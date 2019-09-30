@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
@@ -24,7 +25,7 @@ import static java.util.Objects.nonNull;
 
 @Data
 @FieldNameConstants(asEnum = true)
-public class SingleReportConfigurationDto {
+public class SingleReportConfigurationDto implements Combinable {
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   private AggregationType aggregationType = AggregationType.AVERAGE;
   private FlowNodeExecutionState flowNodeExecutionState = FlowNodeExecutionState.ALL;
@@ -60,6 +61,18 @@ public class SingleReportConfigurationDto {
       configsToConsiderForCommand.add(this.distributedBy.getId());
     }
     return String.join("-", configsToConsiderForCommand);
+  }
+
+  @Override
+  public boolean isCombinable(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof SingleReportConfigurationDto)) {
+      return false;
+    }
+    SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
+    return (distributedBy != DistributedBy.USER_TASK && that.distributedBy != DistributedBy.USER_TASK);
   }
 
   private boolean isUserTaskDurationCommand(ProcessViewDto viewDto) {

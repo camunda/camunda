@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -100,6 +101,36 @@ public class ReportConflictIT {
 
   @Test
   @Parameters(source = ForceParameterProvider.class)
+  public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotCombinableAnymoreWhenForceSet(Boolean force) {
+    // given
+    String firstSingleReportId =
+      createAndStoreDefaultProcessReportDefinition(createRandomRawDataReport());
+    String combinedReportId = createNewCombinedReport(firstSingleReportId);
+    String[] expectedReportIds = new String[]{firstSingleReportId, combinedReportId};
+    String[] expectedConflictedItemIds = new String[]{combinedReportId};
+
+    // when
+    final SingleProcessReportDefinitionDto reportUpdate = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto userTaskReport = ProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE_BY_USER_TASK)
+      .build();
+    userTaskReport.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+    reportUpdate.setData(userTaskReport);
+    ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
+      firstSingleReportId,
+      reportUpdate,
+      force
+    );
+
+    // then
+    checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
+    checkReportsStillExist(expectedReportIds);
+    checkCombinedReportContainsSingleReports(combinedReportId, firstSingleReportId);
+  }
+
+  @Test
+  @Parameters(source = ForceParameterProvider.class)
   public void updateSingleProcessReportFailsWithConflictIfUsedInAlertAndSuitableForAlertAnymoreWhenForceSet(Boolean force) {
     // given
     ProcessReportDataDto numberReport = ProcessReportDataBuilder
@@ -160,7 +191,6 @@ public class ReportConflictIT {
     checkReportsStillExist(expectedReportIds);
     checkAlertsStillExist(expectedConflictedItemIds);
   }
-
 
   @Test
   public void getSingleReportDeleteConflictsIfUsedByCombinedReport() {
@@ -319,40 +349,6 @@ public class ReportConflictIT {
     assertThat(response.getStatus(), is(204));
 
     return id;
-  }
-
-  private String createNewCollectionAndAddReport(String reportId, final String id) {
-    String collectionId = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-
-    final ReportDefinitionDto definition = embeddedOptimizeRule.getRequestExecutor()
-      .buildGetReportRequest(reportId)
-      .execute(ReportDefinitionDto.class, 200);
-    definition.setCollectionId(collectionId);
-
-    if (definition.getCombined()) {
-      embeddedOptimizeRule.getRequestExecutor()
-        .buildUpdateCombinedProcessReportRequest(reportId, (CombinedReportDefinitionDto) definition)
-        .execute(204);
-    } else {
-      switch (definition.getReportType()) {
-        case PROCESS:
-          embeddedOptimizeRule.getRequestExecutor()
-            .buildUpdateSingleProcessReportRequest(reportId, (SingleProcessReportDefinitionDto) definition)
-            .execute(204);
-          break;
-        case DECISION:
-          embeddedOptimizeRule.getRequestExecutor()
-            .buildUpdateSingleDecisionReportRequest(reportId, (SingleDecisionReportDefinitionDto) definition)
-            .execute(204);
-          break;
-      }
-    }
-
-    return collectionId;
   }
 
   private String createNewAlertForReport(String reportId) {

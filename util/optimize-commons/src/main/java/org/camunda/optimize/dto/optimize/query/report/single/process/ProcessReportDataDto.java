@@ -84,6 +84,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     ProcessReportDataDto that = (ProcessReportDataDto) o;
     return Combinable.isCombinable(view, that.view) &&
       Combinable.isCombinable(groupBy, that.groupBy) &&
+      Combinable.isCombinable(getConfiguration(), that.getConfiguration()) &&
       Objects.equals(visualization, that.visualization);
   }
 
