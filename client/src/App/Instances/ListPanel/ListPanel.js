@@ -8,7 +8,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
 import SplitPane from 'modules/components/SplitPane';
-import {EXPAND_STATE} from 'modules/constants';
+import {LOADING_STATE, EXPAND_STATE} from 'modules/constants';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -23,13 +23,11 @@ class ListPanel extends React.Component {
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     filter: PropTypes.object.isRequired,
     filterCount: PropTypes.number.isRequired,
-
     instances: PropTypes.array.isRequired,
     sorting: PropTypes.object.isRequired,
     onSort: PropTypes.func.isRequired,
     firstElement: PropTypes.number.isRequired,
-    onFirstElementChange: PropTypes.func.isRequired,
-    onWorkflowInstancesRefresh: PropTypes.func
+    onFirstElementChange: PropTypes.func.isRequired
   };
 
   constructor(props) {
@@ -41,12 +39,12 @@ class ListPanel extends React.Component {
     };
 
     this.subscriptions = {
-      LOAD_STATE_INSTANCES: response => {
-        if (response.state === 'LOADING') {
+      LOAD_LIST_INSTANCES: response => {
+        if (response.state === LOADING_STATE.LOADING) {
           this.setState({instancesLoaded: false});
         }
 
-        if (response.state === 'LOADED') {
+        if (response.state === LOADING_STATE.LOADED) {
           this.setState({instancesLoaded: true});
         }
       }
@@ -58,6 +56,7 @@ class ListPanel extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    const {dataManager} = this.props;
     const hasListChanged =
       !prevState.instancesLoaded && this.state.instancesLoaded;
 
@@ -70,7 +69,7 @@ class ListPanel extends React.Component {
       if (prevProps.instances.length) {
         const prevActiveInstances = prevProps.instances
           .slice(0, prevState.entriesPerPage)
-          .filter(item => this.props.polling.ids.includes(item.id));
+          .filter(item => this.props.polling.active.has(item.id));
 
         // remove instances with active ops.  from previous page from polling
         Boolean(prevActiveInstances.length) &&
@@ -84,19 +83,19 @@ class ListPanel extends React.Component {
 
     // this.props.instances does not change, so hasListChanged = false
     if (hasEntriesPerPageChanged) {
-      // fetch the list again when expanding the list panel
-      // https://app.camunda.com/jira/browse/OPE-395
       if (isListExpanded) {
-        this.props.onWorkflowInstancesRefresh();
+        dataManager.update({
+          endpoints: ['workflowInstances'],
+          topic: 'REFRESH_AFTER_OPERATION'
+        });
       } else {
         // list is collapsed
-        const activeIds = this.props.polling.ids;
+        const activeIds = this.props.polling.active;
 
         const activeInstancesNotInView = this.props.instances
           .slice(this.state.entriesPerPage) // get hidden ids from collapse
-          .filter(item => activeIds.includes(item.id)) // get only active ids
+          .filter(item => activeIds.has(item.id)) // get only active ids
           .map(item => item.id);
-
         if (Boolean(activeInstancesNotInView.length)) {
           this.props.polling.removeIds(activeInstancesNotInView);
         }
@@ -127,13 +126,24 @@ class ListPanel extends React.Component {
     this.props.polling.addIds([instance.id]);
   };
 
+  getEmptyListMessage = () => {
+    const {active, incidents, completed, canceled} = this.props.filter;
+
+    let msg = 'There are no instances matching this filter set.';
+
+    if (!active && !incidents && !completed && !canceled) {
+      msg += '\n To see some results, select at least one instance state.';
+    }
+
+    return msg;
+  };
+
   render() {
     const {
       filter,
       filterCount,
       onSort,
       onFirstElementChange,
-      onWorkflowInstancesRefresh,
       ...paneProps
     } = this.props;
     const isListEmpty = this.props.instances.length === 0;
@@ -152,9 +162,20 @@ class ListPanel extends React.Component {
             onEntriesPerPageChange={entriesPerPage =>
               this.setState({entriesPerPage})
             }
-            isDataLoaded={this.props.instancesLoaded}
+            isDataLoaded={this.state.instancesLoaded}
             onActionButtonClick={this.handleActionButtonClick}
-          />
+          >
+            <List.Item.Header />
+            {this.state.instancesLoaded ? (
+              !isListEmpty ? (
+                <List.Item.Body />
+              ) : (
+                <List.Item.Message message={this.getEmptyListMessage()} />
+              )
+            ) : (
+              <List.Item.Skeleton />
+            )}
+          </List>
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
           {!isListEmpty && (

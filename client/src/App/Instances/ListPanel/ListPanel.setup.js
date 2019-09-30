@@ -5,7 +5,12 @@
  */
 
 import {createInstance, createOperation} from 'modules/testUtils';
-import {EXPAND_STATE, DEFAULT_SORTING, DEFAULT_FILTER} from 'modules/constants';
+import {
+  EXPAND_STATE,
+  SORT_ORDER,
+  DEFAULT_SORTING,
+  DEFAULT_FILTER
+} from 'modules/constants';
 
 // mock props
 const filterCount = 27;
@@ -21,6 +26,21 @@ export const ACTIVE_INSTANCE = createInstance({
   hasActiveOperation: true
 });
 
+export const emptyList = {
+  data: [],
+  onSelectedInstancesUpdate: jest.fn(),
+  onEntriesPerPageChange: jest.fn(),
+  onSort: jest.fn(),
+  selectedInstances: {
+    all: false,
+    excludeIds: [],
+    ids: []
+  },
+  expandState: EXPAND_STATE.DEFAULT,
+  sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC},
+  isDataLoaded: true
+};
+
 export const mockProps = {
   expandState: EXPAND_STATE.DEFAULT,
   filter: DEFAULT_FILTER,
@@ -30,8 +50,7 @@ export const mockProps = {
   sorting: DEFAULT_SORTING,
   onSort: jest.fn(),
   firstElement: 0,
-  onFirstElementChange: onFirstElementChange,
-  onWorkflowInstancesRefresh: jest.fn()
+  onFirstElementChange: onFirstElementChange
 };
 export const mockPropsWithInstances = {
   ...mockProps,
@@ -48,7 +67,8 @@ export const mockPropsWithNoOperation = {
 export const mockPropsWithPoll = {
   ...mockPropsWithNoOperation,
   polling: {
-    ids: ['1'],
+    active: new Set([]),
+    complete: new Set([]),
     addIds: jest.fn(),
     removeIds: jest.fn()
   }

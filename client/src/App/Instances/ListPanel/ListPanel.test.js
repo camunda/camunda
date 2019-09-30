@@ -8,6 +8,7 @@ import React from 'react';
 import {shallow, mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/theme';
+import {DataManagerProvider} from 'modules/DataManager';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
@@ -15,7 +16,7 @@ import {DataManager} from 'modules/DataManager/core';
 
 import {HashRouter as Router} from 'react-router-dom';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
-import {FILTER_SELECTION} from 'modules/constants';
+import {FILTER_SELECTION, LOADING_STATE} from 'modules/constants';
 import {
   flushPromises,
   mockResolvedAsyncFn,
@@ -23,6 +24,7 @@ import {
 } from 'modules/testUtils';
 
 import {
+  emptyList,
   mockProps,
   mockPropsWithInstances,
   mockPropsWithNoOperation,
@@ -41,7 +43,11 @@ jest.mock('modules/DataManager/core');
 
 DataManager.mockImplementation(() => {
   return {
+    publish: jest.fn(({subscription, state, response}) =>
+      subscription({state, response})
+    ),
     subscribe: jest.fn(),
+    update: jest.fn(),
     getWorkflowXML: jest.fn(),
     getWorkflowInstances: jest.fn(),
     getWorkflowInstancesStatistics: jest.fn()
@@ -76,7 +82,60 @@ describe('ListPanel', () => {
     expect(node.state().entriesPerPage).toBe(0);
   });
 
+  describe('messages', () => {
+    it('should display a message for empty list when filter has no state', async () => {
+      const node = shallow(
+        <List.WrappedComponent
+          {...emptyList}
+          filter={{error: 'mock error message'}}
+        />
+      );
+
+      expect(
+        node.find('[data-test="empty-message-instances-list"]')
+      ).toMatchSnapshot();
+    });
+
+    it('should display a empty list message when filter has at least one state', async () => {
+      const node = shallow(
+        <List.WrappedComponent
+          {...emptyList}
+          filter={{error: 'mock error message', active: true}}
+        />
+      );
+
+      expect(
+        node.find('[data-test="empty-message-instances-list"]')
+      ).toMatchSnapshot();
+    });
+  });
+
   describe('display instances List', () => {
+    it('should render a spinner', () => {
+      // given
+      const node = shallow(ComponentWithInstances);
+      const TBodyNode = node.find(List.Item.Skeleton);
+      expect(TBodyNode).toHaveLength(1);
+    });
+
+    it('should render table body', () => {
+      // given
+      const node = shallow(ComponentWithInstances);
+      const subscriptions = node.instance().subscriptions;
+
+      // when
+      dataManager.publish({
+        subscription: subscriptions['LOAD_LIST_INSTANCES'],
+        state: LOADING_STATE.LOADED,
+        response: {
+          instancesLoaded: true
+        }
+      });
+      // TBody
+      const TBodyNode = node.find(List.Item.Body);
+      expect(TBodyNode).toHaveLength(1);
+    });
+
     it('should not contain a Footer when list is empty', () => {
       // given
       const node = shallow(Component);
@@ -103,19 +162,23 @@ describe('ListPanel', () => {
       const node = mount(
         <Router>
           <ThemeProvider>
-            <CollapsablePanelProvider>
-              <SelectionProvider
-                groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
-                filter={FILTER_SELECTION.incidents}
-              >
-                <InstancesPollProvider>
-                  <ListPanel.WrappedComponent
-                    {...mockPropsWithNoOperation}
-                    {...{dataManager}}
-                  />
-                </InstancesPollProvider>
-              </SelectionProvider>
-            </CollapsablePanelProvider>
+            <DataManagerProvider>
+              <CollapsablePanelProvider>
+                <SelectionProvider
+                  groupedWorkflows={formatGroupedWorkflows(
+                    groupedWorkflowsMock
+                  )}
+                  filter={FILTER_SELECTION.incidents}
+                >
+                  <InstancesPollProvider>
+                    <ListPanel.WrappedComponent
+                      {...mockPropsWithNoOperation}
+                      {...{dataManager}}
+                    />
+                  </InstancesPollProvider>
+                </SelectionProvider>
+              </CollapsablePanelProvider>
+            </DataManagerProvider>
           </ThemeProvider>
         </Router>
       );
@@ -155,26 +218,29 @@ describe('ListPanel', () => {
   describe('polling for instances changes', () => {
     beforeEach(() => {
       api.fetchWorkflowInstances.mockClear();
-      mockProps.onWorkflowInstancesRefresh.mockClear();
     });
 
     it('should not send ids for polling if no instances with active operations are displayed', async () => {
       const node = mount(
         <Router>
           <ThemeProvider>
-            <CollapsablePanelProvider>
-              <SelectionProvider
-                groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
-                filter={FILTER_SELECTION.incidents}
-              >
-                <InstancesPollProvider>
-                  <ListPanel.WrappedComponent
-                    {...mockPropsWithNoOperation}
-                    {...{dataManager}}
-                  />
-                </InstancesPollProvider>
-              </SelectionProvider>
-            </CollapsablePanelProvider>
+            <DataManagerProvider>
+              <CollapsablePanelProvider>
+                <SelectionProvider
+                  groupedWorkflows={formatGroupedWorkflows(
+                    groupedWorkflowsMock
+                  )}
+                  filter={FILTER_SELECTION.incidents}
+                >
+                  <InstancesPollProvider>
+                    <ListPanel.WrappedComponent
+                      {...mockPropsWithNoOperation}
+                      {...{dataManager}}
+                    />
+                  </InstancesPollProvider>
+                </SelectionProvider>
+              </CollapsablePanelProvider>
+            </DataManagerProvider>
           </ThemeProvider>
         </Router>
       );
@@ -183,20 +249,15 @@ describe('ListPanel', () => {
       node.update();
 
       // no ids are sent for polling
-      expect(node.find(InstancesPollProvider).state().ids).toEqual([]);
+      expect(mockPropsWithPoll.polling.addIds).not.toHaveBeenCalled();
     });
 
     it('should send ids for polling if at least one instance with active operations is diplayed', async () => {
-      const mockPropsWithPoll = {
-        ...mockPropsWithInstances,
-        polling: {
-          ids: [],
-          addIds: jest.fn(),
-          removeIds: jest.fn()
-        }
-      };
       const node = shallow(
-        <ListPanel.WrappedComponent {...mockPropsWithPoll} {...{dataManager}} />
+        <ListPanel.WrappedComponent
+          {...{...mockPropsWithPoll, instances: [ACTIVE_INSTANCE]}}
+          {...{dataManager}}
+        />
       );
 
       // when
@@ -217,21 +278,25 @@ describe('ListPanel', () => {
       // given
       const node = mount(
         <Router>
-          <ThemeProvider>
-            <CollapsablePanelProvider>
-              <SelectionProvider
-                groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
-                filter={FILTER_SELECTION.incidents}
-              >
-                <InstancesPollProvider>
-                  <ListPanel.WrappedComponent
-                    {...mockPropsWithPoll}
-                    {...{dataManager}}
-                  />
-                </InstancesPollProvider>
-              </SelectionProvider>
-            </CollapsablePanelProvider>
-          </ThemeProvider>
+          <DataManagerProvider>
+            <ThemeProvider>
+              <CollapsablePanelProvider>
+                <SelectionProvider
+                  groupedWorkflows={formatGroupedWorkflows(
+                    groupedWorkflowsMock
+                  )}
+                  filter={FILTER_SELECTION.incidents}
+                >
+                  <InstancesPollProvider>
+                    <ListPanel.WrappedComponent
+                      {...mockPropsWithPoll}
+                      {...{dataManager}}
+                    />
+                  </InstancesPollProvider>
+                </SelectionProvider>
+              </CollapsablePanelProvider>
+            </ThemeProvider>
+          </DataManagerProvider>
         </Router>
       );
 
@@ -285,9 +350,7 @@ describe('ListPanel', () => {
       await flushPromises();
       node.update();
 
-      expect(
-        mockPropsWithPoll.onWorkflowInstancesRefresh
-      ).toHaveBeenCalledTimes(1);
+      expect(dataManager.update).toHaveBeenCalledTimes(1);
     });
   });
 });
