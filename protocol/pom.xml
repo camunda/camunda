@@ -102,20 +102,6 @@
             <argument>${project.build.outputDirectory}/protocol.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
-          <systemProperties>
-            <systemProperty>
-              <key>sbe.output.dir</key>
-              <value>${project.build.directory}/generated-sources/sbe</value>
-            </systemProperty>
-            <systemProperty>
-              <key>sbe.java.generate.interfaces</key>
-              <value>true</value>
-            </systemProperty>
-            <systemProperty>
-              <key>sbe.decode.unknown.enum.values</key>
-              <value>true</value>
-            </systemProperty>
-          </systemProperties>
         </configuration>
         <dependencies>
           <dependency>

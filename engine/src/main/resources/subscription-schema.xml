@@ -1,35 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
   package="io.zeebe.engine.processor.workflow.message.command" id="6" version="1"
   semanticVersion="${project.version}" description="Zeebe Subscription Protocol"
   byteOrder="littleEndian">
 
-  <types>
-
-    <composite name="messageHeader"
-      description="Message identifiers and length of message root">
-      <type name="blockLength" primitiveType="uint16"/>
-      <type name="templateId" primitiveType="uint16"/>
-      <type name="schemaId" primitiveType="uint16"/>
-      <type name="version" primitiveType="uint16"/>
-    </composite>
-
-    <composite name="varDataEncoding">
-      <type name="length" primitiveType="uint32" maxValue="2147483647"/>
-      <type name="varData" primitiveType="uint8" length="0" characterEncoding="UTF-8"/>
-    </composite>
-
-    <composite name="groupSizeEncoding">
-      <type name="blockLength" primitiveType="uint16"/>
-      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>
-    </composite>
-
-    <enum name="BooleanType" encodingType="uint8" semanticType="Boolean">
-      <validValue name="FALSE">0</validValue>
-      <validValue name="TRUE">1</validValue>
-    </enum>
-
-  </types>
+  <xi:include href="../../../../protocol/src/main/resources/common-types.xml"/>
 
   <sbe:message name="OpenMessageSubscription" id="0">
     <field name="subscriptionPartitionId" id="0" type="uint16"/>
