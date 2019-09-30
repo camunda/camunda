@@ -8,6 +8,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {remove} from 'lodash';
 
+import SpinnerSkeleton from 'modules/components/Skeletons';
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
 import Actions from 'modules/components/Actions';
@@ -21,9 +22,11 @@ import {formatDate} from 'modules/utils/date';
 import {withSelection} from 'modules/contexts/SelectionContext';
 
 import ColumnHeader from './ColumnHeader';
+import ListContext, {useListContext} from './ListContext';
 import * as Styled from './styled';
 
 const {THead, TBody, TH, TR, TD} = Table;
+
 class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -40,7 +43,11 @@ class List extends React.Component {
     onSort: PropTypes.func,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     isDataLoaded: PropTypes.bool,
-    onActionButtonClick: PropTypes.func
+    onActionButtonClick: PropTypes.func,
+    children: PropTypes.oneOfType([
+      PropTypes.arrayOf(PropTypes.node),
+      PropTypes.node
+    ])
   };
 
   constructor(props) {
@@ -163,171 +170,196 @@ class List extends React.Component {
     this.props.onActionButtonClick(instance);
   };
 
-  renderTableHead() {
-    const isListEmpty = this.props.data.length === 0;
-    const listHasFinishedInstances =
-      this.props.filter.canceled || this.props.filter.completed;
-
-    return (
-      <THead>
-        <TR>
-          <TH>
-            <React.Fragment>
-              <Styled.CheckAll>
-                <Checkbox
-                  disabled={isListEmpty}
-                  isChecked={this.areAllInstancesSelected()}
-                  onChange={this.handleSelectAll}
-                  title="Select all instances"
-                />
-              </Styled.CheckAll>
-              <ColumnHeader
-                disabled={isListEmpty}
-                onSort={this.props.onSort}
-                label="Workflow"
-                sortKey="workflowName"
-                sorting={this.props.sorting}
-              />
-            </React.Fragment>
-          </TH>
-          <TH>
-            <ColumnHeader
-              disabled={isListEmpty}
-              label="Instance Id"
-              onSort={this.props.onSort}
-              sortKey="id"
-              sorting={this.props.sorting}
-            />
-          </TH>
-          <TH>
-            <ColumnHeader
-              disabled={isListEmpty}
-              label="Version"
-              onSort={this.props.onSort}
-              sortKey="workflowVersion"
-              sorting={this.props.sorting}
-            />
-          </TH>
-          <TH>
-            <ColumnHeader
-              disabled={isListEmpty}
-              label="Start Time"
-              onSort={this.props.onSort}
-              sortKey="startDate"
-              sorting={this.props.sorting}
-            />
-          </TH>
-          <TH>
-            <ColumnHeader
-              disabled={isListEmpty || !listHasFinishedInstances}
-              label="End Time"
-              onSort={this.props.onSort}
-              sortKey="endDate"
-              sorting={this.props.sorting}
-            />
-          </TH>
-          <Styled.ActionsTH>
-            <ColumnHeader disabled={isListEmpty} label="Actions" />
-          </Styled.ActionsTH>
-        </TR>
-      </THead>
-    );
-  }
-
-  renderTableBody() {
-    return (
-      <TBody>
-        {this.props.data
-          .slice(0, this.state.rowsToDisplay)
-          .map((instance, idx) => (
-            <TR key={idx} selected={this.isSelected(instance.id)}>
-              <TD>
-                <Styled.Cell>
-                  <Styled.SelectionStatusIndicator selected={false} />
-                  <Checkbox
-                    type="selection"
-                    isChecked={this.isSelected(instance.id)}
-                    onChange={this.handleSelectInstance(instance)}
-                    title={`Select instance ${instance.id}`}
-                  />
-
-                  <StateIcon state={instance.state} />
-                  <Styled.WorkflowName>
-                    {getWorkflowName(instance)}
-                  </Styled.WorkflowName>
-                </Styled.Cell>
-              </TD>
-              <TD>
-                <Styled.InstanceAnchor
-                  to={`/instances/${instance.id}`}
-                  title={`View instance ${instance.id}`}
-                >
-                  {instance.id}
-                </Styled.InstanceAnchor>
-              </TD>
-              <TD>{`Version ${instance.workflowVersion}`}</TD>
-              <TD>{formatDate(instance.startDate)}</TD>
-              <TD>{formatDate(instance.endDate)}</TD>
-              <TD>
-                <Actions
-                  instance={instance}
-                  selected={this.isSelected(instance.id)}
-                  onButtonClick={this.handleActionButtonClick.bind(
-                    this,
-                    instance
-                  )}
-                />
-              </TD>
-            </TR>
-          ))}
-      </TBody>
-    );
-  }
-
-  renderEmptyMessage = () => {
-    return (
-      <TBody>
-        <Styled.EmptyTR>
-          <TD colSpan={5}>
-            <EmptyMessage
-              message={this.getEmptyListMessage()}
-              data-test="empty-message-instances-list"
-            />
-          </TD>
-        </Styled.EmptyTR>
-      </TBody>
-    );
-  };
-
-  getEmptyListMessage = () => {
-    const {active, incidents, completed, canceled} = this.props.filter;
-
-    let msg = 'There are no instances matching this filter set.';
-
-    if (!active && !incidents && !completed && !canceled) {
-      msg += '\n To see some results, select at least one instance state.';
-    }
-
-    return msg;
-  };
-
   render() {
-    const isListEmpty = this.props.data.length === 0;
-
     return (
       <Styled.List>
         <Styled.TableContainer ref={this.myRef}>
-          <Table>
-            {this.renderTableHead()}
-            {isListEmpty &&
-              this.props.isDataLoaded &&
-              this.renderEmptyMessage()}
-            {this.renderTableBody()}
-          </Table>
+          <ListContext.Provider
+            value={{
+              data: this.props.data,
+              filter: this.props.filter,
+              sorting: this.props.sorting,
+              onSort: this.props.onSort,
+              areAllInstancesSelected: this.areAllInstancesSelected,
+              handleSelectAll: this.handleSelectAll,
+              rowsToDisplay: this.state.rowsToDisplay,
+              isSelected: this.isSelected,
+              handleSelectInstance: this.handleSelectInstance,
+              handleActionButtonClick: this.handleActionButtonClick
+            }}
+          >
+            <Table>{this.props.children}</Table>
+          </ListContext.Provider>
         </Styled.TableContainer>
       </Styled.List>
     );
   }
 }
 
-export default withSelection(List);
+const WrappedList = withSelection(List);
+WrappedList.Item = List;
+
+export default WrappedList;
+
+WrappedList.Item.Skeleton = function Skeleton() {
+  return (
+    <TBody>
+      <Styled.EmptyTR>
+        <Styled.EmptyTD colSpan={6}>
+          <SpinnerSkeleton data-test="spinner" />
+        </Styled.EmptyTD>
+      </Styled.EmptyTR>
+    </TBody>
+  );
+};
+
+WrappedList.Item.Message = class Message extends React.Component {
+  static propTypes = {
+    message: PropTypes.string
+  };
+  render() {
+    return (
+      <TBody>
+        <Styled.EmptyTR>
+          <TD colSpan={5}>
+            <EmptyMessage
+              message={this.props.message}
+              data-test="empty-message-instances-list"
+            />
+          </TD>
+        </Styled.EmptyTR>
+      </TBody>
+    );
+  }
+};
+
+WrappedList.Item.Body = function Body(props) {
+  const {
+    data,
+    rowsToDisplay,
+    isSelected,
+    handleSelectInstance,
+    handleActionButtonClick
+  } = useListContext();
+
+  return (
+    <TBody {...props}>
+      {data.slice(0, rowsToDisplay).map((instance, idx) => (
+        <TR key={idx} selected={isSelected(instance.id)}>
+          <TD>
+            <Styled.Cell>
+              <Styled.SelectionStatusIndicator selected={false} />
+              <Checkbox
+                type="selection"
+                isChecked={isSelected(instance.id)}
+                onChange={handleSelectInstance(instance)}
+                title={`Select instance ${instance.id}`}
+              />
+
+              <StateIcon state={instance.state} />
+              <Styled.WorkflowName>
+                {getWorkflowName(instance)}
+              </Styled.WorkflowName>
+            </Styled.Cell>
+          </TD>
+          <TD>
+            <Styled.InstanceAnchor
+              to={`/instances/${instance.id}`}
+              title={`View instance ${instance.id}`}
+            >
+              {instance.id}
+            </Styled.InstanceAnchor>
+          </TD>
+          <TD>{`Version ${instance.workflowVersion}`}</TD>
+          <TD>{formatDate(instance.startDate)}</TD>
+          <TD>{formatDate(instance.endDate)}</TD>
+          <TD>
+            <Actions
+              instance={instance}
+              selected={isSelected(instance.id)}
+              onButtonClick={() => handleActionButtonClick(instance)}
+            />
+          </TD>
+        </TR>
+      ))}
+    </TBody>
+  );
+};
+
+WrappedList.Item.Header = function Header(props) {
+  const {
+    data,
+    filter,
+    sorting,
+    onSort,
+    areAllInstancesSelected,
+    handleSelectAll
+  } = useListContext();
+
+  const isListEmpty = data.length === 0;
+  const listHasFinishedInstances = filter.canceled || filter.completed;
+  return (
+    <THead {...props}>
+      <TR>
+        <TH>
+          <React.Fragment>
+            <Styled.CheckAll>
+              <Checkbox
+                disabled={isListEmpty}
+                isChecked={areAllInstancesSelected()}
+                onChange={handleSelectAll}
+                title="Select all instances"
+              />
+            </Styled.CheckAll>
+            <ColumnHeader
+              disabled={isListEmpty}
+              onSort={onSort}
+              label="Workflow"
+              sortKey="workflowName"
+              sorting={sorting}
+            />
+          </React.Fragment>
+        </TH>
+        <TH>
+          <ColumnHeader
+            disabled={isListEmpty}
+            label="Instance Id"
+            onSort={onSort}
+            sortKey="id"
+            sorting={sorting}
+          />
+        </TH>
+        <TH>
+          <ColumnHeader
+            disabled={isListEmpty}
+            label="Version"
+            onSort={onSort}
+            sortKey="workflowVersion"
+            sorting={sorting}
+          />
+        </TH>
+        <TH>
+          <ColumnHeader
+            disabled={isListEmpty}
+            label="Start Time"
+            onSort={onSort}
+            sortKey="startDate"
+            sorting={sorting}
+          />
+        </TH>
+        <TH>
+          <ColumnHeader
+            disabled={isListEmpty || !listHasFinishedInstances}
+            label="End Time"
+            onSort={onSort}
+            sortKey="endDate"
+            sorting={sorting}
+          />
+        </TH>
+        <Styled.ActionsTH>
+          <ColumnHeader disabled={isListEmpty} label="Actions" />
+        </Styled.ActionsTH>
+      </TR>
+    </THead>
+  );
+};

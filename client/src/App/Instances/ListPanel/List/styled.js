@@ -10,8 +10,6 @@ import Table from 'modules/components/Table';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-const {TH} = Table;
-
 export const List = styled.div`
   flex-grow: 1;
   position: relative;
@@ -26,7 +24,7 @@ export const TableContainer = styled.div`
   top: 0;
 `;
 
-export const ActionsTH = styled(TH)`
+export const ActionsTH = styled(Table.TH)`
   width: 90px;
 `;
 
@@ -97,5 +95,9 @@ export const WorkflowName = styled.span`
 
 export const EmptyTR = styled(Table.TR)`
   border: 0;
+  padding: 0;
+`;
+
+export const EmptyTD = styled(Table.TD)`
   padding: 0;
 `;

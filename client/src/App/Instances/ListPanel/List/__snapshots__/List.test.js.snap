@@ -1,16 +1,30 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`List Table should display a empty list message when filter has at least one state 1`] = `
-<EmptyMessage
-  data-test="empty-message-instances-list"
-  message="There are no instances matching this filter set."
-/>
+exports[`List Message should be wrapped correctly 1`] = `
+<TBody>
+  <Styled(TR)>
+    <TD
+      colSpan={5}
+    >
+      <EmptyMessage
+        data-test="empty-message-instances-list"
+        message="some message"
+      />
+    </TD>
+  </Styled(TR)>
+</TBody>
 `;
 
-exports[`List Table should display a message for empty list when filter has no state 1`] = `
-<EmptyMessage
-  data-test="empty-message-instances-list"
-  message="There are no instances matching this filter set.
- To see some results, select at least one instance state."
-/>
+exports[`List Skeleton should be wrapped correctly 1`] = `
+<TBody>
+  <Styled(TR)>
+    <Styled(TD)
+      colSpan={6}
+    >
+      <SpinnerSkeleton
+        data-test="spinner"
+      />
+    </Styled(TD)>
+  </Styled(TR)>
+</TBody>
 `;

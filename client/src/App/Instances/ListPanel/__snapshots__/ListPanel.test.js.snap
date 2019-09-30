@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ListPanel messages should display a empty list message when filter has at least one state 1`] = `null`;
+
+exports[`ListPanel messages should display a message for empty list when filter has no state 1`] = `null`;

@@ -5,9 +5,15 @@
  */
 
 import styled from 'styled-components';
+import Table from 'modules/components/Table';
 
 import SplitPane from 'modules/components/SplitPane';
 
 export const PaneBody = styled(SplitPane.Pane.Body)`
   border-top: none;
+`;
+
+export const EmptyTR = styled(Table.TR)`
+  border: 0;
+  padding: 0;
 `;

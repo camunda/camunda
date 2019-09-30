@@ -6,10 +6,13 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {DataManagerProvider} from 'modules/DataManager';
 
 import ListFooter from './ListFooter';
 import Paginator from './Paginator';
 import AddSelection from './AddSelection';
+
+jest.mock('modules/utils/bpmn');
 
 describe('ListFooter', () => {
   let node;
@@ -26,6 +29,7 @@ describe('ListFooter', () => {
         filterCount={9}
         selection={{ids: [], excludeIds: []}}
         selections={[{selectionId: 0}, {selectionId: 1}]}
+        dataManager={{}}
       />
     );
   });

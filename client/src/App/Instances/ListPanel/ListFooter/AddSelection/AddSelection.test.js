@@ -9,8 +9,10 @@ import {mount} from 'enzyme';
 
 import {xTimes, createSelection} from 'modules/testUtils';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {DataManagerProvider} from 'modules/DataManager';
 
 import AddSelection from './AddSelection';
+jest.mock('modules/utils/bpmn');
 
 const maxSelections = [];
 xTimes(10)(index => maxSelections.push(createSelection(index)));
@@ -33,13 +35,15 @@ describe('AddSelection', () => {
     it('should be disabled if no instance is selected', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <AddSelection
-            {...mockFunctions}
-            selections={[]}
-            selectedInstances={{ids: [], excludeIds: []}}
-          />
-        </ThemeProvider>
+        <DataManagerProvider>
+          <ThemeProvider>
+            <AddSelection
+              {...mockFunctions}
+              selections={[]}
+              selectedInstances={{ids: [], excludeIds: []}}
+            />
+          </ThemeProvider>
+        </DataManagerProvider>
       );
       const selectionButton = node.find('button');
 
@@ -51,13 +55,15 @@ describe('AddSelection', () => {
     it('should create new selection', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <AddSelection
-            {...mockFunctions}
-            selections={[]}
-            selectedInstances={{all: true}}
-          />
-        </ThemeProvider>
+        <DataManagerProvider>
+          <ThemeProvider>
+            <AddSelection
+              {...mockFunctions}
+              selections={[]}
+              selectedInstances={{all: true}}
+            />
+          </ThemeProvider>
+        </DataManagerProvider>
       );
       const selectionButton = node.find('button');
 
@@ -74,13 +80,15 @@ describe('AddSelection', () => {
     it('should be disabled if no instance is selected', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <AddSelection
-            {...mockFunctions}
-            selections={[{selectionId: 1}, {selectionId: 2}]}
-            selectedInstances={{ids: [], excludeIds: []}}
-          />
-        </ThemeProvider>
+        <DataManagerProvider>
+          <ThemeProvider>
+            <AddSelection
+              {...mockFunctions}
+              selections={[{selectionId: 1}, {selectionId: 2}]}
+              selectedInstances={{ids: [], excludeIds: []}}
+            />
+          </ThemeProvider>
+        </DataManagerProvider>
       );
       const dropdownButton = node.find('button');
 
@@ -91,13 +99,15 @@ describe('AddSelection', () => {
     it('should drop "up"', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <AddSelection
-            {...mockFunctions}
-            selections={[{selectionId: 1}, {selectionId: 2}]}
-            selectedInstances={{all: true}}
-          />
-        </ThemeProvider>
+        <DataManagerProvider>
+          <ThemeProvider>
+            <AddSelection
+              {...mockFunctions}
+              selections={[{selectionId: 1}, {selectionId: 2}]}
+              selectedInstances={{all: true}}
+            />
+          </ThemeProvider>
+        </DataManagerProvider>
       );
       const dropdownButton = node.find('button');
 
@@ -116,13 +126,15 @@ describe('AddSelection', () => {
     it('should create new selection', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <AddSelection
-            {...mockFunctions}
-            selections={[{selectionId: 1}, {selectionId: 2}]}
-            selectedInstances={{all: true}}
-          />
-        </ThemeProvider>
+        <DataManagerProvider>
+          <ThemeProvider>
+            <AddSelection
+              {...mockFunctions}
+              selections={[{selectionId: 1}, {selectionId: 2}]}
+              selectedInstances={{all: true}}
+            />
+          </ThemeProvider>
+        </DataManagerProvider>
       );
       const dropdownButton = node.find('button');
       dropdownButton.simulate('click');
@@ -139,14 +151,16 @@ describe('AddSelection', () => {
     it('should add to open selection', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <AddSelection
-            {...mockFunctions}
-            selections={[{selectionId: 1}, {selectionId: 2}]}
-            selectedInstances={{all: true}}
-            openSelection={1}
-          />
-        </ThemeProvider>
+        <DataManagerProvider>
+          <ThemeProvider>
+            <AddSelection
+              {...mockFunctions}
+              selections={[{selectionId: 1}, {selectionId: 2}]}
+              selectedInstances={{all: true}}
+              openSelection={1}
+            />
+          </ThemeProvider>
+        </DataManagerProvider>
       );
       const dropdownButton = node.find('button');
       dropdownButton.simulate('click');
@@ -164,13 +178,15 @@ describe('AddSelection', () => {
       it('should show a submenu on hover', () => {
         // given
         const node = mount(
-          <ThemeProvider>
-            <AddSelection
-              {...mockFunctions}
-              selections={[{selectionId: 1}, {selectionId: 2}]}
-              selectedInstances={{all: true}}
-            />
-          </ThemeProvider>
+          <DataManagerProvider>
+            <ThemeProvider>
+              <AddSelection
+                {...mockFunctions}
+                selections={[{selectionId: 1}, {selectionId: 2}]}
+                selectedInstances={{all: true}}
+              />
+            </ThemeProvider>
+          </DataManagerProvider>
         );
         const dropdownButton = node.find('button');
         dropdownButton.simulate('click');
@@ -190,13 +206,15 @@ describe('AddSelection', () => {
       it('should add to selected selection', () => {
         // given
         const node = mount(
-          <ThemeProvider>
-            <AddSelection
-              {...mockFunctions}
-              selections={[{selectionId: 1}, {selectionId: 2}]}
-              selectedInstances={{all: true}}
-            />
-          </ThemeProvider>
+          <DataManagerProvider>
+            <ThemeProvider>
+              <AddSelection
+                {...mockFunctions}
+                selections={[{selectionId: 1}, {selectionId: 2}]}
+                selectedInstances={{all: true}}
+              />
+            </ThemeProvider>
+          </DataManagerProvider>
         );
         const dropdownButton = node.find('button');
         dropdownButton.simulate('click');
