@@ -7,15 +7,16 @@
 import React from 'react';
 import {Redirect} from 'react-router-dom';
 import PropTypes from 'prop-types';
+import {withData} from 'modules/DataManager';
 
 import Dropdown from 'modules/components/Dropdown';
 import Badge from 'modules/components/Badge';
 import ComboBadge from 'modules/components/ComboBadge';
 import * as api from 'modules/api/header';
 import withSharedState from 'modules/components/withSharedState';
-import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {getFilterQueryString} from 'modules/utils/filter';
 import {
+  LOADING_STATE,
   FILTER_SELECTION,
   BADGE_TYPE,
   COMBO_BADGE_TYPE,
@@ -32,6 +33,7 @@ import * as Styled from './styled.js';
 
 class Header extends React.Component {
   static propTypes = {
+    dataManager: PropTypes.object,
     active: PropTypes.oneOf(['dashboard', 'instances']),
     runningInstancesCount: PropTypes.number,
     filter: PropTypes.object,
@@ -48,6 +50,22 @@ class Header extends React.Component {
     onFilterReset: PropTypes.func
   };
 
+  constructor(props) {
+    super(props);
+    this.subscriptions = {
+      LOAD_CORE_STATS: ({state, response}) => {
+        if (state === LOADING_STATE.LOADED) {
+          this.updateCounts(response.coreStatistics);
+        }
+      },
+      REFRESH_AFTER_OPERATION: ({state, response}) => {
+        if (state === LOADING_STATE.LOADED) {
+          this.updateCounts(response.coreStatistics.coreStatistics);
+        }
+      }
+    };
+  }
+
   state = {
     forceRedirect: false,
     user: {},
@@ -60,6 +78,8 @@ class Header extends React.Component {
   };
 
   componentDidMount = () => {
+    this.props.dataManager.subscribe(this.subscriptions);
+
     this.setUser();
     this.localState = this.props.getStateLocally();
     localStateKeys.forEach(this.setValueFromPropsOrLocalState);
@@ -87,6 +107,20 @@ class Header extends React.Component {
     }
   };
 
+  componentWillUnmount() {
+    this.props.dataManager.unsubscribe(this.subscriptions);
+  }
+
+  updateCounts({running, withIncidents}) {
+    const {runningInstancesCount, incidentsCount} = this.props;
+    const counts = {runningInstancesCount, incidentsCount};
+
+    counts.runningInstancesCount = running || 0;
+    counts.incidentsCount = withIncidents || 0;
+
+    this.setState(counts);
+  }
+
   setUser = async () => {
     const user = await api.fetchUser();
     this.setState({user});
@@ -112,20 +146,13 @@ class Header extends React.Component {
    */
   setValuesFromPropsOrApi = async () => {
     const {runningInstancesCount, incidentsCount} = this.props;
-    const counts = {runningInstancesCount, incidentsCount};
 
     if (
       typeof runningInstancesCount === 'undefined' ||
       typeof incidentsCount === 'undefined'
     ) {
-      const response = await fetchWorkflowCoreStatistics();
-      const {running, withIncidents} = response.data;
-
-      counts.runningInstancesCount = running || 0;
-      counts.incidentsCount = withIncidents || 0;
+      this.props.dataManager.getCoreStatistics();
     }
-
-    this.setState(counts);
   };
 
   handleLogout = async () => {
@@ -304,8 +331,8 @@ class Header extends React.Component {
   }
 }
 
-const WrappedHeader = withSelection(
-  withCollapsablePanel(withSharedState(Header))
+const WrappedHeader = withData(
+  withSelection(withCollapsablePanel(withSharedState(Header)))
 );
 WrappedHeader.WrappedComponent = Header;
 

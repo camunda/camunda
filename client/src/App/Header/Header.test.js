@@ -7,6 +7,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 import {HashRouter as Router} from 'react-router-dom';
+import {DataManager} from 'modules/DataManager/core';
 
 import Dropdown from 'modules/components/Dropdown';
 import Header from './Header';
@@ -23,6 +24,12 @@ import {DEFAULT_FILTER, FILTER_SELECTION} from 'modules/constants';
 import {getFilterQueryString} from 'modules/utils/filter';
 
 import * as Styled from './styled.js';
+
+import {LOADING_STATE} from 'modules/constants';
+
+jest.mock('bpmn-js', () => ({}));
+jest.mock('modules/utils/bpmn');
+jest.mock('modules/DataManager/core');
 
 const USER = {
   user: {
@@ -55,6 +62,16 @@ const mockCollapsablePanelProps = {
   expandSelections: jest.fn()
 };
 
+DataManager.mockImplementation(() => {
+  return {
+    publish: jest.fn(({subscription, state, response}) =>
+      subscription({state, response})
+    ),
+    subscribe: jest.fn(),
+    getCoreStatistics: jest.fn()
+  };
+});
+
 // api mocks
 api.fetchUser = mockResolvedAsyncFn(USER);
 api.logout = mockResolvedAsyncFn();
@@ -66,39 +83,67 @@ instancesApi.fetchWorkflowCoreStatistics = mockResolvedAsyncFn({
   }
 });
 
-describe('Header', () => {
-  const mountComponent = component =>
-    mount(
-      <Router>
-        <ThemeProvider>
-          <CollapsablePanelProvider>{component}</CollapsablePanelProvider>
-        </ThemeProvider>
-      </Router>
-    );
+const mountComponent = props => {
+  const node = mount(
+    <Router>
+      <ThemeProvider>
+        <CollapsablePanelProvider>
+          <Header.WrappedComponent {...props} />
+        </CollapsablePanelProvider>
+      </ThemeProvider>
+    </Router>
+  );
+  return node;
+};
 
-  const mockValues = {
-    filter: {foo: 'bar'},
-    filterCount: 1,
-    selectionCount: 2,
-    instancesInSelectionsCount: 3
-  };
+const mockValues = {
+  filter: {foo: 'bar'},
+  filterCount: 1,
+  selectionCount: 2,
+  instancesInSelectionsCount: 3
+};
+
+describe('Header', () => {
+  let dataManager;
+
   beforeEach(() => {
+    dataManager = new DataManager();
     api.fetchUser.mockClear();
     instancesApi.fetchWorkflowCoreStatistics.mockClear();
   });
 
   describe('localState values', () => {
     it('should render the correct links', async () => {
+      dataManager.getCoreStatistics.mockClear();
+
       const mockProps = {
         ...mockValues,
         ...mockCollapsablePanelProps,
+        dataManager,
         getStateLocally: () => ({})
       };
-      const node = mountComponent(<Header {...mockProps} />);
 
-      // when
+      const node = mountComponent(mockProps);
+      const subscriptions = node.find(Header.WrappedComponent).instance()
+        .subscriptions;
+
+      dataManager.publish({
+        subscription: subscriptions['LOAD_CORE_STATS'],
+        state: LOADING_STATE.LOADED,
+        response: {
+          coreStatistics: {
+            running: RUNNING_COUNT,
+            active: ACTIVE_COUNT,
+            withIncidents: INCIDENTS_COUNT
+          }
+        }
+      });
+
+      // when;
       await flushPromises();
       node.update();
+
+      expect(dataManager.getCoreStatistics).toHaveBeenCalled();
 
       expect(node.find(Styled.Menu)).toExist();
       expect(node.find(Styled.Menu).props().role).toBe('navigation');
@@ -121,6 +166,7 @@ describe('Header', () => {
       );
       expect(InstancesLinkNode).toExist();
       expect(InstancesLinkNode.text()).toContain('Running Instances');
+
       expect(InstancesLinkNode.find(Badge).text()).toBe(
         RUNNING_COUNT.toString()
       );
@@ -163,13 +209,16 @@ describe('Header', () => {
           .text()
       ).toBe(mockValues.instancesInSelectionsCount.toString());
     });
+
     it("should get the filterCount, selectionCount & instancesInSelectionsCount from props if it's provided", () => {
       const mockProps = {
         ...mockValues,
         ...mockCollapsablePanelProps,
+        dataManager,
         getStateLocally: () => ({})
       };
-      const node = mountComponent(<Header {...mockProps} />);
+
+      const node = mountComponent(mockProps);
 
       // then
       expect(
@@ -198,12 +247,28 @@ describe('Header', () => {
       // given
       const mockProps = {
         ...mockCollapsablePanelProps,
+        dataManager,
         getStateLocally: () => {
           return {selectionCount: 2, instancesInSelectionsCount: 3};
         }
       };
 
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
+
+      const subscriptions = node.find(Header.WrappedComponent).instance()
+        .subscriptions;
+
+      dataManager.publish({
+        subscription: subscriptions['LOAD_CORE_STATS'],
+        state: LOADING_STATE.LOADED,
+        response: {
+          coreStatistics: {
+            running: RUNNING_COUNT,
+            active: ACTIVE_COUNT,
+            withIncidents: INCIDENTS_COUNT
+          }
+        }
+      });
 
       await flushPromises();
       node.update();
@@ -230,9 +295,10 @@ describe('Header', () => {
       // given
       const mockProps = {
         ...mockCollapsablePanelProps,
+        dataManager,
         getStateLocally: () => mockValues
       };
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
 
       await flushPromises();
       node.update();
@@ -270,11 +336,26 @@ describe('Header', () => {
       const mockProps = {
         getStateLocally: () => {},
         ...mockCollapsablePanelProps,
-        ...mockApiProps,
-        ...mockValues
+        ...mockValues,
+        dataManager
       };
 
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
+
+      const subscriptions = node.find(Header.WrappedComponent).instance()
+        .subscriptions;
+
+      dataManager.publish({
+        subscription: subscriptions['LOAD_CORE_STATS'],
+        state: LOADING_STATE.LOADED,
+        response: {
+          coreStatistics: {
+            running: mockApiProps.runningInstancesCount,
+            active: ACTIVE_COUNT,
+            withIncidents: mockApiProps.incidentsCount
+          }
+        }
+      });
 
       await flushPromises();
       node.update();
@@ -298,17 +379,33 @@ describe('Header', () => {
       const mockProps = {
         getStateLocally: () => {},
         ...mockCollapsablePanelProps,
-        ...mockValues
+        ...mockValues,
+        dataManager
       };
 
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
+
+      const subscriptions = node.find(Header.WrappedComponent).instance()
+        .subscriptions;
+
+      dataManager.publish({
+        subscription: subscriptions['LOAD_CORE_STATS'],
+        state: LOADING_STATE.LOADED,
+        response: {
+          coreStatistics: {
+            running: RUNNING_COUNT,
+            active: ACTIVE_COUNT,
+            withIncidents: INCIDENTS_COUNT
+          }
+        }
+      });
 
       // when
       await flushPromises();
       node.update();
 
       // then
-      expect(instancesApi.fetchWorkflowCoreStatistics).toBeCalled();
+      expect(dataManager.getCoreStatistics).toBeCalled();
 
       // then
       expect(
@@ -326,26 +423,31 @@ describe('Header', () => {
     });
 
     it('should show zero numbers when fetch error occured', async () => {
-      instancesApi.fetchWorkflowCoreStatistics.mockImplementation(() => ({
-        data: {},
-        error: new Error('error')
-      }));
-
       // given
       const mockProps = {
         getStateLocally: () => {},
         ...mockCollapsablePanelProps,
-        ...mockValues
+        ...mockValues,
+        dataManager
       };
 
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
+
+      const subscriptions = node.find(Header.WrappedComponent).instance()
+        .subscriptions;
+
+      dataManager.publish({
+        subscription: subscriptions['LOAD_CORE_STATS'],
+        state: LOADING_STATE.LOAD_FAILED,
+        error: new Error('error')
+      });
 
       // when
       await flushPromises();
       node.update();
 
       // then
-      expect(instancesApi.fetchWorkflowCoreStatistics).toBeCalled();
+      expect(dataManager.getCoreStatistics).toBeCalled();
       expect(
         node
           .find('[data-test="header-link-incidents"]')
@@ -363,12 +465,14 @@ describe('Header', () => {
 
   describe('links', () => {
     it('should add the correct url to links', () => {
-      const node = mountComponent(
-        <Header {...mockCollapsablePanelProps} {...mockValues} />
-      );
+      const props = {
+        ...mockCollapsablePanelProps,
+        ...mockValues,
+        dataManager
+      };
+      const node = mountComponent(props);
 
       // running instances
-
       expect(
         node
           .find('[data-test="header-link-instances"]')
@@ -403,10 +507,11 @@ describe('Header', () => {
         ...mockCollapsablePanelProps,
         active: 'instances',
         getStateLocally: () => ({}),
-        onFilterReset: onFilterResetMock
+        onFilterReset: onFilterResetMock,
+        dataManager
       };
 
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
       let instancesLinkNode = node
         .find('[data-test="header-link-instances"]')
         .find(Styled.ListLink);
@@ -429,10 +534,11 @@ describe('Header', () => {
         ...mockCollapsablePanelProps,
         active: 'instances',
         getStateLocally: () => ({}),
-        onFilterReset: onFilterResetMock
+        onFilterReset: onFilterResetMock,
+        dataManager
       };
 
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
 
       let instancesLinkNode = node
         .find('[data-test="header-link-instances"]')
@@ -464,9 +570,10 @@ describe('Header', () => {
         const mockProps = {
           ...mockCollapsablePanelProps,
           active: 'dashboard',
-          getStateLocally: () => ({})
+          getStateLocally: () => ({}),
+          dataManager
         };
-        const node = mountComponent(<Header {...mockProps} />);
+        const node = mountComponent(mockProps);
         let dashboardNode = node.find('[data-test="header-link-dashboard"]');
 
         // then
@@ -477,10 +584,11 @@ describe('Header', () => {
         const mockProps = {
           ...mockCollapsablePanelProps,
           active: 'instances',
-          getStateLocally: () => ({})
+          getStateLocally: () => ({}),
+          dataManager
         };
 
-        const node = mountComponent(<Header {...mockProps} />);
+        const node = mountComponent(mockProps);
 
         let dashboardNode = node.find('[data-test="header-link-dashboard"]');
 
@@ -494,10 +602,11 @@ describe('Header', () => {
           ...mockCollapsablePanelProps,
           active: 'instances',
           isFiltersCollapsed: false,
-          getStateLocally: () => ({})
+          getStateLocally: () => ({}),
+          dataManager
         };
 
-        const node = mountComponent(<Header {...mockProps} />);
+        const node = mountComponent(mockProps);
 
         let filtersNode = node.find('[data-test="header-link-filters"]');
 
@@ -513,10 +622,11 @@ describe('Header', () => {
           ...mockCollapsablePanelProps,
           ...mockValues,
           active: 'instances',
-          isFiltersCollapsed: true
+          isFiltersCollapsed: true,
+          dataManager
         };
 
-        const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
+        const node = mountComponent(mockProps);
 
         // when
         await flushPromises();
@@ -535,9 +645,10 @@ describe('Header', () => {
           ...mockCollapsablePanelProps,
           isSelectionsCollapsed: false,
           active: 'instances',
-          getStateLocally: () => mockValues
+          getStateLocally: () => mockValues,
+          dataManager
         };
-        const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
+        const node = mountComponent(mockProps);
         let selectionsNode = node.find('[data-test="header-link-selections"]');
 
         // then
@@ -550,9 +661,10 @@ describe('Header', () => {
           ...mockCollapsablePanelProps,
           isSelectionsCollapsed: true,
           active: 'instances',
-          getStateLocally: () => mockValues
+          getStateLocally: () => mockValues,
+          dataManager
         };
-        const node = mountComponent(<Header {...mockProps} />);
+        const node = mountComponent(mockProps);
 
         let selectionsNode = node.find('[data-test="header-link-selections"]');
 
@@ -566,9 +678,10 @@ describe('Header', () => {
           ...mockCollapsablePanelProps,
           getStateLocally: () => ({}),
           active: 'instances',
-          filter: DEFAULT_FILTER
+          filter: DEFAULT_FILTER,
+          dataManager
         };
-        const node = mountComponent(<Header {...mockProps} />);
+        const node = mountComponent(mockProps);
 
         // when
         await flushPromises();
@@ -586,9 +699,10 @@ describe('Header', () => {
           ...mockCollapsablePanelProps,
           getStateLocally: () => ({}),
           active: 'instances',
-          filter: {incident: true}
+          filter: {incident: true},
+          dataManager
         };
-        const node = mountComponent(<Header {...mockProps} />);
+        const node = mountComponent(mockProps);
 
         // when
         await flushPromises();
@@ -606,9 +720,10 @@ describe('Header', () => {
           ...mockCollapsablePanelProps,
           ...mockValues,
           filter: {incidents: true},
-          active: 'instances'
+          active: 'instances',
+          dataManager
         };
-        const node = mountComponent(<Header.WrappedComponent {...mockProps} />);
+        const node = mountComponent(mockProps);
 
         // when
         await flushPromises();
@@ -625,9 +740,10 @@ describe('Header', () => {
         const mockProps = {
           ...mockCollapsablePanelProps,
           getStateLocally: () => ({}),
-          filter: DEFAULT_FILTER
+          filter: DEFAULT_FILTER,
+          dataManager
         };
-        const node = mountComponent(<Header {...mockProps} />);
+        const node = mountComponent(mockProps);
 
         // when
         await flushPromises();
@@ -646,29 +762,27 @@ describe('Header', () => {
       const mockProps = {
         getStateLocally: () => {},
         ...mockCollapsablePanelProps,
-        ...mockValues
+        ...mockValues,
+        detail: <div data-test="header-detail">Detail</div>,
+        dataManager
       };
 
-      const node = mountComponent(
-        <Header
-          {...mockProps}
-          detail={<div data-test="header-detail">Detail</div>}
-        />
-      );
+      const node = mountComponent(mockProps);
 
       expect(node.find('[data-test="header-detail"]')).toExist();
     });
   });
 
-  describe('Userarea', () => {
+  describe.only('Userarea', () => {
     it('it should request user information', async () => {
       const mockProps = {
         ...mockCollapsablePanelProps,
         getStateLocally: () => ({}),
-        filter: DEFAULT_FILTER
+        filter: DEFAULT_FILTER,
+        dataManager
       };
 
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
 
       await flushPromises();
       node.update();
@@ -678,9 +792,11 @@ describe('Header', () => {
 
     it('it should display user firstname and lastname', async () => {
       const mockProps = {
-        getStateLocally: () => ({})
+        ...mockCollapsablePanelProps,
+        getStateLocally: () => ({}),
+        dataManager
       };
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
 
       // await user data fetching
       await flushPromises();
@@ -697,9 +813,10 @@ describe('Header', () => {
       api.logout = mockResolvedAsyncFn();
       const mockProps = {
         ...mockCollapsablePanelProps,
-        getStateLocally: () => ({})
+        getStateLocally: () => ({}),
+        dataManager
       };
-      const node = mountComponent(<Header {...mockProps} />);
+      const node = mountComponent(mockProps);
 
       // await user data fetching
       await flushPromises();
@@ -712,9 +829,10 @@ describe('Header', () => {
     it('assign handleLogout as a Dropdown.Option onClick', async () => {
       const mockProps = {
         ...mockCollapsablePanelProps,
-        getStateLocally: () => ({})
+        getStateLocally: () => ({}),
+        dataManager
       };
-      const node = mountComponent(<Header {...mockProps} router={{}} />);
+      const node = mountComponent(mockProps);
 
       //when
       node.find('button[data-test="dropdown-toggle"]').simulate('click');
