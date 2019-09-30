@@ -226,7 +226,7 @@ describe('InstancesContainer', () => {
       );
 
       dataManager.getWorkflowInstances = jest.fn(() => {
-        node.instance().subscriptions['LOAD_STATE_INSTANCES']({
+        node.instance().subscriptions['LOAD_LIST_INSTANCES']({
           state: LOADING_STATE.LOADED,
           response: expectedQuery
         });
@@ -864,81 +864,6 @@ describe('InstancesContainer', () => {
 
       // then
       expect(node.find('Instances').prop('sorting')).toEqual(DEFAULT_SORTING);
-    });
-  });
-
-  describe('handleWorkflowInstancesRefresh', () => {
-    it('should pass handleWorkflowInstancesRefresh to Instances', () => {
-      const node = mount(
-        <InstancesContainerWrapped
-          {...{dataManager}}
-          {...localStorageProps}
-          {...getRouterProps()}
-        />
-      );
-
-      expect(
-        node.find(Instances).props().onWorkflowInstancesRefresh
-      ).toBeDefined();
-    });
-
-    it('should refetch the workflow instances', async () => {
-      const MOCK = {workflowInstances: ['1', '2'], totalCount: 2};
-      api.fetchWorkflowInstances = mockResolvedAsyncFn(MOCK);
-
-      const node = mount(
-        <InstancesContainerWrapped
-          {...{dataManager}}
-          {...localStorageProps}
-          {...getRouterProps(fullFilterWithoutWorkflow)}
-        />
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-
-      const onWorkflowInstancesRefresh = node.find(Instances).props()
-        .onWorkflowInstancesRefresh;
-
-      // when
-      onWorkflowInstancesRefresh();
-      node.update();
-      await flushPromises();
-
-      expect(dataManager.getWorkflowInstances).toHaveBeenCalledTimes(2);
-      expect(dataManager.getWorkflowInstancesStatistics).toHaveBeenCalledTimes(
-        0
-      );
-    });
-
-    it('should refetch and set the statistics when a diagram is visible', async () => {
-      const MOCK = ['statistics'];
-      api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn(MOCK);
-      const node = mount(
-        <InstancesContainerWrapped
-          {...{dataManager}}
-          {...localStorageProps}
-          {...getRouterProps(fullFilterWithWorkflow)}
-        />
-      );
-
-      node.setState({diagramModel: {definitions: [], bpmnElements: []}});
-      // when
-      await flushPromises();
-      node.update();
-
-      const onWorkflowInstancesRefresh = node.find(Instances).props()
-        .onWorkflowInstancesRefresh;
-
-      onWorkflowInstancesRefresh();
-
-      await flushPromises();
-      node.update();
-
-      expect(dataManager.getWorkflowInstancesStatistics).toHaveBeenCalledTimes(
-        1
-      );
     });
   });
 });

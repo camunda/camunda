@@ -61,10 +61,10 @@ class InstancesContainer extends Component {
       },
       LOAD_STATE_STATISTICS: ({response, state}) => {
         if (state === LOADING_STATE.LOADED) {
-          this.setState({statistics: response});
+          this.setState({statistics: response.statistics});
         }
       },
-      LOAD_STATE_INSTANCES: ({response, state}) => {
+      LOAD_LIST_INSTANCES: ({response, state}) => {
         if (state === LOADING_STATE.LOADED) {
           this.setState({
             workflowInstances: response.workflowInstances,
@@ -72,6 +72,17 @@ class InstancesContainer extends Component {
           });
           this.props.storeStateLocally({
             filterCount: response.totalCount
+          });
+        }
+      },
+      REFRESH_AFTER_OPERATION: ({state, response, error}) => {
+        if (state === LOADING_STATE.LOADED) {
+          this.setState({
+            workflowInstances: response.workflowInstances.workflowInstances,
+            filterCount: response.workflowInstances.totalCount,
+            ...(response.statistics && {
+              statistics: response.statistics.statistics
+            })
           });
         }
       }
@@ -377,14 +388,6 @@ class InstancesContainer extends Component {
     return this.setState({filter});
   };
 
-  handleWorkflowInstancesRefresh = async () => {
-    this.fetchWorkflowInstances(this.state.filter, this.state.groupedWorkflows);
-
-    if (!isEmpty(this.state.diagramModel)) {
-      this.fetchStatistics();
-    }
-  };
-
   render() {
     return (
       <Instances
@@ -395,7 +398,6 @@ class InstancesContainer extends Component {
         onFirstElementChange={this.handleFirstElementChange}
         onFlowNodeSelection={this.setFilterFromSelection}
         onSort={this.handleSortingChange}
-        onWorkflowInstancesRefresh={this.handleWorkflowInstancesRefresh}
       />
     );
   }
