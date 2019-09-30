@@ -26,6 +26,8 @@ import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import EmptyPanel from 'modules/components/EmptyPanel';
 
+jest.mock('modules/utils/bpmn');
+
 const mockInstancesByWorkflow = {
   data: createInstancesByWorkflow()
 };
@@ -35,7 +37,7 @@ const mockIncidentsByError = {
 };
 
 const mockWorkflowCoreStatistics = {
-  data: createCoreStatistics()
+  coreStatistics: createCoreStatistics()
 };
 
 const mockApi = (mockData = {}) => {

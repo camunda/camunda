@@ -45,7 +45,11 @@ class Dashboard extends Component {
     const counts = await fetchWorkflowCoreStatistics();
     const incidents = await this.fetchIncidents();
 
-    this.setState({counts, incidents, isDataLoaded: true});
+    this.setState({
+      counts: {data: counts.coreStatistics},
+      incidents,
+      isDataLoaded: true
+    });
   };
 
   fetchIncidents = async () => {
