@@ -8,6 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/theme';
+import {DataManagerProvider} from 'modules/DataManager';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
@@ -18,22 +19,26 @@ import {groupedWorkflowsMock} from 'modules/testUtils';
 
 import Selections from './Selections';
 
+jest.mock('modules/utils/bpmn');
+
 describe('Selections', () => {
   it('should render properly', () => {
     // given
     const selectionCount = 1;
     const instancesInSelectionsCount = 2;
     const node = mount(
-      <ThemeProvider>
-        <CollapsablePanelProvider>
-          <SelectionProvider
-            groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
-            filter={FILTER_SELECTION.incidents}
-          >
-            <Selections />
-          </SelectionProvider>
-        </CollapsablePanelProvider>
-      </ThemeProvider>
+      <DataManagerProvider>
+        <ThemeProvider>
+          <CollapsablePanelProvider>
+            <SelectionProvider
+              groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
+              filter={FILTER_SELECTION.incidents}
+            >
+              <Selections />
+            </SelectionProvider>
+          </CollapsablePanelProvider>
+        </ThemeProvider>
+      </DataManagerProvider>
     );
     node
       .find('BasicSelectionProvider')

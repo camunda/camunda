@@ -15,6 +15,7 @@ import {
   flushPromises
 } from 'modules/testUtils';
 import {ThemeProvider} from 'modules/theme';
+import {DataManagerProvider} from 'modules/DataManager';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import * as instancesApi from 'modules/api/instances/instances';
@@ -28,28 +29,29 @@ import {MESSAGES} from 'modules/components/ContextualMessage/constants';
 
 import SelectionList from './SelectionList';
 import {NO_SELECTIONS_MESSAGE} from './constants';
-
+jest.mock('modules/utils/bpmn');
 instancesApi.applyBatchOperation = mockResolvedAsyncFn();
 
 describe('SelectionList', () => {
   let node;
   beforeEach(async () => {
     node = mount(
-      <ThemeProvider>
-        <SelectionProvider
-          groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
-          filter={FILTER_SELECTION.incidents}
-        >
-          <InstancesPollProvider
-            onWorkflowInstancesRefresh={jest.fn()}
-            onSelectionsRefresh={jest.fn()}
-            visibleIdsInListView={[1, 2, 3]}
-            visibleIdsInSelections={[1, 2]}
+      <DataManagerProvider>
+        <ThemeProvider>
+          <SelectionProvider
+            groupedWorkflows={formatGroupedWorkflows(groupedWorkflowsMock)}
+            filter={FILTER_SELECTION.incidents}
           >
-            <SelectionList />
-          </InstancesPollProvider>
-        </SelectionProvider>
-      </ThemeProvider>
+            <InstancesPollProvider
+              onSelectionsRefresh={jest.fn()}
+              visibleIdsInListView={[1, 2, 3]}
+              visibleIdsInSelections={[1, 2]}
+            >
+              <SelectionList />
+            </InstancesPollProvider>
+          </SelectionProvider>
+        </ThemeProvider>
+      </DataManagerProvider>
     );
   });
 
@@ -191,9 +193,9 @@ describe('SelectionList', () => {
     node.update();
 
     // then
-    expect(node.find('InstancesPollProvider').state().ids).toEqual([
-      ...selections[0].instancesMap.keys()
-    ]);
+    expect(
+      node.find(InstancesPollProvider.WrappedComponent).instance().state.active
+    ).toEqual(new Set([...selections[0].instancesMap.keys()]));
   });
 
   it('should send ids for polling after cancel operation is started', async () => {
@@ -211,9 +213,9 @@ describe('SelectionList', () => {
     node.update();
 
     // then
-    expect(node.find('InstancesPollProvider').state().ids).toEqual([
-      ...selections[0].instancesMap.keys()
-    ]);
+    expect(
+      node.find(InstancesPollProvider.WrappedComponent).instance().state.active
+    ).toEqual(new Set([...selections[0].instancesMap.keys()]));
   });
 
   it('should send active ids for polling if already present in selections', async () => {
@@ -232,8 +234,8 @@ describe('SelectionList', () => {
 
     node.find('BasicSelectionProvider').setState({selections});
     node.update();
-    expect(node.find('InstancesPollProvider').state().ids).toEqual([
-      instanceId
-    ]);
+    expect(
+      node.find(InstancesPollProvider.WrappedComponent).instance().state.active
+    ).toEqual(new Set([instanceId]));
   });
 });

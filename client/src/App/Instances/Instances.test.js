@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
+import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
@@ -16,6 +17,7 @@ import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {flushPromises} from 'modules/testUtils';
 
 import {mockInstances, mockProps} from './Instances.setup';
+import {DataManagerProvider} from 'modules/DataManager';
 
 import Filters from './Filters';
 import ListPanel from './ListPanel';
@@ -36,6 +38,14 @@ jest.mock(
   './ListPanel',
   () =>
     function ListPanel(props) {
+      return <div />;
+    }
+);
+
+jest.mock(
+  './Selections',
+  () =>
+    function Selections(props) {
       return <div />;
     }
 );
@@ -70,7 +80,25 @@ jest.mock(
       return <div />;
     }
 );
+
 jest.mock('modules/utils/bpmn');
+
+function ProviderWrapper(props) {
+  return (
+    <DataManagerProvider>
+      <ThemeProvider>
+        <CollapsablePanelProvider>{props.children}</CollapsablePanelProvider>
+      </ThemeProvider>
+    </DataManagerProvider>
+  );
+}
+
+ProviderWrapper.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node
+  ])
+};
 
 describe('Instances', () => {
   beforeEach(() => {
@@ -84,11 +112,9 @@ describe('Instances', () => {
   it('should contain a VisuallyHiddenH1', () => {
     // given
     const node = mount(
-      <ThemeProvider>
-        <CollapsablePanelProvider>
-          <Instances {...mockProps} />
-        </CollapsablePanelProvider>
-      </ThemeProvider>
+      <ProviderWrapper>
+        <Instances {...mockProps} />
+      </ProviderWrapper>
     );
 
     // then
@@ -102,11 +128,9 @@ describe('Instances', () => {
     it('should render the Filters component', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // then
@@ -116,11 +140,9 @@ describe('Instances', () => {
     it('should pass the right data to Filter', async () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // when
@@ -140,11 +162,9 @@ describe('Instances', () => {
     it('should handle the filter reset', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // when
@@ -157,11 +177,9 @@ describe('Instances', () => {
     it('should handle the filter change', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
       const FiltersNode = node.find(Filters);
       const onFilterChange = FiltersNode.prop('onFilterChange');
@@ -179,11 +197,9 @@ describe('Instances', () => {
     it('should render a ListPanel with the right data', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // then
@@ -193,11 +209,9 @@ describe('Instances', () => {
     it('should pass the right data to ListPanel', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // when
@@ -219,11 +233,9 @@ describe('Instances', () => {
     it('should be able to handle sorting change', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // when
@@ -237,11 +249,9 @@ describe('Instances', () => {
     it('should be able to handle first element change', () => {
       const firstResultMock = 2;
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // when
@@ -257,11 +267,9 @@ describe('Instances', () => {
     it('should render the Selections', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // then
@@ -271,11 +279,9 @@ describe('Instances', () => {
     it('should render the SelectionsProvider', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // then
@@ -292,11 +298,9 @@ describe('Instances', () => {
     it('should render the Header', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // then
@@ -313,11 +317,9 @@ describe('Instances', () => {
     it('should render a SplitPane', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
 
       // then
@@ -347,20 +349,13 @@ describe('Instances', () => {
     it('should contain an InstancesPollProvider', () => {
       // given
       const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Instances {...mockProps} />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
+        <ProviderWrapper>
+          <Instances {...mockProps} />
+        </ProviderWrapper>
       );
       const InstancesPollProviderNode = node.find(InstancesPollProvider);
       expect(InstancesPollProviderNode).toExist();
-      expect(
-        InstancesPollProviderNode.props().onSelectionsRefresh
-      ).toBeDefined();
-      expect(
-        InstancesPollProviderNode.props().onWorkflowInstancesRefresh
-      ).toEqual(mockProps.onWorkflowInstancesRefresh);
+
       expect(InstancesPollProviderNode.props().visibleIdsInListPanel).toEqual(
         mockProps.workflowInstances.map(x => x.id)
       );

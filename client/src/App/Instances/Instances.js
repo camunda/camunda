@@ -64,8 +64,7 @@ export default class Instances extends Component {
       bpmnElements: PropTypes.object,
       definitions: PropTypes.object
     }).isRequired,
-    statistics: PropTypes.array.isRequired,
-    onWorkflowInstancesRefresh: PropTypes.func
+    statistics: PropTypes.array.isRequired
   };
 
   render() {
@@ -84,11 +83,10 @@ export default class Instances extends Component {
         <SelectionConsumer>
           {selections => (
             <InstancesPollProvider
-              onWorkflowInstancesRefresh={this.props.onWorkflowInstancesRefresh}
-              onSelectionsRefresh={selections.onInstancesInSelectionsRefresh}
               visibleIdsInListPanel={this.props.workflowInstances.map(
                 x => x.id
               )}
+              filter={this.props.filter}
               visibleIdsInSelections={getInstancesIdsFromSelections(
                 selections.selections
               )}
@@ -138,9 +136,6 @@ export default class Instances extends Component {
                       sorting={this.props.sorting}
                       firstElement={this.props.firstElement}
                       onFirstElementChange={this.props.onFirstElementChange}
-                      onWorkflowInstancesRefresh={
-                        this.props.onWorkflowInstancesRefresh
-                      }
                     />
                   </Styled.SplitPane>
                 </Styled.Content>
