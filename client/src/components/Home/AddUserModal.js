@@ -20,6 +20,9 @@ export default class AddUserModal extends Component {
   state = defaultState;
 
   onConfirm = () => {
+    if (!this.isValid()) {
+      return;
+    }
     const {userName, groupName, activeInput, activeRole} = this.state;
 
     this.props.onConfirm(activeInput === 'user' ? userName : groupName, activeInput, activeRole);
@@ -35,17 +38,29 @@ export default class AddUserModal extends Component {
     this.setState(defaultState);
   };
 
+  getActiveName = () => {
+    const {userName, groupName, activeInput} = this.state;
+
+    return activeInput === 'user' ? userName : groupName;
+  };
+
+  alreadyExists = () => {
+    const activeName = this.getActiveName();
+
+    return this.props.existingUsers.find(
+      ({identity: {id, type}}) => type === this.state.activeInput && id === activeName
+    );
+  };
+
+  isValid = () => !this.alreadyExists() && this.getActiveName();
+
   render() {
-    const {open, existingUsers} = this.props;
+    const {open} = this.props;
     const {userName, groupName, activeInput, activeRole} = this.state;
 
-    const activeName = activeInput === 'user' ? userName : groupName;
+    const alreadyExists = this.alreadyExists();
 
-    const alreadyExists = existingUsers.find(
-      ({identity: {id, type}}) => type === activeInput && id === activeName
-    );
-
-    const validInput = !alreadyExists && activeName;
+    const validInput = this.isValid();
 
     return (
       <Modal className="AddUserModal" open={open} onClose={this.onClose} onConfirm={this.onConfirm}>

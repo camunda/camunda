@@ -25,9 +25,14 @@ export default withErrorHandling(
     }
 
     onConfirm = () => {
+      const {name, loading} = this.state;
+      if (!name || loading) {
+        return;
+      }
+
       this.setState({loading: true});
       this.props.mightFail(
-        this.props.onConfirm(this.state.name),
+        this.props.onConfirm(name),
         id => {
           this.setState({loading: false});
           if (id) {
