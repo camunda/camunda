@@ -13,3 +13,4 @@ Read more about:
 * [Gateways](bpmn-workflows/gateways.html)
 * [Events](bpmn-workflows/events.html)
 * [Sub Processes](bpmn-workflows/subprocesses.html)
+* [Markers](bpmn-workflows/markers.html)
