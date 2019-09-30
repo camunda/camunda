@@ -12,7 +12,7 @@ echo "Using maven settings command option: ${SETTINGS_COMMAND}"
 cd ./backend
 
 ## create back end third party
-mvn org.codehaus.mojo:license-maven-plugin:1.2:download-licenses -Dlicense.excludedScopes=test,system,provided ${SETTINGS_COMMAND} -B --fail-at-end
+mvn org.codehaus.mojo:license-maven-plugin:2.0.0:aggregate-download-licenses -Dlicense.excludedScopes=test,system,provided ${SETTINGS_COMMAND} -B --fail-at-end
 
 ## store directory of license file
 GET_BACKEND_DIR=`pwd`
