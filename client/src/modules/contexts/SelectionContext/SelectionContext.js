@@ -6,16 +6,15 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {withData} from 'modules/DataManager';
+
 import {isEqual} from 'lodash';
 
 import {
   serializeInstancesMaps,
   deserializeInstancesMaps
 } from 'modules/utils/selection/selection';
-import {
-  fetchWorkflowInstancesBySelection,
-  fetchWorkflowInstancesByIds
-} from 'modules/api/instances';
+
 import {immutableArraySet} from 'modules/utils';
 import {getSelectionById} from 'modules/utils/selection';
 import {
@@ -23,7 +22,10 @@ import {
   getFilterWithWorkflowIds
 } from 'modules/utils/filter';
 import withSharedState from 'modules/components/withSharedState';
-import {DEFAULT_SELECTED_INSTANCES} from 'modules/constants';
+import {
+  DEFAULT_SELECTED_INSTANCES,
+  SUBSCRIPTION_TOPIC
+} from 'modules/constants';
 
 import {
   createMapOfInstances,
@@ -37,6 +39,7 @@ export const SelectionConsumer = SelectionContext.Consumer;
 
 class BasicSelectionProvider extends React.Component {
   static propTypes = {
+    dataManager: PropTypes.object,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
@@ -58,6 +61,32 @@ class BasicSelectionProvider extends React.Component {
       selections
     } = props.getStateLocally();
 
+    this.subscriptions = {
+      LOAD_NEW_SELECTION: ({response, state}) => {
+        if (state === 'LOADED') {
+          this.addNewSelection(response);
+        }
+      },
+      LOAD_UPDATE_SELECTION: ({response, state}) => {
+        if (state === 'LOADED') {
+          this.addToSelectionById(response);
+        }
+      },
+      // onMount
+      REFRESH_SELECTION: ({response, state}) => {
+        if (state === 'LOADED') {
+          this.updateInstancesInSelections(response.workflowInstances);
+        }
+      },
+      REFRESH_AFTER_OPERATION: ({state, response}) => {
+        if (state === 'LOADED') {
+          this.updateInstancesInSelections(
+            response.workflowInstances.workflowInstances
+          );
+        }
+      }
+    };
+
     this.state = {
       instancesInSelectionsCount: instancesInSelectionsCount || 0,
       openSelection: null,
@@ -69,8 +98,17 @@ class BasicSelectionProvider extends React.Component {
   }
 
   async componentDidMount() {
+    this.props.dataManager.subscribe(this.subscriptions);
+
     if (this.state.selectionCount) {
-      await this.handleInstancesInSelectionsRefresh();
+      const IdsOfInstancesInSelections = getInstancesIdsFromSelections(
+        this.state.selections
+      );
+
+      this.props.dataManager.getWorkflowInstancesByIds(
+        IdsOfInstancesInSelections,
+        SUBSCRIPTION_TOPIC.REFRESH_SELECTION
+      );
     }
   }
 
@@ -85,6 +123,10 @@ class BasicSelectionProvider extends React.Component {
     }
   }
 
+  componentWillUnmount() {
+    this.props.dataManager.unsubscribe(this.subscriptions);
+  }
+
   getFilterQuery = () => {
     const filterWithWorkflowIds = getFilterWithWorkflowIds(
       this.props.filter,
@@ -93,6 +135,31 @@ class BasicSelectionProvider extends React.Component {
 
     return parseFilterForRequest(filterWithWorkflowIds);
   };
+
+  updateInstancesInSelections(freshInstances) {
+    const workflowInstancesMap = createMapOfInstances(freshInstances);
+    let instances = [];
+    let selections = this.state.selections.map(
+      ({instancesMap, ...selection}) => {
+        const newMap = new Map([...instancesMap]);
+        instancesMap.forEach(function(_, key) {
+          const newValue = workflowInstancesMap.get(key);
+          newValue && newMap.set(key, newValue);
+        });
+        instances.push([...newMap]);
+
+        return {instancesMap: newMap, ...selection};
+      }
+    );
+
+    this.setState(prevState => {
+      return {
+        ...prevState,
+        instances,
+        selections
+      };
+    });
+  }
 
   /**
    * Gets the queries associatioed with a particular selection.
@@ -129,13 +196,14 @@ class BasicSelectionProvider extends React.Component {
    */
   handleAddNewSelection = async () => {
     const queries = this.getSelectionQueries();
+    this.props.dataManager.getWorkflowInstancesBySelection(
+      {queries},
+      SUBSCRIPTION_TOPIC.LOAD_NEW_SELECTION
+    );
+  };
 
-    // fetch new workflowInstances for the selection
-    const {
-      workflowInstances,
-      totalCount
-    } = await fetchWorkflowInstancesBySelection({queries});
-
+  addNewSelection = ({workflowInstances, totalCount}) => {
+    const queries = this.getSelectionQueries();
     // update selection related data
     const rollingSelectionIndex = this.state.rollingSelectionIndex + 1;
 
@@ -182,13 +250,15 @@ class BasicSelectionProvider extends React.Component {
    */
   handleAddToSelectionById = async selectionId => {
     const queries = this.getSelectionQueriesById(selectionId);
+    this.props.dataManager.getWorkflowInstancesBySelection(
+      {queries},
+      SUBSCRIPTION_TOPIC.LOAD_UPDATE_SELECTION,
+      selectionId
+    );
+  };
 
-    // fetch new workflowInstances for the selection
-    const {
-      workflowInstances,
-      totalCount
-    } = await fetchWorkflowInstancesBySelection({queries});
-
+  addToSelectionById = ({workflowInstances, selectionId, totalCount}) => {
+    const queries = this.getSelectionQueriesById(selectionId);
     // get target selection from list of selections
     const {
       index: selectionIndex,
@@ -273,37 +343,6 @@ class BasicSelectionProvider extends React.Component {
   };
 
   /**
-   * Re-fetches all workflow instances present in the selections
-   */
-  handleInstancesInSelectionsRefresh = async () => {
-    const IdsOfInstancesInSelections = getInstancesIdsFromSelections(
-      this.state.selections
-    );
-
-    const {workflowInstances} = await fetchWorkflowInstancesByIds(
-      IdsOfInstancesInSelections
-    );
-    const workflowInstancesMap = createMapOfInstances(workflowInstances);
-
-    let selections = this.state.selections.map(
-      ({instancesMap, ...selection}) => {
-        const newMap = new Map();
-        instancesMap.forEach(function(_, key) {
-          const newValue = workflowInstancesMap.get(key);
-          newMap.set(key, newValue);
-        });
-        return {instancesMap: newMap, ...selection};
-      }
-    );
-
-    this.setState(prevState => {
-      return {
-        selections
-      };
-    });
-  };
-
-  /**
    * A setter for this.state.selection
    */
   handleSelectedInstancesUpdate = selectedInstances => {
@@ -327,8 +366,7 @@ class BasicSelectionProvider extends React.Component {
       onAddToSelectionById: this.handleAddToSelectionById,
       onAddToOpenSelection: this.handleAddToOpenSelection,
       onToggleSelection: this.handleToggleSelection,
-      onDeleteSelection: this.handleDeleteSelectionById,
-      onInstancesInSelectionsRefresh: this.handleInstancesInSelectionsRefresh
+      onDeleteSelection: this.handleDeleteSelectionById
     };
 
     return (
@@ -339,7 +377,11 @@ class BasicSelectionProvider extends React.Component {
   }
 }
 
-export const SelectionProvider = withSharedState(BasicSelectionProvider);
+export let SelectionProvider = withData(
+  withSharedState(BasicSelectionProvider)
+);
+
+SelectionProvider.WrappedComponent = BasicSelectionProvider;
 
 /**
  * HOC that Wraps a component in a the selection consumer
