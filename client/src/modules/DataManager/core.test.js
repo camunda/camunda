@@ -285,7 +285,7 @@ describe('DataManager', () => {
 
         // then
         expect(dataManager._publishLoadingState).toHaveBeenCalledWith(
-          SUBSCRIPTION_TOPIC.LOAD_STATE_INSTANCES,
+          SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES,
           instancesApi.fetchWorkflowInstances,
           mockParams
         );
