@@ -436,7 +436,7 @@
         },
         "createBtn": "Sammlung erstellen",
         "editBtn": "Sammlung bearbeiten",
-        "inputLabel": "Name hinzufügen",
+        "inputLabel": "Name der Sammlung",
         "defaultName": "Neue Sammlung"
       }
     },

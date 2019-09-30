@@ -436,7 +436,7 @@
         },
         "createBtn": "Create Collection",
         "editBtn": "Edit Collection",
-        "inputLabel": "Add Name",
+        "inputLabel": "Collection Name",
         "defaultName": "New Collection"
       }
     },
