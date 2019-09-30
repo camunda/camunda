@@ -17,17 +17,17 @@
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+
+    .arrow {
+      padding: 0 10px;
+    }
   }
 
   a {
     color: #949494;
   }
 
-  &.active a {
+  .active {
     color: #333;
-
-    span {
-      padding: 0 10px;
-    }
   }
 }

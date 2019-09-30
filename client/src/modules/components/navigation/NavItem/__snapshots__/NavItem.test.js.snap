@@ -2,9 +2,10 @@
 
 exports[`should render a breadcrumbs links when specified 1`] = `
 <li
-  className="NavItem active"
+  className="NavItem"
 >
   <Link
+    className=""
     replace={true}
     title="testName"
   >
@@ -16,10 +17,16 @@ exports[`should render a breadcrumbs links when specified 1`] = `
     title="dashboard"
     to="/dashboard/did/"
   >
-    <span>
+    <span
+      className="arrow"
+    >
       ›
     </span>
-    dashboard
+    <span
+      className=""
+    >
+      dashboard
+    </span>
   </Link>
   <Link
     className="breadcrumb"
@@ -27,10 +34,16 @@ exports[`should render a breadcrumbs links when specified 1`] = `
     title="report"
     to="/dashboard/did/report/rid/"
   >
-    <span>
+    <span
+      className="arrow"
+    >
       ›
     </span>
-    report
+    <span
+      className="active"
+    >
+      report
+    </span>
   </Link>
 </li>
 `;

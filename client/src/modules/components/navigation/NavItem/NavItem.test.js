@@ -43,7 +43,7 @@ it('should contain a link to the provided destination', () => {
 it('should set the active class if the location pathname matches headerItem paths', () => {
   const node = mount(<NavItem active="/dashboards/*" location={{pathname: '/dashboards/1'}} />);
 
-  expect(node.find('.NavItem')).toHaveClassName('active');
+  expect(node.find('.NavItem Link')).toHaveClassName('active');
 });
 
 it('should render a breadcrumbs links when specified', async () => {
