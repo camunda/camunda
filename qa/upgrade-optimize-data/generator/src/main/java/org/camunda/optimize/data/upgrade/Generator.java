@@ -5,19 +5,16 @@
  */
 package org.camunda.optimize.data.upgrade;
 
-import org.apache.commons.io.IOUtils;
-import org.camunda.optimize.dto.engine.CredentialsDto;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
@@ -36,54 +33,53 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.service.security.AuthCookieService.createOptimizeAuthCookieValue;
+public class Generator implements AutoCloseable {
 
-public class Generator {
-  public static final String DEFAULT_USERNAME = "demo";
-  private static Client client;
-  private static String authCookie;
-  private static String processDefinitionKey;
-  private static String processDefinitionVersion;
+  private final OptimizeClient optimizeClient;
+  private String processDefinitionKey;
+  private String processDefinitionVersion;
 
-  public static void main(String[] args) throws Exception {
-    ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
-
-    OptimizeObjectMapperContextResolver provider = ctx.getBean(OptimizeObjectMapperContextResolver.class);
-
-    client = ClientBuilder.newClient().register(provider);
-
-    validateAndStoreLicense();
-    authenticateDemo();
-
-    setDefaultProcessDefinition();
-
-    List<String> reportIds = generateReports();
-    generateDashboards(reportIds);
-    generateAlerts();
-
-    ctx.close();
-    client.close();
+  public Generator() throws IOException {
+    optimizeClient = new OptimizeClient();
   }
 
-  private static void generateAlerts() {
+  public static void main(String[] args) throws Exception {
+    try (Generator generator = new Generator()) {
+      generator.setDefaultProcessDefinition();
+
+      List<String> reportIds = generator.generateReports();
+      generator.generateAlerts();
+      generator.generateDashboards(reportIds);
+
+      generator.generateCollection();
+    }
+  }
+
+  @Override
+  public void close() throws Exception {
+    this.optimizeClient.close();
+  }
+
+  private void setDefaultProcessDefinition() {
+    ProcessDefinitionEngineDto processDefinitionEngineDto = getEngineProcessDefinitions().get(0);
+    processDefinitionKey = processDefinitionEngineDto.getKey();
+    processDefinitionVersion = processDefinitionEngineDto.getVersionAsString();
+  }
+
+  private void generateAlerts() {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
@@ -92,17 +88,157 @@ public class Generator {
       .build();
     reportData.setVisualization(ProcessVisualization.NUMBER);
 
-    WebTarget target = client.target("http://localhost:8090/api/report/process/single");
-    List<String> reports = createAndUpdateReports(
-      target,
-      Collections.singletonList(reportData),
-      new ArrayList<>()
-    );
+    List<String> reports = createAndUpdateReports(Collections.singletonList(reportData), new ArrayList<>());
 
     String reportId = reports.get(0);
 
     AlertCreationDto alertCreation = prepareAlertCreation(reportId);
-    createAlert(alertCreation);
+    optimizeClient.createAlert(alertCreation);
+  }
+
+  private void generateDashboards(List<String> reportIds) {
+    DashboardDefinitionDto dashboard = prepareDashboard(reportIds);
+
+    String dashboardId = optimizeClient.createEmptyDashboard();
+    optimizeClient.createEmptyDashboard();
+
+    optimizeClient.updateDashboard(dashboardId, dashboard);
+  }
+
+  private void generateCollection() {
+    final String collectionId = optimizeClient.createCollection();
+
+    final String collectionDashboardId = optimizeClient.createEmptyDashboardInCollection(collectionId);
+
+    final String collectionReport1 = createSingleNumberReportInCollection(collectionId);
+    final String collectionReport2 = createSingleNumberReportInCollection(collectionId);
+
+    optimizeClient.addReportsToDashboard(collectionDashboardId, collectionReport1, collectionReport2);
+  }
+
+  private String createSingleNumberReportInCollection(final String collectionId) {
+    final String collectionReportId = optimizeClient.createEmptySingleProcessReportInCollection(collectionId);
+    final ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = prepareReportUpdate(
+      reportData, collectionReportId
+    );
+    optimizeClient.updateReport(collectionReportId, singleProcessReportDefinitionDto);
+    return collectionReportId;
+  }
+
+  private List<String> generateReports() {
+    final List<ProcessReportDataDto> reportDefinitions = createDifferentReports();
+    final List<ProcessFilterDto> filters = prepareFilters();
+
+    return createAndUpdateReports(reportDefinitions, filters);
+  }
+
+  private List<String> createAndUpdateReports(final List<ProcessReportDataDto> reportDefinitions,
+                                              final List<ProcessFilterDto> filters) {
+    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+    combinedReportData.setReports(new ArrayList<>());
+    List<String> reportIds = new ArrayList<>();
+    for (ProcessReportDataDto reportData : reportDefinitions) {
+      String id = optimizeClient.createEmptySingleProcessReport();
+      reportIds.add(id);
+      // there are two reports expected matching this criteria
+      if (reportData.getVisualization().equals(ProcessVisualization.BAR)
+        && reportData.getGroupBy().getType().equals(ProcessGroupByType.START_DATE)) {
+        combinedReportData.getReports().add(new CombinedReportItemDto(id));
+      }
+      reportData.setFilter(filters);
+
+      SingleProcessReportDefinitionDto reportUpdate = prepareReportUpdate(reportData, id);
+      optimizeClient.updateReport(id, reportUpdate);
+    }
+    if (!combinedReportData.getReports().isEmpty()) {
+      reportIds.add(optimizeClient.createCombinedReport(combinedReportData));
+    }
+    return reportIds;
+  }
+
+  private List<ProcessReportDataDto> createDifferentReports() {
+    List<ProcessReportDataDto> reportDefinitions = new ArrayList<>();
+    reportDefinitions.add(
+      ProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+        .build()
+    );
+    reportDefinitions.add(
+      ProcessReportDataBuilder
+        .createReportData()
+        .setProcessDefinitionKey(processDefinitionKey)
+        .setProcessDefinitionVersion(processDefinitionVersion)
+        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+        .build()
+    );
+    final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .build();
+    maxFlowNodeDurationGroupByFlowNodeHeatmapReport.getConfiguration().setAggregationType(AggregationType.MAX);
+    reportDefinitions.add(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
+
+    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
+      .setDateInterval(GroupByDateUnit.DAY)
+      .build();
+    reportDataDto.setVisualization(ProcessVisualization.BAR);
+    reportDefinitions.add(reportDataDto);
+
+    reportDataDto = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
+      .setDateInterval(GroupByDateUnit.DAY)
+      .build();
+    reportDataDto.setVisualization(ProcessVisualization.BAR);
+    reportDefinitions.add(reportDataDto);
+
+    reportDataDto = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
+      .setVariableType(VariableType.STRING)
+      .setVariableName("var")
+      .setStartFlowNodeId("startNode")
+      .setEndFlowNodeId("endNode")
+      .build();
+    reportDataDto.setVisualization(ProcessVisualization.BAR);
+    reportDefinitions.add(reportDataDto);
+
+    return reportDefinitions;
+  }
+
+  private static List<ProcessDefinitionEngineDto> getEngineProcessDefinitions() {
+    final Client client = ClientBuilder.newClient().register(
+      new OptimizeObjectMapperContextResolver(new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))
+    );
+    try {
+      final WebTarget target = client.target("http://localhost:8080/engine-rest/process-definition");
+      Response response = target.request().get();
+
+      // @formatter:off
+      return response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>() {});
+      // @formatter:on
+    } finally {
+      client.close();
+    }
   }
 
   private static AlertCreationDto prepareAlertCreation(String id) {
@@ -123,40 +259,6 @@ public class Generator {
     alertCreation.setReminder(interval);
 
     return alertCreation;
-  }
-
-  private static void createAlert(AlertCreationDto alertCreation) {
-    WebTarget target = client.target("http://localhost:8090/api/alert");
-    target.request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
-      .post(Entity.json(alertCreation));
-  }
-
-  private static void setDefaultProcessDefinition() {
-    ProcessDefinitionEngineDto processDefinitionEngineDto = getProcessDefinitions().get(0);
-    processDefinitionKey = processDefinitionEngineDto.getKey();
-    processDefinitionVersion = processDefinitionEngineDto.getVersionAsString();
-  }
-
-  private static void generateDashboards(List<String> reportIds) {
-    DashboardDefinitionDto dashboard = prepareDashboard(reportIds);
-
-    WebTarget target = client.target("http://localhost:8090/api/dashboard");
-
-    String dashboardId = createEmptyDashboard(target);
-    createEmptyDashboard(target);
-
-    target = client.target("http://localhost:8090/api/dashboard/" + dashboardId);
-    target.request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
-      .put(Entity.json(dashboard));
-  }
-
-  private static String createEmptyDashboard(WebTarget target) {
-    return target.request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
-      .post(Entity.json(""))
-      .readEntity(IdDto.class).getId();
   }
 
   private static DashboardDefinitionDto prepareDashboard(List<String> reportIds) {
@@ -181,76 +283,6 @@ public class Generator {
     dashboard.setReports(reportLocations);
 
     return dashboard;
-  }
-
-  private static void validateAndStoreLicense() throws IOException {
-    String license = readFileToString();
-
-    client.target("http://localhost:8090/api/license/validate-and-store")
-      .request().post(Entity.entity(license, MediaType.TEXT_PLAIN));
-  }
-
-  private static void authenticateDemo() {
-    CredentialsDto credentials = new CredentialsDto();
-    credentials.setUsername(DEFAULT_USERNAME);
-    credentials.setPassword(DEFAULT_USERNAME);
-
-    Response response = client.target("http://localhost:8090/api/authentication")
-      .request().post(Entity.json(credentials));
-
-    authCookie = createOptimizeAuthCookieValue(response.readEntity(String.class));
-  }
-
-  private static String readFileToString() throws IOException {
-    return IOUtils.toString(Generator.class.getResourceAsStream("/ValidTestLicense.txt"), Charset.forName("UTF-8"));
-  }
-
-  private static List<String> generateReports() {
-    WebTarget target = client.target("http://localhost:8090/api/report/process/single");
-
-    List<ProcessReportDataDto> reportDefinitions = createDifferentReports();
-
-    List<ProcessFilterDto> filters = prepareFilters();
-
-    return createAndUpdateReports(target, reportDefinitions, filters);
-  }
-
-  private static List<String> createAndUpdateReports(WebTarget target, List<ProcessReportDataDto> reportDefinitions,
-                                                     List<ProcessFilterDto> filters) {
-    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
-    combinedReportData.setReports(new ArrayList<>());
-    List<String> reportIds = new ArrayList<>();
-    for (ProcessReportDataDto reportData : reportDefinitions) {
-      String id = createEmptySingleProcessReport(target);
-      reportIds.add(id);
-      // there are two reports expected matching this criteria
-      if (reportData.getVisualization().equals(ProcessVisualization.BAR)
-        && reportData.getGroupBy().getType().equals(ProcessGroupByType.START_DATE)) {
-        combinedReportData.getReports().add(new CombinedReportItemDto(id));
-      }
-      reportData.setFilter(filters);
-
-      SingleProcessReportDefinitionDto reportUpdate = prepareReportUpdate(reportData, id);
-      updateReport(id, reportUpdate);
-    }
-    if (!combinedReportData.getReports().isEmpty()) {
-      reportIds.add(createCombinedReport(combinedReportData));
-    }
-    return reportIds;
-  }
-
-  private static String createCombinedReport(CombinedReportDataDto data) {
-    WebTarget target = client.target("http://localhost:8090/api/report/process/combined");
-    Response response = target.request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
-      .post(Entity.json(new CombinedReportDefinitionDto(data)));
-    String id = response.readEntity(IdDto.class).getId();
-
-    CombinedReportDefinitionDto combinedReportDefinition = new CombinedReportDefinitionDto();
-    combinedReportDefinition.setData(data);
-    updateReport(id, combinedReportDefinition);
-
-    return id;
   }
 
   private static SingleProcessReportDefinitionDto prepareReportUpdate(ProcessReportDataDto reportData, String id) {
@@ -306,97 +338,5 @@ public class Generator {
     variableFilter.setData(booleanVariableFilterDataDto);
 
     return variableFilter;
-  }
-
-  private static List<ProcessReportDataDto> createDifferentReports() {
-    List<ProcessReportDataDto> reportDefinitions = new ArrayList<>();
-
-
-    reportDefinitions.add(
-      ProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
-        .build()
-    );
-    reportDefinitions.add(
-      ProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-        .build()
-    );
-    final ProcessReportDataDto maxFlowNodeDurationGroupByFlowNodeHeatmapReport = ProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-        .build();
-    maxFlowNodeDurationGroupByFlowNodeHeatmapReport.getConfiguration().setAggregationType(AggregationType.MAX);
-    reportDefinitions.add(maxFlowNodeDurationGroupByFlowNodeHeatmapReport);
-
-    ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
-        .setDateInterval(GroupByDateUnit.DAY)
-        .build();
-    reportDataDto.setVisualization(ProcessVisualization.BAR);
-    reportDefinitions.add(reportDataDto);
-
-    reportDataDto = ProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
-        .setDateInterval(GroupByDateUnit.DAY)
-      .build();
-    reportDataDto.setVisualization(ProcessVisualization.BAR);
-    reportDefinitions.add(reportDataDto);
-
-    reportDataDto = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
-      .setVariableType(VariableType.STRING)
-      .setVariableName("var")
-      .setStartFlowNodeId("startNode")
-      .setEndFlowNodeId("endNode")
-      .build();
-    reportDataDto.setVisualization(ProcessVisualization.BAR);
-    reportDefinitions.add(reportDataDto);
-
-    return reportDefinitions;
-  }
-
-  private static String createEmptySingleProcessReport(WebTarget target) {
-    Response response = target.request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
-      .post(Entity.json(new SingleProcessReportDefinitionDto()));
-    return response.readEntity(IdDto.class).getId();
-  }
-
-  private static void
-
-  updateReport(String id, ReportDefinitionDto report) {
-    WebTarget target = client.target("http://localhost:8090/api/report/process/" +
-                                       (report instanceof SingleProcessReportDefinitionDto
-                                         ? "single" : "combined") + "/" + id);
-    target.request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
-      .put(Entity.json(report));
-  }
-
-  private static List<ProcessDefinitionEngineDto> getProcessDefinitions() {
-    WebTarget target = client.target("http://localhost:8080/engine-rest/process-definition");
-    Response response = target.request()
-      .get();
-
-    return response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>() {
-    });
   }
 }

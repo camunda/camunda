@@ -5,9 +5,13 @@
  */
 package org.camunda.optimize.dto.optimize.query.dashboard;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class DimensionDto {
 
   protected int width;
