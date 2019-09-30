@@ -19,7 +19,7 @@ auth:
 container:
   # A host name or IP address, to identify a specific network interface on
   # which to listen.
-  host: localhost
+  host: ${CONTAINER_HOST:localhost}
   ports:
     # A port number that will be used by Optimize to process HTTP connections.
     # If set to null, ~ or left empty, http connections won't be accepted.
