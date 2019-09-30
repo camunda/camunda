@@ -43,18 +43,26 @@ public class ImportJob implements Callable<Boolean> {
   @Override
   public Boolean call() {
     try {
-      //do import
       elasticsearchBulkProcessor.persistZeebeRecords(importBatch);
-      //record latest position
-      final long lastProcessedPosition = importBatch.getRecords().get(importBatch.getRecordsCount() - 1).getPosition();
-      importPositionHolder.recordLatestLoadedPosition(importBatch.getImportValueType().getAliasTemplate(),
-          importBatch.getPartitionId(), lastProcessedPosition);
-      importBatch.notifyImportListenersAsFinished(importListeners);
+      importPositionHolder.recordLatestLoadedPosition(importBatch);
+      notifyImportListenersAsFinished(importBatch);
       return true;
     } catch (Throwable ex) {
       logger.error(ex.getMessage(), ex);
-      importBatch.notifyImportListenersAsFailed(importListeners);
+      notifyImportListenersAsFailed(importBatch);
       return false;
+    }
+  }
+  
+  protected void notifyImportListenersAsFinished(ImportBatch importBatch) {
+    for (ImportListener importListener: importListeners) {
+      importListener.finished(importBatch);
+    }
+  }
+
+  protected void notifyImportListenersAsFailed(ImportBatch importBatch) {
+    for (ImportListener importListener: importListeners) {
+      importListener.failed(importBatch);
     }
   }
 }

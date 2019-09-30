@@ -69,15 +69,15 @@ public class ImportBatch {
     return finishedWiCount;
   }
 
-  protected void notifyImportListenersAsFinished(List<ImportListener> importListeners) {
-    for (ImportListener importListener: importListeners) {
-      importListener.finished(this);
+  public long getLastProcessedPosition() {
+    if (records != null && !records.isEmpty()) {
+      return records.get(records.size() - 1).getPosition();
+    } else {
+      return 0;
     }
   }
 
-  protected void notifyImportListenersAsFailed(List<ImportListener> importListeners) {
-    for (ImportListener importListener: importListeners) {
-      importListener.finished(this);
-    }
+  public String getAliasName() {
+    return importValueType.getAliasTemplate();
   }
 }

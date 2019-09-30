@@ -57,8 +57,6 @@ public class RecordsReader {
 
   public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
 
-  private EventsProcessedMetricsCounterImportListener metricsImportListener;
-
   /**
    * Partition id.
    */
@@ -102,9 +100,7 @@ public class RecordsReader {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private BeanFactory beanFactory;
-
-  private ImportListener importListener;
+  private BeanFactory beanFactory;  
   
   public RecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
@@ -132,13 +128,7 @@ public class RecordsReader {
     //create new instance of import job
     ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch);
     scheduleImport(importJob);
-    recordLatestScheduledPosition(importBatch);
-  }
-
-  private void recordLatestScheduledPosition(ImportBatch importBatch) {
-    final long lastScheduledPosition = importBatch.getRecords().get(importBatch.getRecordsCount() - 1).getPosition();
-    importPositionHolder.recordLatestScheduledPosition(importBatch.getImportValueType().getAliasTemplate(), importBatch.getPartitionId(),
-        lastScheduledPosition);
+    importPositionHolder.recordLatestScheduledPosition(importBatch);
   }
 
   private ImportBatch readNextBatch() throws NoSuchIndexException {
@@ -259,10 +249,6 @@ public class RecordsReader {
 
   public BlockingQueue<Callable<Boolean>> getImportJobs() {
     return importJobs;
-  }
-
-  public void setImportListener(ImportListener importListener) {
-    this.importListener = importListener;
   }
 
 }

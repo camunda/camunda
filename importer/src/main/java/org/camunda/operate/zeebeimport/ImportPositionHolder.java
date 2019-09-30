@@ -59,8 +59,8 @@ public class ImportPositionHolder {
     }
   }
 
-  public void recordLatestScheduledPosition(String aliasTemplate, int partitionId, long position) {
-    lastScheduledPositions.put(getKey(aliasTemplate, partitionId), position);
+  public void recordLatestScheduledPosition(ImportBatch importBatch) {
+    lastScheduledPositions.put(getKey(importBatch.getAliasName(), importBatch.getPartitionId()), importBatch.getLastProcessedPosition());
   }
 
   public long getLatestLoadedPosition(String aliasTemplate, int partitionId) throws IOException {
@@ -86,9 +86,11 @@ public class ImportPositionHolder {
 
     return position;
   }
-
-  public void recordLatestLoadedPosition(String aliasTemplate, int partitionId, long position) {
-    ImportPositionEntity entity = new ImportPositionEntity(aliasTemplate, partitionId, position);
+/**
+ * @param importBatch
+ */
+  public void recordLatestLoadedPosition(ImportBatch importBatch) {
+    ImportPositionEntity entity = new ImportPositionEntity(importBatch.getAliasName(), importBatch.getPartitionId(), importBatch.getLastProcessedPosition());
     Map<String, Object> updateFields = new HashMap<>();
     updateFields.put(ImportPositionIndex.POSITION, entity.getPosition());
     try {
@@ -98,7 +100,7 @@ public class ImportPositionHolder {
           .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       esClient.update(request, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      logger.error(String.format("Error occurred while persisting latest loaded position for %s", aliasTemplate), e);
+      logger.error(String.format("Error occurred while persisting latest loaded position for %s", entity.getAliasName()), e);
       throw new OperateRuntimeException(e);
     }
   }
