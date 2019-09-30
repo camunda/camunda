@@ -11,6 +11,7 @@ import AddUserModal from './AddUserModal';
 
 const props = {
   open: true,
+  existingUsers: [],
   onClose: jest.fn(),
   onConfirm: jest.fn()
 };
@@ -37,4 +38,14 @@ it('should call the onConfirm prop', () => {
   node.find('.confirm').simulate('click');
 
   expect(props.onConfirm).toHaveBeenCalledWith('testUser', 'user', 'editor');
+});
+
+it('should show an error message when trying to add a user that already exists', () => {
+  const node = shallow(
+    <AddUserModal {...props} existingUsers={[{identity: {id: 'testUser', type: 'user'}}]} />
+  );
+
+  node.setState({userName: 'testUser', activeRole: 'editor'});
+
+  expect(node.find('ErrorMessage')).toExist();
 });

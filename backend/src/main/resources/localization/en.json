@@ -69,7 +69,9 @@
       "editor": "Editor",
       "editor-description": "Create, edit and delete Dashboards and Reports",
       "manager": "Manager",
-      "manager-description": "Full rights editing Collection and Users"
+      "manager-description": "Full rights editing Collection and Users",
+      "existing-user-error": "A user with this id already exists in this collection",
+      "existing-group-error": "A group with this id already exists in this collection"
     },
     "data-hint": "Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.",
     "empty": "There are no items created yet",

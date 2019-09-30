@@ -44,6 +44,7 @@ exports[`should match snapshot 1`] = `
           <LabeledInput
             autoComplete="off"
             className="groupIdInput"
+            isInvalid={false}
             label="User Group ID"
             onChange={[Function]}
             onClick={[Function]}

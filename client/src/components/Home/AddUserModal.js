@@ -6,7 +6,7 @@
 
 import React, {Component} from 'react';
 
-import {Button, LabeledInput, Modal, Form, Input} from 'components';
+import {Button, LabeledInput, Modal, Form, Input, ErrorMessage} from 'components';
 import {t} from 'translation';
 
 const defaultState = {
@@ -36,10 +36,16 @@ export default class AddUserModal extends Component {
   };
 
   render() {
-    const {open} = this.props;
+    const {open, existingUsers} = this.props;
     const {userName, groupName, activeInput, activeRole} = this.state;
 
-    const validInput = !!(activeInput === 'user' ? userName : groupName);
+    const activeName = activeInput === 'user' ? userName : groupName;
+
+    const alreadyExists = existingUsers.find(
+      ({identity: {id, type}}) => type === activeInput && id === activeName
+    );
+
+    const validInput = !alreadyExists && activeName;
 
     return (
       <Modal className="AddUserModal" open={open} onClose={this.onClose} onConfirm={this.onConfirm}>
@@ -59,10 +65,15 @@ export default class AddUserModal extends Component {
                   label={t('common.user.id')}
                   className="userIdInput"
                   value={userName}
+                  isInvalid={activeInput === 'user' && alreadyExists}
                   onClick={() => this.setState({activeInput: 'user'})}
                   onChange={({target: {value}}) => this.setState({userName: value})}
                   autoComplete="off"
-                />
+                >
+                  {activeInput === 'user' && alreadyExists && (
+                    <ErrorMessage>{t('home.roles.existing-user-error')}</ErrorMessage>
+                  )}
+                </LabeledInput>
               </Form.Group>
               <Form.Group noSpacing>
                 <Input
@@ -76,10 +87,15 @@ export default class AddUserModal extends Component {
                   label={t('common.user-group.id')}
                   className="groupIdInput"
                   value={groupName}
+                  isInvalid={activeInput === 'group' && alreadyExists}
                   onClick={() => this.setState({activeInput: 'group'})}
                   onChange={({target: {value}}) => this.setState({groupName: value})}
                   autoComplete="off"
-                />
+                >
+                  {activeInput === 'group' && alreadyExists && (
+                    <ErrorMessage>{t('home.roles.existing-group-error')}</ErrorMessage>
+                  )}
+                </LabeledInput>
               </Form.Group>
             </Form.Group>
             {t('home.roles.userRole')}

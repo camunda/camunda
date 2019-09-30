@@ -64,6 +64,38 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           Manager
         </ListItemSection>
       </ListItem>
+      <ListItem
+        className="group"
+        key="GROUP:sales"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <ForwardRef(SvgUsergroup) />
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            User Group
+          </div>
+          <div
+            className="entityName"
+          >
+            sales
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="containedEntities"
+        />
+        <ListItemSection
+          className="role"
+        >
+          Viewer
+        </ListItemSection>
+      </ListItem>
     </ul>
   </div>
   <ConfirmationModal
@@ -74,6 +106,26 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     open={null}
   />
   <AddUserModal
+    existingUsers={
+      Array [
+        Object {
+          "id": "USER:kermit",
+          "identity": Object {
+            "id": "kermit",
+            "type": "user",
+          },
+          "role": "manager",
+        },
+        Object {
+          "id": "GROUP:sales",
+          "identity": Object {
+            "id": "sales",
+            "type": "group",
+          },
+          "role": "viewer",
+        },
+      ]
+    }
     onClose={[Function]}
     onConfirm={[Function]}
     open={false}
@@ -149,6 +201,38 @@ exports[`should match snapshot 1`] = `
         >
           Manager
         </ListItemSection>
+      </ListItem>
+      <ListItem
+        className="group"
+        key="GROUP:sales"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <ForwardRef(SvgUsergroup) />
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            User Group
+          </div>
+          <div
+            className="entityName"
+          >
+            sales
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="containedEntities"
+        />
+        <ListItemSection
+          className="role"
+        >
+          Viewer
+        </ListItemSection>
         <div
           className="contextMenu"
         >
@@ -189,6 +273,26 @@ exports[`should match snapshot 1`] = `
     open={null}
   />
   <AddUserModal
+    existingUsers={
+      Array [
+        Object {
+          "id": "USER:kermit",
+          "identity": Object {
+            "id": "kermit",
+            "type": "user",
+          },
+          "role": "manager",
+        },
+        Object {
+          "id": "GROUP:sales",
+          "identity": Object {
+            "id": "sales",
+            "type": "group",
+          },
+          "role": "viewer",
+        },
+      ]
+    }
     onClose={[Function]}
     onConfirm={[Function]}
     open={false}

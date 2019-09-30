@@ -104,6 +104,7 @@ export default withErrorHandling(
           />
           <AddUserModal
             open={addingUser}
+            existingUsers={this.props.data}
             onClose={this.closeAddUserModal}
             onConfirm={this.addUser}
           />
@@ -134,8 +135,13 @@ export default withErrorHandling(
         return <div className="empty">{t('home.notFound')}</div>;
       }
 
+      const numberOfManagers = this.props.data.filter(({role}) => role === 'manager').length;
+
       return searchFilteredData.map(entity => {
         const {id, identity, role} = entity;
+
+        const isLastManager = role === 'manager' && numberOfManagers === 1;
+
         return (
           <ListItem key={id} className={identity.type}>
             <ListItem.Section className="icon">{getEntityIcon(identity.type)}</ListItem.Section>
@@ -145,7 +151,7 @@ export default withErrorHandling(
             </ListItem.Section>
             <ListItem.Section className="containedEntities" />
             <ListItem.Section className="role">{formatRole(role)}</ListItem.Section>
-            {!readOnly && (
+            {!readOnly && !isLastManager && (
               <div className="contextMenu">
                 <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
                   <Dropdown.Option onClick={() => this.openEditUserModal(entity)}>

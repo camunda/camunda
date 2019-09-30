@@ -69,7 +69,9 @@
       "editor": "Editor",
       "editor-description": "Erstellen, bearbeiten und löschen von Dashboards und Berichten",
       "manager": "Manager",
-      "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern"
+      "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
+      "existing-user-error": "Ein Benutzer mit dieser ID existiert schon in dieser Sammlung",
+      "existing-group-error": "Eine Gruppe mit dieser ID existiert schon in dieser Sammlung"
     },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
     "empty": "Es wurde noch nichts erstellt",

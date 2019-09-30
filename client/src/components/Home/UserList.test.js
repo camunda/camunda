@@ -31,6 +31,14 @@ const props = {
         type: 'user' // or group
       },
       role: 'manager' // or editor, viewer
+    },
+    {
+      id: 'GROUP:sales',
+      identity: {
+        id: 'sales',
+        type: 'group'
+      },
+      role: 'viewer'
     }
   ]
 };
