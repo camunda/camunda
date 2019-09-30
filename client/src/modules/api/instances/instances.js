@@ -40,9 +40,9 @@ export async function fetchGroupedWorkflows() {
 export async function fetchWorkflowCoreStatistics() {
   try {
     const response = await get(`${URL}/core-statistics`);
-    return {data: await response.json()};
+    return {coreStatistics: await response.json()};
   } catch (e) {
-    return {error: e, data: {}};
+    return {error: e, coreStatistics: {}};
   }
 }
 
@@ -88,7 +88,7 @@ export async function fetchWorkflowInstancesBySelection(payload) {
 export async function fetchWorkflowInstancesStatistics(payload) {
   const url = `${URL}/statistics`;
   const response = await post(url, {queries: [...payload.queries]});
-  return await response.json();
+  return {statistics: await response.json()};
 }
 
 /**
