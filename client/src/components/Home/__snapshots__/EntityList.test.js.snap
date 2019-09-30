@@ -89,7 +89,7 @@ exports[`should match snapshot 1`] = `
             }
           >
             <ForwardRef(DropdownOption)
-              link="collection/aCollectionId/edit"
+              onClick={[Function]}
             >
               <Icon
                 type="edit"

@@ -11,7 +11,7 @@ import {Link, Redirect} from 'react-router-dom';
 import {t} from 'translation';
 import {LoadingIndicator, Icon, Dropdown, ConfirmationModal, Input} from 'components';
 import {showError} from 'notifications';
-import {checkDeleteConflict, deleteEntity, createEntity} from 'services';
+import {checkDeleteConflict, deleteEntity, createEntity, updateEntity} from 'services';
 import {withErrorHandling} from 'HOC';
 
 import CreateNewButton from './CreateNewButton';
@@ -36,6 +36,7 @@ export default withErrorHandling(
       redirect: false,
       deleteInProgress: false,
       creatingCollection: false,
+      editingCollection: null,
       searchQuery: ''
     };
 
@@ -98,6 +99,13 @@ export default withErrorHandling(
       this.closeCopyModal();
     };
 
+    startEditingCollection = editingCollection => {
+      this.setState({editingCollection});
+    };
+    stopEditingCollection = () => {
+      this.setState({editingCollection: null});
+    };
+
     render() {
       const {
         deleting,
@@ -106,6 +114,7 @@ export default withErrorHandling(
         conflictedItems,
         deleteInProgress,
         creatingCollection,
+        editingCollection,
         searchQuery
       } = this.state;
 
@@ -157,6 +166,19 @@ export default withErrorHandling(
               confirmText={t('common.collection.modal.createBtn')}
               onClose={this.stopCreatingCollection}
               onConfirm={name => createEntity('collection', {name})}
+            />
+          )}
+          {editingCollection && (
+            <CollectionModal
+              title={t('common.collection.modal.title.edit')}
+              initialName={editingCollection.name}
+              confirmText={t('common.collection.modal.editBtn')}
+              onClose={this.stopEditingCollection}
+              onConfirm={async name => {
+                await updateEntity('collection', editingCollection.id, {name});
+                this.stopEditingCollection();
+                this.props.onChange();
+              }}
             />
           )}
           {copying && (
@@ -226,7 +248,15 @@ export default withErrorHandling(
               {(canEdit || entityType !== 'collection') && (
                 <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
                   {canEdit && (
-                    <Dropdown.Option link={formatLink(id, entityType) + 'edit'}>
+                    <Dropdown.Option
+                      {...(entityType === 'collection'
+                        ? {
+                            onClick: () => this.startEditingCollection(entity)
+                          }
+                        : {
+                            link: formatLink(id, entityType) + 'edit'
+                          })}
+                    >
                       <Icon type="edit" />
                       {t('common.edit')}
                     </Dropdown.Option>
