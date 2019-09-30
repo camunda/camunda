@@ -6,12 +6,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {uniq} from 'lodash';
-
-import {fetchWorkflowInstancesByIds} from 'modules/api/instances';
-
-const POLLING_WINDOW = 5000;
-
+import {withData} from 'modules/DataManager';
+import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 // Creates a context for polling for updates on instances with active operations
 const InstancesPollContext = React.createContext();
 const InstancesPollConsumer = InstancesPollContext.Consumer;
@@ -22,112 +18,118 @@ function getCommonItems(list_1 = [], list_2 = []) {
     : list_2.filter(item => list_1.includes(item));
 }
 
-class InstancesPollProvider extends React.Component {
+class InstancesPollProviderComp extends React.Component {
   static propTypes = {
+    dataManager: PropTypes.object,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-    onWorkflowInstancesRefresh: PropTypes.func,
-    onSelectionsRefresh: PropTypes.func,
+
     visibleIdsInListView: PropTypes.array,
-    visibleIdsInSelections: PropTypes.array
+    visibleIdsInSelections: PropTypes.array,
+    filter: PropTypes.object
   };
 
   constructor(props) {
     super();
-    this.state = {ids: []};
-    this.pollingTimer = null;
+    this.state = {
+      active: new Set([]),
+      complete: new Set([])
+    };
+    this.subscriptions = {
+      LOAD_SELECTION_INSTANCES: ({response, state}) => {
+        if (state === LOADING_STATE.LOADED) {
+          const idsByOperation = {
+            active: new Set([]),
+            complete: new Set([]),
+            completedInstances: []
+          };
+          response.workflowInstances.forEach(item => {
+            item.hasActiveOperation
+              ? idsByOperation.active.add(item.id)
+              : idsByOperation.complete.add(item.id);
+
+            if (!item.hasActiveOperation) {
+              idsByOperation.completedInstances.push(item);
+            }
+          });
+          this.setState(idsByOperation);
+        }
+      }
+    };
+  }
+
+  componentDidMount() {
+    this.props.dataManager.subscribe(this.subscriptions);
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.ids.length !== this.state.ids.length) {
-      Boolean(this.state.ids.length) &&
-        this.pollingTimer === null &&
-        this.initializePolling();
+    const {dataManager} = this.props;
+    const {active, complete, completedInstances} = this.state;
+
+    const hasActiveOperation = Boolean(active.size);
+    const hasCompletedOperations = Boolean(complete.size);
+
+    if (hasActiveOperation) {
+      dataManager.poll.start(() =>
+        dataManager.getWorkflowInstancesByIds(
+          [...active],
+          SUBSCRIPTION_TOPIC.LOAD_SELECTION_INSTANCES
+        )
+      );
+    }
+
+    if (hasCompletedOperations) {
+      this.triggerDataUpdates(completedInstances);
+      this.setState({complete: new Set([]), completedInstances: []});
     }
   }
 
   componentWillUnmount() {
-    this.clearPolling();
+    this.props.dataManager.unsubscribe(this.subscriptions);
   }
 
-  initializePolling = () => {
-    if (Boolean(this.state.ids.length)) {
-      this.pollingTimer = setTimeout(
-        this.detectInstancesChangesPoll,
-        POLLING_WINDOW
-      );
-    }
-  };
+  triggerDataUpdates(completedInstances) {
+    const {
+      dataManager,
+      filter: {workflow, version},
+      visibleIdsInSelections
+    } = this.props;
 
-  clearPolling = () => {
-    this.pollingTimer && clearTimeout(this.pollingTimer);
-    this.pollingTimer = null;
-  };
-
-  resetPoll = () => {
-    this.clearPolling();
-    this.setState({ids: []});
-  };
-
-  fetchWorkflowInstancesByIds = async ids => {
-    const instances = await fetchWorkflowInstancesByIds(ids);
-
-    return instances.workflowInstances;
-  };
-
-  handlePoll = () => {
-    const idsInSelections = getCommonItems(
-      this.state.ids,
-      this.props.visibleIdsInSelections
+    const completedIdsInSelections = getCommonItems(
+      [...this.state.complete],
+      visibleIdsInSelections
     );
 
-    /* only update Selections if we have active operations present there */
-    Boolean(idsInSelections.length) && this.props.onSelectionsRefresh();
+    const {
+      workflowInstances,
+      statistics,
+      coreStatistics
+    } = dataManager.getCachedRequestEndpoints();
 
-    /* always update Instances to reflect new count and statistics */
-    this.props.onWorkflowInstancesRefresh();
-  };
+    let updateParams = {
+      endpoints: [workflowInstances, coreStatistics],
+      topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION
+    };
 
-  detectInstancesChangesPoll = async () => {
-    const ids = this.state.ids;
-    const instancesByIds = await this.fetchWorkflowInstancesByIds(ids);
-    const idsByOperation = {active: [], complete: []};
-    instancesByIds.forEach(item => {
-      item.hasActiveOperation
-        ? idsByOperation.active.push(item.id)
-        : idsByOperation.complete.push(item.id);
-    });
-    const hasActiveOperation = idsByOperation.active.length !== 0;
-    const hasCompletedOperations = idsByOperation.complete.length !== 0;
-
-    if (hasCompletedOperations) {
-      this.handlePoll();
-
-      if (hasActiveOperation) {
-        this.setState(
-          {
-            ids: idsByOperation.active
-          },
-          () => {
-            this.initializePolling();
-          }
-        );
-      } else {
-        this.resetPoll();
-      }
-    } else {
-      hasActiveOperation && this.initializePolling();
+    if (workflow && version && version !== 'all') {
+      updateParams.endpoints = [...updateParams.endpoints, statistics];
     }
-  };
 
-  addIds = ids => {
+    if (Boolean(completedIdsInSelections.length)) {
+      updateParams.staticData = {
+        completedInstances
+      };
+    }
+    dataManager.update(updateParams);
+  }
+
+  addIds = ids =>
     this.setState(prevState => {
-      const newIds = uniq([...ids, ...prevState.ids]);
-      return {ids: newIds};
+      return {active: new Set([...prevState.active, ...ids])};
     });
-  };
+
   /**
    * called only from listView when removing instance with active op. from view
    * - by collapsing
@@ -136,15 +138,14 @@ class InstancesPollProvider extends React.Component {
   removeIds = removeIds => {
     // update the state removing only the ids that are in the List and not in a selection
     // we want to poll for remaining ids in selections, even if they are hidden in ListView
-    const remaningIds = this.state.ids.filter(
+    const remaningIds = [...this.state.active].filter(
       item =>
         removeIds.includes(item) &&
         this.props.visibleIdsInSelections.includes(item)
     );
 
-    Boolean(remaningIds.length)
-      ? this.setState({ids: remaningIds})
-      : this.resetPoll();
+    Boolean(remaningIds.length) &&
+      this.setState({active: new Set(remaningIds)});
   };
 
   render() {
@@ -185,5 +186,8 @@ const withPoll = Component => {
   WithPollWithRef.displayName = `WithPoll(${name})`;
   return WithPollWithRef;
 };
+
+const InstancesPollProvider = withData(InstancesPollProviderComp);
+InstancesPollProvider.WrappedComponent = InstancesPollProviderComp;
 
 export {InstancesPollConsumer, InstancesPollProvider, withPoll};
