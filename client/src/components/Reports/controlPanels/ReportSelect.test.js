@@ -57,3 +57,38 @@ it('should disable the variable groupby submenu if there are no variables', () =
 
   expect(node.find(Select.Submenu)).toBeDisabled();
 });
+
+it('should match snapshot', async () => {
+  const config = {
+    type: 'process',
+    field: 'view',
+    value: 'foo',
+    variables: {inputVariable: [{id: 'test', type: 'date', name: 'testName'}]},
+    disabled: false,
+    onChange: jest.fn()
+  };
+
+  const node = shallow(<ReportSelect {...config} field="groupBy" />);
+
+  expect(node).toMatchSnapshot();
+});
+
+it('invoke onChange with the correct variable data', async () => {
+  const config = {
+    type: 'process',
+    field: 'view',
+    value: 'foo',
+    variables: {inputVariable: [{id: 'test', type: 'date', name: 'testName'}]},
+    disabled: false,
+    onChange: jest.fn()
+  };
+
+  const node = shallow(<ReportSelect {...config} field="groupBy" />);
+
+  node.props().onChange('inputVariable_test');
+
+  expect(config.onChange).toHaveBeenCalledWith({
+    type: 'inputVariable',
+    value: {id: 'test', name: 'testName', type: 'date'}
+  });
+});

@@ -1,0 +1,31 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Select
+  className="ReportSelect"
+  disabled={false}
+  onChange={[Function]}
+  value="none"
+>
+  <Option
+    disabled={true}
+    key="0"
+    value="none"
+  >
+    None
+  </Option>
+  <Submenu
+    disabled={true}
+    key="1"
+    label="Variable"
+  >
+    <Option
+      disabled={true}
+      key="0"
+      value="inputVariable_test"
+    >
+      testName
+    </Option>
+  </Submenu>
+</Select>
+`;

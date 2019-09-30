@@ -54,7 +54,9 @@ export default function ReportSelect({
                     value={key}
                     disabled={!config.isAllowed(report, ...previous, data)}
                   >
-                    {key.includes('variable') ? label : t(`report.${field}.${key.split('_')[1]}`)}
+                    {key.toLowerCase().includes('variable')
+                      ? label
+                      : t(`report.${field}.${key.split('_')[1]}`)}
                   </Select.Option>
                 );
               })}
@@ -83,9 +85,9 @@ function addVariables(options, variables) {
       return {
         ...option,
         options: variables[subOptions].map(({id, name, type}) => {
-          const value = id ? {id, name} : {name, type};
+          const value = id ? {id, name, type} : {name, type};
           return {
-            key: 'variable_' + (id || name),
+            key: subOptions + '_' + (id || name),
             label: name,
             data: {type: subOptions, value}
           };
