@@ -5,16 +5,19 @@
  */
 package org.camunda.operate.util;
 
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
+import java.util.HashSet;
 
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebeimport.PartitionHolder;
 import org.camunda.operate.zeebeimport.archiver.Archiver;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,9 +50,6 @@ public abstract class OperateIntegrationTest {
   protected MockMvc mockMvc;
 
   protected OffsetDateTime testStartTime;
-
-  @Autowired(required = false)
-  private Archiver archiver;
 
   @Before
   public void before() {
@@ -108,7 +108,7 @@ public abstract class OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);  
   }
 
-  protected void runArchiving() {
+  protected void runArchiving(Archiver archiver) {
     try {
       int archived;
       int archivedTotal = 0;
@@ -120,5 +120,11 @@ public abstract class OperateIntegrationTest {
     } catch (ReindexException e) {
       throw new RuntimeException("Error while archiving");
     }
+  }
+
+  protected void mockPartitionHolder(PartitionHolder partitionHolder) {
+    HashSet<Integer> partitions = new HashSet<>();
+    partitions.add(1);
+    when(partitionHolder.getPartitionIds()).thenReturn(partitions);
   }
 }
