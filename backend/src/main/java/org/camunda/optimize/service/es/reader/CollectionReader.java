@@ -84,7 +84,7 @@ public class CollectionReader {
       }
     } else {
       log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
-      throw new NotFoundException("Collection does not exist! Tried to retried collection with id " + collectionId);
+      throw new NotFoundException("Collection does not exist! Tried to retrieve collection with id " + collectionId);
     }
   }
 
