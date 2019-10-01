@@ -173,13 +173,25 @@ pipeline {
                 container('postgres') {
                     sh ("df -h /export /var/lib/postgresql/data")
                 }
+                container('gcloud') {
+                    sh ("apk add --no-cache jq")
+                }
+                container('maven') {
+                    sh ("apt-get update && apt-get install -y jq")
+                }
             }
         }
         stage('Data Generation') {
             steps {
                 container('maven') {
                     // Generate Data
-                    sh ("mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args=\"--numberOfProcessInstances ${NUM_INSTANCES}\"")
+                    sh ("""
+                      if [ "${USE_E2E_PRESETS}" = true ]; then
+                        mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--numberOfProcessInstances \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances) --definitions \$(cat client/e2e_presets.json | jq -r .definitions)"
+                      else
+                        mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--numberOfProcessInstances ${NUM_INSTANCES}"
+                      fi
+                    """)
                 }
             }
         }
@@ -195,7 +207,13 @@ pipeline {
             steps {
                 container('gcloud') {
                     // Upload data
-                    sh ("gsutil -h \"x-goog-meta-NUM_INSTANCES: ${NUM_INSTANCES}\" cp \"/export/${SQL_DUMP}\" gs://optimize-data/")
+                    sh ("""
+                      if [ "${USE_E2E_PRESETS}" = true ]; then
+                        gsutil -h "x-goog-meta-NUM_INSTANCES: \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances)" cp "/export/${SQL_DUMP}" gs://optimize-data/
+                      else
+                        gsutil -h "x-goog-meta-NUM_INSTANCES: ${NUM_INSTANCES}" cp "/export/${SQL_DUMP}" gs://optimize-data/
+                      fi
+                    """)
                     // Cleanup
                     sh ("rm /export/${SQL_DUMP}")
                 }

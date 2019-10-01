@@ -5,6 +5,7 @@
  */
 
 const {spawn} = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 // argument to determine if we are in CI mode
@@ -13,32 +14,16 @@ const ciMode = process.argv.indexOf('ci') > -1;
 console.debug('executing generate-data script in [ci=' + ciMode + ']');
 
 // ~~~ Generator Configuration ~~~
-// adjust for number of process instances to generate
-const numberOfProcessInstances = 5000;
+const e2ePresetsFile = path.resolve(__dirname, '..', 'e2e_presets.json');
 
-const definitions = [
-  'Invoice:4',
-  'InvoiceDataFor2Tenants:2',
-  'LeadQualification:6',
-  'BranchAnalysis:2',
-  'DmnTable:3',
-  'BookRequest:1',
-  'BookRequestForOneTenant:4',
-  'MultiInstanceSubprocessRequest:3',
-  'EmbeddedSubprocessRequest:2',
-  'HiringProcess:4',
-  'HiringProcessFor5Tenants:3',
-  'ProcessRequest:12'
-];
+const e2ePresets = JSON.parse(fs.readFileSync(e2ePresetsFile));
 
 const generateDataProcess = spawn(
   'mvn',
   [
     'exec:java',
     '-f ./qa/data-generation/pom.xml',
-    `-Dexec.args="--numberOfProcessInstances ${numberOfProcessInstances} --removeDeployments false --definitions ${definitions.join(
-      ','
-    )}"`,
+    `-Dexec.args="--numberOfProcessInstances ${e2ePresets.numberOfProcessInstances} --removeDeployments false --definitions ${e2ePresets.definitions}"`,
     ciMode ? '-s settings.xml' : undefined
   ],
   {
