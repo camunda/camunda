@@ -146,12 +146,13 @@ class Header extends React.Component {
    */
   setValuesFromPropsOrApi = async () => {
     const {runningInstancesCount, incidentsCount} = this.props;
-
     if (
       typeof runningInstancesCount === 'undefined' ||
       typeof incidentsCount === 'undefined'
     ) {
       this.props.dataManager.getCoreStatistics();
+    } else {
+      this.setState({runningInstancesCount, incidentsCount});
     }
   };
 
