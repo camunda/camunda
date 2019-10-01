@@ -39,6 +39,8 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.junit.rules.TestWatcher;
@@ -108,6 +110,8 @@ public class ElasticsearchTestRule extends TestWatcher {
     operateProperties.getElasticsearch().setIndexPrefix(TestUtil.createRandomString(10) + "-operate");
     elasticsearchSchemaManager.createIndices();
     elasticsearchSchemaManager.createTemplates();
+    // OPE-579
+    //waitThatElasticsearchIsReady();
   }
 
   @Override
@@ -201,20 +205,63 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  public void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
-    int queueCheckAttempts = 0;
+  public int processImportTypeAndWait(ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
+    int imported = 0;
+    int attempts = 0;
+    int maxAttempts = 100;
+    try {
+      boolean found = false;
+      do {
+        Thread.sleep(100);
+        refreshIndexesInElasticsearch();
+        imported += importOneType(importValueType);
+        found = waitTill.test(arguments);
+        attempts++;
+      } while (!found && attempts < maxAttempts);
+      logger.debug("{} attempts to fulfill condition", attempts);
+      waitForQueuesEmptiness(getRecordsReaders(importValueType));
+    } catch (Throwable t) {
+      logger.error(t.getMessage(), t);
+    }
+    return imported;
+  }
+
+  public void waitThatElasticsearchIsReady() {
+    boolean isReady = false;
+    int maxAttempts = 100;
+    int attempts = 0;
+    while (!isReady || attempts == maxAttempts) {
+      attempts++;
+      try {
+        GetIndexResponse response = esClient.indices().get(new GetIndexRequest("*-operate-*"), RequestOptions.DEFAULT);
+        List<String> indices = List.of(response.getIndices());
+        isReady = indices.stream().filter(index -> index.contains("-operate-")).collect(Collectors.toList()).size() > 5;
+      } catch (Throwable t) {
+        logger.error("Elasticsearch is not ready yet. Waiting {}/{}", attempts, maxAttempts);
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+        }
+      }
+    }
+    logger.info("Elasticsearch is ready after {} checks", attempts);
+  }
+
+  private void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
+    int attempts = 0;
+    int maxAttempts = 10;
     boolean queuesAreEmpty = true;
     do {
-      Thread.sleep(300L);
+      Thread.sleep(100);
       for (RecordsReader reader : recordsReaders) {
         queuesAreEmpty = queuesAreEmpty && reader.getImportJobs().size() == 0;
       }
-      queueCheckAttempts ++;
-    } while (!queuesAreEmpty && queueCheckAttempts < 5);
-    if (!queuesAreEmpty && queueCheckAttempts == 5) {
+      attempts++;
+    } while (!queuesAreEmpty && attempts < maxAttempts);
+    if (!queuesAreEmpty && attempts == maxAttempts) {
       logTimeout();
     } else {
-      Thread.sleep(300L);
+      logger.debug("{} attempts until queues are empty.", attempts);
     }
   }
 
