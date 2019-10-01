@@ -100,12 +100,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
     String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
-    return dashboardWriter.createNewDashboard(
-      userId,
-      dashboardDefinition.getCollectionId(),
-      newDashboardName,
-      dashboardDefinition.getReports()
-    );
+    return copyAndMoveDashboard(dashboardId, userId, dashboardDefinition.getCollectionId(), newDashboardName);
   }
 
   public IdDto copyAndMoveDashboard(final String dashboardId,

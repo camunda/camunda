@@ -129,6 +129,45 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
 
   @Test
   @Parameters(method = EDIT_IDENTITY_ROLES)
+  public void editorIdentityIsGrantedCopyCollectionDashboardInsideCollectionByCollectionRole(final IdentityAndRole identityAndRole) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+
+    // when
+    final String resourceId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final Response response = copyDashboardAsKermit(resourceId);
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    final String copyId = response.readEntity(IdDto.class).getId();
+    final DashboardDefinitionDto dashboardCopy = getDashboardByIdAsDefaultUser(copyId);
+    assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
+  }
+
+  @Test
+  @Parameters(method = ACCESS_ONLY_IDENTITY_ROLES)
+  public void viewerIdentityIsRejectedToCopyCollectionDashboardInsideCollectionByCollectionRole(final IdentityAndRole identityAndRole) {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+
+    final String collectionId = createNewCollectionAsDefaultUser();
+    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+
+    // when
+    final String resourceId = createDashboardInCollectionAsDefaultUser(collectionId);
+    final Response response = copyDashboardAsKermit(resourceId);
+
+    // then
+    assertThat(response.getStatus(), is(403));
+  }
+
+  @Test
+  @Parameters(method = EDIT_IDENTITY_ROLES)
   public void editorIdentityIsGrantedCopyPrivateDashboardToCollectionByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -583,6 +622,10 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   private Response copyDashboardAsPrivateDashboardAsKermit(final String dashboardId) {
     // explicit null string triggers copy to private
     return copyDashboardToCollectionAsKermit(dashboardId, "null");
+  }
+
+  private Response copyDashboardAsKermit(final String dashboardId) {
+    return copyDashboardToCollectionAsKermit(dashboardId, null);
   }
 
   private Response copyDashboardToCollectionAsKermit(final String dashboardId, final String collectionId) {
