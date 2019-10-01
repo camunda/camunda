@@ -75,7 +75,7 @@ spec:
         buildDiscarder(logRotator(daysToKeepStr: '-1', numToKeepStr: '10'))
         skipDefaultCheckout()
         timestamps()
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 60, unit: 'MINUTES')
     }
 
     stages {
