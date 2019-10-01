@@ -8,7 +8,7 @@ package org.camunda.optimize.upgrade.main;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom25To26;
+import org.camunda.optimize.upgrade.main.impl.UpgradeFrom26To27;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -32,7 +32,7 @@ public class UpgradeMain {
 
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
-    upgrades.put("2.6.0", new UpgradeFrom25To26());
+    upgrades.put("2.7.0", new UpgradeFrom26To27());
   }
 
   public static void main(String... args) {
