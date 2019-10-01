@@ -24,15 +24,16 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.join.aggregations.Children;
 import org.elasticsearch.join.aggregations.ChildrenAggregationBuilder;
+import org.elasticsearch.join.aggregations.Parent;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
-import org.elasticsearch.search.aggregations.metrics.cardinality.Cardinality;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_ID;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_STATE;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITY_TYPE;
@@ -45,7 +46,7 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.children;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.cardinality;
+import static org.elasticsearch.join.aggregations.JoinAggregationBuilders.parent;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
@@ -115,7 +116,7 @@ public class ActivityStatisticsReader {
     final QueryBuilder q = constantScoreQuery(listViewReader.createQueryFragment(query, queryType));
 
     ChildrenAggregationBuilder agg =
-        children(AGG_ACTIVITIES, ListViewTemplate.ACTIVITIES_JOIN_RELATION);
+        children(AGG_ACTIVITIES, ACTIVITIES_JOIN_RELATION);
 
     if (queryType != ONLY_ARCHIVE && query.isActive()) {
       agg = agg.subAggregation(getActiveActivitiesAgg());
@@ -146,8 +147,8 @@ public class ActivityStatisticsReader {
     if (incidentActivitiesAgg != null) {
       ((Terms) incidentActivitiesAgg.getAggregations().get(AGG_UNIQUE_ACTIVITIES)).getBuckets().stream().forEach(b -> {
         String activityId = b.getKeyAsString();
-        final Cardinality aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
-        final long docCount = aggregation.getValue();  //number of workflow instances
+        final Parent aggregation = b.getAggregations().get(AGG_ACTIVITY_TO_WORKFLOW);
+        final long docCount = aggregation.getDocCount();  //number of workflow instances
         if (statisticsMap.get(activityId) == null) {
           statisticsMap.put(activityId, new ActivityStatisticsDto(activityId));
         }
@@ -155,38 +156,37 @@ public class ActivityStatisticsReader {
       });
     }
   }
-
   private FilterAggregationBuilder getTerminatedActivitiesAgg() {
     return filter(AGG_TERMINATED_ACTIVITIES, termQuery(ACTIVITY_STATE, ActivityState.TERMINATED)).subAggregation(
-          terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-              .subAggregation(cardinality(AGG_ACTIVITY_TO_WORKFLOW).field(ListViewTemplate.WORKFLOW_INSTANCE_KEY).precisionThreshold(ElasticsearchUtil.CARDINALITY_PRECISION_THRESHOLD))
-        //we need this to count workflow instances, not the activity instances
-      );
+        terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
+            .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+            //we need this to count workflow instances, not the activity instances
+    );
   }
 
   private FilterAggregationBuilder getActiveActivitiesAgg() {
     return filter(AGG_ACTIVE_ACTIVITIES,
-          boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.toString()))).subAggregation(
-          terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-              .subAggregation(cardinality(AGG_ACTIVITY_TO_WORKFLOW).field(ListViewTemplate.WORKFLOW_INSTANCE_KEY).precisionThreshold(ElasticsearchUtil.CARDINALITY_PRECISION_THRESHOLD))
-          //we need this to count workflow instances, not the activity instances
-      );
+        boolQuery().mustNot(existsQuery(INCIDENT_KEY)).must(termQuery(ACTIVITY_STATE, ActivityState.ACTIVE.toString()))).subAggregation(
+        terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
+            .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+            //we need this to count workflow instances, not the activity instances
+    );
   }
 
   private FilterAggregationBuilder getIncidentActivitiesAgg() {
     return filter(AGG_INCIDENT_ACTIVITIES, existsQuery(INCIDENT_KEY)).subAggregation(
-          terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-              .subAggregation(cardinality(AGG_ACTIVITY_TO_WORKFLOW).field(ListViewTemplate.WORKFLOW_INSTANCE_KEY).precisionThreshold(ElasticsearchUtil.CARDINALITY_PRECISION_THRESHOLD))
-        //we need this to count workflow instances, not the activity instances
-      );
+        terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
+            .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+            //we need this to count workflow instances, not the activity instances
+    );
   }
 
   private FilterAggregationBuilder getFinishedActivitiesAgg() {
     final QueryBuilder completedEndEventsQ = joinWithAnd(termQuery(ACTIVITY_TYPE, ActivityType.END_EVENT.toString()), termQuery(ACTIVITY_STATE, ActivityState.COMPLETED.toString()));
     return filter(AGG_FINISHED_ACTIVITIES, completedEndEventsQ).subAggregation(
         terms(AGG_UNIQUE_ACTIVITIES).field(ACTIVITY_ID).size(ElasticsearchUtil.TERMS_AGG_SIZE)
-            .subAggregation(cardinality(AGG_ACTIVITY_TO_WORKFLOW).field(ListViewTemplate.WORKFLOW_INSTANCE_KEY).precisionThreshold(ElasticsearchUtil.CARDINALITY_PRECISION_THRESHOLD))
-        //we need this to count workflow instances, not the activity instances
+            .subAggregation(parent(AGG_ACTIVITY_TO_WORKFLOW, ACTIVITIES_JOIN_RELATION))
+            //we need this to count workflow instances, not the activity instances
     );
   }
 

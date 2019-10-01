@@ -53,7 +53,6 @@ public abstract class ElasticsearchUtil {
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
-  public static final int CARDINALITY_PRECISION_THRESHOLD = 1000;
 
   public static final Function<SearchHit,Long> searchHitIdToLong = (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit,String> searchHitIdToString = SearchHit::getId;
