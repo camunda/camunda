@@ -18,6 +18,7 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
+import io.zeebe.util.ByteValue;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -30,11 +31,14 @@ import org.junit.rules.TemporaryFolder;
 
 public class LogStreamReaderTest {
   private static final UnsafeBuffer EVENT_VALUE = new UnsafeBuffer(getBytes("test"));
+  private static final int LOG_SEGMENT_SIZE = (int) ByteValue.ofMegabytes(4).toBytes();
   private static final UnsafeBuffer BIG_EVENT_VALUE =
       new UnsafeBuffer(new byte[BufferedLogStreamReader.DEFAULT_INITIAL_BUFFER_CAPACITY * 2]);
   @Rule public ExpectedException expectedException = ExpectedException.none();
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
-  public LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
+  public LogStreamRule logStreamRule =
+      LogStreamRule.startByDefault(
+          temporaryFolder, builder -> builder.logSegmentSize(LOG_SEGMENT_SIZE));
   public LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
   public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
@@ -333,5 +337,60 @@ public class LogStreamReaderTest {
 
     // when
     ((BufferedLogStreamReader) reader).wrap(logStorage);
+  }
+
+  @Test
+  public void shouldSeekToEventsWhenMoreThanOneSegment() {
+    // given
+    final int numEventsToFillSegment = LOG_SEGMENT_SIZE / BIG_EVENT_VALUE.capacity();
+    final long position = writer.writeEvents(2 * numEventsToFillSegment, BIG_EVENT_VALUE);
+    writer.writeEvents(numEventsToFillSegment, BIG_EVENT_VALUE);
+
+    // when
+    reader.seek(position);
+
+    // then
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next().getPosition()).isEqualTo(position);
+  }
+
+  @Test
+  public void shouldSeekToFirstEvent() {
+    // given
+    final long firstPosition = writer.writeEvent(EVENT_VALUE);
+    writer.writeEvents(2, EVENT_VALUE);
+
+    // when
+    reader.seekToFirstEvent();
+
+    // then
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next().getPosition()).isEqualTo(firstPosition);
+  }
+
+  @Test
+  public void shouldSeekToFirstPositionWhenPositionBeforeFirstEvent() {
+    // given
+    final long firstPosition = writer.writeEvent(EVENT_VALUE);
+    writer.writeEvents(2, EVENT_VALUE);
+
+    // when
+    reader.seek(firstPosition - 1);
+
+    // then
+    assertThat(reader.hasNext()).isTrue();
+    assertThat(reader.next().getPosition()).isEqualTo(firstPosition);
+  }
+
+  @Test
+  public void shouldNotSeekToEventBeyondLastEvent() {
+    // given
+    final long lastEventPosition = writer.writeEvents(100, EVENT_VALUE);
+
+    // when
+    reader.seek(lastEventPosition + 1);
+
+    // then
+    assertThat(reader.hasNext()).isFalse();
   }
 }

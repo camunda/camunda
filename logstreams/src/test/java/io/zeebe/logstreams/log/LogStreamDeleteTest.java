@@ -76,13 +76,13 @@ public class LogStreamDeleteTest {
     logStream.delete(fourthPosition);
 
     // then
-    assertThat(events().count()).isEqualTo(2);
+    assertThat(events().count()).isEqualTo(1);
 
     assertThat(events().anyMatch(e -> e.getPosition() == firstPosition)).isFalse();
     assertThat(events().anyMatch(e -> e.getPosition() == secondPosition)).isFalse();
+    assertThat(events().anyMatch(e -> e.getPosition() == thirdPosition)).isFalse();
 
-    assertThat(events().findFirst().get().getPosition()).isEqualTo(thirdPosition);
-    assertThat(events().filter(e -> e.getPosition() == fourthPosition).findAny()).isNotEmpty();
+    assertThat(events().findFirst().get().getPosition()).isEqualTo(fourthPosition);
   }
 
   @Test
@@ -114,20 +114,13 @@ public class LogStreamDeleteTest {
             c -> c.logSegmentSize(segmentSize).maxFragmentSize(segmentSize));
     final byte[] largeEvent = new byte[remainingCapacity];
 
-    // log storage always returns on append as address (segment id, segment OFFSET)
-    // where offset should be the start of the event to be written
-    // this is in most cases true, besides the case where the end of an segment is reached
-    // If the segment is full on append - a new segment is created, but as offset
-    // the old position is used (which is the end of the segment) and the old segment id
-    // that is the reason why the tests will only delete 2 segments instead of expected three
-
-    // written from segment 0 4096 -> 8192, idx block address 4096
+    // written from segment 0 4096 -> 8192
     firstPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
-    // written from segment 1 4096 -> 8192, but idx block address segment 0 - 8192
+    // written from segment 1 4096 -> 8192
     secondPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
-    // written from segment 2 4096 -> 8192, but idx block address segment 1 - 8192
+    // written from segment 2 4096 -> 8192
     thirdPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
-    // written from segment 3 4096 -> 8192, but idx block address segment 2 - 8192
+    // written from segment 3 4096 -> 8192
     fourthPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
 
     //    logStream.setCommitPosition(fourthPosition);
