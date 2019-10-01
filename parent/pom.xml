@@ -74,7 +74,7 @@
     <version.snakeyaml>1.25</version.snakeyaml>
     <version.toml>0.7.2</version.toml>
     <version.javax>1.3.2</version.javax>
-    <version.wiremock>2.24.1</version.wiremock>
+    <version.wiremock>2.25.0</version.wiremock>
     <version.asm>7.1</version.asm>
     <version.testcontainers>1.12.1</version.testcontainers>
 
