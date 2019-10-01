@@ -119,7 +119,7 @@ public class UpgradeReportConfigIT extends AbstractUpgradeIT {
     // then
     List<SingleDecisionReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
-    assertThat(allProcessReports.size(), is(1));
+    assertThat(allProcessReports.size(), is(2));
     // report with hidden nodes
     SingleReportConfigurationDto configuration = allProcessReports.get(0)
       .getData()

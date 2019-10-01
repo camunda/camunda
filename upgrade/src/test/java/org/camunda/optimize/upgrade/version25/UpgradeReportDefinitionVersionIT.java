@@ -8,7 +8,9 @@ package org.camunda.optimize.upgrade.version25;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
@@ -29,11 +31,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 
 public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
@@ -81,7 +84,14 @@ public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(2));
-    allProcessReports.forEach(report -> assertThat(report.getData().getDefinitionVersions(), contains("2")));
+    assertThat(
+      allProcessReports.stream()
+        .map(ReportDefinitionDto::getData)
+        .map(ProcessReportDataDto::getProcessDefinitionVersions)
+        .flatMap(Collection::stream)
+        .collect(toList()),
+      containsInAnyOrder("2", "all")
+    );
   }
 
   @Test
@@ -95,8 +105,15 @@ public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
     // then
     List<SingleDecisionReportDefinitionDto> allDecisionReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
-    assertThat(allDecisionReports.size(), is(1));
-    assertThat(allDecisionReports.get(0).getData().getDefinitionVersions(), contains("2"));
+    assertThat(allDecisionReports.size(), is(2));
+    assertThat(
+      allDecisionReports.stream()
+        .map(ReportDefinitionDto::getData)
+        .map(DecisionReportDataDto::getDecisionDefinitionVersions)
+        .flatMap(Collection::stream)
+        .collect(toList()),
+      containsInAnyOrder("2", "all")
+    );
   }
 
   @SneakyThrows
@@ -116,7 +133,7 @@ public class UpgradeReportDefinitionVersionIT extends AbstractUpgradeIT {
           throw new RuntimeException(e);
         }
       })
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
 }

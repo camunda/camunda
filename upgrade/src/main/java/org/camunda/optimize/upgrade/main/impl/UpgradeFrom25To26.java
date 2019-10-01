@@ -113,10 +113,10 @@ public class UpgradeFrom25To26 extends UpgradeProcedure {
       // @formatter:off
       "String definition = ctx._source.${reportDataField}.${definitionVersionField};\n" +
         "if (definition != null && !definition.isEmpty()) {\n" +
-        "def list = new ArrayList();\n" +
-        "list.add(definition);\n" +
-        "ctx._source.${reportDataField}.${definitionVersionsField} = list; \n" +
-        "ctx._source.${reportDataField}.remove(\"${definitionVersionField}\");\n" +
+          "def list = new ArrayList();\n" +
+          "list.add(definition.toLowerCase());\n" +
+          "ctx._source.${reportDataField}.${definitionVersionsField} = list; \n" +
+          "ctx._source.${reportDataField}.remove(\"${definitionVersionField}\");\n" +
         "}\n"
       // @formatter:on
     );
