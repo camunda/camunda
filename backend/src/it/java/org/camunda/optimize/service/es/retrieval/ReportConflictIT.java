@@ -67,11 +67,9 @@ public class ReportConflictIT {
   @Parameters(source = ForceParameterProvider.class)
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
-    String firstSingleReportId =
-      createAndStoreDefaultProcessReportDefinition(createRandomRawDataReport());
-    String secondSingleReportId =
-      createAndStoreDefaultProcessReportDefinition(createRandomRawDataReport());
-    String combinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
+    String firstSingleReportId = createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
+    String secondSingleReportId = createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
+    String combinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
     String[] expectedReportIds = new String[]{firstSingleReportId, secondSingleReportId, combinedReportId};
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
@@ -104,8 +102,8 @@ public class ReportConflictIT {
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId =
-      createAndStoreDefaultProcessReportDefinition(createRandomRawDataReport());
-    String combinedReportId = createNewCombinedReport(firstSingleReportId);
+      createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
+    String combinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId);
     String[] expectedReportIds = new String[]{firstSingleReportId, combinedReportId};
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
@@ -139,9 +137,7 @@ public class ReportConflictIT {
       .setProcessDefinitionVersion(RANDOM_VERSION)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    String reportId = createAndStoreDefaultProcessReportDefinition(
-      numberReport
-    );
+    String reportId = createAndStoreProcessReportWithDefinition(numberReport);
     String alertForReport = createNewAlertForReport(reportId);
     String[] expectedReportIds = new String[]{reportId};
     String[] expectedConflictedItemIds = new String[]{alertForReport};
@@ -197,8 +193,8 @@ public class ReportConflictIT {
     // given
     String firstSingleReportId = addEmptyProcessReportToOptimize();
     String secondSingleReportId = addEmptyProcessReportToOptimize();
-    String firstCombinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
-    String secondCombinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
+    String firstCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
+    String secondCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
     String[] expectedConflictedItemIds = {firstCombinedReportId, secondCombinedReportId};
 
     // when
@@ -214,8 +210,8 @@ public class ReportConflictIT {
     // given
     String firstSingleReportId = addEmptyProcessReportToOptimize();
     String secondSingleReportId = addEmptyProcessReportToOptimize();
-    String firstCombinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
-    String secondCombinedReportId = createNewCombinedReport(firstSingleReportId, secondSingleReportId);
+    String firstCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
+    String secondCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
     String[] expectedReportIds = {
       firstSingleReportId, secondSingleReportId, firstCombinedReportId, secondCombinedReportId
     };
@@ -376,30 +372,23 @@ public class ReportConflictIT {
       .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
-  private String createNewCombinedReport(String... singleReportIds) {
-    String reportId = createNewCombinedReport();
-
-    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport(singleReportIds));
-    updateCombinedProcessReport(reportId, report);
-    return reportId;
-  }
-
-  private String createNewCombinedReport() {
+  private String createNewCombinedReportWithDefinition(String... reportIds) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest()
+      .buildCreateCombinedReportRequestWithDefinition(createCombinedReportDefinition(reportIds))
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  private static CombinedReportDataDto createCombinedReport(String... reportIds) {
+  private static CombinedReportDefinitionDto createCombinedReportDefinition(String... reportIds) {
+    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
     CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
     combinedReportDataDto.setReports(
       Arrays.stream(reportIds).map(CombinedReportItemDto::new).collect(Collectors.toList())
     );
     combinedReportDataDto.setConfiguration(new CombinedReportConfigurationDto());
-    return combinedReportDataDto;
+    combinedReportDefinitionDto.setData(combinedReportDataDto);
+    return combinedReportDefinitionDto;
   }
 
   private ReportDefinitionDto getReport(String id) {
@@ -416,8 +405,7 @@ public class ReportConflictIT {
       .execute(ConflictResponseDto.class, 200);
   }
 
-  private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
-    String id = addEmptyProcessReportToOptimize();
+  private String createAndStoreProcessReportWithDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportDataViewRawAsTable);
     report.setId(RANDOM_STRING);
@@ -427,8 +415,7 @@ public class ReportConflictIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner(RANDOM_STRING);
-    updateSingleProcessReport(id, report);
-    return id;
+    return createSingleProcessReport(report);
   }
 
   private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto reportData) {
@@ -454,28 +441,18 @@ public class ReportConflictIT {
 
   }
 
-  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
+  private String createSingleProcessReport(SingleProcessReportDefinitionDto updatedReport) {
+    return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
+      .buildCreateSingleProcessReportRequestWithDefinition(updatedReport)
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdateSingleDecisionReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private void updateCombinedProcessReport(String id, CombinedReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateCombinedProcessReportRequest(id, updatedReport)
       .execute();
 
     assertThat(response.getStatus(), is(204));

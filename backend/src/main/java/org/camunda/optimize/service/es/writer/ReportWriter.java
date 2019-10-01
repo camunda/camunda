@@ -6,11 +6,9 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.text.StringSubstitutor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
@@ -48,9 +46,8 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COMBINED;
@@ -100,7 +97,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setName(Optional.ofNullable(reportName).orElse(DEFAULT_REPORT_NAME));
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
@@ -145,7 +142,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setName(Optional.ofNullable(reportName).orElse(DEFAULT_REPORT_NAME));
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
@@ -189,7 +186,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(reportName);
+    reportDefinitionDto.setName(Optional.ofNullable(reportName).orElse(DEFAULT_REPORT_NAME));
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 

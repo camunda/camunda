@@ -52,7 +52,7 @@ public class ReportRestService {
   private final SessionService sessionService;
 
   /**
-   * Creates an empty new single process report.
+   * Creates a new single process report.
    *
    * @return the id of the report
    */
@@ -61,13 +61,14 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewSingleProcessReport(@Context final ContainerRequestContext requestContext,
-                                            @QueryParam("collectionId") final String collectionId) {
+                                            @QueryParam("collectionId") final String collectionId,
+                                            SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewSingleProcessReport(userId, collectionId);
+    return reportService.createNewSingleProcessReport(userId, collectionId, singleProcessReportDefinitionDto);
   }
 
   /**
-   * Creates an empty new single decision report.
+   * Creates a new single decision report.
    *
    * @return the id of the report
    */
@@ -76,13 +77,14 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewSingleDecisionReport(@Context final ContainerRequestContext requestContext,
-                                             @QueryParam("collectionId") final String collectionId) {
+                                             @QueryParam("collectionId") final String collectionId,
+                                             SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewSingleDecisionReport(userId, collectionId);
+    return reportService.createNewSingleDecisionReport(userId, collectionId, singleDecisionReportDefinitionDto);
   }
 
   /**
-   * Creates an empty new combined process report.
+   * Creates a new combined process report.
    *
    * @return the id of the report
    */
@@ -91,9 +93,10 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewCombinedProcessReport(@Context final ContainerRequestContext requestContext,
-                                              @QueryParam("collectionId") final String collectionId) {
+                                              @QueryParam("collectionId") final String collectionId,
+                                              CombinedReportDefinitionDto combinedReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewCombinedProcessReport(userId, collectionId);
+    return reportService.createNewCombinedProcessReport(userId, collectionId, combinedReportDefinitionDto);
   }
 
   @POST

@@ -329,6 +329,19 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCreateSingleProcessReportRequestWithDefinition(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+    return buildCreateSingleProcessReportRequestWithDefinition(singleProcessReportDefinitionDto, null);
+  }
+
+  public OptimizeRequestExecutor buildCreateSingleProcessReportRequestWithDefinition(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto,
+                                                                                     final String collectionId) {
+    this.path = "report/process/single";
+    this.body = getBody(singleProcessReportDefinitionDto);
+    this.requestType = POST;
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    return this;
+  }
+
   public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest() {
     return buildCreateSingleDecisionReportRequest(null);
   }
@@ -340,6 +353,19 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequestWithDefinition(final SingleDecisionReportDefinitionDto singleProcessReportDefinitionDto) {
+    return buildCreateSingleDecisionReportRequestWithDefinition(singleProcessReportDefinitionDto, null);
+  }
+
+  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequestWithDefinition(final SingleDecisionReportDefinitionDto singleProcessReportDefinitionDto,
+                                                                                      final String collectionId) {
+    this.path = "report/decision/single";
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    this.body = getBody(singleProcessReportDefinitionDto);
+    this.requestType = POST;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildCreateCombinedReportRequest() {
     return buildCreateCombinedReportRequest(null);
   }
@@ -347,6 +373,19 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildCreateCombinedReportRequest(final String collectionId) {
     this.path = "report/process/combined";
     Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCreateCombinedReportRequestWithDefinition(final CombinedReportDefinitionDto combinedReportDefinitionDto) {
+    return buildCreateCombinedReportRequestWithDefinition(combinedReportDefinitionDto, null);
+  }
+
+  public OptimizeRequestExecutor buildCreateCombinedReportRequestWithDefinition(final CombinedReportDefinitionDto combinedReportDefinitionDto,
+                                                                                final String collectionId) {
+    this.path = "report/process/combined";
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    this.body = getBody(combinedReportDefinitionDto);
     this.requestType = POST;
     return this;
   }
@@ -523,12 +562,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetDashboardDeleteConflictsRequest(String id) {
-    this.path = "dashboard/" + id + "/delete-conflicts";
-    this.requestType = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildDeleteCollectionRequest(String id) {
     return buildDeleteCollectionRequest(id, false);
   }
@@ -635,12 +668,6 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants() {
     this.path = "process-definition/definitionVersionsWithTenants";
-    this.requestType = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetProcessDefinitionsGroupedByKeyRequest() {
-    this.path = "process-definition/groupedByKey";
     this.requestType = GET;
     return this;
   }
@@ -760,12 +787,6 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildGetDecisionDefinitionsRequest() {
     this.path = "decision-definition";
-    this.requestType = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetDecisionDefinitionsGroupedByKeyRequest() {
-    this.path = "decision-definition/groupedByKey";
     this.requestType = GET;
     return this;
   }

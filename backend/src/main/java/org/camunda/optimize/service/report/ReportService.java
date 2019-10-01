@@ -89,19 +89,61 @@ public class ReportService implements CollectionReferencingService {
     reportWriter.deleteAllReportsOfCollection(definition.getId());
   }
 
-  public IdDto createNewSingleDecisionReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return reportWriter.createNewSingleDecisionReport(userId, collectionId);
+  public IdDto createNewSingleDecisionReport(final String userId, final String collectionId,
+                                             final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
+    if (singleDecisionReportDefinitionDto != null) {
+      if (collectionId != null && !collectionId.equals(singleDecisionReportDefinitionDto.getCollectionId())) {
+        throw new BadRequestException("The collection IDs provided must be the same");
+      }
+      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, singleDecisionReportDefinitionDto.getCollectionId());
+      return reportWriter.createNewSingleDecisionReport(
+        userId,
+        singleDecisionReportDefinitionDto.getData(),
+        singleDecisionReportDefinitionDto.getName(),
+        singleDecisionReportDefinitionDto.getCollectionId()
+      );
+    } else {
+      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
+      return reportWriter.createNewSingleDecisionReport(userId, collectionId);
+    }
   }
 
-  public IdDto createNewSingleProcessReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return reportWriter.createNewSingleProcessReport(userId, collectionId);
+  public IdDto createNewSingleProcessReport(final String userId, final String collectionId,
+                                            final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+    if (singleProcessReportDefinitionDto != null) {
+      if (collectionId != null && !collectionId.equals(singleProcessReportDefinitionDto.getCollectionId())) {
+        throw new BadRequestException("The collection IDs provided must be the same");
+      }
+      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, singleProcessReportDefinitionDto.getCollectionId());
+      return reportWriter.createNewSingleProcessReport(
+        userId,
+        singleProcessReportDefinitionDto.getData(),
+        singleProcessReportDefinitionDto.getName(),
+        singleProcessReportDefinitionDto.getCollectionId()
+      );
+    } else {
+      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
+      return reportWriter.createNewSingleProcessReport(userId, collectionId);
+    }
   }
 
-  public IdDto createNewCombinedProcessReport(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return reportWriter.createNewCombinedReport(userId, collectionId);
+  public IdDto createNewCombinedProcessReport(final String userId, final String collectionId,
+                                              final CombinedReportDefinitionDto combinedReportDefinitionDto) {
+    if (combinedReportDefinitionDto != null) {
+      if (collectionId != null && !collectionId.equals(combinedReportDefinitionDto.getCollectionId())) {
+        throw new BadRequestException("The collection IDs provided must be the same");
+      }
+      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, combinedReportDefinitionDto.getCollectionId());
+      return reportWriter.createNewCombinedReport(
+        userId,
+        combinedReportDefinitionDto.getData(),
+        combinedReportDefinitionDto.getName(),
+        combinedReportDefinitionDto.getCollectionId()
+      );
+    } else {
+      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
+      return reportWriter.createNewCombinedReport(userId, collectionId);
+    }
   }
 
   public ConflictResponseDto getReportDeleteConflictingItems(String userId, String reportId) {
