@@ -255,7 +255,7 @@ public class ListViewReader {
       if (query.getEndDateBefore() != null) {
         rangeQueryBuilder.lt(dateTimeFormatter.format(query.getEndDateBefore()));
       }
-      rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
+      rangeQueryBuilder.format(operateProperties.getElasticsearch().getElsDateFormat());
       return rangeQueryBuilder;
     }
     return null;
@@ -270,7 +270,7 @@ public class ListViewReader {
       if (query.getStartDateBefore() != null) {
         rangeQueryBuilder.lt(dateTimeFormatter.format(query.getStartDateBefore()));
       }
-      rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
+      rangeQueryBuilder.format(operateProperties.getElasticsearch().getElsDateFormat());
 
       return rangeQueryBuilder;
     }
