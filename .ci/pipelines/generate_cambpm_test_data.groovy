@@ -114,14 +114,14 @@ spec:
         value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m -XX:+UseConcMarkSweepGC -XX:+CMSParallelRemarkEnabled -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=70 -XX:+ScavengeBeforeFullGC -XX:+CMSScavengeBeforeRemark"
     resources:
       limits:
-        cpu: 16 
+        cpu: 16
       requests:
         cpu: 16
         memory: 12Gi
     volumeMounts:
       - name: ssd-storage
         mountPath: /camunda/logs
-        subPath: camunda-logs 
+        subPath: camunda-logs
   - name: gcloud
     image: google/cloud-sdk:alpine
     imagePullPolicy: Always
@@ -129,11 +129,11 @@ spec:
     tty: true
     resources:
       limits:
-        cpu: 500m 
+        cpu: 500m
         memory: 512Mi
       requests:
-        cpu: 500m 
-        memory: 512Mi 
+        cpu: 500m
+        memory: 512Mi
     volumeMounts:
       - name: ssd-storage
         mountPath: /export
