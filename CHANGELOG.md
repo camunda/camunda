@@ -1,3 +1,25 @@
+<a name="0.21.0"></a>
+## 0.21.0 (2019-10-01)
+
+
+#### Bug Fixes
+
+* **clients/java:**  ignore unknown JSON properties with object mapper ([a5b0af16](https://github.com/zeebe-io/zeebe/commit/a5b0af16a5fa020ad1ff092ec2bdc09824857246))
+* **exporters/elasticsearch:**  log error on flush exception instead of failing ([1b37a3e4](https://github.com/zeebe-io/zeebe/commit/1b37a3e4e29e2ca57cd56475b0ef63b9783605f9))
+
+#### Features
+
+* **broker:**  add job type to metrics ([4f0067d2](https://github.com/zeebe-io/zeebe/commit/4f0067d2b64c8cedfe2a33059559909806314848))
+* **clients/go:**  add env vars for auth configuration ([09021f21](https://github.com/zeebe-io/zeebe/commit/09021f21fb529e00c96d9f79cc73526ea7beb88a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **clients/java:**  add env vars for auth configuration ([bfaa15c3](https://github.com/zeebe-io/zeebe/commit/bfaa15c3c60d8ae0975ac4076f40e5fc3baf1a24), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+#### Breaking Changes
+
+* **clients/go:**  add env vars for auth configuration ([09021f21](https://github.com/zeebe-io/zeebe/commit/09021f21fb529e00c96d9f79cc73526ea7beb88a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **clients/java:**  add env vars for auth configuration ([bfaa15c3](https://github.com/zeebe-io/zeebe/commit/bfaa15c3c60d8ae0975ac4076f40e5fc3baf1a24), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+
+
 <a name="0.21.0-alpha3"></a>
 ## 0.21.0-alpha3 (2019-09-11)
 
