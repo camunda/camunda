@@ -104,7 +104,7 @@ class InstancesPollProviderComp extends React.Component {
       workflowInstances,
       statistics,
       coreStatistics
-    } = dataManager.getCachedRequestEndpoints();
+    } = dataManager.getCachedRequestNames();
 
     let updateParams = {
       endpoints: [workflowInstances, coreStatistics],

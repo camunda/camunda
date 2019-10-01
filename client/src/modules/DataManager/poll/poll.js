@@ -4,10 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export class Poll {
-  constructor() {
+export default class Poll {
+  constructor(pollDelay) {
     this.pollTimer = null;
-    this.POLL_DELAY = 5000;
+    this.POLL_DELAY = pollDelay;
   }
 
   _resetTimer() {

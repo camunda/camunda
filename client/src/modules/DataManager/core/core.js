@@ -16,9 +16,9 @@ import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
-import RequestCache from './cache';
-import Publisher from './publisher';
-import Poll from './poll';
+import RequestCache from '../cache';
+import Publisher from '../publisher';
+import Poll from '../poll';
 
 export class DataManager {
   constructor() {
@@ -70,7 +70,7 @@ export class DataManager {
 
   /** Wrapped API calls */
 
-  async getCoreStatistics() {
+  async getWorkflowCoreStatistics() {
     this.cache.set('coreStatistics', {
       params: {},
       apiCall: fetchWorkflowCoreStatistics
@@ -82,7 +82,7 @@ export class DataManager {
 
   async getWorkflowInstances(params) {
     const cachedParams = this._updateRequestCache(
-      SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES,
+      'workflowInstances',
       fetchWorkflowInstances,
       params
     );
@@ -125,22 +125,20 @@ export class DataManager {
     }
   }
 
-  // helper function used to create a single function
-  // which can be passed to the publishLoadingState function
-  async fetchDiagramModel(params) {
-    const xml = await fetchWorkflowXML(params);
-    return await parseDiagramXML(xml);
-  }
-
   async getWorkflowXML(params) {
+    const fetchDiagramModel = async params => {
+      const xml = await fetchWorkflowXML(params);
+      return await parseDiagramXML(xml);
+    };
+
     const cachedParams = this._updateRequestCache(
       'workflowXML',
-      this.fetchDiagramModel,
+      fetchDiagramModel,
       params
     );
 
     this._pubLoadingStates(SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS, () =>
-      this.fetchDiagramModel(cachedParams)
+      fetchDiagramModel(cachedParams)
     );
   }
 
@@ -170,10 +168,10 @@ export class DataManager {
     this.publisher.publish(topic, {
       state: LOADING_STATE.LOADING
     });
+
     Promise.all([
       ...endpoints.map(endpointName => {
         const cachedEndpoints = this.cache.getEndpointsbyNames([endpointName]);
-
         const {params, apiCall} = cachedEndpoints[endpointName];
         return apiCall(params);
       })
@@ -189,7 +187,6 @@ export class DataManager {
             ...staticData
           }
         };
-
         this.publisher.publish(topic, publishData);
       })
       .catch(error => {
