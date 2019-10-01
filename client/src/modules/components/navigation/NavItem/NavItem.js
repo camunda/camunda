@@ -47,7 +47,7 @@ export default withRouter(
 
       let breadcrumbs = [];
       const entitiesIds = {};
-      for (let entity of breadcrumbsEntities) {
+      breadcrumbsEntities.forEach(entity => {
         const splittedUrl = pathname.split(`/${entity}/`);
         if (splittedUrl[1]) {
           const id = splittedUrl[1].split('/')[0];
@@ -60,7 +60,7 @@ export default withRouter(
             });
           }
         }
-      }
+      });
 
       if (breadcrumbs.length > 0) {
         const names = await loadEntitiesNames(entitiesIds);
