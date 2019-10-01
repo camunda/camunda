@@ -16,7 +16,7 @@ spec:
   nodeSelector:
     cloud.google.com/gke-nodepool: ${NODE_POOL()}
   tolerations:
-   - key: \"${NODE_POOL()}"
+   - key: "${NODE_POOL()}"
      operator: "Exists"
      effect: "NoSchedule"
   imagePullSecrets:
