@@ -134,7 +134,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, ids2);
 
     //assert metrics for finished workflow instances
-    assertThatMetricsFrom(mockMvc, containsString("operate_events_processed_finished_wi_total " + (count1 + count2)));
+    assertThatMetricsFrom(mockMvc, containsString("operate_events_processed_finished_workflow_instances_total " + (count1 + count2)));
 
     //start instances 1 day ago
     int count3 = random.nextInt(6) + 5;
@@ -157,7 +157,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertAllInstancesInAlias(count1 + count2 + count3);
 
     //assert metrics for archived workflow instances
-    assertThatMetricsFrom(mockMvc, containsString("operate_archived_wi_total " + (count1 + count2)));
+    assertThatMetricsFrom(mockMvc, containsString("operate_archived_workflow_instances_total " + (count1 + count2)));
   }
 
   protected void createOperations(List<Long> ids1) throws PersistenceException {

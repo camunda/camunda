@@ -24,9 +24,9 @@ public class Metrics {
   public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE+"query";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
-  public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.wi";
+  public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.workflow.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
-  public static final String COUNTER_NAME_ARCHIVED = "archived.wi";
+  public static final String COUNTER_NAME_ARCHIVED = "archived.workflow.instances";
   // Tags
   // -----
   //  Keys:
