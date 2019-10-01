@@ -48,7 +48,7 @@ public abstract class OperateIntegrationTest {
 
   protected OffsetDateTime testStartTime;
 
-  @Autowired
+  @Autowired(required = false)
   private Archiver archiver;
 
   @Before
