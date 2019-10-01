@@ -98,10 +98,10 @@ public class ActivityStatisticsReader {
       if (searchResponse.getAggregations() != null) {
         Children activities = searchResponse.getAggregations().get(AGG_ACTIVITIES);
         CollectionUtil.asMap(
-            AGG_ACTIVE_ACTIVITIES,     (MapUpdater)ActivityStatisticsDto::setActive,
-            AGG_INCIDENT_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::setIncidents,
-            AGG_TERMINATED_ACTIVITIES, (MapUpdater)ActivityStatisticsDto::setCanceled,
-            AGG_FINISHED_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::setCompleted)
+            AGG_ACTIVE_ACTIVITIES,     (MapUpdater)ActivityStatisticsDto::addActive,
+            AGG_INCIDENT_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::addIncidents,
+            AGG_TERMINATED_ACTIVITIES, (MapUpdater)ActivityStatisticsDto::addCanceled,
+            AGG_FINISHED_ACTIVITIES,   (MapUpdater)ActivityStatisticsDto::addCompleted)
             .forEach((aggName,mapUpdater) -> collectStatisticsFor(statisticsMap, activities, aggName, (MapUpdater)mapUpdater));
       }
     } catch (IOException e) {
@@ -112,7 +112,7 @@ public class ActivityStatisticsReader {
   }
 
   public SearchRequest createQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
-    final QueryBuilder q = constantScoreQuery(listViewReader.createQueryFragment(query));
+    final QueryBuilder q = constantScoreQuery(listViewReader.createQueryFragment(query, queryType));
 
     ChildrenAggregationBuilder agg =
         children(AGG_ACTIVITIES, ListViewTemplate.ACTIVITIES_JOIN_RELATION);
@@ -130,7 +130,11 @@ public class ActivityStatisticsReader {
 
     logger.debug("Activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
-    return ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType)
+    SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, queryType);
+
+    logger.debug("Search request will search in: \n{}", searchRequest.indices());
+
+    return searchRequest
         .source(new SearchSourceBuilder()
           .query(q)
           .size(0)

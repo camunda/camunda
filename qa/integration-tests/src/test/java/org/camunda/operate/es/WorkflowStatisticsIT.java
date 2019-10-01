@@ -55,7 +55,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testStatisticsWithQuery() throws Exception {
+  public void testStatisticsWithQueryByActivityId() throws Exception {
     Long workflowKey = WORKFLOW_KEY_DEMO_PROCESS;
 
     createData(workflowKey);
@@ -67,6 +67,25 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     assertThat(activityStatisticsDtos).hasSize(1);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
       ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
+    );
+  }
+
+  @Test
+  public void testStatisticsWithQueryByErrorMessage() throws Exception {
+    Long workflowKey = WORKFLOW_KEY_DEMO_PROCESS;
+
+    createData(workflowKey);
+
+    final ListViewRequestDto queryRequest = createGetAllWorkflowInstancesQuery(workflowKey);
+    queryRequest.queryAt(0).setErrorMessage("error");
+
+    final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(queryRequest);
+    assertThat(activityStatisticsDtos).hasSize(2);
+    assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskC")).allMatch(ai->
+      ai.getActive().equals(0L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(2L)
+    );
+    assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskE")).allMatch(ai->
+      ai.getActive().equals(0L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(1L)
     );
   }
 
@@ -203,7 +222,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
    * taskE  - 1 active  -             - 1 with incident
    * end    -           -             -                   - 2 finished
    */
-  private void createData(Long workflowKey) {
+  protected void createData(Long workflowKey) {
 
     List<OperateEntity> entities = new ArrayList<>();
 
@@ -236,7 +255,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    ActivityInstanceForListViewEntity task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, "error", null);
+    String error = "error";
+    ActivityInstanceForListViewEntity task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, error, null);
     task.setActivityId("taskC");
     entities.add(task);
     entities.add(inst);
@@ -245,7 +265,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "start", null));
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskA", null));
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
-    task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, "error", null);
+    task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, error, null);
     task.setActivityId("taskC");
     entities.add(task);
     entities.add(inst);
@@ -273,7 +293,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskB", null));
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskC", null));
     entities.add(createActivityInstance(inst.getWorkflowInstanceKey(), ActivityState.COMPLETED, "taskD", null));
-    task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, "error", null);
+    task = createActivityInstanceWithIncident(inst.getWorkflowInstanceKey(), ActivityState.ACTIVE, error, null);
     task.setActivityId("taskE");
     entities.add(task);
     entities.add(inst);

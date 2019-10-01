@@ -67,6 +67,7 @@ import static org.camunda.operate.es.schema.templates.ListViewTemplate.VAR_NAME;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.VAR_VALUE;
 import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
 import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
+import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_ARCHIVE;
 import static org.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -134,6 +135,9 @@ public class ListViewReader {
 
     SearchRequest searchRequest = createSearchRequest(workflowInstanceRequest)
         .source(searchSourceBuilder);
+
+    logger.debug("Search request will search in: \n{}", searchRequest.indices());
+
     try {
       SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       result.setTotalCount(response.getHits().getTotalHits());
@@ -195,9 +199,17 @@ public class ListViewReader {
   }
 
   public QueryBuilder createQueryFragment(ListViewQueryDto query) {
+    return createQueryFragment(query, ALL);
+  }
+
+  public QueryBuilder createQueryFragment(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
+    //archived instances can't have active incidents, error message filter will always return empty list
+    if (queryType == ONLY_ARCHIVE && query.getErrorMessage() != null) {
+      return ElasticsearchUtil.createMatchNoneQuery();
+    }
     return joinWithAnd(
-        createRunningFinishedQuery(query),
-        createActivityIdQuery(query),
+        createRunningFinishedQuery(query, queryType),
+        createActivityIdQuery(query, queryType),
         createIdsQuery(query),
         createErrorMessageQuery(query),
         createStartDateQuery(query),
@@ -322,7 +334,7 @@ public class ListViewReader {
     }
   }
 
-  private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query) {
+  private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
 
     boolean active = query.isActive();
     boolean incidents = query.isIncidents();
@@ -344,7 +356,7 @@ public class ListViewReader {
 
     QueryBuilder runningQuery = null;
 
-    if (running && (active || incidents)) {
+    if (running && (active || incidents) && queryType != ONLY_ARCHIVE) {
       //running query
       runningQuery = boolQuery().mustNot(existsQuery(END_DATE));
 
@@ -387,16 +399,16 @@ public class ListViewReader {
 
   }
 
-  private QueryBuilder createActivityIdQuery(ListViewQueryDto query) {
+  private QueryBuilder createActivityIdQuery(ListViewQueryDto query, ElasticsearchUtil.QueryType queryType) {
     if (StringUtils.isEmpty(query.getActivityId())) {
       return null;
     }
     QueryBuilder activeActivityIdQuery = null;
-    if (query.isActive()) {
+    if (query.isActive() && queryType != ONLY_ARCHIVE) {
       activeActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.ACTIVE);
     }
     QueryBuilder incidentActivityIdQuery = null;
-    if (query.isIncidents()) {
+    if (query.isIncidents() && queryType != ONLY_ARCHIVE) {
       incidentActivityIdQuery = createActivityIdIncidentQuery(query.getActivityId());
     }
     QueryBuilder completedActivityIdQuery = null;

@@ -73,6 +73,7 @@ public abstract class TestUtil {
     if(StringUtils.isEmpty(workflowInstance.getWorkflowName())){
       workflowInstance.setWorkflowName(workflowInstance.getBpmnProcessId());
     }
+    workflowInstance.setPartitionId(1);
     return workflowInstance;
   }
 
@@ -88,6 +89,7 @@ public abstract class TestUtil {
       workflowInstance.setEndDate(endDate);
       workflowInstance.setState(WorkflowInstanceState.COMPLETED);
     }
+    workflowInstance.setPartitionId(1);
     return workflowInstance;
   }
 
@@ -123,6 +125,7 @@ public abstract class TestUtil {
     activityInstanceEntity.setActivityType(activityType);
     activityInstanceEntity.setActivityState(state);
     activityInstanceEntity.getJoinRelation().setParent(workflowInstanceKey);
+    activityInstanceEntity.setPartitionId(1);
     return activityInstanceEntity;
   }
 
@@ -148,6 +151,7 @@ public abstract class TestUtil {
     }
     workflowInstance.setState(state);
     workflowInstance.setWorkflowKey(workflowKey);
+    workflowInstance.setPartitionId(1);
     return workflowInstance;
   }
   
@@ -157,6 +161,7 @@ public abstract class TestUtil {
     workflowInstance.setId(workflowInstanceKey.toString());
     workflowInstance.setWorkflowInstanceKey(workflowInstanceKey);
     workflowInstance.setKey(workflowInstanceKey);
+    workflowInstance.setPartitionId(1);
     return workflowInstance;
   }
 
@@ -172,6 +177,7 @@ public abstract class TestUtil {
       workflowInstance.setEndDate(endDate);
       workflowInstance.setState(WorkflowInstanceState.COMPLETED);
     }
+    workflowInstance.setPartitionId(1);
     return workflowInstance;
   }
 
@@ -200,6 +206,7 @@ public abstract class TestUtil {
       incidentEntity.setErrorMessage(errorMsg);
     }
     incidentEntity.setState(state);
+    incidentEntity.setPartitionId(1);
     return incidentEntity;
   }
 

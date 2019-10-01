@@ -13,11 +13,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.OffsetDateTime;
 
 import org.camunda.operate.TestApplication;
+import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebeimport.archiver.Archiver;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import static org.assertj.core.api.Assertions.assertThat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
@@ -44,7 +47,10 @@ public abstract class OperateIntegrationTest {
   protected MockMvc mockMvc;
 
   protected OffsetDateTime testStartTime;
-  
+
+  @Autowired
+  private Archiver archiver;
+
   @Before
   public void before() {
     testStartTime = OffsetDateTime.now();
@@ -101,5 +107,18 @@ public abstract class OperateIntegrationTest {
   protected void assertErrorMessageIsEqualTo(MvcResult mvcResult, String message) {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);  
   }
-  
+
+  protected void runArchiving() {
+    try {
+      int archived;
+      int archivedTotal = 0;
+      do {
+        archived = archiver.archiveNextBatch();
+        archivedTotal += archived;
+      } while (archived > 0);
+      assertThat(archivedTotal).isGreaterThan(0);
+    } catch (ReindexException e) {
+      throw new RuntimeException("Error while archiving");
+    }
+  }
 }

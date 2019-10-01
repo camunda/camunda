@@ -37,12 +37,20 @@ public class ActivityStatisticsDto {
     this.active = active;
   }
 
+  public void addActive(Long active) {
+    this.active += active;
+  }
+
   public Long getCanceled() {
     return canceled;
   }
 
   public void setCanceled(Long canceled) {
     this.canceled = canceled;
+  }
+
+  public void addCanceled(Long canceled) {
+    this.canceled += canceled;
   }
 
   public Long getIncidents() {
@@ -53,12 +61,20 @@ public class ActivityStatisticsDto {
     this.incidents = incidents;
   }
 
+  public void addIncidents(Long incidents) {
+    this.incidents += incidents;
+  }
+
   public Long getCompleted() {
     return completed;
   }
 
   public void setCompleted(Long completed) {
     this.completed = completed;
+  }
+
+  public void addCompleted(Long completed) {
+    this.completed += completed;
   }
 
   @Override

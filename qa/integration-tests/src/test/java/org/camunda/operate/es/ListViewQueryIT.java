@@ -1045,7 +1045,7 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persistNew(workflowWithoutName);
   }
   
-  private void createData() {
+  protected void createData() {
     List<VariableForListViewEntity> vars = new ArrayList<>();
 
     createWorkflowInstanceWithUpperLowerCaseWorkflowname();
