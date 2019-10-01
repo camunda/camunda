@@ -19,7 +19,9 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.rule.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.Rule;
@@ -48,11 +50,13 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public class VariableQueryFilterIT {
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchRule).around(engineRule).around(engineDatabaseRule).around(embeddedOptimizeRule);
 
   private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
@@ -132,7 +136,6 @@ public class VariableQueryFilterIT {
     // then
     assertResults(result, 1);
   }
-
 
   @Test
   public void severalVariablesInSameProcessInstanceShouldNotAffectFilter() {
@@ -1012,6 +1015,9 @@ public class VariableQueryFilterIT {
     variables.put("testVar", null);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
 
+    variables.put("testVar", new EngineVariableValue(null, "String"));
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+
     engineRule.startProcessInstance(processDefinition.getId());
 
     variables = new HashMap<>();
@@ -1038,7 +1044,7 @@ public class VariableQueryFilterIT {
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
     // then
-    assertResults(result, 3);
+    assertResults(result, 4);
   }
 
   private Map<String, VariableType> createVarNameToTypeMap() {
@@ -1054,7 +1060,7 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void filterForUndefinedWorksWithAllVariableTypes() {
+  public void filterForUndefinedAndNullWorksWithAllVariableTypes() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
@@ -1078,6 +1084,16 @@ public class VariableQueryFilterIT {
     variables.put("longVar", null);
     variables.put("doubleVar", null);
     variables.put("stringVar", null);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+
+    variables = new HashMap<>();
+    variables.put("dateVar", new EngineVariableValue(null, "Date"));
+    variables.put("boolVar", new EngineVariableValue(null, "Boolean"));
+    variables.put("shortVar", new EngineVariableValue(null, "Short"));
+    variables.put("intVar", new EngineVariableValue(null, "Integer"));
+    variables.put("longVar", new EngineVariableValue(null, "Long"));
+    variables.put("doubleVar", new EngineVariableValue(null, "Double"));
+    variables.put("stringVar", new EngineVariableValue(null, "String"));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
 
     engineRule.startProcessInstance(processDefinition.getId());
@@ -1106,11 +1122,9 @@ public class VariableQueryFilterIT {
       // then
       assertThat(result.getData(), is(notNullValue()));
       final List<RawDataProcessInstanceDto> resultData = result.getData();
-      assertThat(resultData.size(), is(2));
-
+      assertThat(resultData.size(), is(3));
     }
   }
-
 
   @Test
   public void validationExceptionOnNullValueField() {

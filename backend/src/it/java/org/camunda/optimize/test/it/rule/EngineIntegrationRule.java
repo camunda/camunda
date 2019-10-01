@@ -144,7 +144,8 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private static ObjectMapper createObjectMapper() {
-    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(IntegrationTestConfigurationUtil.getEngineDateFormat());
+    final DateTimeFormatter formatter =
+      DateTimeFormatter.ofPattern(IntegrationTestConfigurationUtil.getEngineDateFormat());
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(formatter));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(formatter));
@@ -885,7 +886,13 @@ public class EngineIntegrationRule extends TestWatcher {
     Map<String, Object> variables = new HashMap<>();
     for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
       Object value = nameToValue.getValue();
-      if (value instanceof ComplexVariableDto) {
+      if (value instanceof EngineVariableValue) {
+        final EngineVariableValue typedVariable = (EngineVariableValue) value;
+        Map<String, Object> fields = new HashMap<>();
+        fields.put("value", typedVariable.getValue());
+        fields.put("type", typedVariable.getType());
+        variables.put(nameToValue.getKey(), fields);
+      } else if (value instanceof ComplexVariableDto) {
         variables.put(nameToValue.getKey(), value);
       } else {
         Map<String, Object> fields = new HashMap<>();

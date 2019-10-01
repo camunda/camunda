@@ -9,7 +9,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
@@ -44,6 +43,7 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
@@ -133,7 +133,9 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
-          boolQuery().filter(termQuery(getVariableClauseIdField(variablePath), variableClauseId))
+          boolQuery()
+            .must(termQuery(getVariableClauseIdField(variablePath), variableClauseId))
+            .must(existsQuery(getVariableStringValueField(variablePath)))
         )
           .subAggregation(
             createVariableSubAggregation(variableClauseId, variableType)

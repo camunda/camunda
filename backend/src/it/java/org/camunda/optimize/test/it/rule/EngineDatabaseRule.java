@@ -6,6 +6,7 @@
 package org.camunda.optimize.test.it.rule;
 
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.rules.TestWatcher;
 
@@ -438,6 +439,16 @@ public class EngineDatabaseRule extends TestWatcher {
     final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
     statement.setTimestamp(1, toLocalTimestampWithoutNanos(newEvaluationDateTime));
     statement.setString(2, decisionDefinitionId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void setDecisionOutputStringVariableValueToNull(String variableName, String oldValue) {
+    String sql = "UPDATE ACT_HI_DEC_OUT SET TEXT_ = NULL WHERE CLAUSE_ID_ = ? AND TEXT_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setString(1, variableName);
+    statement.setString(2, oldValue);
     statement.executeUpdate();
     connection.commit();
   }

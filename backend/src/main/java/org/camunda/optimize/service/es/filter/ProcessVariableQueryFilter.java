@@ -36,6 +36,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getVariableUndefinedOrNullQuery;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -64,7 +65,7 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
   private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto dto) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
     if (dto.isFilterForUndefined()) {
-      return createFilterUndefinedQueryBuilder(dto);
+      return createFilterUndefinedOrNullQueryBuilder(dto);
     }
 
     QueryBuilder queryBuilder = matchAllQuery();
@@ -284,12 +285,9 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     );
   }
 
-  private QueryBuilder createFilterUndefinedQueryBuilder(VariableFilterDataDto dto) {
-    return boolQuery().mustNot(nestedQuery(
-      VARIABLES,
-      termQuery(getNestedVariableNameField(), dto.getName()),
-      ScoreMode.None
-    ));
+  private QueryBuilder createFilterUndefinedOrNullQueryBuilder(final VariableFilterDataDto dto) {
+    return getVariableUndefinedOrNullQuery(dto.getName(), dto.getType());
   }
+
 
 }

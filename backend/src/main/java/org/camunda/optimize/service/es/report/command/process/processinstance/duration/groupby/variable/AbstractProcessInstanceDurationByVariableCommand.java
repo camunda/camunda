@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable;
 
-import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
@@ -45,9 +44,9 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getVariableUndefinedOrNullQuery;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -83,7 +82,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
       .query(query)
       .fetchSource(false)
       .aggregation(createVariableAggregation(groupByVariable.getName(), groupByVariable.getType()))
-      .aggregation(createMissingVariableAggregation(groupByVariable.getName(), groupByVariable.getType()))
+      .aggregation(createUndefinedOrNullVariableAggregation(groupByVariable.getName(), groupByVariable.getType()))
       .size(0);
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
       .types(PROCESS_INSTANCE_INDEX_NAME)
@@ -175,17 +174,10 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
     return variableSubAggregation;
   }
 
-  private AggregationBuilder createMissingVariableAggregation(String variableName, VariableType variableType) {
-    return filter(
-      MISSING_VARIABLES_AGGREGATION,
-      boolQuery().mustNot(nestedQuery(
-        VARIABLES,
-        boolQuery()
-          .must(termQuery(getNestedVariableNameField(), variableName))
-          .must(termQuery(getNestedVariableTypeField(), variableType.getId())),
-        ScoreMode.None
-      ).ignoreUnmapped(true))
-    ).subAggregation(createOperationsAggregation());
+  private AggregationBuilder createUndefinedOrNullVariableAggregation(final String variableName,
+                                                                      final VariableType variableType) {
+    return filter(MISSING_VARIABLES_AGGREGATION, getVariableUndefinedOrNullQuery(variableName, variableType))
+      .subAggregation(createOperationsAggregation());
   }
 
 

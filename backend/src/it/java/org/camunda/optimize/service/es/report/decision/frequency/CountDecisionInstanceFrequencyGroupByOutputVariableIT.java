@@ -597,15 +597,17 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "testValidMatch")
     );
+    engineDatabaseRule.setDecisionOutputStringVariableValueToNull(outputClauseId, "testValidMatch");
+
     engineRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
-      ImmutableMap.of(camInputVariable, "testNullValue")
+      ImmutableMap.of(camInputVariable, "testValidMatch")
     );
+
     engineRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       Collections.singletonMap(camInputVariable, null)
     );
-
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();

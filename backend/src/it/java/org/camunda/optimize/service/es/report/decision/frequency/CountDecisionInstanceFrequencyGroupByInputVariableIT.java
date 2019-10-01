@@ -24,6 +24,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEva
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.rule.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
@@ -215,7 +216,6 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getData().size(), is(1));
     assertThat(result.getIsComplete(), is(false));
   }
-
 
   @Test
   public void testCustomOrderOnNumberResultKeyIsApplied() {
@@ -629,9 +629,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-
   @Test
-  public void missingVariablesAggregationForUndefinedAndNullOutputVariables() {
+  public void missingVariablesAggregationForUndefinedAndNullInputVariables() {
     // given
     final String inputClauseId = "TestyTest";
     final String camInputVariable = "putIn";
@@ -655,7 +654,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
     engineRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
-      Collections.singletonMap(camInputVariable, null)
+      Collections.singletonMap(camInputVariable, new EngineVariableValue(null, "String"))
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -674,7 +673,6 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     assertThat(result.getEntryForKey("whateverElse").get().getValue(), is(1L));
     assertThat(result.getEntryForKey("missing").get().getValue(), is(2L));
   }
-
 
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {

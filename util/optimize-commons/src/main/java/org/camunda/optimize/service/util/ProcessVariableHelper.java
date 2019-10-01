@@ -5,8 +5,10 @@
  */
 package org.camunda.optimize.service.util;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -19,6 +21,10 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_NAME;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_VALUE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class ProcessVariableHelper {
 
@@ -65,6 +71,32 @@ public class ProcessVariableHelper {
       default:
         throw new IllegalArgumentException("Unhandled type: " + type);
     }
+  }
+
+  public static BoolQueryBuilder getVariableUndefinedOrNullQuery(final String variableName,
+                                                                 final VariableType variableType) {
+    final String variableTypeId = variableType.getId();
+    return boolQuery()
+      .should(
+        // undefined
+        boolQuery().mustNot(nestedQuery(
+          VARIABLES,
+          boolQuery()
+            .must(termQuery(getNestedVariableNameField(), variableName))
+            .must(termQuery(getNestedVariableTypeField(), variableTypeId)),
+          ScoreMode.None
+        )))
+      .should(
+        // or null value
+        boolQuery().must(nestedQuery(
+          VARIABLES,
+          boolQuery()
+            .must(termQuery(getNestedVariableNameField(), variableName))
+            .must(termQuery(getNestedVariableTypeField(), variableTypeId))
+            .mustNot(existsQuery(getNestedVariableValueField())),
+          ScoreMode.None
+        )))
+      .minimumShouldMatch(1);
   }
 
 }

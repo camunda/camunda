@@ -31,7 +31,9 @@ import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConst
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableStringValueField;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -224,11 +226,26 @@ public abstract class DecisionVariableQueryFilter implements QueryFilter<Variabl
   }
 
   private QueryBuilder createFilterUndefinedQueryBuilder(VariableFilterDataDto dto) {
-    return boolQuery().mustNot(nestedQuery(
-      getVariablePath(),
-      termQuery(getVariableIdField(), dto.getName()),
-      ScoreMode.None
-    ));
+    return boolQuery()
+      .should(
+        // undefined
+        boolQuery().mustNot(nestedQuery(
+          getVariablePath(),
+          termQuery(getVariableIdField(), dto.getName()),
+          ScoreMode.None
+        ))
+      )
+      .should(
+        // or null value
+        boolQuery().must(nestedQuery(
+          getVariablePath(),
+          boolQuery()
+            .must(termQuery(getVariableIdField(), dto.getName()))
+            .mustNot(existsQuery(getVariableStringValueField(getVariablePath()))),
+          ScoreMode.None
+        ))
+      )
+      .minimumShouldMatch(1);
   }
 
   private RangeQueryBuilder createRangeQuery(DateVariableFilterDataDto dto) {

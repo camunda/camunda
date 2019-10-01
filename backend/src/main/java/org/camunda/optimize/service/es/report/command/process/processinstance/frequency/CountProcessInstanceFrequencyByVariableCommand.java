@@ -41,9 +41,11 @@ import static org.camunda.optimize.service.es.report.command.util.IntervalAggreg
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -130,8 +132,10 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
-          boolQuery().must(termQuery(getNestedVariableNameField(), variableName))
+          boolQuery()
+            .must(termQuery(getNestedVariableNameField(), variableName))
             .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
+            .must(existsQuery(getNestedVariableValueField()))
         )
           .subAggregation(variableSubAggregation)
           .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION))

@@ -28,6 +28,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.it.rule.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.Test;
@@ -808,7 +809,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     }
   }
 
-
   @Test
   public void missingVariablesAggregationWorksForUndefinedAndNullVariables() throws SQLException {
     // given
@@ -826,7 +826,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       testEndDate
     );
 
-    // 3 process instances without 'testVar'
+    // 4 process instances without 'testVar'
     OffsetDateTime missingTestStartDate = testEndDate.minusDays(1);
 
     startProcessWithVariablesAndDates(
@@ -834,6 +834,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       Collections.singletonMap("testVar", null),
       missingTestStartDate,
       missingTestStartDate.plus(200, MILLIS)
+    );
+
+    startProcessWithVariablesAndDates(
+      definition,
+      Collections.singletonMap("testVar", new EngineVariableValue(null, "String")),
+      missingTestStartDate,
+      missingTestStartDate.plus(500, MILLIS)
     );
 
     startProcessWithDates(
@@ -879,12 +886,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       result.getDataEntryForKey("missing").get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(
         missingTestStartDate.until(missingTestStartDate.plus(200, MILLIS), MILLIS),
+        missingTestStartDate.until(missingTestStartDate.plus(500, MILLIS), MILLIS),
         missingTestStartDate.until(missingTestStartDate.plus(3000, MILLIS), MILLIS),
         missingTestStartDate.until(missingTestStartDate.plus(10000, MILLIS), MILLIS)
       ))
     );
   }
-
 
   @Test
   public void groupByDateVariableIntervalSelection() {

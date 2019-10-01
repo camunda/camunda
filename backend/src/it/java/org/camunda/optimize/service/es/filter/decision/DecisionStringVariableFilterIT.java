@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Inp
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
+import org.camunda.optimize.test.it.rule.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
@@ -68,7 +69,6 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       is(categoryInputValueToFilterFor)
     );
   }
-
 
   @Test
   public void resultFilterByEqualStringInputVariableMultipleValues() {
@@ -177,7 +177,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     );
     engineRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
-      Collections.singletonMap(camInputVariable, null)
+      Collections.singletonMap(camInputVariable, new EngineVariableValue(null, "String"))
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -213,15 +213,23 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
 
     engineRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
+      Collections.singletonMap(camInputVariable, null)
+    );
+
+    engineRule.startDecisionInstance(
+      decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "testValidMatch")
     );
+    engineDatabaseRule.setDecisionOutputStringVariableValueToNull(outputClauseId, "testValidMatch");
+
     engineRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "noMatchingOutputValue")
     );
+
     engineRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
-      Collections.singletonMap(camInputVariable, null)
+      ImmutableMap.of(camInputVariable, "testValidMatch")
     );
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
@@ -238,7 +246,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
+    assertThat(result.getData().size(), is(3));
   }
 
   private DecisionReportDataDto createReportWithAllVersionSet(DecisionDefinitionEngineDto decisionDefinitionDto) {
