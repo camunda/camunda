@@ -89,13 +89,19 @@ export default withErrorHandling(
 
     copyEntity = (name, destination, redirect) => {
       const {id, entityType} = this.state.copying;
-      this.props.mightFail(copyEntity(entityType, id, name, destination), () => {
-        if (redirect) {
-          this.setState({redirect: destination ? `/collection/${destination}/` : '/'});
-        } else {
-          this.props.onChange();
+      this.props.mightFail(
+        copyEntity(entityType, id, name, destination),
+        () => {
+          if (redirect) {
+            this.setState({redirect: destination ? `/collection/${destination}/` : '/'});
+          } else {
+            this.props.onChange();
+          }
+        },
+        error => {
+          showError(error);
         }
-      });
+      );
       this.closeCopyModal();
     };
 
