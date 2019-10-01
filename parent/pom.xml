@@ -76,7 +76,7 @@
     <version.javax>1.3.2</version.javax>
     <version.wiremock>2.24.1</version.wiremock>
     <version.asm>7.1</version.asm>
-    <version.testcontainers>1.12.1</version.testcontainers>
+    <version.testcontainers>1.12.2</version.testcontainers>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
