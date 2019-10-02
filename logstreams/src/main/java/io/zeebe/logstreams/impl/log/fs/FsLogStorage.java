@@ -153,8 +153,7 @@ public class FsLogStorage implements LogStorage {
   public long readLastBlock(final ByteBuffer readBuffer, final ReadResultProcessor processor) {
     ensureOpenedStorage();
 
-    final int segmentCount = logSegments.segmentCount;
-    final FsLogSegment lastSegment = logSegments.getSegment(segmentCount - 1);
+    final FsLogSegment lastSegment = logSegments.getSegment(logSegments.getLastSegmentId());
 
     if (lastSegment != null && lastSegment.getSizeVolatile() > METADATA_LENGTH) {
       boolean findLast = true;
