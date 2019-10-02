@@ -7,7 +7,7 @@ Below, we'll provide a brief overview of Zeebe. For more detail, we recommend th
 ## What problem does Zeebe solve, and how?
 A company’s end-to-end workflows almost always span more than one microservice. In an e-commerce company, for example, a “customer order” workflow might involve a payments microservice, an inventory microservice, a shipping microservice, and more:
 
-![order-process](order-process.png)
+![order-process](/introduction/order-process.png)
 
 These cross-microservice workflows are mission critical, yet the workflows themselves are rarely modeled and monitored. Often, the flow of events through different microservices is expressed only implicitly in code.
 
