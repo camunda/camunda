@@ -17,6 +17,7 @@ import {HEADER_HEIGHT} from './../Header/styled';
 export const Instances = styled.main`
   height: calc(100vh - ${HEADER_HEIGHT}px);
   position: relative;
+  overflow: hidden;
 `;
 
 export const Content = styled.div`
