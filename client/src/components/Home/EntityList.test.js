@@ -173,8 +173,6 @@ it('should copy entity', () => {
     'someCollectionId'
   );
   expect(node.find(CopyModal)).not.toExist();
-  expect(node.find(Redirect)).toExist();
-  expect(node.find(Redirect).prop('to')).toBe('/collection/someCollectionId/');
 });
 
 it('should show an edit name modal when clicking edit in a collection context menu', () => {
