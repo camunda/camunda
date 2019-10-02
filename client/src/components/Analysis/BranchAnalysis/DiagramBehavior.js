@@ -61,6 +61,12 @@ export default class DiagramBehavior extends React.Component {
     return null;
   }
 
+  roundEdges = (elementRegistry, businessObject) => {
+    const gfx = elementRegistry.getGraphics(businessObject.id).querySelector('.djs-outline');
+    gfx.setAttribute('rx', '14px');
+    gfx.setAttribute('ry', '14px');
+  };
+
   componentDidMount() {
     const {viewer} = this.props;
     const elementRegistry = viewer.get('elementRegistry');
@@ -70,11 +76,9 @@ export default class DiagramBehavior extends React.Component {
     elementRegistry.forEach(({businessObject}) => {
       if (this.isValidNode(businessObject)) {
         canvas.addMarker(businessObject.id, 'DiagramBehavior__clickable');
-
-        const gfx = elementRegistry.getGraphics(businessObject.id).querySelector('.djs-outline');
-
-        gfx.setAttribute('rx', '14px');
-        gfx.setAttribute('ry', '14px');
+        this.roundEdges(elementRegistry, businessObject);
+      } else if (!businessObject.$instanceOf('bpmn:Process')) {
+        canvas.addMarker(businessObject.id, 'DiagramBehavior__disabled');
       }
     });
 

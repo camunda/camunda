@@ -5,6 +5,11 @@
   border-radius: 3px;
   background: #fbfbfb;
 
+  &.highlighted {
+    background: rgba(48, 116, 142, 0.6);
+    color: #fff;
+  }
+
   .Button,
   .Button:hover,
   .Button:active {

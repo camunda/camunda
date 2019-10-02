@@ -42,21 +42,11 @@ export default class ClickBehavior extends React.Component {
 
     // remove existing selection markers
     elementRegistry.forEach(element => {
-      if (element.businessObject.$instanceOf('bpmn:' + this.props.nodeType)) {
+      if (this.isValid(element)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node');
       }
     });
-  };
-
-  onClick = ({element}) => {
-    if (element.businessObject.$instanceOf('bpmn:' + this.props.nodeType)) {
-      this.props.onClick(element.businessObject);
-    }
-  };
-
-  teardownEventListeners = () => {
-    this.props.viewer.off('element.click', this.onClick);
   };
 
   update() {
@@ -66,9 +56,11 @@ export default class ClickBehavior extends React.Component {
 
     // remove existing selection markers and indicate selectable status for all flownodes
     elementRegistry.forEach(element => {
-      if (element.businessObject.$instanceOf('bpmn:' + this.props.nodeType)) {
+      if (this.isValid(element)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.addMarker(element.businessObject.id, 'ClickBehavior__node');
+      } else if (!element.businessObject.$instanceOf('bpmn:Process')) {
+        canvas.addMarker(element.businessObject.id, 'ClickBehavior__disabled');
       }
     });
 
@@ -95,7 +87,35 @@ export default class ClickBehavior extends React.Component {
     });
   };
 
+  isValid = element => element.businessObject.$instanceOf('bpmn:' + this.props.nodeType);
+
+  onClick = ({element}) => {
+    if (this.isValid(element)) {
+      this.props.onClick(element.businessObject);
+    }
+  };
+
+  onHover = ({element}) => {
+    if (this.props.onHover && this.isValid(element)) {
+      this.props.onHover(element.businessObject);
+    }
+  };
+
+  outHandler = ({element}) => {
+    if (this.props.onHover && this.isValid(element)) {
+      this.props.onHover(null);
+    }
+  };
+
   setupEventListeners() {
     this.props.viewer.on('element.click', this.onClick);
+    this.props.viewer.on('element.hover', this.onHover);
+    this.props.viewer.on('element.out', this.outHandler);
   }
+
+  teardownEventListeners = () => {
+    this.props.viewer.off('element.click', this.onClick);
+    this.props.viewer.off('element.hover', this.onHover);
+    this.props.viewer.off('element.out', this.outHandler);
+  };
 }

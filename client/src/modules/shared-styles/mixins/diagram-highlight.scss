@@ -1,5 +1,7 @@
 $color: darken($cam-blue, 10%);
 @mixin diagram-highlight {
+  opacity: 1;
+
   .djs-visual {
     rect,
     circle,

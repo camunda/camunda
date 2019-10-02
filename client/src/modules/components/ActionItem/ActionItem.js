@@ -10,9 +10,9 @@ import {Button} from 'components';
 
 import './ActionItem.scss';
 
-export default function ActionItem({disabled, onClick, ...props}) {
+export default function ActionItem({disabled, onClick, highlighted, ...props}) {
   return (
-    <div className="ActionItem">
+    <div className={classnames({highlighted}, 'ActionItem')}>
       <Button disabled={disabled} onClick={onClick}>
         ×
       </Button>

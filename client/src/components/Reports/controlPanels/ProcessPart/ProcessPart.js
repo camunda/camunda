@@ -72,7 +72,7 @@ export default class ProcessPart extends React.Component {
   };
 
   renderModal() {
-    const {start, end, hasPath, modalOpen} = this.state;
+    const {start, end, hasPath, modalOpen, hoveredNode} = this.state;
 
     const selection = [start, end].filter(v => v);
     return (
@@ -89,12 +89,21 @@ export default class ProcessPart extends React.Component {
             {t('report.processPart.description')}{' '}
             <ActionItem
               disabled={!start}
+              highlighted={hoveredNode && (start ? hoveredNode.id === start.id : true)}
               onClick={() => this.setState({start: null, hasPath: true})}
             >
               {start ? start.name || start.id : t('report.processPart.selectStart')}
             </ActionItem>
             <span> {t('common.and')} </span>
-            <ActionItem disabled={!end} onClick={() => this.setState({end: null, hasPath: true})}>
+            <ActionItem
+              highlighted={
+                hoveredNode &&
+                start &&
+                (end ? hoveredNode.id === end.id : hoveredNode.id !== start.id)
+              }
+              disabled={!end}
+              onClick={() => this.setState({end: null, hasPath: true})}
+            >
               {end ? end.name || end.id : t('report.processPart.selectEnd')}
             </ActionItem>
           </span>
@@ -106,6 +115,7 @@ export default class ProcessPart extends React.Component {
               <ClickBehavior
                 setSelectedNodes={this.setSelectedNodes}
                 onClick={this.selectNode}
+                onHover={hoveredNode => this.setState({hoveredNode})}
                 selectedNodes={selection}
               />
               <PartHighlight nodes={selection} setHasPath={this.setHasPath} />

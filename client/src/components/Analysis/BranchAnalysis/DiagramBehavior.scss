@@ -8,23 +8,30 @@
   cursor: pointer;
 }
 
-.DiagramBehavior__clickable .djs-outline {
-  stroke-width: 2px !important;
-  stroke: #276e8c !important;
-  fill: rgba(188, 211, 220, 0.4) !important;
-  cursor: pointer;
+.DiagramBehavior__disabled {
+  opacity: 0.3;
+}
+
+.djs-shape.ClickBehavior__node {
+  opacity: 1;
 }
 
 .DiagramBehavior__highlight .djs-outline {
   stroke-width: 2px !important;
   stroke: #276e8c !important;
-  fill: rgba(48, 116, 142, 0.6) !important;
+  fill: rgba(188, 211, 220, 0.4) !important;
 }
 
 .DiagramBehavior__selected .djs-outline {
   stroke-width: 2px !important;
-  stroke: rgba(66, 180, 21, 1) !important;
-  fill: rgba(66, 180, 21, 0.7) !important;
+  stroke: #276e8c !important;
+  fill: rgba(48, 116, 142, 0.6) !important;
+}
+
+.DiagramBehavior__selected.hover .djs-outline {
+  stroke-width: 2px !important;
+  stroke: #1d5770 !important;
+  fill: rgba(29, 87, 112, 0.6) !important;
 }
 
 g.chart-hover path {

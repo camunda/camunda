@@ -4,7 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import classnames from 'classnames';
 import update from 'immutability-helper';
 import React from 'react';
 import equal from 'deep-equal';
@@ -71,11 +70,7 @@ export default class BranchControlPanel extends React.Component {
 
     return (
       <div
-        className={classnames('config', {
-          configHover:
-            !disableFlowNodeSelection &&
-            (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
-        })}
+        className="config"
         name={type}
         onMouseOver={this.hover(type)}
         onMouseOut={this.hover(null)}
@@ -83,6 +78,10 @@ export default class BranchControlPanel extends React.Component {
         <ActionItem
           disabled={disableFlowNodeSelection}
           onClick={() => this.props.updateSelection(type, null)}
+          highlighted={
+            !disableFlowNodeSelection &&
+            (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
+          }
         >
           {this.props[type]
             ? this.props[type].name || this.props[type].id

@@ -10,8 +10,6 @@ import classnames from 'classnames';
 
 import Viewer from 'bpmn-js/lib/NavigatedViewer';
 
-import TargetValueDiagramBehavior from './TargetValueDiagramBehavior';
-
 import {
   Button,
   Modal,
@@ -21,7 +19,8 @@ import {
   Select,
   TargetValueBadge,
   ErrorMessage,
-  LoadingIndicator
+  LoadingIndicator,
+  ClickBehavior
 } from 'components';
 import {formatters, numberParser} from 'services';
 
@@ -226,6 +225,7 @@ export default class DurationHeatmapModal extends React.Component {
         });
       } else {
         this.setState({
+          focus: null,
           values: {},
           nodeNames: {},
           loading: false
@@ -262,9 +262,9 @@ export default class DurationHeatmapModal extends React.Component {
           {this.state.loading && <LoadingIndicator />}
           <div className="diagram-container">
             <BPMNDiagram xml={report.data.configuration.xml}>
-              <TargetValueDiagramBehavior
-                onClick={this.updateFocus}
-                focus={this.state.focus}
+              <ClickBehavior
+                onClick={({id}) => this.updateFocus(id)}
+                selectedNodes={this.state.focus ? [this.state.focus] : []}
                 nodeType={nodeType}
               />
               <TargetValueBadge values={this.state.values} />

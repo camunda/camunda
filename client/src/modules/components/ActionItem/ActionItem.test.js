@@ -23,6 +23,12 @@ it('should render child content', () => {
   expect(node.find('span')).toIncludeText('Some child content');
 });
 
+it('should add highlighted classname when highlighted property is set', () => {
+  const node = shallow(<ActionItem highlighted />);
+
+  expect(node).toHaveClassName('highlighted');
+});
+
 it('should call the onClick handler', () => {
   const spy = jest.fn();
   const node = shallow(<ActionItem onClick={spy}>Content</ActionItem>);

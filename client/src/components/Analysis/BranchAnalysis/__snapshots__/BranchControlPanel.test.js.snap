@@ -28,6 +28,7 @@ exports[`should display a sentence to describe what the user can do on this page
       >
         <ActionItem
           disabled={true}
+          highlighted={false}
           onClick={[Function]}
         >
           Select Gateway
@@ -42,6 +43,7 @@ exports[`should display a sentence to describe what the user can do on this page
       >
         <ActionItem
           disabled={true}
+          highlighted={false}
           onClick={[Function]}
         >
           Select End Event
