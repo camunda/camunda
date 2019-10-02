@@ -372,7 +372,7 @@ public class ReportService implements CollectionReferencingService {
 
     if (!StringUtils.equals(newCollectionId, oldCollectionId)) {
       final List<CombinedReportItemDto> newReports = new ArrayList<>();
-      oldCombinedReportData.getReports().forEach(combinedReportItemDto -> {
+      oldCombinedReportData.getReports().stream().sequential().forEach(combinedReportItemDto -> {
         final String reportCopyId = existingReportCopies.computeIfAbsent(
           combinedReportItemDto.getId(), reportId -> copyAndMoveReport(reportId, userId, newCollectionId).getId()
         );

@@ -32,11 +32,11 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -115,9 +115,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
 
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
-      final Map<String, String> uniqueReportCopies = new HashMap<>();
+      final Map<String, String> uniqueReportCopies = new ConcurrentHashMap<>();
       newDashboardReports.clear();
-      dashboardDefinition.getReports().forEach(reportLocationDto -> {
+      dashboardDefinition.getReports().stream().sequential().forEach(reportLocationDto -> {
         if (IdGenerator.isValidId(reportLocationDto.getId())) {
           final String reportCopyId = uniqueReportCopies.computeIfAbsent(
             reportLocationDto.getId(),
