@@ -118,16 +118,23 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final Map<String, String> uniqueReportCopies = new HashMap<>();
       newDashboardReports.clear();
       dashboardDefinition.getReports().forEach(reportLocationDto -> {
-        final String reportCopyId = uniqueReportCopies.computeIfAbsent(
-          reportLocationDto.getId(),
-          reportId -> reportService.copyAndMoveReport(
-            reportLocationDto.getId(), userId, collectionId, uniqueReportCopies
-          ).getId()
-        );
+        if (IdGenerator.isValidId(reportLocationDto.getId())) {
+          final String reportCopyId = uniqueReportCopies.computeIfAbsent(
+            reportLocationDto.getId(),
+            reportId -> reportService.copyAndMoveReport(
+              reportLocationDto.getId(),
+              userId,
+              collectionId,
+              uniqueReportCopies
+            ).getId()
+          );
 
-        newDashboardReports.add(
-          reportLocationDto.toBuilder().id(reportCopyId).configuration(reportLocationDto.getConfiguration()).build()
-        );
+          newDashboardReports.add(
+            reportLocationDto.toBuilder().id(reportCopyId).configuration(reportLocationDto.getConfiguration()).build()
+          );
+        } else {
+          newDashboardReports.add(reportLocationDto);
+        }
       });
     }
 
@@ -175,7 +182,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDto(updatedDashboard, userId);
     final String dashboardCollectionId = dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
     updateDto.getReports().forEach(reportLocationDto -> {
-      if (IdGenerator.isValidId(reportLocationDto)) {
+      if (IdGenerator.isValidId(reportLocationDto.getId())) {
         final ReportDefinitionDto reportDefinition =
           reportService.getReportDefinition(reportLocationDto.getId(), userId).getDefinitionDto();
         if (!Objects.equals(dashboardCollectionId, reportDefinition.getCollectionId())) {

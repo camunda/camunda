@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -20,7 +18,7 @@ public class IdGenerator {
     return randomUUID.toString();
   }
 
-  public static boolean isValidId(final ReportLocationDto reportLocationDto) {
-    return IdGenerator.ID_PATTERN.matcher(reportLocationDto.getId()).matches();
+  public static boolean isValidId(final String id) {
+    return IdGenerator.ID_PATTERN.matcher(id).matches();
   }
 }

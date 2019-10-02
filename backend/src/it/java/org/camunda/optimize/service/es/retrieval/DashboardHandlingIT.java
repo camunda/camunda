@@ -36,6 +36,7 @@ import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFA
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.everyItem;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -131,6 +132,36 @@ public class DashboardHandlingIT {
       newReportIds,
       not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
     );
+  }
+
+  @Test
+  public void copyPrivateDashboardAndMoveToCollection_withExternalResource() {
+    // given
+    String dashboardId = addEmptyPrivateDashboard();
+    final String reportId = addEmptySingleProcessReport();
+    final String externalResource = "http://www.camunda.com";
+    addReportsToDashboard(dashboardId, reportId, externalResource);
+
+    final String collectionId = addEmptyCollectionToOptimize();
+
+    // when
+    IdDto copyId = copyDashboardToCollection(dashboardId, collectionId);
+
+    // then
+    DashboardDefinitionDto oldDashboard = getDashboardById(dashboardId);
+    DashboardDefinitionDto dashboard = getDashboardById(copyId.getId());
+    assertThat(dashboard.getName(), is(oldDashboard.getName() + " – Copy"));
+    assertThat(dashboard.getCollectionId(), is(collectionId));
+    assertThat(oldDashboard.getCollectionId(), is(nullValue()));
+
+    final List<String> newReportIds = dashboard.getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+
+    assertThat(newReportIds.isEmpty(), is(false));
+    assertThat(newReportIds, not(hasItem(reportId)));
+    assertThat(newReportIds, hasItem(externalResource));
   }
 
   @Test
