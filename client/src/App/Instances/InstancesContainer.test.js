@@ -432,8 +432,7 @@ describe('InstancesContainer', () => {
   });
 
   describe('reading url filter', () => {
-    // somehow it can't pass the condition in componentDidUpdate.
-    it.skip('should update filters on URL changes', async () => {
+    it('should update filters on URL changes', async () => {
       // given
       const routerProps = getRouterProps();
       const newRouterProps = getRouterProps(fullFilterWithWorkflow);
@@ -447,18 +446,16 @@ describe('InstancesContainer', () => {
       );
       const setFilterFromUrlSpy = jest.spyOn(node.instance(), 'setFilterInURL');
 
-      // when
       await flushPromises();
       node.update();
 
-      // when componentDidMount
-      expect(setFilterFromUrlSpy).toHaveBeenCalledTimes(1);
-
+      // when
       node.setProps({...newRouterProps});
       node.update();
 
       // when componentDidUpdate & Url changed
-      expect(setFilterFromUrlSpy).toHaveBeenCalledTimes(2);
+      expect(setFilterFromUrlSpy).toHaveBeenCalledTimes(1);
+      expect(setFilterFromUrlSpy).toHaveBeenCalledWith(fullFilterWithWorkflow);
     });
 
     describe('fixing an invalid filter in url', () => {
