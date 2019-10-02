@@ -147,11 +147,11 @@ func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
 }
 
 func applyZBClientEnvOverrides(config *ZBClientConfig) {
-	if insecureConn, found := os.LookupEnv(ZbInsecureEnvVar); found {
+	if insecureConn := env.get(ZbInsecureEnvVar); insecureConn != "" {
 		config.UsePlaintextConnection = (insecureConn == "true")
 	}
 
-	if caCertificatePath := os.Getenv(ZbCaCertificatePath); caCertificatePath != "" {
+	if caCertificatePath := env.get(ZbCaCertificatePath); caCertificatePath != "" {
 		config.CaCertificatePath = caCertificatePath
 	}
 }
@@ -178,7 +178,7 @@ func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOptio
 }
 
 func shouldUseDefaultCredentialsProvider() bool {
-	return os.Getenv(OAuthClientSecretEnvVar) != "" || os.Getenv(OAuthClientIdEnvVar) != ""
+	return env.get(OAuthClientSecretEnvVar) != "" || env.get(OAuthClientIdEnvVar) != ""
 }
 
 func setDefaultCredentialsProvider(config *ZBClientConfig) error {

@@ -14,13 +14,21 @@
 package zbc
 
 import (
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+type oauthCredsCacheTestSuite struct {
+	*envSuite
+}
+
+func TestOAuthCredsProviderCacheSuite(t *testing.T) {
+	suite.Run(t, oauthCredsCacheTestSuite{new(envSuite)})
+}
 
 const wombatAudience = "wombat.cloud.camunda.io"
 
@@ -54,16 +62,16 @@ func init() {
 	}
 }
 
-func TestReadCacheGoldenFile(t *testing.T) {
+func (s *oauthCredsCacheTestSuite) TestReadCacheGoldenFile() {
 	cachePath := copyCredentialsCacheGoldenFileToTempFile()
 	cache, err := NewOAuthYamlCredentialsCache(cachePath)
 
-	require.NoError(t, err)
-	require.EqualValues(t, wombat, cache.Get(wombatAudience))
-	require.EqualValues(t, aardvark, cache.Get(aardvarkAudience))
+	s.NoError(err)
+	s.EqualValues(wombat, cache.Get(wombatAudience))
+	s.EqualValues(aardvark, cache.Get(aardvarkAudience))
 }
 
-func TestWriteCacheGoldenFile(t *testing.T) {
+func (s *oauthCredsCacheTestSuite) TestWriteCacheGoldenFile() {
 	capybaraAudience := "capybara.cloud.camunda.io"
 	capybara := &OAuthCredentials{
 		AccessToken: "capybara",
@@ -73,31 +81,31 @@ func TestWriteCacheGoldenFile(t *testing.T) {
 	}
 	cachePath := copyCredentialsCacheGoldenFileToTempFile()
 	cache, err := NewOAuthYamlCredentialsCache(cachePath)
-	require.NoError(t, err)
+	s.NoError(err)
 
 	err = cache.Update(capybaraAudience, capybara)
-	require.NoError(t, err)
+	s.NoError(err)
 
 	cacheCopy, _ := NewOAuthYamlCredentialsCache(cachePath)
 	err = cacheCopy.readCache()
-	require.NoError(t, err)
-	require.EqualValues(t, wombat, cacheCopy.Get(wombatAudience))
-	require.EqualValues(t, aardvark, cacheCopy.Get(aardvarkAudience))
-	require.EqualValues(t, capybara, cacheCopy.Get(capybaraAudience))
+	s.NoError(err)
+	s.EqualValues(wombat, cacheCopy.Get(wombatAudience))
+	s.EqualValues(aardvark, cacheCopy.Get(aardvarkAudience))
+	s.EqualValues(capybara, cacheCopy.Get(capybaraAudience))
 }
 
-func TestOAuthYamlCredentialsCacheDefaultPath(t *testing.T) {
+func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCacheDefaultPath() {
 	cache, err := NewOAuthYamlCredentialsCache("")
-	require.NoError(t, err)
-	require.Equal(t, DefaultOauthYamlCachePath, cache.path)
+	s.NoError(err)
+	s.Equal(DefaultOauthYamlCachePath, cache.path)
 }
 
-func TestOAuthYamlCredentialsCacheGetDefaultPath(t *testing.T) {
+func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCacheGetDefaultPath() {
 	path := getDefaultOAuthYamlCredentialsCachePath()
-	require.True(t, strings.HasSuffix(path, getDefaultOAuthYamlCredentialsCacheRelativePath()), "Expected %v to end with %v", path, getDefaultOAuthYamlCredentialsCacheRelativePath())
+	s.True(strings.HasSuffix(path, getDefaultOAuthYamlCredentialsCacheRelativePath()), "Expected %v to end with %v", path, getDefaultOAuthYamlCredentialsCacheRelativePath())
 }
 
-func TestOAuthYamlCredentialsCachePathFromEnvironment(t *testing.T) {
+func (s *oauthCredsCacheTestSuite) TestOAuthYamlCredentialsCachePathFromEnvironment() {
 	fakePath := copyCredentialsCacheGoldenFileToTempFile()
 	file, err := ioutil.TempFile("", ".envCache")
 	if err != nil {
@@ -105,12 +113,12 @@ func TestOAuthYamlCredentialsCachePathFromEnvironment(t *testing.T) {
 	}
 	defer file.Close()
 
-	err = os.Setenv(OAuthCachePathEnvVar, file.Name())
-	defer os.Unsetenv(OAuthCachePathEnvVar)
+	env.set(OAuthCachePathEnvVar, file.Name())
+
 	cache, err := NewOAuthYamlCredentialsCache(fakePath)
-	require.NoError(t, err)
-	require.Equal(t, file.Name(), cache.path)
-	require.Empty(t, cache.audiences)
+	s.NoError(err)
+	s.Equal(file.Name(), cache.path)
+	s.Empty(cache.audiences)
 }
 
 func copyCredentialsCacheGoldenFileToTempFile() string {
