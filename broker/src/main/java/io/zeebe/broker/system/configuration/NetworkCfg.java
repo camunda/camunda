@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_ADVERTISED_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 
@@ -15,6 +16,7 @@ import io.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg.MonitoringApiCfg;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.Environment;
+import java.util.Optional;
 
 public class NetworkCfg implements ConfigurationEntry {
 
@@ -27,6 +29,7 @@ public class NetworkCfg implements ConfigurationEntry {
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
   private String maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
+  private String advertisedHost;
 
   private CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -44,6 +47,7 @@ public class NetworkCfg implements ConfigurationEntry {
   private void applyEnvironment(final Environment environment) {
     environment.get(ENV_HOST).ifPresent(this::setHost);
     environment.getInt(ENV_PORT_OFFSET).ifPresent(this::setPortOffset);
+    environment.get(ENV_ADVERTISED_HOST).ifPresent(this::setAdvertisedHost);
   }
 
   public String getHost() {
@@ -52,6 +56,14 @@ public class NetworkCfg implements ConfigurationEntry {
 
   public void setHost(final String host) {
     this.host = host;
+  }
+
+  public void setAdvertisedHost(final String advertisedHost) {
+    this.advertisedHost = advertisedHost;
+  }
+
+  public String getAdvertisedHost() {
+    return Optional.ofNullable(advertisedHost).orElse(getHost());
   }
 
   public int getPortOffset() {
@@ -70,12 +82,8 @@ public class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
-  public SocketBindingCfg getCommandApi() {
+  public CommandApiCfg getCommandApi() {
     return commandApi;
-  }
-
-  public void setCommandApi(final CommandApiCfg commandApi) {
-    this.commandApi = commandApi;
   }
 
   public SocketBindingCfg getMonitoringApi() {
