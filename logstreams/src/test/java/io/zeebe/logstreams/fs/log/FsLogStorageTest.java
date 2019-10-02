@@ -414,6 +414,42 @@ public class FsLogStorageTest {
   }
 
   @Test
+  public void shouldReadLastEntryAfterCompaction() throws IOException {
+    // given
+    final int entrySize = (SEGMENT_SIZE - FsLogSegmentDescriptor.METADATA_LENGTH) / 4;
+    final ByteBuffer readBuffer = ByteBuffer.allocate(entrySize);
+    final byte[] oneEntry = new byte[entrySize];
+    new Random().nextBytes(oneEntry);
+
+    fsLogStorage.open();
+
+    long addressToDelete = 0;
+    // fill one segment
+    for (int i = 0; i < SEGMENT_SIZE / oneEntry.length; i++) {
+      Arrays.fill(oneEntry, (byte) i);
+      addressToDelete = fsLogStorage.append(ByteBuffer.wrap(oneEntry));
+    }
+
+    // write more on next segment
+    fsLogStorage.append(ByteBuffer.wrap(oneEntry));
+
+    final byte[] lastEntry = new byte[entrySize];
+    new Random().nextBytes(lastEntry);
+
+    final long address = fsLogStorage.append(ByteBuffer.wrap(lastEntry));
+
+    // when
+    // then delete one segment
+    fsLogStorage.delete(addressToDelete);
+
+    final long result = fsLogStorage.readLastBlock(readBuffer, (buffer, bytesRead) -> bytesRead);
+
+    // then
+    assertThat(result).isEqualTo(address + lastEntry.length);
+    assertThat(readBuffer.array()).isEqualTo(lastEntry);
+  }
+
+  @Test
   public void shouldReadLastEntryWithProcessorAndLargerReadBuffer() throws IOException {
     // given
     final ByteBuffer readBuffer = ByteBuffer.allocate(MSG.length * 2);
