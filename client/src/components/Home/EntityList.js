@@ -98,12 +98,16 @@ export default withErrorHandling(
             this.props.onChange();
           }
         },
-        error => {
-          showError(error);
-        }
+        showError
       );
       this.closeCopyModal();
     };
+
+    componentDidUpdate() {
+      if (this.state.redirect) {
+        this.setState({redirect: false});
+      }
+    }
 
     startEditingCollection = editingCollection => {
       this.setState({editingCollection});

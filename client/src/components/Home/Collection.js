@@ -37,6 +37,12 @@ export default withErrorHandling(
       this.loadCollection();
     }
 
+    componentDidUpdate(prevProps) {
+      if (prevProps.match.params.id !== this.props.match.params.id) {
+        this.loadCollection();
+      }
+    }
+
     loadCollection = () => {
       this.props.mightFail(
         loadEntity('collection', this.props.match.params.id),
