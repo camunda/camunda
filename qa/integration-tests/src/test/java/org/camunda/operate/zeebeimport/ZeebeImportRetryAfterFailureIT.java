@@ -9,12 +9,14 @@ import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.apps.retry_after_failure.RetryAfterFailureTestConfig;
 import org.junit.After;
+import org.junit.Ignore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * Tests that after one failure of specific batch import, it will be successfully retried.
  */
+@Ignore("OPE-579")
 @SpringBootTest(
   classes = {RetryAfterFailureTestConfig.class, TestApplication.class},
   properties = {OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false", "spring.main.allow-bean-definition-overriding=true"})
