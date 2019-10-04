@@ -75,18 +75,23 @@ export default themed(
 
           const {report, disableNameLink, disableReportScrolling, children = () => {}} = this.props;
 
+          const reportName = this.getName();
+
           return (
             <div className="DashboardReport__wrapper">
               <div className="OptimizeReport__header">
                 {disableNameLink ? (
-                  <span className="OptimizeReport__heading">{this.getName()}</span>
+                  <span className="OptimizeReport__heading" title={reportName}>
+                    {reportName}
+                  </span>
                 ) : (
                   <Link
                     to={`${this.props.location.pathname}report/${report.id}/`}
                     onClick={this.exitDarkmode}
                     className="OptimizeReport__heading"
+                    title={reportName}
                   >
-                    {this.getName()}
+                    {reportName}
                   </Link>
                 )}
               </div>

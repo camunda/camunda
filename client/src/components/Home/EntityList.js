@@ -242,7 +242,9 @@ export default withErrorHandling(
               <ListItem.Section className="icon">{getEntityIcon(entityType)}</ListItem.Section>
               <ListItem.Section className="name">
                 <div className="type">{formatType(entityType, reportType, combined)}</div>
-                <div className="entityName">{name}</div>
+                <div className="entityName" title={name}>
+                  {name}
+                </div>
               </ListItem.Section>
               <ListItem.Section className="containedEntities">
                 {formatSubEntities(data.subEntityCounts)}

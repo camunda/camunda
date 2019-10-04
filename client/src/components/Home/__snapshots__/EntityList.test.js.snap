@@ -57,6 +57,7 @@ exports[`should match snapshot 1`] = `
             </div>
             <div
               className="entityName"
+              title="aCollectionName"
             >
               aCollectionName
             </div>
@@ -129,6 +130,7 @@ exports[`should match snapshot 1`] = `
             </div>
             <div
               className="entityName"
+              title="aDashboard"
             >
               aDashboard
             </div>
@@ -207,6 +209,7 @@ exports[`should match snapshot 1`] = `
             </div>
             <div
               className="entityName"
+              title="aReport"
             >
               aReport
             </div>
