@@ -45,7 +45,7 @@ it('should show the name of the Entity to delete', () => {
   };
   const node = shallow(<ConfirmationModal {...props} />);
 
-  expect(node.find(Modal.Header).dive()).toIncludeText('test');
+  expect(node.find(Modal.Header).html()).toMatch('Delete test');
   expect(node.find('Modal').props().open).toBeTruthy();
 });
 

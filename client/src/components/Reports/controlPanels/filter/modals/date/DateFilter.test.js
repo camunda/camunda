@@ -93,27 +93,17 @@ it('shoud show a warning message if the modal is for end date filter', () => {
 it('shoud make difference between start and end date filter modals', () => {
   const endDateModal = shallow(<DateFilter filterType="endDate" />);
 
-  expect(endDateModal.find(Modal.Header).dive()).toIncludeText('Add End Date Filter');
+  expect(endDateModal.find(Modal.Header).html()).toMatch('Add End Date Filter');
 
   endDateModal.instance().setState({
     mode: 'dynamic'
   });
 
-  expect(
-    endDateModal
-      .find(Modal.Header)
-      .dive()
-      .text()
-  ).toBe('Add End Date Filter');
+  expect(endDateModal.find(Modal.Header).html()).toMatch('Add End Date Filter');
 
   const startDateModal = shallow(<DateFilter filterType="startDate" />);
 
-  expect(
-    startDateModal
-      .find(Modal.Header)
-      .dive()
-      .text()
-  ).toBe('Add Start Date Filter');
+  expect(startDateModal.find(Modal.Header).html()).toMatch('Add Start Date Filter');
 
   startDateModal.instance().setState({
     mode: 'dynamic'

@@ -42,6 +42,7 @@ it('should not call the onClose function when modal content is clicked', () => {
     </Modal>
   );
 
+  node.instance().insideClick = true;
   node.find('button').simulate('click');
 
   expect(spy).not.toHaveBeenCalled();

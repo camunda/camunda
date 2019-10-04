@@ -10,12 +10,20 @@ import classnames from 'classnames';
 
 import './Modal.scss';
 
+const ModalContext = React.createContext({});
+
 export default class Modal extends React.Component {
   constructor(props) {
     super(props);
     this.el = document.createElement('div');
     this.focusTrap = React.createRef();
     this.container = React.createRef();
+    this.modalContext = {
+      onClose: () => {
+        const handler = this.props.onClose;
+        handler && handler();
+      }
+    };
   }
 
   componentDidMount() {
@@ -69,15 +77,17 @@ export default class Modal extends React.Component {
 
   onBackdropClick = evt => {
     evt.stopPropagation();
+    if (this.insideClick) {
+      this.insideClick = false;
+      return;
+    }
 
     const handler = this.props.onClose;
     handler && handler();
   };
 
-  catchClick = evt => {
-    if (!evt.nativeEvent.isCloseEvent) {
-      evt.stopPropagation();
-    }
+  onMouseDown = evt => {
+    this.insideClick = true;
   };
 
   handleKeyPress = evt => {
@@ -99,23 +109,25 @@ export default class Modal extends React.Component {
 
     if (open) {
       return ReactDOM.createPortal(
-        <div className="Modal" role="dialog" onClick={this.onBackdropClick}>
-          <div className="Modal__scroll-container">
-            <div tabIndex="0" onFocus={() => this.focusTrap.current.focus()} />
-            <div
-              className={classnames('Modal__content-container', this.props.className, {
-                ['Modal__content-container--' + this.props.size]: this.props.size
-              })}
-              tabIndex="-1"
-              ref={this.container}
-              onClick={this.catchClick}
-            >
-              {children}
+        <ModalContext.Provider value={this.modalContext}>
+          <div className="Modal" role="dialog" onClick={this.onBackdropClick}>
+            <div className="Modal__scroll-container">
+              <div tabIndex="0" onFocus={() => this.focusTrap.current.focus()} />
+              <div
+                className={classnames('Modal__content-container', this.props.className, {
+                  ['Modal__content-container--' + this.props.size]: this.props.size
+                })}
+                tabIndex="-1"
+                ref={this.container}
+                onMouseDown={this.onMouseDown}
+              >
+                {children}
+              </div>
+              <div tabIndex="-1" ref={this.focusTrap} />
+              <div tabIndex="0" onFocus={() => this.container.current.focus()} />
             </div>
-            <div tabIndex="-1" ref={this.focusTrap} />
-            <div tabIndex="0" onFocus={() => this.container.current.focus()} />
           </div>
-        </div>,
+        </ModalContext.Provider>,
         this.el
       );
     }
@@ -134,13 +146,14 @@ export default class Modal extends React.Component {
 
 Modal.Header = function({children}) {
   return (
-    <div className="Modal__header">
-      <h1 className="Modal__heading">{children}</h1>
-      <button
-        className="Modal__close-button"
-        onClick={evt => (evt.nativeEvent.isCloseEvent = true)}
-      />
-    </div>
+    <ModalContext.Consumer>
+      {({onClose}) => (
+        <div className="Modal__header">
+          <h1 className="Modal__heading">{children}</h1>
+          <button className="Modal__close-button" onClick={onClose} />
+        </div>
+      )}
+    </ModalContext.Consumer>
   );
 };
 
