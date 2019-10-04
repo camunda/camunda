@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.CredentialsDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -94,8 +93,6 @@ public class PostMigrationTest {
     assertThat(response.getStatus(), is(200));
   }
 
-  // ignored for now as with OPT-2627 existing alerts from older generators are not visible to demo user
-  @Ignore
   @Test
   public void retrieveAlerts() {
     Response response = client.target("http://localhost:8090/api/alert")
