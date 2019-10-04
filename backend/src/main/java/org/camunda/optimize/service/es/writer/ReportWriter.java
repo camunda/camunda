@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
@@ -48,9 +49,17 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COMBINED;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.CREATED;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.LAST_MODIFIED;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.LAST_MODIFIER;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.NAME;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.REPORT_TYPE;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORT_ITEM_ID;
@@ -68,6 +77,8 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Slf4j
 public class ReportWriter {
   private static final String DEFAULT_REPORT_NAME = "New Report";
+  private static final Set<String> UPDATABLE_FIELDS = ImmutableSet.of(
+    NAME, DATA, LAST_MODIFIED, LAST_MODIFIER, CREATED, OWNER, COLLECTION_ID, COMBINED, REPORT_TYPE);
 
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
@@ -219,9 +230,10 @@ public class ReportWriter {
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
     log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
+      Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(UPDATABLE_FIELDS, updatedReport, objectMapper);
       final UpdateRequest request =
         new UpdateRequest(elasticsearchType, elasticsearchType, updatedReport.getId())
-          .script(buildUpdateScript(updatedReport))
+          .script(updateScript)
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
@@ -252,8 +264,9 @@ public class ReportWriter {
   public void deleteSingleReport(final String reportId) {
     log.debug("Deleting single report with id [{}]", reportId);
 
-    DeleteByQueryRequest request = new DeleteByQueryRequest(SINGLE_PROCESS_REPORT_INDEX_NAME,
-                                                            SINGLE_DECISION_REPORT_INDEX_NAME
+    DeleteByQueryRequest request = new DeleteByQueryRequest(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      SINGLE_DECISION_REPORT_INDEX_NAME
     )
       .setQuery(idsQuery().addIds(reportId))
       .setRefresh(true);
@@ -379,31 +392,4 @@ public class ReportWriter {
       collectionId
     );
   }
-
-
-  private Script buildUpdateScript(final ReportDefinitionUpdateDto updateDto) {
-    final Map<String, Object> parameterMap = mapToParameterSet(updateDto);
-    return new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      createUpdateAllParameterEntriesAsFieldsScript(parameterMap),
-      parameterMap
-    );
-  }
-
-  private String createUpdateAllParameterEntriesAsFieldsScript(final Map<String, Object> parameterMap) {
-    return parameterMap.keySet().stream()
-      .filter(parameterName -> !"id".equals(parameterName))
-      .map(parameterName -> new StringSubstitutor(ImmutableMap.of("fieldName", parameterName))
-        .replace(
-          "ctx._source.${fieldName} = params.${fieldName} != null ? params.${fieldName} : ctx._source.${fieldName};"
-        )
-      ).collect(Collectors.joining());
-  }
-
-  @SuppressWarnings(value = "unchecked")
-  private Map<String, Object> mapToParameterSet(final ReportDefinitionUpdateDto updateDto) {
-    return objectMapper.convertValue(updateDto, Map.class);
-  }
-
 }

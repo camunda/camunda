@@ -8,12 +8,9 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.beanutils.PropertyUtils;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 
-import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
@@ -27,34 +24,22 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 public class ElasticsearchWriterUtil {
   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
-  static Script createPrimitiveFieldUpdateScript(final Set<String> fields,
-                                                 final Object entityDto) {
-    final Map<String, Object> params = new HashMap<>();
-    for (String fieldName : fields) {
-      try {
-        Object fieldValue = PropertyUtils.getProperty(entityDto, fieldName);
-        if (fieldValue instanceof TemporalAccessor) {
-          fieldValue = dateTimeFormatter.format((TemporalAccessor) fieldValue);
-        }
-        params.put(fieldName, fieldValue);
-      } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-        throw new OptimizeRuntimeException("Could not read field from entity: " + fieldName, e);
-      }
-    }
-
-    return createDefaultScript(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
-  }
-
   static Script createFieldUpdateScript(final Set<String> fields,
                                         final Object entityDto,
                                         final ObjectMapper objectMapper) {
     Map<String, Object> entityAsMap =
-      objectMapper.convertValue(entityDto, new TypeReference<Map<String, Object>>() {});
-
-    Map<String, Object> params = entityAsMap.entrySet()
-      .stream()
-      .filter(e -> fields.contains(e.getKey()))
-      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+      objectMapper.convertValue(entityDto, new TypeReference<Map<String, Object>>() {
+      });
+    final Map<String, Object> params = new HashMap<>();
+    for (String fieldName : fields) {
+      Object fieldValue = entityAsMap.get(fieldName);
+      if (fieldValue != null) {
+        if (fieldValue instanceof TemporalAccessor) {
+          fieldValue = dateTimeFormatter.format((TemporalAccessor) fieldValue);
+        }
+        params.put(fieldName, fieldValue);
+      }
+    }
 
     return createDefaultScript(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
   }

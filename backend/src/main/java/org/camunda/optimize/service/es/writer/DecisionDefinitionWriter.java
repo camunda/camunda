@@ -60,9 +60,10 @@ public class DecisionDefinitionWriter {
     for (DecisionDefinitionOptimizeDto decisionDefinition : decisionDefinitionOptimizeDtos) {
       final String id = decisionDefinition.getId();
 
-      final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+      final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
         FIELDS_TO_UPDATE,
-        decisionDefinition
+        decisionDefinition,
+        objectMapper
       );
       final UpdateRequest request = new UpdateRequest(DECISION_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME, id)
         .script(updateScript)

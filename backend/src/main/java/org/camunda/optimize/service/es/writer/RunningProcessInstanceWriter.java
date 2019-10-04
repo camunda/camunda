@@ -69,16 +69,18 @@ public class RunningProcessInstanceWriter {
     throws JsonProcessingException {
     final String processInstanceId = procInst.getProcessInstanceId();
 
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       PRIMITIVE_UPDATABLE_FIELDS,
-      procInst
+      procInst,
+      objectMapper
     );
 
     final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
 
     final UpdateRequest request = new UpdateRequest(
       PROCESS_INSTANCE_INDEX_NAME,
-      PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
+      PROCESS_INSTANCE_INDEX_NAME, processInstanceId
+    )
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON);
 

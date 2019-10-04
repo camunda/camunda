@@ -81,7 +81,7 @@ public class ProcessDefinitionWriter {
   private void addUpdateRequestForEachDefinition(List<ProcessDefinitionOptimizeDto> procDefs, BulkRequest bulkRequest) {
     for (ProcessDefinitionOptimizeDto procDef : procDefs) {
       final String id = procDef.getId();
-      final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, procDef);
+      final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, procDef, objectMapper);
       final UpdateRequest request = new UpdateRequest(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_INDEX_NAME, id)
           .script(updateScript)
           .upsert(objectMapper.convertValue(procDef, Map.class))

@@ -137,15 +137,17 @@ public class CompletedProcessInstanceWriter {
       log.warn("End date should not be null for completed process instances!");
     }
 
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
-      PRIMITIVE_UPDATABLE_FIELDS,
-      procInst
-    );
     final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+      PRIMITIVE_UPDATABLE_FIELDS,
+      procInst,
+      objectMapper
+    );
     final String processInstanceId = procInst.getProcessInstanceId();
     UpdateRequest request = new UpdateRequest(
       PROCESS_INSTANCE_INDEX_NAME,
-      PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
+      PROCESS_INSTANCE_INDEX_NAME, processInstanceId
+    )
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

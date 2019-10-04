@@ -70,9 +70,10 @@ public class ProcessDefinitionXmlWriter {
 
   private void addImportProcessDefinitionXmlRequest(final BulkRequest bulkRequest,
                                                     final ProcessDefinitionOptimizeDto processDefinitionDto) {
-    final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       FIELDS_TO_UPDATE,
-      processDefinitionDto
+      processDefinitionDto,
+      objectMapper
     );
     final UpdateRequest updateRequest = new UpdateRequest(
       PROCESS_DEFINITION_INDEX_NAME,

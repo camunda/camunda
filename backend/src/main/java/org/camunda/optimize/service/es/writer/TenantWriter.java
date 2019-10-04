@@ -61,7 +61,11 @@ public class TenantWriter {
   private void addUpsertsForEachDto(final List<TenantDto> tenantDtos, final BulkRequest bulkRequest) {
     for (TenantDto tenantDto : tenantDtos) {
       final String id = tenantDto.getId();
-      final Script updateScript = ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto);
+      final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+        FIELDS_TO_UPDATE,
+        tenantDto,
+        objectMapper
+      );
       final UpdateRequest request =
         new UpdateRequest(TENANT_INDEX_NAME, TENANT_INDEX_NAME, id)
           .script(updateScript)
