@@ -1,0 +1,2 @@
+[network.commandApi]
+advertisedHost = "zeebe.io"

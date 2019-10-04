@@ -252,8 +252,7 @@ public class ClusteringRule extends ExternalResource {
       // all nodes have to join the same broker
       // https://github.com/zeebe-io/zeebe/issues/2012
 
-      setInitialContactPoints(
-              getBrokerCfg(0).getNetwork().getInternalApi().toSocketAddress().toString())
+      setInitialContactPoints(getBrokerCfg(0).getNetwork().getInternalApi().getAddress().toString())
           .accept(brokerCfg);
     }
 
@@ -278,7 +277,7 @@ public class ClusteringRule extends ExternalResource {
 
   private Gateway createGateway() {
     final String contactPoint =
-        getBrokerCfg(0).getNetwork().getInternalApi().toSocketAddress().toString();
+        getBrokerCfg(0).getNetwork().getInternalApi().getAddress().toString();
 
     final GatewayCfg gatewayCfg = new GatewayCfg();
     gatewayCfg.getCluster().setContactPoint(contactPoint).setClusterName(clusterName);
@@ -333,7 +332,7 @@ public class ClusteringRule extends ExternalResource {
     final Set<SocketAddress> addresses =
         brokers.values().stream()
             .map(Broker::getConfig)
-            .map(b -> b.getNetwork().getCommandApi().toSocketAddress())
+            .map(b -> b.getNetwork().getCommandApi().getAddress())
             .collect(Collectors.toSet());
 
     waitForTopology(
@@ -419,8 +418,7 @@ public class ClusteringRule extends ExternalResource {
   public void restartBroker(final int nodeId) {
     stopBroker(nodeId);
     final Broker broker = getBroker(nodeId);
-    final SocketAddress commandApi =
-        broker.getConfig().getNetwork().getCommandApi().toSocketAddress();
+    final SocketAddress commandApi = broker.getConfig().getNetwork().getCommandApi().getAddress();
     waitUntilBrokerIsAddedToTopology(commandApi);
     waitForPartitionReplicationFactor();
   }
@@ -472,14 +470,13 @@ public class ClusteringRule extends ExternalResource {
 
   public SocketAddress[] getOtherBrokers(final SocketAddress address) {
     return getBrokers().stream()
-        .map(b -> b.getConfig().getNetwork().getCommandApi().toSocketAddress())
+        .map(b -> b.getConfig().getNetwork().getCommandApi().getAddress())
         .filter(a -> !address.equals(a))
         .toArray(SocketAddress[]::new);
   }
 
   public SocketAddress[] getOtherBrokers(final int nodeId) {
-    final SocketAddress filter =
-        getBrokerCfg(nodeId).getNetwork().getCommandApi().toSocketAddress();
+    final SocketAddress filter = getBrokerCfg(nodeId).getNetwork().getCommandApi().getAddress();
     return getOtherBrokers(filter);
   }
 
@@ -499,7 +496,7 @@ public class ClusteringRule extends ExternalResource {
     final Broker broker = brokers.remove(nodeId);
     if (broker != null) {
       final SocketAddress socketAddress =
-          broker.getConfig().getNetwork().getCommandApi().toSocketAddress();
+          broker.getConfig().getNetwork().getCommandApi().getAddress();
       final List<Integer> brokersLeadingPartitions = getBrokersLeadingPartitions(socketAddress);
       broker.close();
 

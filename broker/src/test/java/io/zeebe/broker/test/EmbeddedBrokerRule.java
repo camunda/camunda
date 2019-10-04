@@ -171,7 +171,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public SocketAddress getCommandAdress() {
-    return brokerCfg.getNetwork().getCommandApi().toSocketAddress();
+    return brokerCfg.getNetwork().getCommandApi().getAddress();
   }
 
   public SocketAddress getGatewayAddress() {

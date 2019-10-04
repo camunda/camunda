@@ -58,7 +58,7 @@ public class BrokerShutdownTest {
     // then
     final NetworkCfg networkCfg = broker.getBrokerContext().getBrokerConfiguration().getNetwork();
 
-    tryToBindSocketAddress(networkCfg.getCommandApi().toSocketAddress());
+    tryToBindSocketAddress(networkCfg.getCommandApi().getAddress());
   }
 
   private void tryToBindSocketAddress(SocketAddress socketAddress) {

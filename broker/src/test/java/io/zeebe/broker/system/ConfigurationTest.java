@@ -13,6 +13,7 @@ import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_NODE_ID;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_PARTITIONS_COUNT;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_ADVERTISED_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_NAME;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_SIZE;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DEBUG_EXPORTER;
@@ -446,6 +447,37 @@ public class ConfigurationTest {
     assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT);
   }
 
+  @Test
+  public void shouldUseDefaultAdvertisedHost() {
+    // when - then
+    assertAdvertisedAddress(
+        "default-advertised-host-cfg", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
+    assertHost("default-advertised-host-cfg", "0.0.0.0");
+  }
+
+  @Test
+  public void shouldUseAdvertisedHost() {
+    // when - then
+    assertAdvertisedAddress("advertised-host-cfg", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
+    assertHost("advertised-host-cfg", "0.0.0.0");
+  }
+
+  @Test
+  public void shouldUseAdvertisedAddress() {
+    // when - then
+    assertAdvertisedAddress("advertised-address-cfg", "zeebe.io", 8080);
+  }
+
+  @Test
+  public void shouldUseDefaultAdvertisedHostFromEnv() {
+    // given
+    environment.put(ENV_ADVERTISED_HOST, "zeebe.io");
+
+    // then
+    assertAdvertisedAddress("default", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
+    assertAdvertisedAddress("empty", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -468,7 +500,7 @@ public class ConfigurationTest {
     assertThat(cfg.getCluster().getNodeId()).isEqualTo(nodeId);
   }
 
-  private void assertDefaultClusterName(String clusterName) {
+  private void assertDefaultClusterName(final String clusterName) {
     assertClusterName("default", clusterName);
     assertClusterName("empty", clusterName);
   }
@@ -487,7 +519,8 @@ public class ConfigurationTest {
       final String configFileName, final int command, final int internal, final int monitoring) {
     final BrokerCfg brokerCfg = readConfig(configFileName);
     final NetworkCfg network = brokerCfg.getNetwork();
-    assertThat(network.getCommandApi().getPort()).isEqualTo(command);
+    assertThat(network.getCommandApi().getAddress().port()).isEqualTo(command);
+    assertThat(network.getCommandApi().getAdvertisedAddress().port()).isEqualTo(command);
     assertThat(network.getInternalApi().getPort()).isEqualTo(internal);
     assertThat(network.getMonitoringApi().getPort()).isEqualTo(monitoring);
   }
@@ -512,9 +545,23 @@ public class ConfigurationTest {
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
     assertThat(networkCfg.getHost()).isEqualTo(host);
     assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
-    assertThat(networkCfg.getCommandApi().getHost()).isEqualTo(command);
+    assertThat(networkCfg.getCommandApi().getAddress().host()).isEqualTo(command);
     assertThat(networkCfg.getInternalApi().getHost()).isEqualTo(internal);
     assertThat(networkCfg.getMonitoringApi().getHost()).isEqualTo(monitoring);
+  }
+
+  private void assertAdvertisedHost(final String configFileName, final String host) {
+    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final NetworkCfg networkCfg = brokerCfg.getNetwork();
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().host()).isEqualTo(host);
+  }
+
+  private void assertAdvertisedAddress(
+      final String configFileName, final String host, final int port) {
+    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final NetworkCfg networkCfg = brokerCfg.getNetwork();
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().host()).isEqualTo(host);
+    assertThat(networkCfg.getCommandApi().getAdvertisedAddress().port()).isEqualTo(port);
   }
 
   private void assertDefaultContactPoints(final String... contactPoints) {
@@ -553,22 +600,22 @@ public class ConfigurationTest {
     assertThat(cfg.getDirectories()).containsExactlyElementsOf(expected);
   }
 
-  private void assertDefaultEmbeddedGatewayEnabled(boolean enabled) {
+  private void assertDefaultEmbeddedGatewayEnabled(final boolean enabled) {
     assertEmbeddedGatewayEnabled("default", enabled);
     assertEmbeddedGatewayEnabled("empty", enabled);
   }
 
-  private void assertEmbeddedGatewayEnabled(String configFileName, boolean enabled) {
+  private void assertEmbeddedGatewayEnabled(final String configFileName, final boolean enabled) {
     final EmbeddedGatewayCfg gatewayCfg = readConfig(configFileName).getGateway();
     assertThat(gatewayCfg.isEnable()).isEqualTo(enabled);
   }
 
-  private void assertDefaultDebugLogExporter(boolean prettyPrint) {
+  private void assertDefaultDebugLogExporter(final boolean prettyPrint) {
     assertDebugLogExporter("default", prettyPrint);
     assertDebugLogExporter("empty", prettyPrint);
   }
 
-  private void assertDebugLogExporter(String configFileName, boolean prettyPrint) {
+  private void assertDebugLogExporter(final String configFileName, final boolean prettyPrint) {
     final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
     final BrokerCfg brokerCfg = readConfig(configFileName);
 
@@ -578,11 +625,11 @@ public class ConfigurationTest {
   }
 
   private void assertDefaultSystemClusterConfiguration(
-      int nodeId,
-      int partitionsCount,
-      int replicationFactor,
-      int clusterSize,
-      List<String> initialContactPoints) {
+      final int nodeId,
+      final int partitionsCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final List<String> initialContactPoints) {
     assertSystemClusterConfiguration(
         "default", nodeId, partitionsCount, replicationFactor, clusterSize, initialContactPoints);
     assertSystemClusterConfiguration(
@@ -590,12 +637,12 @@ public class ConfigurationTest {
   }
 
   private void assertSystemClusterConfiguration(
-      String configFileName,
-      int nodeId,
-      int partitionsCount,
-      int replicationFactor,
-      int clusterSize,
-      List<String> initialContactPoints) {
+      final String configFileName,
+      final int nodeId,
+      final int partitionsCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final List<String> initialContactPoints) {
     final BrokerCfg cfg = readConfig(configFileName);
     final ClusterCfg cfgCluster = cfg.getCluster();
 

@@ -75,7 +75,7 @@ public class TransportComponent implements Component {
       final NetworkCfg networkCfg,
       final CommandApiMessageHandler commandApiMessageHandler) {
 
-    final SocketAddress bindAddr = networkCfg.getCommandApi().toSocketAddress();
+    final SocketAddress bindAddr = networkCfg.getCommandApi().getAddress();
 
     return createServerTransport(
         systemContext,
