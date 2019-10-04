@@ -47,7 +47,6 @@ public class PushDeploymentRequestHandler
   private final Int2ObjectHashMap<Partition> leaderPartitions;
   private final ActorControl actor;
   private final Atomix atomix;
-  private final PushDeploymentResponse deploymentResponse = new PushDeploymentResponse();
 
   public PushDeploymentRequestHandler(
       final Int2ObjectHashMap<Partition> leaderPartitions,
@@ -95,7 +94,7 @@ public class PushDeploymentRequestHandler
 
   @Override
   public void sendDeploymentResponse(final long deploymentKey, final int partitionId) {
-    deploymentResponse.reset();
+    final PushDeploymentResponse deploymentResponse = new PushDeploymentResponse();
     deploymentResponse.deploymentKey(deploymentKey).partitionId(partitionId);
     final String topic = DeploymentDistributorImpl.getDeploymentResponseTopic(deploymentKey);
 

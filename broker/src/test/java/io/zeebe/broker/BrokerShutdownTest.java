@@ -5,10 +5,8 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.it.shutdown;
+package io.zeebe.broker;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.transport.TransportServiceNames;
@@ -23,20 +21,13 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
 
 public class BrokerShutdownTest {
 
   private static final ServiceName<Void> BLOCK_BROKER_SERVICE_NAME =
       ServiceName.newServiceName("blockService", Void.class);
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-
-  @Rule public Timeout timeout = Timeout.seconds(60);
+  @Rule public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   @Test
   public void shouldReleaseSockets() {

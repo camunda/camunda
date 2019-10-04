@@ -5,9 +5,10 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.it;
+package io.zeebe.broker.it.util;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.it.clustering.ClusteringRule;
@@ -20,6 +21,7 @@ import io.zeebe.client.api.response.Topology;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -27,6 +29,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
@@ -116,15 +119,36 @@ public class GrpcClientRule extends ExternalResource {
 
   public long createSingleJob(
       String type, Consumer<ServiceTaskBuilder> consumer, String variables) {
+    return createJobs(type, consumer, variables, 1).get(0);
+  }
+
+  public List<Long> createJobs(String type, int amount) {
+    return createJobs(type, b -> {}, "{}", amount);
+  }
+
+  public List<Long> createJobs(
+      String type, Consumer<ServiceTaskBuilder> consumer, String variables, int amount) {
+
     final BpmnModelInstance modelInstance = createSingleJobModelInstance(type, consumer);
     final long workflowKey = deployWorkflow(modelInstance);
-    final long workflowInstanceKey = createWorkflowInstance(workflowKey, variables);
 
-    return RecordingExporter.jobRecords(JobIntent.CREATED)
-        .filter(j -> j.getValue().getWorkflowInstanceKey() == workflowInstanceKey)
-        .withType(type)
-        .getFirst()
-        .getKey();
+    final var workflowInstanceKeys =
+        IntStream.range(0, amount)
+            .boxed()
+            .map(i -> createWorkflowInstance(workflowKey, variables))
+            .collect(Collectors.toList());
+
+    final List<Long> jobKeys =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType(type)
+            .filter(r -> workflowInstanceKeys.contains(r.getValue().getWorkflowInstanceKey()))
+            .limit(amount)
+            .map(Record::getKey)
+            .collect(Collectors.toList());
+
+    assertThat(jobKeys).describedAs("Expected %d created jobs", amount).hasSize(amount);
+
+    return jobKeys;
   }
 
   public BpmnModelInstance createSingleJobModelInstance(

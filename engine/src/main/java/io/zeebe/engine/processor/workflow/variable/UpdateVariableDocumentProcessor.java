@@ -37,7 +37,7 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
     final VariableDocumentRecord record = command.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(record.getScopeKey());
-    if (scope == null) {
+    if (scope == null || scope.isTerminating() || scope.isInFinalState()) {
       controller.reject(
           RejectionType.NOT_FOUND,
           String.format(

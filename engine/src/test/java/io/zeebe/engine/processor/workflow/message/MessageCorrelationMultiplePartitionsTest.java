@@ -132,6 +132,63 @@ public class MessageCorrelationMultiplePartitionsTest {
     assertThat(correlatedValues).contains("\"p1\"", "\"p2\"", "\"p3\"");
   }
 
+  @Test
+  public void shouldOpenMessageSubscriptionsOnSamePartitionsAfterRestart() {
+    // given
+    final WorkflowInstanceCreationClient workflowInstanceCreationClient =
+        engine.workflowInstance().ofBpmnProcessId(PROCESS_ID);
+
+    IntStream.range(0, 5)
+        .forEach(
+            i -> {
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+                  .create();
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+                  .create();
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+                  .create();
+            });
+
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+                .limit(15)
+                .count())
+        .isEqualTo(15);
+
+    // when
+    engine.stop();
+    RecordingExporter.reset();
+    engine.start();
+
+    IntStream.range(0, 5)
+        .forEach(
+            i -> {
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID))
+                  .create();
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 1))
+                  .create();
+              workflowInstanceCreationClient
+                  .withVariable("key", CORRELATION_KEYS.get(START_PARTITION_ID + 2))
+                  .create();
+            });
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+                .limit(30))
+        .extracting(r -> tuple(r.getPartitionId(), r.getValue().getCorrelationKey()))
+        .hasSize(30)
+        .containsOnly(
+            tuple(START_PARTITION_ID, CORRELATION_KEYS.get(START_PARTITION_ID)),
+            tuple(START_PARTITION_ID + 1, CORRELATION_KEYS.get(START_PARTITION_ID + 1)),
+            tuple(START_PARTITION_ID + 2, CORRELATION_KEYS.get(START_PARTITION_ID + 2)));
+  }
+
   private int getPartitionId(final String correlationKey) {
     final List<Integer> partitionIds = engine.getPartitionIds();
     return SubscriptionUtil.getSubscriptionPartitionId(
