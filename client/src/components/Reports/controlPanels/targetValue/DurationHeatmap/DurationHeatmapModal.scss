@@ -57,16 +57,4 @@
       min-width: 0;
     }
   }
-
-  &.type-UserTask {
-    .TargetValueDiagramBehavior__clickable .djs-outline {
-      stroke-width: 2px !important;
-      stroke: #276e8c !important;
-      fill: rgba(188, 211, 220, 0.4) !important;
-    }
-
-    .TargetValueDiagramBehavior__highlight .djs-outline {
-      fill: rgba(48, 116, 142, 0.6) !important;
-    }
-  }
 }

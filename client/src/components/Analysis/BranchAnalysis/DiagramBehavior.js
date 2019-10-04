@@ -77,7 +77,10 @@ export default class DiagramBehavior extends React.Component {
       if (this.isValidNode(businessObject)) {
         canvas.addMarker(businessObject.id, 'DiagramBehavior__clickable');
         this.roundEdges(elementRegistry, businessObject);
-      } else if (!businessObject.$instanceOf('bpmn:Process')) {
+      } else if (
+        businessObject.$instanceOf('bpmn:FlowNode') ||
+        businessObject.$instanceOf('bpmn:SequenceFlow')
+      ) {
         canvas.addMarker(businessObject.id, 'DiagramBehavior__disabled');
       }
     });

@@ -17,7 +17,8 @@ export default class ProcessPart extends React.Component {
     modalOpen: false,
     start: null,
     end: null,
-    hasPath: true
+    hasPath: true,
+    hoveredNode: null
   };
 
   render() {

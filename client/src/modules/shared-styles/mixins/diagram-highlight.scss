@@ -1,6 +1,9 @@
 $color: darken($cam-blue, 10%);
 @mixin diagram-highlight {
-  opacity: 1;
+  &.DiagramBehavior__disabled,
+  &.ClickBehavior__disabled {
+    opacity: 1;
+  }
 
   .djs-visual {
     rect,

@@ -59,7 +59,10 @@ export default class ClickBehavior extends React.Component {
       if (this.isValid(element)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.addMarker(element.businessObject.id, 'ClickBehavior__node');
-      } else if (!element.businessObject.$instanceOf('bpmn:Process')) {
+      } else if (
+        element.businessObject.$instanceOf('bpmn:FlowNode') ||
+        element.businessObject.$instanceOf('bpmn:SequenceFlow')
+      ) {
         canvas.addMarker(element.businessObject.id, 'ClickBehavior__disabled');
       }
     });
