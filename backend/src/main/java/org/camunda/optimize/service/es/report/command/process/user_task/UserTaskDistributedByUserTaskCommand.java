@@ -17,7 +17,7 @@ public abstract class UserTaskDistributedByUserTaskCommand extends ProcessReport
 
   @Override
   protected void sortResultData(final SingleProcessHyperMapReportResult evaluationResult) {
-    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getConfiguration().getSorting().ifPresent(
       sorting -> evaluationResult.getResultAsDto()
         .getData()
         .forEach(groupByEntry -> MapResultSortingUtility.sortResultData(sorting, groupByEntry))

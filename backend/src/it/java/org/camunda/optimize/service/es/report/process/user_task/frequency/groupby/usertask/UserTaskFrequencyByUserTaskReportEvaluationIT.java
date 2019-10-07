@@ -176,7 +176,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
@@ -207,7 +207,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
@@ -241,7 +241,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then

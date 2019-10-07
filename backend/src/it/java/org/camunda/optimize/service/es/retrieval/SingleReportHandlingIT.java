@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -98,7 +99,6 @@ public class SingleReportHandlingIT {
     assertThat(definitionDto.getData(), notNullValue());
     ProcessReportDataDto data = definitionDto.getData();
     assertThat(data.getFilter(), notNullValue());
-    assertThat(data.getParameters(), notNullValue());
     assertThat(data.getConfiguration(), notNullValue());
     assertThat(data.getConfiguration(), equalTo(new SingleReportConfigurationDto()));
     assertThat(
@@ -169,7 +169,7 @@ public class SingleReportHandlingIT {
     ProcessPartDto processPartDto = new ProcessPartDto();
     processPartDto.setStart("start123");
     processPartDto.setEnd("end123");
-    reportData.getParameters().setProcessPart(processPartDto);
+    reportData.setProcessPart(processPartDto);
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId(shouldNotBeUpdatedString);
@@ -190,8 +190,9 @@ public class SingleReportHandlingIT {
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getDefinitionVersions(), contains("123"));
     assertThat(newReport.getData().getConfiguration().getYLabel(), is("fooYLabel"));
-    assertThat(newReport.getData().getParameters().getProcessPart().getStart(), is("start123"));
-    assertThat(newReport.getData().getParameters().getProcessPart().getEnd(), is("end123"));
+    assertThat(newReport.getData().getProcessPart(), not(Optional.empty()));
+    assertThat(newReport.getData().getProcessPart().get().getStart(), is("start123"));
+    assertThat(newReport.getData().getProcessPart().get().getEnd(), is("end123"));
     assertThat(newReport.getId(), is(id));
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));

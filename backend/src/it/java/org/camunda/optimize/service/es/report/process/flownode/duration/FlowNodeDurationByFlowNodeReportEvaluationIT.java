@@ -230,7 +230,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
     AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
       reportData);
 
@@ -302,7 +302,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       // when
       final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
       reportData.getConfiguration().setAggregationType(aggType);
-      reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+      reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
       AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
         evaluateDurationMapReport(
           reportData);

@@ -255,7 +255,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
@@ -305,7 +305,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
         .setProcessDefinitionVersion(processDefinitionVersion)
         .setReportDataType(getTestReportDataType())
         .build();
-      reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+      reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
       reportData.getConfiguration().setAggregationType(aggType);
       final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 

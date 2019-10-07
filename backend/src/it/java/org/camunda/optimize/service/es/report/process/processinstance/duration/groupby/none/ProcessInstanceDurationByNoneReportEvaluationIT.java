@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.time.temporal.ChronoUnit.MILLIS;
@@ -84,7 +85,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(nullValue()));
+    assertThat(resultReportDataDto.getProcessPart(), is(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
     long calculatedResult = evaluationResponse.getResult().getData();

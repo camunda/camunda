@@ -50,10 +50,10 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
 
     final BoolQueryBuilder query = setupBaseQuery(processReportData);
 
-    final String sortByField = processReportData.getParameters().getSorting()
+    final String sortByField = processReportData.getConfiguration().getSorting()
       .flatMap(SortingDto::getBy)
       .orElse(ProcessInstanceIndex.START_DATE);
-    final SortOrder sortOrder = processReportData.getParameters().getSorting()
+    final SortOrder sortOrder = processReportData.getConfiguration().getSorting()
       .flatMap(SortingDto::getOrder)
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);

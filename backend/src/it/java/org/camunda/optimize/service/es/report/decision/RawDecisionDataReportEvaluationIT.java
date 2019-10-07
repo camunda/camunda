@@ -249,7 +249,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    reportData.getParameters().setSorting(new SortingDto(DecisionInstanceIndex.DECISION_INSTANCE_ID, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(DecisionInstanceIndex.DECISION_INSTANCE_ID, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
 
@@ -284,7 +284,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    reportData.getParameters().setSorting(new SortingDto(DecisionInstanceIndex.EVALUATION_DATE_TIME, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(DecisionInstanceIndex.EVALUATION_DATE_TIME, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       evaluateRawReport(reportData);
 
@@ -320,7 +320,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    reportData.getParameters().setSorting(
+    reportData.getConfiguration().setSorting(
       new SortingDto(RawDecisionDataCommand.INPUT_VARIABLE_PREFIX + INPUT_AMOUNT_ID, SortOrder.ASC)
     );
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
@@ -369,7 +369,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    reportData.getParameters().setSorting(
+    reportData.getConfiguration().setSorting(
       new SortingDto(RawDecisionDataCommand.OUTPUT_VARIABLE_PREFIX + OUTPUT_AUDIT_ID, SortOrder.ASC)
     );
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =

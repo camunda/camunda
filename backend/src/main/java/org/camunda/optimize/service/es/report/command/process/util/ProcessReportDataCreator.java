@@ -226,7 +226,7 @@ public class ProcessReportDataCreator {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    reportData.setProcessPart(new ProcessPartDto());
     reportData.getConfiguration().setAggregationType(aggroType);
     return reportData;
   }
@@ -249,7 +249,7 @@ public class ProcessReportDataCreator {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    reportData.setProcessPart(new ProcessPartDto());
     reportData.getConfiguration().setAggregationType(aggroType);
     return reportData;
   }
@@ -272,7 +272,7 @@ public class ProcessReportDataCreator {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    reportData.setProcessPart(new ProcessPartDto());
     reportData.getConfiguration().setAggregationType(aggroType);
     return reportData;
   }
@@ -290,7 +290,7 @@ public class ProcessReportDataCreator {
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByVariableWithProcessPartReport(AggregationType aggroType) {
     ProcessReportDataDto reportData = createProcessInstanceDurationGroupByVariableReport(aggroType);
-    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    reportData.setProcessPart(new ProcessPartDto());
     return reportData;
   }
 

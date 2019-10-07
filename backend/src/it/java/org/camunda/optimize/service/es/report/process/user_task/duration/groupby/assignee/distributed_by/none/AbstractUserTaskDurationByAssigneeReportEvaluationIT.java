@@ -304,7 +304,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
-      reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+      reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
       reportData.getConfiguration().setAggregationType(aggType);
       final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
@@ -340,7 +340,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
@@ -378,7 +378,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       // when
       final ProcessReportDataDto reportData = createReport(processDefinition);
       reportData.getConfiguration().setAggregationType(aggType);
-      reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+      reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
       final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
       // then

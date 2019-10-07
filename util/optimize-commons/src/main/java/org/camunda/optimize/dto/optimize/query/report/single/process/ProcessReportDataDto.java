@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessParametersDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 
@@ -33,7 +32,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   protected ProcessViewDto view;
   protected ProcessGroupByDto groupBy;
   protected ProcessVisualization visualization;
-  protected ProcessParametersDto parameters = new ProcessParametersDto();
+  private ProcessPartDto processPart = null;
 
   @JsonIgnore
   @Override
@@ -58,15 +57,16 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
   }
 
+  public Optional<ProcessPartDto> getProcessPart() {
+    return Optional.ofNullable(processPart);
+  }
+
   @JsonIgnore
   @Override
   public String createCommandKey() {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();
     String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
-    String processPartCommandKey = Optional.ofNullable(getParameters())
-      .flatMap(parameters -> Optional.ofNullable(parameters.getProcessPart()))
-      .map(ProcessPartDto::createCommandKey)
-      .orElse("null");
+    String processPartCommandKey = getProcessPart().isPresent() ? getProcessPart().get().createCommandKey() : null;
     String configurationCommandKey = Optional.ofNullable(getConfiguration())
       .map(c -> c.createCommandKey(getView(), getGroupBy()))
       .orElse("null");

@@ -115,7 +115,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
   @Override
   protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
     DecisionReportDataDto reportData = getReportData();
-    final Optional<SortingDto> sorting = reportData.getParameters().getSorting();
+    final Optional<SortingDto> sorting = reportData.getConfiguration().getSorting();
     if (sorting.isPresent()) {
       MapResultSortingUtility.sortResultData(
         sorting.get(),

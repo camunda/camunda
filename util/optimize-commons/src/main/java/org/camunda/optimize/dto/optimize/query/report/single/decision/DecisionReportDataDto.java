@@ -30,7 +30,6 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
   protected DecisionViewDto view;
   protected DecisionGroupByDto groupBy;
   protected DecisionVisualization visualization;
-  protected DecisionParametersDto parameters = new DecisionParametersDto();
 
   @JsonIgnore
   @Override

@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
@@ -47,6 +48,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -96,7 +98,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getProcessPart(), not(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
     long calculatedResult = evaluationResponse.getResult().getData();
@@ -140,7 +142,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getProcessPart(), not(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
     long calculatedResult = evaluationResponse.getResult().getData();
@@ -182,7 +184,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getProcessPart(), not(Optional.empty()));
 
     long calculatedResult = evaluationResponse.getResult().getData();
     assertThat(calculatedResult, is(1000L));

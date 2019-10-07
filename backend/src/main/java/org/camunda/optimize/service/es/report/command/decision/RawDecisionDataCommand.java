@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.command.decision;
 
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionParametersDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
@@ -103,8 +102,7 @@ public class RawDecisionDataCommand extends DecisionReportCommand<SingleDecision
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,
                                  final SearchSourceBuilder searchRequestBuilder) {
-    final Optional<SortingDto> customSorting = Optional.ofNullable(decisionReportData.getParameters())
-      .flatMap(DecisionParametersDto::getSorting);
+    final Optional<SortingDto> customSorting = decisionReportData.getConfiguration().getSorting();
     final String sortByField = customSorting.flatMap(SortingDto::getBy)
       .orElse(DecisionInstanceIndex.EVALUATION_DATE_TIME);
     final SortOrder sortOrder = customSorting.flatMap(SortingDto::getOrder)

@@ -271,7 +271,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "foo",
       VariableType.STRING
     );
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
@@ -309,7 +309,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       "foo",
       VariableType.STRING
     );
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then

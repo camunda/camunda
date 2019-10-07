@@ -273,7 +273,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -312,7 +312,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
     final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -350,7 +350,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then

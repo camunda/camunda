@@ -205,7 +205,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
       evaluateMapReport(reportData);
 
@@ -267,7 +267,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
       evaluateMapReport(reportData);
 

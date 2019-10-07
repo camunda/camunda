@@ -93,7 +93,7 @@ public abstract class AbstractUserTaskDurationByAssigneeCommand
 
   @Override
   protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
-    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getConfiguration().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

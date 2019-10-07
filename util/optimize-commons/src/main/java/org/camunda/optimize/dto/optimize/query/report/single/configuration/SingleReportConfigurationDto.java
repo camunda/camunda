@@ -17,9 +17,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Objects.nonNull;
 
@@ -47,6 +49,7 @@ public class SingleReportConfigurationDto implements Combinable {
   private SingleReportTargetValueDto targetValue = new SingleReportTargetValueDto();
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
   private DistributedBy distributedBy = DistributedBy.NONE;
+  private SortingDto sorting = null;
 
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto, ProcessGroupByDto groupByDto) {
@@ -94,5 +97,9 @@ public class SingleReportConfigurationDto implements Combinable {
       ProcessGroupByType.ASSIGNEE.equals(groupByDto.getType()) ||
         ProcessGroupByType.CANDIDATE_GROUP.equals(groupByDto.getType())
     );
+  }
+
+  public Optional<SortingDto> getSorting() {
+    return Optional.ofNullable(sorting);
   }
 }

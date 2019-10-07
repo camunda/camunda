@@ -392,7 +392,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
     final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
@@ -443,7 +443,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then

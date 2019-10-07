@@ -393,7 +393,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     elasticSearchRule.refreshAllOptimizeIndices();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
 
     // when
     final Map<AggregationType, ProcessReportHyperMapResult> results =
@@ -444,7 +444,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
     final Map<AggregationType, ProcessReportHyperMapResult> results =
       evaluateHypeMapReportForAllAggTypes(reportData);
 
@@ -491,7 +491,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
     final Map<AggregationType, ProcessReportHyperMapResult> results =
       evaluateHypeMapReportForAllAggTypes(reportData);
 

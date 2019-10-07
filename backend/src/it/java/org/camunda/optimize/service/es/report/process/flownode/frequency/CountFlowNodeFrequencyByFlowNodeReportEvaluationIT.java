@@ -449,7 +449,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
@@ -478,7 +478,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion()
     );
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then

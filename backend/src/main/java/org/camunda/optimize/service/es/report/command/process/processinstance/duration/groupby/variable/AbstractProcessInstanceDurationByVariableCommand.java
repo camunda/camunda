@@ -115,7 +115,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   @Override
   protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
     ProcessReportDataDto reportData = getReportData();
-    final Optional<SortingDto> sortingOpt = reportData.getParameters().getSorting();
+    final Optional<SortingDto> sortingOpt = reportData.getConfiguration().getSorting();
     if (sortingOpt.isPresent()) {
       MapResultSortingUtility.sortResultData(
         sortingOpt.get(),

@@ -9,9 +9,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.processinstance.duration.ProcessPartQueryUtil;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
+
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.ProcessPartQueryUtil.processProcessPartAggregationOperations;
 
@@ -26,8 +29,15 @@ public class ProcessInstanceDurationGroupByVariableWithProcessPartCommand
   @Override
   public BoolQueryBuilder setupBaseQuery(ProcessReportDataDto processReportData) {
     BoolQueryBuilder boolQueryBuilder = super.setupBaseQuery(processReportData);
-    ProcessPartDto processPart = processReportData.getParameters().getProcessPart();
-    return ProcessPartQueryUtil.addProcessPartQuery(boolQueryBuilder, processPart.getStart(), processPart.getEnd());
+    Optional<ProcessPartDto> processPart = processReportData.getProcessPart();
+    if (!processPart.isPresent()) {
+      throw new OptimizeRuntimeException("Missing ProcessPart");
+    }
+    return ProcessPartQueryUtil.addProcessPartQuery(
+      boolQueryBuilder,
+      processPart.get().getStart(),
+      processPart.get().getEnd()
+    );
   }
 
   @Override
@@ -37,7 +47,10 @@ public class ProcessInstanceDurationGroupByVariableWithProcessPartCommand
 
   @Override
   protected AggregationBuilder createOperationsAggregation() {
-    ProcessPartDto processPart = ((ProcessReportDataDto) getReportData()).getParameters().getProcessPart();
-    return ProcessPartQueryUtil.createProcessPartAggregation(processPart.getStart(), processPart.getEnd());
+    Optional<ProcessPartDto> processPart = ((ProcessReportDataDto) getReportData()).getProcessPart();
+    if (!processPart.isPresent()) {
+      throw new OptimizeRuntimeException("Missing ProcessPart");
+    }
+    return ProcessPartQueryUtil.createProcessPartAggregation(processPart.get().getStart(), processPart.get().getEnd());
   }
 }

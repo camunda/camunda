@@ -229,7 +229,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
@@ -277,7 +277,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
         .setStartFlowNodeId(START_EVENT)
         .setEndFlowNodeId(END_EVENT)
         .build();
-      reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+      reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
       reportData.getConfiguration().setAggregationType(aggType);
       final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
@@ -327,7 +327,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
 
     final Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>> results =
       evaluateDurationMapReportForAllAggTypes(reportData);

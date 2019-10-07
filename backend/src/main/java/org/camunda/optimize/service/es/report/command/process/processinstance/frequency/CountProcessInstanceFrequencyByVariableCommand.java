@@ -108,7 +108,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
   @Override
   protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
     ProcessReportDataDto reportData = getReportData();
-    final Optional<SortingDto> sortingOpt = reportData.getParameters().getSorting();
+    final Optional<SortingDto> sortingOpt = reportData.getConfiguration().getSorting();
     if (sortingOpt.isPresent()) {
       MapResultSortingUtility.sortResultData(
         sortingOpt.get(),

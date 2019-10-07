@@ -39,6 +39,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -49,6 +50,7 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -104,7 +106,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getProcessPart(), not(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
     final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
@@ -152,7 +154,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getProcessPart(), not(Optional.empty()));
     assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
     final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -652,7 +654,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
     final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
@@ -704,7 +706,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
         .setEndFlowNodeId(END_EVENT)
         .setReportDataType(getTestReportDataType())
         .build();
-      reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+      reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
       reportData.getConfiguration().setAggregationType(aggType);
       final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 

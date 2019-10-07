@@ -116,7 +116,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
 
   @Override
   protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
-    ((ProcessReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
+    ((ProcessReportDataDto) getReportData()).getConfiguration().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

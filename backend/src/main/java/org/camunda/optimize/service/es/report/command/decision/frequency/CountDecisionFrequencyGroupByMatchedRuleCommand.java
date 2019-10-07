@@ -73,7 +73,7 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
 
   @Override
   protected void sortResultData(final SingleDecisionMapReportResult evaluationResult) {
-    ((DecisionReportDataDto) getReportData()).getParameters().getSorting().ifPresent(
+    ((DecisionReportDataDto) getReportData()).getConfiguration().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
   }

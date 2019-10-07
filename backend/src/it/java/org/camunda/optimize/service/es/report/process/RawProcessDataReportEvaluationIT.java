@@ -325,7 +325,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getParameters().setSorting(new SortingDto(ProcessInstanceIndex.PROCESS_INSTANCE_ID, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(ProcessInstanceIndex.PROCESS_INSTANCE_ID, SortOrder.DESC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
       reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
@@ -348,7 +348,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getParameters().setSorting(new SortingDto("lalalala", SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto("lalalala", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
       reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
@@ -385,7 +385,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getParameters().setSorting(new SortingDto("variable:intVar", SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto("variable:intVar", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
       reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
@@ -408,7 +408,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getParameters().setSorting(new SortingDto("variable:lalalala", SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto("variable:lalalala", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = evaluateRawReport(
       reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();

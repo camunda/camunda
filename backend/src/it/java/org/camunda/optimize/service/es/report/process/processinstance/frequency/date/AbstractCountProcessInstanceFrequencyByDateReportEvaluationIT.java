@@ -206,7 +206,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
@@ -248,7 +248,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    reportData.getParameters().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.DESC));
     final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
