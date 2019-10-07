@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {trimValue} from 'modules/utils';
+
 export function createBeautyfiedJSON(validJSONstring, indentationSpace = 0) {
   return JSON.stringify(removeTabs(validJSONstring), null, indentationSpace);
 }
@@ -19,4 +21,11 @@ export function removeWhiteSpaces(value) {
 
 export function removeLineBreaks(value) {
   return value.replace(/\r?\n|\r/g, '');
+}
+
+export function trimVariable(variable) {
+  return {
+    name: trimValue(variable.name),
+    value: trimValue(variable.value)
+  };
 }

@@ -8,6 +8,9 @@ import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
 
 import {compactObject} from '../index';
 
+import {trimValue} from 'modules/utils';
+import {trimVariable} from 'modules/utils/variable';
+
 /**
  * Returns a query string for the filter objects
  * removes keys with empty values (null, "", []) so that they don't appear in URL
@@ -23,7 +26,7 @@ export function getFilterQueryString(filter = {}) {
  * where name is oneOf['starDate', 'endDate']
  */
 const parseDate = (value, name) => {
-  let date = new Date(value);
+  const date = new Date(trimValue(value));
   const isValidDate = isValid(date);
   let dateAfter, dateBefore;
   // enforce no comma in the timezone
@@ -67,6 +70,9 @@ export const fieldParser = {
   },
   endDate: (name, value) => {
     return parseDate(value, 'endDate');
+  },
+  variable: (name, value) => {
+    return {[name]: trimVariable(value)};
   }
 };
 
@@ -124,10 +130,6 @@ export function getWorkflowByVersion(workflow, version) {
   return workflow.workflows.find(item => {
     return String(item.version) === String(version);
   });
-}
-
-export function trimValue(value) {
-  return typeof value === 'string' ? value.trim() : value;
 }
 
 function trimmFilter(filter) {

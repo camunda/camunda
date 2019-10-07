@@ -55,3 +55,7 @@ export function pickFromObject(object, keys) {
 export function immutableArraySet(array, index, updatedValue) {
   return [...array.slice(0, index), updatedValue, ...array.slice(index + 1)];
 }
+
+export function trimValue(value) {
+  return typeof value === 'string' ? value.trim() : value;
+}

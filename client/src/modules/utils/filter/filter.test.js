@@ -135,6 +135,7 @@ describe('modules/utils/filter.js', () => {
         startDate: '08 October 2018',
         endDate: '10-10-2018',
         activityId: '5',
+        variable: {name: 'myVar', value: '{"id": "1"}'},
         active: true,
         incidents: false,
         completed: true,
@@ -155,6 +156,7 @@ describe('modules/utils/filter.js', () => {
       expect(parsedFilter.endDateBefore).toContain('2018-10-11T00:00:00.000');
       expect(parsedFilter.endDateAfter).toContain('2018-10-10T00:00:00.000');
       expect(parsedFilter.activityId).toBe('5');
+      expect(parsedFilter.variable).toEqual(filter.variable);
       expect(parsedFilter.active).toBe(true);
       expect(parsedFilter.incidents).toBe(false);
       expect(parsedFilter.completed).toBe(true);
@@ -163,7 +165,7 @@ describe('modules/utils/filter.js', () => {
       expect(parsedFilter.finished).toBe(true);
     });
 
-    it('should trimm fileds with string values values', () => {
+    it('should trim fields with string values', () => {
       // given
       const filter = {
         workflowIds: ['4'],
@@ -171,9 +173,10 @@ describe('modules/utils/filter.js', () => {
         id1 , id2    id3
         `,
         errorMessage: '               this is an error message',
-        startDate: '          08 October 2018',
-        endDate: '            10-10-2018',
+        startDate: '          2019-10-07 12:30:00',
+        endDate: '  2019-10-06         ',
         activityId: '5',
+        variable: {name: '   myVar  ', value: '   "1, 2\r \n "   '},
         active: true,
         incidents: false,
         completed: true,
@@ -186,6 +189,14 @@ describe('modules/utils/filter.js', () => {
       expect(parsedFilter.ids).toEqual(['id1', 'id2', 'id3']);
       expect(parsedFilter.errorMessage).toEqual('this is an error message');
       expect(parsedFilter.active).toBe(true);
+      expect(parsedFilter.startDateBefore).toBe('2019-10-07T12:31:00.000+0200');
+      expect(parsedFilter.startDateAfter).toBe('2019-10-07T12:30:00.000+0200');
+      expect(parsedFilter.endDateBefore).toBe('2019-10-07T02:00:00.000+0200');
+      expect(parsedFilter.endDateAfter).toBe('2019-10-06T00:00:00.000+0200');
+      expect(parsedFilter.variable).toEqual({
+        name: 'myVar',
+        value: '"1, 2\r \n "'
+      });
     });
   });
 
@@ -265,6 +276,13 @@ describe('modules/utils/filter.js', () => {
 
       // no timezone tested, it differs on environments
       expect(output.startDateBefore).toContain('2018-07-05T15:19:00.000');
+    });
+    it('should return date for string containing spaces', () => {
+      const value = '  2019-10-17 12:30:00   ';
+      const output = fieldParser.startDate('startDate', value);
+
+      // no timezone tested, it differs on environments
+      expect(output.startDateBefore).toContain('2019-10-17T12:31:00.000');
     });
   });
 

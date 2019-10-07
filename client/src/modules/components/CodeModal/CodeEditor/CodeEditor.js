@@ -13,7 +13,7 @@ import * as Styled from './styled';
 
 import {isValidJSON} from 'modules/utils';
 
-import {createBeautyfiedJSON} from '../service';
+import {createBeautyfiedJSON} from 'modules/utils/variable';
 
 const codeElementRef = React.createRef();
 
