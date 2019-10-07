@@ -271,6 +271,7 @@ test('select which flow nodes to show from the configuration', async t => {
 
   await t.click(e.configurationButton);
 
+  await t.click(e.showFlowNodesSwitch);
   await t.click(e.showFlowNodes);
 
   await t.click(e.flowNode('msLeadReceived'));

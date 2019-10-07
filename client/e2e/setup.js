@@ -14,10 +14,8 @@ export default async function setup() {
 
   const sessionToken = await getSession();
 
-  await cleanEntities('report', sessionToken);
-  await cleanEntities('dashboard', sessionToken);
-  await cleanEntities('collection', sessionToken);
-  await cleanEntities('alert', sessionToken);
+  await cleanAlerts(sessionToken);
+  await cleanEntities(sessionToken);
 }
 
 async function ensureLicense() {
@@ -39,14 +37,28 @@ async function getSession() {
   return await resp.text();
 }
 
-async function cleanEntities(type, sessionToken) {
+async function cleanAlerts(sessionToken) {
   const headers = {Cookie: `X-Optimize-Authorization="Bearer ${sessionToken}"`};
 
-  const response = await fetch(`${config.endpoint}/api/${type}`, {headers});
+  const response = await fetch(`${config.endpoint}/api/alert`, {headers});
+  const alerts = await response.json();
+
+  for (let i = 0; i < alerts.length; i++) {
+    await fetch(`${config.endpoint}/api/alert/${alerts[i].id}`, {
+      method: 'DELETE',
+      headers
+    });
+  }
+}
+
+async function cleanEntities(sessionToken) {
+  const headers = {Cookie: `X-Optimize-Authorization="Bearer ${sessionToken}"`};
+
+  const response = await fetch(`${config.endpoint}/api/entities`, {headers});
   const entities = await response.json();
 
   for (let i = 0; i < entities.length; i++) {
-    await fetch(`${config.endpoint}/api/${type}/${entities[i].id}?force=true`, {
+    await fetch(`${config.endpoint}/api/${entities[i].entityType}/${entities[i].id}?force=true`, {
       method: 'DELETE',
       headers
     });

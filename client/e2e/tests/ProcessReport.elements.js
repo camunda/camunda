@@ -66,7 +66,8 @@ export const createCollectionButton = Selector('.Modal button').withText('Create
 export const collectionOption = text =>
   Selector('.CollectionsDropdown.is-open .DropdownOption').withText(text);
 export const limitPrecisionSwitch = Selector('.NumberConfig .Switch:first-child');
-export const showFlowNodes = Selector('.Button').withText('Show Flow Nodes...');
+export const showFlowNodesSwitch = Selector('.VisibleNodesFilter .Switch');
+export const showFlowNodes = Selector('.Button').withText('Select Flow Nodes...');
 export const flowNodeStatusSelect = Selector('.NodeStatus .Select');
 export const nodeTableCell = text => Selector('.rt-tbody .rt-td').withText(text);
 export const distributedBySelect = Selector('legend')
