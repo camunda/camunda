@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -35,8 +36,6 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.springframework.stereotype.Component;
@@ -46,7 +45,6 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.Set;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COMBINED;
@@ -72,21 +70,17 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 @Slf4j
 public class ReportWriter {
-  private static final String DEFAULT_REPORT_NAME = "New Report";
   private static final Set<String> UPDATABLE_FIELDS = ImmutableSet.of(
-    NAME, DATA, LAST_MODIFIED, LAST_MODIFIER, CREATED, OWNER, COLLECTION_ID, COMBINED, REPORT_TYPE);
+    NAME, DATA, LAST_MODIFIED, LAST_MODIFIER, CREATED, OWNER, COLLECTION_ID, COMBINED, REPORT_TYPE
+  );
 
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
 
-  public IdDto createNewCombinedReport(final String userId, final String collectionId) {
-    return createNewCombinedReport(userId, new CombinedReportDataDto(), DEFAULT_REPORT_NAME, collectionId);
-  }
-
-  public IdDto createNewCombinedReport(final String userId,
-                                       CombinedReportDataDto reportData,
-                                       String reportName,
-                                       String collectionId) {
+  public IdDto createNewCombinedReport(@NonNull final String userId,
+                                       @NonNull final CombinedReportDataDto reportData,
+                                       @NonNull final String reportName,
+                                       final String collectionId) {
     log.debug("Writing new combined report to Elasticsearch");
     final String id = IdGenerator.getNextId();
     final CombinedReportDefinitionDto reportDefinitionDto = new CombinedReportDefinitionDto();
@@ -96,7 +90,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(Optional.ofNullable(reportName).orElse(DEFAULT_REPORT_NAME));
+    reportDefinitionDto.setName(reportName);
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
@@ -123,14 +117,10 @@ public class ReportWriter {
   }
 
 
-  public IdDto createNewSingleProcessReport(final String userId, final String collectionId) {
-    return createNewSingleProcessReport(userId, new ProcessReportDataDto(), DEFAULT_REPORT_NAME, collectionId);
-  }
-
-  public IdDto createNewSingleProcessReport(final String userId,
-                                            ProcessReportDataDto reportData,
-                                            String reportName,
-                                            String collectionId) {
+  public IdDto createNewSingleProcessReport(@NonNull final String userId,
+                                            @NonNull final ProcessReportDataDto reportData,
+                                            @NonNull final String reportName,
+                                            final String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
@@ -141,7 +131,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(Optional.ofNullable(reportName).orElse(DEFAULT_REPORT_NAME));
+    reportDefinitionDto.setName(reportName);
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
@@ -167,14 +157,10 @@ public class ReportWriter {
     }
   }
 
-  public IdDto createNewSingleDecisionReport(final String userId, final String collectionId) {
-    return createNewSingleDecisionReport(userId, new DecisionReportDataDto(), DEFAULT_REPORT_NAME, collectionId);
-  }
-
-  public IdDto createNewSingleDecisionReport(final String userId,
-                                             DecisionReportDataDto reportData,
-                                             String reportName,
-                                             String collectionId) {
+  public IdDto createNewSingleDecisionReport(@NonNull final String userId,
+                                             @NonNull final DecisionReportDataDto reportData,
+                                             @NonNull final String reportName,
+                                             final String collectionId) {
     log.debug("Writing new single report to Elasticsearch");
 
     final String id = IdGenerator.getNextId();
@@ -185,7 +171,7 @@ public class ReportWriter {
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
     reportDefinitionDto.setLastModifier(userId);
-    reportDefinitionDto.setName(Optional.ofNullable(reportName).orElse(DEFAULT_REPORT_NAME));
+    reportDefinitionDto.setName(reportName);
     reportDefinitionDto.setData(reportData);
     reportDefinitionDto.setCollectionId(collectionId);
 
@@ -226,7 +212,11 @@ public class ReportWriter {
   private void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
     log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
-      Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(UPDATABLE_FIELDS, updatedReport, objectMapper);
+      Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+        UPDATABLE_FIELDS,
+        updatedReport,
+        objectMapper
+      );
       final UpdateRequest request =
         new UpdateRequest(elasticsearchType, elasticsearchType, updatedReport.getId())
           .script(updateScript)

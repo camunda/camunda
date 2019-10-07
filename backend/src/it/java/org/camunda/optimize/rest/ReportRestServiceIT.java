@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
-import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -108,30 +107,6 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void createNewProcessReportFromDefinitionWithCollectionIdMismatchThrowsException() {
-    // when
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setCollectionId("first collection ID");
-    // then
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequestWithDefinition(singleProcessReportDefinitionDto, "second collection ID")
-      .execute(BadRequestException.class, 400);
-  }
-
-  @Test
-  public void createNewDecisionReportFromDefinitionWithCollectionIdMismatchThrowsException() {
-    // when
-    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-    singleDecisionReportDefinitionDto.setCollectionId("first collection ID");
-    // then
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequestWithDefinition(singleDecisionReportDefinitionDto, "second collection ID")
-      .execute(BadRequestException.class, 400);
-  }
-
-  @Test
   public void createNewCombinedReportWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeRule
@@ -166,18 +141,6 @@ public class ReportRestServiceIT {
       .execute(IdDto.class, 200);
     // then
     assertThat(idDto, is(notNullValue()));
-  }
-
-  @Test
-  public void createNewCombinedReportFromDefinitionWithCollectionIdMismatchThrowsException() {
-    // when
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
-    combinedReportDefinitionDto.setCollectionId("first collection ID");
-    // then
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequestWithDefinition(combinedReportDefinitionDto, "second collection ID")
-      .execute(BadRequestException.class, 400);
   }
 
   @Test

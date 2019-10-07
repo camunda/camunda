@@ -12,6 +12,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportDefinitionUpdateDto;
@@ -19,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -55,6 +57,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractProcessDefinitionName;
@@ -64,6 +67,7 @@ import static org.camunda.optimize.service.engine.importing.DmnModelUtility.extr
 @Component
 @Slf4j
 public class ReportService implements CollectionReferencingService {
+  private static final String DEFAULT_REPORT_NAME = "New Report";
   private static final String REPORT_NOT_IN_SAME_COLLECTION_ERROR_MESSAGE = "Either the report %s does not reside in " +
     "the same collection as the combined report %s or both are not private entities";
 
@@ -89,61 +93,25 @@ public class ReportService implements CollectionReferencingService {
     reportWriter.deleteAllReportsOfCollection(definition.getId());
   }
 
-  public IdDto createNewSingleDecisionReport(final String userId, final String collectionId,
+  public IdDto createNewSingleDecisionReport(final String userId,
                                              final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    if (singleDecisionReportDefinitionDto != null) {
-      if (collectionId != null && !collectionId.equals(singleDecisionReportDefinitionDto.getCollectionId())) {
-        throw new BadRequestException("The collection IDs provided must be the same");
-      }
-      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, singleDecisionReportDefinitionDto.getCollectionId());
-      return reportWriter.createNewSingleDecisionReport(
-        userId,
-        singleDecisionReportDefinitionDto.getData(),
-        singleDecisionReportDefinitionDto.getName(),
-        singleDecisionReportDefinitionDto.getCollectionId()
-      );
-    } else {
-      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-      return reportWriter.createNewSingleDecisionReport(userId, collectionId);
-    }
+    return createReport(
+      userId, singleDecisionReportDefinitionDto, DecisionReportDataDto::new, reportWriter::createNewSingleDecisionReport
+    );
   }
 
-  public IdDto createNewSingleProcessReport(final String userId, final String collectionId,
+  public IdDto createNewSingleProcessReport(final String userId,
                                             final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    if (singleProcessReportDefinitionDto != null) {
-      if (collectionId != null && !collectionId.equals(singleProcessReportDefinitionDto.getCollectionId())) {
-        throw new BadRequestException("The collection IDs provided must be the same");
-      }
-      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, singleProcessReportDefinitionDto.getCollectionId());
-      return reportWriter.createNewSingleProcessReport(
-        userId,
-        singleProcessReportDefinitionDto.getData(),
-        singleProcessReportDefinitionDto.getName(),
-        singleProcessReportDefinitionDto.getCollectionId()
-      );
-    } else {
-      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-      return reportWriter.createNewSingleProcessReport(userId, collectionId);
-    }
+    return createReport(
+      userId, singleProcessReportDefinitionDto, ProcessReportDataDto::new, reportWriter::createNewSingleProcessReport
+    );
   }
 
-  public IdDto createNewCombinedProcessReport(final String userId, final String collectionId,
+  public IdDto createNewCombinedProcessReport(final String userId,
                                               final CombinedReportDefinitionDto combinedReportDefinitionDto) {
-    if (combinedReportDefinitionDto != null) {
-      if (collectionId != null && !collectionId.equals(combinedReportDefinitionDto.getCollectionId())) {
-        throw new BadRequestException("The collection IDs provided must be the same");
-      }
-      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, combinedReportDefinitionDto.getCollectionId());
-      return reportWriter.createNewCombinedReport(
-        userId,
-        combinedReportDefinitionDto.getData(),
-        combinedReportDefinitionDto.getName(),
-        combinedReportDefinitionDto.getCollectionId()
-      );
-    } else {
-      collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-      return reportWriter.createNewCombinedReport(userId, collectionId);
-    }
+    return createReport(
+      userId, combinedReportDefinitionDto, CombinedReportDataDto::new, reportWriter::createNewCombinedReport
+    );
   }
 
   public ConflictResponseDto getReportDeleteConflictingItems(String userId, String reportId) {
@@ -346,6 +314,26 @@ public class ReportService implements CollectionReferencingService {
     }
 
     reportRelationService.handleDeleted(reportDefinition);
+  }
+
+  private <T extends ReportDefinitionDto<RD>, RD extends ReportDataDto> IdDto createReport(
+    final String userId,
+    final T reportDefinition,
+    final Supplier<RD> defaultDataProvider,
+    final CreateReportMethod<RD> createReportMethod) {
+
+    final Optional<T> optionalProvidedDefinition = Optional.ofNullable(reportDefinition);
+    final String collectionId = optionalProvidedDefinition
+      .map(ReportDefinitionDto::getCollectionId)
+      .orElse(null);
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
+
+    return createReportMethod.create(
+      userId,
+      optionalProvidedDefinition.map(ReportDefinitionDto::getData).orElse(defaultDataProvider.get()),
+      optionalProvidedDefinition.map(ReportDefinitionDto::getName).orElse(DEFAULT_REPORT_NAME),
+      collectionId
+    );
   }
 
   private AuthorizedReportDefinitionDto getReportWithEditAuthorization(final String userId,
@@ -563,6 +551,11 @@ public class ReportService implements CollectionReferencingService {
     to.setName(from.getName());
     to.setLastModifier(userId);
     to.setLastModified(from.getLastModified());
+  }
+
+  @FunctionalInterface
+  private interface CreateReportMethod<RD extends ReportDataDto> {
+    IdDto create(String userId, RD reportData, String reportName, String collectionId);
   }
 
 }

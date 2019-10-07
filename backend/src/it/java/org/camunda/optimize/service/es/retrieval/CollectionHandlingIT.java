@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefi
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -251,6 +252,27 @@ public class CollectionHandlingIT {
   }
 
   @Test
+  public void singleProcessReportCanBeCreatedInsideCollection_collectionIdAsQueryParamIsPreferred() {
+    // given
+    String collectionId1 = createNewCollection();
+    String collectionId2 = createNewCollection();
+
+    SingleProcessReportDefinitionDto reportDefinition = new SingleProcessReportDefinitionDto();
+    reportDefinition.setCollectionId(collectionId1);
+
+    String reportId = createSingleProcessReportWithDefinitionInCollection(reportDefinition, collectionId2);
+
+    // when
+    ResolvedCollectionDefinitionDto collection1 = getCollectionById(collectionId1);
+    ResolvedCollectionDefinitionDto collection2 = getCollectionById(collectionId2);
+
+    // then
+    assertThat(collection1.getData().getEntities().size(), is(0));
+    EntityDto report = collection2.getData().getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+  }
+
+  @Test
   public void singleDecisionReportCanBeCreatedInsideCollection() {
     // given
     String collectionId = createNewCollection();
@@ -268,6 +290,27 @@ public class CollectionHandlingIT {
   }
 
   @Test
+  public void singleDecisionReportCanBeCreatedInsideCollection_collectionIdAsQueryParamIsPreferred() {
+    // given
+    String collectionId1 = createNewCollection();
+    String collectionId2 = createNewCollection();
+
+    SingleDecisionReportDefinitionDto reportDefinition = new SingleDecisionReportDefinitionDto();
+    reportDefinition.setCollectionId(collectionId1);
+
+    String reportId = createNewSingleDecisionReportWithDefinitionInCollection(reportDefinition, collectionId2);
+
+    // when
+    ResolvedCollectionDefinitionDto collection1 = getCollectionById(collectionId1);
+    ResolvedCollectionDefinitionDto collection2 = getCollectionById(collectionId2);
+
+    // then
+    assertThat(collection1.getData().getEntities().size(), is(0));
+    EntityDto report = collection2.getData().getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
+  }
+
+  @Test
   public void combinedProcessReportCanBeCreatedInsideCollection() {
     // given
     String collectionId = createNewCollection();
@@ -282,6 +325,27 @@ public class CollectionHandlingIT {
     assertThat(report.getEntityType(), is(EntityType.REPORT));
     assertThat(report.getReportType(), is(ReportType.PROCESS));
     assertThat(report.getCombined(), is(true));
+  }
+
+  @Test
+  public void combinedProcessReportCanBeCreatedInsideCollection_collectionIdAsQueryParamIsPreferred() {
+    // given
+    String collectionId1 = createNewCollection();
+    String collectionId2 = createNewCollection();
+
+    CombinedReportDefinitionDto reportDefinition = new CombinedReportDefinitionDto();
+    reportDefinition.setCollectionId(collectionId1);
+
+    String reportId = createNewCombinedReportWithDefinitionInCollection(reportDefinition, collectionId2);
+
+    // when
+    ResolvedCollectionDefinitionDto collection1 = getCollectionById(collectionId1);
+    ResolvedCollectionDefinitionDto collection2 = getCollectionById(collectionId2);
+
+    // then
+    assertThat(collection1.getData().getEntities().size(), is(0));
+    EntityDto report = collection2.getData().getEntities().get(0);
+    assertThat(report.getId(), is(reportId));
   }
 
   @Test
@@ -476,10 +540,32 @@ public class CollectionHandlingIT {
     assertThat(response.getStatus(), is(404));
   }
 
+  private String createSingleProcessReportWithDefinitionInCollection(
+    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto,
+    final String collectionId) {
+
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleProcessReportRequestWithDefinition(singleProcessReportDefinitionDto, collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
   private String createNewSingleProcessReportInCollection(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String createNewSingleDecisionReportWithDefinitionInCollection(
+    final SingleDecisionReportDefinitionDto reportDefinitionDto,
+    final String collectionId) {
+
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleDecisionReportRequestWithDefinition(reportDefinitionDto, collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -504,6 +590,17 @@ public class CollectionHandlingIT {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(collectionId)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String createNewCombinedReportWithDefinitionInCollection(
+    final CombinedReportDefinitionDto reportDefinitionDto,
+    final String collectionId) {
+
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequestWithDefinition(reportDefinitionDto, collectionId)
       .execute(IdDto.class, 200)
       .getId();
   }

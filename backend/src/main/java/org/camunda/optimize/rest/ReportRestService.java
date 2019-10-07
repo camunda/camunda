@@ -64,7 +64,13 @@ public class ReportRestService {
                                             @QueryParam("collectionId") final String collectionId,
                                             SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewSingleProcessReport(userId, collectionId, singleProcessReportDefinitionDto);
+    if (singleProcessReportDefinitionDto == null) {
+      singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    }
+    if (collectionId != null) {
+      singleProcessReportDefinitionDto.setCollectionId(collectionId);
+    }
+    return reportService.createNewSingleProcessReport(userId, singleProcessReportDefinitionDto);
   }
 
   /**
@@ -80,7 +86,13 @@ public class ReportRestService {
                                              @QueryParam("collectionId") final String collectionId,
                                              SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewSingleDecisionReport(userId, collectionId, singleDecisionReportDefinitionDto);
+    if (singleDecisionReportDefinitionDto == null) {
+      singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    }
+    if (collectionId != null) {
+      singleDecisionReportDefinitionDto.setCollectionId(collectionId);
+    }
+    return reportService.createNewSingleDecisionReport(userId, singleDecisionReportDefinitionDto);
   }
 
   /**
@@ -96,7 +108,13 @@ public class ReportRestService {
                                               @QueryParam("collectionId") final String collectionId,
                                               CombinedReportDefinitionDto combinedReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.createNewCombinedProcessReport(userId, collectionId, combinedReportDefinitionDto);
+    if (combinedReportDefinitionDto == null) {
+      combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    }
+    if (collectionId != null) {
+      combinedReportDefinitionDto.setCollectionId(collectionId);
+    }
+    return reportService.createNewCombinedProcessReport(userId, combinedReportDefinitionDto);
   }
 
   @POST
