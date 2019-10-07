@@ -28,12 +28,12 @@ export const TextInput = styled(BasicTextInput)`
   &:first-child {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
+    border-right: none;
   }
 
   &:nth-child(2) {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
-    border-left: none;
   }
 
   :focus {
