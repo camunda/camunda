@@ -13,8 +13,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.Optional;
-
 import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.ProcessPartQueryUtil.addProcessPartQuery;
 import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.ProcessPartQueryUtil.createProcessPartAggregation;
 import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.ProcessPartQueryUtil.processProcessPartAggregationOperations;
@@ -30,11 +28,9 @@ public class ProcessInstanceDurationGroupByNoneWithProcessPartCommand
   @Override
   public BoolQueryBuilder setupBaseQuery(ProcessReportDataDto processReportData) {
     BoolQueryBuilder boolQueryBuilder = super.setupBaseQuery(processReportData);
-    Optional<ProcessPartDto> processPart = processReportData.getProcessPart();
-    if (!processPart.isPresent()) {
-      throw new OptimizeRuntimeException("Missing ProcessPart");
-    }
-    return addProcessPartQuery(boolQueryBuilder, processPart.get().getStart(), processPart.get().getEnd());
+    ProcessPartDto processPart = processReportData.getProcessPart()
+      .orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
+    return addProcessPartQuery(boolQueryBuilder, processPart.getStart(), processPart.getEnd());
   }
 
   @Override
@@ -44,10 +40,7 @@ public class ProcessInstanceDurationGroupByNoneWithProcessPartCommand
 
   @Override
   protected AggregationBuilder createOperationsAggregation() {
-    Optional<ProcessPartDto> processPart = ((ProcessReportDataDto) getReportData()).getProcessPart();
-    if (!processPart.isPresent()) {
-      throw new OptimizeRuntimeException("Missing ProcessPart");
-    }
-    return createProcessPartAggregation(processPart.get().getStart(), processPart.get().getEnd());
+    ProcessPartDto processPart = ((ProcessReportDataDto) getReportData()).getProcessPart().orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
+    return createProcessPartAggregation(processPart.getStart(), processPart.getEnd());
   }
 }
