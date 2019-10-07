@@ -17,19 +17,26 @@ package zbc
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"net"
-	"os"
 	"strings"
 	"testing"
 )
 
-func TestNewZBClientWithTls(t *testing.T) {
+type clientTestSuite struct {
+	*envSuite
+}
+
+func TestClientSuite(t *testing.T) {
+	suite.Run(t, clientTestSuite{envSuite: new(envSuite)})
+}
+
+func (s *clientTestSuite) TestNewZBClientWithTls() {
 	// given
 	lis, grpcServer := createSecureServer()
 
@@ -45,19 +52,19 @@ func TestNewZBClientWithTls(t *testing.T) {
 		CaCertificatePath: "../resources/ca.cert.pem",
 	})
 
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// when
 	_, err = client.NewTopologyCommand().Send()
 
 	// then
-	require.Error(t, err)
-	if status, ok := status.FromError(err); ok {
-		require.Equal(t, codes.Unimplemented, status.Code())
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
+		s.EqualValues(codes.Unimplemented, grpcStatus.Code())
 	}
 }
 
-func TestInsecureEnvVar(t *testing.T) {
+func (s *clientTestSuite) TestInsecureEnvVar() {
 	// given
 	lis, grpcServer := createSecureServer()
 
@@ -73,17 +80,16 @@ func TestInsecureEnvVar(t *testing.T) {
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "../resources/ca.cert.pem",
 	}
-	os.Setenv(ZbInsecureEnvVar, "true")
-	defer os.Clearenv()
+	env.set(ZbInsecureEnvVar, "true")
 
 	_, err := NewZBClientWithConfig(config)
 
 	// then
-	require.NoError(t, err)
-	require.EqualValues(t, true, config.UsePlaintextConnection)
+	s.NoError(err)
+	s.EqualValues(true, config.UsePlaintextConnection)
 }
 
-func TestCaCertificateEnvVar(t *testing.T) {
+func (s *clientTestSuite) TestCaCertificateEnvVar() {
 	// given
 	lis, grpcServer := createSecureServer()
 
@@ -99,22 +105,18 @@ func TestCaCertificateEnvVar(t *testing.T) {
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "../resources/wrong.cert",
 	}
-	os.Setenv(ZbCaCertificatePath, "../resources/ca.cert.pem")
-	defer os.Clearenv()
+	env.set(ZbCaCertificatePath, "../resources/ca.cert.pem")
 
 	_, err := NewZBClientWithConfig(config)
 
 	// then
-	require.NoError(t, err)
-	require.EqualValues(t, "../resources/ca.cert.pem", config.CaCertificatePath)
+	s.NoError(err)
+	s.EqualValues("../resources/ca.cert.pem", config.CaCertificatePath)
 }
 
-func TestNewZBClientWithoutTls(t *testing.T) {
+func (s *clientTestSuite) TestNewZBClientWithoutTls() {
 	// given
-	lis, _ := net.Listen("tcp", "0.0.0.0:0")
-
-	grpcServer := grpc.NewServer()
-	pb.RegisterGatewayServer(grpcServer, &pb.UnimplementedGatewayServer{})
+	lis, grpcServer := createServer()
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -129,19 +131,19 @@ func TestNewZBClientWithoutTls(t *testing.T) {
 		CaCertificatePath:      "../resources/ca.cert.pem",
 	})
 
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// when
 	_, err = client.NewTopologyCommand().Send()
 
 	// then
-	require.Error(t, err)
-	if status, ok := status.FromError(err); ok {
-		require.Equal(t, codes.Unimplemented, status.Code())
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.Unimplemented, grpcStatus.Code())
 	}
 }
 
-func TestNewZBClientWithDefaultRootCa(t *testing.T) {
+func (s *clientTestSuite) TestNewZBClientWithDefaultRootCa() {
 	// given
 	lis, grpcServer := createSecureServer()
 
@@ -156,20 +158,20 @@ func TestNewZBClientWithDefaultRootCa(t *testing.T) {
 		GatewayAddress: fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 	})
 
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// then
 	_, err = client.NewTopologyCommand().Send()
 
 	// when
-	require.Error(t, err)
-	if status, ok := status.FromError(err); ok {
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
 		// asserts that an attempt was made to validate the certificate (which fails because it's not installed)
-		require.Contains(t, status.Message(), "certificate signed by unknown authority")
+		s.Contains(grpcStatus.Message(), "certificate signed by unknown authority")
 	}
 }
 
-func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
+func (s *clientTestSuite) TestNewZBClientWithPathToNonExistingFile() {
 	// given
 	lis, grpcServer := createSecureServer()
 
@@ -189,15 +191,12 @@ func TestNewZBClientWithPathToNonExistingFile(t *testing.T) {
 	})
 
 	// then
-	require.EqualValues(t, FileNotFoundError, errors.Cause(err))
+	s.EqualValues(FileNotFoundError, errors.Cause(err))
 }
 
-func TestNewZBClientWithDefaultCredentialsProvider(t *testing.T) {
+func (s *clientTestSuite) TestNewZBClientWithDefaultCredentialsProvider() {
 	// given
-	lis, _ := net.Listen("tcp", "0.0.0.0:0")
-
-	grpcServer := grpc.NewServer()
-	pb.RegisterGatewayServer(grpcServer, &pb.UnimplementedGatewayServer{})
+	lis, grpcServer := createServer()
 
 	go grpcServer.Serve(lis)
 	defer func() {
@@ -205,13 +204,12 @@ func TestNewZBClientWithDefaultCredentialsProvider(t *testing.T) {
 		_ = lis.Close()
 	}()
 
-	authzServer := mockAuthorizationServerWithAudience(t, &mutableToken{value: accessToken}, "0.0.0.0")
+	authzServer := mockAuthorizationServerWithAudience(s.T(), &mutableToken{value: accessToken}, "0.0.0.0")
 	defer authzServer.Close()
 
-	os.Setenv(OAuthClientSecretEnvVar, clientSecret)
-	os.Setenv(OAuthClientIdEnvVar, clientID)
-	os.Setenv(OAuthAuthorizationUrlEnvVar, authzServer.URL)
-	defer os.Clearenv()
+	env.set(OAuthClientSecretEnvVar, clientSecret)
+	env.set(OAuthClientIdEnvVar, clientID)
+	env.set(OAuthAuthorizationUrlEnvVar, authzServer.URL)
 
 	parts := strings.Split(lis.Addr().String(), ":")
 	config := &ZBClientConfig{
@@ -220,24 +218,26 @@ func TestNewZBClientWithDefaultCredentialsProvider(t *testing.T) {
 	}
 	client, err := NewZBClientWithConfig(config)
 
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// when
 	_, err = client.NewTopologyCommand().Send()
 
 	// then
-	require.Error(t, err)
-	if status, ok := status.FromError(err); ok {
-		require.Equal(t, codes.Unimplemented, status.Code())
+	s.Error(err)
+	if grpcStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.Unimplemented, grpcStatus.Code())
 	}
 }
 
 func createSecureServer() (net.Listener, *grpc.Server) {
-	listener, _ := net.Listen("tcp", "0.0.0.0:0")
 	creds, _ := credentials.NewServerTLSFromFile("../resources/chain.cert.pem", "../resources/private.key.pem")
+	return createServer(grpc.Creds(creds))
+}
 
-	grpcServer := grpc.NewServer(grpc.Creds(creds))
+func createServer(opts ...grpc.ServerOption) (net.Listener, *grpc.Server) {
+	lis, _ := net.Listen("tcp", "0.0.0.0:0")
+	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterGatewayServer(grpcServer, &pb.UnimplementedGatewayServer{})
-
-	return listener, grpcServer
+	return lis, grpcServer
 }

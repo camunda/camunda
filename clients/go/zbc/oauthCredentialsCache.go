@@ -57,7 +57,7 @@ type oauthCachedCredentials struct {
 func NewOAuthYamlCredentialsCache(path string) (*oauthYamlCredentialsCache, error) {
 	var err error
 
-	envCachePath := os.Getenv(OAuthCachePathEnvVar)
+	envCachePath := env.get(OAuthCachePathEnvVar)
 	if envCachePath != "" {
 		path = envCachePath
 	} else if path == "" {

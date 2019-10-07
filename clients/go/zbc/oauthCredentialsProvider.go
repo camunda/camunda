@@ -26,7 +26,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 )
 
 const OAuthClientIdEnvVar = "ZEEBE_CLIENT_ID"
@@ -174,16 +173,16 @@ func (provider *OAuthCredentialsProvider) getCachedCredentials() *OAuthCredentia
 }
 
 func applyCredentialEnvOverrides(config *OAuthProviderConfig) {
-	if envClientID := os.Getenv(OAuthClientIdEnvVar); envClientID != "" {
+	if envClientID := env.get(OAuthClientIdEnvVar); envClientID != "" {
 		config.ClientID = envClientID
 	}
-	if envClientSecret := os.Getenv(OAuthClientSecretEnvVar); envClientSecret != "" {
+	if envClientSecret := env.get(OAuthClientSecretEnvVar); envClientSecret != "" {
 		config.ClientSecret = envClientSecret
 	}
-	if envAudience := os.Getenv(OAuthTokenAudienceEnvVar); envAudience != "" {
+	if envAudience := env.get(OAuthTokenAudienceEnvVar); envAudience != "" {
 		config.Audience = envAudience
 	}
-	if envAuthzServerURL := os.Getenv(OAuthAuthorizationUrlEnvVar); envAuthzServerURL != "" {
+	if envAuthzServerURL := env.get(OAuthAuthorizationUrlEnvVar); envAuthzServerURL != "" {
 		config.AuthorizationServerURL = envAuthzServerURL
 	}
 }
