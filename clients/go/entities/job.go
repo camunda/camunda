@@ -16,27 +16,50 @@ package entities
 
 import (
 	"encoding/json"
+
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 )
 
+// Job represents a single work item of a workflow.
+//
+// See https://docs.zeebe.io/basics/job-workers.html#what-is-a-job for details
+// on jobs.
 type Job struct {
 	pb.ActivatedJob
 }
 
-func (job *Job) GetVariablesAsMap() (map[string]interface{}, error) {
-	var variablesMap map[string]interface{}
-	return variablesMap, job.GetVariablesAs(&variablesMap)
+// GetVariablesAsMap retuns a map of a workflow instance's variables.
+//
+// See https://docs.zeebe.io/reference/variables.html for details on workflow
+// variables.
+func (j *Job) GetVariablesAsMap() (map[string]interface{}, error) {
+	var m map[string]interface{}
+	return m, j.GetVariablesAs(&m)
 }
 
-func (job *Job) GetVariablesAs(variablesType interface{}) error {
-	return json.Unmarshal([]byte(job.Variables), variablesType)
+// GetVariablesAs unmarshals the JSON representation of a workflow instance's
+// variables into type t.
+//
+// See https://docs.zeebe.io/reference/variables.html for details on workflow
+// variables.
+func (j *Job) GetVariablesAs(t interface{}) error {
+	return json.Unmarshal([]byte(j.Variables), t)
 }
 
-func (job *Job) GetCustomHeadersAsMap() (map[string]string, error) {
-	var customHeadersMap map[string]string
-	return customHeadersMap, job.GetCustomHeadersAs(&customHeadersMap)
+// GetCustomHeadersAsMap returns a map of a workflow's custom headers.
+//
+// Unlike variables, custom headers are specific to a workflow, as opposed to a
+// workflow instance.
+func (j *Job) GetCustomHeadersAsMap() (map[string]string, error) {
+	var m map[string]string
+	return m, j.GetCustomHeadersAs(&m)
 }
 
-func (job *Job) GetCustomHeadersAs(customHeadersType interface{}) error {
-	return json.Unmarshal([]byte(job.CustomHeaders), customHeadersType)
+// GetCustomHeadersAs unmarshals the JSON representation of a workflow's
+// custom headers into type t.
+//
+// Unlike variables, custom headers are specific to a workflow, as opposed to a
+// workflow instance.
+func (j *Job) GetCustomHeadersAs(t interface{}) error {
+	return json.Unmarshal([]byte(j.CustomHeaders), t)
 }
