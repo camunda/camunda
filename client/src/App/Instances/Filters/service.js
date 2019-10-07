@@ -54,13 +54,14 @@ export function getLastVersionOfWorkflow(workflow = {}) {
 }
 
 export function checkIsDateComplete(date) {
-  if (date === '') {
+  const trimmedDate = trimValue(date);
+  if (trimmedDate === '') {
     return true;
   }
 
-  return !!trimValue(date).match(
-    /^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/
-  );
+  const r = !!trimmedDate.match(/^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/);
+
+  return r;
 }
 
 export function checkIsVariableComplete(variable) {

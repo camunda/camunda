@@ -52,6 +52,10 @@ describe('Filters/service', () => {
     it('should return true for date with whitespaces', () => {
       expect(checkIsDateComplete('     2019-03-12 12:59:30     ')).toBe(true);
     });
+
+    it('should return true for only whitespace', () => {
+      expect(checkIsDateComplete('     ')).toBe(true);
+    });
   });
 
   describe('checkIsVariableComplete', () => {
