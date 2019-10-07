@@ -169,11 +169,12 @@ public final class EngineRule extends ExternalResource {
         partitionId -> {
           try {
             environmentRule.closeStreamProcessor(partitionId);
-            FileUtil.deleteFolder(
-                environmentRule
-                    .getStateSnapshotController(partitionId)
-                    .getLastValidSnapshotDirectory()
-                    .toPath());
+
+            final var snapshotController = environmentRule.getStateSnapshotController(partitionId);
+
+            if (snapshotController.getValidSnapshotsCount() > 0) {
+              FileUtil.deleteFolder(snapshotController.getLastValidSnapshotDirectory().toPath());
+            }
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }
