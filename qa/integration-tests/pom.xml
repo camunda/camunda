@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>0.21.0-SNAPSHOT</version>
+    <version>0.20.1</version>
   </parent>
 
   <dependencies>
