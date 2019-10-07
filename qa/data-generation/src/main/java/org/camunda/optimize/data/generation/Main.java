@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class Main {
 
   private final Logger logger = LoggerFactory.getLogger(getClass());

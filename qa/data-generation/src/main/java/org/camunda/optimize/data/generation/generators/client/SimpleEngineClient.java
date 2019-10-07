@@ -89,20 +89,18 @@ public class SimpleEngineClient {
 
   @SneakyThrows
   public void initializeDefaultUsers() {
-    for (String user : users) {
-      String body = "{\"type\" : 0,\n" +
-        " \"permissions\": [\"ALL\"],\n" +
-        " \"userId\": \"user\",\n" +
-        " \"groupId\": null,\n" +
-        " \"resourceType\": 0,\n" +
-        " \"resourceId\": \"*\"}";
-      HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
-      authPost.setEntity(new StringEntity(body));
-      authPost.addHeader("Content-Type", "application/json");
+    String body = "{\"type\" : 0,\n" +
+      " \"permissions\": [\"ALL\"],\n" +
+      " \"userId\": \"*\",\n" +
+      " \"groupId\": null,\n" +
+      " \"resourceType\": 0,\n" +
+      " \"resourceId\": \"*\"}";
+    HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
+    authPost.setEntity(new StringEntity(body));
+    authPost.addHeader("Content-Type", "application/json");
 
-      try (CloseableHttpResponse createUser = client.execute(authPost)) {
-        log.info("Created user {}.", user);
-      }
+    try (CloseableHttpResponse createUserResponse = client.execute(authPost)) {
+      log.info("Response Status Code {} when creating global application authorization for all users", createUserResponse.getStatusLine().getStatusCode());
     }
   }
 

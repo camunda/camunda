@@ -455,12 +455,12 @@ public class DecisionDefinitionRestServiceIT {
 
   private void createTenantAuthorization(final String tenantUser,
                                          final ImmutableList<String> permissions,
-                                         final String resourceIdId,
+                                         final String resourceId,
                                          int type) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
     authorizationDto.setPermissions(permissions);
-    authorizationDto.setResourceId(resourceIdId);
+    authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(type);
     authorizationDto.setUserId(tenantUser);
     engineRule.createAuthorization(authorizationDto);

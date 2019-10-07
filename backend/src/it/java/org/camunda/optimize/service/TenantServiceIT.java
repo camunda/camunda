@@ -236,17 +236,17 @@ public class TenantServiceIT {
 
   private void createUserWithTenantAuthorization(final String tenantUser,
                                                  final ImmutableList<String> permissions,
-                                                 final String resourceIdId) {
+                                                 final String resourceId) {
     createOptimizeUser(tenantUser);
-    createTenantAuthorization(tenantUser, permissions, resourceIdId, AUTHORIZATION_TYPE_GRANT);
+    createTenantAuthorization(tenantUser, permissions, resourceId, AUTHORIZATION_TYPE_GRANT);
   }
 
   private void createTenantAuthorization(final String tenantUser, final ImmutableList<String> permissions,
-                                         final String resourceIdId, int type) {
+                                         final String resourceId, int type) {
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
     authorizationDto.setPermissions(permissions);
-    authorizationDto.setResourceId(resourceIdId);
+    authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(type);
     authorizationDto.setUserId(tenantUser);
     engineRule.createAuthorization(authorizationDto);

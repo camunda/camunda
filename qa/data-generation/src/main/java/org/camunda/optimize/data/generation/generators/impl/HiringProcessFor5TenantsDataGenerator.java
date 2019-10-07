@@ -37,7 +37,7 @@ public class HiringProcessFor5TenantsDataGenerator extends DataGenerator {
 
   @Override
   protected void generateTenants() {
-    this.tenants = Lists.newArrayList("hr", "engineering", "sales", "support", "csm");
+    this.tenants = Lists.newArrayList("hr", "engineering", "marketing", "support", "csm");
   }
 
   @Override
