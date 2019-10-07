@@ -16,7 +16,7 @@ export default class HeatmapOverlay extends React.Component {
     if (this.props.formatter) {
       return (
         <Tooltip
-          alwaysShow={this.props.alwaysShow}
+          {...this.props.tooltipOptions}
           viewer={this.props.viewer}
           data={this.props.data}
           formatter={this.props.formatter}

@@ -146,14 +146,9 @@ it('should show a tooltip with information about actual and target value', () =>
     />
   );
 
-  const tooltip = node
-    .find(HeatmapOverlay)
-    .props()
-    .formatter('', 'b');
+  const tooltip = node.find(HeatmapOverlay).renderProp('formatter')('', 'b');
 
-  expect(tooltip.textContent).toContain('target duration: 1ms'.replace(/ /g, '\u00A0'));
-  expect(tooltip.textContent).toContain('actual duration: 2ms'.replace(/ /g, '\u00A0'));
-  expect(tooltip.textContent).toContain('200% of the target value'.replace(/ /g, '\u00A0'));
+  expect(tooltip).toMatchSnapshot();
 });
 
 it('should inform if the actual value is less than 1% of the target value', () => {
@@ -174,14 +169,9 @@ it('should inform if the actual value is less than 1% of the target value', () =
     />
   );
 
-  const tooltip = node
-    .find(HeatmapOverlay)
-    .props()
-    .formatter('', 'b');
+  const tooltip = node.find(HeatmapOverlay).renderProp('formatter')('', 'b');
 
-  expect(tooltip.textContent).toContain('target duration: 10000ms'.replace(/ /g, '\u00A0'));
-  expect(tooltip.textContent).toContain('actual duration: 1ms'.replace(/ /g, '\u00A0'));
-  expect(tooltip.textContent).toContain('< 1% of the target value'.replace(/ /g, '\u00A0'));
+  expect(tooltip).toMatchSnapshot();
 });
 
 it('should show a tooltip with information if no actual value is available', () => {
@@ -207,16 +197,9 @@ it('should show a tooltip with information if no actual value is available', () 
     />
   );
 
-  const tooltip = node
-    .find(HeatmapOverlay)
-    .props()
-    .formatter('', 'b');
+  const tooltip = node.find(HeatmapOverlay).renderProp('formatter')('', 'b');
 
-  expect(tooltip.textContent).toContain('target duration: 1ms'.replace(/ /g, '\u00A0'));
-  expect(tooltip.textContent).toContain('No actual value available.'.replace(/ /g, '\u00A0'));
-  expect(tooltip.textContent).toContain(
-    'Cannot compare target and actual value'.replace(/ /g, '\u00A0')
-  );
+  expect(tooltip).toMatchSnapshot();
 });
 
 it('should not display an error message if data is valid', () => {

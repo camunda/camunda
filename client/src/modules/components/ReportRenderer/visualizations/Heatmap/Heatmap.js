@@ -43,9 +43,9 @@ const Heatmap = ({report, formatter, errorMessage}) => {
       <HeatmapOverlay
         key="heatmap"
         data={heat}
-        alwaysShow={alwaysShow}
+        tooltipOptions={{alwaysShow}}
         formatter={(_, id) => {
-          const node = document.createElement('div');
+          let tooltipHTML = '';
 
           const target = formatters.convertToMilliseconds(
             targetValue.values[id].value,
@@ -53,25 +53,25 @@ const Heatmap = ({report, formatter, errorMessage}) => {
           );
           const real = resultObj[id];
 
-          node.innerHTML = `${t('report.heatTarget.targetDuration')}: ${formatters.duration(
+          tooltipHTML = `${t('report.heatTarget.targetDuration')}: ${formatters.duration(
             target
           )}<br/>`;
 
           if (typeof real === 'number') {
             const relation = (real / target) * 100;
 
-            node.innerHTML += t('report.heatTarget.actualDuration', {
+            tooltipHTML += t('report.heatTarget.actualDuration', {
               duration: formatters.duration(real),
               percentage: relation < 1 ? '< 1' : Math.round(relation)
             });
           } else {
-            node.innerHTML += t('report.heatTarget.noValueAvailable');
+            tooltipHTML += t('report.heatTarget.noValueAvailable');
           }
 
           // tooltips don't work well with spaces
-          node.innerHTML = node.innerHTML.replace(/ /g, '\u00A0');
+          tooltipHTML = tooltipHTML.replace(/ /g, '\u00A0');
 
-          return node;
+          return <span dangerouslySetInnerHTML={{__html: tooltipHTML}} />;
         }}
       />,
       <TargetValueBadge key="targetValueBadge" values={targetValue.values} />
@@ -80,7 +80,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
     heatmapComponent = (
       <HeatmapOverlay
         data={resultObj}
-        alwaysShow={alwaysShow}
+        tooltipOptions={{alwaysShow}}
         formatter={data =>
           getTooltipText(
             data,

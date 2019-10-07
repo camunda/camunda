@@ -12,43 +12,6 @@
   .Tooltip__text-top,
   .Tooltip__text-bottom {
     padding: 10px;
-    background: #fff;
-    color: #000;
-    border: 1px solid grey;
-  }
-
-  .Tooltip__text-top {
-    &:before {
-      content: ' ';
-      position: absolute;
-      top: 100%;
-      left: 50%;
-      margin-left: -6px;
-      border-width: 6px;
-      border-style: solid;
-      border-color: gray transparent transparent transparent;
-    }
-
-    &:after {
-      border-color: #fff transparent transparent transparent;
-    }
-  }
-
-  .Tooltip__text-bottom {
-    &:before {
-      content: ' ';
-      position: absolute;
-      bottom: 100%; /* At the top of the tooltip */
-      left: 50%;
-      margin-left: -5px;
-      border-width: 5px;
-      border-style: solid;
-      border-color: transparent transparent gray transparent;
-    }
-
-    &:after {
-      border-color: transparent transparent #fff transparent;
-    }
   }
 
   .nodeTooltip {

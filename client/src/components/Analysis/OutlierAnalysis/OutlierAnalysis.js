@@ -9,7 +9,6 @@ import React, {Component} from 'react';
 import OutlierControlPanel from './OutlierControlPanel';
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
 import {BPMNDiagram, HeatmapOverlay, Button} from 'components';
-import ReactDOM from 'react-dom';
 import equal from 'deep-equal';
 
 import {loadNodesOutliers, loadDurationData} from './service';
@@ -93,14 +92,14 @@ export default class OutlierAnalysis extends Component {
     });
   };
 
-  renderTooltip = (id, data) => {
+  renderTooltip = (data, id) => {
     const nodeData = this.state.data[id];
     if (!data || !nodeData.higherOutlier) {
       return undefined;
     }
 
     return (
-      <>
+      <div className="nodeTooltip">
         <div className="tooltipTitle">
           <b>{this.state.flowNodeNames[id] || id} :</b> {t('analysis.outlier.totalInstances')}{' '}
           {nodeData.totalCount}
@@ -117,7 +116,7 @@ export default class OutlierAnalysis extends Component {
           })}
         </p>
         <Button onClick={() => this.loadChartData(id, nodeData)}>{t('common.viewDetails')}</Button>
-      </>
+      </div>
     );
   };
 
@@ -147,14 +146,10 @@ export default class OutlierAnalysis extends Component {
           {xml && (
             <BPMNDiagram xml={xml}>
               <HeatmapOverlay
+                tooltipOptions={{theme: 'light'}}
                 noSequenceHighlight
                 data={heatData}
-                formatter={(data, id) => {
-                  const div = document.createElement('div');
-                  div.className = 'nodeTooltip';
-                  ReactDOM.render(this.renderTooltip(id, data), div);
-                  return div;
-                }}
+                formatter={this.renderTooltip}
               />
             </BPMNDiagram>
           )}
