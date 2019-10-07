@@ -37,7 +37,6 @@ import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.springframework.stereotype.Component;
@@ -259,37 +258,25 @@ public class ReportWriter {
   }
 
   public void deleteSingleReport(final String reportId) {
-    log.debug("Deleting single report with id [{}]", reportId);
+    String deletedItemName = "single report";
+    String deletedItemIdentifier = String.format("ID %s", reportId);
 
-    DeleteByQueryRequest request = new DeleteByQueryRequest(
+    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+      esClient,
+      idsQuery().addIds(reportId),
+      deletedItemName,
+      deletedItemIdentifier,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SINGLE_DECISION_REPORT_INDEX_NAME
-    )
-      .setQuery(idsQuery().addIds(reportId))
-      .setRefresh(true);
-
-    BulkByScrollResponse bulkByScrollResponse;
-    try {
-      bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason =
-        String.format("Could not delete single report with id [%s].", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
-      String message = String.format(
-        "Could not delete single process report with id [%s]. Single process report does not exist."
-          + "Maybe it was already deleted by someone else?",
-        reportId
-      );
-      log.error(message);
-      throw new OptimizeRuntimeException(message);
-    }
+    );
   }
 
   public void removeSingleReportFromCombinedReports(final String reportId) {
+    String updateItemName = "report";
+    log.info(
+      "Removing {} with ID [{}] from combined report.", updateItemName, reportId
+    );
+
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
@@ -310,32 +297,14 @@ public class ReportWriter {
       ScoreMode.None
     );
 
-    UpdateByQueryRequest request = new UpdateByQueryRequest(COMBINED_REPORT_INDEX_NAME)
-      .setAbortOnVersionConflict(false)
-      .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
-      .setQuery(query)
-      .setScript(removeReportIdFromCombinedReportsScript)
-      .setRefresh(true);
-
-    BulkByScrollResponse bulkByScrollResponse;
-    try {
-      bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Could not remove report with id [%s] from combined report.", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
-      String errorMessage =
-        String.format(
-          "Could not remove report id [%s] from one or more combined report/s! Error response: %s",
-          reportId,
-          bulkByScrollResponse.getBulkFailures()
-        );
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
+    ElasticsearchWriterUtil.doUpdateByQueryRequest(
+      esClient,
+      "report",
+      reportId,
+      removeReportIdFromCombinedReportsScript,
+      query,
+      COMBINED_REPORT_INDEX_NAME
+    );
   }
 
   public void deleteCombinedReport(final String reportId) {
@@ -365,28 +334,17 @@ public class ReportWriter {
   }
 
   public void deleteAllReportsOfCollection(String collectionId) {
-    log.debug("Deleting all reports of collection with collectionId [{}]", collectionId);
-    DeleteByQueryRequest request = new DeleteByQueryRequest(
+    String deletedItemName = "all reports of collection";
+    String deletedItemIdentifier = String.format("collectionId [%s]", collectionId);
+
+    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+      esClient,
+      QueryBuilders.termQuery(COLLECTION_ID, collectionId),
+      deletedItemName,
+      deletedItemIdentifier,
       COMBINED_REPORT_INDEX_NAME,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SINGLE_DECISION_REPORT_INDEX_NAME
-    )
-      .setQuery(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
-
-    BulkByScrollResponse deleteResponse;
-    try {
-      deleteResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason =
-        String.format("Could not delete reports of collection with collectionId [%s].", collectionId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    log.debug(
-      "Deleted [{}] reports that were part of collection with collectionId [{}]",
-      deleteResponse.getDeleted(),
-      collectionId
     );
   }
 }

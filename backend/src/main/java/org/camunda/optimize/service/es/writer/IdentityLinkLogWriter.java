@@ -9,24 +9,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.support.WriteRequest;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,12 +43,10 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_ASSIGNEE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_CANDIDATE;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @Component
 @Slf4j
-public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
+public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstanceDto> {
 
   private final OptimizeElasticsearchClient esClient;
 
@@ -66,52 +57,44 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
   }
 
   public void importIdentityLinkLogs(final List<IdentityLinkLogEntryDto> identityLinkLogs) throws Exception {
-    log.debug("Writing [{}] identity link logs to elasticsearch", identityLinkLogs.size());
-
-    final BulkRequest userTaskToProcessInstanceBulkRequest = new BulkRequest();
-    userTaskToProcessInstanceBulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    String importItemName = "identity link logs";
+    log.debug("Writing [{}] {} to ES.", identityLinkLogs.size(), importItemName);
 
     final Map<String, List<IdentityLinkLogEntryDto>> identityLinksByTaskId = identityLinkLogs.stream()
       // we need to group by concurrent to make sure that the order is preserved
       .collect(groupingByConcurrent(IdentityLinkLogEntryDto::getTaskId));
 
-    final Map<String, List<UserTaskInstanceDto>> userTasksByProcessInstance = identityLinksByTaskId
-      .values()
-      .stream()
-      .map(identityLinkLogEntryDtos -> {
-        final IdentityLinkLogEntryDto firstOperationEntry = identityLinkLogEntryDtos.get(0);
-        List<AssigneeOperationDto> assigneeOperations = mapToAssigneeOperationDtos(identityLinkLogEntryDtos);
-        List<CandidateGroupOperationDto> candidateGroupOperations = mapToCandidateGroupOperationDtos(
-          identityLinkLogEntryDtos);
-        return new UserTaskInstanceDto(
-          firstOperationEntry.getTaskId(),
-          firstOperationEntry.getProcessInstanceId(),
-          firstOperationEntry.getEngine(),
-          extractAssignee(assigneeOperations),
-          extractCandidateGroups(candidateGroupOperations),
-          assigneeOperations,
-          candidateGroupOperations
-        );
-      })
-      .collect(groupingBy(UserTaskInstanceDto::getProcessInstanceId));
-
-    for (Map.Entry<String, List<UserTaskInstanceDto>> processInstanceEntry : userTasksByProcessInstance.entrySet()) {
-      addUserTaskToProcessInstanceRequest(
-        userTaskToProcessInstanceBulkRequest,
-        processInstanceEntry.getKey(),
-        processInstanceEntry.getValue()
-      );
+    List<UserTaskInstanceDto> userTaskInstances = new ArrayList<>();
+    for (List<IdentityLinkLogEntryDto> identityLinkLogEntryDtoList : identityLinksByTaskId.values()) {
+      final IdentityLinkLogEntryDto firstOperationEntry = identityLinkLogEntryDtoList.get(0);
+      List<AssigneeOperationDto> assigneeOperations = mapToAssigneeOperationDtos(identityLinkLogEntryDtoList);
+      List<CandidateGroupOperationDto> candidateGroupOperations = mapToCandidateGroupOperationDtos(
+        identityLinkLogEntryDtoList);
+      userTaskInstances.add(new UserTaskInstanceDto(
+        firstOperationEntry.getTaskId(),
+        firstOperationEntry.getProcessInstanceId(),
+        firstOperationEntry.getEngine(),
+        extractAssignee(assigneeOperations),
+        extractCandidateGroups(candidateGroupOperations),
+        assigneeOperations,
+        candidateGroupOperations
+      ));
     }
 
-    final BulkResponse bulkResponse = esClient.bulk(userTaskToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
-    if (bulkResponse.hasFailures()) {
-      String errorMessage = String.format(
-        "There were failures while writing identity link logs with message: %s",
-        bulkResponse.buildFailureMessage()
-      );
-      throw new OptimizeRuntimeException(errorMessage);
+    final Map<String, List<UserTaskInstanceDto>> userTasksByProcessInstance = new HashMap<>();
+    for (UserTaskInstanceDto userTask : userTaskInstances) {
+      if (!userTasksByProcessInstance.containsKey(userTask.getProcessInstanceId())) {
+        userTasksByProcessInstance.put(userTask.getProcessInstanceId(), new ArrayList<>());
+      }
+      userTasksByProcessInstance.get(userTask.getProcessInstanceId()).add(userTask);
     }
 
+    ElasticsearchWriterUtil.doBulkRequestWithMap(
+      esClient,
+      importItemName,
+      userTasksByProcessInstance,
+      this::addImportUserTaskToRequest
+    );
   }
 
   private List<CandidateGroupOperationDto> mapToCandidateGroupOperationDtos(List<IdentityLinkLogEntryDto> identityLinkLogs) {
@@ -185,33 +168,9 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
     }
   }
 
-  private void addUserTaskToProcessInstanceRequest(final BulkRequest bulkRequest,
-                                                   final String processInstanceId,
-                                                   final List<UserTaskInstanceDto> userTasks)
-    throws IOException {
-    final Script updateScript = createUpdateScript(userTasks);
-
-    final UserTaskInstanceDto firstUserTaskInstance = userTasks.stream().findFirst()
-      .orElseThrow(() -> new OptimizeRuntimeException("No user tasks to import provided"));
-    final ProcessInstanceDto procInst = new ProcessInstanceDto()
-      .setProcessInstanceId(firstUserTaskInstance.getProcessInstanceId())
-      .setEngine(firstUserTaskInstance.getEngine())
-      .setUserTasks(userTasks);
-    String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-
-    UpdateRequest request = new UpdateRequest(
-      PROCESS_INSTANCE_INDEX_NAME,
-      PROCESS_INSTANCE_INDEX_NAME, processInstanceId
-    )
-      .script(updateScript)
-      .upsert(newEntryIfAbsent, XContentType.JSON)
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-    bulkRequest.add(request);
-  }
-
-  private Script createUpdateScript(final List<UserTaskInstanceDto> userTasksWithAssigneeAndCandidateGroups) {
-    return createDefaultScript(
+  @Override
+  protected String createInlineUpdateScript() {
+    return
       // @formatter:off
       // 1 check for existing userTask
       "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
@@ -244,13 +203,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter {
       "}\n" +
        createUpdateAssigneeScript() +
        createUpdateCandidateGroupScript() +
-       createUpdateUserTaskMetricsScript()
-      ,
-      // @formatter:on
-      ImmutableMap.of(
-        USER_TASKS, mapToParameterSet(userTasksWithAssigneeAndCandidateGroups)
-      )
-    );
+       createUpdateUserTaskMetricsScript();
   }
 
   private static String createUpdateAssigneeScript() {

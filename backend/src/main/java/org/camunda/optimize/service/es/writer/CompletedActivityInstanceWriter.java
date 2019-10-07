@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class CompletedActivityInstanceWriter extends AbstractActivityInstanceWriter {
 
   public CompletedActivityInstanceWriter(final OptimizeElasticsearchClient esClient,

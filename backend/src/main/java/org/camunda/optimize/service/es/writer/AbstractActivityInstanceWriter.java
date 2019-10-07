@@ -7,15 +7,14 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.script.Script;
 import org.slf4j.Logger;
@@ -23,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -36,16 +36,16 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 @AllArgsConstructor
 @Component
 public abstract class AbstractActivityInstanceWriter {
-  protected final Logger logger = LoggerFactory.getLogger(getClass());
+  protected final Logger log = LoggerFactory.getLogger(getClass());
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public void importActivityInstances(List<FlowNodeEventDto> events) throws Exception {
-    logger.debug("Writing [{}] activity instances to elasticsearch", events.size());
+  public void importActivityInstances(List<FlowNodeEventDto> events) {
+    String importItemName = "activity instances";
+    log.debug("Writing [{}] {} to ES.", events.size(), importItemName);
 
-    BulkRequest addEventToProcessInstanceBulkRequest = new BulkRequest();
-    Map<String, List<FlowNodeEventDto>> processInstanceToEvents = new HashMap<>();
+    Map<String, List<OptimizeDto>> processInstanceToEvents = new HashMap<>();
     for (FlowNodeEventDto e : events) {
       if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
         processInstanceToEvents.put(e.getProcessInstanceId(), new ArrayList<>());
@@ -53,50 +53,55 @@ public abstract class AbstractActivityInstanceWriter {
       processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
     }
 
-    for (Map.Entry<String, List<FlowNodeEventDto>> entry : processInstanceToEvents.entrySet()) {
-      addActivityInstancesToProcessInstanceRequest(
-        addEventToProcessInstanceBulkRequest,
-        entry.getValue(),
-        entry.getKey()
-      );
-    }
-
-    BulkResponse bulkResponse = esClient.bulk(addEventToProcessInstanceBulkRequest, RequestOptions.DEFAULT);
-    if (bulkResponse.hasFailures()) {
-      String errorMessage = String.format(
-        "There were failures while writing activity instance with message: %s",
-        bulkResponse.buildFailureMessage()
-      );
-      throw new OptimizeRuntimeException(errorMessage);
-    }
+    ElasticsearchWriterUtil.doBulkRequestWithMap(
+      esClient,
+      importItemName,
+      processInstanceToEvents,
+      this::addActivityInstancesToProcessInstanceRequest
+    );
   }
 
   private void addActivityInstancesToProcessInstanceRequest(BulkRequest addEventToProcessInstanceBulkRequest,
-                                                            List<FlowNodeEventDto> processEvents,
-                                                            String processInstanceId) throws IOException {
+                                                            Map.Entry<String, List<OptimizeDto>> activityInstanceEntry) {
+    if (!activityInstanceEntry.getValue().stream().allMatch(dto -> dto instanceof FlowNodeEventDto)) {
+      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
+    }
+    final List<FlowNodeEventDto> activityInstances =
+      (List<FlowNodeEventDto>) (List<?>) activityInstanceEntry.getValue();
+    final String activityInstanceId = activityInstanceEntry.getKey();
 
-    final List<SimpleEventDto> simpleEvents = getSimpleEventDtos(processEvents);
+    final List<SimpleEventDto> simpleEvents = getSimpleEventDtos(activityInstances);
     final Map<String, Object> params = new HashMap<>();
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
-    final List jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(simpleEvents), List.class);
-    params.put(EVENTS, jsonMap);
-    final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
 
-    final FlowNodeEventDto e = getFirst(processEvents);
-    final ProcessInstanceDto procInst = new ProcessInstanceDto()
-      .setProcessInstanceId(e.getProcessInstanceId())
-      .setEngine(e.getEngineAlias())
-      .setEvents(simpleEvents);
-    final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
+    try {
+      List jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(simpleEvents), List.class);
+      params.put(EVENTS, jsonMap);
+      final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
 
-    final UpdateRequest request = new UpdateRequest(
-      PROCESS_INSTANCE_INDEX_NAME,
-      PROCESS_INSTANCE_INDEX_NAME, processInstanceId)
-      .script(updateScript)
-      .upsert(newEntryIfAbsent, XContentType.JSON)
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+      final FlowNodeEventDto e = getFirst(activityInstances);
+      final ProcessInstanceDto procInst = new ProcessInstanceDto()
+        .setProcessInstanceId(e.getProcessInstanceId())
+        .setEngine(e.getEngineAlias())
+        .setEvents(simpleEvents);
+      String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
+      final UpdateRequest request = new UpdateRequest(
+        PROCESS_INSTANCE_INDEX_NAME,
+        PROCESS_INSTANCE_INDEX_NAME, activityInstanceId
+      )
+        .script(updateScript)
+        .upsert(newEntryIfAbsent, XContentType.JSON)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-    addEventToProcessInstanceBulkRequest.add(request);
+      addEventToProcessInstanceBulkRequest.add(request);
+    } catch (IOException e) {
+      String reason = String.format(
+        "Error while processing JSON for activity instances with ID [%s].",
+        activityInstanceId
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
   }
 
   protected abstract String createInlineUpdateScript();

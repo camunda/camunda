@@ -9,17 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,34 +39,23 @@ public class DecisionDefinitionXmlWriter {
   private final ObjectMapper objectMapper;
 
   public void importProcessDefinitionXmls(final List<DecisionDefinitionOptimizeDto> decisionDefinitions) {
-    log.debug("writing [{}] decision definition XMLs to ES", decisionDefinitions.size());
-
-    final BulkRequest processDefinitionXmlBulkRequest = new BulkRequest();
-    for (DecisionDefinitionOptimizeDto decisionDefinition : decisionDefinitions) {
-      addImportProcessDefinitionXmlRequest(processDefinitionXmlBulkRequest, decisionDefinition);
-    }
-
-    if (processDefinitionXmlBulkRequest.numberOfActions() > 0) {
-      try {
-        BulkResponse bulkResponse = esClient.bulk(processDefinitionXmlBulkRequest, RequestOptions.DEFAULT);
-        if (bulkResponse.hasFailures()) {
-          String errorMessage = String.format(
-            "There were failures while writing decision definition xml information. " +
-              "Received error message: %s",
-            bulkResponse.buildFailureMessage()
-          );
-          throw new OptimizeRuntimeException(errorMessage);
-        }
-      } catch (IOException e) {
-        log.error("There were errors while writing decision definition xml information.", e);
-      }
-    } else {
-      log.warn("Cannot import empty list of decision definition xmls.");
-    }
+    String importItemName = "decision definition XML information";
+    log.debug("Writing [{}] {} to ES.", decisionDefinitions.size(), importItemName);
+    ElasticsearchWriterUtil.doBulkRequestWithList(
+      esClient,
+      importItemName,
+      decisionDefinitions,
+      (request, dto) -> addImportProcessDefinitionXmlRequest(request, dto)
+    );
   }
 
   private void addImportProcessDefinitionXmlRequest(final BulkRequest bulkRequest,
-                                                    final DecisionDefinitionOptimizeDto decisionDefinitionDto) {
+                                                    final OptimizeDto optimizeDto) {
+    if (!(optimizeDto instanceof DecisionDefinitionOptimizeDto)) {
+      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
+    }
+    DecisionDefinitionOptimizeDto decisionDefinitionDto = (DecisionDefinitionOptimizeDto) optimizeDto;
+
     final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
       FIELDS_TO_UPDATE,
       decisionDefinitionDto,
@@ -82,5 +69,4 @@ public class DecisionDefinitionXmlWriter {
 
     bulkRequest.add(updateRequest);
   }
-
 }

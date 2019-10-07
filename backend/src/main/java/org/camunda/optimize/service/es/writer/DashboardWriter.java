@@ -29,9 +29,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.springframework.stereotype.Component;
@@ -139,6 +136,11 @@ public class DashboardWriter {
   }
 
   public void removeReportFromDashboards(String reportId) {
+    String updateItemName = "report on dashboard";
+    log.info(
+      "Removing {} with ID [{}].", updateItemName, reportId
+    );
+
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
@@ -151,54 +153,27 @@ public class DashboardWriter {
       QueryBuilders.termQuery(DashboardIndex.REPORTS + "." + DashboardIndex.ID, reportId),
       ScoreMode.None
     );
-    UpdateByQueryRequest request = new UpdateByQueryRequest(DASHBOARD_INDEX_NAME)
-      .setAbortOnVersionConflict(false)
-      .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
-      .setQuery(query)
-      .setScript(removeReportIdFromCombinedReportsScript)
-      .setRefresh(true);
 
-    BulkByScrollResponse bulkByScrollResponse;
-    try {
-      bulkByScrollResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Could not remove report with id [%s] from dashboards.", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
-      String errorMessage =
-        String.format(
-          "Could not remove report id [%s] from dashboard! Error response: %s",
-          reportId,
-          bulkByScrollResponse.getBulkFailures()
-        );
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
+    ElasticsearchWriterUtil.doUpdateByQueryRequest(
+      esClient,
+      "report",
+      reportId,
+      removeReportIdFromCombinedReportsScript,
+      query,
+      DASHBOARD_INDEX_NAME
+    );
   }
 
   public void deleteDashboardsOfCollection(String collectionId) {
-    log.debug("Deleting dashboards of collection with collectionId [{}]", collectionId);
-    DeleteByQueryRequest request = new DeleteByQueryRequest(DASHBOARD_INDEX_NAME)
-      .setQuery(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
+    String deletedItemName = "dashboards of collection";
+    String deletedItemIdentifier = String.format("collectionId [%s]", collectionId);
 
-    BulkByScrollResponse deleteResponse;
-    try {
-      deleteResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason =
-        String.format("Could not delete dashboards of collection with collectionId [%s].", collectionId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    log.debug(
-      "Deleted [{}] dashboards that were part of collection with collectionId [{}]",
-      deleteResponse.getDeleted(),
-      collectionId
-    );
+    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+      esClient,
+      QueryBuilders.termQuery(COLLECTION_ID, collectionId),
+      deletedItemName,
+      deletedItemIdentifier,
+      DASHBOARD_INDEX_NAME);
   }
 
   public void deleteDashboard(String dashboardId) {

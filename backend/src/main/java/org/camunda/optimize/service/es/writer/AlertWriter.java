@@ -24,9 +24,6 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.engine.DocumentMissingException;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -161,33 +158,14 @@ public class AlertWriter {
    * Delete all alerts that are associated with following report ID
    */
   public void deleteAlertsForReport(String reportId) {
-    log.debug("Deleting all alerts for report with id [{}]", reportId);
+    String deletedItemName = "all alerts for report";
+    String deletedItemIdentifier = String.format("ID [%s]", reportId);
 
-    TermQueryBuilder query = QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId);
-    DeleteByQueryRequest request = new DeleteByQueryRequest(ALERT_INDEX_NAME)
-      .setQuery(query)
-      .setRefresh(true);
-
-    BulkByScrollResponse bulkByScrollResponse;
-    try {
-      bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Could not delete all alerts for report with id [%s].", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
-      String errorMessage =
-        String.format(
-          "Could not remove alerts for report id [%s] ! Error response: %s",
-          reportId,
-          bulkByScrollResponse.getBulkFailures()
-        );
-      log.error(errorMessage);
-      throw new OptimizeRuntimeException(errorMessage);
-    }
-    long deleted = bulkByScrollResponse.getDeleted();
-    log.debug("deleted [{}] alerts related to report [{}]", deleted, reportId);
+    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+      esClient,
+      QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),
+      deletedItemName,
+      deletedItemIdentifier,
+      ALERT_INDEX_NAME);
   }
 }

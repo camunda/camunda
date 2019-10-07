@@ -9,17 +9,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -29,7 +27,6 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 
@@ -43,45 +40,25 @@ public class ImportIndexWriter {
   private final DateTimeFormatter dateTimeFormatter;
 
   public void importIndexes(List<ImportIndexDto> importIndexDtos) {
-    log.debug("Writing import index to Elasticsearch");
-    BulkRequest bulkRequest = new BulkRequest();
-    final List<AllEntitiesBasedImportIndexDto> allEntitiesImportIndexDtos = collectSpecificImportIndexDto(
-      importIndexDtos, AllEntitiesBasedImportIndexDto.class
+    String importItemName = "import index information";
+    log.debug("Writing [{}] {} to ES.", importIndexDtos.size(), importItemName);
+
+    ElasticsearchWriterUtil.doBulkRequestWithList(
+      esClient,
+      importItemName,
+      importIndexDtos,
+      (request, dto) -> addImportIndexRequest(request, dto)
     );
-    final List<TimestampBasedImportIndexDto> timestampBasedImportIndexDtos = collectSpecificImportIndexDto(
-      importIndexDtos, TimestampBasedImportIndexDto.class
-    );
-    addAllEntitiesBasedImportIndexesToBulk(bulkRequest, allEntitiesImportIndexDtos);
-    addDefinitionBasedImportIndexesToBulk(bulkRequest, timestampBasedImportIndexDtos);
-    try {
-      BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-      if (bulkResponse.hasFailures()) {
-        String errorMessage = String.format(
-          "There were failures while writing import indexes. Received error message: %s",
-          bulkResponse.buildFailureMessage()
-        );
-        throw new OptimizeRuntimeException(errorMessage);
-      }
-    } catch (IOException e) {
-      log.error("There were errors while writing import indexes.", e);
+  }
+
+  private void addImportIndexRequest(BulkRequest bulkRequest, OptimizeDto optimizeDto) {
+    if (optimizeDto instanceof TimestampBasedImportIndexDto) {
+      TimestampBasedImportIndexDto timestampBasedIndexDto = (TimestampBasedImportIndexDto) optimizeDto;
+      bulkRequest.add(createDefinitionBasedRequest(timestampBasedIndexDto));
+    } else if (optimizeDto instanceof AllEntitiesBasedImportIndexDto) {
+      AllEntitiesBasedImportIndexDto entitiesBasedIndexDto = (AllEntitiesBasedImportIndexDto) optimizeDto;
+      bulkRequest.add(createAllEntitiesBasedRequest(entitiesBasedIndexDto));
     }
-  }
-
-  @SuppressWarnings("unchecked")
-  private <T extends ImportIndexDto> List<T> collectSpecificImportIndexDto(final List<ImportIndexDto> importIndexDtos,
-                                                                           final Class<T> type) {
-    return importIndexDtos.stream()
-      .filter(type::isInstance)
-      .map(v -> (T) v)
-      .collect(toList());
-  }
-
-  private void addDefinitionBasedImportIndexesToBulk(
-    BulkRequest bulkRequest, List<TimestampBasedImportIndexDto> importIndexesDefinitionBasedIndexes) {
-    importIndexesDefinitionBasedIndexes
-      .forEach(importIndex ->
-                 bulkRequest.add(createDefinitionBasedRequest(importIndex))
-      );
   }
 
   private IndexRequest createDefinitionBasedRequest(TimestampBasedImportIndexDto importIndex) {
@@ -103,11 +80,6 @@ public class ImportIndexWriter {
 
   private String getId(ImportIndexDto importIndex) {
     return EsHelper.constructKey(importIndex.getEsTypeIndexRefersTo(), importIndex.getEngine());
-  }
-
-  private void addAllEntitiesBasedImportIndexesToBulk(BulkRequest bulkRequest,
-                                                      List<AllEntitiesBasedImportIndexDto> importIndexes) {
-    importIndexes.forEach(importIndexDto -> bulkRequest.add(createAllEntitiesBasedRequest(importIndexDto)));
   }
 
   private IndexRequest createAllEntitiesBasedRequest(AllEntitiesBasedImportIndexDto importIndex) {

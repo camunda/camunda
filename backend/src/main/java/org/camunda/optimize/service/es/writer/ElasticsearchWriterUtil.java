@@ -8,21 +8,58 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.beanutils.PropertyUtils;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.AbstractQueryBuilder;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @UtilityClass
+@Slf4j
 public class ElasticsearchWriterUtil {
   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+
+  public static Script createPrimitiveFieldUpdateScript(final Set<String> fields,
+                                                        final Object entityDto) {
+    final Map<String, Object> params = new HashMap<>();
+    for (String fieldName : fields) {
+      try {
+        Object fieldValue = PropertyUtils.getProperty(entityDto, fieldName);
+        if (fieldValue instanceof TemporalAccessor) {
+          fieldValue = dateTimeFormatter.format((TemporalAccessor) fieldValue);
+        }
+        params.put(fieldName, fieldValue);
+      } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        throw new OptimizeRuntimeException("Could not read field from entity: " + fieldName, e);
+      }
+    }
+
+    return createDefaultScript(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
+  }
 
   static Script createFieldUpdateScript(final Set<String> fields,
                                         final Object entityDto,
@@ -64,4 +101,134 @@ public class ElasticsearchWriterUtil {
       .collect(Collectors.joining());
   }
 
+  public static<T extends OptimizeDto> void doBulkRequestWithList(OptimizeElasticsearchClient esClient,
+                                           String importItemName,
+                                           List<T> dtoList,
+                                           BiConsumer<BulkRequest, T> addDtoToRequestConsumer) {
+    if (dtoList.isEmpty()) {
+      log.warn("Cannot import empty list of {}.", importItemName);
+    } else {
+      final BulkRequest bulkRequest = new BulkRequest();
+      bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+      dtoList.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
+      doBulkRequest(esClient, bulkRequest, importItemName);
+    }
+  }
+
+  public static<T extends OptimizeDto> void doBulkRequestWithMap(OptimizeElasticsearchClient esClient,
+                                          String importItemName,
+                                          Map<String, List<T>> dtoMap,
+                                          BiConsumer<BulkRequest, Map.Entry<String, List<T>>> addDtoToRequestConsumer) {
+    if (dtoMap.isEmpty()) {
+      log.warn("Cannot import empty map of {}.", importItemName);
+    } else {
+      final BulkRequest bulkRequest = new BulkRequest();
+      bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+
+      dtoMap.entrySet().forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
+      doBulkRequest(esClient, bulkRequest, importItemName);
+    }
+  }
+
+  public static void doUpdateByQueryRequest(OptimizeElasticsearchClient esClient,
+                                            String updateItemName,
+                                            String updateItemIdentifier,
+                                            Script updateScript,
+                                            AbstractQueryBuilder filterQuery,
+                                            String... indices) {
+    UpdateByQueryRequest request = new UpdateByQueryRequest(indices)
+      .setQuery(filterQuery)
+      .setAbortOnVersionConflict(false)
+      .setMaxRetries(NUMBER_OF_RETRIES_ON_CONFLICT)
+      .setScript(updateScript)
+      .setRefresh(true);
+
+    BulkByScrollResponse updateResponse;
+    try {
+      updateResponse = esClient.updateByQuery(request, RequestOptions.DEFAULT);
+      checkBulkByScrollResponse(updateResponse, updateItemName, "updating");
+    } catch (IOException e) {
+      String reason =
+        String.format(
+          "Could not update %s with key [%s].",
+          updateItemName,
+          updateItemIdentifier
+        );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    log.debug(
+      "Updated [{}] {} with ",
+      updateResponse.getDeleted(),
+      updateItemName,
+      updateItemIdentifier
+    );
+  }
+
+  public static void doDeleteByQueryRequest(OptimizeElasticsearchClient esClient,
+                                            AbstractQueryBuilder queryBuilder,
+                                            String deletedItemName,
+                                            String deletedItemIdentifier,
+                                            String... indices) {
+    log.debug("Deleting {} with {}", deletedItemName, deletedItemIdentifier);
+
+    DeleteByQueryRequest request = new DeleteByQueryRequest(indices)
+      .setAbortOnVersionConflict(false)
+      .setQuery(queryBuilder)
+      .setRefresh(true);
+
+    BulkByScrollResponse deleteResponse;
+    try {
+      deleteResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+      checkBulkByScrollResponse(deleteResponse, deletedItemName, "deleting");
+    } catch (IOException e) {
+      String reason =
+        String.format("Could not delete %s with %s.", deletedItemName, deletedItemIdentifier);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    log.debug(
+      "Deleted [{}] {} with ",
+      deleteResponse.getDeleted(),
+      deletedItemName,
+      deletedItemIdentifier
+    );
+  }
+
+  private void doBulkRequest(OptimizeElasticsearchClient esClient,
+                             BulkRequest bulkRequest,
+                             String itemName) {
+    try {
+      BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
+      if (bulkResponse.hasFailures()) {
+        String errorMessage = String.format(
+          "There were failures while writing %s with message: %s",
+          itemName,
+          bulkResponse.buildFailureMessage()
+        );
+        throw new OptimizeRuntimeException(errorMessage);
+      }
+    } catch (IOException e) {
+      String reason = String.format("There were errors while writing {}.", itemName);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+  }
+
+  private void checkBulkByScrollResponse(BulkByScrollResponse bulkByScrollResponse,
+                                         String itemName,
+                                         String verb) {
+    if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
+      String errorMessage = String.format(
+        "There were failures while %s %s with message: %s",
+        verb,
+        itemName,
+        bulkByScrollResponse.getBulkFailures()
+      );
+      throw new OptimizeRuntimeException(errorMessage);
+    }
+  }
 }

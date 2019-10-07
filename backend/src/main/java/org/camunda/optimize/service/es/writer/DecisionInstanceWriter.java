@@ -9,13 +9,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -26,6 +26,7 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -46,32 +47,34 @@ public class DecisionInstanceWriter {
   private final OptimizeElasticsearchClient esClient;
 
   public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) throws Exception {
-    log.debug("Writing [{}] decision instances to elasticsearch", decisionInstanceDtos.size());
-
-    BulkRequest processInstanceBulkRequest = new BulkRequest();
-
-    for (DecisionInstanceDto decisionInstanceDto : decisionInstanceDtos) {
-      addImportDecisionInstanceRequest(processInstanceBulkRequest, decisionInstanceDto);
-    }
-    try {
-      BulkResponse bulkResponse = esClient.bulk(processInstanceBulkRequest, RequestOptions.DEFAULT);
-      if (bulkResponse.hasFailures()) {
-        String errorMessage = String.format(
-          "There were failures while writing decision instances. Received error message: %s",
-          bulkResponse.buildFailureMessage()
-        );
-        throw new OptimizeRuntimeException(errorMessage);
-      }
-    } catch (IOException e) {
-      log.error("There were failures while writing decision instances.", e);
-    }
+    String importItemName = "decision definition information";
+    log.debug("Writing [{}] {} to ES.", decisionInstanceDtos.size(), importItemName);
+    ElasticsearchWriterUtil.doBulkRequestWithList(
+      esClient,
+      importItemName,
+      decisionInstanceDtos,
+      (request, dto) -> addImportDecisionInstanceRequest(request, dto)
+    );
   }
 
   private void addImportDecisionInstanceRequest(final BulkRequest bulkRequest,
-                                                final DecisionInstanceDto decisionInstanceDto
-  ) throws JsonProcessingException {
+                                                final OptimizeDto optimizeDto) {
+    if (!(optimizeDto instanceof DecisionInstanceDto)) {
+      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
+    }
+    DecisionInstanceDto decisionInstanceDto = (DecisionInstanceDto) optimizeDto;
+
     final String decisionInstanceId = decisionInstanceDto.getDecisionInstanceId();
-    final String source = objectMapper.writeValueAsString(decisionInstanceDto);
+    String source = "";
+    try {
+      source = objectMapper.writeValueAsString(decisionInstanceDto);
+    } catch (JsonProcessingException e) {
+      String reason =
+        String.format("Error while processing JSON for decision instance DTO with ID [%s].",
+                      decisionInstanceDto.getProcessInstanceId());
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
 
     final IndexRequest request = new IndexRequest(
       DECISION_INSTANCE_INDEX_NAME,
@@ -83,9 +86,11 @@ public class DecisionInstanceWriter {
 
   public void deleteDecisionInstancesByDefinitionKeyAndEvaluationDateOlderThan(final String decisionDefinitionKey,
                                                                                final OffsetDateTime evaluationDate) {
-    log.info(
-      "Deleting decision instances for decisionDefinitionKey {} and evaluationDate past {}",
-      decisionDefinitionKey, evaluationDate
+    String deletedItemName = "decision instances";
+    String deletedItemIdentifier = String.format(
+      "decisionDefinitionKey %s and evaluationDate past %s",
+      decisionDefinitionKey,
+      evaluationDate
     );
 
     final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
@@ -96,31 +101,13 @@ public class DecisionInstanceWriter {
       final BoolQueryBuilder filterQuery = boolQuery()
         .filter(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
         .filter(rangeQuery(DecisionInstanceIndex.EVALUATION_DATE_TIME).lt(dateTimeFormatter.format(evaluationDate)));
-      DeleteByQueryRequest request = new DeleteByQueryRequest(DECISION_INSTANCE_INDEX_NAME)
-        .setQuery(filterQuery)
-        .setAbortOnVersionConflict(false)
-        .setRefresh(true);
 
-      BulkByScrollResponse bulkByScrollResponse;
-      try {
-        bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-      } catch (IOException e) {
-        String reason =
-          String.format(
-            "Could not delete decision instances for decision definition key [%s] and evaluation date [%s].",
-            decisionDefinitionKey, evaluationDate
-          );
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
-      }
-
-      log.debug(
-        "BulkByScrollResponse on deleting decision instances for decisionDefinitionKey {}: {}",
-        decisionDefinitionKey, bulkByScrollResponse
-      );
-      log.info(
-        "Deleted {} decision instances for decisionDefinitionKey {} and evaluationDate past {}",
-        bulkByScrollResponse.getDeleted(), decisionDefinitionKey, evaluationDate
+      ElasticsearchWriterUtil.doDeleteByQueryRequest(
+        esClient,
+        filterQuery,
+        deletedItemName,
+        deletedItemIdentifier,
+        DECISION_INSTANCE_INDEX_NAME
       );
     } finally {
       progressReporter.stop();

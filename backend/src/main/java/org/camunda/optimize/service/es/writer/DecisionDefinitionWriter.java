@@ -9,17 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +30,6 @@ import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionInd
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @AllArgsConstructor
 @Component
@@ -56,41 +53,37 @@ public class DecisionDefinitionWriter {
   }
 
   private void writeDecisionDefinitionInformation(List<DecisionDefinitionOptimizeDto> decisionDefinitionOptimizeDtos) {
-    final BulkRequest bulkRequest = new BulkRequest();
-    for (DecisionDefinitionOptimizeDto decisionDefinition : decisionDefinitionOptimizeDtos) {
-      final String id = decisionDefinition.getId();
-
-      final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-        FIELDS_TO_UPDATE,
-        decisionDefinition,
-        objectMapper
-      );
-      final UpdateRequest request = new UpdateRequest(DECISION_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME, id)
-        .script(updateScript)
-        .upsert(objectMapper.convertValue(decisionDefinition, Map.class))
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      bulkRequest.add(request);
-    }
-
-    if (bulkRequest.numberOfActions() > 0) {
-      final BulkResponse bulkResponse;
-      try {
-        bulkRequest.setRefreshPolicy(IMMEDIATE);
-        bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-        if (bulkResponse.hasFailures()) {
-          String errorMessage = String.format(
-            "There were failures while writing decision definition information. Received error message: %s",
-            bulkResponse.buildFailureMessage()
-          );
-          throw new OptimizeRuntimeException(errorMessage);
-        }
-      } catch (IOException e) {
-        log.error("There were errors while writing decision definition information.", e);
-      }
-    } else {
-      log.warn("Cannot import empty list of decision definitions.");
-    }
+    String importItemName = "decision definition information";
+    log.debug("Writing [{}] {} to ES.", decisionDefinitionOptimizeDtos.size(), importItemName);
+    ElasticsearchWriterUtil.doBulkRequestWithList(
+      esClient,
+      importItemName,
+      decisionDefinitionOptimizeDtos,
+      (request, dto) -> addImportDecisionDefinitionXmlRequest(request, dto)
+    );
   }
 
+  private void addImportDecisionDefinitionXmlRequest(final BulkRequest bulkRequest,
+                                                     final OptimizeDto optimizeDto) {
+    if (!(optimizeDto instanceof DecisionDefinitionOptimizeDto)) {
+      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
+    }
+    DecisionDefinitionOptimizeDto decisionDefinitionDto = (DecisionDefinitionOptimizeDto) optimizeDto;
+
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
+      FIELDS_TO_UPDATE,
+      decisionDefinitionDto,
+      objectMapper
+    );
+    final UpdateRequest request = new UpdateRequest(
+      DECISION_DEFINITION_INDEX_NAME,
+      DECISION_DEFINITION_INDEX_NAME,
+      decisionDefinitionDto.getId()
+    )
+      .script(updateScript)
+      .upsert(objectMapper.convertValue(decisionDefinitionDto, Map.class))
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    bulkRequest.add(request);
+  }
 }

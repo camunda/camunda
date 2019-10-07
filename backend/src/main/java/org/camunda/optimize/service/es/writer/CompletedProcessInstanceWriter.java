@@ -5,29 +5,19 @@
  */
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
-import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -43,16 +33,14 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-@AllArgsConstructor
 @Component
 @Slf4j
-public class CompletedProcessInstanceWriter {
+public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWriter<ProcessInstanceDto> {
   private static final Set<String> PRIMITIVE_UPDATABLE_FIELDS = ImmutableSet.of(
     PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_VERSION, PROCESS_DEFINITION_ID,
     BUSINESS_KEY, START_DATE, END_DATE, DURATION, STATE,
@@ -60,31 +48,38 @@ public class CompletedProcessInstanceWriter {
   );
 
   private final OptimizeElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
   private final DateTimeFormatter dateTimeFormatter;
 
-  public void importProcessInstances(List<ProcessInstanceDto> processInstances) throws Exception {
-    log.debug("Writing [{}] completed process instances to elasticsearch", processInstances.size());
+  public CompletedProcessInstanceWriter(final OptimizeElasticsearchClient esClient,
+                                        final ObjectMapper objectMapper,
+                                        final DateTimeFormatter dateTimeFormatter) {
+    super(objectMapper);
+    this.esClient = esClient;
+    this.dateTimeFormatter = dateTimeFormatter;
+  }
 
-    BulkRequest processInstanceBulkRequest = new BulkRequest();
+  public void importProcessInstances(List<ProcessInstanceDto> processInstances) {
+    String importItemName = "completed process instances";
+    log.debug("Writing [{}] {} to ES", processInstances.size(), importItemName);
 
-    for (ProcessInstanceDto procInst : processInstances) {
-      addImportProcessInstanceRequest(processInstanceBulkRequest, procInst);
-    }
-    BulkResponse bulkResponse = esClient.bulk(processInstanceBulkRequest, RequestOptions.DEFAULT);
-    if (bulkResponse.hasFailures()) {
-      String errorMessage = String.format(
-        "There were failures while writing process instances with message: %s",
-        bulkResponse.buildFailureMessage()
-      );
-      throw new OptimizeRuntimeException(errorMessage);
-    }
+    ElasticsearchWriterUtil.doBulkRequestWithList(
+      esClient,
+      importItemName,
+      processInstances,
+      (request, dto) -> addImportProcessInstanceRequest(
+        request,
+        dto,
+        PRIMITIVE_UPDATABLE_FIELDS,
+        objectMapper
+      )
+    );
   }
 
   public void deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(final String processDefinitionKey,
                                                                               final OffsetDateTime endDate) {
-    log.info(
-      "Deleting process instances for processDefinitionKey {} and endDate past {}",
+    String deletedItemName = "process instances";
+    String deletedItemIdentifier = String.format(
+      "processDefinitionKey %s endDate past %s",
       processDefinitionKey,
       endDate
     );
@@ -94,66 +89,32 @@ public class CompletedProcessInstanceWriter {
     );
     try {
       progressReporter.start();
+
       final BoolQueryBuilder filterQuery = boolQuery()
         .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate)));
-      DeleteByQueryRequest request = new DeleteByQueryRequest(PROCESS_INSTANCE_INDEX_NAME)
-        .setQuery(filterQuery)
-        .setAbortOnVersionConflict(false)
-        .setRefresh(true);
 
-      BulkByScrollResponse bulkByScrollResponse;
-      try {
-        bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-      } catch (IOException e) {
-        String reason =
-          String.format("Could not delete process instances " +
-                          "for process definition key [%s] and end date [%s].", processDefinitionKey, endDate);
-        log.error(reason, e);
-        throw new OptimizeRuntimeException(reason, e);
-      }
-
-      log.debug(
-        "BulkByScrollResponse on deleting process instances for processDefinitionKey {}: {}",
-        processDefinitionKey,
-        bulkByScrollResponse
-      );
-      log.info(
-        "Deleted {} process instances for processDefinitionKey {} and endDate past {}",
-        bulkByScrollResponse.getDeleted(),
-        processDefinitionKey,
-        endDate
+      ElasticsearchWriterUtil.doDeleteByQueryRequest(
+        esClient,
+        filterQuery,
+        deletedItemName,
+        deletedItemIdentifier,
+        PROCESS_INSTANCE_INDEX_NAME
       );
     } finally {
       progressReporter.stop();
     }
-
   }
 
-  private void addImportProcessInstanceRequest(BulkRequest bulkRequest, ProcessInstanceDto procInst)
-    throws JsonProcessingException {
-
+  @Override
+  protected void addImportProcessInstanceRequest(BulkRequest bulkRequest,
+                                                 ProcessInstanceDto procInst,
+                                                 Set<String> primitiveUpdatableFields,
+                                                 ObjectMapper objectMapper) {
     if (procInst.getEndDate() == null) {
       log.warn("End date should not be null for completed process instances!");
     }
 
-    final String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-      PRIMITIVE_UPDATABLE_FIELDS,
-      procInst,
-      objectMapper
-    );
-    final String processInstanceId = procInst.getProcessInstanceId();
-    UpdateRequest request = new UpdateRequest(
-      PROCESS_INSTANCE_INDEX_NAME,
-      PROCESS_INSTANCE_INDEX_NAME, processInstanceId
-    )
-      .script(updateScript)
-      .upsert(newEntryIfAbsent, XContentType.JSON)
-      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-    bulkRequest.add(request);
-
+    super.addImportProcessInstanceRequest(bulkRequest, procInst, primitiveUpdatableFields, objectMapper);
   }
-
 }

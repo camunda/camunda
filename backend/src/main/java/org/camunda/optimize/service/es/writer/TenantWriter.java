@@ -9,17 +9,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -37,43 +35,31 @@ public class TenantWriter {
   private final ObjectMapper objectMapper;
 
   public void writeTenants(final List<TenantDto> tenantDtos) {
-    log.debug("Writing [{}] tenants to elasticsearch", tenantDtos.size());
-
-    final BulkRequest bulkRequest = new BulkRequest();
-    addUpsertsForEachDto(tenantDtos, bulkRequest);
-
-    if (bulkRequest.numberOfActions() > 0) {
-      try {
-        final BulkResponse bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-        if (bulkResponse.hasFailures()) {
-          final String errorMessage = String.format(
-            "There were failures while writing tenants. Received error message: %s",
-            bulkResponse.buildFailureMessage()
-          );
-          throw new OptimizeRuntimeException(errorMessage);
-        }
-      } catch (IOException e) {
-        log.error("There were errors while writing tenants.", e);
-      }
-    }
+    String importItemName = "tenants";
+    log.debug("Writing [{}] {} to ES.", tenantDtos.size(), importItemName);
+    ElasticsearchWriterUtil.doBulkRequestWithList(
+      esClient,
+      importItemName,
+      tenantDtos,
+      (request, dto) -> addImportTenantRequest(request, dto)
+    );
   }
 
-  private void addUpsertsForEachDto(final List<TenantDto> tenantDtos, final BulkRequest bulkRequest) {
-    for (TenantDto tenantDto : tenantDtos) {
-      final String id = tenantDto.getId();
-      final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-        FIELDS_TO_UPDATE,
-        tenantDto,
-        objectMapper
-      );
-      final UpdateRequest request =
-        new UpdateRequest(TENANT_INDEX_NAME, TENANT_INDEX_NAME, id)
-          .script(updateScript)
-          .upsert(objectMapper.convertValue(tenantDto, Map.class))
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      bulkRequest.add(request);
+  private void addImportTenantRequest(BulkRequest bulkRequest, OptimizeDto optimizeDto) {
+    if (!(optimizeDto instanceof TenantDto)) {
+      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
+    TenantDto tenantDto = (TenantDto) optimizeDto;
+
+    final String id = tenantDto.getId();
+    final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto, objectMapper);
+    final UpdateRequest request =
+      new UpdateRequest(TENANT_INDEX_NAME, TENANT_INDEX_NAME, id)
+        .script(updateScript)
+        .upsert(objectMapper.convertValue(tenantDto, Map.class))
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    bulkRequest.add(request);
   }
 
 }

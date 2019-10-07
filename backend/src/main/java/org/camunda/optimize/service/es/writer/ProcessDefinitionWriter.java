@@ -7,21 +7,13 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
@@ -30,13 +22,10 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_VERSION_TAG;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.TENANT_ID;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
-@AllArgsConstructor
 @Component
 @Slf4j
-public class ProcessDefinitionWriter {
+public class ProcessDefinitionWriter extends AbstractProcessDefinitionWriter {
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
     PROCESS_DEFINITION_KEY,
     PROCESS_DEFINITION_VERSION,
@@ -46,49 +35,30 @@ public class ProcessDefinitionWriter {
     TENANT_ID
   );
 
-  private final OptimizeElasticsearchClient esClient;
-  private final ObjectMapper objectMapper;
+  public ProcessDefinitionWriter(final OptimizeElasticsearchClient esClient,
+                                 final ObjectMapper objectMapper) {
+    super(objectMapper, esClient);
+  }
 
   public void importProcessDefinitions(List<ProcessDefinitionOptimizeDto> procDefs) {
     log.debug("Writing [{}] process definitions to elasticsearch", procDefs.size());
     writeProcessDefinitionInformation(procDefs);
   }
 
+  @Override
+  Script createUpdateScript(final ProcessDefinitionOptimizeDto processDefinitionDto) {
+    return ElasticsearchWriterUtil.createPrimitiveFieldUpdateScript(FIELDS_TO_UPDATE, processDefinitionDto);
+  }
+
   private void writeProcessDefinitionInformation(List<ProcessDefinitionOptimizeDto> procDefs) {
-    BulkRequest bulkRequest = new BulkRequest();
-    addUpdateRequestForEachDefinition(procDefs, bulkRequest);
+    String importItemName = "process definition information";
+    log.debug("Writing [{}] {} to ES.", procDefs.size(), importItemName);
 
-    if (bulkRequest.numberOfActions() > 0) {
-      final BulkResponse bulkResponse;
-      try {
-        bulkResponse = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
-        if (bulkResponse.hasFailures()) {
-          String errorMessage = String.format(
-            "There were failures while writing process definition information. " +
-              "Received error message: %s",
-            bulkResponse.buildFailureMessage()
-          );
-          throw new OptimizeRuntimeException(errorMessage);
-        }
-      } catch (IOException e) {
-        log.error("There were errors while writing process definition information.", e);
-      }
-    } else {
-      log.warn("Cannot import empty list of process definitions.");
-    }
+    ElasticsearchWriterUtil.doBulkRequestWithList(
+      esClient,
+      importItemName,
+      procDefs,
+      (request, dto) -> addImportProcessDefinitionToRequest(request, dto)
+    );
   }
-
-  private void addUpdateRequestForEachDefinition(List<ProcessDefinitionOptimizeDto> procDefs, BulkRequest bulkRequest) {
-    for (ProcessDefinitionOptimizeDto procDef : procDefs) {
-      final String id = procDef.getId();
-      final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, procDef, objectMapper);
-      final UpdateRequest request = new UpdateRequest(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_INDEX_NAME, id)
-          .script(updateScript)
-          .upsert(objectMapper.convertValue(procDef, Map.class))
-          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
-
-      bulkRequest.add(request);
-    }
-  }
-
 }

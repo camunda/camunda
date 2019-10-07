@@ -5,12 +5,24 @@
  */
 package org.camunda.optimize.service.es.writer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.script.Script;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,11 +36,14 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @AllArgsConstructor
-public abstract class AbstractUserTaskWriter {
-
+public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
+  protected final Logger log = LoggerFactory.getLogger(getClass());
   protected final ObjectMapper objectMapper;
 
   @SuppressWarnings("unchecked")
@@ -37,6 +52,13 @@ public abstract class AbstractUserTaskWriter {
       .map(userTaskInstanceDto -> (Map<String, String>) objectMapper.convertValue(userTaskInstanceDto, Map.class))
       .collect(Collectors.toList());
   }
+
+  protected Script createUpdateScript(List<UserTaskInstanceDto> userTasks){
+    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, mapToParameterSet(userTasks));
+    return createDefaultScript(createInlineUpdateScript(), scriptParameters);
+  };
+
+  protected abstract String createInlineUpdateScript();
 
   protected static String createUpdateUserTaskMetricsScript() {
 
@@ -92,6 +114,45 @@ public abstract class AbstractUserTaskWriter {
       "}\n"
     );
     // @formatter:on
+  }
+
+  protected void addImportUserTaskToRequest(final BulkRequest bulkRequest,
+                                            Map.Entry<String, List<T>> activityInstanceEntry) {
+    if (!activityInstanceEntry.getValue().stream().allMatch(dto -> dto instanceof UserTaskInstanceDto)) {
+      throw new InvalidParameterException("Method called with incorrect instance of DTO.");
+    }
+    final List<UserTaskInstanceDto> userTasks = (List<UserTaskInstanceDto>) (List<?>) activityInstanceEntry.getValue();
+    final String activiyInstanceId = activityInstanceEntry.getKey();
+
+    final Script updateScript = createUpdateScript(userTasks);
+
+    final UserTaskInstanceDto firstUserTaskInstance = userTasks.stream().findFirst()
+      .orElseThrow(() -> new OptimizeRuntimeException("No user tasks to import provided"));
+    final ProcessInstanceDto procInst = new ProcessInstanceDto()
+      .setProcessInstanceId(firstUserTaskInstance.getProcessInstanceId())
+      .setEngine(firstUserTaskInstance.getEngine())
+      .setUserTasks(userTasks);
+    String newEntryIfAbsent = null;
+    try {
+      newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
+    } catch (JsonProcessingException e) {
+      String reason = String.format(
+        "Error while processing JSON for user tasks with ID [%s].",
+        activiyInstanceId
+      );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    UpdateRequest request = new UpdateRequest(
+      PROCESS_INSTANCE_INDEX_NAME,
+      PROCESS_INSTANCE_INDEX_NAME, activiyInstanceId
+    )
+      .script(updateScript)
+      .upsert(newEntryIfAbsent, XContentType.JSON)
+      .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+
+    bulkRequest.add(request);
   }
 
 }

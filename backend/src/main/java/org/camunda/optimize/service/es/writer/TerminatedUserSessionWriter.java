@@ -16,8 +16,6 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -58,28 +56,20 @@ public class TerminatedUserSessionWriter {
   }
 
   public void deleteTerminatedUserSessionsOlderThan(final OffsetDateTime timestamp) {
-    log.debug("Deleting terminated user sessions older than {}", timestamp);
+    String deletedItemName = "terminated user sessions";
+    String deletedItemIdentifier = String.format("timestamp older than %s", timestamp);
 
     final BoolQueryBuilder filterQuery = boolQuery().filter(
       rangeQuery(TerminatedUserSessionIndex.TERMINATION_TIMESTAMP)
         .lt(dateTimeFormatter.format(timestamp))
         .format(OPTIMIZE_DATE_FORMAT)
     );
-    final DeleteByQueryRequest request = new DeleteByQueryRequest(TERMINATED_USER_SESSION_INDEX_NAME)
-      .setQuery(filterQuery)
-      .setAbortOnVersionConflict(false)
-      .setRefresh(true);
 
-    final BulkByScrollResponse bulkByScrollResponse;
-    try {
-      bulkByScrollResponse = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not delete terminated user session instances", e);
-    }
-
-    log.info(
-      "Deleted {} terminated user session instances older than {}", bulkByScrollResponse.getDeleted(), timestamp
-    );
-
+    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+      esClient,
+      filterQuery,
+      deletedItemName,
+      deletedItemIdentifier,
+      TERMINATED_USER_SESSION_INDEX_NAME);
   }
 }
