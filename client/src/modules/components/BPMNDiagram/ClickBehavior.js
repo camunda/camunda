@@ -45,9 +45,13 @@ export default class ClickBehavior extends React.Component {
       if (this.isValid(element)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node');
+      } else if (this.isNodeOrSequence(element.businessObject)) {
+        canvas.removeMarker(element.businessObject.id, 'ClickBehavior__disabled');
       }
     });
   };
+
+  isNodeOrSequence = el => el.$instanceOf('bpmn:FlowNode') || el.$instanceOf('bpmn:SequenceFlow');
 
   update() {
     const {viewer, selectedNodes} = this.props;
@@ -59,10 +63,7 @@ export default class ClickBehavior extends React.Component {
       if (this.isValid(element)) {
         canvas.removeMarker(element.businessObject.id, 'ClickBehavior__node--selected');
         canvas.addMarker(element.businessObject.id, 'ClickBehavior__node');
-      } else if (
-        element.businessObject.$instanceOf('bpmn:FlowNode') ||
-        element.businessObject.$instanceOf('bpmn:SequenceFlow')
-      ) {
+      } else if (this.isNodeOrSequence(element.businessObject)) {
         canvas.addMarker(element.businessObject.id, 'ClickBehavior__disabled');
       }
     });

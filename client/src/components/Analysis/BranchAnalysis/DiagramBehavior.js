@@ -77,10 +77,7 @@ export default class DiagramBehavior extends React.Component {
       if (this.isValidNode(businessObject)) {
         canvas.addMarker(businessObject.id, 'DiagramBehavior__clickable');
         this.roundEdges(elementRegistry, businessObject);
-      } else if (
-        businessObject.$instanceOf('bpmn:FlowNode') ||
-        businessObject.$instanceOf('bpmn:SequenceFlow')
-      ) {
+      } else if (this.isNodeOrSequence(businessObject)) {
         canvas.addMarker(businessObject.id, 'DiagramBehavior__disabled');
       }
     });
@@ -111,9 +108,13 @@ export default class DiagramBehavior extends React.Component {
         canvas.removeMarker(businessObject.id, 'DiagramBehavior__highlight');
         canvas.removeMarker(businessObject.id, 'DiagramBehavior__selected');
         canvas.removeMarker(businessObject.id, 'DiagramBehavior__clickable');
+      } else if (this.isNodeOrSequence(businessObject)) {
+        canvas.removeMarker(businessObject.id, 'DiagramBehavior__disabled');
       }
     });
   }
+
+  isNodeOrSequence = el => el.$instanceOf('bpmn:FlowNode') || el.$instanceOf('bpmn:SequenceFlow');
 
   hoverHandler = ({element}) => {
     if (element.businessObject && this.isValidNode(element.businessObject)) {
