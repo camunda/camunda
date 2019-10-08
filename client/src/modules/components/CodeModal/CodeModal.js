@@ -52,7 +52,6 @@ function CodeModal({
 
 CodeModal.propTypes = {
   handleModalClose: PropTypes.func,
-  handleModalSave: PropTypes.func,
   isModalVisible: PropTypes.bool,
   headline: PropTypes.string,
   initialValue: PropTypes.string,
