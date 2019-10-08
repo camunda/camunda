@@ -133,7 +133,7 @@ export default themed(
       }
 
       componentWillUnmount() {
-        this.unattach(this.props.xml);
+        this.unattach(this.props.xml, this.props.theme);
       }
 
       fitDiagram = () => {
