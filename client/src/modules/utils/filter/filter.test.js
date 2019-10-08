@@ -189,10 +189,10 @@ describe('modules/utils/filter.js', () => {
       expect(parsedFilter.ids).toEqual(['id1', 'id2', 'id3']);
       expect(parsedFilter.errorMessage).toEqual('this is an error message');
       expect(parsedFilter.active).toBe(true);
-      expect(parsedFilter.startDateBefore).toBe('2019-10-07T12:31:00.000+0200');
-      expect(parsedFilter.startDateAfter).toBe('2019-10-07T12:30:00.000+0200');
-      expect(parsedFilter.endDateBefore).toBe('2019-10-07T02:00:00.000+0200');
-      expect(parsedFilter.endDateAfter).toBe('2019-10-06T00:00:00.000+0200');
+      expect(parsedFilter.startDateBefore).toContain('2019-10-07T12:31:00.000');
+      expect(parsedFilter.startDateAfter).toContain('2019-10-07T12:30:00.000');
+      expect(parsedFilter.endDateBefore).toContain('2019-10-07T02:00:00.000');
+      expect(parsedFilter.endDateAfter).toContain('2019-10-06T00:00:00.000');
       expect(parsedFilter.variable).toEqual({
         name: 'myVar',
         value: '"1, 2\r \n "'
