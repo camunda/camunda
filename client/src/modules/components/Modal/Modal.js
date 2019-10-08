@@ -90,6 +90,11 @@ export default class Modal extends React.Component {
     this.insideClick = true;
   };
 
+  onMouseClick = evt => {
+    evt.stopPropagation();
+    this.insideClick = false;
+  };
+
   handleKeyPress = evt => {
     if (evt.key === 'Escape') {
       const handler = this.props.onClose;
@@ -120,6 +125,7 @@ export default class Modal extends React.Component {
                 tabIndex="-1"
                 ref={this.container}
                 onMouseDown={this.onMouseDown}
+                onClick={this.onMouseClick}
               >
                 {children}
               </div>
