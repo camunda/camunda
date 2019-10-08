@@ -107,7 +107,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
   public void reportEvaluationForOneProcessBigActivityDuration() throws Exception {
 
     // given
-    OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime startDate = OffsetDateTime.parse("2019-06-01T10:00:00+02:00");
     // big activity durations in ms (>32 bit) caused the bug described in OPT-2393
     final long activityDurationInSeconds = Integer.valueOf(Integer.MAX_VALUE).longValue();
     OffsetDateTime endDate = startDate.plusSeconds(activityDurationInSeconds);
