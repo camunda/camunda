@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import {DataManagerProvider} from 'modules/DataManager';
+
 
 import ListFooter from './ListFooter';
 import Paginator from './Paginator';
