@@ -25,8 +25,6 @@ class InstancesPollProviderComp extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-
-    visibleIdsInListView: PropTypes.array,
     visibleIdsInSelections: PropTypes.array,
     filter: PropTypes.object
   };
