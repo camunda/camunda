@@ -18,12 +18,12 @@
     "start": "react-scripts start",
     "build": "react-scripts build && node license-build.js",
     "test": "react-scripts test --env=jsdom",
-    "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
+    "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --reporters=default --reporters=jest-junit",
     "eject": "react-scripts eject"
   },
   "jest-junit": {
     "suiteName": "client",
-    "output": "./jest-test-results.xml",
+    "outputName": "jest-test-results.xml",
     "suiteNameTemplate": "{filename}",
     "classNameTemplate": "client.{filename}",
     "titleTemplate": "{title}",
