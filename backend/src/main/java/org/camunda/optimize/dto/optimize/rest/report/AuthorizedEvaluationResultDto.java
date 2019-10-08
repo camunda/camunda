@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.rest.report;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
@@ -16,6 +17,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 
 @Getter
 @Setter
+@FieldNameConstants(asEnum = true)
 public class AuthorizedEvaluationResultDto<Result extends ReportResultDto, ReportDefinition extends ReportDefinitionDto>
   extends AuthorizedEntityDto {
 

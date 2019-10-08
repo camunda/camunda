@@ -80,8 +80,8 @@ public class OptimizeClient implements AutoCloseable {
       .queryParam("collectionId", collectionId)
       .request()
       .cookie(OPTIMIZE_AUTHORIZATION, authCookie)
-      .post(Entity.json(new SingleProcessReportDefinitionDto()))
-      .readEntity(IdDto.class).getId();
+      .post(Entity.json(new SingleProcessReportDefinitionDto()), IdDto.class)
+      .getId();
   }
 
   public void updateReport(String id, ReportDefinitionDto report) {
