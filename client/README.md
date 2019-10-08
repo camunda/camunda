@@ -39,14 +39,6 @@ You can then destroy the environment using:
 docker-compose down
 ```
 
-### Run the styleguide
-
-```sh
-yarn styleguide
-```
-
-The styleguide will be available at `localhost:6060`.
-
 ## Writing Components
 
 Related files should be close to each other. React components usually consist of a directory with the following files:
@@ -83,11 +75,6 @@ Should contain the logic of the APIs calls for fetching or updating data. The st
 
 Defines the public interface of the directory. Usually re-exports the default component export as a named export. In some cases, it might also export other resources.
 
-
-### Readme.js
-
-Documentation of the component for react-styleguidist. Add this file only to the components you want to appear in styleguide. Details on [react-styleguist](https://react-styleguidist.js.org/docs/documenting.html).
-
 ## Developing UI components
 
 ### The `src/modules` directory
@@ -119,20 +106,20 @@ class MyComponent extends React.Component {
   }
 }
 ```
-Read more on [styled-components](https://www.styled-components.com/docs/advanced#styling-normal-react-components).
 
+Read more on [styled-components](https://www.styled-components.com/docs/advanced#styling-normal-react-components).
 
 ### Event handler naming
 
 **For props**
-When defining the prop names, prefix with on*, as in onClick, onRemove, etc. 
+When defining the prop names, prefix with on\*, as in onClick, onRemove, etc.
 When having more detailed prop names, keep the verb at the end:
 onItemClick
 onItemDelete
 
 **For component methods**
 When passing down a function to a child component that contains logic related to an action:
-use the handle* prefix, as is handleClick, handleItemDelete.
+use the handle\* prefix, as is handleClick, handleItemDelete.
 
 As below, put the noun first (Alert), then the verb last (Click). Then, as other events pile up around that concept, they are grouped together nicely:
 
@@ -148,24 +135,27 @@ onAlertClick={this.props.onAlertClick}
 onAlertHover={this.props.onAlertHover}
 ```
 
-
 ### Boolean variables naming
 
 For boolean variables please use the prefixes is* or has*, as an indicator for
 the value stored and a better understanding of the code:
 
 **bad**
+
 ```js
 let withChildren = false;
 ```
 
 **good**
+
 ```js
 let hasChildren = false;
 ```
+
 or
 
 **bad**
+
 ```js
 let visible = false;
 ...
@@ -176,6 +166,7 @@ if (visible) {
 ```
 
 **good**
+
 ```js
 let isVisible = false;
 ...
@@ -188,11 +179,13 @@ if (isVisible) {
 Don't use negation in the variable name. It's hard to read.
 
 **bad**
+
 ```js
 let isNotAllowed = true;
 ```
 
 **good**
+
 ```js
 let isForbidden = true;
 ```
@@ -200,15 +193,18 @@ let isForbidden = true;
 or
 
 **bad**
+
 ```js
-if (!IsNotAllowed) { }
+if (!IsNotAllowed) {
+}
 ```
 
 **good**
-```js
-if (isAllowed) { }
-```
 
+```js
+if (isAllowed) {
+}
+```
 
 ### Forwarding Refs
 
@@ -224,9 +220,9 @@ div:first-schild a) are not a solid solution.
 
 When adding a new data-test attribute please follow the following conventions:
 
-* start with a verb if the case (delete, confirm, add, etc...)
-* add details about the area the element relates to (comment, diagram, account)
-* end with the element type (button, title, tile, etc...)
+- start with a verb if the case (delete, confirm, add, etc...)
+- add details about the area the element relates to (comment, diagram, account)
+- end with the element type (button, title, tile, etc...)
 
 The goal is to have specific attributes for a more ease of identifying elements,
 and also to avoid name collision.
@@ -273,19 +269,17 @@ We use [prettier](https://prettier.io/) to automatically format the Javascript s
 
 This project was bootstrapped using [create-react-app](https://github.com/facebook/create-react-app), so if you want to find out how something related to the build process works, check out their [User Guide](https://github.com/facebook/create-react-app/blob/master/packages/react-scripts/template/README.md#table-of-contents).
 
-
 ## Accessibility
 
-We care about #a11y! In order to cover basic requirements, we should make sure that:  
-  
-* We use semantic markup
-* Interactive elements can
-	* Be accessed using keyboard and screenreader
-	* Name/label are provided when necessary
-	* Can be actioned using mouse, Enter Key, or Space bar
+We care about #a11y! In order to cover basic requirements, we should make sure that:
 
-We will further work on more detailed instructions and requirements, for now you can check  
-  
-* The Accessibility section of our [Design Review Guidelines](https://app.camunda.com/confluence/display/camBPM/Design+Review+Guidelines)
-* Our [Confluence page on Accessibility](https://app.camunda.com/confluence/display/camBPM/Accessibility)
-* [Get started using VoiceOver, the Mac built-in screen reader](https://webaim.org/articles/voiceover/)
+- We use semantic markup
+- Interactive elements can
+  _ Be accessed using keyboard and screenreader
+  _ Name/label are provided when necessary \* Can be actioned using mouse, Enter Key, or Space bar
+
+We will further work on more detailed instructions and requirements, for now you can check
+
+- The Accessibility section of our [Design Review Guidelines](https://app.camunda.com/confluence/display/camBPM/Design+Review+Guidelines)
+- Our [Confluence page on Accessibility](https://app.camunda.com/confluence/display/camBPM/Accessibility)
+- [Get started using VoiceOver, the Mac built-in screen reader](https://webaim.org/articles/voiceover/)

@@ -1,6 +1,6 @@
 {
   "name": "camunda-operate",
-  "version": "1.1.0-SNAPSHOT",
+  "version": "1.2.0-SNAPSHOT",
   "private": true,
   "dependencies": {
     "bpmn-js": "^4.0.3",
@@ -12,7 +12,6 @@
     "react-dom": "^16.9.0",
     "react-router-dom": "^5.0.1",
     "react-transition-group": "^4.2.2",
-    "sanitize-html": "^1.20.1",
     "styled-components": "^4.3.2"
   },
   "scripts": {
@@ -20,8 +19,7 @@
     "build": "react-scripts build && node license-build.js",
     "test": "react-scripts test --env=jsdom",
     "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
-    "eject": "react-scripts eject",
-    "styleguide": "styleguidist server"
+    "eject": "react-scripts eject"
   },
   "jest-junit": {
     "suiteName": "client",
@@ -43,23 +41,13 @@
     "jest-junit": "^6.4.0",
     "lint-staged": "^8.2.0",
     "prettier": "^1.18.2",
-    "react-scripts": "2.1.2",
-    "react-styleguidist": "^9.1.13"
+    "react-scripts": "2.1.2"
   },
   "lint-staged": {
-    "src/**/*.js": [
-      "eslint --fix",
-      "prettier --write",
-      "git add"
-    ]
+    "src/**/*.js": ["eslint --fix", "prettier --write", "git add"]
   },
   "proxy": "http://localhost:8080",
-  "browserslist": [
-    ">0.2%",
-    "not dead",
-    "not ie <= 11",
-    "not op_mini all"
-  ],
+  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"],
   "husky": {
     "hooks": {
       "pre-commit": "lint-staged"
