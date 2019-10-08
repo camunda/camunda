@@ -220,31 +220,6 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  @Test
-  public void emailNotificationIsEnabledCheckWithoutAuthentication() {
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .withoutAuthentication()
-      .buildEmailNotificationIsEnabledRequest()
-      .execute();
-
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(401));
-  }
-
-  @Test
-  public void emailNotificationIsEnabledCheckWithAuthentication() {
-    // when
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEmailNotificationIsEnabledRequest()
-      .execute();
-
-    // then the status code is authorized
-    assertThat(response.getStatus(), is(200));
-  }
-
   private String addAlertToOptimize(AlertCreationDto creationDto) {
     return addAlertToOptimizeAsUser(creationDto, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }

@@ -9,7 +9,6 @@ import com.icegreen.greenmail.util.GreenMail;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.After;
 import org.junit.Before;
@@ -154,36 +153,6 @@ public class AlertStateChangeIT extends AbstractAlertIT {
       content,
       containsString(String.format("http://localhost:%d/#/report/" + reportId, getOptimizeHttpPort()))
     );
-  }
-
-  @Test
-  public void emailNotificationIsEnabled() {
-    //given
-    embeddedOptimizeRule.getConfigurationService().setEmailEnabled(true);
-
-    // when
-    EmailAlertEnabledDto emailEnabled = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEmailNotificationIsEnabledRequest()
-      .execute(EmailAlertEnabledDto.class, 200);
-
-    // then the status code is authorized
-    assertThat(emailEnabled.isEnabled(), is(true));
-  }
-
-  @Test
-  public void emailNotificationIsDisabled() {
-    //given
-    embeddedOptimizeRule.getConfigurationService().setEmailEnabled(false);
-
-    // when
-    EmailAlertEnabledDto emailEnabled = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEmailNotificationIsEnabledRequest()
-      .execute(EmailAlertEnabledDto.class, 200);
-
-    // then the status code is authorized
-    assertThat(emailEnabled.isEnabled(), is(false));
   }
 
   private AlertCreationDto createAlertWithReminder(String reportId) {

@@ -45,24 +45,6 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void checkIsSharingEnabledWithoutAuthentication() {
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCheckIsSharingEnabledRequest()
-      .withoutAuthentication()
-      .execute(SharingEnabledDto.class, 401);
-  }
-
-  @Test
-  public void checkIsSharingEnabled() {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCheckIsSharingEnabledRequest()
-      .execute();
-    assertThat(response.getStatus(), is(200));
-  }
-
-  @Test
   public void createNewReportShareWithoutAuthentication() {
     // when
     Response response =

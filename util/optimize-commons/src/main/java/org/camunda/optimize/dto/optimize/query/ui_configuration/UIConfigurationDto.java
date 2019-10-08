@@ -10,6 +10,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 @Data
 @EqualsAndHashCode
 @AllArgsConstructor
@@ -17,4 +19,8 @@ import lombok.NoArgsConstructor;
 public class UIConfigurationDto {
 
   private HeaderCustomizationDto header;
+  private boolean emailEnabled;
+  private boolean sharingEnabled;
+  private String optimizeVersion;
+  private Map<String, WebappsEndpointDto> webappsEndpoints;
 }

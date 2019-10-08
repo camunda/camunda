@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
-import org.camunda.optimize.service.util.configuration.ui.UIConfigurationService;
+import org.camunda.optimize.service.UIConfigurationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.GET;

@@ -13,7 +13,6 @@ import com.jayway.jsonpath.ReadContext;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.metadata.Version;
-import org.camunda.optimize.service.util.configuration.ui.UIConfigurationService;
 
 import java.awt.*;
 import java.io.InputStream;
@@ -28,6 +27,7 @@ import java.util.Optional;
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
+import static org.camunda.optimize.service.util.configuration.ui.HeaderLogoRetriever.readLogoAsBase64;
 
 @Slf4j
 public class ConfigurationValidator {
@@ -93,8 +93,8 @@ public class ConfigurationValidator {
 
   private void validateUIConfiguration(final ConfigurationService configurationService) {
     // validate that icon can be read from the given logo icon path
-    UIConfigurationService uiConfigurationService = new UIConfigurationService(configurationService);
-    Objects.requireNonNull(uiConfigurationService.getLogoAsBase64());
+    final String pathToLogoIcon = configurationService.getUiConfiguration().getHeader().getPathToLogoIcon();
+    Objects.requireNonNull(readLogoAsBase64(pathToLogoIcon));
     validateColorCode(configurationService);
   }
 

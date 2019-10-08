@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionVisualization;
@@ -131,13 +130,6 @@ public class AlertService implements ReportReferencingService {
       this.schedulerFactoryBean = null;
     }
   }
-
-  public EmailAlertEnabledDto isAlertingEnabled() {
-    EmailAlertEnabledDto check = new EmailAlertEnabledDto();
-    check.setEnabled(configurationService.getEmailEnabled());
-    return check;
-  }
-
 
   private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
     List<Trigger> triggers = new ArrayList<>();

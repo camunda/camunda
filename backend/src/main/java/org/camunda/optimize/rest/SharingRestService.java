@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
-import org.camunda.optimize.dto.optimize.rest.SharingEnabledDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
 import org.camunda.optimize.rest.providers.Secured;
@@ -72,14 +71,6 @@ public class SharingRestService {
     } else {
       throw new SharingNotAllowedException("Sharing of dashboards is disabled per Optimize configuration");
     }
-  }
-
-  @GET
-  @Secured
-  @Produces(MediaType.APPLICATION_JSON)
-  @Path("/isEnabled")
-  public SharingEnabledDto isSharingEnabled() {
-    return new SharingEnabledDto(configurationService.getSharingEnabled());
   }
 
   @DELETE

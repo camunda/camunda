@@ -3,12 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.alert;
+package org.camunda.optimize.dto.optimize.query.ui_configuration;
 
 import lombok.Data;
 
 @Data
-public class EmailAlertEnabledDto {
+public class WebappsEndpointDto {
 
-  protected boolean isEnabled;
+  private String endpoint;
+  private String engineName;
 }

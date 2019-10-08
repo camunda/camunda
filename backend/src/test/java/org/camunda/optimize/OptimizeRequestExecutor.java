@@ -256,12 +256,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildEmailNotificationIsEnabledRequest() {
-    this.path = "alert/email/isEnabled";
-    this.requestType = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildUpdateSingleReportRequest(String id,
                                                                 ReportDefinitionDto entity) {
     switch (entity.getReportType()) {
@@ -656,12 +650,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCheckIsSharingEnabledRequest() {
-    this.path = "share/isEnabled";
-    this.requestType = GET;
-    return this;
-  }
-
   public OptimizeRequestExecutor buildDeleteReportShareRequest(String id) {
     this.path = "share/report/" + id;
     this.requestType = DELETE;
@@ -770,12 +758,6 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildGetOptimizeVersionRequest() {
     this.path = "meta/version";
-    this.requestType = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetCamundaWebappsEndpointRequest() {
-    this.path = "camunda";
     this.requestType = GET;
     return this;
   }

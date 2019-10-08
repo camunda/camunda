@@ -9,7 +9,6 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.security.SessionService;
@@ -76,12 +75,5 @@ public class AlertRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteAlert(@PathParam("id") String alertId) {
     alertService.deleteAlert(alertId);
-  }
-
-  @GET
-  @Path("/email/isEnabled")
-  @Produces(MediaType.APPLICATION_JSON)
-  public EmailAlertEnabledDto isAlertingEnabled() {
-    return alertService.isAlertingEnabled();
   }
 }
