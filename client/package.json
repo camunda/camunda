@@ -32,7 +32,7 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
-    "enzyme": "^3.9.0",
+    "enzyme": "^3.10.0",
     "enzyme-adapter-react-16": "^1.9.1",
     "eslint-config-react-app": "^3.0.5",
     "eslint-plugin-camunda-licensed": "^0.4.0",
