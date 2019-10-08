@@ -18,6 +18,7 @@ export default class Popover extends React.Component {
     this.initilizeFooterRef();
 
     this.id = getRandomId();
+    this.insideClick = false;
 
     this.state = {
       open: false,
@@ -55,13 +56,15 @@ export default class Popover extends React.Component {
       if (
         !(evt.popoverChain || []).includes(this.id) &&
         !evt.target.closest('.Modal') &&
-        this.mounted
+        this.mounted &&
+        !this.insideClick
       ) {
         this.setState({
           open: false
         });
         this.calculateDialogStyle();
       }
+      this.insideClick = false;
     });
   };
 
@@ -103,6 +106,10 @@ export default class Popover extends React.Component {
     });
   };
 
+  onPopoverDialogMouseDown = evt => {
+    this.insideClick = true;
+  };
+
   createOverlay = () => {
     return (
       <div onClick={this.catchClick}>
@@ -110,6 +117,7 @@ export default class Popover extends React.Component {
         <span className="Popover__dialog-arrow" />
         <div
           ref={this.storePopoverDialogRef}
+          onMouseDown={this.onPopoverDialogMouseDown}
           style={this.state.dialogStyles}
           className={classnames('Popover__dialog', {scrollable: this.state.scrollable})}
         >
