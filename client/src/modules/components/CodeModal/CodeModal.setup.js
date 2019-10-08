@@ -14,7 +14,6 @@ const props = {
 
 const pageMounts = {
   handleModalClose: jest.fn(),
-  handleModalSave: jest.fn(),
   headline: 'Some Headline',
   initialValue: props.validJSON,
   isModalVisible: false,

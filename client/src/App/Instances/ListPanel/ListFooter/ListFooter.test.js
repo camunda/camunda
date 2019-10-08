@@ -7,7 +7,6 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-
 import ListFooter from './ListFooter';
 import Paginator from './Paginator';
 import AddSelection from './AddSelection';
