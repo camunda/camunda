@@ -21,7 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -169,7 +169,7 @@ public class SingleReportHandlingIT {
     ProcessPartDto processPartDto = new ProcessPartDto();
     processPartDto.setStart("start123");
     processPartDto.setEnd("end123");
-    reportData.setProcessPart(processPartDto);
+    reportData.getConfiguration().setProcessPart(processPartDto);
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setId(shouldNotBeUpdatedString);
@@ -190,9 +190,9 @@ public class SingleReportHandlingIT {
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getDefinitionVersions(), contains("123"));
     assertThat(newReport.getData().getConfiguration().getYLabel(), is("fooYLabel"));
-    assertThat(newReport.getData().getProcessPart(), not(Optional.empty()));
-    assertThat(newReport.getData().getProcessPart().get().getStart(), is("start123"));
-    assertThat(newReport.getData().getProcessPart().get().getEnd(), is("end123"));
+    assertThat(newReport.getData().getConfiguration().getProcessPart(), not(Optional.empty()));
+    assertThat(newReport.getData().getConfiguration().getProcessPart().get().getStart(), is("start123"));
+    assertThat(newReport.getData().getConfiguration().getProcessPart().get().getEnd(), is("end123"));
     assertThat(newReport.getId(), is(id));
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));

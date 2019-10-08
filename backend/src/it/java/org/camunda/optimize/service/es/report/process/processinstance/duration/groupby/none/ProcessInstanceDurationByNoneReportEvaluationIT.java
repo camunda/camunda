@@ -85,7 +85,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(resultReportDataDto.getProcessPart(), is(Optional.empty()));
+    assertThat(resultReportDataDto.getConfiguration().getProcessPart(), is(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
     long calculatedResult = evaluationResponse.getResult().getData();

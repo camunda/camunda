@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;

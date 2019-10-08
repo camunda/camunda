@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -218,7 +218,7 @@ public class ProcessReportDataBuilderHelper {
     reportData.setVisualization(visualization);
     reportData.setView(viewDto);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(processPartDto);
+    reportData.getConfiguration().setProcessPart(processPartDto);
     return reportData;
   }
 
@@ -296,7 +296,7 @@ public class ProcessReportDataBuilderHelper {
         variableName,
         variableType
       );
-    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    reportData.getConfiguration().setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
     return reportData;
   }
 

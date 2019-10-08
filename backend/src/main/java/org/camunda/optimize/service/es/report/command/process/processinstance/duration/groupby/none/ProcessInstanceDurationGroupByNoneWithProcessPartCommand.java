@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -28,7 +28,7 @@ public class ProcessInstanceDurationGroupByNoneWithProcessPartCommand
   @Override
   public BoolQueryBuilder setupBaseQuery(ProcessReportDataDto processReportData) {
     BoolQueryBuilder boolQueryBuilder = super.setupBaseQuery(processReportData);
-    ProcessPartDto processPart = processReportData.getProcessPart()
+    ProcessPartDto processPart = processReportData.getConfiguration().getProcessPart()
       .orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
     return addProcessPartQuery(boolQueryBuilder, processPart.getStart(), processPart.getEnd());
   }
@@ -40,7 +40,9 @@ public class ProcessInstanceDurationGroupByNoneWithProcessPartCommand
 
   @Override
   protected AggregationBuilder createOperationsAggregation() {
-    ProcessPartDto processPart = ((ProcessReportDataDto) getReportData()).getProcessPart().orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
+    ProcessPartDto processPart = ((ProcessReportDataDto) getReportData()).getConfiguration()
+      .getProcessPart()
+      .orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
     return createProcessPartAggregation(processPart.getStart(), processPart.getEnd());
   }
 }

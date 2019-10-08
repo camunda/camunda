@@ -11,13 +11,14 @@ import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.sorting.SortingDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,6 +51,7 @@ public class SingleReportConfigurationDto implements Combinable {
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
   private DistributedBy distributedBy = DistributedBy.NONE;
   private SortingDto sorting = null;
+  private ProcessPartDto processPart = null;
 
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto, ProcessGroupByDto groupByDto) {
@@ -101,5 +103,9 @@ public class SingleReportConfigurationDto implements Combinable {
 
   public Optional<SortingDto> getSorting() {
     return Optional.ofNullable(sorting);
+  }
+
+  public Optional<ProcessPartDto> getProcessPart() {
+    return Optional.ofNullable(processPart);
   }
 }

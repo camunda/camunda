@@ -98,7 +98,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(resultReportDataDto.getProcessPart(), not(Optional.empty()));
+    assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
     long calculatedResult = evaluationResponse.getResult().getData();
@@ -142,7 +142,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(resultReportDataDto.getProcessPart(), not(Optional.empty()));
+    assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
     assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
     long calculatedResult = evaluationResponse.getResult().getData();
@@ -184,7 +184,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
-    assertThat(resultReportDataDto.getProcessPart(), not(Optional.empty()));
+    assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
     long calculatedResult = evaluationResponse.getResult().getData();
     assertThat(calculatedResult, is(1000L));

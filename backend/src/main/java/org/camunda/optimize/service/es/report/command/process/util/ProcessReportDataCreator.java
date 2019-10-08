@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Distr
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
@@ -226,7 +226,7 @@ public class ProcessReportDataCreator {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getConfiguration().setProcessPart(new ProcessPartDto());
     reportData.getConfiguration().setAggregationType(aggroType);
     return reportData;
   }
@@ -249,7 +249,7 @@ public class ProcessReportDataCreator {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getConfiguration().setProcessPart(new ProcessPartDto());
     reportData.getConfiguration().setAggregationType(aggroType);
     return reportData;
   }
@@ -272,7 +272,7 @@ public class ProcessReportDataCreator {
     ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getConfiguration().setProcessPart(new ProcessPartDto());
     reportData.getConfiguration().setAggregationType(aggroType);
     return reportData;
   }
@@ -290,7 +290,7 @@ public class ProcessReportDataCreator {
 
   public static ProcessReportDataDto createProcessInstanceDurationGroupByVariableWithProcessPartReport(AggregationType aggroType) {
     ProcessReportDataDto reportData = createProcessInstanceDurationGroupByVariableReport(aggroType);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getConfiguration().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
