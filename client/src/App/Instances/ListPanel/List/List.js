@@ -42,7 +42,6 @@ class List extends React.Component {
     sorting: PropTypes.object,
     onSort: PropTypes.func,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-    isDataLoaded: PropTypes.bool,
     onActionButtonClick: PropTypes.func,
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
