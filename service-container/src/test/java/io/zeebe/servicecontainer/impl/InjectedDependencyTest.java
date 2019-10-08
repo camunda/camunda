@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-@SuppressWarnings("unchecked")
 public class InjectedDependencyTest {
   @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
@@ -138,10 +137,11 @@ public class InjectedDependencyTest {
     serviceContainer
         .createService(service1Name, mockService1)
         .dependency(service2Name, injector)
-        .install();
+        .install()
+        .join();
 
     // when
-    serviceContainer.removeService(service1Name);
+    serviceContainer.removeService(service1Name).join();
 
     // then
     assertThat(injector.getValue()).isNull();
@@ -151,11 +151,13 @@ public class InjectedDependencyTest {
   public void shouldUninjectAfterStop() {
     // given
     final Injector<Object> injector = mock(Injector.class);
-    serviceContainer
-        .createService(service1Name, mockService1)
-        .dependency(service2Name, injector)
-        .install();
+    final ActorFuture<Object> install =
+        serviceContainer
+            .createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .install();
     serviceContainer.createService(service2Name, mockService2).install().join();
+    install.join();
 
     // when
     serviceContainer.removeService(service1Name).join();
@@ -171,15 +173,17 @@ public class InjectedDependencyTest {
     // given
     final Injector<Object> injector = new Injector<>();
     final Injector<Object> anotherInjector = new Injector<>();
-    serviceContainer
-        .createService(service1Name, mockService1)
-        .dependency(service2Name, injector)
-        .dependency(service2Name, anotherInjector)
-        .install();
+    final ActorFuture<Object> install =
+        serviceContainer
+            .createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .dependency(service2Name, anotherInjector)
+            .install();
     serviceContainer.createService(service2Name, mockService2).install();
+    install.join();
 
     // when
-    serviceContainer.removeService(service1Name);
+    serviceContainer.removeService(service1Name).join();
 
     // then
     assertThat(injector.getValue()).isNull();
@@ -191,12 +195,14 @@ public class InjectedDependencyTest {
     // given
     final Injector<Object> injector = new Injector<>();
     final Injector<Object> anotherInjector = new Injector<>();
-    serviceContainer
-        .createService(service1Name, mockService1)
-        .dependency(service2Name, injector)
-        .dependency(service2Name, anotherInjector)
-        .install();
+    final ActorFuture<Object> install =
+        serviceContainer
+            .createService(service1Name, mockService1)
+            .dependency(service2Name, injector)
+            .dependency(service2Name, anotherInjector)
+            .install();
     serviceContainer.createService(service2Name, mockService2).install().join();
+    install.join();
 
     // when + then
     assertThat(serviceContainer.hasService(service1Name).join()).isTrue();
