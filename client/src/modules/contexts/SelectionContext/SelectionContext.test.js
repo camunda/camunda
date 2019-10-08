@@ -9,11 +9,7 @@ import {mount} from 'enzyme';
 import {DataManagerProvider} from 'modules/DataManager';
 import {DataManager} from 'modules/DataManager/core';
 
-import {
-  mockResolvedAsyncFn,
-  flushPromises,
-  groupedWorkflowsMock
-} from 'modules/testUtils';
+import {mockResolvedAsyncFn, groupedWorkflowsMock} from 'modules/testUtils';
 import {
   DEFAULT_SELECTED_INSTANCES,
   SUBSCRIPTION_TOPIC
@@ -356,13 +352,6 @@ describe('SelectionContext', () => {
             queries: [{ids: ['key1', 'key2']}]
           }
         ])
-      };
-      const mockResponse = {
-        workflowInstances: [
-          {id: 'key1', value: 'value1'},
-          {id: 'key2', value: 'value2'}
-        ],
-        totalCount: 2
       };
 
       const wrapper = mount(

@@ -25,7 +25,6 @@ jest.mock('modules/utils/bpmn');
 const providerPropsMock = {
   onWorkflowInstancesRefresh: jest.fn(),
   onSelectionsRefresh: jest.fn(),
-  visibleIdsInListView: ['1', '2', '3', '4', '5'],
   visibleIdsInSelections: ['4', '5', '6']
 };
 
@@ -61,7 +60,7 @@ DataManager.mockImplementation(() => {
   };
 });
 
-describe.only('InstancesPollContext', () => {
+describe('InstancesPollContext', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();

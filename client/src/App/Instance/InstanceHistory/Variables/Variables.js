@@ -50,15 +50,12 @@ export default function Variables({
   }
 
   // scroll to the bottom of the table if the variables inputs got added
-  useEffect(
-    () => {
-      if (editMode === MODE.ADD) {
-        const scrollableElement = variablesContentRef.current.children[0];
-        scrollableElement.scrollTop = scrollableElement.scrollHeight;
-      }
-    },
-    [editMode]
-  );
+  useEffect(() => {
+    if (editMode === MODE.ADD) {
+      const scrollableElement = variablesContentRef.current.children[0];
+      scrollableElement.scrollTop = scrollableElement.scrollHeight;
+    }
+  }, [editMode]);
 
   function renderEditButtons({isDisabled}) {
     return (

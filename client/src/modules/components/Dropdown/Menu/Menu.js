@@ -19,7 +19,6 @@ export default class Menu extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-    onStateChange: PropTypes.func,
     transitionTiming: PropTypes.object,
     className: PropTypes.string
   };

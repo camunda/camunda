@@ -81,9 +81,7 @@ export default class Actions extends React.Component {
       <ActionItems.Item
         type={operationType}
         onClick={() => this.handleOnClick(operationType)}
-        title={`${ariaLabelMap[operationType]} Instance ${
-          this.props.instance.id
-        }`}
+        title={`${ariaLabelMap[operationType]} Instance ${this.props.instance.id}`}
       />
     );
   };

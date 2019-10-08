@@ -60,6 +60,5 @@ export default CodeEditor;
 
 CodeEditor.propTypes = {
   contentEditable: PropTypes.bool,
-  initialValue: PropTypes.string,
-  handleChange: PropTypes.func
+  initialValue: PropTypes.string
 };
