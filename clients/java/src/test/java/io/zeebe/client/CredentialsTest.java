@@ -98,8 +98,8 @@ public class CredentialsTest {
 
     recordingInterceptor.setInterceptAction(
         (call, headers) -> {
-          call.close(Status.UNKNOWN, headers);
           recordingInterceptor.reset();
+          call.close(Status.UNKNOWN, headers);
         });
 
     final CredentialsProvider provider =
@@ -134,10 +134,7 @@ public class CredentialsTest {
     final int retries = 2;
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 
-    recordingInterceptor.setInterceptAction(
-        (call, headers) -> {
-          call.close(Status.UNKNOWN, headers);
-        });
+    recordingInterceptor.setInterceptAction((call, headers) -> call.close(Status.UNKNOWN, headers));
 
     final CredentialsProvider provider =
         Mockito.spy(
