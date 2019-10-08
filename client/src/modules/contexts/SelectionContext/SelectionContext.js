@@ -81,7 +81,7 @@ class BasicSelectionProvider extends React.Component {
       REFRESH_AFTER_OPERATION: ({state, response}) => {
         if (state === 'LOADED') {
           this.updateInstancesInSelections(
-            response.workflowInstances.workflowInstances
+            response[SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES].workflowInstances
           );
         }
       }

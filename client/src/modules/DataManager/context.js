@@ -6,7 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {DataManager} from './core';
+import {DataManager} from './core/';
 
 const DataContext = React.createContext({});
 

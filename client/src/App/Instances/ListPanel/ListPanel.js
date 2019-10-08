@@ -8,7 +8,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
 import SplitPane from 'modules/components/SplitPane';
-import {LOADING_STATE, EXPAND_STATE} from 'modules/constants';
+import {
+  LOADING_STATE,
+  EXPAND_STATE,
+  SUBSCRIPTION_TOPIC
+} from 'modules/constants';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -85,8 +89,8 @@ class ListPanel extends React.Component {
     if (hasEntriesPerPageChanged) {
       if (isListExpanded) {
         dataManager.update({
-          endpoints: ['workflowInstances'],
-          topic: 'REFRESH_AFTER_OPERATION'
+          endpoints: [SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES],
+          topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION
         });
       } else {
         // list is collapsed

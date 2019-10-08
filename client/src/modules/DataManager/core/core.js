@@ -20,6 +20,13 @@ import RequestCache from '../cache';
 import Publisher from '../publisher';
 import Poll from '../poll';
 
+const {
+  LOAD_CORE_STATS,
+  LOAD_LIST_INSTANCES,
+  LOAD_STATE_STATISTICS,
+  LOAD_STATE_DEFINITIONS
+} = SUBSCRIPTION_TOPIC;
+
 export class DataManager {
   constructor() {
     this.poll = new Poll(5000);
@@ -71,33 +78,33 @@ export class DataManager {
   /** Wrapped API calls */
 
   async getWorkflowCoreStatistics() {
-    this.cache.set('coreStatistics', {
+    this.cache.set(LOAD_CORE_STATS, {
       params: {},
       apiCall: fetchWorkflowCoreStatistics
     });
-    this._pubLoadingStates(SUBSCRIPTION_TOPIC.LOAD_CORE_STATS, () =>
+    this._pubLoadingStates(LOAD_CORE_STATS, () =>
       fetchWorkflowCoreStatistics()
     );
   }
 
   async getWorkflowInstances(params) {
     const cachedParams = this._updateRequestCache(
-      'workflowInstances',
+      LOAD_LIST_INSTANCES,
       fetchWorkflowInstances,
       params
     );
-    this._pubLoadingStates(SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES, () =>
+    this._pubLoadingStates(LOAD_LIST_INSTANCES, () =>
       fetchWorkflowInstances(cachedParams)
     );
   }
 
   async getWorkflowInstancesStatistics(params) {
     const cachedParams = this._updateRequestCache(
-      'statistics',
+      LOAD_STATE_STATISTICS,
       fetchWorkflowInstancesStatistics,
       params
     );
-    this._pubLoadingStates(SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS, () =>
+    this._pubLoadingStates(LOAD_STATE_STATISTICS, () =>
       fetchWorkflowInstancesStatistics(cachedParams)
     );
   }
@@ -132,19 +139,19 @@ export class DataManager {
     };
 
     const cachedParams = this._updateRequestCache(
-      'workflowXML',
+      LOAD_STATE_DEFINITIONS,
       fetchDiagramModel,
       params
     );
 
-    this._pubLoadingStates(SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS, () =>
+    this._pubLoadingStates(LOAD_STATE_DEFINITIONS, () =>
       fetchDiagramModel(cachedParams)
     );
   }
 
   async getWorkflowInstancesByIds(params, topic) {
     const cachedParams = this._updateRequestCache(
-      'fetchWorkflowInstancesByIds',
+      topic,
       fetchWorkflowInstancesByIds,
       params
     );

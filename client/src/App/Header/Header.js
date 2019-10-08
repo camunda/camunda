@@ -20,7 +20,8 @@ import {
   FILTER_SELECTION,
   BADGE_TYPE,
   COMBO_BADGE_TYPE,
-  DEFAULT_FILTER
+  DEFAULT_FILTER,
+  SUBSCRIPTION_TOPIC
 } from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
@@ -60,7 +61,9 @@ class Header extends React.Component {
       },
       REFRESH_AFTER_OPERATION: ({state, response}) => {
         if (state === LOADING_STATE.LOADED) {
-          this.updateCounts(response.coreStatistics.coreStatistics);
+          this.updateCounts(
+            response[SUBSCRIPTION_TOPIC.LOAD_CORE_STATS].coreStatistics
+          );
         }
       }
     };
@@ -150,7 +153,7 @@ class Header extends React.Component {
       typeof runningInstancesCount === 'undefined' ||
       typeof incidentsCount === 'undefined'
     ) {
-      this.props.dataManager.getCoreStatistics();
+      this.props.dataManager.getWorkflowCoreStatistics();
     } else {
       this.setState({runningInstancesCount, incidentsCount});
     }

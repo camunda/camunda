@@ -17,7 +17,8 @@ import {
   DEFAULT_MAX_RESULTS,
   DEFAULT_FIRST_ELEMENT,
   PAGE_TITLE,
-  LOADING_STATE
+  LOADING_STATE,
+  SUBSCRIPTION_TOPIC
 } from 'modules/constants';
 import {fetchGroupedWorkflows} from 'modules/api/instances';
 import {
@@ -77,11 +78,15 @@ class InstancesContainer extends Component {
       },
       REFRESH_AFTER_OPERATION: ({state, response, error}) => {
         if (state === LOADING_STATE.LOADED) {
+          const {
+            LOAD_LIST_INSTANCES,
+            LOAD_STATE_STATISTICS
+          } = SUBSCRIPTION_TOPIC;
           this.setState({
-            workflowInstances: response.workflowInstances.workflowInstances,
-            filterCount: response.workflowInstances.totalCount,
-            ...(response.statistics && {
-              statistics: response.statistics.statistics
+            workflowInstances: response[LOAD_LIST_INSTANCES].workflowInstances,
+            filterCount: response[LOAD_LIST_INSTANCES].totalCount,
+            ...(response[LOAD_STATE_STATISTICS] && {
+              statistics: response[LOAD_STATE_STATISTICS].statistics
             })
           });
         }
@@ -199,6 +204,7 @@ class InstancesContainer extends Component {
 
   fetchWorkflowInstances = async (filter, groupedWorkflows) => {
     const {sorting, firstElement} = this.state;
+
     this.props.dataManager.getWorkflowInstances({
       queries: [
         parseFilterForRequest(

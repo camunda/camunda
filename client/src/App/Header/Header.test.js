@@ -68,7 +68,7 @@ DataManager.mockImplementation(() => {
       subscription({state, response})
     ),
     subscribe: jest.fn(),
-    getCoreStatistics: jest.fn()
+    getWorkflowCoreStatistics: jest.fn()
   };
 });
 
@@ -114,7 +114,7 @@ describe('Header', () => {
 
   describe('localState values', () => {
     it('should render the correct links', async () => {
-      dataManager.getCoreStatistics.mockClear();
+      dataManager.getWorkflowCoreStatistics.mockClear();
 
       const mockProps = {
         ...mockValues,
@@ -143,7 +143,7 @@ describe('Header', () => {
       await flushPromises();
       node.update();
 
-      expect(dataManager.getCoreStatistics).toHaveBeenCalled();
+      expect(dataManager.getWorkflowCoreStatistics).toHaveBeenCalled();
 
       expect(node.find(Styled.Menu)).toExist();
       expect(node.find(Styled.Menu).props().role).toBe('navigation');
@@ -405,7 +405,7 @@ describe('Header', () => {
       node.update();
 
       // then
-      expect(dataManager.getCoreStatistics).toBeCalled();
+      expect(dataManager.getWorkflowCoreStatistics).toBeCalled();
 
       // then
       expect(
@@ -447,7 +447,7 @@ describe('Header', () => {
       node.update();
 
       // then
-      expect(dataManager.getCoreStatistics).toBeCalled();
+      expect(dataManager.getWorkflowCoreStatistics).toBeCalled();
       expect(
         node
           .find('[data-test="header-link-incidents"]')

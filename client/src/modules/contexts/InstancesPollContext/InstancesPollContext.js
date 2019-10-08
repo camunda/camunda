@@ -100,19 +100,19 @@ class InstancesPollProviderComp extends React.Component {
       visibleIdsInSelections
     );
 
-    const {
-      workflowInstances,
-      statistics,
-      coreStatistics
-    } = dataManager.getCachedRequestNames();
-
     let updateParams = {
-      endpoints: [workflowInstances, coreStatistics],
+      endpoints: [
+        SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES,
+        SUBSCRIPTION_TOPIC.LOAD_CORE_STATS
+      ],
       topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION
     };
 
     if (workflow && version && version !== 'all') {
-      updateParams.endpoints = [...updateParams.endpoints, statistics];
+      updateParams.endpoints = [
+        ...updateParams.endpoints,
+        SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS
+      ];
     }
 
     if (Boolean(completedIdsInSelections.length)) {
@@ -120,6 +120,7 @@ class InstancesPollProviderComp extends React.Component {
         completedInstances
       };
     }
+
     dataManager.update(updateParams);
   }
 
