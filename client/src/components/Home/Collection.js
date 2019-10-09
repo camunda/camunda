@@ -104,7 +104,7 @@ export default withErrorHandling(
               <div className="name">
                 {collection && (
                   <>
-                    {collection.name}
+                    <span title={collection.name}>{collection.name}</span>
                     {collection.currentUserRole === 'manager' && (
                       <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
                         <Dropdown.Option onClick={this.startEditingCollection}>

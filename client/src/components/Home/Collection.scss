@@ -39,6 +39,9 @@
       display: inline-block;
       margin-top: 26px;
       vertical-align: top;
+      position: absolute;
+      left: 108px;
+      right: 400px;
 
       .type {
         font-size: 12px;
@@ -49,6 +52,15 @@
       .name {
         font-size: 24px;
         line-height: 32px;
+
+        span {
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: inline-block;
+          max-width: calc(100% - 43px);
+          vertical-align: top;
+        }
 
         .Dropdown {
           margin-left: 19px;

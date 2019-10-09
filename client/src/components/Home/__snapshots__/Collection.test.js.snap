@@ -32,7 +32,11 @@ exports[`should match snapshot 1`] = `
       <div
         className="name"
       >
-        aCollectionName
+        <span
+          title="aCollectionName"
+        >
+          aCollectionName
+        </span>
         <Dropdown
           label={
             <Icon
@@ -159,7 +163,11 @@ exports[`should render content depending on the selected tab 1`] = `
       <div
         className="name"
       >
-        aCollectionName
+        <span
+          title="aCollectionName"
+        >
+          aCollectionName
+        </span>
         <Dropdown
           label={
             <Icon
