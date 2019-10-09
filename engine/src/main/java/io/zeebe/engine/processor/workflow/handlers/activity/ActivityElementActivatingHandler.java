@@ -9,10 +9,12 @@ package io.zeebe.engine.processor.workflow.handlers.activity;
 
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatingHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.List;
 
 public class ActivityElementActivatingHandler<T extends ExecutableActivity>
     extends ElementActivatingHandler<T> {
@@ -39,6 +41,11 @@ public class ActivityElementActivatingHandler<T extends ExecutableActivity>
 
   @Override
   protected boolean handleState(BpmnStepContext<T> context) {
-    return super.handleState(context) && catchEventSubscriber.subscribeToEvents(context);
+    if (!super.handleState(context)) {
+      return false;
+    }
+
+    final List<ExecutableCatchEvent> eventSubprocesses = context.getElement().getEvents();
+    return eventSubprocesses.isEmpty() || catchEventSubscriber.subscribeToEvents(context);
   }
 }

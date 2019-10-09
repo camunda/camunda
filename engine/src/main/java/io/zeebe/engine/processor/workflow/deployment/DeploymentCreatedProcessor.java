@@ -12,6 +12,7 @@ import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -92,7 +93,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
     final long workflowKey = workflowRecord.getKey();
     final DeployedWorkflow workflowDefinition = workflowState.getWorkflowByKey(workflowKey);
     final ExecutableWorkflow workflow = workflowDefinition.getWorkflow();
-    final List<ExecutableCatchEventElement> startEvents = workflow.getStartEvents();
+    final List<ExecutableStartEvent> startEvents = workflow.getStartEvents();
 
     // if startEvents contain message events
     for (ExecutableCatchEventElement startEvent : startEvents) {
