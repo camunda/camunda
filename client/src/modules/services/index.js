@@ -43,3 +43,8 @@ export function getRandomId() {
 export function capitalize(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
+
+export function getCollection(path) {
+  const collectionMatch = /\/collection\/([^/]+)/g.exec(path);
+  return collectionMatch && collectionMatch[1];
+}

@@ -17,7 +17,13 @@ import {
   EntityNameForm
 } from 'components';
 
-import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
+import {
+  incompatibleFilters,
+  updateEntity,
+  createEntity,
+  evaluateReport,
+  getCollection
+} from 'services';
 import {addNotification} from 'notifications';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
@@ -80,10 +86,11 @@ export default withRouter(
         const name = updatedName || this.state.report.name;
         const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
 
-        const collectionMatch = /\/collection\/([^/]+)/g.exec(this.props.location.pathname);
+        const collection = getCollection(this.props.location.pathname);
+
         let creationEndpoint = endpoint;
-        if (collectionMatch && collectionMatch[1]) {
-          creationEndpoint += '?collectionId=' + collectionMatch[1];
+        if (collection) {
+          creationEndpoint += '?collectionId=' + collection;
         }
 
         if (this.props.isNew) {

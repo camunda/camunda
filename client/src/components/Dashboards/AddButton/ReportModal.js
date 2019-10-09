@@ -17,6 +17,7 @@ import {
   Labeled,
   Form
 } from 'components';
+import {getCollection} from 'services';
 
 import {loadReports, loadReportsInCollection} from './service';
 import {t} from 'translation';
@@ -31,8 +32,7 @@ export default withRouter(
     };
 
     componentDidMount = async () => {
-      const collectionMatch = /\/collection\/([^/]+)/g.exec(this.props.location.pathname);
-      const collection = collectionMatch && collectionMatch[1];
+      const collection = getCollection(this.props.location.pathname);
 
       this.setState({
         availableReports: await (collection ? loadReportsInCollection(collection) : loadReports())

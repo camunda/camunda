@@ -7,7 +7,7 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 
-import {loadEntities} from 'services';
+import {loadEntities, getCollection} from 'services';
 import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
 import {Configuration} from './Configuration';
 
@@ -28,8 +28,7 @@ export default withRouter(
     async componentDidMount() {
       const acceptedVisualizations = ['table', 'bar', 'line', 'number'];
 
-      const collectionMatch = /\/collection\/([^/]+)/g.exec(this.props.location.pathname);
-      const collection = (collectionMatch && collectionMatch[1]) || null;
+      const collection = getCollection(this.props.location.pathname) || null;
 
       const reports = (await loadEntities('report', 'lastModified')).filter(
         report =>

@@ -9,7 +9,7 @@ import {Redirect} from 'react-router-dom';
 import moment from 'moment';
 
 import {withErrorHandling} from 'HOC';
-import {loadEntity, deleteEntity, updateEntity, createEntity} from 'services';
+import {loadEntity, deleteEntity, updateEntity, createEntity, getCollection} from 'services';
 
 import {ErrorPage, LoadingIndicator} from 'components';
 
@@ -120,8 +120,7 @@ export default withErrorHandling(
     };
 
     saveChanges = (name, reports) => {
-      const collectionMatch = /\/collection\/([^/]+)/g.exec(this.props.location.pathname);
-      const collection = collectionMatch && collectionMatch[1];
+      const collection = getCollection(this.props.location.pathname);
 
       if (this.isNew()) {
         this.props.mightFail(
