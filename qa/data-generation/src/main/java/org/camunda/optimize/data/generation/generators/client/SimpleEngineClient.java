@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
@@ -32,6 +33,7 @@ import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.data.generation.generators.client.dto.MessageCorrelationDto;
 import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
@@ -50,12 +52,17 @@ import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 @Slf4j
 public class SimpleEngineClient {
@@ -88,19 +95,11 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
-  public void initializeDefaultUsers() {
-    String body = "{\"type\" : 0,\n" +
-      " \"permissions\": [\"ALL\"],\n" +
-      " \"userId\": \"*\",\n" +
-      " \"groupId\": null,\n" +
-      " \"resourceType\": 0,\n" +
-      " \"resourceId\": \"*\"}";
-    HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
-    authPost.setEntity(new StringEntity(body));
-    authPost.addHeader("Content-Type", "application/json");
-
-    try (CloseableHttpResponse createUserResponse = client.execute(authPost)) {
-      log.info("Response Status Code {} when creating global application authorization for all users", createUserResponse.getStatusLine().getStatusCode());
+  public void initializeStandardUserAuthorizations() {
+    for (String user : users) {
+      createGrantAllOfTypeAuthorization(RESOURCE_TYPE_APPLICATION, user);
+      createGrantAllOfTypeAuthorization(RESOURCE_TYPE_PROCESS_DEFINITION, user);
+      createGrantAllOfTypeAuthorization(RESOURCE_TYPE_DECISION_DEFINITION, user);
     }
   }
 
@@ -479,6 +478,27 @@ public class SimpleEngineClient {
       }
     } catch (Exception e) {
       log.error("Could not complete user task!", e);
+    }
+  }
+
+  private void createGrantAllOfTypeAuthorization(final int resourceType, final String userId) throws IOException {
+    final HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
+    final AuthorizationDto globalAppAuth = new AuthorizationDto(
+      null, 1, Collections.singletonList("ALL"), userId, null, resourceType, "*"
+    );
+    authPost.setEntity(new StringEntity(objectMapper.writeValueAsString(globalAppAuth)));
+    authPost.addHeader("Content-Type", "application/json");
+
+    try (CloseableHttpResponse createUserResponse = client.execute(authPost)) {
+      log.info(
+        "Response Status Code {} when granting ALL authorization for resource type {} to user {}.",
+        createUserResponse.getStatusLine().getStatusCode(),
+        resourceType,
+        userId
+      );
+      if (createUserResponse.getStatusLine().getStatusCode() != 200) {
+        log.warn(IOUtils.toString(createUserResponse.getEntity().getContent(), StandardCharsets.UTF_8));
+      }
     }
   }
 

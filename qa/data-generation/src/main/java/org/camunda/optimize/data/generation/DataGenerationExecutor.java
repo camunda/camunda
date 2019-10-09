@@ -61,7 +61,7 @@ public class DataGenerationExecutor {
       1, 1, Long.MAX_VALUE, TimeUnit.DAYS, importJobsQueue, new WaitHandler());
 
     engineClient = new SimpleEngineClient(engineRestEndpoint);
-    engineClient.initializeDefaultUsers();
+    engineClient.initializeStandardUserAuthorizations();
 
     if (this.removeDeployments) {
       engineClient.cleanUpDeployments();
