@@ -29,7 +29,7 @@ spec:
       - name: configuration
         configMap:
           name: @BRANCH@-optimize-camunda-cloud
-          defaultMode: 0744
+          defaultMode: 0555
       initContainers:
       - name: init-sysctl
         image: busybox
