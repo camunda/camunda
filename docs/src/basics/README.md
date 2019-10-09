@@ -9,5 +9,4 @@ This section provides an overview of Zeebe's core concepts. Understanding them h
 * [Protocols](basics/protocols.html)
 * [Internal Processing](basics/internal-processing.html)
 * [Exporters](basics/exporters.html)
-* [Performance](basics/performance.html)
 * [Clustering](basics/clustering.html)

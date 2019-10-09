@@ -4,8 +4,8 @@ This page guides you through the initial installation of a Zeebe broker for deve
 
 There are different ways to install Zeebe:
 
-* [Download a distribution](#download-a-distribution)
 * [Using Docker](#using-docker) (Recommended)
+* [Download a distribution](#download-a-distribution)
 
 ## Using Docker
 
@@ -140,8 +140,8 @@ You can always download the latest Zeebe release from the [Github release page](
   * Linux
   * Windows/MacOS (development only, not supported for production)
 * Java Virtual Machine:
-  * Oracle Hotspot v1.8
-  * Open JDK v1.8
+  * Oracle Hotspot 11
+  * Open JDK 11
 
 Once you have downloaded a distribution, extract it into a folder of your choice. To extract the Zeebe distribution and start the broker, **Linux users** can type:
 

@@ -58,7 +58,7 @@
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.junit>4.12</version.junit>
     <version.log4j>2.12.1</version.log4j>
-    <version.mockito>3.0.0</version.mockito>
+    <version.mockito>3.1.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
     <version.netty>4.1.39.Final</version.netty>
@@ -100,7 +100,7 @@
     <plugin.version.enforcer>3.0.0-M2</plugin.version.enforcer>
     <plugin.version.dependency>3.1.1</plugin.version.dependency>
     <plugin.version.spotbugs>3.1.12.2</plugin.version.spotbugs>
-    <plugin.version.sonar>3.6.1.1688</plugin.version.sonar>
+    <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.2</extension.version.os-maven-plugin>
