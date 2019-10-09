@@ -9,10 +9,12 @@ import {mount} from 'enzyme';
 
 import {
   mockResolvedAsyncFn,
-  flushPromises,
   createInstance,
-  createOperation
+  createOperation,
+  mockDataManager
 } from 'modules/testUtils';
+
+import {SUBSCRIPTION_TOPIC} from 'modules/constants';
 
 import * as api from 'modules/api/instances/instances';
 
@@ -25,7 +27,8 @@ jest.mock('modules/utils/bpmn');
 const providerPropsMock = {
   onWorkflowInstancesRefresh: jest.fn(),
   onSelectionsRefresh: jest.fn(),
-  visibleIdsInSelections: ['4', '5', '6']
+  visibleIdsInSelections: ['4', '5', '6'],
+  filter: {workflow: 'asd', version: '1'}
 };
 
 // api mock
@@ -46,19 +49,7 @@ api.fetchWorkflowInstancesByIds = mockResolvedAsyncFn({
 
 jest.mock('modules/DataManager/core');
 
-DataManager.mockImplementation(() => {
-  return {
-    publish: jest.fn(({subscription, state, response}) =>
-      subscription({state, response})
-    ),
-    poll: {start: jest.fn()},
-    update: jest.fn(),
-    subscribe: jest.fn(),
-    getWorkflowInstancesByIds: jest.fn(),
-    getWorkflowInstancesBySelection: jest.fn(),
-    unsubscribe: jest.fn()
-  };
-});
+DataManager.mockImplementation(mockDataManager);
 
 describe('InstancesPollContext', () => {
   beforeEach(() => {
@@ -184,8 +175,7 @@ describe('InstancesPollContext', () => {
     // ).toHaveBeenCalled();
   });
 
-  // TODO: create a way to mock the poll property of the dataManager
-  it.skip('should continue polling until all ids have completed operations', async () => {
+  it('should poll when there are active instances', async () => {
     const COMPLETED_ACTION_INSTANCE = createInstance({
       id: '2',
       hasActiveOperation: false,
@@ -214,6 +204,9 @@ describe('InstancesPollContext', () => {
       </DataManagerProvider>
     );
     const compProps = node.find(FooComp).props();
+    const dataManagerMock = node
+      .find(InstancesPollProvider.WrappedComponent)
+      .instance().props.dataManager;
 
     // ids are send for polling
     compProps.polling.addIds(['1', '2']);
@@ -222,113 +215,50 @@ describe('InstancesPollContext', () => {
 
     // then
     // expect polling to start
-    expect(setTimeout).toBeCalledTimes(1);
-
-    jest.runOnlyPendingTimers();
-    await flushPromises();
-    node.update();
-
-    // TODO: How to Mock instances coming back?
-    //expect to fetch the instances for this ids
-    expect(
-      node.find(InstancesPollProvider.WrappedComponent).instance().props
-        .dataManager.getWorkflowInstancesByIds
-    ).toHaveBeenCalledWith(['1', '2']);
-
-    jest.runOnlyPendingTimers();
-    await flushPromises();
-    node.update();
-
-    // polling will stop as the active operations on instance#2 is completed
-    expect(api.fetchWorkflowInstancesByIds).toHaveBeenCalledTimes(2);
-    expect(api.fetchWorkflowInstancesByIds.mock.calls[1][0]).toEqual(['2']);
+    expect(dataManagerMock.poll.start).toHaveBeenCalled();
+    expect(dataManagerMock.getWorkflowInstancesByIds).toHaveBeenCalledWith(
+      ['1', '2'],
+      SUBSCRIPTION_TOPIC.LOAD_SELECTION_INSTANCES
+    );
   });
 
-  // TODO: create a way to mock the poll property of the dataManager
-  it.skip('should stop polling when all operations have finished', async () => {
+  it('should update when instances have completed operations', () => {
     const COMPLETED_ACTION_INSTANCE = createInstance({
       id: '2',
       hasActiveOperation: false,
       operations: [createOperation({state: 'COMPLETED'})]
     });
-    api.fetchWorkflowInstancesByIds = jest
-      .fn()
-      .mockResolvedValue({
+
+    // given
+    function FooComp() {
+      return <div>foo</div>;
+    }
+    const Foo = withPoll(FooComp);
+    const node = mount(
+      <DataManagerProvider>
+        <InstancesPollProvider {...providerPropsMock}>
+          <Foo />
+        </InstancesPollProvider>
+      </DataManagerProvider>
+    );
+
+    const dataManagerMock = node
+      .find(InstancesPollProvider.WrappedComponent)
+      .instance().props.dataManager;
+
+    const subscriptions = node
+      .find(InstancesPollProvider.WrappedComponent)
+      .instance().subscriptions;
+
+    dataManagerMock.publish({
+      subscription: subscriptions['LOAD_SELECTION_INSTANCES'],
+      state: 'LOADED',
+      response: {
         workflowInstances: [INSTANCE, COMPLETED_ACTION_INSTANCE]
-      }) // default
-      .mockResolvedValueOnce({workflowInstances: [INSTANCE, ACTIVE_INSTANCE]}) // 1st call
-      .mockResolvedValueOnce({workflowInstances: [INSTANCE, ACTIVE_INSTANCE]}); // 2nd call
+      }
+    });
 
-    // given
-    function FooComp() {
-      return <div>foo</div>;
-    }
-    const Foo = withPoll(FooComp);
-    const node = mount(
-      <DataManagerProvider>
-        <InstancesPollProvider {...providerPropsMock}>
-          <Foo />
-        </InstancesPollProvider>
-      </DataManagerProvider>
-    );
-    const compProps = node.find(FooComp).props();
-
-    // ids are send for polling
-    compProps.polling.addIds(['1', '2']);
-
-    node.update();
-
-    // then
-    // expect polling to start
-    expect(setTimeout).toBeCalledTimes(1);
-
-    jest.runOnlyPendingTimers();
-    await flushPromises();
-    node.update();
-
-    // expect to fetch the instances for this ids
-    expect(api.fetchWorkflowInstancesByIds).toHaveBeenCalledWith(['1', '2']);
-
-    jest.runOnlyPendingTimers();
-    await flushPromises();
-    node.update();
-
-    // polling will continue as the active operations on instance#2 is not completed
-    expect(api.fetchWorkflowInstancesByIds).toHaveBeenCalledTimes(2);
-  });
-
-  // TODO: poll timer
-  it.skip('should remove ids with operations', async () => {
-    // given
-    function FooComp() {
-      return <div>foo</div>;
-    }
-    const Foo = withPoll(FooComp);
-    const node = mount(
-      <DataManagerProvider>
-        <InstancesPollProvider {...providerPropsMock}>
-          <Foo />
-        </InstancesPollProvider>
-      </DataManagerProvider>
-    );
-    const compProps = node.find(FooComp).props();
-
-    // ids are send for polling
-    compProps.polling.addIds(['1', '4', '5']);
-    // ids are removed from polling
-    compProps.polling.removeIds(['1', '4', '5']);
-    // then
-    // expect polling to start
-    expect(setTimeout).toBeCalledTimes(1);
-
-    jest.runOnlyPendingTimers();
-    await flushPromises();
-    node.update();
-    // expect to fetch the instances for instances left in selections
-    expect(
-      node.find(InstancesPollProvider.WrappedComponent).instance().props
-        .dataManager.getWorkflowInstancesByIds
-    ).toHaveBeenCalledWith(['4', '5']);
+    expect(dataManagerMock.update).toHaveBeenCalled();
   });
 
   it('should clear polling on unmount', () => {
@@ -356,7 +286,6 @@ describe('InstancesPollContext', () => {
     // expect polling to start
     expect(props.dataManager.poll.start).toBeCalledTimes(1);
     node.unmount();
-    // jest.runOnlyPendingTimers();
 
     // expect to fetch the instances for this ids
     expect(props.dataManager.unsubscribe).toHaveBeenCalled();

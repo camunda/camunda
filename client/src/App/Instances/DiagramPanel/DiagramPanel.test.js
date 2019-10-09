@@ -19,6 +19,8 @@ import {
   mockPropsNoDefinitions
 } from './DiagramPanel.setup';
 
+import {mockDataManager} from 'modules/testUtils';
+
 import SplitPane from 'modules/components/SplitPane';
 
 import Diagram from 'modules/components/Diagram';
@@ -38,14 +40,7 @@ jest.mock(
 
 jest.mock('modules/DataManager/core');
 
-DataManager.mockImplementation(() => {
-  return {
-    subscribe: jest.fn(),
-    getWorkflowXML: jest.fn(),
-    getWorkflowInstances: jest.fn(),
-    getWorkflowInstancesStatistics: jest.fn()
-  };
-});
+DataManager.mockImplementation(mockDataManager);
 
 describe('DiagramPanel', () => {
   let dataManager;

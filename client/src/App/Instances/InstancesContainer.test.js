@@ -15,7 +15,8 @@ import Instances from './Instances';
 import {parseQueryString, decodeFields} from './service';
 import * as api from 'modules/api/instances/instances';
 import * as apiDiagram from 'modules/api/diagram/diagram';
-import {getFilterQueryString} from 'modules/utils/filter';
+import * as filterUtils from 'modules/utils/filter/filter';
+
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 import {
   DEFAULT_FILTER,
@@ -30,7 +31,8 @@ import {
   mockResolvedAsyncFn,
   flushPromises,
   groupedWorkflowsMock,
-  createMockInstancesObject
+  createMockInstancesObject,
+  mockDataManager
 } from 'modules/testUtils';
 import {parsedDiagram} from 'modules/utils/bpmn';
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
@@ -45,20 +47,6 @@ jest.mock(
 );
 
 jest.mock('modules/DataManager/core');
-
-const subscribeMock = jest.fn(); // Lets you check if `connect()` was called, if you want
-const getWorkflowXMLMock = jest.fn();
-const getWorkflowInstancesMock = jest.fn();
-const getWorkflowInstancesStatisticsMock = jest.fn();
-
-DataManager.mockImplementation(() => {
-  return {
-    subscribe: subscribeMock,
-    getWorkflowXML: getWorkflowXMLMock,
-    getWorkflowInstances: getWorkflowInstancesMock,
-    getWorkflowInstancesStatistics: getWorkflowInstancesStatisticsMock
-  };
-});
 
 // props mocks
 const fullFilterWithoutWorkflow = {
@@ -83,7 +71,6 @@ const fullFilterWithWorkflow = {
   endDate: '2018-12-28',
   workflow: 'demoProcess',
   version: 1
-  // activityId: 'taskD'
 };
 
 const localStorageProps = {
@@ -103,16 +90,22 @@ jest.mock('modules/utils/bpmn');
 // local utility
 const pushMock = jest.fn();
 const listenMock = jest.fn();
+// utility mock;
+
 function getRouterProps(filter = DEFAULT_FILTER) {
   return {
     history: {push: pushMock, listen: () => listenMock, location: {search: ''}},
     location: {
-      search: getFilterQueryString(filter)
+      search: filterUtils.getFilterQueryString(filter)
     }
   };
 }
 
 describe('InstancesContainer', () => {
+  beforeAll(() => {
+    DataManager.mockImplementation(mockDataManager);
+  });
+
   let dataManager;
   beforeEach(() => {
     jest.clearAllMocks();
@@ -169,7 +162,7 @@ describe('InstancesContainer', () => {
     });
 
     // How to test the logic of the callback, which are subscribed to topics?
-    it.skip('should fetch statistics', async () => {
+    it('should fetch statistics', async () => {
       // given
       const node = mount(
         <InstancesContainerWrapped
@@ -178,27 +171,24 @@ describe('InstancesContainer', () => {
           {...getRouterProps(fullFilterWithWorkflow)}
         />
       );
-      const expectedQuery = {
-        active: true,
-        activityId: 'taskD',
-        completed: true,
-        errorMessage: 'No data found for query $.foo.',
-        finished: true,
-        ids: ['424242', '434343'],
-        incidents: true,
-        running: true,
-        workflowIds: ['1']
-      };
 
       // when
       await flushPromises();
       node.update();
 
+      const subscriptions = node.instance().subscriptions;
+      dataManager.publish({
+        subscription: subscriptions['LOAD_STATE_DEFINITIONS'],
+        state: LOADING_STATE.LOADED,
+        response: parsedDiagram
+      });
+
       // then
       expect(dataManager.getWorkflowInstancesStatistics).toHaveBeenCalled();
+
       expect(
         dataManager.getWorkflowInstancesStatistics.mock.calls[0][0].queries[0]
-      ).toMatchObject(expectedQuery);
+      ).toMatchSnapshot();
     });
   });
 
@@ -553,8 +543,14 @@ describe('InstancesContainer', () => {
             })}
           />
         );
-
+        const subscriptions = node.instance().subscriptions;
         // when
+        dataManager.publish({
+          subscription: subscriptions['LOAD_STATE_DEFINITIONS'],
+          state: LOADING_STATE.LOADED,
+          response: parsedDiagram
+        });
+
         await flushPromises();
         node.update();
 
@@ -762,7 +758,7 @@ describe('InstancesContainer', () => {
       // then
       expect(pushMock).toHaveBeenCalled();
       expect(pushMock.mock.calls[0][0].search).toBe(
-        getFilterQueryString({
+        filterUtils.getFilterQueryString({
           ...fullFilterWithoutWorkflow,
           ...fullFilterWithWorkflow,
           variable: ''
@@ -789,7 +785,7 @@ describe('InstancesContainer', () => {
       // then
       expect(pushMock).toHaveBeenCalled();
       expect(pushMock.mock.calls[0][0].search).toBe(
-        getFilterQueryString(DEFAULT_FILTER)
+        filterUtils.getFilterQueryString(DEFAULT_FILTER)
       );
     });
   });

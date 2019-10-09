@@ -20,6 +20,7 @@ import {
   LOADING_STATE,
   SUBSCRIPTION_TOPIC
 } from 'modules/constants';
+
 import {fetchGroupedWorkflows} from 'modules/api/instances';
 import {
   parseFilterForRequest,
@@ -103,11 +104,11 @@ class InstancesContainer extends Component {
     );
 
     const filterFromURL = parseQueryString(this.props.location.search).filter;
-
     const sanitizedFilterfromURL = this.sanitizeFilter(
       filterFromURL,
       groupedWorkflows
     );
+
     if (!isEqual(sanitizedFilterfromURL, filterFromURL)) {
       this.setFilterInURL(sanitizedFilterfromURL);
     }

@@ -20,7 +20,8 @@ import {FILTER_SELECTION, LOADING_STATE} from 'modules/constants';
 import {
   flushPromises,
   mockResolvedAsyncFn,
-  groupedWorkflowsMock
+  groupedWorkflowsMock,
+  mockDataManager
 } from 'modules/testUtils';
 
 import {
@@ -41,18 +42,7 @@ import * as api from 'modules/api/instances/instances';
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/DataManager/core');
 
-DataManager.mockImplementation(() => {
-  return {
-    publish: jest.fn(({subscription, state, response}) =>
-      subscription({state, response})
-    ),
-    subscribe: jest.fn(),
-    update: jest.fn(),
-    getWorkflowXML: jest.fn(),
-    getWorkflowInstances: jest.fn(),
-    getWorkflowInstancesStatistics: jest.fn()
-  };
-});
+DataManager.mockImplementation(mockDataManager);
 
 // api mocks
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);

@@ -9,7 +9,11 @@ import {mount} from 'enzyme';
 import {DataManagerProvider} from 'modules/DataManager';
 import {DataManager} from 'modules/DataManager/core';
 
-import {mockResolvedAsyncFn, groupedWorkflowsMock} from 'modules/testUtils';
+import {
+  mockResolvedAsyncFn,
+  groupedWorkflowsMock,
+  mockDataManager
+} from 'modules/testUtils';
 import {
   DEFAULT_SELECTED_INSTANCES,
   SUBSCRIPTION_TOPIC
@@ -31,16 +35,7 @@ const mockProps = {
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/DataManager/core');
 
-DataManager.mockImplementation(() => {
-  return {
-    publish: jest.fn(({subscription, state, response}) =>
-      subscription({state, response})
-    ),
-    subscribe: jest.fn(),
-    getWorkflowInstancesByIds: jest.fn(),
-    getWorkflowInstancesBySelection: jest.fn()
-  };
-});
+DataManager.mockImplementation(mockDataManager);
 
 describe('SelectionContext', () => {
   beforeEach(() => {

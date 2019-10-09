@@ -19,7 +19,11 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import * as api from 'modules/api/header/header';
 import * as instancesApi from 'modules/api/instances/instances';
 
-import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
+import {
+  flushPromises,
+  mockResolvedAsyncFn,
+  mockDataManager
+} from 'modules/testUtils';
 import {DEFAULT_FILTER, FILTER_SELECTION} from 'modules/constants';
 import {getFilterQueryString} from 'modules/utils/filter';
 
@@ -62,15 +66,7 @@ const mockCollapsablePanelProps = {
   expandSelections: jest.fn()
 };
 
-DataManager.mockImplementation(() => {
-  return {
-    publish: jest.fn(({subscription, state, response}) =>
-      subscription({state, response})
-    ),
-    subscribe: jest.fn(),
-    getWorkflowCoreStatistics: jest.fn()
-  };
-});
+DataManager.mockImplementation(mockDataManager);
 
 // api mocks
 api.fetchUser = mockResolvedAsyncFn(USER);

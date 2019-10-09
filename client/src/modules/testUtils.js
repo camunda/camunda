@@ -29,6 +29,24 @@ export const mockRejectedAsyncFn = value => {
   return jest.fn(() => Promise.reject(value));
 };
 
+export const mockDataManager = () => {
+  return {
+    publish: jest.fn(({subscription, state, response}) =>
+      subscription({state, response})
+    ),
+    poll: {start: jest.fn().mockImplementation(cb => cb())},
+    update: jest.fn(),
+    subscribe: jest.fn(),
+    unsubscribe: jest.fn(),
+    getWorkflowXML: jest.fn(),
+    getWorkflowInstances: jest.fn(),
+    getWorkflowInstancesStatistics: jest.fn(),
+    getWorkflowInstancesByIds: jest.fn(),
+    getWorkflowInstancesBySelection: jest.fn(),
+    getWorkflowCoreStatistics: jest.fn()
+  };
+};
+
 /**
  * @returns a higher order function which executes the wrapped method x times;
  * @param {*} x number of times the method should be executed
