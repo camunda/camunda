@@ -41,7 +41,7 @@
     "title": "Collections, Dashboards, and Reports",
     "search": {
       "name": "Filter for name...",
-      "id": "Filter for user ID..."
+      "id": "Filter for ID..."
     },
     "collectionTitle": "Dashboards and Reports",
     "collectionTitleWithAmpersand": "Dashboards & Reports",

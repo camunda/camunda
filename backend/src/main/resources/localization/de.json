@@ -41,7 +41,7 @@
     "title": "Sammlungen, Dashboards, und Berichte",
     "search": {
       "name": "Nach Namen filtern ...",
-      "id": "Nach Benutzer ID filtern ..."
+      "id": "Nach ID filtern ..."
     },
     "collectionTitle": "Dashboards und Berichte",
     "collectionTitleWithAmpersand": "Dashboards & Berichte",
