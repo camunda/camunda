@@ -512,7 +512,7 @@ public class EngineDatabaseRule extends TestWatcher {
     // due to the added precision that is not available on the engines REST-API
     return Timestamp.valueOf(
       offsetDateTime
-        .atZoneSimilarLocal(ZoneId.systemDefault())
+        .atZoneSameInstant(ZoneId.systemDefault())
         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS"))
     );
   }
