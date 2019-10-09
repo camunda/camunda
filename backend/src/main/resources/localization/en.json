@@ -73,7 +73,7 @@
       "existing-user-error": "A user with this id already exists in this collection",
       "existing-group-error": "A group with this id already exists in this collection"
     },
-    "data-hint": "Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.",
+    "data-hint": "Missing data? The last update introduced user permissions. Ask your administrator for access rights.",
     "empty": "There are no items created yet",
     "notFound": "No results found"
   },

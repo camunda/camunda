@@ -20,7 +20,7 @@ exports[`should pass loaded entities to the EntityList 1`] = `
         type="hint"
       />
        
-      Do you miss any data? The last update introduced user permissions. Ask your administrator for access rights.
+      Missing data? The last update introduced user permissions. Ask your administrator for access rights.
     </div>
   </EntityListErrorHandler>
 </div>

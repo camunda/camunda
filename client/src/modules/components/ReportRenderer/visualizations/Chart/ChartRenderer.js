@@ -11,6 +11,9 @@ import {themed} from 'theme';
 
 import './ChartRenderer.scss';
 
+Chart.defaults.global.defaultFontFamily =
+  "'IBM Plex Sans', 'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+
 export default themed(
   class ChartRenderer extends React.Component {
     storeContainer = container => {

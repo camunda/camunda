@@ -41,7 +41,16 @@ function getImportedModules(content) {
 
   while (result !== null) {
     if (result[1] && !result[1].includes('!')) {
-      matches.push(result[1].split('/')[0]);
+      if (result[1].charAt(0) === '@') {
+        matches.push(
+          result[1]
+            .split('/')
+            .slice(0, 2)
+            .join('/')
+        );
+      } else {
+        matches.push(result[1].split('/')[0]);
+      }
     }
     result = regex.exec(content);
   }
