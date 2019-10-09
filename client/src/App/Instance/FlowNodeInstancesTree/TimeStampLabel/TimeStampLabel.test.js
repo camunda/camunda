@@ -33,7 +33,7 @@ describe('TimeStampLabel', () => {
 
   it('should not render a time stamp as a default', () => {
     expect(node.find(Styled.TimeStamp)).not.toExist();
-    expect(node.find(TimeStampLabel).text()).toBe(null);
+    expect(node.find(TimeStampLabel).text()).toBe('');
   });
 
   it('should not render a component if no timestamp is passed', () => {
