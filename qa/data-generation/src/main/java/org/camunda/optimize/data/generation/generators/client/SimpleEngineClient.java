@@ -33,6 +33,7 @@ import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.data.generation.generators.client.dto.MessageCorrelationDto;
 import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
+import org.camunda.optimize.data.generation.generators.client.dto.VariableValue;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
@@ -73,6 +74,7 @@ public class SimpleEngineClient {
   // @formatter:on
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(ENGINE_DATE_FORMAT);
   private static final int MAX_CONNECTIONS = 150;
+  public static final String DELAY_VARIABLE_NAME = "delay";
 
   private CloseableHttpClient client;
   private String engineRestEndpoint;
@@ -182,6 +184,18 @@ public class SimpleEngineClient {
       log.warn("Deployment should contain only one process definition!");
     }
     return processDefinitions.get(0).getId();
+  }
+
+  public VariableValue getProcessInstanceDelayVariable(String procInstId) {
+    HttpGet get = new HttpGet(engineRestEndpoint+ "/process-instance/" + procInstId + "/variables/" + DELAY_VARIABLE_NAME);
+    VariableValue variable = new VariableValue();
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      variable = objectMapper.readValue(responseString, VariableValue.class);
+    } catch (IOException e) {
+      log.error("Error while trying to fetch the variable!!", e);
+    }
+    return variable;
   }
 
   private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment) {

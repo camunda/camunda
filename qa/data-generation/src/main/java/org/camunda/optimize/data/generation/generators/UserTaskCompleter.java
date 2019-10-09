@@ -8,6 +8,7 @@ package org.camunda.optimize.data.generation.generators;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
+import org.camunda.optimize.data.generation.generators.client.dto.VariableValue;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -32,6 +33,7 @@ public class UserTaskCompleter {
   private static final OffsetDateTime OFFSET_DATE_TIME_OF_EPOCH = OffsetDateTime.from(
     Instant.EPOCH.atZone(ZoneId.of("UTC"))
   );
+  public static final int OUTLIER_DELAY = 5000;
 
   private final String processDefinitionId;
   private ExecutorService taskExecutorService;
@@ -138,6 +140,12 @@ public class UserTaskCompleter {
         engineClient.unclaimTask(task);
       } else {
         if (RANDOM.nextDouble() < 0.97) {
+          VariableValue processInstanceVariable =
+            engineClient.getProcessInstanceDelayVariable(task.getProcessInstanceId());
+          if (Boolean.parseBoolean(processInstanceVariable.getValue().toString())) {
+            log.info("Creating an outlier instance, sleeping for " + OUTLIER_DELAY + " ms");
+            Thread.sleep(OUTLIER_DELAY);
+          }
           engineClient.completeUserTask(task);
         }
       }

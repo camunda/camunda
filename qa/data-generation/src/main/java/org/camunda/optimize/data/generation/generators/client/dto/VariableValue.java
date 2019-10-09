@@ -5,6 +5,9 @@
  */
 package org.camunda.optimize.data.generation.generators.client.dto;
 
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor
 public class VariableValue {
 
   Object value;

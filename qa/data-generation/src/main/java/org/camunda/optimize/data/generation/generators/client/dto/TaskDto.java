@@ -16,5 +16,5 @@ public class TaskDto {
 
   private String id;
   private OffsetDateTime created;
-
+  private String processInstanceId;
 }
