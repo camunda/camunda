@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Protocol</name>
   <artifactId>zeebe-protocol</artifactId>
-  <version>0.21.0-SNAPSHOT</version>
+  <version>0.22.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.21.0-SNAPSHOT</version>
+    <version>0.22.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -102,20 +102,6 @@
             <argument>${project.build.outputDirectory}/protocol.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
-          <systemProperties>
-            <systemProperty>
-              <key>sbe.output.dir</key>
-              <value>${project.build.directory}/generated-sources/sbe</value>
-            </systemProperty>
-            <systemProperty>
-              <key>sbe.java.generate.interfaces</key>
-              <value>true</value>
-            </systemProperty>
-            <systemProperty>
-              <key>sbe.decode.unknown.enum.values</key>
-              <value>true</value>
-            </systemProperty>
-          </systemProperties>
         </configuration>
         <dependencies>
           <dependency>

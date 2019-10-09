@@ -78,8 +78,8 @@ public class OAuthCredentialsProvider implements CredentialsProvider {
   }
 
   /**
-   * @return true if the Throwable was caused by an UNAUTHENTICATED response and a new access token
-   *     could be fetched; otherwise returns false.
+   * Returns true if the Throwable was caused by an UNAUTHENTICATED response and a new access token
+   * could be fetched; otherwise returns false.
    */
   @Override
   public boolean shouldRetryRequest(final Throwable throwable) {

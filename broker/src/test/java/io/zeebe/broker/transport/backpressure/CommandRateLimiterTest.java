@@ -79,6 +79,16 @@ public class CommandRateLimiterTest {
   }
 
   @Test
+  public void shouldAcquireWhenJobFailCommandAfterLimit() {
+    // given
+    IntStream.range(0, limit.getLimit())
+        .forEach(i -> assertThat(rateLimiter.tryAcquire(0, 1, context)).isTrue());
+
+    // then
+    assertThat(rateLimiter.tryAcquire(0, 1, JobIntent.FAIL)).isTrue();
+  }
+
+  @Test
   public void shouldReleaseRequestOnIgnore() {
     // given
     rateLimiter.tryAcquire(0, 1, context);

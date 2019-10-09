@@ -31,6 +31,8 @@ import (
 )
 
 const DefaultRequestTimeout = 15 * time.Second
+const ZbInsecureEnvVar = "ZEEBE_INSECURE_CONNECTION"
+const ZbCaCertificatePath = "ZEEBE_CA_CERTIFICATE_PATH"
 
 type ZBClientImpl struct {
 	gateway             pb.GatewayClient
@@ -121,6 +123,7 @@ func NewZBClient(gatewayAddress string) (ZBClient, error) {
 
 func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
 	var opts []grpc.DialOption
+	applyZBClientEnvOverrides(config)
 
 	if err := configureConnectionSecurity(config, &opts); err != nil {
 		return nil, err
@@ -141,6 +144,16 @@ func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
 		connection:          conn,
 		credentialsProvider: config.CredentialsProvider,
 	}, nil
+}
+
+func applyZBClientEnvOverrides(config *ZBClientConfig) {
+	if insecureConn, found := os.LookupEnv(ZbInsecureEnvVar); found {
+		config.UsePlaintextConnection = (insecureConn == "true")
+	}
+
+	if caCertificatePath := os.Getenv(ZbCaCertificatePath); caCertificatePath != "" {
+		config.CaCertificatePath = caCertificatePath
+	}
 }
 
 func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOption) error {

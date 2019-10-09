@@ -19,6 +19,8 @@ import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.impl.BpmnModelConstants;
+import io.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -41,6 +43,22 @@ public class ZeebeServiceTaskValidationTest extends AbstractZeebeValidationTest 
             .done(),
         singletonList(expect(ZeebeTaskDefinition.class, "Task type must be present and not empty"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task")
+            .addExtensionElement(
+                ZeebeTaskDefinition.class,
+                b ->
+                    b.setAttributeValueNs(
+                        BpmnModelConstants.ZEEBE_NS,
+                        ZeebeConstants.ATTRIBUTE_RETRIES,
+                        "notANumber"))
+            .zeebeTaskType("type")
+            .endEvent()
+            .done(),
+        singletonList(expect(ZeebeTaskDefinition.class, "Task retries must be an integer"))
+      }
     };
   }
 }

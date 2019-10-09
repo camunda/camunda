@@ -16,7 +16,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.impl.util.SocketUtil;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.transport.util.RecordingMessageHandler;
 import io.zeebe.util.ByteValue;
@@ -33,7 +33,7 @@ public class ServerTransportTest {
   public static final DirectBuffer BUF2 = BufferUtil.wrapBytes(5, 6, 7, 8);
 
   public static final int NODE_ID = 1;
-  public static final SocketAddress SERVER_ADDRESS = SocketUtil.getNextAddress();
+  public static final SocketAddress SERVER_ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
 
   public static final ByteValue SEND_BUFFER_SIZE = ByteValue.ofKilobytes(16);
 

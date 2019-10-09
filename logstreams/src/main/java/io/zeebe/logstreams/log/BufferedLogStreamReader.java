@@ -88,19 +88,18 @@ public class BufferedLogStreamReader implements LogStreamReader {
       throw new IllegalStateException("Iterator not initialized");
     }
 
-    // invalidate events first as the buffer content may change
-    invalidateBufferAndOffsets();
+    final long seekAddress =
+        logStorage.lookUpApproximateAddress(
+            position,
+            blockAddress -> {
+              invalidateBufferAndOffsets();
+              readBlockIntoBuffer(blockAddress);
+              readNextEvent();
+              return nextEvent.getPosition();
+            });
 
-    final long blockAddress = logStorage.getFirstBlockAddress();
-    if (blockAddress < 0) {
-      // no block found => empty log
-      state = IteratorState.EMPTY_LOG_STREAM;
-      return false;
-    } else {
-      readBlockIntoBuffer(blockAddress);
-      readNextEvent();
-      return searchPositionInBuffer(position);
-    }
+    invalidateBufferAndOffsets();
+    return seekFrom(seekAddress, position);
   }
 
   @Override
@@ -108,6 +107,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
     seek(FIRST_POSITION);
   }
 
+  @Override
   public long seekToEnd() {
     // invalidate events first as the buffer content may change
     invalidateBufferAndOffsets();
@@ -120,6 +120,18 @@ public class BufferedLogStreamReader implements LogStreamReader {
     } else {
       readLastBlockIntoBuffer();
       return completeEventsInBlockProcessor.getLastReadEventPosition();
+    }
+  }
+
+  private boolean seekFrom(final long blockAddress, final long position) {
+    if (blockAddress < 0) {
+      // no block found => empty log
+      state = IteratorState.EMPTY_LOG_STREAM;
+      return false;
+    } else {
+      readBlockIntoBuffer(blockAddress);
+      readNextEvent();
+      return searchPositionInBuffer(position);
     }
   }
 

@@ -102,8 +102,8 @@ func (provider *OAuthCredentialsProvider) ShouldRetryRequest(err error) bool {
 
 // NewOAuthCredentialsProvider requests credentials from an authorization server and uses them to create an OAuthCredentialsProvider.
 func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentialsProvider, error) {
-	applyEnvironmentOverrides(config)
-	applyDefaults(config)
+	applyCredentialEnvOverrides(config)
+	applyCredentialDefaults(config)
 
 	if err := validation.Validate(config.AuthorizationServerURL, is.URL); err != nil {
 		return nil, invalidArgumentError("authorization server URL", err.Error())
@@ -173,7 +173,7 @@ func (provider *OAuthCredentialsProvider) getCachedCredentials() *OAuthCredentia
 	return provider.Cache.Get(audience)
 }
 
-func applyEnvironmentOverrides(config *OAuthProviderConfig) {
+func applyCredentialEnvOverrides(config *OAuthProviderConfig) {
 	if envClientID := os.Getenv(OAuthClientIdEnvVar); envClientID != "" {
 		config.ClientID = envClientID
 	}
@@ -188,7 +188,7 @@ func applyEnvironmentOverrides(config *OAuthProviderConfig) {
 	}
 }
 
-func applyDefaults(config *OAuthProviderConfig) {
+func applyCredentialDefaults(config *OAuthProviderConfig) {
 	if config.AuthorizationServerURL == "" {
 		config.AuthorizationServerURL = OAuthDefaultAuthzURL
 	}
@@ -232,8 +232,4 @@ func fetchAccessToken(authorizationServerURL string, payload *oauthRequestPayloa
 	}
 
 	return responsePayload, nil
-}
-
-func (config *OAuthProviderConfig) createDefaultCache() (OAuthCredentialsCache, error) {
-	return NewOAuthYamlCredentialsCache("")
 }

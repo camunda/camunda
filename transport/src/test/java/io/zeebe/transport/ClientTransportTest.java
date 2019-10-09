@@ -25,9 +25,9 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.ControllableServerTransport;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
 import io.zeebe.transport.util.RecordingChannelListener;
@@ -64,9 +64,11 @@ public class ClientTransportTest {
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
   public static final BufferWriter WRITER1 = writerFor(BUF1);
   public static final int NODE_ID1 = 1;
-  public static final SocketAddress SERVER_ADDRESS1 = SocketUtil.getNextAddress();
+  public static final SocketAddress SERVER_ADDRESS1 =
+      new SocketAddress(SocketUtil.getNextAddress());
   public static final int NODE_ID2 = 2;
-  public static final SocketAddress SERVER_ADDRESS2 = SocketUtil.getNextAddress();
+  public static final SocketAddress SERVER_ADDRESS2 =
+      new SocketAddress(SocketUtil.getNextAddress());
   public static final int REQUEST_POOL_SIZE = 4;
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
   public AutoCloseableRule closeables = new AutoCloseableRule();
@@ -776,7 +778,7 @@ public class ClientTransportTest {
   @Test
   public void shouldCloseTransportWithUnreachableRemote() {
     // given
-    clientTransport.registerEndpoint(1, SocketUtil.getNextAddress());
+    clientTransport.registerEndpoint(1, new SocketAddress(SocketUtil.getNextAddress()));
 
     // when
     try {

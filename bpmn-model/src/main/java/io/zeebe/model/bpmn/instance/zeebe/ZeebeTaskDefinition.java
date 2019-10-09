@@ -25,7 +25,7 @@ public interface ZeebeTaskDefinition extends BpmnModelElementInstance {
 
   void setType(String type);
 
-  int getRetries();
+  Integer getRetries();
 
   void setRetries(int retries);
 }

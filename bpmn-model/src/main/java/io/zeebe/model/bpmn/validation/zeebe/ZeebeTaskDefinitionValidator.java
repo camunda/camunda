@@ -28,12 +28,16 @@ public class ZeebeTaskDefinitionValidator implements ModelElementValidator<Zeebe
 
   @Override
   public void validate(
-      ZeebeTaskDefinition element, ValidationResultCollector validationResultCollector) {
-
+      final ZeebeTaskDefinition element,
+      final ValidationResultCollector validationResultCollector) {
     final String taskType = element.getType();
 
     if (taskType == null || element.getType().isEmpty()) {
       validationResultCollector.addError(0, "Task type must be present and not empty");
+    }
+
+    if (element.getRetries() == null) {
+      validationResultCollector.addError(0, "Task retries must be an integer");
     }
   }
 }

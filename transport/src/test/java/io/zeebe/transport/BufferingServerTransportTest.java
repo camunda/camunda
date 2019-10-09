@@ -14,8 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.RecordingMessageHandler;
 import io.zeebe.transport.util.TransportTestUtil;
 import io.zeebe.util.ByteValue;
@@ -30,7 +30,7 @@ import org.junit.rules.RuleChain;
 
 public class BufferingServerTransportTest {
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
-  public static final SocketAddress SERVER_ADDRESS = SocketUtil.getNextAddress();
+  public static final SocketAddress SERVER_ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
   public static final int NODE_ID = 1;
 
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);

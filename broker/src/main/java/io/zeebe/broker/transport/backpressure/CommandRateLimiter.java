@@ -11,13 +11,17 @@ import com.netflix.concurrency.limits.limiter.AbstractLimiter;
 import io.zeebe.broker.Loggers;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CommandRateLimiter extends AbstractLimiter<Intent> implements RequestLimiter<Intent> {
 
+  private static final Set<? extends Intent> WHITE_LISTED_COMMANDS =
+      EnumSet.of(JobIntent.COMPLETE, JobIntent.FAIL);
   private final Map<ListenerId, Listener> responseListeners = new ConcurrentHashMap<>();
   private final int partitionId;
   private final BackpressureMetrics metrics = new BackpressureMetrics();
@@ -31,7 +35,7 @@ public class CommandRateLimiter extends AbstractLimiter<Intent> implements Reque
 
   @Override
   public Optional<Listener> acquire(Intent intent) {
-    if (getInflight() >= getLimit() && intent != JobIntent.COMPLETE) {
+    if (getInflight() >= getLimit() && !WHITE_LISTED_COMMANDS.contains(intent)) {
       return createRejectedListener();
     }
     final Listener listener = createListener();

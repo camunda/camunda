@@ -50,6 +50,10 @@ public final class Environment {
     return get(key) != null;
   }
 
+  public boolean getBoolean(final String key) {
+    return isDefined(key) && get(key).equals("true");
+  }
+
   // primarily for testing
   Map<String, String> copy() {
     return new HashMap<>(variables);

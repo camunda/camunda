@@ -21,6 +21,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.client.api.command.ClientException;
 import io.zeebe.client.api.response.ActivateJobsResponse;
+import io.zeebe.client.impl.ZeebeObjectMapper;
+import io.zeebe.client.impl.response.ActivatedJobImpl;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -224,5 +226,37 @@ public class ActivateJobsTest extends ClientTest {
 
     // then
     assertThat(request.getRequestTimeout()).isEqualTo(requestTimeout.toMillis());
+  }
+
+  @Test
+  public void shouldDeserializePartiallyToPojo() {
+    // given
+    final ActivatedJobImpl activatedJob =
+        new ActivatedJobImpl(
+            new ZeebeObjectMapper(),
+            ActivatedJob.newBuilder()
+                .setCustomHeaders("{}")
+                .setVariables("{\"a\": 1, \"b\": 2}")
+                .build());
+
+    // when
+    final VariablesPojo variablesPojo = activatedJob.getVariablesAsType(VariablesPojo.class);
+
+    // then
+    assertThat(variablesPojo.getA()).isEqualTo(1);
+  }
+
+  static class VariablesPojo {
+
+    int a;
+
+    public int getA() {
+      return a;
+    }
+
+    public VariablesPojo setA(int a) {
+      this.a = a;
+      return this;
+    }
   }
 }

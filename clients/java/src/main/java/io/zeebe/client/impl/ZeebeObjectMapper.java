@@ -17,6 +17,7 @@ package io.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.client.api.command.InternalClientException;
 import java.io.IOException;
@@ -30,6 +31,10 @@ public class ZeebeObjectMapper extends ObjectMapper {
 
   private static final TypeReference<Map<String, String>> STRING_MAP_TYPE_REFERENCE =
       new TypeReference<Map<String, String>>() {};
+
+  public ZeebeObjectMapper() {
+    this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+  }
 
   public <T> T fromJson(String json, Class<T> typeClass) {
     try {

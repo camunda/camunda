@@ -11,8 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.ControlMessages;
-import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -29,9 +29,9 @@ import org.junit.rules.RuleChain;
 public class ClientChannelKeepAliveTest {
   protected static final Duration KEEP_ALIVE_PERIOD = Duration.ofSeconds(1);
   protected static final int NODE_ID = 1;
-  protected static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
+  protected static final SocketAddress ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
   protected static final int NODE_ID2 = 2;
-  protected static final SocketAddress ADDRESS2 = SocketUtil.getNextAddress();
+  protected static final SocketAddress ADDRESS2 = new SocketAddress(SocketUtil.getNextAddress());
   public AutoCloseableRule closeables = new AutoCloseableRule();
   public ControlledActorClock clock = new ControlledActorClock();
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);

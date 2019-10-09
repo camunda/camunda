@@ -1,3 +1,20 @@
+<a name="0.21.0"></a>
+## 0.21.0 (2019-10-01)
+
+
+#### Features
+
+* **broker:**  add job type to metrics ([4f0067d2](https://github.com/zeebe-io/zeebe/commit/4f0067d2b64c8cedfe2a33059559909806314848))
+* **clients/go:**  add env vars for auth configuration ([09021f21](https://github.com/zeebe-io/zeebe/commit/09021f21fb529e00c96d9f79cc73526ea7beb88a), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **clients/java:**  add env vars for auth configuration ([bfaa15c3](https://github.com/zeebe-io/zeebe/commit/bfaa15c3c60d8ae0975ac4076f40e5fc3baf1a24), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+
+#### Bug Fixes
+
+* **clients/java:**  ignore unknown JSON properties with object mapper ([a5b0af16](https://github.com/zeebe-io/zeebe/commit/a5b0af16a5fa020ad1ff092ec2bdc09824857246))
+* **exporters/elasticsearch:**  log error on flush exception instead of failing ([1b37a3e4](https://github.com/zeebe-io/zeebe/commit/1b37a3e4e29e2ca57cd56475b0ef63b9783605f9))
+
+
 <a name="0.21.0-alpha3"></a>
 ## 0.21.0-alpha3 (2019-09-11)
 
@@ -34,7 +51,7 @@
   *  add OAuth credentials provider ([2cae751e](https://github.com/zeebe-io/zeebe/commit/2cae751e3765ed2ae9e4b1e6f64f200621a2b56d))
 * **clients/zbctl:**
   *  support OAuth credentials in zbctl ([63167d4a](https://github.com/zeebe-io/zeebe/commit/63167d4a8fca1e07a16080d01691d40de82a20c1))
-  *  add credentials support to zbctl ([ee4a9b4a](https://github.com/zeebe-io/zeebe/commit/ee4a9b4a8749cb6842812a91033748fdd31e144d))  
+  *  add credentials support to zbctl ([ee4a9b4a](https://github.com/zeebe-io/zeebe/commit/ee4a9b4a8749cb6842812a91033748fdd31e144d))
   *  configure long polling timeout per request ([28a92262](https://github.com/zeebe-io/zeebe/commit/28a922627b4e41fd0665e286b9aa3a886ddf4737))
 
 #### Bug Fixes
@@ -94,7 +111,7 @@
 
 #### Breaking Changes
 
-* **broker:**  
+* **broker:**
   *  migrate RecordValue interfaces to protocol ([e19529f1](https://github.com/zeebe-io/zeebe/commit/e19529f1efba8b7206502bf8e3e55d372e6f62ee))
   *  change package of asserts and generated types ([9abc82236](https://github.com/zeebe-io/zeebe/commit/9abc82236bc0cd9b2d406ada2e2a59b6e2d63485))
   *  change type of Record#getTimestamp() to Long ([04414316](https://github.com/zeebe-io/zeebe/commit/04414316f92c82a5a452c7a52d50f7b9893b29d4))
@@ -114,11 +131,11 @@
 
 #### Features
 
-* **broker:**  
+* **broker:**
   *  filter duplicated deployments ([c34e5995](https://github.com/zeebe-io/zeebe/commit/c34e59958afc858b1f164b086a6245820215bec5))
   *  expose elasticsearch exporter metrics ([62448c75](https://github.com/zeebe-io/zeebe/commit/62448c757edd197c3a6e88722b2f3979016e63cc))
   *  add exporter back off retry strategy ([9a92c04b](https://github.com/zeebe-io/zeebe/commit/9a92c04bb0d631076c2b7f3dbc08804952e1dbf7))
-* **clients/java:**  
+* **clients/java:**
   *  allow job handlers to throw exceptions ([77192a92](https://github.com/zeebe-io/zeebe/commit/77192a92b614bd165c0ce9af70473f08e5d1625e))
   *   allow to set request timeout ([2d7ac6b9](https://github.com/zeebe-io/zeebe/commit/2d7ac6b9476e2731fb012b37f8ac61f2134bb073))
 * **gateway:**  add grpc metrics ([aa7f47a6](https://github.com/zeebe-io/zeebe/commit/aa7f47a6f3921503d5647414fcbd8633da880d7f))
