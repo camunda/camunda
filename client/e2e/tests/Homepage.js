@@ -91,3 +91,61 @@ test('use breadcrumbs to navigate back from a report to the parent dashboard', a
 
   await t.expect(e.dashboardView.visible).ok();
 });
+
+test('create a new collection and display it on the homepage', async t => {
+  await login(t);
+
+  await t.click(e.createNewMenu).click(e.option('New Collection'));
+  await t.typeText(e.modalNameInput, 'Test Collection', {replace: true});
+  await t.click(e.confirmButton);
+
+  await t.click(e.homepageLink);
+
+  await t.expect(e.collectionItem.visible).ok();
+  await t.expect(e.collectionItem.textContent).contains('Test Collection');
+});
+
+test('filter for the name entered', async t => {
+  await login(t);
+
+  await t.typeText(e.searchField, 'new', {replace: true});
+  await t.expect(e.collectionItem.exists).notOk();
+  await t.expect(e.dashboardItem.visible).ok();
+  await t.expect(e.reportItem.visible).ok();
+
+  await t.typeText(e.searchField, 't', {replace: true});
+  await t.expect(e.collectionItem.visible).ok();
+  await t.expect(e.dashboardItem.exists).notOk();
+  await t.expect(e.reportItem.visible).ok();
+
+  await t.typeText(e.searchField, 'Test Collection', {replace: true});
+  await t.expect(e.collectionItem.visible).ok();
+  await t.expect(e.dashboardItem.exists).notOk();
+  await t.expect(e.reportItem.exists).notOk();
+
+  await t.typeText(e.searchField, 'Collection b', {replace: true});
+  await t.expect(e.collectionItem.exists).notOk();
+  await t.expect(e.dashboardItem.exists).notOk();
+  await t.expect(e.reportItem.exists).notOk();
+});
+
+test('copy to a new location', async t => {
+  await login(t);
+
+  await t.hover(e.dashboardItem);
+  await t.click(e.contextMenu(e.dashboardItem));
+  await t.click(e.copy(e.dashboardItem));
+
+  await t.typeText(e.modalNameInput, 'Copy of the Dashboard', {replace: true});
+
+  await t.click(e.moveCopySwitch);
+  await t.click(e.copyTargetsInput);
+  await t.click(e.copyTarget('Test Collection'));
+  await t.click(e.confirmButton);
+
+  await t.expect(e.dashboardItem.visible).ok();
+  await t.expect(e.dashboardItem.textContent).contains('Copy of the Dashboard');
+
+  await t.expect(e.reportItem.visible).ok();
+  await t.expect(e.reportItem.textContent).contains('New Report – Copy');
+});
