@@ -451,6 +451,30 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public List<DecisionDefinitionEngineDto> getLatestDecisionDefinitions() {
+    URI uri;
+    try {
+      uri = new URIBuilder(getDecisionDefinitionUri())
+        .setParameter("latestVersion", "true")
+        .build();
+    } catch (URISyntaxException e) {
+      throw new OptimizeRuntimeException("Could not create URI!", e);
+    }
+    HttpRequestBase get = new HttpGet(uri);
+    CloseableHttpResponse response;
+    try {
+      response = HTTP_CLIENT.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      List<DecisionDefinitionEngineDto> decDefs =
+        OBJECT_MAPPER.readValue(responseString, new TypeReference<List<DecisionDefinitionEngineDto>>() {
+        });
+      response.close();
+      return decDefs;
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not fetch the process definition!", e);
+    }
+  }
+
   public ProcessDefinitionXmlEngineDto getProcessDefinitionXml(String processDefinitionId) {
     HttpRequestBase get = new HttpGet(getProcessDefinitionXmlUri(processDefinitionId));
     CloseableHttpResponse response;

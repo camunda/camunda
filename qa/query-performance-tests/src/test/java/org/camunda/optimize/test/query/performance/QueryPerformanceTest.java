@@ -12,8 +12,12 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.ModelInstance;
+import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -26,6 +30,9 @@ import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -62,6 +69,8 @@ public class QueryPerformanceTest {
   private static final String PROPERTY_LOCATION = "query-performance.properties";
   private static final Properties properties = PropertyUtil.loadProperties(PROPERTY_LOCATION);
   private static final Random randomGen = new Random();
+  public static final String DOUBLE_VAR = "doubleVar";
+  public static final String VARIABLE_ID = "clause1";
 
   private static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   private static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -86,20 +95,32 @@ public class QueryPerformanceTest {
     authenticationToken = embeddedOptimizeRule.getNewAuthenticationToken();
   }
 
-  private static List<ProcessReportDataDto> createAllPossibleReports() {
+  private static List<SingleReportDataDto> createAllPossibleReports() {
     List<ProcessDefinitionEngineDto> latestDefinitionVersions =
       engineRule.getLatestProcessDefinitions();
 
-    return latestDefinitionVersions
+    List<DecisionDefinitionEngineDto> latestDecisionDefs =
+      engineRule.getLatestDecisionDefinitions();
+
+
+    List<ProcessReportDataDto> processReportDataDtos = latestDefinitionVersions
       .stream()
-      .map(QueryPerformanceTest::createReportsFromDefinition)
+      .map(QueryPerformanceTest::createProcessReportsFromDefinition)
       .reduce(ListUtils::union)
       .orElse(Collections.emptyList());
 
+    List<DecisionReportDataDto> decisionReportDataDtos = latestDecisionDefs
+      .stream()
+      .map(QueryPerformanceTest::createDecisionReportsFromDefinition)
+      .reduce(ListUtils::union)
+      .orElse(Collections.emptyList());
+    List<SingleReportDataDto> reports = new ArrayList<>();
+    reports.addAll(decisionReportDataDtos);
+    reports.addAll(processReportDataDtos);
+    return reports;
   }
 
-  private static List<ProcessReportDataDto> createReportsFromDefinition(ProcessDefinitionEngineDto definition) {
-    String variableName = "doubleVar";
+  private static List<ProcessReportDataDto> createProcessReportsFromDefinition(ProcessDefinitionEngineDto definition) {
     List<ProcessReportDataDto> reports = new ArrayList<>();
     ProcessPartDto processPart = createProcessPart(definition);
     for (ProcessReportDataType reportDataType : ProcessReportDataType.values()) {
@@ -107,12 +128,12 @@ public class QueryPerformanceTest {
         .setReportDataType(reportDataType)
         .setProcessDefinitionKey(definition.getKey())
         .setProcessDefinitionVersion(definition.getVersionAsString())
-        .setVariableName(variableName)
+        .setVariableName(DOUBLE_VAR)
         .setVariableType(VariableType.DOUBLE)
         .setDateInterval(GroupByDateUnit.WEEK)
         .setStartFlowNodeId(processPart.getStart())
         .setEndFlowNodeId(processPart.getEnd())
-        .setFilter(createFilter());
+        .setFilter(createProcessFilter());
 
       ProcessReportDataDto reportDataLatestDefinitionVersion =
         reportDataBuilder.build();
@@ -120,6 +141,24 @@ public class QueryPerformanceTest {
       reportDataBuilder.setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS);
       ProcessReportDataDto reportDataAllDefinitionVersions = reportDataBuilder.build();
       reports.add(reportDataAllDefinitionVersions);
+    }
+    return reports;
+  }
+
+  private static List<DecisionReportDataDto> createDecisionReportsFromDefinition(DecisionDefinitionEngineDto definition) {
+    List<DecisionReportDataDto> reports = new ArrayList<>();
+
+    for (DecisionReportDataType type : DecisionReportDataType.values()) {
+      DecisionReportDataDto reportDataDto = DecisionReportDataBuilder.create().setReportDataType(type)
+        .setDecisionDefinitionKey(definition.getKey())
+        .setDecisionDefinitionVersion(definition.getVersionAsString())
+        .setDateInterval(GroupByDateUnit.DAY)
+        .setFilter(createDecisionFilter())
+        .setVariableName(DOUBLE_VAR)
+        .setVariableType(VariableType.DOUBLE)
+        .setVariableId(VARIABLE_ID)
+        .build();
+      reports.add(reportDataDto);
     }
     return reports;
   }
@@ -137,7 +176,7 @@ public class QueryPerformanceTest {
     return processPart;
   }
 
-  private static List<ProcessFilterDto> createFilter() {
+  private static List<ProcessFilterDto> createProcessFilter() {
     // @formatter:off
     return ProcessFilterBuilder
       .filter()
@@ -165,6 +204,14 @@ public class QueryPerformanceTest {
   }
   // @formatter:on
 
+  private static List<DecisionFilterDto> createDecisionFilter() {
+    List<DecisionFilterDto> list = new ArrayList<>();
+    list.add(DecisionFilterUtilHelper.createBooleanInputVariableFilter("boolVar", String.valueOf(randomGen.nextBoolean())));
+    list.add(DecisionFilterUtilHelper.createBooleanOutputVariableFilter("boolVar", String.valueOf(randomGen.nextBoolean())));
+    list.add(DecisionFilterUtilHelper.createFixedEvaluationDateFilter(OffsetDateTime.now().minusDays(1L), OffsetDateTime.now()));
+    return list;
+  }
+
   private static void importEngineData() throws InterruptedException, TimeoutException {
     logger.info("Start importing engine data...");
     ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -190,7 +237,7 @@ public class QueryPerformanceTest {
 
   @Test
   @Parameters(source = ReportDataProvider.class)
-  public void testQueryPerformance(ProcessReportDataDto report) {
+  public void testQueryPerformance(SingleReportDataDto report) {
     // given the report to evaluate
 
     // when
@@ -206,7 +253,7 @@ public class QueryPerformanceTest {
     return Long.parseLong(timeoutAsString);
   }
 
-  private long evaluateReportAndReturnEvaluationTime(ProcessReportDataDto report) {
+  private long evaluateReportAndReturnEvaluationTime(SingleReportDataDto report) {
     logger.info("Evaluating report {}", report);
     Instant start = Instant.now();
     Response response = embeddedOptimizeRule
@@ -224,7 +271,7 @@ public class QueryPerformanceTest {
 
   public static class ReportDataProvider {
     public static Object[] provideReportData() {
-      List<ProcessReportDataDto> allReports = createAllPossibleReports();
+      List<SingleReportDataDto> allReports = createAllPossibleReports();
       return allReports.toArray();
     }
   }
