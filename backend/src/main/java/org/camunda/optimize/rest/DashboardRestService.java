@@ -28,6 +28,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
 
+import java.util.Optional;
+
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
 @AllArgsConstructor
@@ -40,7 +42,7 @@ public class DashboardRestService {
   private final SessionService sessionService;
 
   /**
-   * Creates an empty dashboard.
+   * Creates a new dashboard.
    *
    * @return the id of the dashboard
    */
@@ -48,9 +50,16 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewDashboard(@Context final ContainerRequestContext requestContext,
-                                  @QueryParam("collectionId") final String collectionId) {
+                                  @QueryParam("collectionId") final String collectionId,
+                                  DashboardDefinitionDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return dashboardService.createNewDashboardAndReturnId(userId, collectionId);
+    if (dashboardDefinitionDto == null) {
+      dashboardDefinitionDto = new DashboardDefinitionDto();
+    }
+    if (collectionId != null) {
+      dashboardDefinitionDto.setCollectionId(collectionId);
+    }
+    return dashboardService.createNewDashboardAndReturnId(userId, dashboardDefinitionDto);
   }
 
   @POST

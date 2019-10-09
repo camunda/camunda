@@ -7,12 +7,12 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -36,7 +36,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.DashboardIndex.COLLECTION_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
@@ -52,32 +52,21 @@ public class DashboardWriter {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public IdDto createNewDashboard(final String userId, final String collectionId) {
-    return createNewDashboard(userId, collectionId, DEFAULT_DASHBOARD_NAME, null);
-  }
-
-  public IdDto createNewDashboard(final String userId,
-                                  final String collectionId,
-                                  final String dashboardName,
-                                  final List<ReportLocationDto> reports) {
+  public IdDto createNewDashboard(@NonNull final String userId,
+                                  @NonNull final DashboardDefinitionDto dashboardDefinitionDto) {
     log.debug("Writing new dashboard to Elasticsearch");
 
     String id = IdGenerator.getNextId();
-    DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
-    dashboard.setCreated(LocalDateUtil.getCurrentDateTime());
-    dashboard.setLastModified(LocalDateUtil.getCurrentDateTime());
-    dashboard.setOwner(userId);
-    dashboard.setLastModifier(userId);
-    dashboard.setName(dashboardName);
-    dashboard.setId(id);
-    dashboard.setCollectionId(collectionId);
-    if (reports != null) {
-      dashboard.setReports(reports);
-    }
+    dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
+    dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    dashboardDefinitionDto.setOwner(userId);
+    dashboardDefinitionDto.setName(Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
+    dashboardDefinitionDto.setLastModifier(userId);
+    dashboardDefinitionDto.setId(id);
 
     try {
       IndexRequest request = new IndexRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id)
-        .source(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
+        .source(objectMapper.writeValueAsString(dashboardDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);

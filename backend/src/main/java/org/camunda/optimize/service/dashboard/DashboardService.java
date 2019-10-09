@@ -90,9 +90,9 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     dashboardWriter.deleteDashboardsOfCollection(definition.getId());
   }
 
-  public IdDto createNewDashboardAndReturnId(final String userId, final String collectionId) {
-    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
-    return dashboardWriter.createNewDashboard(userId, collectionId);
+  public IdDto createNewDashboardAndReturnId(final String userId, final DashboardDefinitionDto dashboardDefinitionDto) {
+    collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
+    return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
 
   public IdDto copyDashboard(final String dashboardId, final String userId, final String name) {
@@ -139,12 +139,11 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     }
 
     String newDashboardName = name != null ? name : dashboardDefinition.getName() + " – Copy";
-    return dashboardWriter.createNewDashboard(
-      userId,
-      collectionId,
-      newDashboardName,
-      newDashboardReports
-    );
+    DashboardDefinitionDto newDashboardDefinitionDto = new DashboardDefinitionDto();
+    newDashboardDefinitionDto.setCollectionId(collectionId);
+    newDashboardDefinitionDto.setName(newDashboardName);
+    newDashboardDefinitionDto.setReports(newDashboardReports);
+    return dashboardWriter.createNewDashboard(userId, newDashboardDefinitionDto);
   }
 
   public AuthorizedDashboardDefinitionDto getDashboardDefinition(final String dashboardId,

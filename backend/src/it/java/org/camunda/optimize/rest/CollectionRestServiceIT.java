@@ -5,9 +5,13 @@
  */
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
+import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
@@ -15,7 +19,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
+import java.util.Collections;
+import java.util.Map;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,6 +58,41 @@ public class CollectionRestServiceIT {
 
     // then the status code is okay
     assertThat(idDto, is(notNullValue()));
+
+    // and saved Collection has expected properties
+    ResolvedCollectionDefinitionDto savedCollectionDto = getCollectionById(idDto.getId());
+    assertThat(savedCollectionDto.getName(), is(CollectionWriter.DEFAULT_COLLECTION_NAME));
+    assertThat(savedCollectionDto.getData().getConfiguration(), equalTo(Collections.EMPTY_MAP));
+    assertThat(savedCollectionDto.getData().getRoles().size(), is(1));
+    assertThat(savedCollectionDto.getData().getRoles().get(0).getRole(), is(RoleType.MANAGER));
+    assertThat(savedCollectionDto.getData().getRoles().get(0).getIdentity().getType(), is(IdentityType.USER));
+  }
+
+  @Test
+  public void createNewCollectionWithPartialDefinition() {
+    // when
+    String collectionName = "some collection";
+    Map<String, String> configMap = Collections.singletonMap("Foo", "Bar");
+    PartialCollectionDefinitionDto partialCollectionDefinitionDto = new PartialCollectionDefinitionDto();
+    partialCollectionDefinitionDto.setName(collectionName);
+    PartialCollectionDataDto partialCollectionDataDto = new PartialCollectionDataDto();
+    partialCollectionDataDto.setConfiguration(configMap);
+    partialCollectionDefinitionDto.setData(partialCollectionDataDto);
+    IdDto idDto = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateCollectionRequestWithPartialDefinition(partialCollectionDefinitionDto)
+      .execute(IdDto.class, 200);
+
+    // then the status code is okay
+    assertThat(idDto, is(notNullValue()));
+
+    // and saved Collection has expected properties
+    ResolvedCollectionDefinitionDto savedCollectionDto = getCollectionById(idDto.getId());
+    assertThat(savedCollectionDto.getName(), is(collectionName));
+    assertThat(savedCollectionDto.getData().getConfiguration(), is(configMap));
+    assertThat(savedCollectionDto.getData().getRoles().size(), is(1));
+    assertThat(savedCollectionDto.getData().getRoles().get(0).getRole(), is(RoleType.MANAGER));
+    assertThat(savedCollectionDto.getData().getRoles().get(0).getIdentity().getType(), is(IdentityType.USER));
   }
 
   @Test
@@ -71,7 +113,7 @@ public class CollectionRestServiceIT {
     // when
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdatePartialCollectionRequest("NonExistingId", new PartialCollectionUpdateDto())
+      .buildUpdatePartialCollectionRequest("NonExistingId", new PartialCollectionDefinitionDto())
       .execute();
 
     // given
@@ -82,7 +124,7 @@ public class CollectionRestServiceIT {
   public void updateNameOfCollection() {
     //given
     String id = addEmptyCollectionToOptimize();
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
+    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
 
     // when
     Response response = embeddedOptimizeRule

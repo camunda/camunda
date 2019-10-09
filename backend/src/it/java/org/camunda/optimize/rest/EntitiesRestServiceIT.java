@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
@@ -456,7 +456,7 @@ public class EntitiesRestServiceIT {
 
   private String addCollection(final String collectionName) {
     final String collectionId = addEmptyCollectionToOptimize();
-    updateCollectionRequest(collectionId, new PartialCollectionUpdateDto(collectionName));
+    updateCollectionRequest(collectionId, new PartialCollectionDefinitionDto(collectionName));
     return collectionId;
   }
 
@@ -586,7 +586,7 @@ public class EntitiesRestServiceIT {
       .getId();
   }
 
-  private void updateCollectionRequest(String id, PartialCollectionUpdateDto renameCollection) {
+  private void updateCollectionRequest(String id, PartialCollectionDefinitionDto renameCollection) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, renameCollection)

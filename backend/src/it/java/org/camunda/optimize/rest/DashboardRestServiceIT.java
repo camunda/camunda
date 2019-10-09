@@ -18,13 +18,13 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-
 
 public class DashboardRestServiceIT {
 
@@ -41,7 +41,7 @@ public class DashboardRestServiceIT {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildCreateDashboardRequest()
+      .buildCreateDashboardRequestWithDefinition(generateDashboardDefinitionDto())
       .execute();
 
     // then the status code is not authorized
@@ -58,6 +58,33 @@ public class DashboardRestServiceIT {
 
     // then the status code is okay
     assertThat(idDto, is(notNullValue()));
+  }
+
+  @Test
+  public void createNewDashboardWithDefinition() {
+    // when
+    IdDto idDto = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateDashboardRequestWithDefinition(generateDashboardDefinitionDto())
+      .execute(IdDto.class, 200);
+
+    // then the status code is okay
+    assertThat(idDto, is(notNullValue()));
+  }
+
+  @Test
+  public void createNewDashboardWithCollectionIdAndDefinitionRespectsTheCollectionIdParameter() {
+    // when
+    final String collectionId = createEmptyCollectionToOptimize();
+    DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId(UUID.randomUUID().toString());
+    String id = createDashboardToCollectionAsDefaultUserWithDefinition(collectionId, dashboardDefinitionDto);
+
+    // then the status code is okay
+    assertThat(id, is(notNullValue()));
+    // and the stored dashboard has the expected collectionId
+    DashboardDefinitionDto returnedDashboard = getDashboardWithId(id);
+    assertThat(returnedDashboard.getCollectionId(), is(collectionId));
   }
 
   @Test
@@ -126,17 +153,16 @@ public class DashboardRestServiceIT {
   @Test
   public void getDashboard() {
     //given
-    String id = createEmptyPrivateDashboard();
+    DashboardDefinitionDto definitionDto = generateDashboardDefinitionDto();
+    String id = createPrivateDashboardWithDefinition(generateDashboardDefinitionDto());
 
     // when
-    DashboardDefinitionDto dashboard = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildGetDashboardRequest(id)
-      .execute(DashboardDefinitionDto.class, 200);
+    DashboardDefinitionDto returnedDashboard = getDashboardWithId(id);
 
     // then
-    assertThat(dashboard, is(notNullValue()));
-    assertThat(dashboard.getId(), is(id));
+    assertThat(returnedDashboard, is(notNullValue()));
+    assertThat(returnedDashboard.getId(), is(id));
+    assertThat(returnedDashboard.getName(), is(definitionDto.getName()));
   }
 
   @Test
@@ -195,7 +221,7 @@ public class DashboardRestServiceIT {
   public void updateDashboardDoesNotChangeCollectionId() {
     //given
     final String collectionId = createEmptyCollectionToOptimize();
-    String id = createEmptyDashboardToCollectionAsDefaultUser(collectionId);
+    String id = createDashboardToCollectionAsDefaultUserWithDefinition(collectionId, new DashboardDefinitionDto());
 
     // when
     embeddedOptimizeRule
@@ -249,13 +275,18 @@ public class DashboardRestServiceIT {
   }
 
   private String createEmptyPrivateDashboard() {
-    return createEmptyDashboardToCollectionAsDefaultUser(null);
+    return createDashboardToCollectionAsDefaultUserWithDefinition(null, null);
   }
 
-  private String createEmptyDashboardToCollectionAsDefaultUser(final String collectionId) {
+  private String createPrivateDashboardWithDefinition(DashboardDefinitionDto dashboardDefinitionDto) {
+    return createDashboardToCollectionAsDefaultUserWithDefinition(null, dashboardDefinitionDto);
+  }
+
+  private String createDashboardToCollectionAsDefaultUserWithDefinition(final String collectionId,
+                                                                        final DashboardDefinitionDto dashboardDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest(collectionId)
+      .buildCreateDashboardRequestWithDefinition(collectionId, dashboardDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -276,8 +307,7 @@ public class DashboardRestServiceIT {
   }
 
   private void updateDashboardRequest(final String dashboardId, final List<ReportLocationDto> reports) {
-    final DashboardDefinitionDto dashboard = embeddedOptimizeRule.getRequestExecutor()
-      .buildGetDashboardRequest(dashboardId).execute(DashboardDefinitionDto.class, 200);
+    final DashboardDefinitionDto dashboard = getDashboardWithId(dashboardId);
 
     if (reports != null) {
       dashboard.setReports(reports);
@@ -286,18 +316,20 @@ public class DashboardRestServiceIT {
     embeddedOptimizeRule.getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboard)
       .execute(204);
+  }
 
+  private DashboardDefinitionDto getDashboardWithId(final String id) {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetDashboardRequest(id)
+      .execute(DashboardDefinitionDto.class, 200);
   }
 
   private void createEmptyReportToDashboard(final String dashboardId) {
-    final String reportId = createEmptySingleProcessReport();
+    final String reportId = createEmptySingleProcessReportToCollection(null);
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId(reportId);
     updateDashboardRequest(dashboardId, Collections.singletonList(reportLocationDto));
-  }
-
-  private String createEmptySingleProcessReport() {
-    return createEmptySingleProcessReportToCollection(null);
   }
 
   private String createEmptySingleProcessReportToCollection(final String collectionId) {
@@ -306,6 +338,12 @@ public class DashboardRestServiceIT {
       .buildCreateSingleProcessReportRequest(collectionId)
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  private DashboardDefinitionDto generateDashboardDefinitionDto() {
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setName("Dashboard name");
+    return dashboardDefinitionDto;
   }
 
 }

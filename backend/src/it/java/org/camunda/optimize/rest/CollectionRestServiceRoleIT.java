@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -54,7 +54,7 @@ public class CollectionRestServiceRoleIT {
     final SimpleCollectionDefinitionDto expectedCollection = getCollection(collectionId);
 
     // when
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
+    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)

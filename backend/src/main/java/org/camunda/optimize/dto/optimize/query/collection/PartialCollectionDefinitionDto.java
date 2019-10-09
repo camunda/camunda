@@ -14,11 +14,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Data
-public class PartialCollectionUpdateDto {
+public class PartialCollectionDefinitionDto {
   protected String name;
   protected PartialCollectionDataDto data;
 
-  public PartialCollectionUpdateDto(final String name) {
+  public PartialCollectionDefinitionDto(final String name) {
     this.name = name;
   }
 }

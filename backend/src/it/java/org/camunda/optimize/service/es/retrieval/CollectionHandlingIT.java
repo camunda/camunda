@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
@@ -157,7 +157,7 @@ public class CollectionHandlingIT {
     OffsetDateTime now = OffsetDateTime.parse("2019-04-23T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
 
-    PartialCollectionUpdateDto collectionUpdate = new PartialCollectionUpdateDto();
+    PartialCollectionDefinitionDto collectionUpdate = new PartialCollectionDefinitionDto();
     collectionUpdate.setName("MyCollection");
     final Map<String, String> configuration = Collections.singletonMap("Foo", "Bar");
     final PartialCollectionDataDto data = new PartialCollectionDataDto();
@@ -187,7 +187,7 @@ public class CollectionHandlingIT {
     LocalDateUtil.setCurrentTime(now);
 
     // when (update only name)
-    PartialCollectionUpdateDto collectionUpdate = new PartialCollectionUpdateDto();
+    PartialCollectionDefinitionDto collectionUpdate = new PartialCollectionDefinitionDto();
     collectionUpdate.setName("MyCollection");
 
     updateCollectionRequest(id, collectionUpdate);
@@ -200,7 +200,7 @@ public class CollectionHandlingIT {
     assertThat(collection.getLastModified(), is(now));
 
     // when (update only configuration)
-    collectionUpdate = new PartialCollectionUpdateDto();
+    collectionUpdate = new PartialCollectionDefinitionDto();
     final Map<String, String> configuration = Collections.singletonMap("Foo", "Bar");
     PartialCollectionDataDto data = new PartialCollectionDataDto();
     data.setConfiguration(configuration);
@@ -219,7 +219,7 @@ public class CollectionHandlingIT {
 
 
     // when (again only update name)
-    collectionUpdate = new PartialCollectionUpdateDto();
+    collectionUpdate = new PartialCollectionDefinitionDto();
     collectionUpdate.setName("TestNewCollection");
 
     updateCollectionRequest(id, collectionUpdate);
@@ -452,7 +452,7 @@ public class CollectionHandlingIT {
   public void doNotUpdateNullFieldsInCollection() {
     // given
     String id = createNewCollection();
-    PartialCollectionUpdateDto collection = new PartialCollectionUpdateDto();
+    PartialCollectionDefinitionDto collection = new PartialCollectionDefinitionDto();
 
     // when
     updateCollectionRequest(id, collection);
@@ -639,7 +639,7 @@ public class CollectionHandlingIT {
       .getId();
   }
 
-  private void updateCollectionRequest(String id, PartialCollectionUpdateDto renameCollection) {
+  private void updateCollectionRequest(String id, PartialCollectionDefinitionDto renameCollection) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, renameCollection)

@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -50,7 +50,7 @@ public class CollectionRestServiceScopeIT {
     final SimpleCollectionDefinitionDto expectedCollection = getCollection(collectionId);
 
     // when
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
+    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)

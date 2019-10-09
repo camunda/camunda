@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
@@ -35,6 +35,7 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.Optional;
 
 @AllArgsConstructor
 @Secured
@@ -45,14 +46,15 @@ public class CollectionRestService {
   private final SessionService sessionService;
 
   /**
-   * Creates an empty collection.
+   * Creates a new collection.
    */
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createNewCollection(@Context ContainerRequestContext requestContext) {
+  public IdDto createNewCollection(@Context ContainerRequestContext requestContext,
+                                   PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.createNewCollectionAndReturnId(userId);
+    return collectionService.createNewCollectionAndReturnId(userId, Optional.ofNullable(partialCollectionDefinitionDto).orElse(new PartialCollectionDefinitionDto()));
   }
 
   /**
@@ -80,7 +82,7 @@ public class CollectionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateCollectionPartial(@Context ContainerRequestContext requestContext,
                                       @PathParam("id") String collectionId,
-                                      @NotNull PartialCollectionUpdateDto updatedCollection) {
+                                      @NotNull PartialCollectionDefinitionDto updatedCollection) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updatePartialCollection(userId, collectionId, updatedCollection);
   }

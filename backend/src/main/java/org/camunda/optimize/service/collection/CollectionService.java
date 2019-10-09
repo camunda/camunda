@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
@@ -63,8 +63,8 @@ public class CollectionService {
   private final AuthorizedEntitiesService entitiesService;
   private final IdentityService identityService;
 
-  public IdDto createNewCollectionAndReturnId(final String userId) {
-    return collectionWriter.createNewCollectionAndReturnId(userId);
+  public IdDto createNewCollectionAndReturnId(final String userId, final PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
+    return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);
   }
 
   public AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
@@ -91,7 +91,7 @@ public class CollectionService {
 
   public void updatePartialCollection(final String userId,
                                       final String collectionId,
-                                      final PartialCollectionUpdateDto collectionUpdate) {
+                                      final PartialCollectionDefinitionDto collectionUpdate) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
     final CollectionDefinitionUpdateDto updateDto = new CollectionDefinitionUpdateDto();

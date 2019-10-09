@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -465,9 +465,29 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCreateDashboardRequestWithDefinition(final DashboardDefinitionDto dashboardDefinitionDto) {
+    return buildCreateDashboardRequestWithDefinition(null, dashboardDefinitionDto);
+  }
+
+  public OptimizeRequestExecutor buildCreateDashboardRequestWithDefinition(final String collectionId,
+                                                                           DashboardDefinitionDto dashboardDefinitionDto) {
+    this.requestType = POST;
+    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    this.body = getBody(dashboardDefinitionDto);
+    this.path = "dashboard";
+    return this;
+  }
+
   public OptimizeRequestExecutor buildCreateCollectionRequest() {
     this.requestType = POST;
     this.body = Entity.json("");
+    this.path = "collection";
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCreateCollectionRequestWithPartialDefinition(PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
+    this.requestType = POST;
+    this.body = getBody(partialCollectionDefinitionDto);
     this.path = "collection";
     return this;
   }
@@ -480,7 +500,7 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdatePartialCollectionRequest(String id,
-                                                                     PartialCollectionUpdateDto updateDto) {
+                                                                     PartialCollectionDefinitionDto updateDto) {
     this.path = "collection/" + id;
     this.requestType = PUT;
     this.body = getBody(updateDto);

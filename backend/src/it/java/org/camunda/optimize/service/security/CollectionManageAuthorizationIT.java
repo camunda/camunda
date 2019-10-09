@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -43,7 +43,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
+    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
       .execute();
@@ -63,7 +63,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
 
     // when
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
+    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
       .execute();
@@ -81,7 +81,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
+    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
       .execute();
@@ -98,7 +98,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = createNewCollectionAsDefaultUser();
 
     // when
-    final PartialCollectionUpdateDto collectionRenameDto = new PartialCollectionUpdateDto("Test");
+    final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
       .execute();

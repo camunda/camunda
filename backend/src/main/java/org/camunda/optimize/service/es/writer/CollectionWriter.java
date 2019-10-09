@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -18,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
@@ -42,6 +44,7 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -58,27 +61,29 @@ public class CollectionWriter {
   private final ObjectMapper objectMapper;
   private final DateTimeFormatter formatter;
 
-  public IdDto createNewCollectionAndReturnId(String userId) {
+  public IdDto createNewCollectionAndReturnId(@NonNull String userId,
+                                              @NonNull PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
     log.debug("Writing new collection to Elasticsearch");
 
     String id = IdGenerator.getNextId();
+    SimpleCollectionDefinitionDto simpleCollectionDefinitionDto = new SimpleCollectionDefinitionDto();
+    simpleCollectionDefinitionDto.setId(id);
+    simpleCollectionDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
+    simpleCollectionDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    simpleCollectionDefinitionDto.setOwner(userId);
+    simpleCollectionDefinitionDto.setLastModifier(userId);
+    simpleCollectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName()).orElse(DEFAULT_COLLECTION_NAME));
 
-    SimpleCollectionDefinitionDto collection = new SimpleCollectionDefinitionDto();
-    collection.setId(id);
-    collection.setCreated(LocalDateUtil.getCurrentDateTime());
-    collection.setLastModified(LocalDateUtil.getCurrentDateTime());
-    collection.setOwner(userId);
-    collection.setLastModifier(userId);
-    collection.setName(DEFAULT_COLLECTION_NAME);
-    final CollectionDataDto newData = new CollectionDataDto();
-    newData.getRoles().add(
-      new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER)
-    );
-    collection.setData(newData);
+    final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
+    newCollectionDataDto.getRoles().add(new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
+    if (partialCollectionDefinitionDto.getData() != null) {
+      newCollectionDataDto.setConfiguration(partialCollectionDefinitionDto.getData().getConfiguration());
+    }
+    simpleCollectionDefinitionDto.setData(newCollectionDataDto);
 
     try {
       IndexRequest request = new IndexRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id)
-        .source(objectMapper.writeValueAsString(collection), XContentType.JSON)
+        .source(objectMapper.writeValueAsString(simpleCollectionDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
@@ -102,7 +107,6 @@ public class CollectionWriter {
     log.debug("Updating collection with id [{}] in Elasticsearch", id);
 
     try {
-
       UpdateRequest request =
         new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id)
           .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)
