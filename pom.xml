@@ -30,7 +30,7 @@
 
     <surefire-plugin.version>3.0.0-M3</surefire-plugin.version>
 
-    <jackson.version>2.9.9</jackson.version>
+    <jackson.version>2.9.10</jackson.version>
     <jsonpath.version>2.4.0</jsonpath.version>
     <elasticsearch.version>6.6.2</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
