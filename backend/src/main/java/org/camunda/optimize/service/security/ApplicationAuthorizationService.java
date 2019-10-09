@@ -7,7 +7,7 @@ package org.camunda.optimize.service.security;
 
 import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.engine.GroupDto;
+import org.camunda.optimize.dto.engine.EngineGroupDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -71,7 +71,7 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
 
   private static boolean isAuthorizedToAccessOptimizeOnEngine(final String username,
                                                               final EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
+    final List<EngineGroupDto> groups = engineContext.getAllGroupsOfUser(username);
     final List<AuthorizationDto> allAuthorizations = engineContext.getAllApplicationAuthorizations();
     final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
       engineContext.getEngineAlias(),

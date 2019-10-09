@@ -5,17 +5,30 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
+@JsonTypeInfo(
+  use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type", visible = true
+)
+@JsonSubTypes({
+  @JsonSubTypes.Type(value = UserDto.class, name = "user"),
+  @JsonSubTypes.Type(value = GroupDto.class, name = "group"),
+})
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @FieldNameConstants(asEnum = true)
-public class IdentityDto {
+public abstract class IdentityDto {
   private String id;
   private IdentityType type;
+  protected String name;
+
+  public IdentityDto(final String id, final IdentityType type) {
+    this.id = id;
+    this.type = type;
+  }
 }

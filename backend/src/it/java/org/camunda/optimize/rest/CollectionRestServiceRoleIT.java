@@ -6,9 +6,10 @@
 package org.camunda.optimize.rest;
 
 import org.apache.http.HttpStatus;
+import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
@@ -91,10 +92,7 @@ public class CollectionRestServiceRoleIT {
     engineIntegrationRule.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
-      new IdentityDto(USER_KERMIT, IdentityType.USER),
-      RoleType.EDITOR
-    );
+    final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
     IdDto idDto = addRoleToCollection(collectionId, roleDto);
 
     // then
@@ -113,16 +111,10 @@ public class CollectionRestServiceRoleIT {
     engineIntegrationRule.grantUserOptimizeAccess(USER_MISS_PIGGY);
 
     // when
-    final CollectionRoleDto kermitRoleDto = new CollectionRoleDto(
-      new IdentityDto(USER_KERMIT, IdentityType.USER),
-      RoleType.EDITOR
-    );
+    final CollectionRoleDto kermitRoleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
     IdDto kermitRoleIdDto = addRoleToCollection(collectionId, kermitRoleDto);
 
-    final CollectionRoleDto missPiggyRoleDto = new CollectionRoleDto(
-      new IdentityDto(USER_MISS_PIGGY, IdentityType.USER),
-      RoleType.VIEWER
-    );
+    final CollectionRoleDto missPiggyRoleDto = new CollectionRoleDto(new UserDto(USER_MISS_PIGGY), RoleType.VIEWER);
     IdDto missPiggyIdDto = addRoleToCollection(collectionId, missPiggyRoleDto);
 
     // then
@@ -140,10 +132,7 @@ public class CollectionRestServiceRoleIT {
     engineIntegrationRule.addUser(USER_KERMIT, USER_KERMIT);
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
-      new IdentityDto(USER_KERMIT, IdentityType.USER),
-      RoleType.EDITOR
-    );
+    final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
     final Response addRoleResponse = embeddedOptimizeRule
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
@@ -159,10 +148,7 @@ public class CollectionRestServiceRoleIT {
     final String collectionId = createNewCollection();
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
-      new IdentityDto(USER_KERMIT, IdentityType.USER),
-      RoleType.EDITOR
-    );
+    final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
     final Response addRoleResponse = embeddedOptimizeRule
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
@@ -179,10 +165,7 @@ public class CollectionRestServiceRoleIT {
     engineIntegrationRule.createGroup(TEST_GROUP);
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
-      new IdentityDto(TEST_GROUP, IdentityType.GROUP),
-      RoleType.EDITOR
-    );
+    final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP, null), RoleType.EDITOR);
     IdDto idDto = addRoleToCollection(collectionId, roleDto);
 
     // then
@@ -197,10 +180,7 @@ public class CollectionRestServiceRoleIT {
     final String collectionId = createNewCollection();
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(
-      new IdentityDto(TEST_GROUP, IdentityType.GROUP),
-      RoleType.EDITOR
-    );
+    final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(TEST_GROUP), RoleType.EDITOR);
     final Response addRoleResponse = embeddedOptimizeRule
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
@@ -219,7 +199,7 @@ public class CollectionRestServiceRoleIT {
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(
       // there is already an entry for the default user who created the collection
-      new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
+      new UserDto(DEFAULT_USERNAME),
       RoleType.EDITOR
     );
     Response response = embeddedOptimizeRule
@@ -243,7 +223,7 @@ public class CollectionRestServiceRoleIT {
     engineIntegrationRule.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
-    final IdentityDto identityDto = new IdentityDto(USER_KERMIT, IdentityType.USER);
+    final IdentityDto identityDto = new UserDto(USER_KERMIT);
     final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
 
@@ -306,7 +286,7 @@ public class CollectionRestServiceRoleIT {
     engineIntegrationRule.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
-    final IdentityDto identityDto = new IdentityDto(USER_KERMIT, IdentityType.USER);
+    final IdentityDto identityDto = new UserDto(USER_KERMIT);
     final CollectionRoleDto roleDto = new CollectionRoleDto(identityDto, RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
     deleteRoleFromCollection(collectionId, roleDto.getId());

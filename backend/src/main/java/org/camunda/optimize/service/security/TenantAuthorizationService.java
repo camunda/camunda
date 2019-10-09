@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.engine.GroupDto;
+import org.camunda.optimize.dto.engine.EngineGroupDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -102,7 +102,7 @@ public class TenantAuthorizationService
 
   private ResolvedResourceTypeAuthorizations resolveUserAuthorizations(String username,
                                                                        EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
+    final List<EngineGroupDto> groups = engineContext.getAllGroupsOfUser(username);
     final List<AuthorizationDto> allAuthorizations = engineContext.getAllTenantAuthorizations();
     addEnginesDefaultTenantAuthorization(username, engineContext, allAuthorizations);
 

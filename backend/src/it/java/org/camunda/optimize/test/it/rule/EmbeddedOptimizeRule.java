@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
@@ -423,6 +424,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public TenantService getTenantService() {
     return getApplicationContext().getBean(TenantService.class);
+  }
+
+  public IdentityService getIdentityService() {
+    return getApplicationContext().getBean(IdentityService.class);
   }
 
   public ElasticSearchSchemaManager getElasticSearchSchemaManager() {

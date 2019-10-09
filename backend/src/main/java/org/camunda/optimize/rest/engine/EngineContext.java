@@ -6,9 +6,8 @@
 package org.camunda.optimize.rest.engine;
 
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.engine.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.engine.EngineGroupDto;
+import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
 import org.slf4j.Logger;
@@ -56,7 +55,7 @@ public class EngineContext {
     return configurationService.getEngineDefaultTenantIdOfCustomEngine(engineAlias);
   }
 
-  public List<GroupDto> getAllGroupsOfUser(String userId) {
+  public List<EngineGroupDto> getAllGroupsOfUser(String userId) {
     try {
       Response response = getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
@@ -66,7 +65,7 @@ public class EngineContext {
         .get();
       if (response.getStatus() == 200) {
         // @formatter:off
-        return response.readEntity(new GenericType<List<GroupDto>>() {});
+        return response.readEntity(new GenericType<List<EngineGroupDto>>() {});
         // @formatter:on
       }
     } catch (Exception e) {
@@ -75,8 +74,8 @@ public class EngineContext {
     return new ArrayList<>();
   }
 
-  public Optional<IdentityDto> getGroupById(final String groupId) {
-    GroupDto groupDto = null;
+  public Optional<GroupDto> getGroupById(final String groupId) {
+    EngineGroupDto groupDto = null;
     try {
       Response response = getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
@@ -85,13 +84,13 @@ public class EngineContext {
         .request(MediaType.APPLICATION_JSON)
         .get();
       if (response.getStatus() == 200) {
-        groupDto = response.readEntity(GroupDto.class);
+        groupDto = response.readEntity(EngineGroupDto.class);
       }
     } catch (Exception e) {
       logger.error("Could not fetch group with id [{}]", groupId, e);
     }
     return Optional.ofNullable(groupDto)
-      .map(user -> new IdentityDto(user.getId(), IdentityType.GROUP));
+      .map(group -> new GroupDto(group.getId(), group.getName()));
   }
 
   public List<AuthorizationDto> getAllApplicationAuthorizations() {

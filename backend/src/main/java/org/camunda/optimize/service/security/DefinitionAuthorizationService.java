@@ -8,7 +8,7 @@ package org.camunda.optimize.service.security;
 import com.google.common.collect.ImmutableList;
 import lombok.Value;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.dto.engine.GroupDto;
+import org.camunda.optimize.dto.engine.EngineGroupDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
@@ -185,7 +185,7 @@ public class DefinitionAuthorizationService
 
   private static EngineAuthorizations fetchEngineAuthorizations(final String username,
                                                                 final EngineContext engineContext) {
-    final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
+    final List<EngineGroupDto> groups = engineContext.getAllGroupsOfUser(username);
     final List<AuthorizationDto> allAuthorizations = ImmutableList.<AuthorizationDto>builder()
       .addAll(engineContext.getAllProcessDefinitionAuthorizations())
       .addAll(engineContext.getAllDecisionDefinitionAuthorizations())

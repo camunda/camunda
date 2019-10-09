@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.springframework.stereotype.Component;
 

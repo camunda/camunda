@@ -8,9 +8,11 @@ package org.camunda.optimize.service.security;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -64,10 +66,7 @@ public abstract class AbstractCollectionRoleIT {
   protected static IdentityAndRole[] accessIdentityRoles() {
     return Arrays.stream(RoleType.values())
       .flatMap(roleType -> Arrays.stream(IdentityType.values())
-        .map(identityType -> new IdentityAndRole(
-          new IdentityDto(getDefaultIdentityIdForType(identityType), identityType),
-          roleType
-        ))
+        .map(identityType -> new IdentityAndRole(getDefaultIdentityDtoForType(identityType), roleType))
       )
       .toArray(IdentityAndRole[]::new);
   }
@@ -76,9 +75,7 @@ public abstract class AbstractCollectionRoleIT {
 
   protected static IdentityAndRole[] accessUserRoles() {
     return Arrays.stream(RoleType.values())
-      .map(roleType -> new IdentityAndRole(
-        new IdentityDto(getDefaultIdentityIdForType(IdentityType.USER), IdentityType.USER), roleType
-      ))
+      .map(roleType -> new IdentityAndRole(getDefaultIdentityDtoForType(IdentityType.USER), roleType))
       .toArray(IdentityAndRole[]::new);
   }
 
@@ -87,10 +84,7 @@ public abstract class AbstractCollectionRoleIT {
   protected static IdentityAndRole[] accessOnlyIdentityRoles() {
     return Arrays.stream(accessOnlyRoles())
       .flatMap(roleType -> Arrays.stream(IdentityType.values())
-        .map(identityType -> new IdentityAndRole(
-          new IdentityDto(getDefaultIdentityIdForType(identityType), identityType),
-          roleType
-        ))
+        .map(identityType -> new IdentityAndRole(getDefaultIdentityDtoForType(identityType), roleType))
       )
       .toArray(IdentityAndRole[]::new);
   }
@@ -99,9 +93,7 @@ public abstract class AbstractCollectionRoleIT {
 
   protected static IdentityAndRole[] accessOnlyUserRoles() {
     return Arrays.stream(accessOnlyRoles())
-      .map(roleType -> new IdentityAndRole(
-        new IdentityDto(getDefaultIdentityIdForType(IdentityType.USER), IdentityType.USER), roleType
-      ))
+      .map(roleType -> new IdentityAndRole(getDefaultIdentityDtoForType(IdentityType.USER), roleType))
       .toArray(IdentityAndRole[]::new);
   }
 
@@ -110,10 +102,7 @@ public abstract class AbstractCollectionRoleIT {
   protected static IdentityAndRole[] editIdentityRoles() {
     return Arrays.stream(editRoles())
       .flatMap(roleType -> Arrays.stream(IdentityType.values())
-        .map(identityType -> new IdentityAndRole(
-          new IdentityDto(getDefaultIdentityIdForType(identityType), identityType),
-          roleType
-        ))
+        .map(identityType -> new IdentityAndRole(getDefaultIdentityDtoForType(identityType), roleType))
       )
       .toArray(IdentityAndRole[]::new);
   }
@@ -122,9 +111,7 @@ public abstract class AbstractCollectionRoleIT {
 
   protected static IdentityAndRole[] editUserRoles() {
     return Arrays.stream(editRoles())
-      .map(roleType -> new IdentityAndRole(
-        new IdentityDto(getDefaultIdentityIdForType(IdentityType.USER), IdentityType.USER), roleType
-      ))
+      .map(roleType -> new IdentityAndRole(getDefaultIdentityDtoForType(IdentityType.USER), roleType))
       .toArray(IdentityAndRole[]::new);
   }
 
@@ -133,10 +120,7 @@ public abstract class AbstractCollectionRoleIT {
   protected static IdentityAndRole[] managerIdentityRoles() {
     return Arrays.stream(managerRoles())
       .flatMap(roleType -> Arrays.stream(IdentityType.values())
-        .map(identityType -> new IdentityAndRole(
-          new IdentityDto(getDefaultIdentityIdForType(identityType), identityType),
-          roleType
-        ))
+        .map(identityType -> new IdentityAndRole(getDefaultIdentityDtoForType(identityType), roleType))
       )
       .toArray(IdentityAndRole[]::new);
   }
@@ -146,16 +130,13 @@ public abstract class AbstractCollectionRoleIT {
   protected static IdentityAndRole[] nonManagerIdentityRoles() {
     return Arrays.stream(nonManagerRoles())
       .flatMap(roleType -> Arrays.stream(IdentityType.values())
-        .map(identityType -> new IdentityAndRole(
-          new IdentityDto(getDefaultIdentityIdForType(identityType), identityType),
-          roleType
-        ))
+        .map(identityType -> new IdentityAndRole(getDefaultIdentityDtoForType(identityType), roleType))
       )
       .toArray(IdentityAndRole[]::new);
   }
 
-  protected static String getDefaultIdentityIdForType(final IdentityType identityType) {
-    return identityType.equals(IdentityType.USER) ? KERMIT_USER : GROUP_ID;
+  protected static IdentityDto getDefaultIdentityDtoForType(final IdentityType identityType) {
+    return identityType.equals(IdentityType.USER) ? new UserDto(KERMIT_USER) : new GroupDto(GROUP_ID);
   }
 
   protected RoleType getExpectedResourceRoleForCollectionRole(final IdentityAndRole identityAndRole) {
@@ -169,9 +150,7 @@ public abstract class AbstractCollectionRoleIT {
   }
 
   protected void addKermitGroupRoleToCollectionAsDefaultUser(final RoleType roleType, final String collectionId) {
-    addRoleToCollectionAsDefaultUser(
-      collectionId, new CollectionRoleDto(new IdentityDto(GROUP_ID, IdentityType.GROUP), roleType)
-    );
+    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new GroupDto(GROUP_ID), roleType));
   }
 
   protected void addRoleToCollectionAsDefaultUser(final RoleType roleType,

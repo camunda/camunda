@@ -6,12 +6,13 @@
 package org.camunda.optimize.service.security;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.engine.GroupDto;
+import org.camunda.optimize.dto.engine.EngineGroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
+import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.springframework.stereotype.Component;
 
@@ -98,7 +99,7 @@ public class AuthorizedCollectionService {
     } else {
       final List<CollectionRoleDto> collectionRoles = collectionDefinition.getData().getRoles();
       final Set<String> userGroupIds = identityService.getAllGroupsOfUser(userId).stream()
-        .map(GroupDto::getId)
+        .map(EngineGroupDto::getId)
         .collect(Collectors.toSet());
 
       final Optional<CollectionRoleDto> highestGrantedAuthorizationFromUsersGroups = collectionRoles.stream()

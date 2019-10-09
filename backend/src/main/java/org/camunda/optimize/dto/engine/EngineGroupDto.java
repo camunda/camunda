@@ -6,12 +6,14 @@
 package org.camunda.optimize.dto.engine;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class UserDto {
-  private String firstName;
-  private String lastName;
-  private String displayName;
+@EqualsAndHashCode(of = {"id"})
+public class EngineGroupDto {
 
   private String id;
+  private String name;
+  private String type;
+
 }

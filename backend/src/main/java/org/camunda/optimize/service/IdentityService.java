@@ -3,15 +3,18 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.security;
+package org.camunda.optimize.service;
 
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
-import org.camunda.optimize.dto.engine.GroupDto;
+import org.camunda.optimize.dto.engine.EngineGroupDto;
+import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.security.ApplicationAuthorizationService;
+import org.camunda.optimize.service.security.SessionListener;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -28,7 +31,9 @@ import java.util.concurrent.TimeUnit;
 public class IdentityService implements ConfigurationReloadable, SessionListener {
   private static final int CACHE_MAXIMUM_SIZE = 10_000;
 
-  private LoadingCache<String, List<GroupDto>> userGroupsCache;
+  private LoadingCache<String, List<EngineGroupDto>> userGroupsCache;
+  private SearchableIdentityCache syncedIdentityCache;
+
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
@@ -40,38 +45,51 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     this.configurationService = configurationService;
     this.engineContextFactory = engineContextFactory;
 
-    initCache();
+    initCaches();
+  }
+
+  public void addIdentity(final IdentityDto identity) {
+    syncedIdentityCache.addIdentity(identity);
   }
 
   public boolean isSuperUserIdentity(final String userId) {
     return configurationService.getSuperUserIds().contains(userId);
   }
 
-  public List<GroupDto> getAllGroupsOfUser(final String userId) {
+  public List<EngineGroupDto> getAllGroupsOfUser(final String userId) {
     return userGroupsCache.get(userId);
   }
 
-  public Optional<IdentityDto> getOptimizeUserById(final String userId) {
-    IdentityDto identityDto = null;
-
-    if (applicationAuthorizationService.isAuthorizedToAccessOptimize(userId)) {
-      identityDto = new IdentityDto(userId, IdentityType.USER);
-    }
-
-    return Optional.ofNullable(identityDto);
+  public Optional<UserDto> getUserById(final String userId) {
+    return syncedIdentityCache.getUserIdentityById(userId)
+      .map(Optional::of)
+      .orElseGet(() -> {
+        if (applicationAuthorizationService.isAuthorizedToAccessOptimize(userId)) {
+          return Optional.of(new UserDto(userId, null, null, null));
+        } else {
+          return Optional.empty();
+        }
+      });
   }
 
-  public Optional<IdentityDto> getGroupById(final String groupId) {
-    return engineContextFactory.getConfiguredEngines().stream()
-      .map(engineContext -> engineContext.getGroupById(groupId))
-      .filter(Optional::isPresent)
-      .map(Optional::get)
-      .findFirst();
+  public Optional<GroupDto> getGroupById(final String groupId) {
+    return syncedIdentityCache.getGroupIdentityById(groupId)
+      .map(Optional::of)
+      .orElseGet(() -> engineContextFactory.getConfiguredEngines().stream()
+        .map(engineContext -> engineContext.getGroupById(groupId))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .findFirst()
+      );
+  }
+
+  public List<IdentityDto> searchForIdentities(final String searchString, final int maxResults) {
+    return syncedIdentityCache.searchIdentities(searchString, maxResults);
   }
 
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
-    initCache();
+    cleanUpCaches();
   }
 
   @Override
@@ -89,15 +107,28 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     userGroupsCache.invalidate(userId);
   }
 
-  private void initCache() {
+  private void initCaches() {
     userGroupsCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)
       .expireAfterAccess(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
       .build(this::fetchUserGroups);
+
+    syncedIdentityCache = new SearchableIdentityCache();
   }
 
-  private List<GroupDto> fetchUserGroups(final String userId) {
-    final Set<GroupDto> result = new HashSet<>();
+  private void cleanUpCaches() {
+    if (userGroupsCache != null) {
+      userGroupsCache.invalidateAll();
+    }
+
+    if (syncedIdentityCache != null) {
+      syncedIdentityCache.close();
+      syncedIdentityCache = new SearchableIdentityCache();
+    }
+  }
+
+  private List<EngineGroupDto> fetchUserGroups(final String userId) {
+    final Set<EngineGroupDto> result = new HashSet<>();
     applicationAuthorizationService.getAuthorizedEngines(userId)
       .forEach(engineAlias -> {
         final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);

@@ -938,6 +938,18 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildSearchForIdentities(final String searchTerms) {
+    return buildSearchForIdentities(searchTerms, null);
+  }
+
+  public OptimizeRequestExecutor buildSearchForIdentities(final String searchTerms, final Integer limit) {
+    this.path = "identity/search";
+    this.requestType = GET;
+    addSingleQueryParam("terms", searchTerms);
+    Optional.ofNullable(limit).ifPresent(limitValue -> addSingleQueryParam("limit", limitValue));
+    return this;
+  }
+
 
   private Entity getBody(Object entity) {
     try {

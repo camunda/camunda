@@ -8,9 +8,8 @@ package org.camunda.optimize.service.security;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
@@ -487,7 +486,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private CollectionRoleDto createJohnEditorRoleDto() {
-    return new CollectionRoleDto(new IdentityDto(USER_ID_JOHN, IdentityType.USER), RoleType.EDITOR);
+    return new CollectionRoleDto(new UserDto(USER_ID_JOHN), RoleType.EDITOR);
   }
 
 }

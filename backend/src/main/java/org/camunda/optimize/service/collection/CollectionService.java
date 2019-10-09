@@ -30,6 +30,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefiniti
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
@@ -37,7 +38,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
-import org.camunda.optimize.service.security.IdentityService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
@@ -47,7 +47,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -176,18 +175,18 @@ public class CollectionService {
   }
 
   private void verifyIdentityExists(final IdentityDto identity) {
-    final Optional<IdentityDto> foundIdentity;
+    final boolean identityFound;
     switch (identity.getType()) {
       case USER:
-        foundIdentity = identityService.getOptimizeUserById(identity.getId());
+        identityFound = identityService.getUserById(identity.getId()).isPresent();
         break;
       case GROUP:
-        foundIdentity = identityService.getGroupById(identity.getId());
+        identityFound = identityService.getGroupById(identity.getId()).isPresent();
         break;
       default:
         throw new OptimizeRuntimeException("Unsupported identity type: " + identity.getType());
     }
-    if (!foundIdentity.isPresent()) {
+    if (!identityFound) {
       throw new BadRequestException(
         String.format("%s with id %s does not exist in Optimize", identity.getType(), identity.getId())
       );
