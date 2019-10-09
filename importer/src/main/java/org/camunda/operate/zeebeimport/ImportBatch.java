@@ -80,4 +80,32 @@ public class ImportBatch {
   public String getAliasName() {
     return importValueType.getAliasTemplate();
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
+
+    ImportBatch that = (ImportBatch) o;
+
+    if (partitionId != that.partitionId)
+      return false;
+    if (finishedWiCount != that.finishedWiCount)
+      return false;
+    if (importValueType != null ? !importValueType.equals(that.importValueType) : that.importValueType != null)
+      return false;
+    return records != null ? records.equals(that.records) : that.records == null;
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = partitionId;
+    result = 31 * result + (importValueType != null ? importValueType.hashCode() : 0);
+    result = 31 * result + (records != null ? records.hashCode() : 0);
+    result = 31 * result + finishedWiCount;
+    return result;
+  }
 }

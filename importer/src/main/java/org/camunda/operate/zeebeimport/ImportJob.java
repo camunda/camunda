@@ -33,7 +33,7 @@ public class ImportJob implements Callable<Boolean> {
   @Autowired
   private ImportPositionHolder importPositionHolder;
 
-  @Autowired
+  @Autowired(required = false)
   private List<ImportListener> importListeners;
 
   public ImportJob(ImportBatch importBatch) {
@@ -55,14 +55,18 @@ public class ImportJob implements Callable<Boolean> {
   }
   
   protected void notifyImportListenersAsFinished(ImportBatch importBatch) {
-    for (ImportListener importListener: importListeners) {
-      importListener.finished(importBatch);
+    if (importListeners != null) {
+      for (ImportListener importListener : importListeners) {
+        importListener.finished(importBatch);
+      }
     }
   }
 
   protected void notifyImportListenersAsFailed(ImportBatch importBatch) {
-    for (ImportListener importListener: importListeners) {
-      importListener.failed(importBatch);
+    if (importListeners != null) {
+      for (ImportListener importListener : importListeners) {
+        importListener.failed(importBatch);
+      }
     }
   }
 }
