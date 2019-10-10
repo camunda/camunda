@@ -26,12 +26,7 @@ if (!ciMode) {
 process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 process.env.BROWSERSTACK_DISPLAY_RESOLUTION = '1920x1080';
 
-const browsers = [
-  'browserstack:IE@11.0:Windows 8.1',
-  'browserstack:Edge',
-  'browserstack:Firefox',
-  'browserstack:Chrome'
-];
+const browsers = ['browserstack:Edge', 'browserstack:Firefox', 'browserstack:Chrome'];
 
 const backendProcess = spawn('yarn', ['run', 'start-backend', ciMode ? 'ci' : undefined]);
 const frontendProcess = spawn('yarn', ['start']);
@@ -116,31 +111,14 @@ async function startTest() {
   let hasFailures = false;
   try {
     for (let i = 0; i < browsers.length; i++) {
-      if (browsers[i] === 'browserstack:IE@11.0:Windows 8.1') {
-        const files = fs.readdirSync('e2e/tests');
-        for (let j = 0; j < files.length; j++) {
-          if (files[j].indexOf('.elements.js') === -1) {
-            if (
-              await testCafe
-                .createRunner()
-                .src('e2e/tests/' + files[j])
-                .browsers(browsers[i])
-                .run({skipJsErrors: true, assertionTimeout: 10000, pageLoadTimeout: 10000})
-            ) {
-              hasFailures = true;
-            }
-          }
-        }
-      } else {
-        if (
-          await testCafe
-            .createRunner()
-            .src('e2e/tests/*.js')
-            .browsers(browsers[i])
-            .run({skipJsErrors: true, assertionTimeout: 10000, pageLoadTimeout: 10000})
-        ) {
-          hasFailures = true;
-        }
+      if (
+        await testCafe
+          .createRunner()
+          .src('e2e/tests/*.js')
+          .browsers(browsers[i])
+          .run({skipJsErrors: true, assertionTimeout: 10000, pageLoadTimeout: 10000})
+      ) {
+        hasFailures = true;
       }
     }
   } finally {
