@@ -82,7 +82,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // then
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
     assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
@@ -202,7 +202,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // then
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getProcessInstanceCount(), is(3L));
+    assertThat(resultDto.getInstanceCount(), is(3L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(4));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
@@ -500,7 +500,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
   }
 
   @Test

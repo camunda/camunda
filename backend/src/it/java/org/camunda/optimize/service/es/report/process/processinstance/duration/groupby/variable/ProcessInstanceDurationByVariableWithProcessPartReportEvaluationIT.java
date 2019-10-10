@@ -103,7 +103,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     assertThat(variableGroupByDto.getValue().getType(), is(DEFAULT_VARIABLE_TYPE));
 
     final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData().size(), is(1));
     final Long calculatedResult = result.getDataEntryForKey(DEFAULT_VARIABLE_VALUE).get().getValue();
     assertThat(calculatedResult, is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
@@ -376,7 +376,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     // then
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
     assertThat(resultDto.getIsComplete(), is(false));
@@ -551,7 +551,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test

@@ -102,7 +102,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
+    assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
     assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
     assertThat(evaluationResponse.getResult().getData().size(), is(1));
 
@@ -768,7 +768,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test

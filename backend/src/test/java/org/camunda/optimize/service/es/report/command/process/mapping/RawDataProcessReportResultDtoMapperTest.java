@@ -35,7 +35,7 @@ public class RawDataProcessReportResultDtoMapperTest {
     // then
     assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getIsComplete(), is(false));
-    assertThat(result.getProcessInstanceCount(), is(actualInstanceCount));
+    assertThat(result.getInstanceCount(), is(actualInstanceCount));
   }
 
   @Test
@@ -52,7 +52,7 @@ public class RawDataProcessReportResultDtoMapperTest {
     // then
     assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getProcessInstanceCount(), is(actualInstanceCount));
+    assertThat(result.getInstanceCount(), is(actualInstanceCount));
   }
 
   private List<ProcessInstanceDto> generateInstanceList(final Integer rawDataLimit) {

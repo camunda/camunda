@@ -64,7 +64,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
 
     final ProcessReportNumberResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    assertThat(resultDto.getInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData(), is(1L));
   }
@@ -185,7 +185,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     ProcessReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
   }
 
 
@@ -236,7 +236,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     final ProcessReportNumberResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    assertThat(resultDto.getInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData(), is(1L));
   }

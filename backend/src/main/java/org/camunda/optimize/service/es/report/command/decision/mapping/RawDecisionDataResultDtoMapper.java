@@ -131,7 +131,7 @@ public class RawDecisionDataResultDtoMapper {
     final RawDataDecisionReportResultDto result = new RawDataDecisionReportResultDto();
     result.setData(limitedRawDataResult);
     result.setIsComplete(limitedRawDataResult.size() == totalHits);
-    result.setDecisionInstanceCount(totalHits);
+    result.setInstanceCount(totalHits);
     return result;
   }
 

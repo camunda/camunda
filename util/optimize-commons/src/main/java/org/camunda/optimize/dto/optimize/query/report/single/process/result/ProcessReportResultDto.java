@@ -32,5 +32,5 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 @Data
 public abstract class ProcessReportResultDto implements ReportResultDto {
 
-  protected long processInstanceCount;
+  protected long instanceCount;
 }

@@ -146,7 +146,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
 
     // then
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getProcessInstanceCount(), is(3L));
+    assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getIsComplete(), is(true));
 
     final List<MapResultEntryDto<Long>> resultData = result.getData();

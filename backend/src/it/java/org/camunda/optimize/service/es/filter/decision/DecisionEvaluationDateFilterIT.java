@@ -55,7 +55,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(0L));
+    assertThat(result.getInstanceCount(), is(0L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(0));
   }
@@ -88,7 +88,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(5));
   }
@@ -124,7 +124,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(5));
   }
@@ -145,7 +145,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
   }
@@ -168,7 +168,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateReportWithNewAuthToken(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(0L));
+    assertThat(result.getInstanceCount(), is(0L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(0));
   }

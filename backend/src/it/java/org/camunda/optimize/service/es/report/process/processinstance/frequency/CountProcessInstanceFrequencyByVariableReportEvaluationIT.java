@@ -88,7 +88,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
 
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getDataEntryForKey("bar").get().getValue(), is(1L));
@@ -126,7 +126,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
 
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getDataEntryForKey("bar").get().getValue(), is(1L));
@@ -180,7 +180,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test
@@ -241,7 +241,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     // then
     final ProcessCountReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getProcessInstanceCount(), is(3L));
+    assertThat(resultDto.getInstanceCount(), is(3L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
     assertThat(resultDto.getIsComplete(), is(false));

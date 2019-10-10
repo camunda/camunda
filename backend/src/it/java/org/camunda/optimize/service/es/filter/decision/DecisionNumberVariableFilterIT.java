@@ -52,7 +52,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
 
@@ -96,7 +96,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
 
@@ -135,7 +135,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
 
@@ -171,7 +171,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
   }
@@ -203,7 +203,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
 

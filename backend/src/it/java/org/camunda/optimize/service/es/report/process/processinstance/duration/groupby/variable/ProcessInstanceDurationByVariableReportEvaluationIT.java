@@ -111,7 +111,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
 
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    assertThat(resultDto.getInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
 
@@ -164,7 +164,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
 
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getProcessInstanceCount(), is(1L));
+    assertThat(resultDto.getInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
 
@@ -360,7 +360,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test
@@ -438,7 +438,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then
     final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
     assertThat(resultDto.getIsComplete(), is(false));

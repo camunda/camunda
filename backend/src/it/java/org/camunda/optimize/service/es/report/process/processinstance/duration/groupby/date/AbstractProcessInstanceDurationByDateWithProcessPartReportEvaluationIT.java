@@ -108,7 +108,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
     assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
     assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
-    assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
+    assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
     final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
@@ -483,7 +483,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test

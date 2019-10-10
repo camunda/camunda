@@ -100,7 +100,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
     assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
-    assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
+    assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
     long calculatedResult = evaluationResponse.getResult().getData();
     assertThat(calculatedResult, is(1000L));
   }
@@ -144,7 +144,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
     assertThat(resultReportDataDto.getConfiguration().getProcessPart(), not(Optional.empty()));
 
-    assertThat(evaluationResponse.getResult().getProcessInstanceCount(), is(1L));
+    assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
     long calculatedResult = evaluationResponse.getResult().getData();
     assertThat(calculatedResult, is(activityDurationInSeconds * 1000L));
   }
@@ -459,7 +459,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test

@@ -152,7 +152,7 @@ public abstract class AbstractUserTaskDurationByAssigneeCommand
 
     resultDto.setData(resultData);
     resultDto.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
-    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    resultDto.setInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;
   }

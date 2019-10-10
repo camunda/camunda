@@ -108,7 +108,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       result.getDataEntryForKey(SECOND_USER).get().getValue(),
       is(1L)
     );
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
   }
 
   @Test
@@ -139,7 +139,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       result.getDataEntryForKey(SECOND_USER).get().getValue(),
       is(2L)
     );
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
   }
 
   @Test
@@ -163,7 +163,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     final ProcessCountReportMapResultDto resultDto = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
@@ -317,7 +317,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test
@@ -395,7 +395,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
       result.getDataEntryForKey(SECOND_USER).map(MapResultEntryDto::getValue).orElse(null),
       is(testValues.getExpectedFrequencyValues().get(SECOND_USER))
     );
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
   }
 
   @Test

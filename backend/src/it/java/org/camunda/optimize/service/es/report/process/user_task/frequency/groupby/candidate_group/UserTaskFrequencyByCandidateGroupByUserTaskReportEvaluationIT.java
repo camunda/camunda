@@ -422,7 +422,7 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskReportEvaluationIT exten
     final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(actualResult.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(actualResult.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test

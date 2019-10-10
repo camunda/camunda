@@ -105,7 +105,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
       is(1L)
     );
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
   }
 
   @Test
@@ -143,7 +143,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
       is(1L)
     );
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
   }
 
   @Test
@@ -174,7 +174,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
       is(2L)
     );
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
   }
 
   @Test
@@ -198,7 +198,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ProcessCountReportMapResultDto resultDto = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
@@ -352,7 +352,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test
@@ -431,7 +431,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       result.getDataEntryForKey(SECOND_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
       is(testValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP))
     );
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
   }
 
   @Test

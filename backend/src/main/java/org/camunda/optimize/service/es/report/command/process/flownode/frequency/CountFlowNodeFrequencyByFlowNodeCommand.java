@@ -128,7 +128,7 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeFrequencyGr
 
     resultDto.setData(resultData);
     resultDto.setIsComplete(activityTerms.getSumOfOtherDocCounts() == 0L);
-    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    resultDto.setInstanceCount(response.getHits().getTotalHits());
     return resultDto;
   }
 

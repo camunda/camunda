@@ -27,7 +27,7 @@ public class HyperMapAsserter {
     }
 
     public HyperMapAsserter processInstanceCount(long count) {
-      expectedResult.setProcessInstanceCount(count);
+      expectedResult.setInstanceCount(count);
       return this;
     }
 
@@ -43,7 +43,7 @@ public class HyperMapAsserter {
     public void doAssert(ProcessReportHyperMapResult actualResult) {
       // this is done by hand since it's otherwise really hard to see where the
       // assert failed.
-      assertThat(actualResult.getProcessInstanceCount(), is(expectedResult.getProcessInstanceCount()));
+      assertThat(actualResult.getInstanceCount(), is(expectedResult.getInstanceCount()));
       assertThat(actualResult.getIsComplete(), is(expectedResult.getIsComplete()));
       assertThat(actualResult.getData(), is(notNullValue()));
       assertThat(

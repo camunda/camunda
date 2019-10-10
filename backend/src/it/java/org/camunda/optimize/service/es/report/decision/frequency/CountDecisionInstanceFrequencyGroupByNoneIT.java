@@ -50,7 +50,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     final DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(3L));
+    assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData(), is(3L));
   }
@@ -78,7 +78,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     final DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData(), is(5L));
   }
@@ -109,7 +109,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     final DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData(), is(5L));
   }
@@ -173,7 +173,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
    final DecisionReportNumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData(), is(2L));
   }

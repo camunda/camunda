@@ -98,7 +98,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       result.getDataEntryForKey(USER_TASK_2).get().getValue(),
       is(1L)
     );
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
   }
 
   @Test
@@ -129,7 +129,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       result.getDataEntryForKey(USER_TASK_2).get().getValue(),
       is(2L)
     );
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
   }
 
   @Test
@@ -153,7 +153,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessCountReportMapResultDto resultDto = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
@@ -441,7 +441,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test
@@ -512,7 +512,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
       result.getDataEntryForKey(USER_TASK_2).get().getValue(),
       is(testValues.getExpectedFrequencyValues().get(USER_TASK_2))
     );
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
   }
 
   @Test
@@ -634,7 +634,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
 
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(

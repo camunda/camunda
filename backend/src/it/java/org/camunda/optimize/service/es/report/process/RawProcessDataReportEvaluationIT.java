@@ -69,7 +69,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // then
     final ProcessReportDataDto resultDataDto = evaluationResult.getReportDefinition().getData();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getDefinitionVersions(), contains(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -257,7 +257,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     RawDataProcessReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
     result.getData().forEach(rawDataDecisionInstanceDto -> assertThat(
       rawDataDecisionInstanceDto.getTenantId(),
       isOneOf(selectedTenants.toArray())

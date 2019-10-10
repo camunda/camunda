@@ -110,7 +110,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
       is(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
     );
 
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
 
   }
 
@@ -146,7 +146,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
       is(calculateExpectedValueGivenDurationsDefaultAggr(setDurations))
     );
 
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
   }
 
   @Test
@@ -173,7 +173,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
     // then
     assertDurationMapReportResults(results, ImmutableMap.of(USER_TASK_1, setDurations, USER_TASK_2, setDurations));
-    assertThat(results.get(MIN).getProcessInstanceCount(), is(2L));
+    assertThat(results.get(MIN).getInstanceCount(), is(2L));
   }
 
   @Test
@@ -269,7 +269,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     final ProcessDurationReportMapResultDto resultDto = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
@@ -592,7 +592,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
   }
 
   @Test

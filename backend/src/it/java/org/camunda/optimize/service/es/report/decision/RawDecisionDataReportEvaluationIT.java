@@ -64,7 +64,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
 
@@ -106,7 +106,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
 
@@ -155,7 +155,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
     result.getData().forEach(rawDataDecisionInstanceDto -> assertThat(
       rawDataDecisionInstanceDto.getTenantId(),
       isOneOf(selectedTenants.toArray())
@@ -188,7 +188,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
 
@@ -219,7 +219,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData().size(), is(5));
@@ -255,7 +255,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(5));
 
@@ -290,7 +290,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(5));
 
@@ -328,7 +328,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(5));
 
@@ -377,7 +377,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(5));
 

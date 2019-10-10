@@ -118,7 +118,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       is(calculateExpectedValueGivenDurationsDefaultAggr(setDuration))
     );
 
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
   }
 
   @Test
@@ -159,7 +159,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       is(calculateExpectedValueGivenDurationsDefaultAggr(20L))
     );
 
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
   }
 
   @Test
@@ -193,7 +193,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       is(calculateExpectedValueGivenDurationsDefaultAggr(setDurations))
     );
 
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
   }
 
   @Test
@@ -223,7 +223,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       results,
       ImmutableMap.of(FIRST_CANDIDATE_GROUP, setDurations, SECOND_CANDIDATE_GROUP, setDurations)
     );
-    assertThat(results.get(MIN).getProcessInstanceCount(), is(2L));
+    assertThat(results.get(MIN).getInstanceCount(), is(2L));
   }
 
   @Test
@@ -318,7 +318,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
     final ProcessDurationReportMapResultDto resultDto = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
     assertThat(resultDto.getIsComplete(), is(false));
@@ -491,7 +491,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
     ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
   }
 
   @Test

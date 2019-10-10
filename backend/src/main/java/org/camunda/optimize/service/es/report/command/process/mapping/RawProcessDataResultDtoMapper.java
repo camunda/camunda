@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.util.ArrayList;
@@ -89,7 +88,7 @@ public class RawProcessDataResultDtoMapper {
     final RawDataProcessReportResultDto result = new RawDataProcessReportResultDto();
     result.setData(limitedRawDataResult);
     result.setIsComplete(limitedRawDataResult.size() == totalHits);
-    result.setProcessInstanceCount(totalHits);
+    result.setInstanceCount(totalHits);
     return result;
   }
 

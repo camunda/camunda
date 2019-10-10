@@ -36,7 +36,7 @@ public class RawDataDecisionReportResultDtoMapperTest {
     // then
     assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getIsComplete(), is(false));
-    assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
+    assertThat(result.getInstanceCount(), is(actualInstanceCount));
   }
 
   @Test
@@ -53,7 +53,7 @@ public class RawDataDecisionReportResultDtoMapperTest {
     // then
     assertThat(result.getData().size(), is(rawDataLimit));
     assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
+    assertThat(result.getInstanceCount(), is(actualInstanceCount));
   }
 
   @Test
@@ -87,7 +87,7 @@ public class RawDataDecisionReportResultDtoMapperTest {
 
     // then
     assertThat(result.getData().size(), is(rawDataLimit));
-    assertThat(result.getDecisionInstanceCount(), is(actualInstanceCount));
+    assertThat(result.getInstanceCount(), is(actualInstanceCount));
     IntStream.range(0, rawDataLimit)
       .forEach(i -> {
         assertThat(result.getData().get(i).getInputVariables().size(), is(rawDataLimit));

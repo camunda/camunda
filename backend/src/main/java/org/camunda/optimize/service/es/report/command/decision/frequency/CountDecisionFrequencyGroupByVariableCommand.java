@@ -199,7 +199,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
 
     resultDto.setData(resultData);
     resultDto.setIsComplete(isResultComplete(variableTerms));
-    resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+    resultDto.setInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;
   }

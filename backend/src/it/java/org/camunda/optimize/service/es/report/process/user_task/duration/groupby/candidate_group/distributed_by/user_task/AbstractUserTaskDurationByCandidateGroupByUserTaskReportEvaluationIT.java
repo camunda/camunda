@@ -739,7 +739,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     ProcessReportHyperMapResult result = evaluateHyperMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
   }
 
   @Test

@@ -24,6 +24,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 })
 public abstract class DecisionReportResultDto implements ReportResultDto {
 
-  @Getter @Setter protected long decisionInstanceCount;
+  @Getter @Setter protected long instanceCount;
 
 }

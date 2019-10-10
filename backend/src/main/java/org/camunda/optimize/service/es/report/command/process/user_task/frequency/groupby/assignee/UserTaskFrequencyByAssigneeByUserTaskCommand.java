@@ -132,7 +132,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
 
     resultDto.setData(resultData);
     resultDto.setIsComplete(byAssigneeAggregation.getSumOfOtherDocCounts() == 0L);
-    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    resultDto.setInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;
   }

@@ -164,7 +164,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskCommand
 
     resultDto.setData(resultData);
     resultDto.setIsComplete(byCandidateGroupAggregation.getSumOfOtherDocCounts() == 0L);
-    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    resultDto.setInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;
   }

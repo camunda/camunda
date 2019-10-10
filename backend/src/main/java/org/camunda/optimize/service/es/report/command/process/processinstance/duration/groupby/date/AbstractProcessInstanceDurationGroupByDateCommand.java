@@ -208,7 +208,7 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
     final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setIsComplete(isResultComplete(response));
-    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    resultDto.setInstanceCount(response.getHits().getTotalHits());
     return resultDto;
   }
 

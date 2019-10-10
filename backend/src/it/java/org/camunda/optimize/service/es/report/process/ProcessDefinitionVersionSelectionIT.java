@@ -76,7 +76,7 @@ public class ProcessDefinitionVersionSelectionIT {
       AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getProcessInstanceCount(), is(3L));
+      assertThat(result.getResult().getInstanceCount(), is(3L));
     }
   }
 
@@ -99,7 +99,7 @@ public class ProcessDefinitionVersionSelectionIT {
       AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getProcessInstanceCount(), is(5L));
+      assertThat(result.getResult().getInstanceCount(), is(5L));
     }
   }
 
@@ -121,7 +121,7 @@ public class ProcessDefinitionVersionSelectionIT {
       AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getProcessInstanceCount(), is(1L));
+      assertThat(result.getResult().getInstanceCount(), is(1L));
     }
 
     // when
@@ -135,7 +135,7 @@ public class ProcessDefinitionVersionSelectionIT {
       AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getProcessInstanceCount(), is(4L));
+      assertThat(result.getResult().getInstanceCount(), is(4L));
     }
   }
 

@@ -187,7 +187,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
   }
 
   @Test
@@ -245,7 +245,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getData().size(), is(3));
     assertThat(result.getDataEntryForKey(TEST_ACTIVITY).get().getValue(), is(1L));
   }
@@ -266,7 +266,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getDataEntryForKey("startEvent").get().getValue(), is(nullValue()));
     assertThat(result.getDataEntryForKey("userTask").get().getValue(), is(1L));
   }
@@ -287,7 +287,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getDataEntryForKey("startEvent").get().getValue(), is(1L));
     assertThat(result.getDataEntryForKey("userTask").get().getValue(), is(nullValue()));
   }
@@ -309,7 +309,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // then
 
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getDataEntryForKey("startEvent").get().getValue(), is(1L));
     assertThat(result.getDataEntryForKey("userTask").get().getValue(), is(1L));
   }
@@ -331,7 +331,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getDataEntryForKey(TEST_ACTIVITY).get().getValue(), is(2L));
@@ -356,7 +356,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     ProcessCountReportMapResultDto resultDto = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getProcessInstanceCount(), is(2L));
+    assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(3));
     assertThat(getExecutedFlowNodeCount(resultDto), is(1L));

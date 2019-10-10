@@ -88,7 +88,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(), is(GroupByDateUnit.DAY));
 
     final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getProcessInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount(), is(1L));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
@@ -609,7 +609,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getProcessInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test

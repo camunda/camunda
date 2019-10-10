@@ -71,7 +71,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getDecisionInstanceCount(), is(3L));
+    assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getData().get(0).getValue(), is(3L));
@@ -100,7 +100,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
@@ -520,7 +520,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
@@ -550,7 +550,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(5L));
+    assertThat(result.getInstanceCount(), is(5L));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
@@ -581,7 +581,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test
@@ -620,7 +620,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // then
     final DecisionReportMapResultDto result = evaluationResult.getResult();
-    assertThat(result.getDecisionInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));

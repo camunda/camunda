@@ -70,7 +70,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getDecisionInstanceCount(), is(3L));
+      assertThat(result.getResult().getInstanceCount(), is(3L));
     }
   }
 
@@ -93,7 +93,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getDecisionInstanceCount(), is(5L));
+      assertThat(result.getResult().getInstanceCount(), is(5L));
     }
   }
 
@@ -113,7 +113,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getDecisionInstanceCount(), is(1L));
+      assertThat(result.getResult().getInstanceCount(), is(1L));
     }
 
     deployDecisionAndStartInstances(4);
@@ -126,7 +126,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
 
       // then
-      assertThat(result.getResult().getDecisionInstanceCount(), is(4L));
+      assertThat(result.getResult().getInstanceCount(), is(4L));
     }
   }
 

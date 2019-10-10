@@ -186,7 +186,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
   private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
     final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
-    resultDto.setProcessInstanceCount(response.getHits().getTotalHits());
+    resultDto.setInstanceCount(response.getHits().getTotalHits());
     resultDto.setIsComplete(isResultComplete(response));
     return resultDto;
   }

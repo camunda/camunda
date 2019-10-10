@@ -78,7 +78,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getData().get(0).getKey(), is(amountValue));
@@ -114,7 +114,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getData().get(0).getKey(), is(dateGroupKey));
@@ -158,7 +158,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(6L));
+    assertThat(result.getInstanceCount(), is(6L));
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
@@ -211,7 +211,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(6L));
+    assertThat(result.getInstanceCount(), is(6L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getIsComplete(), is(false));
@@ -357,7 +357,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
@@ -396,7 +396,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(4L));
+    assertThat(result.getInstanceCount(), is(4L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getData().get(0).getKey(), is(amountValue));
@@ -433,7 +433,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(4L));
+    assertThat(result.getInstanceCount(), is(4L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getData().get(0).getKey(), is(categoryValue));
@@ -472,7 +472,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     ).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is(2L));
+    assertThat(result.getInstanceCount(), is(2L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
     assertThat(result.getData().get(0).getKey(), is(amountValue));
@@ -503,7 +503,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
   }
 
   @Test

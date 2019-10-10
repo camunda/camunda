@@ -172,7 +172,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
   private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
     final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
-    resultDto.setDecisionInstanceCount(response.getHits().getTotalHits());
+    resultDto.setInstanceCount(response.getHits().getTotalHits());
     resultDto.setIsComplete(isResultComplete(response));
     return resultDto;
   }

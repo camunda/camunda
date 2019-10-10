@@ -204,7 +204,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
 
 
     // then
-    assertThat(result.getProcessInstanceCount(), is(3L));
+    assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getIsComplete(), is(true));
 
     final List<MapResultEntryDto<Long>> resultData = result.getData();

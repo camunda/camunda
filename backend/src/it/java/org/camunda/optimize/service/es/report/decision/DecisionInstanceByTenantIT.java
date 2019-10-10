@@ -89,7 +89,7 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
     RawDataDecisionReportResultDto result = evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getDecisionInstanceCount(), is((long) expectedTenants.size()));
+    assertThat(result.getInstanceCount(), is((long) expectedTenants.size()));
     result.getData().forEach(rawDataDecisionInstanceDto -> assertThat(
       rawDataDecisionInstanceDto.getTenantId(),
       isOneOf(expectedTenants.toArray())
