@@ -47,7 +47,7 @@ type OAuthCredentialsCache interface {
 type oauthYamlCredentialsCache struct {
 	path      string
 	audiences map[string]*oauthCachedCredentials
-	writeLock sync.Mutex
+	lock      sync.RWMutex
 }
 
 type oauthCachedCredentials struct {
@@ -87,7 +87,10 @@ func (cache *oauthYamlCredentialsCache) Refresh() error {
 
 // Get returns the cached credentials for the given audience or nil
 // Note: it does not read the cache again
-func (cache oauthYamlCredentialsCache) Get(audience string) *OAuthCredentials {
+func (cache *oauthYamlCredentialsCache) Get(audience string) *OAuthCredentials {
+	cache.lock.RLock()
+	defer cache.lock.RUnlock()
+
 	cachedCredentials := cache.audiences[audience]
 	if cachedCredentials == nil {
 		return nil
@@ -103,8 +106,8 @@ func (cache *oauthYamlCredentialsCache) Update(audience string, credentials *OAu
 }
 
 func (cache *oauthYamlCredentialsCache) put(audience string, credentials *OAuthCredentials) {
-	cache.writeLock.Lock()
-	defer cache.writeLock.Unlock()
+	cache.lock.Lock()
+	defer cache.lock.Unlock()
 	cache.audiences[audience] = &oauthCachedCredentials{
 		Auth: struct{ Credentials *OAuthCredentials }{Credentials: credentials},
 	}
@@ -117,12 +120,17 @@ func (cache *oauthYamlCredentialsCache) readCache() error {
 		return err
 	}
 
+	cache.lock.Lock()
+	defer cache.lock.Unlock()
 	err = yaml.Unmarshal(cacheContents, &cache.audiences)
 	return err
 }
 
 // writeCache will overwrite any contents in the current cache file, so use carefully
-func (cache oauthYamlCredentialsCache) writeCache() error {
+func (cache *oauthYamlCredentialsCache) writeCache() error {
+	cache.lock.RLock()
+	defer cache.lock.RUnlock()
+
 	cacheContents, err := yaml.Marshal(&cache.audiences)
 	if err != nil {
 		return err
