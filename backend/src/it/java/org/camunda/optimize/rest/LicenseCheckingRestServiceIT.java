@@ -30,7 +30,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class LicenseCheckingRestServiceIT {
 
   public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
@@ -52,8 +51,7 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void validLicenseShouldBeAccepted() throws IOException, URISyntaxException {
-
+  public void validLegacyLicenseShouldBeAccepted() throws IOException, URISyntaxException {
     // given
     String license = readFileToString("/license/ValidTestLicense.txt");
 
@@ -70,10 +68,8 @@ public class LicenseCheckingRestServiceIT {
 
   @Test
   public void unsecuredLicenseEndpointsIgnoresInvalidAuthCookie() throws IOException, URISyntaxException {
-
     // given
-    String license = readFileToString("/license/ValidTestLicense.txt");
-
+    String license = readFileToString("/license/TestLegacyLicense_Valid.txt");
     // when
     Response response = embeddedOptimizeRule.getRequestExecutor()
       .withoutAuthentication()
@@ -87,10 +83,9 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void unlimitedValidLicenseShouldBeAccepted() throws IOException, URISyntaxException {
-
+  public void unlimitedValidLegacyLicenseShouldBeAccepted() throws IOException, URISyntaxException {
     // given
-    String license = readFileToString("/license/UnlimitedTestLicense.txt");
+    String license = readFileToString("/license/TestLegacyLicense_Unlimited.txt");
 
     // when
     Response response =
@@ -105,9 +100,8 @@ public class LicenseCheckingRestServiceIT {
 
   @Test
   public void storedLicenseCanBeValidated() throws IOException, URISyntaxException {
-
     // given
-    String license = readFileToString("/license/ValidTestLicense.txt");
+    String license = readFileToString("/license/TestLegacyLicense_Valid.txt");
     Response response =
       embeddedOptimizeRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
@@ -125,24 +119,24 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void invalidLicenseShouldThrowAnError() throws IOException, URISyntaxException {
+  public void invalidLegacyLicenseShouldThrowAnError() throws IOException, URISyntaxException {
     // given
-    String license = readFileToString("/license/InvalidTestLicense.txt");
+    String license = readFileToString("/license/TestLegacyLicense_Invalid.txt");
 
     // when
     String errorMessage =
       embeddedOptimizeRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
-        .execute(String.class, 500);
+        .execute(String.class, 400);
 
     // then
-    assertThat(errorMessage.contains("Cannot verify signature"), is(true));
+    assertThat(errorMessage.contains("License Key has wrong format."), is(true));
   }
 
   @Test
-  public void expiredLicenseShouldThrowAnError() throws IOException, URISyntaxException {
+  public void expiredLegacyLicenseShouldThrowAnError() throws IOException, URISyntaxException {
     // given
-    String license = readFileToString("/license/ExpiredDateTestLicense.txt");
+    String license = readFileToString("/license/TestLegacyLicense_ExpiredDate.txt");
 
     // when
     String errorMessage =
@@ -173,9 +167,8 @@ public class LicenseCheckingRestServiceIT {
 
   @Test
   public void notValidLicenseAndIWantToSeeRootPage() throws IOException, URISyntaxException {
-
     // given
-    String license = readFileToString("/license/ValidTestLicense.txt");
+    String license = readFileToString("/license/TestLegacyLicense_Valid.txt");
 
     // when
     Response response =
@@ -185,6 +178,126 @@ public class LicenseCheckingRestServiceIT {
 
     // then
     assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void validUnlimitedUnifiedLicenseWithOptimizeShouldBeAccepted() throws IOException, URISyntaxException {
+    // given
+    String license = readFileToString("/license/TestUnifiedLicense_UnlimitedWithOptimize.txt");
+
+    // when
+    Response response =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void validLimitedUnifiedLicenseWithOptimizeShouldBeAccepted() throws IOException, URISyntaxException {
+    // given
+    String license = readFileToString("/license/TestUnifiedLicense_LimitedWithOptimize.txt");
+
+    // when
+    Response response =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void validUnlimitedUnifiedLicenseWithoutOptimizeShouldReturnError() throws IOException, URISyntaxException {
+    // given
+    String license = readFileToString("/license/TestUnifiedLicense_UnlimitedWithoutOptimize.txt");
+
+    // when
+    String errorMessage =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute(String.class, 400);
+
+    // then
+    assertThat(errorMessage.contains("Your license is invalid."), is(true));
+  }
+
+  @Test
+  public void validLimitedUnifiedLicenseWithoutOptimizeShouldReturnError() throws IOException, URISyntaxException {
+    // given
+    String license = readFileToString("/license/TestUnifiedLicense_LimitedWithoutOptimize.txt");
+
+    // when
+    String errorMessage =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute(String.class, 400);
+
+    // then
+    assertThat(errorMessage.contains("Your license is invalid."), is(true));
+  }
+
+  @Test
+  public void invalidUnifiedLicenseWithOptimizeShouldReturnError() throws IOException, URISyntaxException {
+    // given
+    String license = readFileToString("/license/TestUnifiedLicense_InvalidSignatureWithOptimize.txt");
+
+    // when
+    String errorMessage =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute(String.class, 400);
+
+    // then
+    assertThat(errorMessage.contains("Your license is invalid."), is(true));
+  }
+
+  @Test
+  public void invalidUnifiedLicenseWithoutOptimizeShouldReturnError() throws IOException, URISyntaxException {
+    // given
+    String license = readFileToString("/license/TestUnifiedLicense_InvalidSignatureWithoutOptimize.txt");
+
+    // when
+    String errorMessage =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute(String.class, 400);
+
+    // then
+    assertThat(errorMessage.contains("Your license is invalid."), is(true));
+  }
+
+  @Test
+  public void expiredUnifiedLicenseWithOptimizeShouldReturnError() throws IOException, URISyntaxException {
+    // given
+    String license = readFileToString("/license/TestUnifiedLicense_ExpiredWithOptimize.txt");
+
+    // when
+    String errorMessage =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute(String.class, 400);
+
+    // then
+    assertThat(errorMessage.contains("Your license has expired."), is(true));
+  }
+
+  @Test
+  public void expiredUnifiedLicenseWithoutOptimizeShouldReturnError() throws IOException, URISyntaxException {
+    // given
+    String license = readFileToString("/license/TestUnifiedLicense_ExpiredWithoutOptimize.txt");
+
+    // when
+    String errorMessage =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute(String.class, 400);
+
+    // then
+    assertThat(errorMessage.contains("Your license has expired."), is(true));
   }
 
   private String readFileToString(String filePath) throws IOException, URISyntaxException {

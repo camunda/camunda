@@ -9,7 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
-import org.camunda.bpm.licensecheck.OptimizeLicenseKey;
+import org.camunda.bpm.licensecheck.LicenseKeyImpl;
+import org.camunda.bpm.licensecheck.LicenseType;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -31,6 +32,8 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
+import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.index.LicenseIndex.LICENSE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_INDEX_NAME;
@@ -47,8 +50,8 @@ public class LicenseManager {
 
   private final OptimizeElasticsearchClient esClient;
 
-  private LicenseKey licenseKey = new OptimizeLicenseKey();
   private String optimizeLicense;
+  Map<String, String> requiredUnifiedKeyMap = Collections.singletonMap("optimize", "true");
 
   @PostConstruct
   public void init() {
@@ -158,8 +161,13 @@ public class LicenseManager {
     if (licenseAsString == null) {
       throw new InvalidLicenseException("Could not validate given license. Please try to provide another license!");
     }
-    licenseKey.createLicenseKey(licenseAsString);
-    licenseKey.validate();
+    LicenseKey licenseKey = new LicenseKeyImpl(licenseAsString);
+    // check that the license key is a legacy key
+    if (licenseKey.getLicenseType() == LicenseType.OPTIMIZE) {
+      licenseKey.validate();
+    } else {
+      licenseKey.validate(requiredUnifiedKeyMap);
+    }
     return licenseKeyToDto(licenseKey);
   }
 
