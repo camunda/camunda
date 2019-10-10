@@ -1,0 +1,19 @@
+--------------- BEGIN CAMUNDA FAKE KEY ---------------
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedr
+redactedredactedredactedredactedredactedredactedredactedre
+customer = Testaccount Camunda;
+expiryDate = unlimited;
+camundaBPM = true;
+optimize = true;
+cawemo = true;
+--------------- END CAMUNDA LICENSE KEY ---------------
