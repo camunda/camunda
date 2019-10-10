@@ -181,7 +181,7 @@ public class AuthenticationExtractorPluginIT {
     // when
     Response response = embeddedOptimizeRule.getRequestExecutor()
       .buildGetAllAlertsRequest()
-      .withoutAuthentication()
+      .withGivenAuthToken("wrong token")
       .execute();
 
     // then

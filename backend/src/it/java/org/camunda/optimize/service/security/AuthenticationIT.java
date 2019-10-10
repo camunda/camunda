@@ -21,6 +21,7 @@ import static org.camunda.optimize.service.security.AuthCookieService.AUTH_COOKI
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.junit.Assert.assertThat;
 
 
@@ -137,6 +138,38 @@ public class AuthenticationIT {
 
     //then
     assertThat(logoutResponse.getStatus(), is(401));
+  }
+
+  @Test
+  public void deleteCookiesIfInvalidToken() {
+    addAdminUserAndGrantAccessPermission();
+    authenticateAdminUser();
+    Algorithm algorithm = Algorithm.HMAC256("secret");
+    String selfGeneratedEvilToken = JWT.create()
+      .withIssuer("admin")
+      .sign(algorithm);
+
+    //when
+    Response logoutResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withGivenAuthToken(selfGeneratedEvilToken)
+        .execute();
+
+    assertThat(logoutResponse.getHeaders().get("Set-Cookie").get(0).toString().contains("delete cookie"), is(true));
+  }
+
+  @Test
+  public void dontDeleteCookiesIfNoToken() {
+    Response logoutResponse =
+      embeddedOptimizeRule
+        .getRequestExecutor()
+        .buildLogOutRequest()
+        .withoutAuthentication()
+        .execute();
+
+    assertThat(logoutResponse.getHeaders().get("Set-Cookie"), is(nullValue()));
   }
 
   private String authenticateAdminUser() {

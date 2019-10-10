@@ -82,6 +82,10 @@ public class SessionService implements ConfigurationReloadable {
       .orElse(false);
   }
 
+  public boolean isTokenPresent(ContainerRequestContext requestContext) {
+    return AuthCookieService.getToken(requestContext).isPresent();
+  }
+
   private boolean isValidAuthToken(String token) {
     boolean isValid = false;
 

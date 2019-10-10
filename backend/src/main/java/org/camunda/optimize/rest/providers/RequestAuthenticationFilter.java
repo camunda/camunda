@@ -49,6 +49,7 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
       if (!sessionService.hasValidSession(requestContext)) {
         handleInvalidToken(requestContext);
       }
+
     } catch (Exception e) {
       logger.debug("Error during issuing of security token!", e);
       handleInvalidToken(requestContext);
@@ -65,9 +66,12 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
     if (isCSVRequest(path)) {
       redirectToLoginPage(requestContext);
     } else {
+      Response.ResponseBuilder responseBuilder = Response.status(Response.Status.UNAUTHORIZED);
+      if (sessionService.isTokenPresent(requestContext)) {
+        responseBuilder.cookie(authCookieService.createDeleteOptimizeAuthCookie());
+      }
       requestContext.abortWith(
-        Response.status(Response.Status.UNAUTHORIZED)
-          .cookie(authCookieService.createDeleteOptimizeAuthCookie())
+        responseBuilder
           .build()
       );
     }
