@@ -4601,10 +4601,10 @@ enzyme-adapter-utils@^1.12.0:
     prop-types "^15.7.2"
     semver "^5.6.0"
 
-enzyme-matchers@^7.1.0:
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/enzyme-matchers/-/enzyme-matchers-7.1.0.tgz#7224298028679af41d224fdff02b9a9a61f2ad86"
-  integrity sha512-PCfIvyNnZh4ougBaMXKeqNrN6yilzkbtphpi2X74uFeqbPabDUcvNq30Bcw29sSIv7QI1ZCTlQ2ktGep/4jIBw==
+enzyme-matchers@^7.1.1:
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/enzyme-matchers/-/enzyme-matchers-7.1.1.tgz#d1210ce0bd55b55d61af1ff72777bd8b1fa5176e"
+  integrity sha512-fw/FxwpEg6n1KYpEHnhA44iFduYHDUVVePXSMmf883q/JDMXb+sIU55maSw2oFWqt9zd7rcGqmSV8sHQO5pReg==
   dependencies:
     circular-json-es6 "^2.0.1"
     deep-equal-ident "^1.1.1"
@@ -6945,10 +6945,10 @@ jest-each@^24.7.1:
     jest-util "^24.7.1"
     pretty-format "^24.7.0"
 
-jest-environment-enzyme@^7.1.0:
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/jest-environment-enzyme/-/jest-environment-enzyme-7.1.0.tgz#1181d174034a2a4d8ba8fd6ba2123f243ccaf7ec"
-  integrity sha512-31nPBYx1MZfihsKUgZg16zLS4+f4gBvo4YpYMU4TIvQ2IjbREU9bLFwAszTgcs5mkE7SNOykm/68OjPmgDd4/Q==
+jest-environment-enzyme@^7.1.1:
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/jest-environment-enzyme/-/jest-environment-enzyme-7.1.1.tgz#d9dd7b6b72ed37d213ba77e05ab7f9062aa62402"
+  integrity sha512-k+QJkK0iRtjWbNfKdtj1QQIs12JbbvPmHW30cSbDoIgOFO7Bd1lLo6qOabM+PdhPCeLWQ1D1ZoTrHPauXdYpzA==
   dependencies:
     jest-environment-jsdom "^24.0.0"
 
@@ -6981,14 +6981,14 @@ jest-environment-node@^24.7.1:
     jest-mock "^24.7.0"
     jest-util "^24.7.1"
 
-jest-enzyme@^7.1.0:
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/jest-enzyme/-/jest-enzyme-7.1.0.tgz#4345e989382a6cd70c15c7225dad9c9a9bb79cbc"
-  integrity sha512-ukL9jFwvQ3xbzhoKniDVTkAgZzGCFJNeJVU058RyY0R46fVhjJlPEV/hYlmJl518qfCmKNW6zXgtmyPcaDgxhA==
+jest-enzyme@^7.1.1:
+  version "7.1.1"
+  resolved "https://registry.yarnpkg.com/jest-enzyme/-/jest-enzyme-7.1.1.tgz#7684720b795636503c7660e8c6f70bd644a485fd"
+  integrity sha512-ujMi/2OF16rsjsS2ozdZCukfRZGC/Sb3MoJjINXITTvZM6lTL14lDliJr1kYIlUZVrphw0fmZkTNVTP7DnJ+Xw==
   dependencies:
-    enzyme-matchers "^7.1.0"
+    enzyme-matchers "^7.1.1"
     enzyme-to-json "^3.3.0"
-    jest-environment-enzyme "^7.1.0"
+    jest-environment-enzyme "^7.1.1"
 
 jest-get-type@^24.3.0:
   version "24.3.0"
