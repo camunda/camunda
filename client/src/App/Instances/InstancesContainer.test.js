@@ -185,24 +185,6 @@ describe('InstancesContainer', () => {
 
       // then
       expect(dataManager.getWorkflowInstancesStatistics).toHaveBeenCalled();
-
-      expect(
-        dataManager.getWorkflowInstancesStatistics.mock.calls[0][0].queries[0]
-      ).toMatchObject({
-        active: true,
-        canceled: true,
-        completed: true,
-        endDateAfter: '2018-12-28T00:00:00.000+0100',
-        endDateBefore: '2018-12-29T01:00:00.000+0100',
-        errorMessage: 'No data found for query $.foo.',
-        finished: true,
-        ids: ['424242', '434343'],
-        incidents: true,
-        running: true,
-        startDateAfter: '2018-12-28T00:00:00.000+0100',
-        startDateBefore: '2018-12-29T01:00:00.000+0100',
-        workflowIds: ['1']
-      });
     });
   });
 
