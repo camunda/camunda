@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -37,6 +38,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
 
   private static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
   private static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
+  private static final int EXPECTED_NUMBER_OF_REPORTS = 2;
 
   @Before
   @Override
@@ -66,10 +68,25 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
-    assertThat(allProcessReports.size(), is(1));
+    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
     assertTrue(allProcessReports.get(0).getData().getConfiguration().getSorting().isPresent());
     assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(), is("key"));
     assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().get().getOrder().get(), is(SortOrder.ASC));
+  }
+
+  @Test
+  public void processReportsHaveNoneSortParam() {
+    //given
+    final UpgradePlan upgradePlan = new UpgradeFrom26To27().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    List<SingleProcessReportDefinitionDto> allProcessReports =
+      getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
+    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+    assertFalse(allProcessReports.get(1).getData().getConfiguration().getSorting().isPresent());
   }
 
   @Test
@@ -83,7 +100,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
-    assertThat(allProcessReports.size(), is(1));
+    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
     assertTrue(allProcessReports.get(0).getData().getConfiguration().getProcessPart().isPresent());
     assertThat(
       allProcessReports.get(0).getData().getConfiguration().getProcessPart().get().getStart(),
@@ -93,6 +110,21 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
       allProcessReports.get(0).getData().getConfiguration().getProcessPart().get().getEnd(),
       is("approveInvoice")
     );
+  }
+
+  @Test
+  public void processReportsHaveNoneProcessPartParam() {
+    //given
+    final UpgradePlan upgradePlan = new UpgradeFrom26To27().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    List<SingleProcessReportDefinitionDto> allProcessReports =
+      getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
+    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+    assertFalse(allProcessReports.get(1).getData().getConfiguration().getProcessPart().isPresent());
   }
 
   @Test
@@ -106,13 +138,28 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleDecisionReportDefinitionDto> allDecisionReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
-    assertThat(allDecisionReports.size(), is(1));
+    assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
     assertTrue(allDecisionReports.get(0).getData().getConfiguration().getSorting().isPresent());
     assertThat(
       allDecisionReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(),
       is("evaluationDateTime")
     );
     assertThat(allDecisionReports.get(0).getData().getConfiguration().getSorting().get().getOrder().get(), is(SortOrder.ASC));
+  }
+
+  @Test
+  public void decisionReportsHaveNoneSortParam() {
+    //given
+    final UpgradePlan upgradePlan = new UpgradeFrom26To27().buildUpgradePlan();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    List<SingleDecisionReportDefinitionDto> allDecisionReports =
+      getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
+    assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+    assertFalse(allDecisionReports.get(1).getData().getConfiguration().getSorting().isPresent());
   }
 
   @SneakyThrows

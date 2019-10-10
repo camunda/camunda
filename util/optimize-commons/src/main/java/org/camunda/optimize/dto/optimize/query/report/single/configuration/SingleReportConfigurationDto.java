@@ -65,6 +65,9 @@ public class SingleReportConfigurationDto implements Combinable {
     if (isUserTaskCommand(viewDto) && isGroupByAssigneeOrCandidateGroup(groupByDto)) {
       configsToConsiderForCommand.add(this.distributedBy.getId());
     }
+    if (getProcessPart().isPresent()) {
+      configsToConsiderForCommand.add(getProcessPart().get().createCommandKey());
+    }
     return String.join("-", configsToConsiderForCommand);
   }
 

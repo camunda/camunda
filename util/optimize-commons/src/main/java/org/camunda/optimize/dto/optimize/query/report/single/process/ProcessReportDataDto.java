@@ -60,13 +60,10 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   public String createCommandKey() {
     String viewCommandKey = view == null ? "null" : view.createCommandKey();
     String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
-    String processPartCommandKey = getConfiguration().getProcessPart().isPresent() ? getConfiguration().getProcessPart()
-      .get()
-      .createCommandKey() : null;
     String configurationCommandKey = Optional.ofNullable(getConfiguration())
       .map(c -> c.createCommandKey(getView(), getGroupBy()))
       .orElse("null");
-    return viewCommandKey + "_" + groupByCommandKey + "_" + processPartCommandKey + "_" + configurationCommandKey;
+    return viewCommandKey + "_" + groupByCommandKey + "_" + configurationCommandKey;
   }
 
   @Override
