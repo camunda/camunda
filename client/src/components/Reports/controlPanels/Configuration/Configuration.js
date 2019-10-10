@@ -87,18 +87,25 @@ export default class Configuration extends React.Component {
     this.props.onChange({configuration: change}, needsReevaluation);
   };
 
+  isResultAvailable = ({result, combined}) => {
+    return result && combined ? Object.keys(result.data).length > 0 : result;
+  };
+
   render() {
     const {report, type, onChange} = this.props;
     const Component = visualizations[type];
 
-    const disabledComponent = Component && Component.isDisabled && Component.isDisabled(report);
+    const enablePopover =
+      Component &&
+      this.isResultAvailable(report) &&
+      (!Component.isDisabled || !Component.isDisabled(report));
 
     return (
       <li className="Configuration">
         <Popover
           tooltip={t('report.config.buttonTooltip')}
           title={<Icon type="settings" />}
-          disabled={!type || disabledComponent}
+          disabled={!enablePopover}
         >
           <Form className="content" compact>
             {!report.combined && (

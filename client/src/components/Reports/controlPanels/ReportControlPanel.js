@@ -128,6 +128,7 @@ export default class ReportControlPanel extends React.Component {
 
   render() {
     const {data} = this.props.report;
+
     return (
       <div className="ReportControlPanel">
         <ul>
