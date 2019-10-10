@@ -14,3 +14,8 @@ export const topicBar = MOCK_TOPICS.FETCH_STATE_BAR;
 
 export const callbackMockOne = jest.fn();
 export const callbackMockTwo = jest.fn();
+
+export const mockApiData = {
+  success: {data: ['someData', 'someMoreData'], error: null},
+  error: {data: [], error: 'fetchError'}
+};

@@ -32,21 +32,14 @@ describe('DataManager', () => {
   let publishSpy;
   let subscribeSpy;
   let unsubscribeSpy;
-  let cacheSetSpy;
-  let cachegetEndpointsbyNamesSpy;
-  let cacheGetEndpointNames;
+  let pubLoadingStatesSpy;
 
   beforeEach(() => {
     dataManager = new DataManager();
     publishSpy = jest.spyOn(dataManager.publisher, 'publish');
     subscribeSpy = jest.spyOn(dataManager.publisher, 'subscribe');
     unsubscribeSpy = jest.spyOn(dataManager.publisher, 'unsubscribe');
-    cacheSetSpy = jest.spyOn(dataManager.cache, 'set');
-    cachegetEndpointsbyNamesSpy = jest.spyOn(
-      dataManager.cache,
-      'getEndpointsbyNames'
-    );
-    cacheGetEndpointNames = jest.spyOn(dataManager.cache, 'getEndpointNames');
+    pubLoadingStatesSpy = jest.spyOn(dataManager.publisher, 'pubLoadingStates');
   });
 
   describe('Publisher interface', () => {
@@ -60,108 +53,15 @@ describe('DataManager', () => {
     });
   });
 
-  describe('cache request parameter', () => {
-    it('should set params in cache and pass through', () => {
-      const name = '';
-      const params = {};
-      const apiCall = '';
-      const cachedParams = dataManager._updateRequestCache(
-        name,
-        apiCall,
-        params
-      );
-
-      expect(cacheSetSpy.mock.calls[0][0]).toEqual(name, {params, apiCall});
-      expect(cachedParams).toEqual(params);
-    });
-
-    it('should retrieve params from cache', () => {
-      //given
-      const name = 'NAME';
-      const apiCall = 'apicallFunctionName';
-
-      dataManager._updateRequestCache(name, apiCall);
-      expect(cachegetEndpointsbyNamesSpy.mock.calls[0][0]).toEqual([name]);
-    });
-
-    it('should return all cached endpoint names', () => {
-      //when
-      dataManager.getCachedRequestNames();
-
-      //then
-      expect(cacheGetEndpointNames).toHaveBeenCalled();
-    });
-  });
-
-  describe('publish loading states', () => {
-    it('should publish the LOADING state before the request is made', async () => {
-      //given
-      const topic = MOCK_TOPICS.FETCH_STATE_FOO;
-      const callback = jest.fn();
-
-      dataManager.subscribe({[topic]: callback});
-      await dataManager._pubLoadingStates(topic, mockApi.success);
-
-      expect(callback.mock.calls[0][0]).toEqual({
-        state: LOADING_STATE.LOADING
-      });
-    });
-
-    it('should publish the LOADED state after a successful request', async () => {
-      //given
-      const topic = MOCK_TOPICS.FETCH_STATE_FOO;
-      const callback = jest.fn();
-
-      // when
-      dataManager.subscribe({[topic]: callback});
-      await dataManager._pubLoadingStates(topic, mockApi.success);
-
-      // then
-      expect(callback.mock.calls).toEqual([
-        [{state: LOADING_STATE.LOADING}],
-        [
-          {
-            state: LOADING_STATE.LOADED,
-            response: mockApiData.success
-          }
-        ]
-      ]);
-    });
-
-    it('should publish the ERROR state after a unsuccessful request', async () => {
-      //given
-      const topic = MOCK_TOPICS.FETCH_STATE_FOO;
-      const callback = jest.fn();
-
-      // when
-      dataManager.subscribe({[topic]: callback});
-      await dataManager._pubLoadingStates(topic, mockApi.error);
-
-      // then
-      expect(callback.mock.calls).toEqual([
-        [{state: LOADING_STATE.LOADING}],
-        [
-          {
-            state: LOADING_STATE.LOAD_FAILED,
-            response: mockApiData.error
-          }
-        ]
-      ]);
-    });
-  });
-
   describe('API calls', () => {
-    beforeEach(() => {
-      dataManager._pubLoadingStates = jest.fn();
-      dataManager._pubLoadingStates.mockClear();
-    });
+    beforeEach(() => {});
 
     describe('fetch core statistics', () => {
       it('should publish loading stats to topic', () => {
         // when
         dataManager.getWorkflowCoreStatistics(mockParams);
 
-        expect(dataManager._pubLoadingStates.mock.calls[0][0]).toBe(
+        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
           SUBSCRIPTION_TOPIC.LOAD_CORE_STATS
         );
       });
@@ -171,7 +71,7 @@ describe('DataManager', () => {
         // when
         dataManager.getWorkflowInstances(mockParams);
 
-        expect(dataManager._pubLoadingStates.mock.calls[0][0]).toBe(
+        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
           SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES
         );
       });
@@ -182,7 +82,7 @@ describe('DataManager', () => {
         dataManager.getWorkflowInstancesStatistics(mockParams);
 
         // then
-        expect(dataManager._pubLoadingStates.mock.calls[0][0]).toBe(
+        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
           SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS
         );
       });
@@ -193,7 +93,7 @@ describe('DataManager', () => {
         dataManager.getWorkflowXML(mockParams);
 
         // then
-        expect(dataManager._pubLoadingStates.mock.calls[0][0]).toBe(
+        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
           SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
         );
       });
@@ -212,7 +112,6 @@ describe('DataManager', () => {
         });
       });
     });
-
     describe('fetch workflow instances by Ids', () => {
       it('should publish loading states to topic', () => {
         //given
@@ -222,9 +121,7 @@ describe('DataManager', () => {
         dataManager.getWorkflowInstancesByIds(mockParams, customTopic);
 
         // then
-        expect(dataManager._pubLoadingStates.mock.calls[0][0]).toBe(
-          customTopic
-        );
+        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(customTopic);
       });
     });
   });

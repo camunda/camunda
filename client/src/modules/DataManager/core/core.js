@@ -30,7 +30,7 @@ const {
 export class DataManager {
   constructor() {
     this.poll = new Poll(5000);
-    this.publisher = new Publisher(SUBSCRIPTION_TOPIC);
+    this.publisher = new Publisher(SUBSCRIPTION_TOPIC, LOADING_STATE);
     this.cache = new RequestCache();
   }
 
@@ -43,38 +43,6 @@ export class DataManager {
     this.publisher.unsubscribe(subscriptions);
   }
 
-  _updateRequestCache(name, apiCall, params) {
-    if (!params) {
-      // Required when single DM 'get' methods are called without the params required to do the api request.
-      //In this case the last used once are used again.
-      return this.cache.getEndpointsbyNames([name]).params;
-    } else {
-      this.cache.set(name, {
-        params,
-        apiCall
-      });
-      return params;
-    }
-  }
-
-  async _pubLoadingStates(topic, callback) {
-    this.publisher.publish(topic, {state: LOADING_STATE.LOADING});
-
-    const response = await callback();
-
-    if (response.error) {
-      this.publisher.publish(topic, {
-        state: LOADING_STATE.LOAD_FAILED,
-        response
-      });
-    } else {
-      this.publisher.publish(topic, {
-        state: LOADING_STATE.LOADED,
-        response
-      });
-    }
-  }
-
   /** Wrapped API calls */
 
   async getWorkflowCoreStatistics() {
@@ -82,35 +50,35 @@ export class DataManager {
       params: {},
       apiCall: fetchWorkflowCoreStatistics
     });
-    this._pubLoadingStates(LOAD_CORE_STATS, () =>
+    this.publisher.pubLoadingStates(LOAD_CORE_STATS, () =>
       fetchWorkflowCoreStatistics()
     );
   }
 
   async getWorkflowInstances(params) {
-    const cachedParams = this._updateRequestCache(
+    const cachedParams = this.cache.update(
       LOAD_LIST_INSTANCES,
       fetchWorkflowInstances,
       params
     );
-    this._pubLoadingStates(LOAD_LIST_INSTANCES, () =>
+    this.publisher.pubLoadingStates(LOAD_LIST_INSTANCES, () =>
       fetchWorkflowInstances(cachedParams)
     );
   }
 
   async getWorkflowInstancesStatistics(params) {
-    const cachedParams = this._updateRequestCache(
+    const cachedParams = this.cache.update(
       LOAD_STATE_STATISTICS,
       fetchWorkflowInstancesStatistics,
       params
     );
-    this._pubLoadingStates(LOAD_STATE_STATISTICS, () =>
+    this.publisher.pubLoadingStates(LOAD_STATE_STATISTICS, () =>
       fetchWorkflowInstancesStatistics(cachedParams)
     );
   }
 
   async getWorkflowInstancesBySelection(params, topic, selectionId) {
-    const cachedParams = this._updateRequestCache(
+    const cachedParams = this.cache.update(
       'workflowInstancesBySelection',
       fetchWorkflowInstancesBySelection,
       params
@@ -138,37 +106,30 @@ export class DataManager {
       return await parseDiagramXML(xml);
     };
 
-    const cachedParams = this._updateRequestCache(
+    const cachedParams = this.cache.update(
       LOAD_STATE_DEFINITIONS,
       fetchDiagramModel,
       params
     );
 
-    this._pubLoadingStates(LOAD_STATE_DEFINITIONS, () =>
+    this.publisher.pubLoadingStates(LOAD_STATE_DEFINITIONS, () =>
       fetchDiagramModel(cachedParams)
     );
   }
 
   async getWorkflowInstancesByIds(params, topic) {
-    const cachedParams = this._updateRequestCache(
+    const cachedParams = this.cache.update(
       topic,
       fetchWorkflowInstancesByIds,
       params
     );
 
-    this._pubLoadingStates(topic, () =>
+    this.publisher.pubLoadingStates(topic, () =>
       fetchWorkflowInstancesByIds(cachedParams)
     );
   }
 
   /** Update Data */
-
-  // Retruns the names of all api requests which have been executed before, so they can be called again.
-  getCachedRequestNames() {
-    return this.cache.getEndpointNames().reduce((acc, name) => {
-      return {...acc, [name]: name};
-    }, {});
-  }
 
   // fetches the data again for all passed endpoints and publishes loading states and result to passed topic
   async update({endpoints, topic, staticData}) {

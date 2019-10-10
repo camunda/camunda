@@ -17,9 +17,12 @@ import {
 
 describe('Cache', () => {
   let cache;
-
+  let cacheSetSpy;
+  let cachegetEndpointsbyNamesSpy;
   beforeEach(() => {
     cache = new RequestCache();
+    cacheSetSpy = jest.spyOn(cache, 'set');
+    cachegetEndpointsbyNamesSpy = jest.spyOn(cache, 'getEndpointsbyNames');
   });
 
   it('should allow to cache request details by name', () => {
@@ -39,11 +42,23 @@ describe('Cache', () => {
     expect(cache.cache[requestName]).toMatchObject(newRequestDetails);
   });
 
-  it('should allow to get all keys of cached details', () => {
-    cache.set(requests[0].name, requests[0].details);
-    cache.set(requests[1].name, requests[1].details);
+  it('should set params in cache and pass through', () => {
+    const name = '';
+    const params = {};
+    const apiCall = '';
+    const cachedParams = cache.update(name, apiCall, params);
 
-    expect(cache.getEndpointNames()).toMatchObject(requestNames);
+    expect(cacheSetSpy.mock.calls[0][0]).toEqual(name, {params, apiCall});
+    expect(cachedParams).toEqual(params);
+  });
+
+  it('should retrieve params from cache', () => {
+    //given
+    const name = 'NAME';
+    const apiCall = 'apicallFunctionName';
+
+    cache.update(name, apiCall);
+    expect(cachegetEndpointsbyNamesSpy.mock.calls[0][0]).toEqual([name]);
   });
 
   it('should get cached details by key', () => {

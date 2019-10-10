@@ -14,8 +14,18 @@ export default class RequestCache {
     this.cache = {...this.cache, [name]: {params, apiCall}};
   }
 
-  getEndpointNames() {
-    return Object.keys(this.cache);
+  update(name, apiCall, params) {
+    if (!params) {
+      // Required when single DM 'get' methods are called without the params required to do the api request.
+      //In this case the last used once are used again.
+      return this.getEndpointsbyNames([name]).params;
+    } else {
+      this.set(name, {
+        params,
+        apiCall
+      });
+      return params;
+    }
   }
 
   getEndpointsbyNames(names = []) {

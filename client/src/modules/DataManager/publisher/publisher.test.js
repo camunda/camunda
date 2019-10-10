@@ -11,14 +11,23 @@ import {
   topicFoo,
   topicBar,
   callbackMockOne,
-  callbackMockTwo
+  callbackMockTwo,
+  mockApiData
 } from './publisher.setup';
+import {LOADING_STATE} from 'modules/constants';
+
+const mockApi = {
+  success: jest.fn(() => Promise.resolve(mockApiData.success)),
+  error: jest.fn(() => Promise.resolve(mockApiData.error))
+};
 
 describe('Publisher', () => {
   let publisher;
+  let pubLoadingStatesSpy;
 
   beforeEach(() => {
-    publisher = new Publisher(MOCK_TOPICS);
+    publisher = new Publisher(MOCK_TOPICS, LOADING_STATE);
+    pubLoadingStatesSpy = jest.spyOn(publisher, 'pubLoadingStates');
   });
 
   describe('subscribe', () => {
@@ -103,6 +112,63 @@ describe('Publisher', () => {
 
       // then
       expect(publisher.subscriptions).toEqual({[topicFoo]: [callbackMockTwo]});
+    });
+  });
+
+  describe('publish loading states', () => {
+    it('should publish the LOADING state before the request is made', async () => {
+      //given
+      const topic = MOCK_TOPICS.FETCH_STATE_FOO;
+      const callback = jest.fn();
+
+      publisher.subscribe({[topic]: callback});
+      await publisher.pubLoadingStates(topic, mockApi.success);
+
+      expect(callback.mock.calls[0][0]).toEqual({
+        state: LOADING_STATE.LOADING
+      });
+    });
+
+    it('should publish the LOADED state after a successful request', async () => {
+      //given
+      const topic = MOCK_TOPICS.FETCH_STATE_FOO;
+      const callback = jest.fn();
+
+      // when
+      publisher.subscribe({[topic]: callback});
+      await publisher.pubLoadingStates(topic, mockApi.success);
+
+      // then
+      expect(callback.mock.calls).toEqual([
+        [{state: LOADING_STATE.LOADING}],
+        [
+          {
+            state: LOADING_STATE.LOADED,
+            response: mockApiData.success
+          }
+        ]
+      ]);
+    });
+
+    it('should publish the ERROR state after a unsuccessful request', async () => {
+      //given
+      const topic = MOCK_TOPICS.FETCH_STATE_FOO;
+      const callback = jest.fn();
+
+      // when
+      publisher.subscribe({[topic]: callback});
+      await publisher.pubLoadingStates(topic, mockApi.error);
+
+      // then
+      expect(callback.mock.calls).toEqual([
+        [{state: LOADING_STATE.LOADING}],
+        [
+          {
+            state: LOADING_STATE.LOAD_FAILED,
+            response: mockApiData.error
+          }
+        ]
+      ]);
     });
   });
 

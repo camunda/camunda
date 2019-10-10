@@ -5,9 +5,10 @@
  */
 
 export default class Publisher {
-  constructor(subscriptionTopics) {
+  constructor(subscriptionTopics, loadingStates) {
     this.subscriptions = {};
     this.registeredTopics = subscriptionTopics;
+    this.loadingStates = loadingStates;
   }
 
   printWarning(topic, action) {
@@ -53,5 +54,23 @@ export default class Publisher {
       this.subscriptions[topic].forEach(handle => {
         handle(value);
       });
+  }
+
+  async pubLoadingStates(topic, callback) {
+    this.publish(topic, {state: this.loadingStates.LOADING});
+
+    const response = await callback();
+
+    if (response.error) {
+      this.publish(topic, {
+        state: this.loadingStates.LOAD_FAILED,
+        response
+      });
+    } else {
+      this.publish(topic, {
+        state: this.loadingStates.LOADED,
+        response
+      });
+    }
   }
 }
