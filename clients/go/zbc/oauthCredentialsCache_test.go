@@ -27,7 +27,7 @@ type oauthCredsCacheTestSuite struct {
 }
 
 func TestOAuthCredsProviderCacheSuite(t *testing.T) {
-	suite.Run(t, oauthCredsCacheTestSuite{new(envSuite)})
+	suite.Run(t, &oauthCredsCacheTestSuite{new(envSuite)})
 }
 
 const wombatAudience = "wombat.cloud.camunda.io"

@@ -41,6 +41,10 @@ required = [
   name = "github.com/golang/mock"
   version = ">=1.3.1"
 
+[[override]]
+  name = "github.com/docker/docker"
+  branch = "master"
+
 [prune]
   go-tests = true
   unused-packages = true

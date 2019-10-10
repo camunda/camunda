@@ -33,7 +33,7 @@ type clientTestSuite struct {
 }
 
 func TestClientSuite(t *testing.T) {
-	suite.Run(t, clientTestSuite{envSuite: new(envSuite)})
+	suite.Run(t, &clientTestSuite{envSuite: new(envSuite)})
 }
 
 func (s *clientTestSuite) TestNewZBClientWithTls() {
