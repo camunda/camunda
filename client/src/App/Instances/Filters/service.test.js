@@ -7,7 +7,8 @@
 import {
   checkIsDateComplete,
   sanitizeFilter,
-  checkIsVariableComplete
+  checkIsVariableComplete,
+  checkIsIdComplete
 } from './service';
 import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 
@@ -74,6 +75,58 @@ describe('Filters/service', () => {
     it('should not be complete, if only value is empty', () => {
       const variable = {name: 'fancyName', value: ''};
       expect(checkIsVariableComplete(variable)).toBe(false);
+    });
+  });
+
+  describe.only('checkIsIdComplete', () => {
+    it('should be complete on only white spaces', () => {
+      expect(checkIsIdComplete('')).toBe(true);
+      expect(checkIsIdComplete('      ')).toBe(true);
+      expect(checkIsIdComplete('\r\n')).toBe(true);
+    });
+
+    it('should be complete on 16 digit ids', () => {
+      expect(checkIsIdComplete('1234039287523094')).toBe(true);
+      expect(checkIsIdComplete('1234039287523094, 1234039287523095')).toBe(
+        true
+      );
+    });
+
+    it('should be complete on 16-19 digit ids', () => {
+      expect(checkIsIdComplete('12340392875230941')).toBe(true);
+      expect(checkIsIdComplete('12340392875230941, 12340392875230942')).toBe(
+        true
+      );
+      expect(checkIsIdComplete('12340392875230941 12340392875230942')).toBe(
+        true
+      );
+    });
+
+    it('should be complete when containing white spaces', () => {
+      expect(
+        checkIsIdComplete('1234039287523094,        1234039287523095')
+      ).toBe(true);
+      expect(checkIsIdComplete('    1234039287523094     ')).toBe(true);
+      expect(
+        checkIsIdComplete(`1234039287523094
+
+
+        1234039287523094`)
+      ).toBe(true);
+    });
+
+    it('should be incomplete on <16 digits', () => {
+      expect(checkIsIdComplete('123')).toBe(false);
+      expect(checkIsIdComplete('       123      ')).toBe(false);
+      expect(checkIsIdComplete('1234039287523094, 123')).toBe(false);
+    });
+
+    it('should be incomplete when containing non digit characters', () => {
+      expect(checkIsIdComplete('ABC')).toBe(false);
+      expect(checkIsIdComplete('1234039287523094, ABCABCABCABCABC')).toBe(
+        false
+      );
+      expect(checkIsIdComplete('123123123123123\n')).toBe(false);
     });
   });
 

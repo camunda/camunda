@@ -13,15 +13,19 @@ function ValidationTextInput({
   children,
   onChange,
   checkIsComplete,
+  checkIsValid,
   onFilterChange,
   name,
   value,
   ...props
 }) {
-  const [isIncomplete, setIsIncomplete] = useState(false);
+  const [isComplete, setIsComplete] = useState(true);
+  const [isValid, setIsValid] = useState(true);
 
   useEffect(() => {
-    if (checkIsComplete(value)) setIsIncomplete(false);
+    setIsValid(checkIsValid(value));
+
+    if (checkIsComplete(value)) setIsComplete(true);
   }, [value]);
 
   const handleChange = async event => {
@@ -32,14 +36,14 @@ function ValidationTextInput({
     await onFilterChange();
 
     if (!checkIsComplete(value)) {
-      setIsIncomplete(true);
+      setIsComplete(false);
     }
   };
 
   const handleBlur = event => {
     const {value} = event.target;
     if (!checkIsComplete(value)) {
-      setIsIncomplete(true);
+      setIsComplete(false);
     }
   };
 
@@ -52,10 +56,10 @@ function ValidationTextInput({
           value,
           onChange: handleChange,
           onBlur: handleBlur,
-          hasError: isIncomplete
+          hasError: !isValid || !isComplete
         })
       )}
-      {isIncomplete && <Styled.WarningIcon>!</Styled.WarningIcon>}
+      {(!isComplete || !isValid) && <Styled.WarningIcon>!</Styled.WarningIcon>}
     </Styled.InputContainer>
   );
 }
@@ -63,6 +67,7 @@ function ValidationTextInput({
 ValidationTextInput.propTypes = {
   onChange: PropTypes.func.isRequired,
   checkIsComplete: PropTypes.func,
+  checkIsValid: PropTypes.func,
   onFilterChange: PropTypes.func,
   name: PropTypes.string,
   value: PropTypes.string,
@@ -71,6 +76,7 @@ ValidationTextInput.propTypes = {
 
 ValidationTextInput.defaultProps = {
   checkIsComplete: () => true,
+  checkIsValid: () => true,
   onFilterChange: () => {}
 };
 

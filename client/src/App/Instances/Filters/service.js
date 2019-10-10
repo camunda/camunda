@@ -78,6 +78,36 @@ export function checkIsVariableValueValid(variable) {
   return true;
 }
 
+function checkIsSingleIdValid(id) {
+  return Boolean(id.match(/^\d{0,19}$/));
+}
+
+export function checkIsIdValid(id) {
+  const hasInvalidCharacter = !Boolean(id.match(/^[\d,\s]*$/));
+
+  if (hasInvalidCharacter) {
+    return false;
+  }
+
+  const hasInvalidIds = id.split(/[,\s]/).some(id => {
+    return !checkIsSingleIdValid(id.trim());
+  });
+
+  return !hasInvalidIds;
+}
+
+function checkIsSingleIdComplete(id) {
+  return id === '' || Boolean(id.match(/^\d{16,}$/));
+}
+
+export function checkIsIdComplete(id) {
+  const hasIncompleteIds = id.split(/[,\s]/).some(id => {
+    return !checkIsSingleIdComplete(id.trim());
+  });
+
+  return checkIsIdValid(id) && !hasIncompleteIds;
+}
+
 function sanitizeVariable(variable) {
   if (!variable) return;
   if (
@@ -95,11 +125,16 @@ function sanitizeDate(date) {
   return checkIsDateComplete(date) || date === '' ? date : '';
 }
 
+function sanitizeIds(ids) {
+  return checkIsIdComplete(ids) ? ids : '';
+}
+
 export function sanitizeFilter(filter) {
-  const {variable, startDate, endDate} = filter;
+  const {variable, startDate, endDate, ids} = filter;
 
   return compactObject({
     ...filter,
+    ids: sanitizeIds(ids),
     variable: sanitizeVariable(variable),
     startDate: sanitizeDate(startDate),
     endDate: sanitizeDate(endDate)

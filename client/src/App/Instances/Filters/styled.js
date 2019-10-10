@@ -6,7 +6,7 @@
 
 import styled, {css} from 'styled-components';
 
-import {themed, themeStyle} from 'modules/theme';
+import {themed, themeStyle, Colors} from 'modules/theme';
 import Panel from 'modules/components/Panel';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import BasicCollapseButton from 'modules/components/CollapseButton';
@@ -77,6 +77,15 @@ export const Textarea = styled(BasicTextarea)`
   max-height: 100px;
 
   resize: vertical;
+
+  ${props => props.hasError && `border-color: ${Colors.incidentsAndErrors};`}
+
+  &:focus {
+    ${props =>
+      props.hasError &&
+      `box-shadow: 0 0 0 4px #ffafaf, 0 0 0 1px 
+    ${Colors.incidentsAndErrors};`}
+  }
 `;
 
 export const TextInput = styled(BasicTextInput)`

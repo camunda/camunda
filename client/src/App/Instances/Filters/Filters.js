@@ -30,6 +30,8 @@ import {
   checkIsDateComplete,
   checkIsVariableComplete,
   checkIsVariableValueValid,
+  checkIsIdComplete,
+  checkIsIdValid,
   sortAndModify,
   sanitizeFilter
 } from './service';
@@ -130,19 +132,7 @@ export default class Filters extends React.Component {
   };
 
   setFilterFromProps = () => {
-    const {
-      errorMessage,
-      startDate,
-      endDate,
-      variable,
-      // fields that are evaluated immediately will be overwritten by props
-      ...immediateFilter
-    } = this.props.filter;
-
-    const debouncedFilter = {errorMessage, startDate, endDate, variable};
-    const sanitizedDebouncedFilter = sanitizeFilter(debouncedFilter);
-
-    this.setFilterState({...immediateFilter, ...sanitizedDebouncedFilter});
+    this.setFilterState(sanitizeFilter(this.props.filter));
   };
 
   handleWorkflowNameChange = event => {
@@ -258,6 +248,8 @@ export default class Filters extends React.Component {
                       name="ids"
                       placeholder="Instance Id(s) separated by space or comma"
                       onChange={this.handleControlledInputChange}
+                      checkIsComplete={checkIsIdComplete}
+                      checkIsValid={checkIsIdValid}
                       onFilterChange={() =>
                         this.waitForTimer(this.propagateFilter)
                       }

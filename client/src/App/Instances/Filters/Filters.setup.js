@@ -40,7 +40,7 @@ export const mockPropsWithSelectableFlowNodes = {
 
 export const COMPLETE_FILTER = {
   ...createFilter(),
-  ids: 'a, b, c',
+  ids: '0000000000000001, 0000000000000002',
   errorMessage: 'This is an error message',
   startDate: '2018-10-08',
   endDate: '2018-10-10',

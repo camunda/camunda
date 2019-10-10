@@ -282,7 +282,7 @@ describe('Filters', () => {
       jest.useFakeTimers();
 
       // given
-      const target = {name: 'ids', value: '123'};
+      const target = {name: 'ids', value: '0000000000000001'};
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
@@ -351,7 +351,10 @@ describe('Filters', () => {
             <Filters
               groupedWorkflows={workflows}
               {...mockProps}
-              filter={{...DEFAULT_FILTER_CONTROLLED_VALUES, ids: 'a, b, c'}}
+              filter={{
+                ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                ids: '0000000000000001, 0000000000000002'
+              }}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -362,11 +365,11 @@ describe('Filters', () => {
         .filterWhere(n => n.props().name === 'ids');
 
       // then
-      expect(field.props().value).toEqual('a, b, c');
+      expect(field.props().value).toEqual('0000000000000001, 0000000000000002');
     });
 
     it('should call onFilterChange with the right instance ids', () => {
-      const instanceIds = '4294968008,4294972032  4294974064, 4294976280, ,';
+      const instanceIds = '0000000000000001, 0000000000000002';
       // given
       const node = shallow(
         <Filters
