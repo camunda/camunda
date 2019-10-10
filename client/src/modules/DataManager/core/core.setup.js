@@ -4,14 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const MOCK_TOPICS = {
+export const MOCK_TOPICS = {
   FETCH_STATE_FOO: 'FETCH_STATE_FOO',
   FETCH_STATE_BAR: 'FETCH_STATE_BAR'
 };
 
-const mockParams = {};
+export const mockParams = {};
 
-const mockApiData = {
+export const mockApiData = {
   success: {data: ['someData', 'someMoreData'], error: null},
   error: {data: [], error: 'fetchError'}
 };

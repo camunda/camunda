@@ -10,20 +10,8 @@ import {DataManager} from './core';
 
 import * as instancesApi from 'modules/api/instances/instances';
 import * as diagramApi from 'modules/api/diagram/diagram';
-
+import {MOCK_TOPICS, mockParams, mockApiData} from './core.setup';
 jest.mock('modules/utils/bpmn');
-
-const MOCK_TOPICS = {
-  FETCH_STATE_FOO: 'FETCH_STATE_FOO',
-  FETCH_STATE_BAR: 'FETCH_STATE_BAR'
-};
-
-const mockParams = {};
-
-const mockApiData = {
-  success: {data: ['someData', 'someMoreData'], error: null},
-  error: {data: [], error: 'fetchError'}
-};
 
 const mockApi = {
   success: jest.fn(() => Promise.resolve(mockApiData.success)),
