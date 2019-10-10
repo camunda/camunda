@@ -10,20 +10,14 @@ import {shallow} from 'enzyme';
 import WrappedTable from './Table';
 import processRawData from './processRawData';
 
-import {getCamundaEndpoints} from './service';
+import {getWebappEndpoints} from 'config';
 
 jest.mock('./processRawData', () => ({
   process: jest.fn(),
   decision: jest.fn()
 }));
 
-jest.mock('./service', () => {
-  const rest = jest.requireActual('./service');
-  return {
-    ...rest,
-    getCamundaEndpoints: jest.fn().mockReturnValue('camundaEndpoint')
-  };
-});
+jest.mock('config', () => ({getWebappEndpoints: jest.fn()}));
 
 const report = {
   reportType: 'process',
@@ -54,7 +48,7 @@ const props = {
 };
 
 it('should get the camunda endpoints for raw data', () => {
-  getCamundaEndpoints.mockClear();
+  getWebappEndpoints.mockClear();
   shallow(
     <Table
       {...props}
@@ -66,14 +60,14 @@ it('should get the camunda endpoints for raw data', () => {
     />
   );
 
-  expect(getCamundaEndpoints).toHaveBeenCalled();
+  expect(getWebappEndpoints).toHaveBeenCalled();
 });
 
 it('should not get the camunda endpoints for non-raw-data tables', () => {
-  getCamundaEndpoints.mockClear();
+  getWebappEndpoints.mockClear();
   shallow(<Table {...props} report={{...report, result: {data: []}}} />);
 
-  expect(getCamundaEndpoints).not.toHaveBeenCalled();
+  expect(getWebappEndpoints).not.toHaveBeenCalled();
 });
 
 it('should process raw data', async () => {

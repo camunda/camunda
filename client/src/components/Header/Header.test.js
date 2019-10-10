@@ -24,9 +24,11 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
 
-jest.mock('./service', () => ({
-  getUiConfig: jest.fn().mockReturnValue({
-    header: {textColor: 'light', backgroundColor: '#000', logo: 'url'}
+jest.mock('config', () => ({
+  getHeader: jest.fn().mockReturnValue({
+    textColor: 'light',
+    backgroundColor: '#000',
+    logo: 'url'
   })
 }));
 

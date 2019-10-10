@@ -11,7 +11,7 @@ import {Logo} from 'components';
 import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
 import {t} from 'translation';
-import {getUiConfig} from './service';
+import {getHeader} from 'config';
 import classnames from 'classnames';
 import {withErrorHandling} from 'HOC';
 import {addNotification} from 'notifications';
@@ -20,12 +20,12 @@ import './Header.scss';
 
 class Header extends React.Component {
   state = {
-    config: {header: {}}
+    config: {}
   };
 
   async componentDidMount() {
     this.props.mightFail(
-      getUiConfig(),
+      getHeader(),
       config => this.setState({config}),
       () => addNotification({type: 'error', text: t('navigation.configLoadingError')})
     );
@@ -33,18 +33,16 @@ class Header extends React.Component {
 
   render() {
     const {name, location} = this.props;
-    const {
-      config: {header}
-    } = this.state;
+    const {config} = this.state;
 
     return (
       <header
-        style={{backgroundColor: header.backgroundColor}}
+        style={{backgroundColor: config.backgroundColor}}
         role="banner"
-        className={classnames('Header', {['text-' + header.textColor]: header.textColor})}
+        className={classnames('Header', {['text-' + config.textColor]: config.textColor})}
       >
         <Link to="/" replace={location.pathname === '/'} className="Header__link" title={name}>
-          <Logo src={header.logo} className="Header__logo" />
+          <Logo src={config.logo} className="Header__logo" />
           <span>{name}</span>
         </Link>
         <HeaderNav>

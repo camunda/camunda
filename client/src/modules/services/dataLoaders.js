@@ -6,13 +6,6 @@
 
 import {get, post} from 'request';
 
-export async function getOptimizeVersion() {
-  const response = await get('api/meta/version');
-
-  const payload = await response.json();
-  return payload.optimizeVersion;
-}
-
 export async function getFlowNodeNames(processDefinitionKey, processDefinitionVersion, tenantId) {
   if (processDefinitionKey && processDefinitionVersion) {
     const payload = {

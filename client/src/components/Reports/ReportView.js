@@ -9,8 +9,9 @@ import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
 import {Button, ShareEntity, ReportRenderer, Popover, Icon, ConfirmationModal} from 'components';
+import {isSharingEnabled} from 'config';
 
-import {shareReport, revokeReportSharing, getSharedReport, isSharingEnabled} from './service';
+import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
 import {checkDeleteConflict, deleteEntity} from 'services';
 

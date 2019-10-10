@@ -10,9 +10,9 @@ import {shallow, mount} from 'enzyme';
 import {Server} from 'mock-socket';
 
 import Footer from './Footer';
-import {getOptimizeVersion} from 'services';
+import {getOptimizeVersion} from 'config';
 
-jest.mock('services', () => {
+jest.mock('config', () => {
   return {
     getOptimizeVersion: jest.fn()
   };

@@ -14,8 +14,7 @@ const {WrappedComponent: Dashboard} = DashboardWithErrorHandling;
 
 jest.mock('./service', () => {
   return {
-    isAuthorizedToShareDashboard: jest.fn(),
-    isSharingEnabled: jest.fn().mockReturnValue(true)
+    isAuthorizedToShareDashboard: jest.fn()
   };
 });
 

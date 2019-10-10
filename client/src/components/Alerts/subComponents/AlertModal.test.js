@@ -12,9 +12,12 @@ import AlertModalFunc from './AlertModal';
 import ThresholdInput from './ThresholdInput';
 
 import {formatters} from 'services';
-import * as service from './service';
+import {isEmailEnabled} from 'config';
 
-service.emailNotificationIsEnabled = jest.fn();
+jest.mock('config', () => ({
+  isEmailEnabled: jest.fn().mockReturnValue(true),
+  getOptimizeVersion: jest.fn().mockReturnValue('2.7.0')
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -136,14 +139,14 @@ it('should disable the submit button if the check interval is negative', () => {
 });
 
 it('should show warning that email is not configured', async () => {
-  service.emailNotificationIsEnabled.mockReturnValue(false);
+  isEmailEnabled.mockReturnValue(false);
   const node = await shallow(<AlertModal reports={reports} />);
 
   expect(node.find('Message').exists()).toBe(true);
 });
 
 it('should not display warning if email is configured', async () => {
-  service.emailNotificationIsEnabled.mockReturnValue(true);
+  isEmailEnabled.mockReturnValue(true);
   const node = await shallow(<AlertModal reports={reports} />);
   await node.instance().componentDidMount();
   await node.update();

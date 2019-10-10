@@ -7,7 +7,6 @@
 import * as formattersImport from './formatters';
 
 export {
-  getOptimizeVersion,
   getFlowNodeNames,
   loadDefinitions,
   loadProcessDefinitionXml,

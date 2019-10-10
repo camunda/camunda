@@ -9,12 +9,11 @@ import processRawData from './processRawData';
 
 import {Table as TableRenderer, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
+import {getWebappEndpoints} from 'config';
 
 import ColumnRearrangement from './ColumnRearrangement';
 import processCombinedData from './processCombinedData';
 import processDefaultData from './processDefaultData';
-
-import {getCamundaEndpoints} from './service';
 
 export default withErrorHandling(
   class Table extends React.Component {
@@ -32,7 +31,7 @@ export default withErrorHandling(
 
     componentDidMount() {
       if (this.state.needEndpoint) {
-        this.props.mightFail(getCamundaEndpoints(), camundaEndpoints =>
+        this.props.mightFail(getWebappEndpoints(), camundaEndpoints =>
           this.setState({camundaEndpoints})
         );
       }

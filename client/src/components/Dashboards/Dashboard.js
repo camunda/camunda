@@ -10,13 +10,14 @@ import moment from 'moment';
 
 import {withErrorHandling} from 'HOC';
 import {loadEntity, deleteEntity, updateEntity, createEntity, getCollection} from 'services';
+import {isSharingEnabled} from 'config';
 
 import {ErrorPage, LoadingIndicator} from 'components';
 
 import {addNotification} from 'notifications';
 import {t} from 'translation';
 
-import {isAuthorizedToShareDashboard, isSharingEnabled} from './service';
+import {isAuthorizedToShareDashboard} from './service';
 
 import DashboardView from './DashboardView';
 import DashboardEdit from './DashboardEdit';

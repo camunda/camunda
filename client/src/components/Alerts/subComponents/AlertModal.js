@@ -19,12 +19,11 @@ import {
   Message,
   Form
 } from 'components';
-import {emailNotificationIsEnabled} from './service';
-import {getOptimizeVersion} from 'services';
+import {formatters, isDurationReport} from 'services';
+import {isEmailEnabled, getOptimizeVersion} from 'config';
 
 import ThresholdInput from './ThresholdInput';
 
-import {formatters, isDurationReport} from 'services';
 import {t} from 'translation';
 
 const newAlert = {
@@ -61,7 +60,7 @@ export default function AlertModal(reports) {
       version.length = 2;
 
       this.setState({
-        emailNotificationIsEnabled: await emailNotificationIsEnabled(),
+        emailNotificationIsEnabled: await isEmailEnabled(),
         optimizeVersion: version.join('.')
       });
     };

@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get} from 'request';
-
 import {reportConfig, formatters} from 'services';
 import {getRelativeValue} from '../service';
 import {t} from 'translation';
@@ -16,11 +14,6 @@ const {
 } = reportConfig.process;
 
 const {formatReportResult} = formatters;
-
-export async function getCamundaEndpoints() {
-  const response = await get('api/camunda');
-  return await response.json();
-}
 
 export function getFormattedLabels(
   reportsLabels,
