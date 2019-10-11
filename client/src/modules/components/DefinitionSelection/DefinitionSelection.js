@@ -107,8 +107,22 @@ export default class DefinitionSelection extends React.Component {
     if (this.isSpecificVersion(versions)) {
       this.setState({selectedSpecificVersions: versions});
     }
-    const tenants = this.getAvailableTenants(this.props.definitionKey, versions);
-    this.props.onChange(this.props.definitionKey, versions, tenants.map(({id}) => id));
+
+    this.props.onChange(this.props.definitionKey, versions, this.findTenants(versions));
+  };
+
+  findTenants = versions => {
+    const prevTenants = this.getAvailableTenants(this.props.definitionKey, this.props.versions);
+    const deselectedTenants = prevTenants
+      .map(({id}) => id)
+      .filter(tenant => !this.props.tenants.includes(tenant));
+
+    // remove previously deselected tenants from the available tenants of the new version
+    const newTenants = this.getAvailableTenants(this.props.definitionKey, versions)
+      .map(({id}) => id)
+      .filter(tenant => !deselectedTenants.includes(tenant));
+
+    return newTenants;
   };
 
   isSpecificVersion = versions => versions && versions[0] !== 'latest' && versions[0] !== 'all';

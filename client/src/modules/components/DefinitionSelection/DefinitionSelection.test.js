@@ -56,6 +56,10 @@ jest.mock('services', () => {
               {
                 id: 'a',
                 name: 'Tenant A'
+              },
+              {
+                id: 'c',
+                name: 'Tenant C'
               }
             ]
           }
@@ -72,6 +76,10 @@ jest.mock('services', () => {
           {
             id: 'b',
             name: 'Tenant B'
+          },
+          {
+            id: 'c',
+            name: 'Tenant C'
           }
         ]
       },
@@ -308,7 +316,8 @@ it('should merge tenenats from all selected versions and duplicates are filtered
 
   expect(node.find(TenantPopover)).toHaveProp('tenants', [
     {id: 'a', name: 'Tenant A'},
-    {id: 'b', name: 'Tenant B'}
+    {id: 'b', name: 'Tenant B'},
+    {id: 'c', name: 'Tenant C'}
   ]);
 });
 
@@ -320,7 +329,8 @@ it('should show all tenants if version is set to all', async () => {
   expect(node.find(TenantPopover)).toHaveProp('tenants', [
     {id: null, name: 'Not defined'},
     {id: 'a', name: 'Tenant A'},
-    {id: 'b', name: 'Tenant B'}
+    {id: 'b', name: 'Tenant B'},
+    {id: 'c', name: 'Tenant C'}
   ]);
 });
 
@@ -332,16 +342,14 @@ it('should show tenants from latest version if version is set to latest', async 
   expect(node.find(TenantPopover)).toHaveProp('tenants', [{id: null, name: 'Not defined'}]);
 });
 
-it('should change tenants if version changes', async () => {
+it('should preserve previously deselected tenants if version changes', async () => {
   const node = await shallow(
-    <DefinitionSelection {...props} definitionKey="foo" versions={['1']} />
+    <DefinitionSelection {...props} definitionKey="foo" versions={['1']} tenants={['c']} />
   );
-
-  expect(node.find(TenantPopover)).toHaveProp('tenants', [{id: 'a', name: 'Tenant A'}]);
 
   spy.mockClear();
   await node.instance().changeVersions(['2']);
-  expect(spy).toHaveBeenCalledWith('foo', ['2'], ['a', 'b']);
+  expect(spy).toHaveBeenCalledWith('foo', ['2'], ['b']);
 });
 
 describe('tenants', () => {
