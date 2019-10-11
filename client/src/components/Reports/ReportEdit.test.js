@@ -216,7 +216,11 @@ it('should create a new report if the report is new', () => {
 
   node.instance().save();
 
-  expect(createEntity).toHaveBeenCalledWith('report/process/single');
+  expect(createEntity).toHaveBeenCalledWith('report/process/single', {
+    collectionId: null,
+    data: report.data,
+    name: report.name
+  });
 });
 
 it('should create a new report in a collection', async () => {
@@ -234,7 +238,11 @@ it('should create a new report in a collection', async () => {
 
   node.instance().save();
 
-  expect(createEntity).toHaveBeenCalledWith('report/process/single?collectionId=123');
+  expect(createEntity).toHaveBeenCalledWith('report/process/single', {
+    collectionId: '123',
+    data: report.data,
+    name: report.name
+  });
 });
 
 it('should invoke updateOverview when saving the report', async () => {

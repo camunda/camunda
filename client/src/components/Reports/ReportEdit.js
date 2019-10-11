@@ -55,12 +55,7 @@ export default withRouter(
       saveUpdatedReport = ({endpoint, id, name, data}) => {
         this.props.mightFail(
           updateEntity(endpoint, id, {name, data}, {query: {force: this.state.conflict !== null}}),
-          () => {
-            this.props.updateOverview(
-              update(this.state.report, {name: {$set: name}, id: {$set: id}})
-            );
-            this.setState({redirect: this.props.isNew ? `../${id}/` : './'});
-          },
+          () => this.updateReportState(id, name),
           async error => {
             if (error.statusText === 'Conflict') {
               const conflictData = await error.json();
@@ -80,23 +75,23 @@ export default withRouter(
         );
       };
 
+      updateReportState = (id, name) => {
+        this.props.updateOverview(update(this.state.report, {name: {$set: name}, id: {$set: id}}));
+        this.setState({redirect: this.props.isNew ? `../${id}/` : './'});
+      };
+
       save = (evt, updatedName) => {
         this.setState({saveLoading: true});
         const {id, data, reportType, combined} = this.state.report;
         const name = updatedName || this.state.report.name;
         const endpoint = `report/${reportType}/${combined ? 'combined' : 'single'}`;
 
-        const collection = getCollection(this.props.location.pathname);
-
-        let creationEndpoint = endpoint;
-        if (collection) {
-          creationEndpoint += '?collectionId=' + collection;
-        }
-
         if (this.props.isNew) {
+          const collectionId = getCollection(this.props.location.pathname);
+
           this.props.mightFail(
-            createEntity(creationEndpoint),
-            id => this.saveUpdatedReport({endpoint, id, name, data}),
+            createEntity(endpoint, {collectionId, name, data}),
+            id => this.updateReportState(id, name),
             () => this.showSaveError(name)
           );
         } else {

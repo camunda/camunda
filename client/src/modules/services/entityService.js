@@ -28,13 +28,9 @@ export async function loadEntities(api, sortBy, numResults) {
   return await response.json();
 }
 
-export async function createEntity(type, initialValues, options = {}) {
-  const response = await post('api/' + type, options);
+export async function createEntity(type, initialValues = {}) {
+  const response = await post('api/' + type, initialValues);
   const json = await response.json();
-
-  if (initialValues) {
-    await updateEntity(type, json.id, initialValues);
-  }
 
   return json.id;
 }

@@ -102,7 +102,7 @@ class Alerts extends React.Component {
     if (editEntity.id) {
       updatePromise = updateEntity('alert', editEntity.id, entity);
     } else {
-      updatePromise = createEntity('alert', null, entity);
+      updatePromise = createEntity('alert', entity);
     }
 
     await this.props.mightFail(

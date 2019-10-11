@@ -105,27 +105,29 @@ export default withErrorHandling(
           name,
           reports
         }),
-        async () => {
-          this.setState({
-            name,
-            reports,
-            redirect: this.isNew() ? `../${id}/` : './',
-            isAuthorizedToShare: await isAuthorizedToShareDashboard(id)
-          });
-        },
+        () => this.updateDashboardState(id, name, reports),
         () => {
           addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'});
         }
       );
     };
 
-    saveChanges = (name, reports) => {
-      const collection = getCollection(this.props.location.pathname);
+    updateDashboardState = async (id, name, reports) => {
+      this.setState({
+        name,
+        reports,
+        redirect: this.isNew() ? `../${id}/` : './',
+        isAuthorizedToShare: await isAuthorizedToShareDashboard(id)
+      });
+    };
 
+    saveChanges = (name, reports) => {
       if (this.isNew()) {
+        const collectionId = getCollection(this.props.location.pathname);
+
         this.props.mightFail(
-          createEntity(collection ? 'dashboard?collectionId=' + collection : 'dashboard'),
-          id => this.updateDashboard(id, name, reports),
+          createEntity('dashboard', {collectionId, name, reports}),
+          id => this.updateDashboardState(id, name, reports),
           () => {
             addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'});
           }
