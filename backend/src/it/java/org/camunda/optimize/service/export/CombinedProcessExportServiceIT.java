@@ -18,15 +18,13 @@ import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -76,7 +74,8 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/combined/combined_flow_node_frequency_group_by_flow_node.csv");
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+        "/csv/process/combined/combined_flow_node_frequency_group_by_flow_node.csv");
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -105,7 +104,9 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/combined/combined_flow_node_duration_group_by_flow_node.csv");
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+        "/csv/process/combined/combined_flow_node_duration_group_by_flow_node.csv"
+      );
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -132,7 +133,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString(
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
         "/csv/process/combined/combined_flow_node_frequency_group_by_flow_node_different_order.csv"
       );
 
@@ -161,7 +162,9 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/combined/combined_pi_frequency_group_by_none.csv");
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+        "/csv/process/combined/combined_pi_frequency_group_by_none.csv"
+      );
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -194,7 +197,9 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/combined/combined_pi_duration_group_by_none.csv");
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+        "/csv/process/combined/combined_pi_duration_group_by_none.csv"
+      );
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -218,7 +223,9 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/combined/combined_empty_report.csv");
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+        "/csv/process/combined/combined_empty_report.csv"
+      );
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -240,12 +247,6 @@ public class CombinedProcessExportServiceIT {
     assertThat(response.getStatus(), is(200));
     String actualContent = getResponseContentAsString(response);
     assertThat(actualContent.trim(), isEmptyString());
-  }
-
-  private String getExpectedContentAsString(String pathToExpectedCSV) throws IOException {
-    Path path = Paths.get(this.getClass().getResource(pathToExpectedCSV).getPath());
-    byte[] expectedContent = Files.readAllBytes(path);
-    return new String(expectedContent);
   }
 
   private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {

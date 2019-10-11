@@ -15,6 +15,7 @@ import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluation
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -22,10 +23,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -52,45 +49,50 @@ public class ExportServiceTest {
   }
 
   @Test
-  public void rawProcessReportCsvExport() throws IOException {
+  public void rawProcessReportCsvExport() {
     // given
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setData(RawDataHelper.getRawDataProcessInstanceDtos());
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, new SingleProcessReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(rawDataReportResult, RoleType.VIEWER));
+    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(
+      rawDataReportResult,
+      RoleType.VIEWER
+    ));
 
     // when
     Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
-
     assertThat(csvContent.isPresent(), is(true));
 
-    byte[] expectedContent = readFileFromClasspath("/csv/process/single/raw_process_data.csv");
-    assertThat(csvContent.get(), is(expectedContent));
+    String actualContent = new String(csvContent.get());
+    String expectedContent = FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+      "/csv/process/single/raw_process_data.csv"
+    );
+
+    assertThat(actualContent, is(expectedContent));
   }
 
   @Test
-  public void rawDecisionReportCsvExport() throws IOException {
+  public void rawDecisionReportCsvExport() {
     // given
     final RawDataDecisionReportResultDto rawDataDecisionReportResultDto = new RawDataDecisionReportResultDto();
     rawDataDecisionReportResultDto.setData(RawDataHelper.getRawDataDecisionInstanceDtos());
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, new SingleDecisionReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(rawDataReportResult, RoleType.VIEWER));
+    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(
+      rawDataReportResult,
+      RoleType.VIEWER
+    ));
 
     // when
     Optional<byte[]> csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", Collections.emptySet());
 
     assertThat(csvContent.isPresent(), is(true));
 
-    byte[] expectedContent = readFileFromClasspath("/csv/decision/raw_decision_data.csv");
-    assertThat(csvContent.get(), is(expectedContent));
+    String actualContent = new String(csvContent.get());
+    String expectedContent = FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+      "/csv/decision/raw_decision_data.csv"
+    );
+    assertThat(actualContent, is(expectedContent));
   }
-
-  private byte[] readFileFromClasspath(final String s) throws IOException {
-    Path path = Paths.get(this.getClass().getResource(s).getPath());
-    return Files.readAllBytes(path);
-  }
-
-
 }

@@ -20,6 +20,7 @@ import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -27,10 +28,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -60,8 +57,8 @@ public class ProcessExportServiceIT {
           .setProcessDefinitionVersion(FAKE)
           .setReportDataType(ProcessReportDataType.RAW_DATA)
           .build(),
-    "/csv/process/single/raw_process_data_grouped_by_none.csv",
-      "Raw Data Grouped By None"
+        "/csv/process/single/raw_process_data_grouped_by_none.csv",
+        "Raw Data Grouped By None"
       },
       {
         ProcessReportDataBuilder
@@ -171,15 +168,11 @@ public class ProcessExportServiceIT {
     assertThat(actualContent, is(stringExpected));
   }
 
-  private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance) throws IOException {
-    Path path = Paths.get(this.getClass().getResource(expectedCSV).getPath());
-    byte[] expectedContent = Files.readAllBytes(path);
-    String stringExpected = new String(expectedContent);
-    stringExpected = stringExpected.
-      replace("${PI_ID}", processInstance.getId());
-    stringExpected = stringExpected.
-      replace("${PD_ID}", processInstance.getDefinitionId());
-    return stringExpected;
+  private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance) {
+    String expectedString = FileReaderUtil.getFileContentWithReplacedNewlinesAsString(expectedCSV);
+    expectedString = expectedString.replace("${PI_ID}", processInstance.getId());
+    expectedString = expectedString.replace("${PD_ID}", processInstance.getDefinitionId());
+    return expectedString;
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
@@ -240,11 +233,11 @@ public class ProcessExportServiceIT {
   private static ProcessReportDataDto createRunningFlowNodeDurationGroupByFlowNodeTableReport() {
     final ProcessReportDataDto reportDataDto =
       ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(FAKE)
-          .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-          .build();
+        .createReportData()
+        .setProcessDefinitionKey(FAKE)
+        .setProcessDefinitionVersion(FAKE)
+        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+        .build();
     reportDataDto.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
     return reportDataDto;
   }

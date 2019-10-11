@@ -19,16 +19,13 @@ import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
@@ -89,7 +86,9 @@ public class ProcessHyperMapExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/hyper/usertask_frequency_group_by_assignee_by_usertask.csv");
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+        "/csv/process/hyper/usertask_frequency_group_by_assignee_by_usertask.csv"
+      );
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -118,7 +117,9 @@ public class ProcessHyperMapExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/hyper/usertask_duration_group_by_assignee_by_usertask.csv");
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+        "/csv/process/hyper/usertask_duration_group_by_assignee_by_usertask.csv"
+      );
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -143,7 +144,7 @@ public class ProcessHyperMapExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      getExpectedContentAsString("/csv/process/hyper/hypermap_empty_result.csv");
+      FileReaderUtil.getFileContentWithReplacedNewlinesAsString("/csv/process/hyper/hypermap_empty_result.csv");
 
     assertThat(actualContent, is(stringExpected));
   }
@@ -214,12 +215,6 @@ public class ProcessHyperMapExportServiceIT {
             throw new RuntimeException(ex);
           }
         });
-  }
-
-  private String getExpectedContentAsString(String pathToExpectedCSV) throws IOException {
-    Path path = Paths.get(this.getClass().getResource(pathToExpectedCSV).getPath());
-    byte[] expectedContent = Files.readAllBytes(path);
-    return new String(expectedContent);
   }
 
   private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {

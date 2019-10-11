@@ -16,6 +16,7 @@ import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -23,10 +24,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -38,10 +35,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 @RunWith(Parameterized.class)
 public class DecisionExportServiceIT {
-
-  private static final String START = "aStart";
-  private static final String END = "anEnd";
-  public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
 
   @Parameterized.Parameters(name = "{2}")
   public static Collection<Object[]> data() {
@@ -58,29 +51,29 @@ public class DecisionExportServiceIT {
       },
       {
         DecisionReportDataBuilder.create()
-        .setDecisionDefinitionKey(FAKE)
-        .setDecisionDefinitionVersion(FAKE)
-        .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-        .setDateInterval(GroupByDateUnit.DAY)
-        .build(),
+          .setDecisionDefinitionKey(FAKE)
+          .setDecisionDefinitionVersion(FAKE)
+          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+          .setDateInterval(GroupByDateUnit.DAY)
+          .build(),
         "/csv/decision/count_decision_frequency_group_by_evaluation_date.csv",
         "Count Decision Frequency grouped by evaluation date"
       },
       {
         DecisionReportDataBuilder.create()
-        .setDecisionDefinitionKey(FAKE)
-        .setDecisionDefinitionVersion(FAKE)
-        .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-        .build(),
+          .setDecisionDefinitionKey(FAKE)
+          .setDecisionDefinitionVersion(FAKE)
+          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+          .build(),
         "/csv/decision/count_decision_frequency_group_by_none.csv",
         "Count Decision Frequency grouped by none"
       },
       {
         DecisionReportDataBuilder.create()
-        .setDecisionDefinitionKey(FAKE)
-        .setDecisionDefinitionVersion(FAKE)
-        .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
-        .build(),
+          .setDecisionDefinitionKey(FAKE)
+          .setDecisionDefinitionVersion(FAKE)
+          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
+          .build(),
         "/csv/decision/count_decision_frequency_group_by_matched_rule.csv",
         "Count Decision Frequency grouped by matched rule"
       }
@@ -99,10 +92,10 @@ public class DecisionExportServiceIT {
 
   @Rule
   public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule)
-      .around(engineDatabaseRule);
+    .outerRule(elasticSearchRule)
+    .around(engineRule)
+    .around(embeddedOptimizeRule)
+    .around(engineDatabaseRule);
 
   public DecisionExportServiceIT(DecisionReportDataDto currentReport, String expectedCSV, String testName) {
     this.currentReport = currentReport;
@@ -121,15 +114,15 @@ public class DecisionExportServiceIT {
     engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, lastEvaluationDateFilter);
     String decisionInstanceId =
       engineDatabaseRule.getDecisionInstanceIdsWithEvaluationDateEqualTo(
-      lastEvaluationDateFilter).get(0);
+        lastEvaluationDateFilter).get(0);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCsvExportRequest(reportId, "my_file.csv")
-            .execute();
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -141,15 +134,11 @@ public class DecisionExportServiceIT {
   }
 
   private String getExpectedContentAsString(String decisionInstanceId,
-                                            DecisionDefinitionEngineDto decisionDefinitionEngineDto) throws IOException {
-    Path path = Paths.get(this.getClass().getResource(expectedCSV).getPath());
-    byte[] expectedContent = Files.readAllBytes(path);
-    String stringExpected = new String(expectedContent);
-    stringExpected  = stringExpected.
-      replace("${DI_ID}", decisionInstanceId);
-    stringExpected  = stringExpected.
-      replace("${DD_ID}", decisionDefinitionEngineDto.getId());
-    return stringExpected;
+                                            DecisionDefinitionEngineDto decisionDefinitionEngineDto) {
+    String expectedString = FileReaderUtil.getFileContentWithReplacedNewlinesAsString(expectedCSV);
+    expectedString = expectedString.replace("${DI_ID}", decisionInstanceId);
+    expectedString = expectedString.replace("${DD_ID}", decisionDefinitionEngineDto.getId());
+    return expectedString;
   }
 
   private String createAndStoreDefaultReportDefinition(DecisionReportDataDto reportData) {
@@ -169,18 +158,18 @@ public class DecisionExportServiceIT {
 
   private void updateReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateSingleDecisionReportRequest(id, updatedReport)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateSingleDecisionReportRequest(id, updatedReport)
+      .execute();
 
     assertThat(response.getStatus(), is(204));
   }
 
   private String createNewReportHelper() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateSingleDecisionReportRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 }
