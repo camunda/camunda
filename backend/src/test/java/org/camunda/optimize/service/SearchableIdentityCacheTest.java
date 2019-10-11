@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service;
 
+import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -12,9 +14,15 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -212,6 +220,38 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(group);
 
     assertSearchResultsPresentForPartialSearchTerm(group.getName(), 1);
+  }
+
+  @Test
+  public void load100kUsersAndSearch() {
+    insert100kUsers();
+
+    final long cacheSizeInBytes = cache.getCacheSizeInBytes();
+    final long cacheSizeInMb = cacheSizeInBytes / (1024L * 1024L);
+    assertThat(cacheSizeInMb, is(lessThan(50L)));
+
+    final long beforeSearchMillis = System.currentTimeMillis();
+    final List<IdentityDto> searchResult = cache.searchIdentities("Cla");
+    final long afterSearchMillis = System.currentTimeMillis();
+    assertThat(searchResult.size(), is(greaterThan(0)));
+    assertThat(afterSearchMillis - beforeSearchMillis, is(lessThan(1000L)));
+  }
+
+
+  @SneakyThrows
+  private void insert100kUsers() {
+    final List<String> lines = FileUtils.readLines(
+      new File(SearchableIdentityCacheTest.class.getResource("/fakeNames100k.csv").toURI()), StandardCharsets.UTF_8
+    );
+    final List<IdentityDto> users = lines.stream().parallel()
+      .map(rawUser -> {
+        final String[] properties = rawUser.split(",");
+        // use uuid id's, as they are big and bloat the index
+        return new UserDto(UUID.randomUUID().toString(), properties[0], properties[1], properties[2]);
+      })
+      .collect(Collectors.toList());
+
+    cache.addIdentities(users);
   }
 
   private void verifyCaseInsensitiveSearchResults(final String searchTerm, final int expectedResultCount) {

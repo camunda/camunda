@@ -5,7 +5,9 @@
  */
 package org.camunda.optimize.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -51,6 +53,7 @@ import java.util.function.Function;
 
 import static org.apache.lucene.search.SortField.STRING_LAST;
 
+@Slf4j
 public class SearchableIdentityCache implements AutoCloseable {
   private final ByteBuffersDirectory memoryDirectory;
 
@@ -116,6 +119,26 @@ public class SearchableIdentityCache implements AutoCloseable {
 
     }
     return identities;
+  }
+
+  @SneakyThrows(IOException.class)
+  @VisibleForTesting
+  public long getCacheSizeInBytes() {
+    long size;
+    try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
+      size = Arrays.stream(memoryDirectory.listAll())
+        .map(file -> {
+          try {
+            return memoryDirectory.fileLength(file);
+          } catch (IOException e) {
+            log.error("Failed reading file from in memory directory.", e);
+            return 0L;
+          }
+        })
+        .reduce(Long::sum)
+        .orElse(0L);
+    }
+    return size;
   }
 
   @SneakyThrows(IOException.class)
