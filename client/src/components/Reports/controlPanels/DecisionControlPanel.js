@@ -148,7 +148,7 @@ export default class DecisionControlPanel extends React.Component {
             <DecisionFilter
               data={filter}
               onChange={this.props.updateReport}
-              instanceCount={result && result.decisionInstanceCount}
+              instanceCount={result && result.instanceCount}
               decisionDefinitionKey={decisionDefinitionKey}
               decisionDefinitionVersions={decisionDefinitionVersions}
               tenants={tenantIds}

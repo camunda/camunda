@@ -101,7 +101,7 @@ it('should return correct combined table report data properties', () => {
       configuration: {sorting: null}
     },
     result: {
-      processInstanceCount: 100,
+      instanceCount: 100,
       data: [
         {key: '2015-03-25T12:00:00Z', label: '2015-03-25T12:00:00Z', value: 2},
         {key: '2015-03-26T12:00:00Z', label: '2015-03-26T12:00:00Z', value: 3}
@@ -134,7 +134,7 @@ it('should return correct combined table report data properties', () => {
       ]
     ],
     labels: [['foo', 'foo'], ['foo', 'foo']],
-    processInstanceCount: [100, 100],
+    instanceCount: [100, 100],
     reportsNames: ['report A', 'report A']
   });
 });

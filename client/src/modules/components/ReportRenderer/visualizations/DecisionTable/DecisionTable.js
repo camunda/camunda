@@ -77,7 +77,7 @@ export default themed(
 
     renderRuleCell = ruleId => {
       const {
-        result: {data, decisionInstanceCount},
+        result: {data, instanceCount},
         data: {
           configuration: {hideAbsoluteValue, hideRelativeValue, showGradientBars}
         }
@@ -86,11 +86,11 @@ export default themed(
       const resultObj = formatters.objectifyResult(data);
 
       const resultNumber = resultObj[ruleId] || 0;
-      const percentage = Math.round((resultNumber / decisionInstanceCount) * 1000) / 10 || 0;
+      const percentage = Math.round((resultNumber / instanceCount) * 1000) / 10 || 0;
 
       const node = this.state.entryPoints.rules[ruleId];
       if (showGradientBars) {
-        const progress = resultNumber / decisionInstanceCount;
+        const progress = resultNumber / instanceCount;
 
         node.style.background = `linear-gradient(to right, ${getColor(
           this.props.theme,
@@ -119,7 +119,7 @@ export default themed(
     render() {
       const {rules, summary} = this.state.entryPoints;
       const {
-        result: {decisionInstanceCount, data}
+        result: {instanceCount, data}
       } = this.props.report;
 
       const hitCount = data.map(({value}) => value).reduce((sum, current) => sum + current, 0);
@@ -129,8 +129,8 @@ export default themed(
           {Object.keys(rules).map(this.renderRuleCell)}
           <DmnJsPortal renderIn={summary}>
             <b>
-              {decisionInstanceCount} Evaluation{decisionInstanceCount !== 1 ? 's' : ''}
-              {hitCount > decisionInstanceCount && ` / ${hitCount} Hits`}
+              {instanceCount} Evaluation{instanceCount !== 1 ? 's' : ''}
+              {hitCount > instanceCount && ` / ${hitCount} Hits`}
             </b>
           </DmnJsPortal>
         </div>

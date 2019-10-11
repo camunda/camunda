@@ -19,7 +19,7 @@ export default function processDefaultData({formatter = v => v, report}) {
   } = data;
 
   const formattedResult = formatReportResult(data, result.data);
-  const instanceCount = result.processInstanceCount || result.decisionInstanceCount || 0;
+  const instanceCount = result.instanceCount || 0;
   const config = reportConfig[reportType];
   const labels = [
     config.getLabelFor('groupBy', config.options.groupBy, groupBy),

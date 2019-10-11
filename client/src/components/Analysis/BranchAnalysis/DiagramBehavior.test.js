@@ -47,7 +47,7 @@ const props = {
   data: {
     result: {
       data: [{key: 'endEvent', value: 3}],
-      processInstanceCount: 5
+      instanceCount: 5
     }
   },
   setViewer: jest.fn()

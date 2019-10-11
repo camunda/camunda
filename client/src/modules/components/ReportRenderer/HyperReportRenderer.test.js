@@ -59,7 +59,7 @@ it('should convert a hypermap to a combined report', () => {
             }
           ],
           isComplete: true,
-          processInstanceCount: 1234,
+          instanceCount: 1234,
           type: 'hyperMap'
         }
       }}

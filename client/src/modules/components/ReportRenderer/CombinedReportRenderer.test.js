@@ -47,7 +47,7 @@ const reportA = {
   },
 
   result: {
-    processInstanceCount: 100,
+    instanceCount: 100,
     data: {
       '2015-03-25T12:00:00Z': 2
     }

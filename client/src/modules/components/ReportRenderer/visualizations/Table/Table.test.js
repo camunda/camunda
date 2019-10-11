@@ -40,7 +40,7 @@ const report = {
     visualization: 'table'
   },
   result: {
-    processInstanceCount: 5,
+    instanceCount: 5,
     data: []
   }
 };

@@ -18,7 +18,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   } = report;
 
   const isDark = theme === 'dark';
-  const instanceCountArr = [result.processInstanceCount || result.decisionInstanceCount || 0];
+  const instanceCountArr = [result.instanceCount || 0];
   const isDuration = isDurationReport(report);
   const maxValue = isDuration ? Math.max(...result.data.map(({value}) => value)) : 0;
   const isPersistedTooltips = isDuration

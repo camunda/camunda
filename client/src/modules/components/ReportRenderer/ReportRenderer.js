@@ -68,11 +68,7 @@ export default function ReportRenderer(props) {
                   className="additionalInfo"
                   dangerouslySetInnerHTML={{
                     __html: t(`report.totalCount.${isDecision ? 'evaluation' : 'instance'}`, {
-                      count: formatters.frequency(
-                        report.result.processInstanceCount ||
-                          report.result.decisionInstanceCount ||
-                          0
-                      )
+                      count: formatters.frequency(report.result.instanceCount || 0)
                     })
                   }}
                 />
@@ -94,13 +90,12 @@ function containsData(report) {
   if (report.combined) {
     return report.data.reports.length > 0 && Object.values(report.result.data).some(containsData);
   } else {
-    const {type, processInstanceCount, decisionInstanceCount, data} = report.result;
+    const {type, instanceCount, data} = report.result;
     if (type && type.includes('Map') && data.length === 0) {
       return false;
     }
     return (
-      processInstanceCount ||
-      decisionInstanceCount ||
+      instanceCount ||
       (report.data.view.property === 'frequency' && report.data.visualization === 'number')
     );
   }

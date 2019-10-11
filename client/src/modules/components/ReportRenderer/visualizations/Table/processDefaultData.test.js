@@ -30,7 +30,7 @@ const report = {
   },
   result: {
     data: [{key: 'a', value: 1, label: 'a name'}, {key: 'b', value: 2}, {key: 'c', value: 3}],
-    processInstanceCount: 5
+    instanceCount: 5
   }
 };
 
@@ -101,8 +101,7 @@ it('should display the relative percentage for frequency views for DMN', () => {
       ...newProps.report,
       result: {
         ...newProps.report.result,
-        decisionInstanceCount: 18,
-        processInstanceCount: undefined
+        instanceCount: 18
       }
     }
   };

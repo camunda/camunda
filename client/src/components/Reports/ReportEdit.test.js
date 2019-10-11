@@ -155,7 +155,7 @@ it('should show a warning message when the data is not complete', async () => {
   node.setState({
     report: {
       ...report,
-      result: {data: new Array(1000), isComplete: false, processInstanceCount: 1500}
+      result: {data: new Array(1000), isComplete: false, instanceCount: 1500}
     }
   });
 

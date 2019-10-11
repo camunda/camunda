@@ -27,7 +27,7 @@ const reportTemplate = {
     visualization: 'number',
     configuration: {}
   },
-  result: {data: 1234, processInstanceCount: 100}
+  result: {data: 1234, instanceCount: 100}
 };
 
 it('should render ProcessReportRenderer if the report type is process', () => {
@@ -64,7 +64,7 @@ it('should render CombinedReportRenderer if the report is combined and all repor
           ...reportTemplate,
           result: {
             ...reportTemplate.result,
-            processInstanceCount: 1
+            instanceCount: 1
           }
         }
       }
@@ -90,7 +90,7 @@ it('should include the instance count if indicated in the config', () => {
       ...reportTemplate.data,
       configuration: {showInstanceCount: true}
     },
-    result: {...reportTemplate.result, processInstanceCount: 723}
+    result: {...reportTemplate.result, instanceCount: 723}
   };
 
   const node = shallow(<ReportRenderer report={report} />);
@@ -220,7 +220,7 @@ describe('NoDataNotice', () => {
       ...reportTemplate,
       result: {
         ...reportTemplate.result,
-        processInstanceCount: 0
+        instanceCount: 0
       }
     };
 
@@ -245,7 +245,7 @@ describe('NoDataNotice', () => {
       },
       result: {
         ...reportTemplate.result,
-        processInstanceCount: 0
+        instanceCount: 0
       }
     };
 
@@ -267,14 +267,14 @@ describe('NoDataNotice', () => {
             ...reportTemplate,
             result: {
               ...reportTemplate.result,
-              processInstanceCount: 0
+              instanceCount: 0
             }
           },
           2: {
             ...reportTemplate,
             result: {
               ...reportTemplate.result,
-              processInstanceCount: 0
+              instanceCount: 0
             }
           }
         }
@@ -300,14 +300,14 @@ describe('NoDataNotice', () => {
             ...reportTemplate,
             result: {
               ...reportTemplate.result,
-              processInstanceCount: 0
+              instanceCount: 0
             }
           },
           2: {
             ...reportTemplate,
             result: {
               ...reportTemplate.result,
-              processInstanceCount: 1
+              instanceCount: 1
             }
           }
         }

@@ -85,7 +85,7 @@ const Heatmap = ({report, formatter, errorMessage}) => {
           getTooltipText(
             data,
             formatter,
-            result.processInstanceCount,
+            result.instanceCount,
             alwaysShowAbsolute,
             alwaysShowRelative,
             isDuration

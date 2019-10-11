@@ -19,9 +19,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
 
   const isDark = theme === 'dark';
   const isNumber = visualization === 'number';
-  const instanceCountArr = Object.values(result.data).map(
-    report => report.result.processInstanceCount
-  );
+  const instanceCountArr = Object.values(result.data).map(report => report.result.instanceCount);
   const isDuration = isDurationReport(Object.values(result.data)[0]);
   const maxDuration = isDuration ? findMaxDurationAcrossReports(result) : 0;
   const isPersistedTooltips = isDuration

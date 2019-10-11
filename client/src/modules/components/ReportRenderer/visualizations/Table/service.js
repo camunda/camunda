@@ -48,7 +48,7 @@ export function getBodyRows(
   allKeys,
   formatter,
   displayRelativeValue,
-  processInstanceCount,
+  instanceCount,
   displayAbsoluteValue,
   flowNodeNames = {}
 ) {
@@ -60,7 +60,7 @@ export function getBodyRows(
         row.push(formatter(typeof value !== 'undefined' && value !== null ? value : ''));
       }
       if (displayRelativeValue) {
-        row.push(getRelativeValue(value, processInstanceCount[i]));
+        row.push(getRelativeValue(value, instanceCount[i]));
       }
     });
     return row;
@@ -73,7 +73,7 @@ export function getCombinedTableProps(reportResult, reports) {
     labels: [],
     reportsNames: [],
     combinedResult: [],
-    processInstanceCount: []
+    instanceCount: []
   };
 
   const combinedProps = reports.reduce((prevReport, {id}) => {
@@ -93,16 +93,13 @@ export function getCombinedTableProps(reportResult, reports) {
     const reportsResult = [...prevReport.combinedResult, formattedResult];
 
     // 2d array of all process instances count
-    const reportsProcessInstanceCount = [
-      ...prevReport.processInstanceCount,
-      result.processInstanceCount
-    ];
+    const reportsInstanceCount = [...prevReport.instanceCount, result.instanceCount];
 
     return {
       labels,
       reportsNames,
       combinedResult: reportsResult,
-      processInstanceCount: reportsProcessInstanceCount
+      instanceCount: reportsInstanceCount
     };
   }, initialData);
 

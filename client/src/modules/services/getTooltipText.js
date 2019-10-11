@@ -7,7 +7,7 @@
 export default function getTooltipText(
   data,
   formatter,
-  processInstanceCount,
+  instanceCount,
   alwaysShowAbsolute,
   alwaysShowRelative,
   hideRelative
@@ -17,7 +17,7 @@ export default function getTooltipText(
   }
 
   const absolute = formatter(data);
-  const relative = getRelativeValue(data, processInstanceCount);
+  const relative = getRelativeValue(data, instanceCount);
 
   if (hideRelative) {
     return absolute;

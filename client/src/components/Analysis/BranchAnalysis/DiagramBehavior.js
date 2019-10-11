@@ -150,7 +150,7 @@ export default class DiagramBehavior extends React.Component {
     const {
       viewer,
       data: {
-        result: {data, processInstanceCount: piCount}
+        result: {data, instanceCount: piCount}
       }
     } = this.props;
 

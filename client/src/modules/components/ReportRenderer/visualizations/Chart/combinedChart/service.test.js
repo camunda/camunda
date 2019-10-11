@@ -42,7 +42,7 @@ it('should return correct cominbed chart repot data properties for single report
       visualization: 'line'
     },
     result: {
-      processInstanceCount: 100,
+      instanceCount: 100,
       data: [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}]
     }
   };

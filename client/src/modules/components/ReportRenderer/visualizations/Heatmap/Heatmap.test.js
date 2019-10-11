@@ -62,7 +62,7 @@ const report = {
     },
     visualization: 'heat'
   },
-  result: {data: [{key: 'a', value: 1}, {key: 'b', value: 2}], processInstanceCount: 5}
+  result: {data: [{key: 'a', value: 1}, {key: 'b', value: 2}], instanceCount: 5}
 };
 
 it('should load the process definition xml', () => {
