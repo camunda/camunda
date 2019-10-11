@@ -6,11 +6,11 @@
 
 import {Selector} from 'testcafe';
 
-export async function login(t) {
+export async function login(t, user = 'demo') {
   await t
     .maximizeWindow()
-    .typeText('input[name="username"]', 'demo')
-    .typeText('input[name="password"]', 'demo')
+    .typeText('input[name="username"]', user)
+    .typeText('input[name="password"]', user)
     .click('.primary');
 }
 

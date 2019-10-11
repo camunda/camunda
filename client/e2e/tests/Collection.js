@@ -54,20 +54,6 @@ test('renaming the collection', async t => {
   await t.expect(e.collectionTitle.textContent).contains('another Collection Name');
 });
 
-test('deleting a collection', async t => {
-  await login(t);
-
-  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
-  await t.typeText(Homepage.modalNameInput, 'Collection to delete', {replace: true});
-  await t.click(Homepage.confirmButton);
-
-  await t.click(e.collectionContextMenu);
-  await t.click(e.deleteCollectionButton);
-  await t.click(Homepage.confirmButton);
-
-  await t.expect(Homepage.collectionItem.textContent).notContains('Collection to delete');
-});
-
 test('adding a new user', async t => {
   await login(t);
 
@@ -117,4 +103,16 @@ test('changing user permission', async t => {
   await t.click(Homepage.dashboardItem);
 
   await t.expect(Dashboard.editButton.exists).notOk();
+});
+
+test('deleting a collection', async t => {
+  await login(t, 'john');
+
+  await t.click(Homepage.collectionItem);
+
+  await t.click(e.collectionContextMenu);
+  await t.click(e.deleteCollectionButton);
+  await t.click(Homepage.confirmButton);
+
+  await t.expect(Homepage.collectionItem.exists).notOk();
 });
