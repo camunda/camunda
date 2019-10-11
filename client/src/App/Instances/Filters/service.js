@@ -82,14 +82,14 @@ function checkIsSingleIdValid(id) {
   return Boolean(id.match(/^\d{0,19}$/));
 }
 
-export function checkIsIdValid(id) {
-  const hasInvalidCharacter = !Boolean(id.match(/^[\d,\s]*$/));
+export function checkIsIdValid(ids = '') {
+  const hasInvalidCharacter = !Boolean(ids.match(/^[\d,\s]*$/));
 
   if (hasInvalidCharacter) {
     return false;
   }
 
-  const hasInvalidIds = id.split(/[,\s]/).some(id => {
+  const hasInvalidIds = ids.split(/[,\s]/).some(id => {
     return !checkIsSingleIdValid(id.trim());
   });
 
@@ -100,12 +100,12 @@ function checkIsSingleIdComplete(id) {
   return id === '' || Boolean(id.match(/^\d{16,}$/));
 }
 
-export function checkIsIdComplete(id) {
-  const hasIncompleteIds = id.split(/[,\s]/).some(id => {
+export function checkIsIdComplete(ids = '') {
+  const hasIncompleteIds = ids.split(/[,\s]/).some(id => {
     return !checkIsSingleIdComplete(id.trim());
   });
 
-  return checkIsIdValid(id) && !hasIncompleteIds;
+  return checkIsIdValid(ids) && !hasIncompleteIds;
 }
 
 function sanitizeVariable(variable) {
@@ -125,7 +125,7 @@ function sanitizeDate(date) {
   return checkIsDateComplete(date) || date === '' ? date : '';
 }
 
-function sanitizeIds(ids) {
+function sanitizeIds(ids = '') {
   return checkIsIdComplete(ids) ? ids : '';
 }
 
