@@ -325,7 +325,7 @@ describe('NoDataNotice', () => {
       ...reportTemplate,
       result: {
         ...reportTemplate.result,
-        type: 'durationMap',
+        type: 'map',
         data: []
       }
     };

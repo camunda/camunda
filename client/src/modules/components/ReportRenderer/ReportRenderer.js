@@ -91,9 +91,10 @@ function containsData(report) {
     return report.data.reports.length > 0 && Object.values(report.result.data).some(containsData);
   } else {
     const {type, instanceCount, data} = report.result;
-    if (type && type.includes('Map') && data.length === 0) {
+    if (type && type === 'map' && data.length === 0) {
       return false;
     }
+
     return (
       instanceCount ||
       (report.data.view.property === 'frequency' && report.data.visualization === 'number')

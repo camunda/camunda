@@ -210,7 +210,7 @@ describe('isCompatible', () => {
         ...reportsList[0].data,
         view: {
           entity: 'userTask',
-          property: 'workDuration'
+          property: 'duration'
         }
       }
     };

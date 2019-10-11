@@ -68,7 +68,7 @@ exports[`should convert a hypermap to a combined report 1`] = `
               ],
               "instanceCount": 1234,
               "isComplete": true,
-              "type": "durationMap",
+              "type": "map",
             },
           },
           "taskId2": Object {
@@ -111,7 +111,7 @@ exports[`should convert a hypermap to a combined report 1`] = `
               ],
               "instanceCount": 1234,
               "isComplete": true,
-              "type": "durationMap",
+              "type": "map",
             },
           },
           "taskId3": Object {
@@ -154,7 +154,7 @@ exports[`should convert a hypermap to a combined report 1`] = `
               ],
               "instanceCount": 1234,
               "isComplete": true,
-              "type": "durationMap",
+              "type": "map",
             },
           },
         },

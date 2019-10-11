@@ -18,7 +18,7 @@ it('should render nothing if the current result does is no duration', () => {
 it('should render an aggregation selection for duration reports', () => {
   const node = shallow(
     <AggregationType
-      report={{result: {type: 'durationMap'}, data: {configuration: {aggregationType: 'median'}}}}
+      report={{data: {view: {property: 'duration'}, configuration: {aggregationType: 'median'}}}}
     />
   );
 
@@ -34,7 +34,7 @@ it('should reevaluate the report when changing the aggregation type', () => {
 
   const node = shallow(
     <AggregationType
-      report={{result: {type: 'durationMap'}, data: {configuration: {aggregationType: 'median'}}}}
+      report={{data: {view: {property: 'duration'}, configuration: {aggregationType: 'median'}}}}
       onChange={spy}
     />
   );

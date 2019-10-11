@@ -16,8 +16,6 @@ export function getFormatter(viewProperty) {
     case 'frequency':
       return formatters.frequency;
     case 'duration':
-    case 'idleDuration':
-    case 'workDuration':
       return formatters.duration;
     default:
       return v => v;
@@ -28,10 +26,10 @@ export function processResult({data, result}) {
   const filteredResult = filterResult(result, data);
   const formattedResult = formatResult(filteredResult, data);
   if (data.view.property.toLowerCase().includes('duration')) {
-    if (formattedResult.type === 'durationNumber') {
+    if (formattedResult.type === 'number') {
       return {...formattedResult, data: formattedResult.data};
     }
-    if (formattedResult.type === 'durationMap') {
+    if (formattedResult.type === 'map') {
       const newData = formattedResult.data.map(entry => {
         return {...entry, value: entry.value};
       });

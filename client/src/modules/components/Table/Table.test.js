@@ -101,7 +101,7 @@ it('should call the updateSorting method to sort by key/value if result is map',
   const spy = jest.fn();
   const node = shallow(
     <Table
-      {...{head: ['a'], body: generateData(20), foot: [], resultType: 'Map'}}
+      {...{head: ['a'], body: generateData(20), foot: [], resultType: 'map'}}
       updateSorting={spy}
     />
   );
@@ -118,7 +118,7 @@ it('should call the updateSorting method to sort by Label if sortByLabel is true
   const spy = jest.fn();
   const node = shallow(
     <Table
-      {...{head: ['a'], body: generateData(20), foot: [], sortByLabel: true, resultType: 'Map'}}
+      {...{head: ['a'], body: generateData(20), foot: [], sortByLabel: true, resultType: 'map'}}
       updateSorting={spy}
     />
   );

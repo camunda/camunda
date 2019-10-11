@@ -35,7 +35,7 @@ export default function HyperReportRenderer({report, ...rest}) {
       data: report.data,
       result: {
         ...report.result,
-        type: report.data.view.property === 'duration' ? 'durationMap' : 'frequencyMap',
+        type: 'map',
         data: report.result.data.map(entry => ({
           ...entry,
           value: entry.value.find(data => data.key === key).value

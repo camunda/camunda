@@ -8,15 +8,12 @@ import React from 'react';
 
 import {Select} from 'components';
 import {t} from 'translation';
+import {isDurationReport} from 'services';
 
-export default function AggregationType({
-  report: {
-    result: {type},
-    data
-  },
-  onChange
-}) {
-  if (type && type.toLowerCase().includes('duration')) {
+export default function AggregationType({report, onChange}) {
+  const {data} = report;
+
+  if (isDurationReport(report)) {
     return (
       <fieldset className="AggregationType">
         <legend>{t('report.config.aggregation.legend')}</legend>

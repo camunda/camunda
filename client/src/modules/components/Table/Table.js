@@ -64,7 +64,7 @@ export default class Table extends React.Component {
     const {resultType = '', updateSorting, sorting, sortByLabel = false} = this.props;
 
     let sortBy = id;
-    if (resultType.includes('Map')) {
+    if (resultType === 'map') {
       if (id === state.columns[0].accessor) {
         sortBy = sortByLabel ? 'label' : 'key';
       } else {

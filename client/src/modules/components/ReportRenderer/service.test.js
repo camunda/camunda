@@ -18,13 +18,13 @@ it('should process duration reports', () => {
         configuration: {}
       },
       result: {
-        type: 'durationMap',
+        type: 'map',
         data: [{key: '2015-03-25T12:00:00Z', value: 4}, {key: '2015-03-26T12:00:00Z', value: 8}]
       }
     })
   ).toEqual({
     data: [{key: '2015-03-25T12:00:00Z', value: 4}, {key: '2015-03-26T12:00:00Z', value: 8}],
-    type: 'durationMap'
+    type: 'map'
   });
 });
 
