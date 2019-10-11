@@ -3179,36 +3179,36 @@ bowser@1.6.0:
   resolved "https://registry.yarnpkg.com/bowser/-/bowser-1.6.0.tgz#37fc387b616cb6aef370dab4d6bd402b74c5c54d"
   integrity sha1-N/w4e2Fstq7zcNq01r1AK3TFxU0=
 
-bpmn-font@^0.8.0:
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/bpmn-font/-/bpmn-font-0.8.0.tgz#85b18715faede345cd33c8a48f50bbe557ff76c2"
-  integrity sha512-j8u5k7EcGkmg7WkPgObxyvMEccr0qyiCuvXGnM5G2Q+kza119vVq3gblt0Rro/UDjl7i3VmfG3ojeZ04VHeVFg==
+bpmn-font@^0.9.3:
+  version "0.9.3"
+  resolved "https://registry.yarnpkg.com/bpmn-font/-/bpmn-font-0.9.3.tgz#03c2c906dbd30653e5b1f113d92c78cab6710df4"
+  integrity sha512-kzRGXGLzTROLRNCSskkOyj/+SbtTAn2unKfgB9tNt7RWJFybg/Wbe9YjK2ALotI3b64wwlCTkAalXiTiskP6dg==
 
-bpmn-js@3.4.1:
-  version "3.4.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-3.4.1.tgz#95f72ce954bf63d2e4bfb09da55fb374f4389507"
-  integrity sha512-rCR43EJ2YeszFJEL8q3tOlxLGXwEnn2StlA/oilPpi4XumxgQa7Oj4S2fev0M450tKaZIQJjZniX+b7+gb5ugA==
+bpmn-js@5.0.5:
+  version "5.0.5"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-5.0.5.tgz#22122b44b383477664b6d99c72f2a3438792774f"
+  integrity sha512-2ZMmjKR06nlgwnADoL9upK5Gy4TwqSycQAYDB0aqaObdd+lgFpEhdEifXlkxFJo6s4TNaDA6HmhZp6nsXlwHQA==
   dependencies:
-    bpmn-font "^0.8.0"
-    bpmn-moddle "^5.1.6"
+    bpmn-font "^0.9.3"
+    bpmn-moddle "^6.0.0"
     css.escape "^1.5.1"
-    diagram-js "^3.3.0"
-    diagram-js-direct-editing "^1.4.2"
-    ids "^0.2.0"
+    diagram-js "^5.0.2"
+    diagram-js-direct-editing "^1.6.0"
+    ids "^1.0.0"
     inherits "^2.0.1"
-    min-dash "^3.4.0"
+    min-dash "^3.5.1"
     min-dom "^3.0.0"
     object-refs "^0.3.0"
     tiny-svg "^2.2.1"
 
-bpmn-moddle@^5.1.6:
-  version "5.2.0"
-  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-5.2.0.tgz#b28247c4f07cfee73a334ef2ae51cac8304ba387"
-  integrity sha512-MZTlpIXWcHTelp09vR4hs23diCdeHl4JbwOXGmif10qf9v/kqreiCMeo0B9w8eEmZqdRdkulTIScKavTYOxTQw==
+bpmn-moddle@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-6.0.0.tgz#3f44fc1ea50d1cd9a588099a331fe478075dffa3"
+  integrity sha512-/yi7LBT4MFWsv5fmQD7/aeCZC94Ot8onADiJMQkosY2XGN85cVmOpPdmo8FfBu+6gjI9EWUnnUWjjY1SDVLeXw==
   dependencies:
     min-dash "^3.0.0"
-    moddle "^4.1.0"
-    moddle-xml "^7.5.0"
+    moddle "^5.0.1"
+    moddle-xml "^8.0.1"
 
 brace-expansion@^1.1.7:
   version "1.1.11"
@@ -4723,7 +4723,7 @@ dezalgo@^1.0.0:
     asap "^2.0.0"
     wrappy "1"
 
-diagram-js-direct-editing@^1.4.2, diagram-js-direct-editing@^1.5.0:
+diagram-js-direct-editing@^1.5.0, diagram-js-direct-editing@^1.6.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.6.0.tgz#8c0e220266c8234969a46a47c0f5609decfe1ee3"
   integrity sha512-bO9FqB6lJm+kaA6tSrXO0jT+Fu++yJTHbBf/wYb+AfJYAB92zZJrxwHRPTRhZGB4Md7XMEba5LAuNL8u9bjf3w==
@@ -4731,25 +4731,25 @@ diagram-js-direct-editing@^1.4.2, diagram-js-direct-editing@^1.5.0:
     min-dash "^3.0.0"
     min-dom "^3.0.0"
 
-diagram-js@^3.3.0:
-  version "3.3.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-3.3.1.tgz#3c266e5a810736e13fc1d933267fad3c985e5d4a"
-  integrity sha512-O4jdbcajP8D82U8NvUVVIgA4FuA64D3le2yLuaLTkYbkZookU06lm80cXxomAznLuJugEUy0xWugW9bHeJxnoA==
+diagram-js@^4.0.1:
+  version "4.0.3"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-4.0.3.tgz#a38ff9b2e2701644d3accafb0d98ee2dd9681bc6"
+  integrity sha512-BzcWUEnRfO2tpdc8XHvG/wsX+GrE/7qGRDf1khn5b0UrzrqqLhj1yiguvpgb0rQSTPeBtkot6PUA4wB2QAQutA==
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
     hammerjs "^2.0.1"
     inherits "^2.0.1"
-    min-dash "^3.2.0"
+    min-dash "^3.5.0"
     min-dom "^3.0.0"
     object-refs "^0.3.0"
     path-intersection "^1.0.2"
     tiny-svg "^2.2.1"
 
-diagram-js@^4.0.1:
-  version "4.0.3"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-4.0.3.tgz#a38ff9b2e2701644d3accafb0d98ee2dd9681bc6"
-  integrity sha512-BzcWUEnRfO2tpdc8XHvG/wsX+GrE/7qGRDf1khn5b0UrzrqqLhj1yiguvpgb0rQSTPeBtkot6PUA4wB2QAQutA==
+diagram-js@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-5.0.2.tgz#5243a57c6090912785a4c20441712bcebd2d02d9"
+  integrity sha512-N4rZPiZcZYfDvl63sYq0y7RgXaP6h/bJq3xahJsHoqHwCgFfG2F8HW98afhakirvY8K5IoHwAYmlcCort5DbSA==
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
@@ -8902,7 +8902,7 @@ mimic-fn@^2.0.0, mimic-fn@^2.1.0:
   resolved "https://registry.yarnpkg.com/mimic-fn/-/mimic-fn-2.1.0.tgz#7ed2c2ccccaf84d3ffcb7a69b57711fc2083401b"
   integrity sha512-OqbOk5oEQeAZ8WXWydlu9HJjz9WVdEIvamMCcXmuqUYjTknH/sqsWvhQ3vgwKFRR1HpjvNBKQ37nbJgYzGqGcg==
 
-min-dash@^3.0.0, min-dash@^3.2.0, min-dash@^3.4.0, min-dash@^3.5.0:
+min-dash@^3.0.0, min-dash@^3.5.0, min-dash@^3.5.1:
   version "3.5.2"
   resolved "https://registry.yarnpkg.com/min-dash/-/min-dash-3.5.2.tgz#23786fa289116ba3656038e16511577413d27200"
   integrity sha512-YVbJZUtnzT5QsgJUp9H9uyJTW6NJgswFqI27RI/+MSox860uIjaGMbSQBftEzbMXiJVRG24hpoIh3SG666SHgA==
@@ -9037,7 +9037,7 @@ mock-socket@^9.0.0:
   dependencies:
     url-parse "^1.4.4"
 
-moddle-xml@^7.1.0, moddle-xml@^7.5.0:
+moddle-xml@^7.1.0:
   version "7.5.0"
   resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-7.5.0.tgz#812cba2f299f1ebc8bf7efe96bf99e62b48dab2c"
   integrity sha512-wPm3TD9910Iblp4lg1okHDRilY9gTvNBdo7ZHBmBzH4OioF5R2hvG3SMyn7cAUjOUg0kYUfChHgcUEO+qUc77Q==
@@ -9046,10 +9046,26 @@ moddle-xml@^7.1.0, moddle-xml@^7.5.0:
     moddle "^4.1.0"
     saxen "^8.1.0"
 
+moddle-xml@^8.0.1:
+  version "8.0.1"
+  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-8.0.1.tgz#0aca9d9c0d32a082d6113599faba8c52f4a3fb31"
+  integrity sha512-aeMpZTFv5Vm5sKXtRRIoXb/4eMssNWjsvb0MNPe7g8x3F2cRmQa2AwT8gnjtlefHwmCxQRbIoP2kutmqfgoKzg==
+  dependencies:
+    min-dash "^3.0.0"
+    moddle "^5.0.1"
+    saxen "^8.1.0"
+
 moddle@^4.1.0:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/moddle/-/moddle-4.1.0.tgz#1b49f60dbe6c9565875605555c9fabe661e400b6"
   integrity sha512-asBaDLTTNpv4oC8iFdwonfMf/noPVvaBDXoSL7AsXZUDqwokgy8Lsf5eXwdnjXiDqm0olYi/S3Do544uVJSQDg==
+  dependencies:
+    min-dash "^3.0.0"
+
+moddle@^5.0.1:
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/moddle/-/moddle-5.0.1.tgz#1e27915d5539fcdad33e6e7ad2acdeacc5ad856c"
+  integrity sha512-RB9NCYxbnQLiY1ZJ8Y61+I8TBEmmyaMr8Tj0+fJHN8Fm6l5NqojDy1s4LNDxq+omvug4gnzERMgT8uwNsADDvw==
   dependencies:
     min-dash "^3.0.0"
 

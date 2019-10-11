@@ -7,7 +7,7 @@
     "@ibm/plex": "^3.0.0",
     "array-includes": "^3.0.3",
     "array.prototype.find": "^2.1.0",
-    "bpmn-js": "3.4.1",
+    "bpmn-js": "5.0.5",
     "chart.js": "2.8.0",
     "classnames": "^2.2.6",
     "debounce": "^1.2.0",
