@@ -57,6 +57,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -186,7 +187,7 @@ public class SimpleEngineClient {
     return processDefinitions.get(0).getId();
   }
 
-  public VariableValue getProcessInstanceDelayVariable(String procInstId) {
+  public Optional<Boolean> getProcessInstanceDelayVariable(String procInstId) {
     HttpGet get = new HttpGet(engineRestEndpoint+ "/process-instance/" + procInstId + "/variables/" + DELAY_VARIABLE_NAME);
     VariableValue variable = new VariableValue();
     try (CloseableHttpResponse response = client.execute(get)) {
@@ -195,7 +196,7 @@ public class SimpleEngineClient {
     } catch (IOException e) {
       log.error("Error while trying to fetch the variable!!", e);
     }
-    return variable;
+    return Optional.ofNullable(variable.getValue()).map(Object::toString).map(Boolean::parseBoolean);
   }
 
   private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment) {

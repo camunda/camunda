@@ -8,7 +8,6 @@ package org.camunda.optimize.data.generation.generators;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
-import org.camunda.optimize.data.generation.generators.client.dto.VariableValue;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -140,9 +139,10 @@ public class UserTaskCompleter {
         engineClient.unclaimTask(task);
       } else {
         if (RANDOM.nextDouble() < 0.97) {
-          VariableValue processInstanceVariable =
-            engineClient.getProcessInstanceDelayVariable(task.getProcessInstanceId());
-          if (Boolean.parseBoolean(processInstanceVariable.getValue().toString())) {
+          boolean executionDelayed = engineClient
+            .getProcessInstanceDelayVariable(task.getProcessInstanceId())
+            .orElse(false);
+          if (executionDelayed) {
             log.info("Creating an outlier instance, sleeping for " + OUTLIER_DELAY + " ms");
             Thread.sleep(OUTLIER_DELAY);
           }
