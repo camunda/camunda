@@ -59,7 +59,9 @@
         },
         "distributedBy": "none",
         "ylabel": "",
-        "xlabel": ""
+        "xlabel": "",
+        "processPart": null,
+        "sorting": null
       },
       "processDefinitionKey": null,
       "processDefinitionVersions": null,
@@ -68,11 +70,7 @@
       "filter": [],
       "view": null,
       "groupBy": null,
-      "visualization": null,
-      "parameters": {
-        "processPart": null,
-        "sorting": null
-      }
+      "visualization": null
     },
     "combined": false,
     "reportType": "process",
@@ -173,7 +171,8 @@
         },
         "distributedBy": "none",
         "ylabel": "",
-        "xlabel": ""
+        "xlabel": "",
+        "sorting": null
       },
       "decisionDefinitionKey": null,
       "decisionDefinitionVersions": null,
@@ -182,10 +181,7 @@
       "filter": [],
       "view": null,
       "groupBy": null,
-      "visualization": null,
-      "parameters": {
-        "sorting": null
-      }
+      "visualization": null
     },
     "combined": false,
     "reportType": "decision",

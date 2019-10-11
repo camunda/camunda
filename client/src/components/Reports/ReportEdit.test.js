@@ -41,7 +41,6 @@ const report = {
   data: {
     processDefinitionKey: null,
     configuration: {},
-    parameters: {},
     visualization: 'table'
   },
   result: {data: [1, 2, 3]}

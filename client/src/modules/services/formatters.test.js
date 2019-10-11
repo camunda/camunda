@@ -176,8 +176,7 @@ const exampleDurationReport = {
       }
     },
     visualization: 'table',
-    parameters: {sorting: null},
-    configuration: {}
+    configuration: {sorting: null}
   },
   result: {
     processInstanceCount: 100,
@@ -267,8 +266,7 @@ describe('automatic interval selection', () => {
       }
     },
     visualization: 'table',
-    parameters: {sorting: null},
-    configuration: {}
+    configuration: {sorting: null}
   };
 
   it('should use seconds when interval is less than hour', () => {

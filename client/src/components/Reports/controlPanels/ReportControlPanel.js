@@ -87,7 +87,6 @@ export default class ReportControlPanel extends React.Component {
       processDefinitionKey: {$set: key},
       processDefinitionVersions: {$set: versions},
       tenantIds: {$set: tenants},
-      parameters: {$set: {}},
       configuration: {
         excludedColumns: {$set: []},
         columnOrder: {
@@ -197,9 +196,9 @@ export default class ReportControlPanel extends React.Component {
               <ProcessPart
                 flowNodeNames={this.state.flowNodeNames}
                 xml={data.configuration.xml}
-                processPart={data.parameters.processPart}
+                processPart={data.configuration.processPart}
                 update={newPart =>
-                  this.props.updateReport({parameters: {processPart: {$set: newPart}}}, true)
+                  this.props.updateReport({configuration: {processPart: {$set: newPart}}}, true)
                 }
               />
             </li>

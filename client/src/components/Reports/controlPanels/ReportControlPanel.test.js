@@ -57,8 +57,7 @@ const report = {
     groupBy: {type: 'none', unit: null},
     visualization: 'number',
     filter: [],
-    configuration: {xml: 'fooXml'},
-    parameters: {}
+    configuration: {xml: 'fooXml'}
   }
 };
 

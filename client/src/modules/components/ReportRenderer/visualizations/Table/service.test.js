@@ -98,8 +98,7 @@ it('should return correct combined table report data properties', () => {
         }
       },
       visualization: 'table',
-      parameters: {sorting: null},
-      configuration: {}
+      configuration: {sorting: null}
     },
     result: {
       processInstanceCount: 100,
@@ -113,8 +112,7 @@ it('should return correct combined table report data properties', () => {
   const combinedReport = {
     combined: true,
     data: {
-      parameters: {sorting: null},
-      configuration: {},
+      configuration: {sorting: null},
       reports: [{id: 'report A'}, {id: 'report B'}]
     },
     result: {

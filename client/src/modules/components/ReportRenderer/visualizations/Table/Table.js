@@ -53,7 +53,7 @@ export default withErrorHandling(
     }
 
     updateSorting = (by, order) => {
-      this.props.updateReport({parameters: {sorting: {$set: {by, order}}}}, true);
+      this.props.updateReport({configuration: {sorting: {$set: {by, order}}}}, true);
     };
 
     formatData = () => {
@@ -61,7 +61,7 @@ export default withErrorHandling(
         report: {reportType, combined, data, result},
         updateReport
       } = this.props;
-      const {parameters} = data;
+      const {configuration} = data;
 
       // Combined Report
       if (combined) {
@@ -82,7 +82,7 @@ export default withErrorHandling(
         resultType: result.type,
         sortByLabel: data.groupBy.type === 'flowNodes',
         updateSorting: updateReport && this.updateSorting,
-        sorting: parameters && parameters.sorting
+        sorting: configuration && configuration.sorting
       };
     };
   }
