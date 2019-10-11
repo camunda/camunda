@@ -15,7 +15,7 @@ import {login} from './service';
 
 jest.mock('./service', () => {
   return {
-    login: jest.fn()
+    login: jest.fn().mockReturnValue({token: 'authToken'})
   };
 });
 
@@ -80,14 +80,16 @@ it('should set the error property on failed login', async () => {
 
   login.mockReturnValueOnce({errorMessage: 'Failed'});
 
+  node.instance().passwordField = document.createElement('input');
   await node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
   expect(node).toHaveState('error', 'Failed');
 });
 
 it('should disable the login button when waiting for server response', () => {
-  const node = shallow(<Login />);
+  const node = shallow(<Login onLogin={jest.fn()} />);
 
+  node.instance().passwordField = document.createElement('input');
   node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
   expect(node.find(Button)).toBeDisabled();

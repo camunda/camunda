@@ -412,6 +412,11 @@ describe('tenants', () => {
             name: 'Tenant C'
           }
         ]
+      },
+      {
+        key: 'bar',
+        name: 'Bar Definition',
+        versions: []
       }
     ]);
   });
