@@ -69,7 +69,6 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
 
   private final List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.values());
 
-
   protected abstract ProcessReportDataType getTestReportDataType();
 
   protected abstract ProcessGroupByType getGroupByType();

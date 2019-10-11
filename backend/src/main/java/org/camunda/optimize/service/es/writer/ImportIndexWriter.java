@@ -47,7 +47,7 @@ public class ImportIndexWriter {
       esClient,
       importItemName,
       importIndexDtos,
-      (request, dto) -> addImportIndexRequest(request, dto)
+      this::addImportIndexRequest
     );
   }
 

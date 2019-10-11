@@ -7,16 +7,19 @@ package org.camunda.optimize.upgrade.main.impl;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.elasticsearch.index.query.QueryBuilders;
 
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
@@ -42,6 +45,8 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .toVersion(TO_VERSION)
       .addUpgradeStep(moveParameterFieldsForDecisionReport())
       .addUpgradeStep(moveParameterFieldsForProcessReport())
+      .addUpgradeStep(removeDocumentsForImportIndexWithId("decisionDefinitionXmlImportIndex"))
+      .addUpgradeStep(removeDocumentsForImportIndexWithId("processDefinitionXmlImportIndex"))
       .build();
   }
 
@@ -103,4 +108,17 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       script
     );
   }
+
+  private UpgradeStep removeDocumentsForImportIndexWithId(String idPrefix) {
+    final String[] documentIdsToRemove = configurationService.getConfiguredEngines()
+      .keySet()
+      .stream()
+      .map(engineAlias -> EsHelper.constructKey(idPrefix, engineAlias))
+      .toArray(String[]::new);
+    return new DeleteDataStep(
+      IMPORT_INDEX_INDEX_NAME,
+      QueryBuilders.idsQuery().addIds(documentIdsToRemove)
+    );
+  }
+
 }

@@ -36,7 +36,6 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class ScrollBasedImportMediatorTest {
 
-
   @Mock
   private ImportIndexHandlerProvider provider;
 
@@ -88,7 +87,6 @@ public class ScrollBasedImportMediatorTest {
     assertThat(result, is(false));
   }
 
-
   @Test
   public void testImportNextEnginePageWithNotEmptyIdSet() {
     // given
@@ -103,7 +101,6 @@ public class ScrollBasedImportMediatorTest {
     resultList.add(new DecisionDefinitionXmlEngineDto());
     when(engineEntityFetcher.fetchXmlsForDefinitions(page))
       .thenReturn(resultList);
-
 
     // when
     final boolean result = underTest.importNextEnginePage();

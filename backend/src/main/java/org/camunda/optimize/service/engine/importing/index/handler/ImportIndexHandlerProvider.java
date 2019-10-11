@@ -49,7 +49,6 @@ public class ImportIndexHandlerProvider {
     );
   }
 
-
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers(String engineAlias) {
     List<AllEntitiesBasedImportIndexHandler> result = new ArrayList<>();
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
@@ -66,16 +65,6 @@ public class ImportIndexHandlerProvider {
       engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getTimestampBasedHandlers();
-    }
-    return result;
-  }
-
-  public List<ScrollBasedImportIndexHandler> getAllScrollBasedHandlers(String engineAlias) {
-    List<ScrollBasedImportIndexHandler> result = new ArrayList<>();
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getScrollBasedHandlers();
     }
     return result;
   }
@@ -174,15 +163,6 @@ public class ImportIndexHandlerProvider {
     List<ImportIndexHandler> result = new ArrayList<>();
     for (EngineImportIndexHandlerProvider provider : engineImportIndexHandlerProviderMap.values()) {
       result.addAll(provider.getAllHandlers());
-    }
-    return result;
-  }
-
-  public List<ImportIndexHandler> getAllHandlers(String engine) {
-    List<ImportIndexHandler> result = new ArrayList<>();
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engine);
-    if (engineImportIndexHandlerProvider != null) {
-      result = engineImportIndexHandlerProvider.getAllHandlers();
     }
     return result;
   }

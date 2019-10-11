@@ -77,7 +77,6 @@ public class EngineImportIndexHandlerProvider {
     }
   }
 
-
   public List<AllEntitiesBasedImportIndexHandler> getAllEntitiesBasedHandlers() {
     return allEntitiesBasedHandlers;
   }

@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
@@ -38,6 +39,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
 
   private static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
   private static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
+  private static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
   private static final int EXPECTED_NUMBER_OF_REPORTS = 2;
 
   @Before
@@ -48,7 +50,8 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     initSchema(Lists.newArrayList(
       METADATA_INDEX,
       SINGLE_DECISION_REPORT_INDEX,
-      SINGLE_PROCESS_REPORT_INDEX
+      SINGLE_PROCESS_REPORT_INDEX,
+      IMPORT_INDEX_INDEX
     ));
 
     setMetadataIndexVersion(FROM_VERSION);

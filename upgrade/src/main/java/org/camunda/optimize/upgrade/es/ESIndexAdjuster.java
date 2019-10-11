@@ -29,6 +29,7 @@ import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
@@ -265,6 +266,24 @@ public class ESIndexAdjuster {
       restClient.updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String errorMessage = String.format("Could not update data for indexAlias [%s]!", aliasName);
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void deleteDataByTypeName(final String indexName,
+                                   final QueryBuilder query) {
+    String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexName);
+    logger.debug(
+      "Deleting data for indexAlias [{}] with query [{}].", aliasName, query.toString()
+    );
+
+    try {
+      DeleteByQueryRequest request = new DeleteByQueryRequest(aliasName);
+      request.setRefresh(true);
+      request.setQuery(query);
+      restClient.deleteByQuery(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String errorMessage = String.format("Could not delete data for indexAlias [%s] with query [%s]!", aliasName, query);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }

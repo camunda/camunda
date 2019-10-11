@@ -14,6 +14,8 @@ import org.camunda.optimize.upgrade.indexes.UserTestIndex;
 import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
+import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
@@ -26,6 +28,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -127,6 +130,30 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(searchResponse.getHits().getHits().length, is(1));
     assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("username"), is("admin"));
     assertThat(searchResponse.getHits().getHits()[0].getSourceAsMap().get("password"), is("admin1"));
+  }
+
+  @Test
+  public void executeDeleteDataStep() throws Exception {
+    //given
+    UpgradePlan upgradePlan =
+      UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
+        .fromVersion(FROM_VERSION)
+        .toVersion(TO_VERSION)
+        .addUpgradeStep(buildCreateIndexStep(TEST_INDEX))
+        .addUpgradeStep(buildInsertDataStep())
+        .addUpgradeStep(buildDeleteDataStep())
+        .build();
+
+    // when
+    upgradePlan.execute();
+
+    // then
+    final SearchResponse searchResponse = prefixAwareClient.search(
+      new SearchRequest(TEST_INDEX.getIndexName()),
+      RequestOptions.DEFAULT
+    );
+    assertThat(searchResponse.getHits().getHits().length, is(0));
   }
 
   @Test
@@ -236,6 +263,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       TEST_INDEX.getIndexName(),
       termQuery("username", "admin"),
       "ctx._source.password = ctx._source.password + \"1\""
+    );
+  }
+
+  private UpgradeStep buildDeleteDataStep() {
+    return new DeleteDataStep(
+      TEST_INDEX.getIndexName(),
+      QueryBuilders.termQuery("username", "admin")
     );
   }
 

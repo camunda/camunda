@@ -7,7 +7,6 @@ package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 
-
 public class Main {
 
   private static EmbeddedCamundaOptimize jettyCamundaOptimize;

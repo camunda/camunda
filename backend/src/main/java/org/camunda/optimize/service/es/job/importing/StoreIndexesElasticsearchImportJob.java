@@ -21,7 +21,7 @@ public class StoreIndexesElasticsearchImportJob extends ElasticsearchImportJob<I
   }
 
   @Override
-  protected void persistEntities(List<ImportIndexDto> newOptimizeEntities) throws Exception {
+  protected void persistEntities(List<ImportIndexDto> newOptimizeEntities) {
     importIndexWriter.importIndexes(newOptimizeEntities);
   }
 }

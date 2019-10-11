@@ -1,0 +1,10 @@
+{"index":{"_index":"optimize-import-index_v1","_type":"import-index","_id":"decisionDefinitionXmlImportIndex-camunda-bpm"}}
+{ "engine": "camunda-bpm", "importIndex": "0" }
+{"index":{"_index":"optimize-import-index_v1","_type":"import-index","_id":"decision-definition-camunda-bpm"}}
+{ "engine": "camunda-bpm", "importIndex": "4" }
+{"index":{"_index":"optimize-import-index_v1","_type":"import-index","_id":"tenant-camunda-bpm"}}
+{ "engine": "camunda-bpm", "importIndex": "0" }
+{"index":{"_index":"optimize-import-index_v1","_type":"import-index","_id":"processDefinitionXmlImportIndex-camunda-bpm"}}
+{ "engine": "camunda-bpm", "importIndex": "0" }
+{"index":{"_index":"optimize-import-index_v1","_type":"import-index","_id":"process-definition-camunda-bpm"}}
+{ "engine": "camunda-bpm", "importIndex": "2" }

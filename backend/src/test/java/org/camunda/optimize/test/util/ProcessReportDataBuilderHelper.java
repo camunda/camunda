@@ -35,7 +35,6 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskDurationView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskFrequencyView;
 
-
 public class ProcessReportDataBuilderHelper {
 
   public static ProcessReportDataDto createProcessReportDataViewRawAsTable(

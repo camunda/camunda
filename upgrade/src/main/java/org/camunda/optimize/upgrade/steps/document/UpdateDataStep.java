@@ -11,7 +11,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 
 import java.util.Map;
 
-
 public class UpdateDataStep implements UpgradeStep {
   private final String indexName;
   private final QueryBuilder query;

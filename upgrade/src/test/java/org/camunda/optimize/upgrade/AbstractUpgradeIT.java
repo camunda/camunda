@@ -34,7 +34,6 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
 
-
 public abstract class AbstractUpgradeIT {
 
   public static final MetadataIndex METADATA_INDEX = new MetadataIndex();
