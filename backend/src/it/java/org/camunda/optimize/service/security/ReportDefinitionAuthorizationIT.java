@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
@@ -334,16 +334,16 @@ public class ReportDefinitionAuthorizationIT {
     // when
     CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
 
-    CombinedProcessReportResultDataDto<ProcessCountReportMapResultDto> result = embeddedOptimizeRule
+    CombinedProcessReportResultDataDto<ReportMapResult> result = embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResult>>() {
       })
       .getResult();
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>> resultMap = result.getData();
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap = result.getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
     List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(authorizedReportId).getResult().getData();

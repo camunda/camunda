@@ -8,13 +8,13 @@ package org.camunda.optimize.service.es.report.command.process.flownode.duration
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeDurationGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchRequest;
@@ -58,7 +58,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
   protected AggregationStrategy aggregationStrategy;
 
   @Override
-  protected SingleProcessMapDurationReportResult evaluate() {
+  protected SingleProcessMapReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating flow node duration grouped by flow node report " +
@@ -80,8 +80,8 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessDurationReportMapResultDto resultDto = mapToReportResult(response);
-      return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
+      final ReportMapResult resultDto = mapToReportResult(response);
+      return new SingleProcessMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -97,7 +97,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
   }
 
   @Override
-  protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
     ((ProcessReportDataDto) getReportData()).getConfiguration().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
@@ -138,8 +138,8 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     );
   }
 
-  private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
+  private ReportMapResult mapToReportResult(final SearchResponse response) {
+    final ReportMapResult resultDto = new ReportMapResult();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested activities = aggregations.get(EVENTS_AGGREGATION);

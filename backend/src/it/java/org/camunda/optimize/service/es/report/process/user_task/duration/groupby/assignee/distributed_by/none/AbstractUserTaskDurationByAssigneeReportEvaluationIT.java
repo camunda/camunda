@@ -16,15 +16,15 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -96,8 +96,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
-      evaluateDurationMapReport(reportData);
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse =
+      evaluateMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -108,7 +108,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime(), is(getUserTaskDurationTime()));
 
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     assertThat(
@@ -141,7 +141,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(2));
@@ -176,8 +176,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final Map<AggregationType, ProcessDurationReportMapResultDto> results =
-      evaluateDurationMapReportForAllAggTypes(reportData);
+    final Map<AggregationType, ReportMapResult> results =
+      evaluateMapReportForAllAggTypes(reportData);
 
     // then
     assertDurationMapReportResults(results, ImmutableMap.of(DEFAULT_USERNAME, setDurations, SECOND_USER, setDurations));
@@ -204,7 +204,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getIsComplete(), is(true));
@@ -240,8 +240,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final Map<AggregationType, ProcessDurationReportMapResultDto> results =
-      evaluateDurationMapReportForAllAggTypes(reportData);
+    final Map<AggregationType, ReportMapResult> results =
+      evaluateMapReportForAllAggTypes(reportData);
 
     // then
     assertDurationMapReportResults(
@@ -273,7 +273,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto resultDto = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount(), is(2L));
@@ -306,7 +306,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       // when
       reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
       reportData.getConfiguration().setAggregationType(aggType);
-      final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+      final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
       // then
       final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -341,7 +341,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -379,7 +379,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       final ProcessReportDataDto reportData = createReport(processDefinition);
       reportData.getConfiguration().setAggregationType(aggType);
       reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-      final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+      final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
       // then
       assertThat(result.getData().size(), is(2));
@@ -411,9 +411,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
-    final ProcessDurationReportMapResultDto result1 = evaluateDurationMapReport(reportData1).getResult();
+    final ReportMapResult result1 = evaluateMapReport(reportData1).getResult();
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ProcessDurationReportMapResultDto result2 = evaluateDurationMapReport(reportData2).getResult();
+    final ReportMapResult result2 = evaluateMapReport(reportData2).getResult();
 
     // then
     assertThat(result1.getData().size(), is(1));
@@ -445,7 +445,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
@@ -470,8 +470,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final Map<AggregationType, ProcessDurationReportMapResultDto> results =
-      evaluateDurationMapReportForAllAggTypes(reportData);
+    final Map<AggregationType, ReportMapResult> results =
+      evaluateMapReportForAllAggTypes(reportData);
 
     // then
     assertDurationMapReportResults(results, ImmutableMap.of(DEFAULT_USERNAME, new Long[]{100L, 300L, 600L}));
@@ -483,7 +483,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(0));
@@ -576,13 +576,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setFlowNodeExecutionState(testValues.executionState);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertEvaluateReportWithExecutionState(result, testValues);
   }
 
-  protected abstract void assertEvaluateReportWithExecutionState(ProcessDurationReportMapResultDto result,
+  protected abstract void assertEvaluateReportWithExecutionState(ReportMapResult result,
                                                                  ExecutionStateTestValues expectedValues);
 
   @Test
@@ -609,7 +609,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(1));
@@ -635,7 +635,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(1));
@@ -662,7 +662,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -671,7 +671,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // when
     reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(processStartTime, null));
-    result = evaluateDurationMapReport(reportData).getResult();
+    result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -824,7 +824,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private void assertCorrectValueOrdering(ProcessDurationReportMapResultDto result) {
+  private void assertCorrectValueOrdering(ReportMapResult result) {
     List<MapResultEntryDto<Long>> resultData = result.getData();
     final List<Long> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)
@@ -835,22 +835,22 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     );
   }
 
-  private Map<AggregationType, ProcessDurationReportMapResultDto> evaluateDurationMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  private Map<AggregationType, ReportMapResult> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
-    Map<AggregationType, ProcessDurationReportMapResultDto> resultsMap = new HashMap<>();
+    Map<AggregationType, ReportMapResult> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
       reportData.getConfiguration().setAggregationType(aggType);
-      final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+      final ReportMapResult result = evaluateMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });
     return resultsMap;
   }
 
-  private void assertDurationMapReportResults(Map<AggregationType, ProcessDurationReportMapResultDto> results,
+  private void assertDurationMapReportResults(Map<AggregationType, ReportMapResult> results,
                                               Map<String, Long[]> expectedUserTaskValues) {
 
     aggregationTypes.forEach((AggregationType aggType) -> {
-      ProcessDurationReportMapResultDto result = results.get(aggType);
+      ReportMapResult result = results.get(aggType);
       assertThat(result.getData(), is(notNullValue()));
 
       expectedUserTaskValues.keySet().forEach((String userTaskKey) -> assertThat(

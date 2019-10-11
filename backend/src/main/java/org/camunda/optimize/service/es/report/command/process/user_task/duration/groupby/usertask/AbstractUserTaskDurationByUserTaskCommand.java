@@ -7,13 +7,13 @@ package org.camunda.optimize.service.es.report.command.process.user_task.duratio
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.UserTaskDurationGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchRequest;
@@ -56,7 +56,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
 
   @Override
-  protected SingleProcessMapDurationReportResult evaluate() {
+  protected SingleProcessMapReportResult evaluate() {
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
       "Evaluating user task total duration report for process definition key [{}] and versions [{}]",
@@ -76,8 +76,8 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessDurationReportMapResultDto resultDto = mapToReportResult(response);
-      return new SingleProcessMapDurationReportResult(resultDto, reportDefinition);
+      final ReportMapResult resultDto = mapToReportResult(response);
+      return new SingleProcessMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
         "Could not evaluate user task total duration for process definition key [%s] and versions [%s]",
@@ -90,7 +90,7 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
   }
 
   @Override
-  protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
     ((ProcessReportDataDto) getReportData()).getConfiguration().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
@@ -134,8 +134,8 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
 
   protected abstract String getReferenceDateFieldName();
 
-  private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
+  private ReportMapResult mapToReportResult(final SearchResponse response) {
+    final ReportMapResult resultDto = new ReportMapResult();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);

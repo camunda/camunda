@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -59,7 +59,7 @@ public class CountProcessInstanceFrequencyGroupByNoneCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    ProcessReportNumberResultDto numberResultDto = new ProcessReportNumberResultDto();
+    NumberResultDto numberResultDto = new NumberResultDto();
     numberResultDto.setData(response.getHits().getTotalHits());
     numberResultDto.setInstanceCount(response.getHits().getTotalHits());
     return new SingleProcessNumberReportResult(numberResultDto, reportDefinition);

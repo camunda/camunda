@@ -8,14 +8,14 @@ package org.camunda.optimize.dto.optimize.rest.report;
 import lombok.Getter;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 import java.util.Map;
 
 @Getter
 @Setter
-public class CombinedProcessReportResultDataDto<RESULT extends ProcessReportResultDto> implements ReportResultDto {
+public class CombinedProcessReportResultDataDto<RESULT extends SingleReportResultDto> implements ReportResultDto {
   protected Map<String, AuthorizedProcessReportEvaluationResultDto<RESULT>> data;
 
   protected CombinedProcessReportResultDataDto() {

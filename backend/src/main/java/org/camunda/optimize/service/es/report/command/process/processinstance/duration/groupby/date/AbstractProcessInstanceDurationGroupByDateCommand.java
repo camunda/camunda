@@ -9,14 +9,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -53,7 +53,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 public abstract class AbstractProcessInstanceDurationGroupByDateCommand
-  extends ProcessReportCommand<SingleProcessMapDurationReportResult>
+  extends ProcessReportCommand<SingleProcessMapReportResult>
   implements AutomaticGroupByDateCommand {
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
@@ -74,7 +74,7 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
   protected abstract AggregationBuilder createOperationsAggregation();
 
   @Override
-  protected SingleProcessMapDurationReportResult evaluate() throws OptimizeException {
+  protected SingleProcessMapReportResult evaluate() throws OptimizeException {
 
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
@@ -101,8 +101,8 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessDurationReportMapResultDto mapResultDto = mapToReportResult(response);
-      return new SingleProcessMapDurationReportResult(mapResultDto, reportDefinition);
+      final ReportMapResult mapResultDto = mapToReportResult(response);
+      return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(
@@ -128,7 +128,7 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
   }
 
   @Override
-  protected void sortResultData(final SingleProcessMapDurationReportResult evaluationResult) {
+  protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
     ((ProcessReportDataDto) getReportData()).getConfiguration().getSorting().ifPresent(
       sorting -> MapResultSortingUtility.sortResultData(sorting, evaluationResult)
     );
@@ -204,8 +204,8 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
     return aggregationBuilder.subAggregation(createOperationsAggregation());
   }
 
-  private ProcessDurationReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessDurationReportMapResultDto resultDto = new ProcessDurationReportMapResultDto();
+  private ReportMapResult mapToReportResult(final SearchResponse response) {
+    final ReportMapResult resultDto = new ReportMapResult();
     resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setIsComplete(isResultComplete(response));
     resultDto.setInstanceCount(response.getHits().getTotalHits());

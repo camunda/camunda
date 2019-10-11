@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result.raw
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
@@ -15,7 +15,7 @@ import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class RawDataProcessReportResultDto extends ProcessReportResultDto implements LimitedResultDto {
+public class RawDataProcessReportResultDto extends SingleReportResultDto implements LimitedResultDto {
 
   protected List<RawDataProcessInstanceDto> data;
   private Boolean isComplete = true;

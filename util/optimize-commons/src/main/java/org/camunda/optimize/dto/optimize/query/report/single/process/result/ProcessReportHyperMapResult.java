@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
@@ -17,7 +18,7 @@ import java.util.Optional;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ProcessReportHyperMapResult extends ProcessReportResultDto
+public class ProcessReportHyperMapResult extends SingleReportResultDto
   implements LimitedResultDto {
   private List<HyperMapResultEntryDto<Long>> data = new ArrayList<>();
   private Boolean isComplete = true;

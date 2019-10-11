@@ -7,24 +7,18 @@ package org.camunda.optimize.dto.optimize.query.report.single.result;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import static org.camunda.optimize.dto.optimize.ReportConstants.DURATION_MAP_RESULT_TYPE;
-import static org.camunda.optimize.dto.optimize.ReportConstants.DURATION_NUMBER_RESULT_TYPE;
-import static org.camunda.optimize.dto.optimize.ReportConstants.FREQUENCY_MAP_RESULT_TYPE;
-import static org.camunda.optimize.dto.optimize.ReportConstants.FREQUENCY_NUMBER_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.HYPER_MAP_RESULT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.MAP_RESULT_TYPE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.NUMBER_RESULT_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.RAW_RESULT_TYPE;
 
 public enum ResultType {
-  @JsonProperty(FREQUENCY_MAP_RESULT_TYPE)
-  FREQUENCY_MAP,
-  @JsonProperty(DURATION_MAP_RESULT_TYPE)
-  DURATION_MAP,
+  @JsonProperty(MAP_RESULT_TYPE)
+  MAP,
   @JsonProperty(HYPER_MAP_RESULT_TYPE)
   HYPER_MAP,
-  @JsonProperty(FREQUENCY_NUMBER_RESULT_TYPE)
-  FREQUENCY_NUMBER,
-  @JsonProperty(DURATION_NUMBER_RESULT_TYPE)
-  DURATION_NUMBER,
+  @JsonProperty(NUMBER_RESULT_TYPE)
+  NUMBER,
   @JsonProperty(RAW_RESULT_TYPE)
   RAW,
   ;

@@ -7,14 +7,12 @@ package org.camunda.optimize.service.es.report.result.process;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
@@ -55,46 +53,24 @@ public class CombinedProcessReportResult
                                                            final ResultType resultType) {
     final List<String[]> csvStrings;
     switch (resultType) {
-      case FREQUENCY_MAP:
+      case MAP:
         csvStrings = mapCombinedReportResultsToCsvList(
           limit,
           offset,
-          (CombinedProcessReportResultDto<ProcessCountReportMapResultDto>) reportResult,
+          (CombinedProcessReportResultDto<ReportMapResult>) reportResult,
           r -> new String[]{r.getReportDefinition().getName(), "", ""},
           evaluationResult -> new SingleProcessMapReportResult(
             evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
           )
         );
         break;
-      case DURATION_MAP:
-        csvStrings = mapCombinedReportResultsToCsvList(
-          limit,
-          offset,
-          (CombinedProcessReportResultDto<ProcessDurationReportMapResultDto>) reportResult,
-          r -> new String[]{r.getReportDefinition().getName(), "", ""},
-          evaluationResult -> new SingleProcessMapDurationReportResult(
-            evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
-          )
-        );
-        break;
-      case FREQUENCY_NUMBER:
+      case NUMBER:
         csvStrings = mapCombinedReportResultsToCsvList(
           1,
           0,
-          (CombinedProcessReportResultDto<ProcessReportNumberResultDto>) reportResult,
+          (CombinedProcessReportResultDto<NumberResultDto>) reportResult,
           r -> new String[]{r.getReportDefinition().getName(), ""},
           evaluationResult -> new SingleProcessNumberReportResult(
-            evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
-          )
-        );
-        break;
-      case DURATION_NUMBER:
-        csvStrings = mapCombinedReportResultsToCsvList(
-          1,
-          0,
-          (CombinedProcessReportResultDto<ProcessDurationReportNumberResultDto>) reportResult,
-          r -> new String[]{r.getReportDefinition().getName(), ""},
-          evaluationResult -> new SingleProcessNumberDurationReportResult(
             evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()
           )
         );
@@ -110,15 +86,15 @@ public class CombinedProcessReportResult
     return csvStrings;
   }
 
-  interface ReportResultMapper<T extends ProcessReportResultDto>
+  interface ReportResultMapper<T extends SingleReportResultDto>
     extends Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, ReportEvaluationResult<?, ?>> {
   }
 
-  interface ReportResultHeaderMapper<T extends ProcessReportResultDto>
+  interface ReportResultHeaderMapper<T extends SingleReportResultDto>
     extends Function<ReportEvaluationResult<T, SingleProcessReportDefinitionDto>, String[]> {
   }
 
-  private <T extends ProcessReportResultDto> List<String[]> mapCombinedReportResultsToCsvList(
+  private <T extends SingleReportResultDto> List<String[]> mapCombinedReportResultsToCsvList(
     final Integer limit,
     final Integer offset,
     final CombinedProcessReportResultDto<T> combinedResult,
@@ -141,7 +117,7 @@ public class CombinedProcessReportResult
   }
 
 
-  private <T extends ProcessReportResultDto> List<List<String[]>> mapCombinedReportResultsToCsvLists(
+  private <T extends SingleReportResultDto> List<List<String[]>> mapCombinedReportResultsToCsvLists(
     final Integer limit,
     final Integer offset,
     final CombinedProcessReportResultDto<T> combinedResult,
@@ -173,7 +149,7 @@ public class CombinedProcessReportResult
       });
   }
 
-  private <T extends ProcessReportResultDto> String[] createCombinedReportHeader(
+  private <T extends SingleReportResultDto> String[] createCombinedReportHeader(
     final CombinedProcessReportResultDto<T> combinedResult,
     final ReportResultHeaderMapper<T> singleResultHeaderMapper) {
     return combinedResult.getData()

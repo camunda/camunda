@@ -17,6 +17,6 @@ public class DecisionReportNumberResultDto extends DecisionReportResultDto {
 
   @Override
   public ResultType getType() {
-    return ResultType.FREQUENCY_NUMBER;
+    return ResultType.NUMBER;
   }
 }

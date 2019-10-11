@@ -90,9 +90,9 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       // @formatter:off
       "def parameters = ctx._source.${reportDataField}.${parameterField};\n" +
         "if (parameters != null) {\n" +
-        "if (ctx._source.${reportDataField}.${configurationField} != null) {\n" +
-        substitutionScriptPart +
-        "}\n" +
+          "if (ctx._source.${reportDataField}.${configurationField} != null) {\n" +
+          substitutionScriptPart +
+          "}\n" +
         "ctx._source.${reportDataField}.remove(\"${parameterField}\");\n" +
         "}\n"
       // @formatter:on
@@ -102,6 +102,5 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       QueryBuilders.matchAllQuery(),
       script
     );
-
   }
 }

@@ -9,24 +9,24 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.process.util.GroupByFlowNodeCommandUtil;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 
 import java.util.Map;
 import java.util.function.Function;
 
 public abstract class FlowNodeDurationGroupingCommand
-  extends ProcessReportCommand<SingleProcessMapDurationReportResult> {
+  extends ProcessReportCommand<SingleProcessMapReportResult> {
 
   @Override
-  protected SingleProcessMapDurationReportResult filterResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
-                                                                  final SingleProcessMapDurationReportResult evaluationResult) {
+  protected SingleProcessMapReportResult filterResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
+                                                                  final SingleProcessMapReportResult evaluationResult) {
     GroupByFlowNodeCommandUtil.filterResultData(commandContext, evaluationResult);
     return evaluationResult;
   }
 
   @Override
-  protected SingleProcessMapDurationReportResult enrichResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
-                                                                  final SingleProcessMapDurationReportResult evaluationResult) {
+  protected SingleProcessMapReportResult enrichResultData(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
+                                                                  final SingleProcessMapReportResult evaluationResult) {
     GroupByFlowNodeCommandUtil.enrichResultData(
       commandContext, evaluationResult, () -> null, getGetFlowNodeNameExtractor()
     );

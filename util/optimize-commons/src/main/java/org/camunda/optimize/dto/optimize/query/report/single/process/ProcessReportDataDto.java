@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,6 +54,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   @JsonIgnore
   public void setProcessDefinitionVersion(String processDefinitionVersion) {
     this.processDefinitionVersions = Lists.newArrayList(processDefinitionVersion);
+  }
+
+  @JsonIgnore
+  public boolean isFrequencyReport() {
+    return Optional.ofNullable(view)
+      .map(ProcessViewDto::getProperty)
+      .map(p -> p.equals(ProcessViewProperty.FREQUENCY))
+      .orElse(false);
   }
 
   @JsonIgnore

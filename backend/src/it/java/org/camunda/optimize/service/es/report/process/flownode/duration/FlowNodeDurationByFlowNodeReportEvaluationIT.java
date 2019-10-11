@@ -11,15 +11,15 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -76,11 +76,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(result.getInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
@@ -123,11 +123,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
     assertThat(result.getDataEntryForKey(SERVICE_TASK_ID).isPresent(), is(true));
     assertThat(
@@ -157,11 +157,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     ProcessReportDataDto reportData =
       getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData().size(), is(4));
     assertThat(result.getDataEntryForKey(SERVICE_TASK_ID).isPresent(), is(true));
@@ -197,11 +197,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto resultDto = evaluationResponse.getResult();
+    final ReportMapResult resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount(), is(3L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(4));
@@ -231,7 +231,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
@@ -261,17 +261,17 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    final Map<AggregationType, ProcessDurationReportMapResultDto> results = evaluateDurationMapReportForAllAggTypes(
+    final Map<AggregationType, ReportMapResult> results = evaluateMapReportForAllAggTypes(
       reportData);
 
     // then
     assertDurationMapReportResults(results, new Long[]{10L, 30L, 20L});
   }
 
-  private void assertDurationMapReportResults(final Map<AggregationType, ProcessDurationReportMapResultDto> results,
+  private void assertDurationMapReportResults(final Map<AggregationType, ReportMapResult> results,
                                               Long[] expectedDurations) {
     aggregationTypes.forEach((AggregationType aggType) -> {
-      final ProcessDurationReportMapResultDto result = results.get(aggType);
+      final ReportMapResult result = results.get(aggType);
       assertThat(result.getDataEntryForKey(SERVICE_TASK_ID).isPresent(), is(true));
       assertThat(
         result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
@@ -303,8 +303,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
       reportData.getConfiguration().setAggregationType(aggType);
       reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-      AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse =
-        evaluateDurationMapReport(
+      AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse =
+        evaluateMapReport(
           reportData);
 
       // then
@@ -346,11 +346,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       latestDefinition.getKey(),
       ALL_VERSIONS
     );
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     //then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(4));
     assertThat(
       result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
@@ -389,11 +389,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       latestDefinition.getKey(),
       ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
     );
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     //then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(4));
     assertThat(
       result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
@@ -429,11 +429,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     //when
     ProcessReportDataDto reportData = createReport(latestDefinition.getKey(),
                                                    ALL_VERSIONS);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     //then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
     assertThat(
       result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
@@ -469,11 +469,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
         latestDefinition.getKey(),
         ImmutableList.of(firstDefinition.getVersionAsString(), latestDefinition.getVersionAsString())
       );
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     //then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
     assertThat(
       result.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
@@ -497,7 +497,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     ProcessReportDataDto reportData = createReport(processKey, ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), CoreMatchers.is((long) selectedTenants.size()));
@@ -525,20 +525,20 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData1 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse1 =
-      evaluateDurationMapReport(reportData1);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse1 =
+      evaluateMapReport(reportData1);
     ProcessReportDataDto reportData2 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse2 =
-      evaluateDurationMapReport(reportData2);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse2 =
+      evaluateMapReport(reportData2);
 
     // then
-    final ProcessDurationReportMapResultDto result1 = evaluationResponse1.getResult();
+    final ReportMapResult result1 = evaluationResponse1.getResult();
     assertThat(result1.getData().size(), is(3));
     assertThat(
       result1.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(80L, 40L, 120L))
     );
-    final ProcessDurationReportMapResultDto result2 = evaluationResponse2.getResult();
+    final ReportMapResult result2 = evaluationResponse2.getResult();
     assertThat(result2.getData().size(), is(3));
     assertThat(
       result2.getDataEntryForKey(SERVICE_TASK_ID).get().getValue(),
@@ -561,7 +561,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    final Map<AggregationType, ProcessDurationReportMapResultDto> results = evaluateDurationMapReportForAllAggTypes(
+    final Map<AggregationType, ReportMapResult> results = evaluateMapReportForAllAggTypes(
       reportData);
 
 
@@ -575,7 +575,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     ProcessReportDataDto reportData =
       createReport("nonExistingProcessDefinitionId", "1");
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
@@ -605,11 +605,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       createReport(processDefinition.getKey(),
                    processDefinition.getVersionAsString());
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
@@ -645,11 +645,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       createReport(processDefinition.getKey(),
                    processDefinition.getVersionAsString());
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.COMPLETED);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
     assertThat(getExecutedFlowNodeCount(result), is(1L));
     assertThat(
@@ -685,11 +685,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       createReport(processDefinition.getKey(),
                    processDefinition.getVersionAsString());
     reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.ALL);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     assertThat(
@@ -735,11 +735,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     ProcessReportDataDto reportData =
       createReport(subProcessDefinition.getKey(), subProcessDefinition.getVersionAsString());
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
     assertThat(getExecutedFlowNodeCount(result), is(3L));
     assertThat(
@@ -763,11 +763,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData().size(), is(3));
     Long[] durationSet = new Long[11];
     Arrays.fill(durationSet, 10L);
@@ -793,7 +793,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(),
                                                    engineDto.getProcessDefinitionVersion());
-    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(3));
@@ -817,11 +817,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, past.minusSeconds(1L)));
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluationResponse = evaluateDurationMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    ProcessDurationReportMapResultDto result = evaluationResponse.getResult();
+    ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(3));
     assertThat(getExecutedFlowNodeCount(result), is(0L));
@@ -829,7 +829,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // when
     reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(createStartDateFilter(past, null));
-    evaluationResponse = evaluateDurationMapReport(reportData);
+    evaluationResponse = evaluateMapReport(reportData);
 
     // then
     result = evaluationResponse.getResult();
@@ -911,7 +911,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
 
-  private long getExecutedFlowNodeCount(ProcessDurationReportMapResultDto resultList) {
+  private long getExecutedFlowNodeCount(ReportMapResult resultList) {
     return resultList.getData()
       .stream()
       .map(MapResultEntryDto::getValue)
@@ -933,13 +933,13 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private Map<AggregationType, ProcessDurationReportMapResultDto> evaluateDurationMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  private Map<AggregationType, ReportMapResult> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
-    Map<AggregationType, ProcessDurationReportMapResultDto> resultsMap =
+    Map<AggregationType, ReportMapResult> resultsMap =
       new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
       reportData.getConfiguration().setAggregationType(aggType);
-      resultsMap.put(aggType, evaluateDurationMapReport(reportData).getResult());
+      resultsMap.put(aggType, evaluateMapReport(reportData).getResult());
     });
     return resultsMap;
   }

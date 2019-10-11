@@ -9,14 +9,10 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
@@ -114,18 +110,16 @@ public abstract class ReportEvaluationHandler {
         },
         LinkedHashMap::new
       ));
-    final CombinedProcessReportResultDto combinedProcessReportResultDto = new CombinedProcessReportResultDto(
+    final CombinedProcessReportResultDto combinedSingleReportResultDto = new CombinedProcessReportResultDto(
       reportIdToMapResult
     );
-    return new CombinedProcessReportResult(combinedProcessReportResultDto, combinedReportDefinition);
+    return new CombinedProcessReportResult(combinedSingleReportResultDto, combinedReportDefinition);
   }
 
   private boolean isProcessMapOrNumberResult(ReportEvaluationResult reportResult) {
-    final ReportResultDto resultAsDto = reportResult.getResultAsDto();
-    return resultAsDto instanceof ProcessReportNumberResultDto ||
-      resultAsDto instanceof ProcessCountReportMapResultDto ||
-      resultAsDto instanceof ProcessDurationReportNumberResultDto ||
-      resultAsDto instanceof ProcessDurationReportMapResultDto;
+    final ResultType resultType = reportResult.getResultAsDto().getType();
+    return ResultType.MAP.equals(resultType) ||
+      ResultType.NUMBER.equals(resultType);
   }
 
   private List<ReportEvaluationResult> evaluateListOfReportIds(final String userId,

@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.f
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
@@ -84,7 +84,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessCountReportMapResultDto mapResultDto = mapToReportResult(response);
+      final ReportMapResult mapResultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -167,8 +167,8 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     return aggregationBuilder;
   }
 
-  private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
+  private ReportMapResult mapToReportResult(final SearchResponse response) {
+    final ReportMapResult resultDto = new ReportMapResult();
 
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);

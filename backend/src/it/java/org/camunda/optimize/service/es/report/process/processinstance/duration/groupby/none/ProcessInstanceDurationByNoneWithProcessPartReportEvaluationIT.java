@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -87,8 +87,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
-      evaluateDurationNumberReport(reportData);
+    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
+      evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -131,8 +131,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
-      evaluateDurationNumberReport(reportData);
+    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
+      evaluateNumberReport(reportData);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -173,8 +173,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
-      evaluateDurationNumberReportById(reportId);
+    AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
+      evaluateNumberReportById(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -221,8 +221,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    final Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
-      evaluateDurationMapReportForAllAggTypes(reportData);
+    final Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> results =
+      evaluateMapReportForAllAggTypes(reportData);
 
     // then
     assertAggregationResults(results);
@@ -247,7 +247,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_LOOP
       );
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -276,7 +276,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -323,7 +323,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -350,7 +350,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -377,7 +377,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         "FOO"
       );
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -395,7 +395,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -432,8 +432,8 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    final Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results =
-      evaluateDurationMapReportForAllAggTypes(reportData);
+    final Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> results =
+      evaluateMapReportForAllAggTypes(reportData);
 
     // then
     assertAggregationResults(results);
@@ -456,7 +456,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     ProcessReportDataDto reportData =
       createReport(processKey, ALL_VERSIONS, START_EVENT, END_EVENT);
     reportData.setTenantIds(selectedTenants);
-    ProcessDurationReportNumberResultDto result = evaluateDurationNumberReport(reportData).getResult();
+    NumberResultDto result = evaluateNumberReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -485,7 +485,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
     reportData.setFilter(createVariableFilter("true"));
-    ProcessDurationReportNumberResultDto resultDto = evaluateDurationNumberReport(reportData).getResult();
+    NumberResultDto resultDto = evaluateNumberReport(reportData).getResult();
 
     // then
     long calculatedResult = resultDto.getData();
@@ -493,7 +493,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
     // when
     reportData.setFilter(createVariableFilter("false"));
-    resultDto = evaluateDurationNumberReport(reportData).getResult();
+    resultDto = evaluateNumberReport(reportData).getResult();
 
     // then
     calculatedResult = resultDto.getData();
@@ -562,21 +562,21 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
     return id;
   }
 
-  private Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> evaluateDurationMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  private Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
-    Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> resultsMap =
+    Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultsMap =
       new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
       reportData.getConfiguration().setAggregationType(aggType);
-      AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluationResponse =
-        evaluateDurationNumberReport(reportData);
+      AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
+        evaluateNumberReport(reportData);
       resultsMap.put(aggType, evaluationResponse);
     });
     return resultsMap;
   }
 
   private void assertAggregationResults(
-    Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>> results) {
+    Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> results) {
     assertThat(results.get(AVERAGE).getResult().getData(), is(notNullValue()));
     assertThat(results.get(AVERAGE).getResult().getData(), is(4000L));
     assertThat(results.get(MIN).getResult().getData(), is(notNullValue()));

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -86,7 +86,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
     ));
     reportData.setFilter(Collections.singletonList(new StartDateFilterDto(dateFilterDataDto)));
 
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -141,11 +141,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse = evaluateCountMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getIsComplete(), is(true));
 

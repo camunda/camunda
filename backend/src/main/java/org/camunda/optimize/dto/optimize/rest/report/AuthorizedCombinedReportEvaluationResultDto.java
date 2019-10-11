@@ -6,10 +6,10 @@
 package org.camunda.optimize.dto.optimize.rest.report;
 
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 
-public class AuthorizedCombinedReportEvaluationResultDto<T extends ProcessReportResultDto>
+public class AuthorizedCombinedReportEvaluationResultDto<T extends SingleReportResultDto>
   extends AuthorizedEvaluationResultDto<CombinedProcessReportResultDataDto<T>, CombinedReportDefinitionDto> {
 
   public AuthorizedCombinedReportEvaluationResultDto() {

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -90,7 +90,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(startDateFilterDto)
       .build();
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
 
     // then

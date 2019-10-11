@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -95,7 +95,7 @@ public class ProcessInstanceDurationByEndDateReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -141,7 +141,7 @@ public class ProcessInstanceDurationByEndDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .setFilter(endDateFilterDto)
       .build();
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
 
     // then
@@ -198,7 +198,7 @@ public class ProcessInstanceDurationByEndDateReportEvaluationIT
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
       .build();
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -224,7 +224,7 @@ public class ProcessInstanceDurationByEndDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .build();
 
-    final ProcessDurationReportMapResultDto result = evaluateDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
 
     // then

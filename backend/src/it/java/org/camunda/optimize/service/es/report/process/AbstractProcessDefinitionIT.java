@@ -13,11 +13,9 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -73,8 +71,8 @@ public class AbstractProcessDefinitionIT {
     return deployAndStartSimpleProcessWithVariables(variables, null);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables,
-                                                                              String tenantId) {
+  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables,
+                                                                            String tenantId) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
       .startEvent()
@@ -97,7 +95,7 @@ public class AbstractProcessDefinitionIT {
     return deploySimpleOneUserTasksDefinition("aProcess", null);
   }
 
-  protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
+  private ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
       .startEvent(START_EVENT)
       .userTask(USER_TASK)
@@ -163,30 +161,21 @@ public class AbstractProcessDefinitionIT {
     return processKey;
   }
 
-  protected AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateCountMapReportById(String id) {
+  protected AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluateMapReportById(String id) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResult>>() {});
       // @formatter:on
   }
 
-  protected AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateDurationMapReportById(String reportId) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(reportId)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  protected AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluateDurationNumberReportById(String id) {
+  protected AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluateNumberReportById(String id) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<NumberResultDto>>() {});
       // @formatter:on
   }
 
@@ -199,12 +188,12 @@ public class AbstractProcessDefinitionIT {
       // @formatter:on
   }
 
-  protected AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateCountMapReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluateMapReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResult>>() {});
       // @formatter:on
   }
 
@@ -217,30 +206,12 @@ public class AbstractProcessDefinitionIT {
       // @formatter:on
   }
 
-  protected AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateDurationMapReport(ProcessReportDataDto reportData) {
+  protected AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluateNumberReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  protected AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto> evaluateDurationNumberReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportNumberResultDto>>() {});
-      // @formatter:on
-  }
-
-  protected AuthorizedProcessReportEvaluationResultDto<ProcessReportNumberResultDto> evaluateNumberReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessReportNumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<NumberResultDto>>() {});
       // @formatter:on
   }
 

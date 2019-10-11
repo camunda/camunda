@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -35,7 +35,7 @@ public class GroupByFlowNodeCommandUtil {
   private GroupByFlowNodeCommandUtil() {
   }
 
-  public static <MAP extends ProcessReportMapResult<V>, V extends Comparable> void filterResultData(
+  public static <MAP extends ReportMapResult, V extends Comparable> void filterResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult) {
 
@@ -47,7 +47,7 @@ public class GroupByFlowNodeCommandUtil {
         .ifPresent(processDefinition -> {
           final Map<String, String> flowNodeNames = processDefinition.getFlowNodeNames();
 
-          final List<MapResultEntryDto<V>> collect = evaluationResult.getResultAsDto()
+          final List<MapResultEntryDto<Long>> collect = evaluationResult.getResultAsDto()
             .getData()
             .stream()
             .filter(resultEntry -> flowNodeNames.containsKey(resultEntry.getKey()))
@@ -84,10 +84,10 @@ public class GroupByFlowNodeCommandUtil {
     }
   }
 
-  public static <MAP extends ProcessReportMapResult<V>, V extends Comparable> void enrichResultData(
+  public static <MAP extends ReportMapResult, V extends Comparable> void enrichResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult,
-    final Supplier<V> createNewEmptyResult,
+    final Supplier<Long> createNewEmptyResult,
     final Function<ProcessDefinitionOptimizeDto, Map<String, String>> flowNodeNameExtractor) {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
@@ -103,7 +103,7 @@ public class GroupByFlowNodeCommandUtil {
         Set<String> allFlowNodeKeys = flowNodeNames.keySet();
         Set<String> difference = Sets.difference(allFlowNodeKeys, flowNodeKeysWithResult);
         difference.forEach(flowNodeKey -> {
-          MapResultEntryDto<V> emptyResult = new MapResultEntryDto<>(flowNodeKey, createNewEmptyResult.get());
+          MapResultEntryDto<Long> emptyResult = new MapResultEntryDto<>(flowNodeKey, createNewEmptyResult.get());
           emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
           evaluationResult.getResultAsDto().getData().add(emptyResult);
         });

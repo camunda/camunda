@@ -13,8 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -309,7 +308,7 @@ public class DateQueryFilterIT {
         .add()
         .buildList()
     );
-    final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -358,7 +357,7 @@ public class DateQueryFilterIT {
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
-    final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -415,7 +414,7 @@ public class DateQueryFilterIT {
         .add()
         .buildList()
     );
-    final ProcessDurationReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -481,7 +480,7 @@ public class DateQueryFilterIT {
         .add()
         .buildList()
     );
-    final ProcessCountReportMapResultDto result = evaluateProcessCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateProcessCountMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -524,23 +523,23 @@ public class DateQueryFilterIT {
     assertThat(resultMap.getData().size(), is(size));
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateProcessCountMapReport(
+  private AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluateProcessCountMapReport(
     final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResult>>() {});
       // @formatter:on
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto> evaluateProcessDurationMapReport(
+  private AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluateProcessDurationMapReport(
     final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessDurationReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResult>>() {});
       // @formatter:on
   }
 

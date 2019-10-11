@@ -82,10 +82,10 @@ public class RawProcessDataCommand extends ProcessReportCommand<SingleProcessRaw
         recordLimit
       );
 
-      final RawDataProcessReportResultDto rawDataProcessReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
+      final RawDataProcessReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
         rawDataProcessInstanceDtos, response.getHits().getTotalHits(), objectMapper
       );
-      return new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
+      return new SingleProcessRawDataReportResult(rawDataSingleReportResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
         String.format(

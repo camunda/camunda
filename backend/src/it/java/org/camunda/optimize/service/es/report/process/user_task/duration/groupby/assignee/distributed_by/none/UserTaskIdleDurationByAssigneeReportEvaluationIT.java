@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.user_task.duration.groupb
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -82,7 +82,7 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ProcessDurationReportMapResultDto result,
+  protected void assertEvaluateReportWithExecutionState(final ReportMapResult result,
                                                         final ExecutionStateTestValues expectedValues) {
     assertThat(
       result.getDataEntryForKey(DEFAULT_USERNAME).orElse(new MapResultEntryDto<>("foo", null)).getValue(),

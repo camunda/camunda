@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
@@ -88,7 +88,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessCountReportMapResultDto mapResultDto = mapToReportResult(response);
+      final ReportMapResult mapResultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -183,8 +183,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
     }
   }
 
-  private ProcessCountReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ProcessCountReportMapResultDto resultDto = new ProcessCountReportMapResultDto();
+  private ReportMapResult mapToReportResult(final SearchResponse response) {
+    final ReportMapResult resultDto = new ReportMapResult();
     resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setInstanceCount(response.getHits().getTotalHits());
     resultDto.setIsComplete(isResultComplete(response));

@@ -6,10 +6,10 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberDurationReportResult;
+import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -24,12 +24,12 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
-  extends ProcessReportCommand<SingleProcessNumberDurationReportResult> {
+  extends ProcessReportCommand<SingleProcessNumberReportResult> {
 
   protected AggregationStrategy aggregationStrategy;
 
   @Override
-  protected SingleProcessNumberDurationReportResult evaluate() {
+  protected SingleProcessNumberReportResult evaluate() {
 
     final ProcessReportDataDto processReportData = getReportData();
     logger.debug(
@@ -68,15 +68,15 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
 
     Aggregations aggregations = response.getAggregations();
 
-    ProcessDurationReportNumberResultDto numberResultDto = new ProcessDurationReportNumberResultDto();
+    NumberResultDto numberResultDto = new NumberResultDto();
     numberResultDto.setData(processAggregationOperation(aggregations));
     numberResultDto.setInstanceCount(response.getHits().getTotalHits());
-    return new SingleProcessNumberDurationReportResult(numberResultDto, reportDefinition);
+    return new SingleProcessNumberReportResult(numberResultDto, reportDefinition);
   }
 
   @Override
   protected void sortResultData(
-    final SingleProcessNumberDurationReportResult evaluationResult) {
+    final SingleProcessNumberReportResult evaluationResult) {
     // no ordering for single result
   }
 

@@ -5,13 +5,12 @@
  */
 package org.camunda.optimize.service.es.report.command.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapDurationReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 
 import java.util.Comparator;
@@ -57,25 +56,6 @@ public class MapResultSortingUtility {
     resultData.getResultAsDto().setData(sortResultData(
       sorting, resultData.getResultAsDto().getData(), keyType
     ));
-  }
-
-  public static void sortResultData(final SortingDto sorting,
-                                    final SingleProcessMapDurationReportResult resultData,
-                                    final VariableType keyType) {
-    resultData.getResultAsDto().setData(sortResultData(
-      sorting, resultData.getResultAsDto().getData(), keyType
-    ));
-  }
-
-
-  public static void sortResultData(final SortingDto sorting,
-                                    final SingleProcessMapDurationReportResult resultData) {
-    final List<MapResultEntryDto<Long>> mapResultEntryDtos = sortResultData(
-      sorting,
-      resultData.getResultAsDto().getData(),
-      VariableType.STRING
-    );
-    resultData.getResultAsDto().setData(mapResultEntryDtos);
   }
 
   public static void sortResultData(final SortingDto sorting,

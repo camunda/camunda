@@ -9,7 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
@@ -380,7 +380,7 @@ public class VariableImportIT extends AbstractImportIT {
       .setProcessDefinitionVersion(ALL_VERSIONS)
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
-    ProcessCountReportMapResultDto result = evaluateReport(reportData).getResult();
+    ReportMapResult result = evaluateReport(reportData).getResult();
     assertThat(result.getData(), is(notNullValue()));
     List<MapResultEntryDto<Long>> flowNodeIdToExecutionFrequency = result.getData();
     for (MapResultEntryDto<Long> frequency : flowNodeIdToExecutionFrequency) {
@@ -388,12 +388,12 @@ public class VariableImportIT extends AbstractImportIT {
     }
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
+  private AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluateReport(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResult>>() {});
       // @formatter:on
   }
 

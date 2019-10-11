@@ -28,6 +28,6 @@ public class DecisionReportMapResultDto extends DecisionReportResultDto implemen
 
   @Override
   public ResultType getType() {
-    return ResultType.FREQUENCY_MAP;
+    return ResultType.MAP;
   }
 }

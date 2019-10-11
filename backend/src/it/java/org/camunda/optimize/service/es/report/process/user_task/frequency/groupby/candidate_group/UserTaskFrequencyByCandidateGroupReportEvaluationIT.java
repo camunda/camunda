@@ -14,15 +14,15 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -82,8 +82,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
-      evaluateCountMapReport(reportData);
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse =
+      evaluateMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -93,7 +93,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
 
-    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
@@ -127,12 +127,12 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ProcessCountReportMapResultDto> evaluationResponse =
-      evaluateCountMapReport(reportData);
+    final AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse =
+      evaluateMapReport(reportData);
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    final ProcessCountReportMapResultDto result = evaluationResponse.getResult();
+    final ReportMapResult result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     assertThat(
@@ -161,7 +161,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(2));
@@ -195,7 +195,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessCountReportMapResultDto resultDto = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(resultDto.getInstanceCount(), is(2L));
@@ -222,7 +222,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -253,7 +253,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -287,7 +287,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(2));
@@ -313,9 +313,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
-    final ProcessCountReportMapResultDto result1 = evaluateCountMapReport(reportData1).getResult();
+    final ReportMapResult result1 = evaluateMapReport(reportData1).getResult();
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ProcessCountReportMapResultDto result2 = evaluateCountMapReport(reportData2).getResult();
+    final ReportMapResult result2 = evaluateMapReport(reportData2).getResult();
 
     // then
     assertThat(result1.getData().size(), is(1));
@@ -349,7 +349,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -361,7 +361,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(0));
@@ -416,7 +416,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setFlowNodeExecutionState(testValues.executionState);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(
@@ -458,7 +458,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(1));
@@ -485,7 +485,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    final ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData().size(), is(1));
@@ -512,7 +512,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    ProcessCountReportMapResultDto result = evaluateCountMapReport(reportData).getResult();
+    ReportMapResult result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -522,7 +522,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // when
     reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(processStartTime, null));
-    result = evaluateCountMapReport(reportData).getResult();
+    result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -636,7 +636,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private long getExecutedFlowNodeCount(ProcessCountReportMapResultDto resultList) {
+  private long getExecutedFlowNodeCount(ReportMapResult resultList) {
     return resultList.getData()
       .stream()
       .map(MapResultEntryDto::getValue)
@@ -644,7 +644,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .count();
   }
 
-  private void assertCorrectValueOrdering(ProcessCountReportMapResultDto result) {
+  private void assertCorrectValueOrdering(ReportMapResult result) {
     List<MapResultEntryDto<Long>> resultData = result.getData();
     final List<Long> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)

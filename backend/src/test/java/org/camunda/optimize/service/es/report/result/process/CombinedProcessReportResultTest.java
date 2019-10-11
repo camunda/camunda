@@ -9,16 +9,14 @@ import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessCountReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportNumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.duration.ProcessDurationReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.export.CSVUtils;
@@ -40,12 +38,12 @@ public class CombinedProcessReportResultTest {
   @Test
   public void testGetResultAsCsvForMapResult() {
     // given
-    final ProcessCountReportMapResultDto mapResultDto = new ProcessCountReportMapResultDto();
+    final ReportMapResult mapResultDto = new ReportMapResult();
     final List<MapResultEntryDto<Long>> resultDtoMap = new ArrayList<>();
     resultDtoMap.add(new MapResultEntryDto<>("900.0", 1L));
     resultDtoMap.add(new MapResultEntryDto<>("10.99", 1L));
     mapResultDto.setData(resultDtoMap);
-    final List<ProcessReportResultDto> mapResultDtos = Lists.newArrayList(
+    final List<SingleReportResultDto> mapResultDtos = Lists.newArrayList(
       mapResultDto,
       mapResultDto
     );
@@ -104,13 +102,13 @@ public class CombinedProcessReportResultTest {
   public void testGetResultAsCsvForNumberResult() {
 
     // given
-    final ProcessReportNumberResultDto numberResultDto1 = new ProcessReportNumberResultDto();
+    final NumberResultDto numberResultDto1 = new NumberResultDto();
     numberResultDto1.setData(5l);
 
-    final ProcessReportNumberResultDto numberResultDto2 = new ProcessReportNumberResultDto();
+    final NumberResultDto numberResultDto2 = new NumberResultDto();
     numberResultDto2.setData(2l);
 
-    final ArrayList<ProcessReportResultDto> resultDtos = Lists.newArrayList(
+    final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       numberResultDto1,
       numberResultDto2
     );
@@ -150,10 +148,10 @@ public class CombinedProcessReportResultTest {
 
     // given
 
-    final ProcessDurationReportNumberResultDto durReportDto = new ProcessDurationReportNumberResultDto();
+    final NumberResultDto durReportDto = new NumberResultDto();
     durReportDto.setData(6L);
 
-    final ArrayList<ProcessReportResultDto> resultDtos = Lists.newArrayList(
+    final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       durReportDto,
       durReportDto
     );
@@ -197,14 +195,14 @@ public class CombinedProcessReportResultTest {
 
     // given
 
-    final ProcessDurationReportMapResultDto durMapReportDto = new ProcessDurationReportMapResultDto();
+    final ReportMapResult durMapReportDto = new ReportMapResult();
 
     List<MapResultEntryDto<Long>> data = new ArrayList<>();
     data.add(new MapResultEntryDto<>("test1", 3L));
     data.add(new MapResultEntryDto<>("test2", 6L));
     durMapReportDto.setData(data);
 
-    final ArrayList<ProcessReportResultDto> resultDtos = Lists.newArrayList(
+    final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(
       durMapReportDto,
       durMapReportDto
     );
@@ -286,7 +284,7 @@ public class CombinedProcessReportResultTest {
   public void testGetResultAsCsvForEmptyReport() {
     // given
     CombinedProcessReportResult underTest = new CombinedProcessReportResult(
-      new CombinedProcessReportResultDto(new HashMap<String, ReportEvaluationResult<ProcessReportResultDto,
+      new CombinedProcessReportResultDto(new HashMap<String, ReportEvaluationResult<SingleReportResultDto,
         SingleProcessReportDefinitionDto>>()),
       new CombinedReportDefinitionDto()
     );
@@ -300,7 +298,7 @@ public class CombinedProcessReportResultTest {
 
 
   private CombinedProcessReportResult createTestCombinedProcessReportResult(ProcessReportDataType reportDataType,
-                                                                            List<ProcessReportResultDto> reportResultDtos,
+                                                                            List<SingleReportResultDto> reportResultDtos,
                                                                             AggregationType aggregationType) {
 
     final ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder.createReportData()
@@ -323,24 +321,25 @@ public class CombinedProcessReportResultTest {
     return createCombinedProcessReportResult(reportEvaluationResults);
   }
 
-  private ReportEvaluationResult createReportEvaluationResult(final ProcessReportResultDto reportResultDto,
+  private ReportEvaluationResult createReportEvaluationResult(final SingleReportResultDto reportResultDto,
                                                               final SingleProcessReportDefinitionDto singleDefDto) {
     ReportEvaluationResult reportResult = null;
 
-    if (reportResultDto instanceof ProcessCountReportMapResultDto) {
-      reportResult = new SingleProcessMapReportResult((ProcessCountReportMapResultDto) reportResultDto, singleDefDto);
+    final boolean isFrequencyReport = singleDefDto.getData().isFrequencyReport();
+    if (reportResultDto instanceof ReportMapResult && isFrequencyReport) {
+      reportResult = new SingleProcessMapReportResult((ReportMapResult) reportResultDto, singleDefDto);
 
-    } else if (reportResultDto instanceof ProcessReportNumberResultDto) {
-      reportResult = new SingleProcessNumberReportResult((ProcessReportNumberResultDto) reportResultDto, singleDefDto);
+    } else if (reportResultDto instanceof NumberResultDto && isFrequencyReport) {
+      reportResult = new SingleProcessNumberReportResult((NumberResultDto) reportResultDto, singleDefDto);
 
-    } else if (reportResultDto instanceof ProcessDurationReportNumberResultDto) {
-      reportResult = new SingleProcessNumberDurationReportResult(
-        (ProcessDurationReportNumberResultDto) reportResultDto,
+    } else if (reportResultDto instanceof NumberResultDto) {
+      reportResult = new SingleProcessNumberReportResult(
+        (NumberResultDto) reportResultDto,
         singleDefDto
       );
-    } else if (reportResultDto instanceof ProcessDurationReportMapResultDto) {
-      reportResult = new SingleProcessMapDurationReportResult(
-        (ProcessDurationReportMapResultDto) reportResultDto,
+    } else if (reportResultDto instanceof ReportMapResult) {
+      reportResult = new SingleProcessMapReportResult(
+        (ReportMapResult) reportResultDto,
         singleDefDto
       );
     }

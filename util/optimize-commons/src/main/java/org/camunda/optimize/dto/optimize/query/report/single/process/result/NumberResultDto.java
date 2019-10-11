@@ -5,13 +5,17 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.result;
 
+import lombok.Getter;
+import lombok.Setter;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
-public class ProcessCountReportMapResultDto extends ProcessReportMapResult<Long> {
+public class NumberResultDto extends SingleReportResultDto {
+
+  @Getter @Setter private Long data;
 
   @Override
   public ResultType getType() {
-    return ResultType.FREQUENCY_MAP;
+    return ResultType.NUMBER;
   }
-
 }

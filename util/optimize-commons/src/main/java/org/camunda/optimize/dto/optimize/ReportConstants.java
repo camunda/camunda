@@ -81,11 +81,9 @@ public class ReportConstants {
   public static final String RELATIVE_DATE_FILTER = "relative";
 
   public static final String RAW_RESULT_TYPE = "raw";
-  public static final String FREQUENCY_MAP_RESULT_TYPE = "frequencyMap";
-  public static final String DURATION_MAP_RESULT_TYPE = "durationMap";
+  public static final String NUMBER_RESULT_TYPE = "number";
+  public static final String MAP_RESULT_TYPE = "map";
   public static final String HYPER_MAP_RESULT_TYPE = "hyperMap";
-  public static final String FREQUENCY_NUMBER_RESULT_TYPE = "frequencyNumber";
-  public static final String DURATION_NUMBER_RESULT_TYPE = "durationNumber";
 
   public static final String MISSING_VARIABLE_KEY = "missing";
 
