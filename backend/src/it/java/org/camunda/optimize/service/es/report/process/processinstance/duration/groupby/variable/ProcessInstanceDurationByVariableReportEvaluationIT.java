@@ -18,10 +18,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -92,7 +92,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
@@ -109,7 +109,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
 
-    final ReportMapResult resultDto = evaluationResponse.getResult();
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
@@ -145,7 +145,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     String reportId = createAndStoreDefaultReportDefinition(reportData);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
@@ -162,7 +162,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(variableGroupByDto.getValue().getName(), is("foo"));
     assertThat(variableGroupByDto.getValue().getType(), is(VariableType.STRING));
 
-    final ReportMapResult resultDto = evaluationResponse.getResult();
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount(), is(1L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
@@ -200,7 +200,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -242,7 +242,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
         .build();
       reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
       reportData.getConfiguration().setAggregationType(aggType);
-      final ReportMapResult result = evaluateMapReport(reportData).getResult();
+      final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
       // then
       final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -281,7 +281,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       "dateVar",
       VariableType.DATE
     );
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> response = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> response = evaluateMapReport(
       reportData);
 
     // then
@@ -321,7 +321,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
@@ -356,7 +356,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       processKey, newArrayList(ALL_VERSIONS), DEFAULT_VARIABLE_NAME, VariableType.STRING
     );
     reportData.setTenantIds(selectedTenants);
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -386,7 +386,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
@@ -394,15 +394,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinitionDto.getKey()));
     assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinitionDto.getVersionAsString()));
 
-    final ReportMapResult result = evaluationResponse.getResult();
+    final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getIsComplete(), is(true));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(
-      result.getDataEntryForKey("bar1").get().getValue(),
+      result.getEntryForKey("bar1").get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(1000L))
     );
     assertThat(
-      result.getDataEntryForKey("bar2").get().getValue(),
+      result.getEntryForKey("bar2").get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(1000L, 9000L, 2000L))
     );
   }
@@ -432,11 +432,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ReportMapResult resultDto = evaluationResponse.getResult();
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount(), is(2L));
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
@@ -488,7 +488,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
@@ -541,7 +541,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
@@ -589,7 +589,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.STRING)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
@@ -648,7 +648,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
@@ -694,7 +694,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
     reportData.getConfiguration().setAggregationType(AggregationType.MAX);
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
@@ -740,7 +740,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo1")
       .setVariableType(VariableType.STRING)
       .build();
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
@@ -789,7 +789,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
         .setVariableType(variableType)
         .build();
 
-      ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+      ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
       // then
       assertThat(resultDto.getData(), is(notNullValue()));
@@ -868,21 +868,21 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("testVar")
       .setVariableType(VariableType.STRING)
       .build();
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
 
     // then
-    final ReportMapResult result = evaluationResponse.getResult();
+    final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
     assertThat(
-      result.getDataEntryForKey("withValue").get().getValue(),
+      result.getEntryForKey("withValue").get().getValue(),
       is(testStartDate.until(testEndDate, MILLIS)
       )
     );
     assertThat(
-      result.getDataEntryForKey("missing").get().getValue(),
+      result.getEntryForKey("missing").get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(
         missingTestStartDate.until(missingTestStartDate.plus(200, MILLIS), MILLIS),
         missingTestStartDate.until(missingTestStartDate.plus(500, MILLIS), MILLIS),
@@ -917,7 +917,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("dateVar")
       .setVariableType(VariableType.DATE)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     //then
     assertThat(resultDto.getData().size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
@@ -964,7 +964,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
                            .end(startDate.minusSeconds(1L))
                            .add()
                            .buildList());
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = resultDto.getData();

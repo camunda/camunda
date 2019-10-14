@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.report.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +19,7 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class HyperMapAsserter {
 
-  private ProcessReportHyperMapResult expectedResult = new ProcessReportHyperMapResult();
+  private ReportHyperMapResultDto expectedResult = new ReportHyperMapResultDto();
 
 
     public static HyperMapAsserter asserter() {
@@ -40,7 +40,7 @@ public class HyperMapAsserter {
       return new GroupByAdder(this, groupByKey);
     }
 
-    public void doAssert(ProcessReportHyperMapResult actualResult) {
+    public void doAssert(ReportHyperMapResultDto actualResult) {
       // this is done by hand since it's otherwise really hard to see where the
       // assert failed.
       assertThat(actualResult.getInstanceCount(), is(expectedResult.getInstanceCount()));
@@ -108,7 +108,7 @@ public class HyperMapAsserter {
         return new GroupByAdder(asserter, groupByKey);
       }
 
-      public void doAssert(ProcessReportHyperMapResult actualResult) {
+      public void doAssert(ReportHyperMapResultDto actualResult) {
         asserter.addEntryToHyperMap(new HyperMapResultEntryDto<>(this.groupByKey, distributedByEntry, this.groupByKey));
         asserter.doAssert(actualResult);
       }

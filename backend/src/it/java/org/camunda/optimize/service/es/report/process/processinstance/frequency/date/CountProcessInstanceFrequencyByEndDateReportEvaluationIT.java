@@ -13,8 +13,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -84,7 +84,7 @@ public class CountProcessInstanceFrequencyByEndDateReportEvaluationIT
     ));
     reportData.setFilter(Collections.singletonList(new EndDateFilterDto(dateFilterDataDto)));
 
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -140,11 +140,11 @@ public class CountProcessInstanceFrequencyByEndDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .build();
 
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse = evaluateMapReport(
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
       reportData);
 
     // then
-    final ReportMapResult result = evaluationResponse.getResult();
+    final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount(), is(1L));
     assertThat(result.getIsComplete(), is(true));
 

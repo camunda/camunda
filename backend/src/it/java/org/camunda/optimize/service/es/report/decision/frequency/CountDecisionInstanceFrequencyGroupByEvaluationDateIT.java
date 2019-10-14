@@ -11,16 +11,16 @@ import junitparams.Parameters;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -65,7 +65,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
     ).getResult();
 
@@ -95,7 +95,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
     ).getResult();
 
@@ -142,7 +142,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
     ).getResult();
 
@@ -206,11 +206,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       evaluateMapReport(reportData);
 
     // then
-    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final ReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(3));
@@ -268,11 +268,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       evaluateMapReport(reportData);
 
     // then
-    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final ReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData.size(), is(3));
@@ -319,7 +319,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setFilter(dateFilterDto)
       .build();
 
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       evaluateMapReport(reportData);
 
 
@@ -397,11 +397,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       evaluateMapReport(reportData);
 
     // then
-    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final ReportMapResultDto result = evaluationResult.getResult();
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
     assertThat(resultData.size(), is(2));
@@ -438,7 +438,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, groupByDateUnit
     ).getResult();
 
@@ -488,7 +488,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.AUTOMATIC
     ).getResult();
 
@@ -515,7 +515,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, GroupByDateUnit.YEAR
     ).getResult();
 
@@ -545,7 +545,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, GroupByDateUnit.YEAR
     ).getResult();
 
@@ -578,7 +578,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.HOUR)
       .build();
-    DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -615,11 +615,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
         INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult =
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       evaluateMapReport(reportData);
 
     // then
-    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final ReportMapResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount(), is(2L));
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
@@ -667,7 +667,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(response.getStatus(), is(400));
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByEvaluationDate(
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByEvaluationDate(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final GroupByDateUnit groupByDateUnit) {

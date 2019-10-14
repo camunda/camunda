@@ -17,11 +17,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -86,7 +86,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
     // when
-    final AuthorizedProcessReportEvaluationResultDto<ProcessReportHyperMapResult> evaluationResponse =
+    final AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
       evaluateHyperMapReport(reportData);
 
     // then
@@ -97,7 +97,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
 
-    final ProcessReportHyperMapResult actualResult = evaluationResponse.getResult();
+    final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -130,7 +130,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
@@ -168,7 +168,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
@@ -200,7 +200,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
@@ -235,7 +235,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
@@ -270,7 +270,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.DESC));
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
@@ -305,7 +305,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     // @formatter:off
@@ -336,8 +336,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
     final ProcessReportDataDto reportData2 = createReport(processDefinition2);
-    final ProcessReportHyperMapResult actualResult1 = evaluateHyperMapReport(reportData1).getResult();
-    final ProcessReportHyperMapResult actualResult2 = evaluateHyperMapReport(reportData2).getResult();
+    final ReportHyperMapResultDto actualResult1 = evaluateHyperMapReport(reportData1).getResult();
+    final ReportHyperMapResultDto actualResult2 = evaluateHyperMapReport(reportData2).getResult();
 
     // then
     // @formatter:off
@@ -371,7 +371,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
     reportData.setTenantIds(selectedTenants);
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(actualResult.getInstanceCount(), is((long) selectedTenants.size()));
@@ -383,7 +383,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     final ProcessReportDataDto reportData = createReport(
       "nonExistingProcessDefinitionId", "1"
     );
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(actualResult.getData().size(), is(0));
@@ -435,7 +435,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.getConfiguration().setFlowNodeExecutionState(testValues.executionState);
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     assertThat(actualResult.getData().size(), is(1));
@@ -465,7 +465,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
@@ -490,7 +490,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    final ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    final ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()
@@ -516,7 +516,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
     reportData.setFilter(createStartDateFilter(null, processStartTime.minusSeconds(1L)));
-    ProcessReportHyperMapResult actualResult = evaluateHyperMapReport(reportData).getResult();
+    ReportHyperMapResultDto actualResult = evaluateHyperMapReport(reportData).getResult();
 
     // then
     HyperMapAsserter.asserter()

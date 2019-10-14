@@ -12,9 +12,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Re
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -154,7 +154,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     reportData.setFilter(
       ProcessFilterBuilder.filter().relativeStartDate().start(10L, RelativeDateFilterUnit.DAYS).add().buildList()
     );
-    final ReportMapResult result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -223,7 +223,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResult result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -254,13 +254,13 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     }
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluateProcessDurationMapReport(
+  private AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateProcessDurationMapReport(
     final ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResult>>() {});
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
       // @formatter:on
   }
 

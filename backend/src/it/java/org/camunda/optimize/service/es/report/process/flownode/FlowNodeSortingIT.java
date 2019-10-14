@@ -10,8 +10,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -49,7 +49,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -85,7 +85,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -127,7 +127,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -169,7 +169,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_LABEL, SortOrder.ASC));
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -207,7 +207,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -243,7 +243,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, sortOrder));
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -306,11 +306,11 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
       .build();
   }
 
-  private long getExecutedFlowNodeCount(ReportMapResult resultList) {
+  private long getExecutedFlowNodeCount(ReportMapResultDto resultList) {
     return resultList.getData().stream().filter(result -> result.getValue() > 0).count();
   }
 
-  private long getExecutedFlowNodeDuration(ReportMapResult resultList) {
+  private long getExecutedFlowNodeDuration(ReportMapResultDto resultList) {
     return resultList.getData()
       .stream()
       .map(MapResultEntryDto::getValue)

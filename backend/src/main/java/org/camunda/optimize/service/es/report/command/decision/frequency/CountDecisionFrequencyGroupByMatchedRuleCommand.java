@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.es.report.command.decision.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
@@ -56,7 +56,7 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final DecisionReportMapResultDto mapResultDto = mapToReportResult(response);
+      final ReportMapResultDto mapResultDto = mapToReportResult(response);
       return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -85,8 +85,8 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
       .field(MATCHED_RULES);
   }
 
-  private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
+  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
 
     final Terms matchedRuleTerms = response.getAggregations().get(MATCHED_RULES_AGGREGATION);
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();

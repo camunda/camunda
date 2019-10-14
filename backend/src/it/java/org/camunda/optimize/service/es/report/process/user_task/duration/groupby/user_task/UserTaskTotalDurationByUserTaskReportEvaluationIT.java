@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.process.user_task.duration.groupb
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -59,14 +59,14 @@ public class UserTaskTotalDurationByUserTaskReportEvaluationIT
   }
 
   @Override
-  protected void assertEvaluateReportWithExecutionState(final ReportMapResult result,
+  protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
     assertThat(
-      result.getDataEntryForKey(USER_TASK_1).get().getValue(),
+      result.getEntryForKey(USER_TASK_1).get().getValue(),
       is(expectedValues.getExpectedTotalDurationValues().get(USER_TASK_1))
     );
     assertThat(
-      result.getDataEntryForKey(USER_TASK_2).get().getValue(),
+      result.getEntryForKey(USER_TASK_2).get().getValue(),
       is(expectedValues.getExpectedTotalDurationValues().get(USER_TASK_2))
     );
   }

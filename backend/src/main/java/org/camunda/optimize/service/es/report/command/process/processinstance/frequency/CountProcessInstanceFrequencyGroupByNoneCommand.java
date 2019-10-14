@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.process.processinstance.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;

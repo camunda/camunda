@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.report.command.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;

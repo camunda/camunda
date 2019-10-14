@@ -12,8 +12,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.service.export.CSVUtils;
 
 import java.util.ArrayList;
@@ -25,9 +25,9 @@ import java.util.stream.IntStream;
 
 @Slf4j
 public class SingleProcessHyperMapReportResult
-  extends ReportEvaluationResult<ProcessReportHyperMapResult, SingleProcessReportDefinitionDto> {
+  extends ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionDto> {
 
-  public SingleProcessHyperMapReportResult(@NonNull final ProcessReportHyperMapResult reportResult,
+  public SingleProcessHyperMapReportResult(@NonNull final ReportHyperMapResultDto reportResult,
                                            @NonNull final SingleProcessReportDefinitionDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
@@ -40,7 +40,7 @@ public class SingleProcessHyperMapReportResult
   private List<String[]> mapHyperMapReportResultsToCsvList(
     final Integer limit,
     final Integer offset,
-    final ProcessReportHyperMapResult hyperMapResult) {
+    final ReportHyperMapResultDto hyperMapResult) {
 
     final List<List<String[]>> allSingleReportsAsCsvList = mapHyperMapReportResultsToCsvLists(
       limit,
@@ -67,7 +67,7 @@ public class SingleProcessHyperMapReportResult
   private List<List<String[]>> mapHyperMapReportResultsToCsvLists(
     final Integer limit,
     final Integer offset,
-    final ProcessReportHyperMapResult hyperMapResult) {
+    final ReportHyperMapResultDto hyperMapResult) {
 
     return Streams.mapWithIndex(
       hyperMapResult.getData().stream(),

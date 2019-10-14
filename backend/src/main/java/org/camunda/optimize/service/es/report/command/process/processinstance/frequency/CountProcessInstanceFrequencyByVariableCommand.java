@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.command.process.processinstance.f
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -84,7 +84,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ReportMapResult mapResultDto = mapToReportResult(response);
+      final ReportMapResultDto mapResultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -167,8 +167,8 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
     return aggregationBuilder;
   }
 
-  private ReportMapResult mapToReportResult(final SearchResponse response) {
-    final ReportMapResult resultDto = new ReportMapResult();
+  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
 
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);

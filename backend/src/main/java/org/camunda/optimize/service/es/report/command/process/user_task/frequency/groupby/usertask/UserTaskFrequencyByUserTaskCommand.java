@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.report.command.process.user_task.frequen
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.process.UserTaskFrequencyGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
@@ -65,7 +65,7 @@ public class UserTaskFrequencyByUserTaskCommand extends UserTaskFrequencyGroupin
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ReportMapResult resultDto = mapToReportResult(response);
+      final ReportMapResultDto resultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
@@ -105,8 +105,8 @@ public class UserTaskFrequencyByUserTaskCommand extends UserTaskFrequencyGroupin
       );
   }
 
-  private ReportMapResult mapToReportResult(final SearchResponse response) {
-    final ReportMapResult resultDto = new ReportMapResult();
+  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);

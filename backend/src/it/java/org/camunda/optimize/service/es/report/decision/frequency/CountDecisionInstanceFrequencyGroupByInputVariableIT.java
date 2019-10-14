@@ -13,12 +13,12 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -73,7 +73,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID
     ).getResult();
 
@@ -109,7 +109,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_INVOICE_DATE_ID
     ).getResult();
 
@@ -153,7 +153,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID
     ).getResult();
 
@@ -206,7 +206,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID
     ).getResult();
 
@@ -252,7 +252,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableId(INPUT_AMOUNT_ID)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -300,7 +300,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setVariableId(INPUT_AMOUNT_ID)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -354,7 +354,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       )))
       .build();
 
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(2L));
@@ -391,7 +391,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_AMOUNT_ID
     ).getResult();
 
@@ -428,7 +428,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_CATEGORY_ID
     ).getResult();
 
@@ -467,7 +467,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, INPUT_AMOUNT_ID
     ).getResult();
 
@@ -500,7 +500,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
       .setVariableId(INPUT_AMOUNT_ID)
       .build();
-    DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -521,7 +521,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> result =
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> result =
       evaluateDecisionInstanceFrequencyByInputVariable(
         decisionDefinitionDto1, decisionDefinitionVersion1, INPUT_AMOUNT_ID, "amount"
       );
@@ -551,7 +551,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -582,7 +582,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -614,7 +614,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -661,7 +661,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), inputClauseId, null, VariableType.STRING
     ).getResult();
 
@@ -718,7 +718,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     return engineRule.deployDecisionDefinition(dmnModelInstance);
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId) {
@@ -730,7 +730,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
@@ -744,7 +744,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,

@@ -14,10 +14,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import java.util.List;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
-public class RawDataDecisionReportResultDto extends DecisionReportResultDto implements LimitedResultDto {
+public class RawDataDecisionReportResultDto implements DecisionReportResultDto,LimitedResultDto {
 
-  protected List<RawDataDecisionInstanceDto> data;
+  private long instanceCount;
+  private List<RawDataDecisionInstanceDto> data;
   private Boolean isComplete = true;
 
   @Override

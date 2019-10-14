@@ -10,10 +10,10 @@ import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportNumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -181,21 +181,21 @@ public abstract class AbstractDecisionDefinitionIT {
     );
   }
 
-  protected AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateMapReport(DecisionReportDataDto reportData) {
+  protected AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateMapReport(DecisionReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto>>() {});
       // @formatter:on
   }
 
-  protected AuthorizedDecisionReportEvaluationResultDto<DecisionReportNumberResultDto> evaluateNumberReport(DecisionReportDataDto reportData) {
+  protected AuthorizedDecisionReportEvaluationResultDto<NumberResultDto> evaluateNumberReport(DecisionReportDataDto reportData) {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<DecisionReportNumberResultDto>>() {});
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<NumberResultDto>>() {});
       // @formatter:on
   }
 

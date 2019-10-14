@@ -21,10 +21,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -90,7 +90,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
       .build();
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse =
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
       evaluateMapReport(reportData);
 
     // then
@@ -133,7 +133,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
 
     // when
     String reportId = createAndStoreDefaultReportDefinition(reportData);
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResult> evaluationResponse =
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
       evaluateMapReportById(reportId);
 
     // then
@@ -182,7 +182,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    final Map<AggregationType, ReportMapResult> results =
+    final Map<AggregationType, ReportMapResultDto> results =
       evaluateMapReportForAllAggTypes(reportData);
 
     // then
@@ -216,7 +216,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
       .build();
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -256,7 +256,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setReportDataType(getTestReportDataType())
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getIsComplete(), is(true));
@@ -307,7 +307,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
         .build();
       reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
       reportData.getConfiguration().setAggregationType(aggType);
-      final ReportMapResult result = evaluateMapReport(reportData).getResult();
+      final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
       // then
       assertThat(result.getIsComplete(), is(true));
@@ -364,7 +364,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
       .build();
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -400,7 +400,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setProcessDefinitionKey(processDefinitionKey)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -444,7 +444,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setProcessDefinitionKey(processDefinitionKey)
       .setDateInterval(GroupByDateUnit.AUTOMATIC)
       .build();
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -498,7 +498,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
@@ -547,7 +547,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
@@ -574,7 +574,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setReportDataType(getTestReportDataType())
       .build();
 
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -633,7 +633,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -658,7 +658,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setReportDataType(getTestReportDataType())
       .build();
 
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -683,7 +683,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setReportDataType(getTestReportDataType())
       .build();
 
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -708,7 +708,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setDateInterval(GroupByDateUnit.YEAR)
       .build();
 
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -733,7 +733,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultMap = result.getData();
@@ -765,7 +765,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .build();
 
     reportData.setTenantIds(selectedTenants);
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -794,7 +794,7 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
       .setFilter(createVariableFilter("true"))
       .build();
 
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
@@ -942,18 +942,18 @@ public abstract class AbstractProcessInstanceDurationByDateReportEvaluationIT ex
     return embeddedOptimizeRule.getDateTimeFormatter().format(time);
   }
 
-  private Map<AggregationType, ReportMapResult> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
+  private Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {
 
-    Map<AggregationType, ReportMapResult> resultsMap = new HashMap<>();
+    Map<AggregationType, ReportMapResultDto> resultsMap = new HashMap<>();
     aggregationTypes.forEach((AggregationType aggType) -> {
       reportData.getConfiguration().setAggregationType(aggType);
-      ReportMapResult result = evaluateMapReport(reportData).getResult();
+      ReportMapResultDto result = evaluateMapReport(reportData).getResult();
       resultsMap.put(aggType, result);
     });
     return resultsMap;
   }
 
-  private void assertDurationMapReportResults(Map<AggregationType, ReportMapResult> results,
+  private void assertDurationMapReportResults(Map<AggregationType, ReportMapResultDto> results,
                                               Long[] expectedDurations) {
 
     aggregationTypes.forEach((AggregationType aggType) -> {

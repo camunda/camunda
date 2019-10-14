@@ -67,7 +67,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(
+        report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(3L));
@@ -90,7 +91,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     );
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(
+        report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(5L));
@@ -110,7 +112,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(
+        report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(1L));
@@ -123,7 +126,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(report);
+      AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> result = evaluateReport(
+        report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(4L));
@@ -163,7 +167,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto>>() {
+      .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto,
+        SingleDecisionReportDefinitionDto>>() {
       });
   }
 

@@ -15,9 +15,9 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.export.CSVUtils;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
@@ -38,7 +38,7 @@ public class CombinedProcessReportResultTest {
   @Test
   public void testGetResultAsCsvForMapResult() {
     // given
-    final ReportMapResult mapResultDto = new ReportMapResult();
+    final ReportMapResultDto mapResultDto = new ReportMapResultDto();
     final List<MapResultEntryDto<Long>> resultDtoMap = new ArrayList<>();
     resultDtoMap.add(new MapResultEntryDto<>("900.0", 1L));
     resultDtoMap.add(new MapResultEntryDto<>("10.99", 1L));
@@ -195,7 +195,7 @@ public class CombinedProcessReportResultTest {
 
     // given
 
-    final ReportMapResult durMapReportDto = new ReportMapResult();
+    final ReportMapResultDto durMapReportDto = new ReportMapResultDto();
 
     List<MapResultEntryDto<Long>> data = new ArrayList<>();
     data.add(new MapResultEntryDto<>("test1", 3L));
@@ -326,8 +326,8 @@ public class CombinedProcessReportResultTest {
     ReportEvaluationResult reportResult = null;
 
     final boolean isFrequencyReport = singleDefDto.getData().isFrequencyReport();
-    if (reportResultDto instanceof ReportMapResult && isFrequencyReport) {
-      reportResult = new SingleProcessMapReportResult((ReportMapResult) reportResultDto, singleDefDto);
+    if (reportResultDto instanceof ReportMapResultDto && isFrequencyReport) {
+      reportResult = new SingleProcessMapReportResult((ReportMapResultDto) reportResultDto, singleDefDto);
 
     } else if (reportResultDto instanceof NumberResultDto && isFrequencyReport) {
       reportResult = new SingleProcessNumberReportResult((NumberResultDto) reportResultDto, singleDefDto);
@@ -337,9 +337,9 @@ public class CombinedProcessReportResultTest {
         (NumberResultDto) reportResultDto,
         singleDefDto
       );
-    } else if (reportResultDto instanceof ReportMapResult) {
+    } else if (reportResultDto instanceof ReportMapResultDto) {
       reportResult = new SingleProcessMapReportResult(
-        (ReportMapResult) reportResultDto,
+        (ReportMapResultDto) reportResultDto,
         singleDefDto
       );
     }

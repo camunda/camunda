@@ -21,10 +21,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -278,7 +278,7 @@ public class CombinedReportHandlingIT {
     updateReport(reportId, report);
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
@@ -326,11 +326,11 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(singleReportId, singleReportId2);
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap = result.getResult()
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
       .getData();
     assertThat(resultMap.size(), is(2));
     List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
@@ -351,11 +351,11 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(totalDurationReportId, idleDurationReportId);
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     List<MapResultEntryDto<Long>> userTaskCount1 = resultMap.get(totalDurationReportId)
@@ -380,11 +380,11 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(userTaskTotalDurationReportId, flowNodeDurationReportId);
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     List<MapResultEntryDto<Long>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
@@ -415,24 +415,24 @@ public class CombinedReportHandlingIT {
 
     // when
     final String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
-    final AuthorizedCombinedReportEvaluationResultDto<ReportMapResult>
+    final AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>
       result = evaluateCombinedReportById(combinedReportId);
 
 
     // then
-    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap = result.getResult()
+    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
       .getData();
     assertThat(resultMap, is(CoreMatchers.notNullValue()));
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
 
-    final ReportMapResult result1 = resultMap.get(singleReportId1)
+    final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
     final List<MapResultEntryDto<Long>> resultData1 = result1.getData();
     assertThat(resultData1, is(CoreMatchers.notNullValue()));
     assertThat(resultData1.size(), is(1));
 
-    final ReportMapResult result2 = resultMap.get(singleReportId2)
+    final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
     final List<MapResultEntryDto<Long>> resultData2 = result2.getData();
     assertThat(resultData2, is(CoreMatchers.notNullValue()));
@@ -449,11 +449,11 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(singleReportId);
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result = evaluateCombinedReportById(reportId);
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getReportDefinition().getId(), is(reportId));
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(0));
   }
@@ -616,11 +616,11 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result =
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
@@ -638,14 +638,14 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result =
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(1));
-    AuthorizedEvaluationResultDto<ReportMapResult, SingleProcessReportDefinitionDto> mapResult =
+    AuthorizedEvaluationResultDto<ReportMapResultDto, SingleProcessReportDefinitionDto> mapResult =
       resultMap.get(singleReportId);
     assertThat(mapResult.getReportDefinition().getName(), is(TEST_REPORT_NAME));
   }
@@ -681,12 +681,12 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result = evaluateUnsavedCombined(
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId1, singleReportId2)
     );
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
@@ -817,22 +817,22 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result = evaluateUnsavedCombined(
+    final AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateUnsavedCombined(
       createCombinedReport(singleReportId1, singleReportId2));
 
     // then
-    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap = result.getResult()
+    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
       .getData();
     assertThat(resultMap, is(CoreMatchers.notNullValue()));
     assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
 
-    final ReportMapResult result1 = resultMap.get(singleReportId1)
+    final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
     final List<MapResultEntryDto<Long>> resultData1 = result1.getData();
     assertThat(resultData1, is(CoreMatchers.notNullValue()));
     assertThat(resultData1.size(), is(1));
 
-    final ReportMapResult result2 = resultMap.get(singleReportId2)
+    final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
     final List<MapResultEntryDto<Long>> resultData2 = result2.getData();
     assertThat(resultData2, is(CoreMatchers.notNullValue()));
@@ -870,11 +870,11 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result =
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(singleReportId2), is(true));
@@ -913,11 +913,11 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    AuthorizedCombinedReportEvaluationResultDto<ReportMapResult> result =
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId));
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResult>> resultMap =
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(0));
   }

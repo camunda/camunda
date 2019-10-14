@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.decision.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportNumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionNumberReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -58,7 +58,7 @@ public class CountDecisionFrequencyGroupByNoneCommand extends DecisionReportComm
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    DecisionReportNumberResultDto numberResultDto = new DecisionReportNumberResultDto();
+    NumberResultDto numberResultDto = new NumberResultDto();
     numberResultDto.setData(response.getHits().getTotalHits());
     numberResultDto.setInstanceCount(response.getHits().getTotalHits());
     return new SingleDecisionNumberReportResult(numberResultDto, reportDefinition);

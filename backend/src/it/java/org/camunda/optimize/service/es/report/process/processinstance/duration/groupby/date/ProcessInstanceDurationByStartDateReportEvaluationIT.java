@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -97,7 +97,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    ReportMapResult result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -143,7 +143,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .setFilter(startDateFilterDto)
       .build();
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
 
     // then
@@ -200,7 +200,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .build();
 
-    final ReportMapResult result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
 
     // then
@@ -266,7 +266,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
@@ -317,7 +317,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
-    ReportMapResult resultDto = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = resultDto.getData();

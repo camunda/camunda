@@ -10,12 +10,12 @@ import com.google.common.collect.Lists;
 import junitparams.JUnitParamsRunner;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -67,7 +67,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_CLASSIFICATION_ID
     ).getResult();
 
@@ -108,7 +108,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID
     ).getResult();
 
@@ -154,7 +154,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID
     ).getResult();
 
@@ -203,7 +203,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
         OUTPUT_AUDIT_ID, "true"
       )))
       .build();
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -239,7 +239,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_CLASSIFICATION_ID
     ).getResult();
 
@@ -277,7 +277,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_AUDIT_ID
     ).getResult();
 
@@ -315,7 +315,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_AUDIT_ID
     ).getResult();
 
@@ -349,7 +349,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
       .build();
-    DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -393,7 +393,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -444,7 +444,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -471,7 +471,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> result =
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> result =
       evaluateDecisionInstanceFrequencyByOutputVariable(
         decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, "audit"
       );
@@ -502,7 +502,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -533,7 +533,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -565,7 +565,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE
     ).getResult();
 
@@ -613,7 +613,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto, decisionDefinitionDto.getVersionAsString(), outputClauseId, null, VariableType.STRING
     ).getResult();
 
@@ -659,7 +659,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     assertThat(response.getStatus(), is(400));
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId) {
@@ -668,7 +668,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,
@@ -678,7 +678,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
     final String variableId,

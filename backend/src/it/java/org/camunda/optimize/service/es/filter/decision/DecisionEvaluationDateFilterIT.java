@@ -9,11 +9,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -213,10 +213,10 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(createRollingEvaluationDateFilter(3L, RelativeDateFilterUnit.DAYS))
       .build();
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
 
     // then
-    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final ReportMapResultDto result = evaluationResult.getResult();
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
     assertThat(resultData.size(), is(2));
@@ -272,10 +272,10 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(createFixedEvaluationDateFilter(beforeStart.minusDays(3L), beforeStart))
       .build();
-    final AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult = evaluateMapReport(reportData);
 
     // then
-    final DecisionReportMapResultDto result = evaluationResult.getResult();
+    final ReportMapResultDto result = evaluationResult.getResult();
     final List<MapResultEntryDto<Long>> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
     assertThat(resultData.size(), is(1));

@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.command.process.flownode.duration
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.FlowNodeDurationGroupingCommand;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
@@ -80,7 +80,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ReportMapResult resultDto = mapToReportResult(response);
+      final ReportMapResultDto resultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -138,8 +138,8 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     );
   }
 
-  private ReportMapResult mapToReportResult(final SearchResponse response) {
-    final ReportMapResult resultDto = new ReportMapResult();
+  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested activities = aggregations.get(EVENTS_AGGREGATION);

@@ -5,13 +5,13 @@
  */
 package org.camunda.optimize.service.es.report.command.decision.frequency;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
@@ -102,7 +102,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    final DecisionReportMapResultDto mapResultDto = mapToReportResult(response);
+    final ReportMapResultDto mapResultDto = mapToReportResult(response);
     return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
   }
 
@@ -170,8 +170,8 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
   }
 
 
-  private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
+  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
 
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);

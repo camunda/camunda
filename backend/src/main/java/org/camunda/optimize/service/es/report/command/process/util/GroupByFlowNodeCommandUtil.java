@@ -10,10 +10,10 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 
 import java.util.Comparator;
@@ -35,7 +35,7 @@ public class GroupByFlowNodeCommandUtil {
   private GroupByFlowNodeCommandUtil() {
   }
 
-  public static <MAP extends ReportMapResult, V extends Comparable> void filterResultData(
+  public static <MAP extends ReportMapResultDto, V extends Comparable> void filterResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult) {
 
@@ -60,7 +60,7 @@ public class GroupByFlowNodeCommandUtil {
 
   public static void filterHyperMapResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
-    final ReportEvaluationResult<ProcessReportHyperMapResult, SingleProcessReportDefinitionDto> evaluationResult) {
+    final ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionDto> evaluationResult) {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     // if version is set to all, filter for only latest flow nodes
@@ -84,7 +84,7 @@ public class GroupByFlowNodeCommandUtil {
     }
   }
 
-  public static <MAP extends ReportMapResult, V extends Comparable> void enrichResultData(
+  public static <MAP extends ReportMapResultDto, V extends Comparable> void enrichResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
     final ReportEvaluationResult<MAP, SingleProcessReportDefinitionDto> evaluationResult,
     final Supplier<Long> createNewEmptyResult,
@@ -113,7 +113,7 @@ public class GroupByFlowNodeCommandUtil {
 
   public static void enrichResultData(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext,
-    final ReportEvaluationResult<ProcessReportHyperMapResult, SingleProcessReportDefinitionDto> evaluationResult) {
+    final ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionDto> evaluationResult) {
 
     final ProcessReportDataDto reportData = commandContext.getReportDefinition().getData();
     getProcessDefinitionIfAvailable(commandContext, reportData)

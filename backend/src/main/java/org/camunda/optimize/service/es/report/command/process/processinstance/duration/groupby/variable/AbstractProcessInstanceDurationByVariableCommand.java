@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
@@ -90,7 +90,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ReportMapResult resultDto = mapToReportResult(response);
+      final ReportMapResultDto resultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -181,8 +181,8 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand
   }
 
 
-  private ReportMapResult mapToReportResult(final SearchResponse response) {
-    final ReportMapResult resultDto = new ReportMapResult();
+  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
 
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);

@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -85,7 +85,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, decisionDefinitionVersion1
     ).getResult();
 
@@ -139,7 +139,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, decisionDefinitionVersion1
     ).getResult();
 
@@ -188,7 +188,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -239,7 +239,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -293,7 +293,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
     ).getResult();
 
@@ -336,7 +336,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
         INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
-    final DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is(1L));
@@ -368,7 +368,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
     ).getResult();
 
@@ -402,7 +402,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     elasticSearchRule.refreshAllOptimizeIndices();
 
     // when
-    final DecisionReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
       decisionDefinitionDto1, ReportConstants.ALL_VERSIONS
     ).getResult();
 
@@ -434,7 +434,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setTenantIds(selectedTenants)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
-    DecisionReportMapResultDto result = evaluateMapReport(reportData).getResult();
+    ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
@@ -504,7 +504,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     }};
   }
 
-  private AuthorizedDecisionReportEvaluationResultDto<DecisionReportMapResultDto> evaluateDecisionInstanceFrequencyByMatchedRule(
+  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByMatchedRule(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

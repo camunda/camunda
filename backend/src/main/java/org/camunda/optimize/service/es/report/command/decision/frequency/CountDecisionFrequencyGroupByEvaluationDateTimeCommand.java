@@ -9,10 +9,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.decision.DecisionReportCommand;
 import org.camunda.optimize.service.es.report.command.decision.util.DecisionInstanceQueryUtil;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
@@ -86,7 +86,7 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final DecisionReportMapResultDto mapResultDto = mapToReportResult(response);
+      final ReportMapResultDto mapResultDto = mapToReportResult(response);
       return new SingleDecisionMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -169,8 +169,8 @@ public class CountDecisionFrequencyGroupByEvaluationDateTimeCommand
     }
   }
 
-  private DecisionReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final DecisionReportMapResultDto resultDto = new DecisionReportMapResultDto();
+  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setInstanceCount(response.getHits().getTotalHits());
     resultDto.setIsComplete(isResultComplete(response));

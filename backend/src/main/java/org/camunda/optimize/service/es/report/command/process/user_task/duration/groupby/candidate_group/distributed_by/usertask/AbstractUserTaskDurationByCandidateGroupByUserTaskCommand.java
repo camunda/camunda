@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.report.command.process.user_task.duratio
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.process.user_task.UserTaskDistributedByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
@@ -80,7 +80,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskCommand
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessReportHyperMapResult resultDto = mapToReportResult(response);
+      final ReportHyperMapResultDto resultDto = mapToReportResult(response);
       return new SingleProcessHyperMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
@@ -141,8 +141,8 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskCommand
 
   protected abstract String getReferenceDateFieldName();
 
-  private ProcessReportHyperMapResult mapToReportResult(final SearchResponse response) {
-    final ProcessReportHyperMapResult resultDto = new ProcessReportHyperMapResult();
+  private ReportHyperMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportHyperMapResultDto resultDto = new ReportHyperMapResultDto();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);

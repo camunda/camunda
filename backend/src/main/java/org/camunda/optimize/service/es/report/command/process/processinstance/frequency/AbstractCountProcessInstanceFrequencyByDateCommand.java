@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
 import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -88,7 +88,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ReportMapResult mapResultDto = mapToReportResult(response);
+      final ReportMapResultDto mapResultDto = mapToReportResult(response);
       return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
     } catch (IOException e) {
       String reason =
@@ -183,8 +183,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
     }
   }
 
-  private ReportMapResult mapToReportResult(final SearchResponse response) {
-    final ReportMapResult resultDto = new ReportMapResult();
+  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
     resultDto.setData(processAggregations(response.getAggregations()));
     resultDto.setInstanceCount(response.getHits().getTotalHits());
     resultDto.setIsComplete(isResultComplete(response));

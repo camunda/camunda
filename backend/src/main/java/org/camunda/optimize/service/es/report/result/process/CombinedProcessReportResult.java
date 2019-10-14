@@ -11,8 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.NumberResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ReportMapResult;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
@@ -57,7 +57,7 @@ public class CombinedProcessReportResult
         csvStrings = mapCombinedReportResultsToCsvList(
           limit,
           offset,
-          (CombinedProcessReportResultDto<ReportMapResult>) reportResult,
+          (CombinedProcessReportResultDto<ReportMapResultDto>) reportResult,
           r -> new String[]{r.getReportDefinition().getName(), "", ""},
           evaluationResult -> new SingleProcessMapReportResult(
             evaluationResult.getResultAsDto(), evaluationResult.getReportDefinition()

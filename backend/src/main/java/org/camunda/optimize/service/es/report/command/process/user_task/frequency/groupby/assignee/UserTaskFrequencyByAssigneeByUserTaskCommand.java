@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.report.command.process.user_task.frequen
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportHyperMapResult;
-import org.camunda.optimize.dto.optimize.query.report.single.result.HyperMapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.service.es.report.command.process.user_task.UserTaskDistributedByUserTaskCommand;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -69,7 +69,7 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ProcessReportHyperMapResult resultDto = mapToReportResult(response);
+      final ReportHyperMapResultDto resultDto = mapToReportResult(response);
       return new SingleProcessHyperMapReportResult(resultDto, reportDefinition);
     } catch (IOException e) {
       final String reason = String.format(
@@ -111,8 +111,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
       );
   }
 
-  private ProcessReportHyperMapResult mapToReportResult(final SearchResponse response) {
-    final ProcessReportHyperMapResult resultDto = new ProcessReportHyperMapResult();
+  private ReportHyperMapResultDto mapToReportResult(final SearchResponse response) {
+    final ReportHyperMapResultDto resultDto = new ReportHyperMapResultDto();
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);

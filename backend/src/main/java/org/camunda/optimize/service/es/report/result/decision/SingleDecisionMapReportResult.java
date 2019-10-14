@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.result.decision;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
@@ -15,9 +15,9 @@ import java.util.List;
 import java.util.Set;
 
 public class SingleDecisionMapReportResult
-  extends ReportEvaluationResult<DecisionReportMapResultDto, SingleDecisionReportDefinitionDto> {
+  extends ReportEvaluationResult<ReportMapResultDto, SingleDecisionReportDefinitionDto> {
 
-  public SingleDecisionMapReportResult(@NotNull final DecisionReportMapResultDto reportResult,
+  public SingleDecisionMapReportResult(@NotNull final ReportMapResultDto reportResult,
                                        @NotNull final SingleDecisionReportDefinitionDto reportDefinition) {
     super(reportResult, reportDefinition);
   }
