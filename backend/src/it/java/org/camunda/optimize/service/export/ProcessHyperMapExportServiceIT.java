@@ -217,28 +217,17 @@ public class ProcessHyperMapExportServiceIT {
         });
   }
 
-  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
-  }
-
   private String createNewSingleMapReport(ProcessReportDataDto data) {
-    String singleReportId = createNewSingleReport();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setName("FooName");
-    definitionDto.setData(data);
-    updateSingleProcessReport(singleReportId, definitionDto);
-    return singleReportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setName("FooName");
+    singleProcessReportDefinitionDto.setData(data);
+    return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
-  private String createNewSingleReport() {
+  private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

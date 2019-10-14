@@ -604,18 +604,22 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   }
 
   private String createDashboardInCollectionAsDefaultUser(final String collectionId) {
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest(collectionId)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
   private Response createDashboardInCollectionAsKermit(final String collectionId) {
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .buildCreateDashboardRequest(collectionId)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute();
   }
 

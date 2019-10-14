@@ -137,7 +137,7 @@ public class ReportRestServiceIT {
     combinedReportDefinitionDto.setData(ProcessReportDataBuilderHelper.createCombinedReport());
     IdDto idDto = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequestWithDefinition(combinedReportDefinitionDto)
+      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200);
     // then
     assertThat(idDto, is(notNullValue()));
@@ -188,8 +188,7 @@ public class ReportRestServiceIT {
     String id = addEmptyReportToOptimize(reportType);
 
     // when
-    final Response response;
-    response = updateReportWithValidXml(id, reportType);
+    final Response response = updateReportWithValidXml(id, reportType);
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -852,15 +851,12 @@ public class ReportRestServiceIT {
   }
 
   private IdDto createAndUpdateCombinedReport(final CombinedReportDataDto combined, final String collectionId) {
-    IdDto id = embeddedOptimizeRule
+    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto(combined);
+    combinedReportDefinitionDto.setCollectionId(collectionId);
+    return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest(collectionId)
+      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200);
-
-    embeddedOptimizeRule.getRequestExecutor()
-      .buildUpdateCombinedProcessReportRequest(id.getId(), new CombinedReportDefinitionDto(combined), true)
-      .execute(204);
-    return id;
   }
 
   private String addReportToOptimizeWithDefinition(final ReportType reportType) {
@@ -895,19 +891,19 @@ public class ReportRestServiceIT {
 
   private String addSingleDecisionReportWithDefinition(final DecisionReportDataDto decisionReportDataDto,
                                                        final String collectionId) {
-    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
-    report.setData(decisionReportDataDto);
-    report.setId(RANDOM_STRING);
-    report.setLastModifier(RANDOM_STRING);
-    report.setName(RANDOM_STRING);
+    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    singleDecisionReportDefinitionDto.setData(decisionReportDataDto);
+    singleDecisionReportDefinitionDto.setId(RANDOM_STRING);
+    singleDecisionReportDefinitionDto.setLastModifier(RANDOM_STRING);
+    singleDecisionReportDefinitionDto.setName(RANDOM_STRING);
     OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner(RANDOM_STRING);
-    report.setCollectionId(collectionId);
+    singleDecisionReportDefinitionDto.setCreated(someDate);
+    singleDecisionReportDefinitionDto.setLastModified(someDate);
+    singleDecisionReportDefinitionDto.setOwner(RANDOM_STRING);
+    singleDecisionReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequestWithDefinition(report)
+      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -917,44 +913,42 @@ public class ReportRestServiceIT {
   }
 
   private String addEmptyProcessReport(final String collectionId) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  private String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDtoto) {
-    return addSingleProcessReportWithDefinition(processReportDataDtoto, null);
+  private String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDto) {
+    return addSingleProcessReportWithDefinition(processReportDataDto, null);
   }
 
   private String addSingleProcessReportWithDefinition(final ProcessReportDataDto processReportDataDto,
                                                       final String collectionId) {
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(processReportDataDto);
-    report.setId(RANDOM_STRING);
-    report.setLastModifier(RANDOM_STRING);
-    report.setName(RANDOM_STRING);
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(processReportDataDto);
+    singleProcessReportDefinitionDto.setId(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setLastModifier(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setName(RANDOM_STRING);
     OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner(RANDOM_STRING);
-    report.setCollectionId(collectionId);
+    singleProcessReportDefinitionDto.setCreated(someDate);
+    singleProcessReportDefinitionDto.setLastModified(someDate);
+    singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequestWithDefinition(report)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
   private String addEmptyDecisionReport() {
-    return addEmptyDecisionReport(null);
-  }
-
-  private String addEmptyDecisionReport(final String collectionId) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest(collectionId)
+      .buildCreateSingleDecisionReportRequest()
       .execute(IdDto.class, 200)
       .getId();
   }

@@ -310,7 +310,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     ReportLocationDto reportLocationDto = new ReportLocationDto();
-    final String reportId = createNewReport();
+    final String reportId = createNewReport(new SingleProcessReportDefinitionDto());
     reportLocationDto.setId(reportId);
     reportLocationDto.setConfiguration("testConfiguration");
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
@@ -662,7 +662,6 @@ public class SharingServiceIT extends AbstractSharingIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    String reportId = this.createNewReport();
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
@@ -670,9 +669,10 @@ public class SharingServiceIT extends AbstractSharingIT {
       .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
       .build();
     reportData.setView(null);
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    updateReport(reportId, report);
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportData);
+
+    String reportId = this.createNewReport(singleProcessReportDefinitionDto);
 
     String dashboardWithReport = createDashboardWithReport(reportId);
     String dashboardShareId = addShareForDashboard(dashboardWithReport);

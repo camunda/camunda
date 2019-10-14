@@ -7,6 +7,8 @@ package org.camunda.optimize.service.es.retrieval;
 
 import junitparams.JUnitParamsRunner;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
@@ -66,25 +68,24 @@ public class CollectionConflictIT {
     );
   }
 
-
   private String createNewDashboardAddedToCollection(String collectionId) {
-    final String id = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId(collectionId);
+    return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest(collectionId)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
-
-    return id;
   }
 
   private String createNewReportAddedToCollection(String collectionId) {
-    final String id = embeddedOptimizeRule
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
+    return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
-
-    return id;
   }
 
   private ConflictResponseDto getDeleteCollectionConflicts(String id) {
@@ -93,7 +94,6 @@ public class CollectionConflictIT {
       .buildGetCollectionDeleteConflictsRequest(id)
       .execute(ConflictResponseDto.class, 200);
   }
-
 
   private String addEmptyCollectionToOptimize() {
     return embeddedOptimizeRule

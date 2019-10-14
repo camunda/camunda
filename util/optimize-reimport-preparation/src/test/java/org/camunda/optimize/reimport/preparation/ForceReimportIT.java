@@ -34,7 +34,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -162,34 +161,20 @@ public class ForceReimportIT {
     return createSimpleAlert(reportId);
   }
 
-  private String createNewReportHelper() {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
   private String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
-    String id = createNewReportHelper();
-    SingleProcessReportDefinitionDto report = getReportDefinitionDto(
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = getReportDefinitionDto(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion())
     );
-    updateReport(id, report);
-    return id;
+    return createNewReport(singleProcessReportDefinitionDto);
   }
 
-  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
+  private String createNewReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+    return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-    assertThat(response.getStatus(), is(204));
-  }
-
-  protected SingleProcessReportDefinitionDto getReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
-    return getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,

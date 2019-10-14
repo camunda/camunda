@@ -191,8 +191,8 @@ public class ReportConflictIT {
   @Test
   public void getSingleReportDeleteConflictsIfUsedByCombinedReport() {
     // given
-    String firstSingleReportId = addEmptyProcessReportToOptimize();
-    String secondSingleReportId = addEmptyProcessReportToOptimize();
+    String firstSingleReportId = createProcessReport();
+    String secondSingleReportId = createProcessReport();
     String firstCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
     String secondCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
     String[] expectedConflictedItemIds = {firstCombinedReportId, secondCombinedReportId};
@@ -208,8 +208,8 @@ public class ReportConflictIT {
   @Parameters(source = ForceParameterProvider.class)
   public void deleteSingleReportsFailsWithConflictIfUsedByCombinedReportWhenForceSet(Boolean force) {
     // given
-    String firstSingleReportId = addEmptyProcessReportToOptimize();
-    String secondSingleReportId = addEmptyProcessReportToOptimize();
+    String firstSingleReportId = createProcessReport();
+    String secondSingleReportId = createProcessReport();
     String firstCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
     String secondCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
     String[] expectedReportIds = {
@@ -231,7 +231,7 @@ public class ReportConflictIT {
   @Parameters(source = ForceParameterProvider.class)
   public void deleteSingleReportsFailsWithConflictIfUsedByAlertWhenForceSet(Boolean force) {
     // given
-    String reportId = addEmptyProcessReportToOptimize();
+    String reportId = createProcessReport();
     String firstAlertForReport = createNewAlertForReport(reportId);
     String secondAlertForReport = createNewAlertForReport(reportId);
     String[] expectedReportIds = {reportId};
@@ -250,7 +250,7 @@ public class ReportConflictIT {
   @Parameters(source = ForceParameterProvider.class)
   public void deleteSingleReportsFailsWithConflictIfUsedByDashboardWhenForceSet(Boolean force) {
     // given
-    String reportId = addEmptyProcessReportToOptimize();
+    String reportId = createProcessReport();
     String firstDashboardId = createNewDashboardAndAddReport(reportId);
     String secondDashboardId = createNewDashboardAndAddReport(reportId);
     String[] expectedReportIds = {reportId};
@@ -375,7 +375,7 @@ public class ReportConflictIT {
   private String createNewCombinedReportWithDefinition(String... reportIds) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequestWithDefinition(createCombinedReportDefinition(reportIds))
+      .buildCreateCombinedReportRequest(createCombinedReportDefinition(reportIds))
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -406,31 +406,29 @@ public class ReportConflictIT {
   }
 
   private String createAndStoreProcessReportWithDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportDataViewRawAsTable);
-    report.setId(RANDOM_STRING);
-    report.setLastModifier(RANDOM_STRING);
-    report.setName(RANDOM_STRING);
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportDataViewRawAsTable);
+    singleProcessReportDefinitionDto.setId(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setLastModifier(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setName(RANDOM_STRING);
     OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner(RANDOM_STRING);
-    return createSingleProcessReport(report);
+    singleProcessReportDefinitionDto.setCreated(someDate);
+    singleProcessReportDefinitionDto.setLastModified(someDate);
+    singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
+    return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto reportData) {
-    String id = addEmptyDecisionReportToOptimize();
-    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(RANDOM_STRING);
-    report.setLastModifier(RANDOM_STRING);
-    report.setName(RANDOM_STRING);
+    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    singleDecisionReportDefinitionDto.setData(reportData);
+    singleDecisionReportDefinitionDto.setId(RANDOM_STRING);
+    singleDecisionReportDefinitionDto.setLastModifier(RANDOM_STRING);
+    singleDecisionReportDefinitionDto.setName(RANDOM_STRING);
     OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner(RANDOM_STRING);
-    updateSingleDecisionReport(id, report);
-    return id;
+    singleDecisionReportDefinitionDto.setCreated(someDate);
+    singleDecisionReportDefinitionDto.setLastModified(someDate);
+    singleDecisionReportDefinitionDto.setOwner(RANDOM_STRING);
+    return createDecisionReport(singleDecisionReportDefinitionDto);
   }
 
   private ConflictResponseDto deleteReportFailWithConflict(String reportId, Boolean force) {
@@ -441,21 +439,12 @@ public class ReportConflictIT {
 
   }
 
-  private String createSingleProcessReport(SingleProcessReportDefinitionDto updatedReport) {
+  private String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequestWithDefinition(updatedReport)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
-  }
-
-  private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleDecisionReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
   }
 
   private ConflictResponseDto updateReportFailWithConflict(String id,
@@ -476,7 +465,7 @@ public class ReportConflictIT {
       .execute(ConflictResponseDto.class, 409);
   }
 
-  private String addEmptyProcessReportToOptimize() {
+  private String createProcessReport() {
     return embeddedOptimizeRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
@@ -484,10 +473,10 @@ public class ReportConflictIT {
       .getId();
   }
 
-  private String addEmptyDecisionReportToOptimize() {
+  private String createDecisionReport(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest()
+      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

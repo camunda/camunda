@@ -14,13 +14,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -140,7 +139,7 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
 
-    String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
+    String reportId = createNewReport(reportDataDto);
 
     // when
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
@@ -1010,21 +1009,6 @@ public abstract class AbstractProcessInstanceDurationByDateWithProcessPartReport
       .done();
     // @formatter:on
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReport();
-
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
   }
 
   protected void adjustProcessInstanceDates(String processInstanceId,

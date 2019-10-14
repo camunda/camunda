@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -18,7 +19,6 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -41,7 +41,7 @@ public class DashboardRestServiceIT {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildCreateDashboardRequestWithDefinition(generateDashboardDefinitionDto())
+      .buildCreateDashboardRequest(generateDashboardDefinitionDto())
       .execute();
 
     // then the status code is not authorized
@@ -65,26 +65,11 @@ public class DashboardRestServiceIT {
     // when
     IdDto idDto = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequestWithDefinition(generateDashboardDefinitionDto())
+      .buildCreateDashboardRequest(generateDashboardDefinitionDto())
       .execute(IdDto.class, 200);
 
     // then the status code is okay
     assertThat(idDto, is(notNullValue()));
-  }
-
-  @Test
-  public void createNewDashboardWithCollectionIdAndDefinitionRespectsTheCollectionIdParameter() {
-    // when
-    final String collectionId = createEmptyCollectionToOptimize();
-    DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
-    dashboardDefinitionDto.setCollectionId(UUID.randomUUID().toString());
-    String id = createDashboardToCollectionAsDefaultUserWithDefinition(collectionId, dashboardDefinitionDto);
-
-    // then the status code is okay
-    assertThat(id, is(notNullValue()));
-    // and the stored dashboard has the expected collectionId
-    DashboardDefinitionDto returnedDashboard = getDashboardWithId(id);
-    assertThat(returnedDashboard.getCollectionId(), is(collectionId));
   }
 
   @Test
@@ -154,7 +139,7 @@ public class DashboardRestServiceIT {
   public void getDashboard() {
     //given
     DashboardDefinitionDto definitionDto = generateDashboardDefinitionDto();
-    String id = createPrivateDashboardWithDefinition(generateDashboardDefinitionDto());
+    String id = createDashboard(generateDashboardDefinitionDto());
 
     // when
     DashboardDefinitionDto returnedDashboard = getDashboardWithId(id);
@@ -221,7 +206,9 @@ public class DashboardRestServiceIT {
   public void updateDashboardDoesNotChangeCollectionId() {
     //given
     final String collectionId = createEmptyCollectionToOptimize();
-    String id = createDashboardToCollectionAsDefaultUserWithDefinition(collectionId, new DashboardDefinitionDto());
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId(collectionId);
+    String id = createDashboard(dashboardDefinitionDto);
 
     // when
     embeddedOptimizeRule
@@ -275,18 +262,13 @@ public class DashboardRestServiceIT {
   }
 
   private String createEmptyPrivateDashboard() {
-    return createDashboardToCollectionAsDefaultUserWithDefinition(null, null);
+    return createDashboard(new DashboardDefinitionDto());
   }
 
-  private String createPrivateDashboardWithDefinition(DashboardDefinitionDto dashboardDefinitionDto) {
-    return createDashboardToCollectionAsDefaultUserWithDefinition(null, dashboardDefinitionDto);
-  }
-
-  private String createDashboardToCollectionAsDefaultUserWithDefinition(final String collectionId,
-                                                                        final DashboardDefinitionDto dashboardDefinitionDto) {
+  private String createDashboard(final DashboardDefinitionDto dashboardDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequestWithDefinition(collectionId, dashboardDefinitionDto)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -326,16 +308,16 @@ public class DashboardRestServiceIT {
   }
 
   private void createEmptyReportToDashboard(final String dashboardId) {
-    final String reportId = createEmptySingleProcessReportToCollection(null);
+    final String reportId = createEmptySingleProcessReportToCollection();
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId(reportId);
     updateDashboardRequest(dashboardId, Collections.singletonList(reportLocationDto));
   }
 
-  private String createEmptySingleProcessReportToCollection(final String collectionId) {
+  private String createEmptySingleProcessReportToCollection() {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
+      .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionDto())
       .execute(IdDto.class, 200)
       .getId();
   }

@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefi
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -471,9 +472,11 @@ public class DashboardHandlingIT {
   }
 
   private String addEmptyDashboardToCollectionAsDefaultUser(final String collectionId) {
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest(collectionId)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -535,9 +538,11 @@ public class DashboardHandlingIT {
   }
 
   private String addEmptySingleProcessReportToCollection(final String collectionId) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -569,25 +574,12 @@ public class DashboardHandlingIT {
     return createNewCombinedReport(report);
   }
 
-  private String createNewCombinedReport(CombinedReportDefinitionDto report) {
-    String reportId = createNewCombinedReportInCollection(null);
-    updateCombinedReport(reportId, report);
-    return reportId;
-  }
-
-  private String createNewCombinedReportInCollection(String collectionId) {
+  private String createNewCombinedReport(CombinedReportDefinitionDto combinedReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest(collectionId)
+      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
-  }
-
-  private void updateCombinedReport(String id, CombinedReportDefinitionDto updatedReport) {
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateCombinedProcessReportRequest(id, updatedReport)
-      .execute(204);
   }
 
   private IdDto copyDashboardToCollection(final String dashboardId, final String collectionId) {

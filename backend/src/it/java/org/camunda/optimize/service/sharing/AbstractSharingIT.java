@@ -62,17 +62,15 @@ public abstract class AbstractSharingIT {
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
-    String reportId = this.createNewReport();
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    updateReport(reportId, report);
-    return reportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportData);
+    return this.createNewReport(singleProcessReportDefinitionDto);
   }
 
   public static void assertErrorFields(ReportEvaluationException errorMessage) {
@@ -109,18 +107,10 @@ public abstract class AbstractSharingIT {
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-    assertThat(response.getStatus(), is(204));
-  }
-
-  protected String createNewReport() {
+  protected String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

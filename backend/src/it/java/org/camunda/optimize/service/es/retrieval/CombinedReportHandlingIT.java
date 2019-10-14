@@ -114,7 +114,7 @@ public class CombinedReportHandlingIT {
   @Test
   public void getSingleAndCombinedReport() {
     // given
-    String singleReportId = createNewSingleReport();
+    String singleReportId = createNewSingleReport(new SingleProcessReportDefinitionDto());
     String combinedReportId = createNewCombinedReport();
 
     // when
@@ -443,7 +443,7 @@ public class CombinedReportHandlingIT {
   public void reportsThatCantBeEvaluatedAreIgnored() {
     // given
     deploySimpleServiceTaskProcessDefinition();
-    String singleReportId = createNewSingleReport();
+    String singleReportId = createNewSingleReport(new SingleProcessReportDefinitionDto());
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -977,12 +977,10 @@ public class CombinedReportHandlingIT {
   }
 
   private String createNewSingleMapReport(ProcessReportDataDto data) {
-    String singleReportId = createNewSingleReport();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setName(TEST_REPORT_NAME);
-    definitionDto.setData(data);
-    updateReport(singleReportId, definitionDto);
-    return singleReportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setName(TEST_REPORT_NAME);
+    singleProcessReportDefinitionDto.setData(data);
+    return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
   private String createNewSingleNumberReport(ProcessInstanceEngineDto engineDto) {
@@ -996,11 +994,9 @@ public class CombinedReportHandlingIT {
   }
 
   private String createNewSingleNumberReport(ProcessReportDataDto data) {
-    String singleReportId = createNewSingleReport();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setData(data);
-    updateReport(singleReportId, definitionDto);
-    return singleReportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(data);
+    return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
   private String createNewSingleReportGroupByEndDate(ProcessInstanceEngineDto engineDto,
@@ -1029,17 +1025,15 @@ public class CombinedReportHandlingIT {
 
 
   private String createNewSingleRawReport(ProcessInstanceEngineDto engineDto) {
-    String singleReportId = createNewSingleReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
-    updateReport(singleReportId, definitionDto);
-    return singleReportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
+    return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
   private String createNewCombinedReport(String... singleReportIds) {
@@ -1055,9 +1049,11 @@ public class CombinedReportHandlingIT {
   }
 
   private String createNewCombinedReportInCollection(String collectionId) {
+    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    combinedReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest(collectionId)
+      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -1095,16 +1091,12 @@ public class CombinedReportHandlingIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private String createNewSingleReport() {
+  private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
-  }
-
-  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    updateReport(id, updatedReport, null);
   }
 
   private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport, Boolean force) {
@@ -1175,9 +1167,11 @@ public class CombinedReportHandlingIT {
   }
 
   private String addEmptySingleProcessReportToCollection(final String collectionId) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

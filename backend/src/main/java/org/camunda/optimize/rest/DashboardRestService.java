@@ -50,16 +50,11 @@ public class DashboardRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewDashboard(@Context final ContainerRequestContext requestContext,
-                                  @QueryParam("collectionId") final String collectionId,
                                   DashboardDefinitionDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (dashboardDefinitionDto == null) {
-      dashboardDefinitionDto = new DashboardDefinitionDto();
-    }
-    if (collectionId != null) {
-      dashboardDefinitionDto.setCollectionId(collectionId);
-    }
-    return dashboardService.createNewDashboardAndReturnId(userId, dashboardDefinitionDto);
+    return dashboardService.createNewDashboardAndReturnId(userId,
+                                                          Optional.ofNullable(dashboardDefinitionDto)
+                                                            .orElseGet(DashboardDefinitionDto::new));
   }
 
   @POST

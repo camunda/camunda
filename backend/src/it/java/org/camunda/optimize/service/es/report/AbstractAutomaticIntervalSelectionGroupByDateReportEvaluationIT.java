@@ -10,11 +10,11 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
@@ -250,7 +250,6 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     changeProcessInstanceDates(procInstMin, now.plusDays(1), now.plusDays(2));
     changeProcessInstanceDates(procInstMax, now.plusDays(3), now.plusDays(6));
 
-
     ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinition.getKey())
@@ -271,7 +270,6 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
 
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
-
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
@@ -321,17 +319,15 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
   }
 
   private String createNewSingleReport(ProcessReportDataDto reportDataDto) {
-    String singleReportId = createNewSingleReport();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setData(reportDataDto);
-    updateReport(singleReportId, definitionDto);
-    return singleReportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportDataDto);
+    return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
-  private String createNewSingleReport() {
+  private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -386,15 +382,6 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
       // @formatter:on
       .getResult();
-  }
-
-  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
   }
 
   private String localDateTimeToString(ZonedDateTime time) {

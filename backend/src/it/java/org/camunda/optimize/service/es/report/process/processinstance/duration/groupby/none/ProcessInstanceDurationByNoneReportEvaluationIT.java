@@ -10,13 +10,12 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
-import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -105,7 +104,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     ProcessReportDataDto reportDataDto =
       createReport(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
 
-    String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
+    String reportId = createNewReport(reportDataDto);
 
     // when
     AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
@@ -527,21 +526,6 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
       .endEvent()
       .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReport();
-
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
   }
 
   private Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {

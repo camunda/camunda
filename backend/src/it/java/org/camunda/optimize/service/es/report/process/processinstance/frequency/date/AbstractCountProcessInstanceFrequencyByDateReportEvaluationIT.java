@@ -697,24 +697,13 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
-    String id = createNewReport();
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
       .build();
-
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
+    return createNewReport(reportData);
   }
 
   private ProcessReportDataDto createGroupByStartDateReport(String processDefinitionKey,

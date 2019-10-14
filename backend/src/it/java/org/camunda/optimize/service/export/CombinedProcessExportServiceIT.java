@@ -207,7 +207,7 @@ public class CombinedProcessExportServiceIT {
   @Test
   public void combinedReportWithUnevaluatableReportProducesEmptyResult() throws Exception {
     //given
-    String singleReportId1 = createNewSingleReport();
+    String singleReportId1 = createNewSingleReport(new SingleProcessReportDefinitionDto());
     String combinedReportId = createNewCombinedReport(singleReportId1);
     embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
     elasticSearchRule.refreshAllOptimizeIndices();
@@ -249,15 +249,6 @@ public class CombinedProcessExportServiceIT {
     assertThat(actualContent.trim(), isEmptyString());
   }
 
-  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
-  }
-
   private void updateCombinedProcessReport(String id, CombinedReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
@@ -296,46 +287,40 @@ public class CombinedProcessExportServiceIT {
   }
 
   private String createNewSingleMapReport(ProcessReportDataDto data) {
-    String singleReportId = createNewSingleReport();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setName("FooName");
-    definitionDto.setData(data);
-    updateSingleProcessReport(singleReportId, definitionDto);
-    return singleReportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setName("FooName");
+    singleProcessReportDefinitionDto.setData(data);
+    return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
   private String createNewSingleNumberReport(ProcessInstanceEngineDto engineDto) {
-    String singleReportId = createNewSingleReport();
     ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
-    updateSingleProcessReport(singleReportId, definitionDto);
-    return singleReportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
+    return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
   private String createNewSingleDurationNumberReport(ProcessInstanceEngineDto engineDto) {
-    String singleReportId = createNewSingleReport();
     ProcessReportDataDto processInstanceDurationGroupByNone = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
       .build();
-    SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setData(processInstanceDurationGroupByNone);
-    updateSingleProcessReport(singleReportId, definitionDto);
-    return singleReportId;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(processInstanceDurationGroupByNone);
+    return createNewSingleReport(singleProcessReportDefinitionDto);
   }
 
-  private String createNewSingleReport() {
+  private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

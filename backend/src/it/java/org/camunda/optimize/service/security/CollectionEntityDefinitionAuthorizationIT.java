@@ -69,31 +69,24 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     assertThat(entities.stream().map(EntityDto::getId).collect(toList()), contains(expectedReport));
   }
 
-  private String createSingleProcessReportForDefinitionAsDefaultUser(final ProcessDefinitionEngineDto processDefinition1,
+  private String createSingleProcessReportForDefinitionAsDefaultUser(final ProcessDefinitionEngineDto processDefinitionEngineDto,
                                                                      final String collectionId) {
     final ProcessReportDataDto reportDataDto = ProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(processDefinition1.getKey())
-      .setProcessDefinitionVersion(processDefinition1.getVersionAsString())
+      .setProcessDefinitionKey(processDefinitionEngineDto.getKey())
+      .setProcessDefinitionVersion(processDefinitionEngineDto.getVersionAsString())
       .setDateInterval(GroupByDateUnit.AUTOMATIC)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
 
-    final String singleReportId = embeddedOptimizeRule
+    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportDataDto);
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
+    return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
-
-    final SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setData(reportDataDto);
-
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(singleReportId, definitionDto)
-      .execute();
-
-    return singleReportId;
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(final String definitionKey) {

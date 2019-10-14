@@ -316,23 +316,11 @@ public class OptimizeRequestExecutor {
     return buildCreateSingleProcessReportRequest(null);
   }
 
-  public OptimizeRequestExecutor buildCreateSingleProcessReportRequest(final String collectionId) {
+  public OptimizeRequestExecutor buildCreateSingleProcessReportRequest(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     this.path = "report/process/single";
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
+    Optional.ofNullable(singleProcessReportDefinitionDto)
+      .ifPresent(definitionDto -> this.body = getBody(definitionDto));
     this.requestType = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCreateSingleProcessReportRequestWithDefinition(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return buildCreateSingleProcessReportRequestWithDefinition(singleProcessReportDefinitionDto, null);
-  }
-
-  public OptimizeRequestExecutor buildCreateSingleProcessReportRequestWithDefinition(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto,
-                                                                                     final String collectionId) {
-    this.path = "report/process/single";
-    this.body = getBody(singleProcessReportDefinitionDto);
-    this.requestType = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
     return this;
   }
 
@@ -340,22 +328,10 @@ public class OptimizeRequestExecutor {
     return buildCreateSingleDecisionReportRequest(null);
   }
 
-  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest(final String collectionId) {
+  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequest(final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
     this.path = "report/decision/single";
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
-    this.requestType = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequestWithDefinition(final SingleDecisionReportDefinitionDto singleProcessReportDefinitionDto) {
-    return buildCreateSingleDecisionReportRequestWithDefinition(singleProcessReportDefinitionDto, null);
-  }
-
-  public OptimizeRequestExecutor buildCreateSingleDecisionReportRequestWithDefinition(final SingleDecisionReportDefinitionDto singleProcessReportDefinitionDto,
-                                                                                      final String collectionId) {
-    this.path = "report/decision/single";
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
-    this.body = getBody(singleProcessReportDefinitionDto);
+    Optional.ofNullable(singleDecisionReportDefinitionDto)
+      .ifPresent(definitionDto -> this.body = getBody(definitionDto));
     this.requestType = POST;
     return this;
   }
@@ -364,22 +340,9 @@ public class OptimizeRequestExecutor {
     return buildCreateCombinedReportRequest(null);
   }
 
-  public OptimizeRequestExecutor buildCreateCombinedReportRequest(final String collectionId) {
+  public OptimizeRequestExecutor buildCreateCombinedReportRequest(final CombinedReportDefinitionDto combinedReportDefinitionDto) {
     this.path = "report/process/combined";
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
-    this.requestType = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCreateCombinedReportRequestWithDefinition(final CombinedReportDefinitionDto combinedReportDefinitionDto) {
-    return buildCreateCombinedReportRequestWithDefinition(combinedReportDefinitionDto, null);
-  }
-
-  public OptimizeRequestExecutor buildCreateCombinedReportRequestWithDefinition(final CombinedReportDefinitionDto combinedReportDefinitionDto,
-                                                                                final String collectionId) {
-    this.path = "report/process/combined";
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
-    this.body = getBody(combinedReportDefinitionDto);
+    Optional.ofNullable(combinedReportDefinitionDto).ifPresent(definitionDto -> this.body = getBody(definitionDto));
     this.requestType = POST;
     return this;
   }
@@ -448,40 +411,27 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildCreateDashboardRequest() {
-    return buildCreateDashboardRequest(null);
+    return buildCreateDashboardRequest(new DashboardDefinitionDto());
   }
 
-  public OptimizeRequestExecutor buildCreateDashboardRequest(final String collectionId) {
+  public OptimizeRequestExecutor buildCreateDashboardRequest(DashboardDefinitionDto dashboardDefinitionDto) {
     this.requestType = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
-    this.body = Entity.json("");
-    this.path = "dashboard";
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCreateDashboardRequestWithDefinition(final DashboardDefinitionDto dashboardDefinitionDto) {
-    return buildCreateDashboardRequestWithDefinition(null, dashboardDefinitionDto);
-  }
-
-  public OptimizeRequestExecutor buildCreateDashboardRequestWithDefinition(final String collectionId,
-                                                                           DashboardDefinitionDto dashboardDefinitionDto) {
-    this.requestType = POST;
-    Optional.ofNullable(collectionId).ifPresent(value -> addSingleQueryParam("collectionId", value));
-    this.body = getBody(dashboardDefinitionDto);
+    this.body = Optional.ofNullable(dashboardDefinitionDto)
+      .map(definitionDto -> getBody(dashboardDefinitionDto))
+      .orElseGet(() -> Entity.json(""));
     this.path = "dashboard";
     return this;
   }
 
   public OptimizeRequestExecutor buildCreateCollectionRequest() {
-    this.requestType = POST;
-    this.body = Entity.json("");
-    this.path = "collection";
-    return this;
+    return buildCreateCollectionRequestWithPartialDefinition(null);
   }
 
   public OptimizeRequestExecutor buildCreateCollectionRequestWithPartialDefinition(PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
     this.requestType = POST;
-    this.body = getBody(partialCollectionDefinitionDto);
+    this.body = Optional.ofNullable(partialCollectionDefinitionDto)
+      .map(definitionDto -> getBody(partialCollectionDefinitionDto))
+      .orElseGet(() -> Entity.json(""));
     this.path = "collection";
     return this;
   }

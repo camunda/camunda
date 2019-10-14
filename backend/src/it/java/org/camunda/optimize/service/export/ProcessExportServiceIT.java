@@ -176,33 +176,22 @@ public class ProcessExportServiceIT {
   }
 
   private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReportHelper();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
-    report.setName("something");
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportData);
+    singleProcessReportDefinitionDto.setId("something");
+    singleProcessReportDefinitionDto.setLastModifier("something");
+    singleProcessReportDefinitionDto.setName("something");
     OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
+    singleProcessReportDefinitionDto.setCreated(someDate);
+    singleProcessReportDefinitionDto.setLastModified(someDate);
+    singleProcessReportDefinitionDto.setOwner("something");
+    return createNewReport(singleProcessReportDefinitionDto);
   }
 
-  private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private String createNewReportHelper() {
+  private String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

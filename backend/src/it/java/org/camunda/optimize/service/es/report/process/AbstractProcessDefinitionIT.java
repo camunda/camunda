@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -231,19 +232,23 @@ public class AbstractProcessDefinitionIT {
       .execute();
   }
 
-  protected String createNewReport() {
+  protected String createNewReport(ProcessReportDataDto processReportDataDto) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(processReportDataDto);
+    singleProcessReportDefinitionDto.setLastModifier("something");
+    singleProcessReportDefinitionDto.setName("something");
+    singleProcessReportDefinitionDto.setCreated(OffsetDateTime.now());
+    singleProcessReportDefinitionDto.setLastModified(OffsetDateTime.now());
+    singleProcessReportDefinitionDto.setOwner("something");
+    return createNewReport(singleProcessReportDefinitionDto);
+  }
+
+  protected String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  protected void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-    assertThat(response.getStatus(), is(204));
-  }
 }

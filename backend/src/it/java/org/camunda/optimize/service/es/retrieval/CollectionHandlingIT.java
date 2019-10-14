@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataD
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -252,27 +253,6 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void singleProcessReportCanBeCreatedInsideCollection_collectionIdAsQueryParamIsPreferred() {
-    // given
-    String collectionId1 = createNewCollection();
-    String collectionId2 = createNewCollection();
-
-    SingleProcessReportDefinitionDto reportDefinition = new SingleProcessReportDefinitionDto();
-    reportDefinition.setCollectionId(collectionId1);
-
-    String reportId = createSingleProcessReportWithDefinitionInCollection(reportDefinition, collectionId2);
-
-    // when
-    ResolvedCollectionDefinitionDto collection1 = getCollectionById(collectionId1);
-    ResolvedCollectionDefinitionDto collection2 = getCollectionById(collectionId2);
-
-    // then
-    assertThat(collection1.getData().getEntities().size(), is(0));
-    EntityDto report = collection2.getData().getEntities().get(0);
-    assertThat(report.getId(), is(reportId));
-  }
-
-  @Test
   public void singleDecisionReportCanBeCreatedInsideCollection() {
     // given
     String collectionId = createNewCollection();
@@ -290,27 +270,6 @@ public class CollectionHandlingIT {
   }
 
   @Test
-  public void singleDecisionReportCanBeCreatedInsideCollection_collectionIdAsQueryParamIsPreferred() {
-    // given
-    String collectionId1 = createNewCollection();
-    String collectionId2 = createNewCollection();
-
-    SingleDecisionReportDefinitionDto reportDefinition = new SingleDecisionReportDefinitionDto();
-    reportDefinition.setCollectionId(collectionId1);
-
-    String reportId = createNewSingleDecisionReportWithDefinitionInCollection(reportDefinition, collectionId2);
-
-    // when
-    ResolvedCollectionDefinitionDto collection1 = getCollectionById(collectionId1);
-    ResolvedCollectionDefinitionDto collection2 = getCollectionById(collectionId2);
-
-    // then
-    assertThat(collection1.getData().getEntities().size(), is(0));
-    EntityDto report = collection2.getData().getEntities().get(0);
-    assertThat(report.getId(), is(reportId));
-  }
-
-  @Test
   public void combinedProcessReportCanBeCreatedInsideCollection() {
     // given
     String collectionId = createNewCollection();
@@ -325,27 +284,6 @@ public class CollectionHandlingIT {
     assertThat(report.getEntityType(), is(EntityType.REPORT));
     assertThat(report.getReportType(), is(ReportType.PROCESS));
     assertThat(report.getCombined(), is(true));
-  }
-
-  @Test
-  public void combinedProcessReportCanBeCreatedInsideCollection_collectionIdAsQueryParamIsPreferred() {
-    // given
-    String collectionId1 = createNewCollection();
-    String collectionId2 = createNewCollection();
-
-    CombinedReportDefinitionDto reportDefinition = new CombinedReportDefinitionDto();
-    reportDefinition.setCollectionId(collectionId1);
-
-    String reportId = createNewCombinedReportWithDefinitionInCollection(reportDefinition, collectionId2);
-
-    // when
-    ResolvedCollectionDefinitionDto collection1 = getCollectionById(collectionId1);
-    ResolvedCollectionDefinitionDto collection2 = getCollectionById(collectionId2);
-
-    // then
-    assertThat(collection1.getData().getEntities().size(), is(0));
-    EntityDto report = collection2.getData().getEntities().get(0);
-    assertThat(report.getId(), is(reportId));
   }
 
   @Test
@@ -368,12 +306,13 @@ public class CollectionHandlingIT {
   @Test
   public void singleProcessReportCanNotBeCreatedForInvalidCollection() {
     // given
-    String invalidCollectionId = "invalidId";
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setCollectionId("invalidId");
 
     // when
     final Response createResponse = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(invalidCollectionId)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute();
 
     // then
@@ -383,12 +322,13 @@ public class CollectionHandlingIT {
   @Test
   public void singleDecisionReportCanNotBeCreatedForInvalidCollection() {
     // given
-    String invalidCollectionId = "invalidId";
+    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    singleDecisionReportDefinitionDto.setCollectionId("invalidId");
 
     // when
     final Response createResponse = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest(invalidCollectionId)
+      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute();
 
     // then
@@ -398,12 +338,13 @@ public class CollectionHandlingIT {
   @Test
   public void combinedProcessReportCanNotBeCreatedForInvalidCollection() {
     // given
-    String invalidCollectionId = "invalidId";
+    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    combinedReportDefinitionDto.setCollectionId("invalidId");
 
     // when
     final Response createResponse = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest(invalidCollectionId)
+      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute();
 
     // then
@@ -413,12 +354,13 @@ public class CollectionHandlingIT {
   @Test
   public void dashboardCanNotBeCreatedForInvalidCollection() {
     // given
-    String invalidCollectionId = "invalidId";
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId("invalidId");
 
     // when
     final Response createResponse = embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest(invalidCollectionId)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute();
 
     // then
@@ -540,67 +482,42 @@ public class CollectionHandlingIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  private String createSingleProcessReportWithDefinitionInCollection(
-    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto,
-    final String collectionId) {
-
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequestWithDefinition(singleProcessReportDefinitionDto, collectionId)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
   private String createNewSingleProcessReportInCollection(final String collectionId) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private String createNewSingleDecisionReportWithDefinitionInCollection(
-    final SingleDecisionReportDefinitionDto reportDefinitionDto,
-    final String collectionId) {
-
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequestWithDefinition(reportDefinitionDto, collectionId)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
   private String createNewSingleDecisionReportInCollection(final String collectionId) {
+    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    singleDecisionReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest(collectionId)
+      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
   private String createNewDashboardInCollection(final String collectionId) {
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest(collectionId)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
   private String createNewCombinedReportInCollection(final String collectionId) {
+    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    combinedReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest(collectionId)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private String createNewCombinedReportWithDefinitionInCollection(
-    final CombinedReportDefinitionDto reportDefinitionDto,
-    final String collectionId) {
-
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequestWithDefinition(reportDefinitionDto, collectionId)
+      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

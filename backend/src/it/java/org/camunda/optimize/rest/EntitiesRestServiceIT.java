@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
+import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.hamcrest.CoreMatchers.is;
@@ -270,7 +271,7 @@ public class EntitiesRestServiceIT {
     addSingleReportToOptimize("A Report", ReportType.DECISION, collectionId, DEFAULT_USERNAME);
     addSingleReportToOptimize("B Report", ReportType.PROCESS, collectionId, DEFAULT_USERNAME);
     addDashboardToOptimize("C Dashboard", collectionId, DEFAULT_USERNAME);
-    addCombinedReport("D Combined", collectionId, DEFAULT_USERNAME);
+    addCombinedReport("D Combined", collectionId);
 
     elasticSearchRule.refreshAllOptimizeIndices();
 
@@ -482,39 +483,25 @@ public class EntitiesRestServiceIT {
   private String addSingleReportToOptimize(String name, ReportType reportType, String collectionId, String user) {
     switch (reportType) {
       case PROCESS:
-        final String processReportId = embeddedOptimizeRule
+        SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+        singleProcessReportDefinitionDto.setName(name);
+        singleProcessReportDefinitionDto.setCollectionId(collectionId);
+        return embeddedOptimizeRule
           .getRequestExecutor()
-          .buildCreateSingleProcessReportRequest(collectionId)
+          .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
           .withUserAuthentication(user, user)
           .execute(IdDto.class, 200)
           .getId();
-
-        SingleProcessReportDefinitionDto processReportDefinition = new SingleProcessReportDefinitionDto();
-        processReportDefinition.setName(name);
-
-        embeddedOptimizeRule.getRequestExecutor()
-          .withUserAuthentication(user, user)
-          .buildUpdateSingleProcessReportRequest(processReportId, processReportDefinition)
-          .execute(204);
-
-        return processReportId;
       case DECISION:
-        final String decisionReportId = embeddedOptimizeRule
+        SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+        singleDecisionReportDefinitionDto.setName(name);
+        singleDecisionReportDefinitionDto.setCollectionId(collectionId);
+        return embeddedOptimizeRule
           .getRequestExecutor()
-          .buildCreateSingleDecisionReportRequest(collectionId)
+          .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
           .withUserAuthentication(user, user)
           .execute(IdDto.class, 200)
           .getId();
-
-        SingleDecisionReportDefinitionDto decisionReportDefinition = new SingleDecisionReportDefinitionDto();
-        decisionReportDefinition.setName(name);
-
-        embeddedOptimizeRule.getRequestExecutor()
-          .withUserAuthentication(user, user)
-          .buildUpdateSingleDecisionReportRequest(decisionReportId, decisionReportDefinition)
-          .execute(204);
-
-        return decisionReportId;
       default:
         throw new IllegalStateException("ReportType not allowed!");
     }
@@ -525,44 +512,30 @@ public class EntitiesRestServiceIT {
   }
 
   private String addDashboardToOptimize(String name, String collectionId, String user) {
-    final String id = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setName(name);
+    dashboardDefinitionDto.setCollectionId(collectionId);
+    return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest(collectionId)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .withUserAuthentication(user, user)
       .execute(IdDto.class, 200)
       .getId();
-
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
-    dashboardDefinitionDto.setName(name);
-
-    embeddedOptimizeRule.getRequestExecutor()
-      .buildUpdateDashboardRequest(id, dashboardDefinitionDto)
-      .withUserAuthentication(user, user)
-      .execute(204);
-
-    return id;
   }
 
   private String addCombinedReport(String name) {
-    return addCombinedReport(name, null, DEFAULT_USERNAME);
+    return addCombinedReport(name, null);
   }
 
-  private String addCombinedReport(String name, String collectionId, String user) {
-    final String id = embeddedOptimizeRule
+  private String addCombinedReport(String name, String collectionId) {
+    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    combinedReportDefinitionDto.setName(name);
+    combinedReportDefinitionDto.setCollectionId(collectionId);
+    return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest(collectionId)
-      .withUserAuthentication(user, user)
+      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .execute(IdDto.class, 200).getId();
-
-    CombinedReportDefinitionDto definitionDto = new CombinedReportDefinitionDto();
-    definitionDto.setName(name);
-
-    embeddedOptimizeRule.getRequestExecutor()
-      .buildUpdateCombinedProcessReportRequest(id, definitionDto)
-      .withUserAuthentication(user, user)
-      .execute(204);
-
-    return id;
   }
 
   private List<EntityDto> getEntities() {

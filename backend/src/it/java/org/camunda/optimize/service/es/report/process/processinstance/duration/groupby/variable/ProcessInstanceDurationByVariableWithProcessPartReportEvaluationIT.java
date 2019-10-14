@@ -133,7 +133,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setEndFlowNodeId(END_EVENT)
       .build();
 
-    String reportId = createAndStoreDefaultReportDefinition(reportData);
+    String reportId = createNewReport(reportData);
 
     // when
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
@@ -828,21 +828,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .done();
     // @formatter:on
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReport();
-
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
   }
 
   private void startThreeProcessInstances(OffsetDateTime activityStartDate,

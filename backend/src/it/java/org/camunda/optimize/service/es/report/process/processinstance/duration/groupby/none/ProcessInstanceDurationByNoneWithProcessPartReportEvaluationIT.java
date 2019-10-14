@@ -170,7 +170,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
         END_EVENT
       );
 
-    String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
+    String reportId = createNewReport(reportDataDto);
 
     // when
     AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluationResponse =
@@ -545,21 +545,6 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       .endEvent(END_EVENT)
       .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReport();
-
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
   }
 
   private Map<AggregationType, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {

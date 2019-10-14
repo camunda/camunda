@@ -142,7 +142,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
 
-    String reportId = createAndStoreDefaultReportDefinition(reportData);
+    createNewReport(reportData);
 
     // when
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = evaluateMapReport(
@@ -1128,21 +1128,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .endEvent()
       .done();
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
-  }
-
-  private String createAndStoreDefaultReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewReport();
-
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
   }
 
   private ProcessInstanceEngineDto startProcessWithVariablesAndDates(final ProcessDefinitionEngineDto definition,

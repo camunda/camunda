@@ -9,7 +9,9 @@ import junitparams.JUnitParamsRunner;
 import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -48,8 +50,8 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = createNewCollectionAsDefaultUser();
-    final String reportId = createSimpleProcessReportInCollectionAsDefaultUser(collectionId);
-    final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
+    createSimpleProcessReportInCollectionAsDefaultUser(collectionId);
+    createDashboardInCollectionAsDefaultUser(collectionId);
     addRoleToCollectionAsDefaultUser(
       accessIdentityRolePairs.roleType, accessIdentityRolePairs.identityDto, collectionId
     );
@@ -116,17 +118,21 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private String createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
+    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+    combinedReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest(collectionId)
+      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
   private String createDashboardInCollectionAsDefaultUser(final String collectionId) {
+    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateDashboardRequest(collectionId)
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

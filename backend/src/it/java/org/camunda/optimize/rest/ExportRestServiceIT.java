@@ -199,58 +199,36 @@ public class ExportRestServiceIT {
   }
 
   private String createAndStoreDefaultProcessReportDefinition(ProcessReportDataDto reportData) {
-    String id = createNewProcessReport();
-
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setName("something");
-    updateSingleProcessReport(id, report);
-    return id;
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportData);
+    singleProcessReportDefinitionDto.setName("something");
+    return createNewProcessReport(singleProcessReportDefinitionDto);
   }
 
   private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto decisionReportDataDto) {
-    String id = addEmptyDecisionReportToOptimize();
-    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
-    report.setData(decisionReportDataDto);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
+    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+    singleDecisionReportDefinitionDto.setData(decisionReportDataDto);
+    singleDecisionReportDefinitionDto.setLastModifier("something");
+    singleDecisionReportDefinitionDto.setName("something");
     OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
-    updateSingleDecisionReport(id, report);
-    return id;
+    singleDecisionReportDefinitionDto.setCreated(someDate);
+    singleDecisionReportDefinitionDto.setLastModified(someDate);
+    singleDecisionReportDefinitionDto.setOwner("something");
+    return createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 
-  private String addEmptyDecisionReportToOptimize() {
+  private String createSingleDecisionReport(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest()
+      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  private void updateSingleProcessReport(String id, SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute();
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private void updateSingleDecisionReport(String id, SingleDecisionReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleDecisionReportRequest(id, updatedReport)
-      .execute();
-    assertThat(response.getStatus(), is(204));
-  }
-
-  private String createNewProcessReport() {
+  private String createNewProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

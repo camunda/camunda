@@ -193,10 +193,10 @@ public class CollectionRestServiceScopeIT {
 
     final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
 
-    String reportId = createNewSingleProcessReportInCollection(collectionId);
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.getData().setProcessDefinitionKey("_KEY_");
-    updateReport(reportId, report);
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.getData().setProcessDefinitionKey("_KEY_");
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
+    String reportId = createNewSingleProcessReport(singleProcessReportDefinitionDto);
 
     ConflictResponseDto conflictResponseDto = embeddedOptimizeRule.getRequestExecutor()
       .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
@@ -223,13 +223,6 @@ public class CollectionRestServiceScopeIT {
     );
   }
 
-  private void updateReport(final String id, final SingleProcessReportDefinitionDto updatedReport) {
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(id, updatedReport)
-      .execute(204);
-  }
-
   private String addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
     return embeddedOptimizeRule.getRequestExecutor()
       .buildAddScopeEntryToCollectionRequest(collectionId, entry)
@@ -237,10 +230,10 @@ public class CollectionRestServiceScopeIT {
       .getId();
   }
 
-  private String createNewSingleProcessReportInCollection(final String collectionId) {
+  private String createNewSingleProcessReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(collectionId)
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

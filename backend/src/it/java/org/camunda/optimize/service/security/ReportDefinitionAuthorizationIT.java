@@ -465,10 +465,6 @@ public class ReportDefinitionAuthorizationIT {
     }
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    updateReportAsUser(id, updatedReport, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
   private void updateReportAsUser(String id, ReportDefinitionDto updatedReport, final String user,
                                   final String password) {
     Response response = getUpdateReportResponse(id, updatedReport, user, password);
@@ -516,13 +512,13 @@ public class ReportDefinitionAuthorizationIT {
         return embeddedOptimizeRule
           .getRequestExecutor()
           .withUserAuthentication(user, password)
-          .buildUpdateSingleProcessReportRequest(id, (SingleProcessReportDefinitionDto) updatedReport)
+          .buildUpdateSingleProcessReportRequest(id, updatedReport)
           .execute();
       case DECISION:
         return embeddedOptimizeRule
           .getRequestExecutor()
           .withUserAuthentication(user, password)
-          .buildUpdateSingleDecisionReportRequest(id, (SingleDecisionReportDefinitionDto) updatedReport)
+          .buildUpdateSingleDecisionReportRequest(id, updatedReport)
           .execute();
     }
   }

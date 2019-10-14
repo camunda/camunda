@@ -728,23 +728,13 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
                                                        String processDefinitionVersion,
                                                        String variableName,
                                                        VariableType variableType) {
-    String id = createNewReport();
     ProcessReportDataDto reportData = createReport(
       processDefinitionKey,
       processDefinitionVersion,
       variableName,
       variableType
     );
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId(id);
-    report.setLastModifier("something");
-    report.setName("something");
-    report.setCreated(OffsetDateTime.now());
-    report.setLastModified(OffsetDateTime.now());
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
+    return createNewReport(reportData);
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey,

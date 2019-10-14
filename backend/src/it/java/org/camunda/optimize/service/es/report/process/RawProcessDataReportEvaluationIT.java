@@ -770,24 +770,13 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
-    String id = createNewReport();
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(RAW_DATA)
       .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
-    report.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
-    updateReport(id, report);
-    return id;
+    return createNewReport(reportData);
   }
 
   private ProcessReportDataDto createReport(ProcessInstanceEngineDto processInstance) {

@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -881,23 +882,29 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     switch (reportScenario.reportType) {
       case PROCESS:
         if (reportScenario.combined) {
+          CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
+          combinedReportDefinitionDto.setCollectionId(collectionId);
           return embeddedOptimizeRule
             .getRequestExecutor()
             .withUserAuthentication(user, password)
-            .buildCreateCombinedReportRequest(collectionId)
+            .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
             .execute();
         } else {
+          SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+          singleProcessReportDefinitionDto.setCollectionId(collectionId);
           return embeddedOptimizeRule
             .getRequestExecutor()
             .withUserAuthentication(user, password)
-            .buildCreateSingleProcessReportRequest(collectionId)
+            .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
             .execute();
         }
       case DECISION:
+        SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
+        singleDecisionReportDefinitionDto.setCollectionId(collectionId);
         return embeddedOptimizeRule
           .getRequestExecutor()
           .withUserAuthentication(user, password)
-          .buildCreateSingleDecisionReportRequest(collectionId)
+          .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
           .execute();
       default:
         throw new OptimizeIntegrationTestException("Unsupported reportType: " + reportScenario.reportType);

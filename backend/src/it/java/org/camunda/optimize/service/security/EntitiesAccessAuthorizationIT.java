@@ -165,22 +165,20 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
 
-    final String singleReportId = createSingleDecisionReportAsDefaultUser();
-
     final SingleDecisionReportDefinitionDto definitionDto = new SingleDecisionReportDefinitionDto();
     definitionDto.setData(reportDataDto);
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleDecisionReportRequest(singleReportId, definitionDto)
-      .execute();
 
-    return singleReportId;
+    return createSingleDecisionReportAsDefaultUser(definitionDto);
   }
 
   private String createSingleDecisionReportAsDefaultUser() {
+    return createSingleDecisionReportAsDefaultUser(new SingleDecisionReportDefinitionDto());
+  }
+
+  private String createSingleDecisionReportAsDefaultUser(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleDecisionReportRequest()
+      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -194,22 +192,19 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
 
-    final String singleReportId = createSingleProcessReportAsDefaultUser();
-
-    final SingleProcessReportDefinitionDto definitionDto = new SingleProcessReportDefinitionDto();
-    definitionDto.setData(reportDataDto);
-    embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildUpdateSingleProcessReportRequest(singleReportId, definitionDto)
-      .execute();
-
-    return singleReportId;
+    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportDataDto);
+    return createSingleProcessReportAsDefaultUser(singleProcessReportDefinitionDto);
   }
 
   private String createSingleProcessReportAsDefaultUser() {
+    return createSingleProcessReportAsDefaultUser(new SingleProcessReportDefinitionDto());
+  }
+
+  private String createSingleProcessReportAsDefaultUser(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeRule
       .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest()
+      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }

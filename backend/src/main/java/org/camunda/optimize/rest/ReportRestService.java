@@ -39,6 +39,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
 
@@ -61,16 +62,11 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewSingleProcessReport(@Context final ContainerRequestContext requestContext,
-                                            @QueryParam("collectionId") final String collectionId,
                                             SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (singleProcessReportDefinitionDto == null) {
-      singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    }
-    if (collectionId != null) {
-      singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    }
-    return reportService.createNewSingleProcessReport(userId, singleProcessReportDefinitionDto);
+    return reportService.createNewSingleProcessReport(
+      userId,
+      Optional.ofNullable(singleProcessReportDefinitionDto).orElseGet(SingleProcessReportDefinitionDto::new));
   }
 
   /**
@@ -83,16 +79,11 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewSingleDecisionReport(@Context final ContainerRequestContext requestContext,
-                                             @QueryParam("collectionId") final String collectionId,
                                              SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (singleDecisionReportDefinitionDto == null) {
-      singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-    }
-    if (collectionId != null) {
-      singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-    }
-    return reportService.createNewSingleDecisionReport(userId, singleDecisionReportDefinitionDto);
+    return reportService.createNewSingleDecisionReport(
+      userId,
+      Optional.ofNullable(singleDecisionReportDefinitionDto).orElseGet(SingleDecisionReportDefinitionDto::new));
   }
 
   /**
@@ -105,16 +96,11 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public IdDto createNewCombinedProcessReport(@Context final ContainerRequestContext requestContext,
-                                              @QueryParam("collectionId") final String collectionId,
                                               CombinedReportDefinitionDto combinedReportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    if (combinedReportDefinitionDto == null) {
-      combinedReportDefinitionDto = new CombinedReportDefinitionDto();
-    }
-    if (collectionId != null) {
-      combinedReportDefinitionDto.setCollectionId(collectionId);
-    }
-    return reportService.createNewCombinedProcessReport(userId, combinedReportDefinitionDto);
+    return reportService.createNewCombinedProcessReport(
+      userId,
+      Optional.ofNullable(combinedReportDefinitionDto).orElseGet(CombinedReportDefinitionDto::new));
   }
 
   @POST
