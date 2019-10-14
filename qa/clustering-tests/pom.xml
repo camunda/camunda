@@ -177,7 +177,7 @@
                     <echo message="Evaluating the new report on api of not importing optimize instance.." />
                     <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true" outputproperty="report.instance.count">
                       <arg value="-c" />
-                      <arg value="curl -s -f --connect-to optimize.host::${optimize.notImporting.host}:${optimize.notImporting.port} -XGET http://optimize.host/api/report/${report.id}/evaluate -b authCookie | jq -r '.result.processInstanceCount'" />
+                      <arg value="curl -s -f --connect-to optimize.host::${optimize.notImporting.host}:${optimize.notImporting.port} -XGET http://optimize.host/api/report/${report.id}/evaluate -b authCookie | jq -r '.result.instanceCount'" />
                     </exec>
                     <echo message="ProcessInstanceCount: ${report.instance.count}" />
 
