@@ -21,6 +21,13 @@ import java.util.Map;
 public class RawDataHelper {
   public static final String FIXED_TIME = "2018-02-23T14:31:08.048+01:00";
   public static final String FIXED_TIME_VARIABLE = "2018-02-23T12:31:08.048+01:00";
+  // Process Columns: processDefinitionKey, processDefinitionId, processInstanceId, startDate, endDate, durationInMs,
+  // engineName, tenantId, 2 variable fields
+  public static final int NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS = 11;
+  // Decision Columns: decisionDefinitionKey, decisionDefinitionId, decisionInstanceId, evaluationDateTime,
+  // engineName, tenantId, 7 input fields, 14 output fields
+  public static final int NUMBER_OF_RAW_DECISION_REPORT_COLUMNS = 27;
+
 
   public static List<RawDataProcessInstanceDto> getRawDataProcessInstanceDtos() {
     final List<RawDataProcessInstanceDto> toMap = new ArrayList<>();
@@ -30,6 +37,7 @@ public class RawDataHelper {
     instance1.setProcessDefinitionKey("test_key");
     instance1.setStartDate(OffsetDateTime.parse(FIXED_TIME));
     instance1.setEndDate(OffsetDateTime.parse(FIXED_TIME));
+    instance1.setDurationInMs(0L);
     instance1.setBusinessKey("aBusinessKey");
     instance1.setEngineName("engine");
     instance1.setTenantId("tenant");

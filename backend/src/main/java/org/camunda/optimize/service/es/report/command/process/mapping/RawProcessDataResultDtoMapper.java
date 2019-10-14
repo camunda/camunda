@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -58,6 +59,7 @@ public class RawProcessDataResultDtoMapper {
       processInstanceDto.getBusinessKey(),
       processInstanceDto.getStartDate(),
       processInstanceDto.getEndDate(),
+      processInstanceDto.getDurationInMs(),
       processInstanceDto.getEngine(),
       processInstanceDto.getTenantId(),
       variables

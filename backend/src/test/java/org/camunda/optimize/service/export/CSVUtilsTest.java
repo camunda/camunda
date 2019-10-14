@@ -15,6 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_DECISION_REPORT_COLUMNS;
+import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.core.Is.is;
@@ -33,7 +35,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(10));
+    assertThat(result.get(0).length, is(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS));
   }
 
 
@@ -49,7 +51,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(10 - excludedColumns.size()));
+    assertThat(result.get(0).length, is(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -67,7 +69,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(10 - excludedColumns.size()));
+    assertThat(result.get(0).length, is(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -81,8 +83,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 6 fields, 7 inputs, 14 outputs
-    assertThat(result.get(0).length, is(6 + 7 + 14));
+    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS));
   }
 
   @Test
@@ -98,8 +99,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 6 fields, 7 inputs, 14 outputs - 1 excluded fields
-    assertThat(result.get(0).length, is(6 + 7 + 14 - excludedColumns.size()));
+    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -116,8 +116,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 6 fields, 7 inputs, 14 outputs - 1 excluded fields
-    assertThat(result.get(0).length, is(6 + 7 + 14 - excludedColumns.size()));
+    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -134,8 +133,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 6 fields, 7 inputs, 14 outputs - 1 excluded fields
-    assertThat(result.get(0).length, is(6 + 7 + 14 - excludedColumns.size()));
+    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 
@@ -156,8 +154,7 @@ public class CSVUtilsTest {
 
     //then
     assertThat(result.size(), is(4));
-    // 6 fields, 7 inputs, 14 outputs - 1 excluded fields
-    assertThat(result.get(0).length, is(6 + 7 + 14 - excludedColumns.size()));
+    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size()));
     assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
   }
 

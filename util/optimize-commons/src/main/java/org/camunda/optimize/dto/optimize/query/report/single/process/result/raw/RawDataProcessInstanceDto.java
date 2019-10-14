@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
@@ -22,6 +23,7 @@ public class RawDataProcessInstanceDto {
   protected String businessKey;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
+  protected Long durationInMs;
   protected String engineName;
   protected String tenantId;
   protected Map<String, Object> variables;
