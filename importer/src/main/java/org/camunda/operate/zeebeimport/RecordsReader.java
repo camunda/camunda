@@ -19,7 +19,8 @@ import org.camunda.operate.exceptions.NoSuchIndexException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.camunda.operate.zeebeimport.record.RecordImpl;
+import org.camunda.operate.zeebe.ImportValueType;
+import org.camunda.operate.zeebe.record.RecordImpl;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -42,7 +43,7 @@ import io.zeebe.protocol.record.Record;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 /**
  * Represents Zeebe data reader for one partition and one value type. After reading the data is also schedules the jobs
@@ -177,7 +178,7 @@ public class RecordsReader {
    * Backoff for this specific reader.
    */
   public void doBackoff() {
-    int readerBackoff = operateProperties.getImportProperties().getReaderBackoff();
+    int readerBackoff = operateProperties.getImporter().getReaderBackoff();
     if (readerBackoff > 0) {
       this.activateDateTime = OffsetDateTime.now().plus(readerBackoff, ChronoUnit.MILLIS);
     }
@@ -215,7 +216,7 @@ public class RecordsReader {
    * Freeze the scheduler (usually when queue is full).
    */
   private void doBackoffForScheduler() {
-    int schedulerBackoff = operateProperties.getImportProperties().getSchedulerBackoff();
+    int schedulerBackoff = operateProperties.getImporter().getSchedulerBackoff();
     if (schedulerBackoff > 0) {
       try {
         Thread.sleep(schedulerBackoff);

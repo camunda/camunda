@@ -28,7 +28,7 @@ import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
-import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
+import org.camunda.operate.zeebe.record.value.DeploymentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;

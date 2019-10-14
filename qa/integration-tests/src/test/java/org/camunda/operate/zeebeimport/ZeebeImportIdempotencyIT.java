@@ -8,6 +8,7 @@ package org.camunda.operate.zeebeimport;
 import org.camunda.operate.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.apps.idempotency.ZeebeImportIdempotencyTestConfig;
+import org.camunda.operate.zeebe.ImportValueType;
 import org.junit.Ignore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

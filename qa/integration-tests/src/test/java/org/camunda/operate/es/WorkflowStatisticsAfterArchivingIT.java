@@ -5,11 +5,12 @@
  */
 package org.camunda.operate.es;
 
-import org.camunda.operate.zeebeimport.PartitionHolder;
-import org.camunda.operate.zeebeimport.archiver.Archiver;
+import org.camunda.operate.archiver.ArchiverJob;
+import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import static org.junit.Assume.assumeFalse;
@@ -17,7 +18,7 @@ import static org.junit.Assume.assumeFalse;
 public class WorkflowStatisticsAfterArchivingIT extends WorkflowStatisticsIT {
 
   @Autowired
-  private Archiver archiver;
+  private BeanFactory beanFactory;
 
   @MockBean
   private PartitionHolder partitionHolder;
@@ -35,7 +36,8 @@ public class WorkflowStatisticsAfterArchivingIT extends WorkflowStatisticsIT {
   protected void createData(Long workflowKey) {
     super.createData(workflowKey);
     mockPartitionHolder(partitionHolder);
-    runArchiving(archiver);
+    ArchiverJob archiverJob = beanFactory.getBean(ArchiverJob.class, partitionHolder.getPartitionIds());
+    runArchiving(archiverJob);
   }
 
 }

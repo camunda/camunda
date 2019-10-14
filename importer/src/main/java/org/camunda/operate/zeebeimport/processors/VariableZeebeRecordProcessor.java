@@ -16,7 +16,7 @@ import org.camunda.operate.es.schema.templates.VariableTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
-import org.camunda.operate.zeebeimport.record.value.VariableRecordValueImpl;
+import org.camunda.operate.zeebe.record.value.VariableRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -26,8 +26,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
-import static org.camunda.operate.zeebeimport.record.Intent.CREATED;
-import static org.camunda.operate.zeebeimport.record.Intent.UPDATED;
+import static org.camunda.operate.zeebe.record.Intent.CREATED;
+import static org.camunda.operate.zeebe.record.Intent.UPDATED;
 
 @Component
 public class VariableZeebeRecordProcessor {

@@ -15,7 +15,7 @@ camunda.operate:
     dateFormat: dd-MM-yyyy
     batchSize: 222
     prefix: somePrefix
-  importProperties:
+  importer:
     startLoadingDataOnStartup: false
   zeebe:
     brokerContactPoint: someZeebeHost:999

@@ -12,7 +12,7 @@ import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.OperateZeebeRule;
 import org.camunda.operate.util.ZeebeClientRule;
-import org.camunda.operate.zeebeimport.PartitionHolder;
+import org.camunda.operate.zeebe.PartitionHolder;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;

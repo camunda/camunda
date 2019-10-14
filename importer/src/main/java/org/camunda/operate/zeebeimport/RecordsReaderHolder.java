@@ -5,17 +5,19 @@
  */
 package org.camunda.operate.zeebeimport;
 
-import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebe.ImportValueType;
+import org.camunda.operate.zeebe.PartitionHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import static org.camunda.operate.zeebeimport.ImportValueType.IMPORT_VALUE_TYPES;
+import static org.camunda.operate.zeebe.ImportValueType.IMPORT_VALUE_TYPES;
 
 /**
  * Holder for all possible record readers.
@@ -40,9 +42,9 @@ public class RecordsReaderHolder {
   public Set<RecordsReader> getAllRecordsReaders() {
     if (recordsReaders == null) {
       recordsReaders = new HashSet<>();
-      int queueSize = operateProperties.getImportProperties().getQueueSize();
+      int queueSize = operateProperties.getImporter().getQueueSize();
       //create readers
-      Set<Integer> partitionIds = partitionHolder.getPartitionIds();
+      List<Integer> partitionIds = partitionHolder.getPartitionIds();
       logger.info("Starting import for partitions: {}", partitionIds);
       for (Integer partitionId : partitionIds) {
         //TODO what if it's not the final list of partitions

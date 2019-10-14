@@ -29,7 +29,7 @@ public class PropertiesTest {
   @Test
   //TODO extend for new properties
   public void testProperties() {
-    assertThat(operateProperties.getImportProperties().isStartLoadingDataOnStartup()).isFalse();
+    assertThat(operateProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
     assertThat(operateProperties.getBatchOperationMaxSize()).isEqualTo(500);
     assertThat(operateProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");
     assertThat(operateProperties.getElasticsearch().getHost()).isEqualTo("someHost");

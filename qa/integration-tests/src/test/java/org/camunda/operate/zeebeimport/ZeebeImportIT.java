@@ -35,6 +35,8 @@ import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.zeebe.ImportValueType;
+import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -343,7 +345,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testPartitionIds() {
-    final Set<Integer> operatePartitions = partitionHolder.getPartitionIds();
+    final List<Integer> operatePartitions = partitionHolder.getPartitionIds();
     final int zeebePartitionsCount = zeebeClient.newTopologyRequest().send().join().getPartitionsCount();
     assertThat(operatePartitions).hasSize(zeebePartitionsCount);
     assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);

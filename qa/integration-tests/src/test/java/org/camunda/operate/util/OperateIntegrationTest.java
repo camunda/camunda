@@ -12,18 +12,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.OffsetDateTime;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.camunda.operate.TestApplication;
+import org.camunda.operate.archiver.ArchiverJob;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.zeebeimport.PartitionHolder;
-import org.camunda.operate.zeebeimport.archiver.Archiver;
+import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import static org.assertj.core.api.Assertions.assertThat;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
@@ -38,7 +38,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @SpringBootTest(
   classes = {TestApplication.class},
   properties = {OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false",
-    OperateProperties.PREFIX + ".elasticsearch.rolloverEnabled = false"})
+    OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 @ActiveProfiles("test")
@@ -108,12 +108,12 @@ public abstract class OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);  
   }
 
-  protected void runArchiving(Archiver archiver) {
+  protected void runArchiving(ArchiverJob archiverJob) {
     try {
       int archived;
       int archivedTotal = 0;
       do {
-        archived = archiver.archiveNextBatch();
+        archived = archiverJob.archiveNextBatch();
         archivedTotal += archived;
       } while (archived > 0);
       assertThat(archivedTotal).isGreaterThan(0);
@@ -123,7 +123,7 @@ public abstract class OperateIntegrationTest {
   }
 
   protected void mockPartitionHolder(PartitionHolder partitionHolder) {
-    HashSet<Integer> partitions = new HashSet<>();
+    List<Integer> partitions = new ArrayList<>();
     partitions.add(1);
     when(partitionHolder.getPartitionIds()).thenReturn(partitions);
   }

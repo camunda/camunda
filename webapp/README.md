@@ -22,9 +22,9 @@ In case you want to scale import to be run on several nodes, you can run Webapp 
 For this you can use following configuration parameters:
 * `camunda.operate.importerEnabled`: when `true` will include the import in current run, default: true
 * `camunda.operate.webappEnabled`: when `true` will include the webapp in current run, default: true
-* `camunda.operate.importProperties.partitionIds`: array of Zeebe partition ids, this Importer node must be responsible for, default: empty array, meaning all partitions data is loaded
-* `camunda.operate.importProperties.nodeCount`: total amount of Importer nodes in cluster
-* `camunda.operate.importProperties.currentNodeId`: id of current Importer node, starting from 0
+* `camunda.operate.clusterNode.partitionIds`: array of Zeebe partition ids, this Importer node must be responsible for, default: empty array, meaning all partitions data is loaded
+* `camunda.operate.clusterNode.nodeCount`: total amount of Importer nodes in cluster
+* `camunda.operate.clusterNode.currentNodeId`: id of current Importer node, starting from 0
 
 It's enough to configure either `partitionIds` or pair of `nodeCount` and `currentNodeId`.
 

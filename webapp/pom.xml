@@ -20,13 +20,7 @@
 
     <dependency>
       <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-util</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <dependency>
-      <groupId>org.camunda.operate</groupId>
-      <artifactId>camunda-operate-elasticsearch</artifactId>
+      <artifactId>camunda-operate-common</artifactId>
       <version>${project.version}</version>
     </dependency>
 
@@ -36,10 +30,15 @@
       <version>${project.version}</version>
     </dependency>
 
-    <!-- TODO this must be removed, when modules are separated -->
     <dependency>
       <groupId>org.camunda.operate</groupId>
       <artifactId>camunda-operate-importer</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-archiver</artifactId>
       <version>${project.version}</version>
     </dependency>
 

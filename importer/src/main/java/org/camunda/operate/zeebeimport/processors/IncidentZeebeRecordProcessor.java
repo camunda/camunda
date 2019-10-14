@@ -16,7 +16,7 @@ import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebeimport.ElasticsearchManager;
-import org.camunda.operate.zeebeimport.record.value.IncidentRecordValueImpl;
+import org.camunda.operate.zeebe.record.value.IncidentRecordValueImpl;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -29,8 +29,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
-import static org.camunda.operate.zeebeimport.record.Intent.CREATED;
-import static org.camunda.operate.zeebeimport.record.Intent.RESOLVED;
+import static org.camunda.operate.zeebe.record.Intent.CREATED;
+import static org.camunda.operate.zeebe.record.Intent.RESOLVED;
 
 @Component
 public class IncidentZeebeRecordProcessor {

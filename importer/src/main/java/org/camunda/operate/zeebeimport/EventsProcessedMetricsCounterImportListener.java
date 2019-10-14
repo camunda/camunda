@@ -6,6 +6,7 @@
 package org.camunda.operate.zeebeimport;
 
 import org.camunda.operate.Metrics;
+import org.camunda.operate.zeebe.ImportValueType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

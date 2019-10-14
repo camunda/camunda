@@ -7,6 +7,7 @@ package org.camunda.operate.zeebeimport;
 
 import java.util.List;
 
+import org.camunda.operate.zeebe.ImportValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

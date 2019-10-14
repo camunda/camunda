@@ -5,8 +5,9 @@
  */
 package org.camunda.operate.es;
 
-import org.camunda.operate.zeebeimport.PartitionHolder;
-import org.camunda.operate.zeebeimport.archiver.Archiver;
+import org.camunda.operate.archiver.ArchiverJob;
+import org.camunda.operate.zeebe.PartitionHolder;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
@@ -16,13 +17,14 @@ public class ListViewQueryAfterArchivingIT extends ListViewQueryIT {
   private PartitionHolder partitionHolder;
 
   @Autowired
-  private Archiver archiver;
+  private BeanFactory beanFactory;
 
   @Override
   protected void createData() {
     super.createData();
     mockPartitionHolder(partitionHolder);
-    runArchiving(archiver);
+    ArchiverJob archiverJob = beanFactory.getBean(ArchiverJob.class, partitionHolder.getPartitionIds());
+    runArchiving(archiverJob);
   }
 
 }

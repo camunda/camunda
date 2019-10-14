@@ -22,7 +22,8 @@ import org.springframework.context.annotation.FilterType;
 @ComponentScan(basePackages = "org.camunda.operate",
     excludeFilters = {
         @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.zeebeimport\\..*"),
-        @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.webapp\\..*")
+        @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.webapp\\..*"),
+        @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.archiver\\..*")
     })
 @EnableAutoConfiguration
 public class Application {

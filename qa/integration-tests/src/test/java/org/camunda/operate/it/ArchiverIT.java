@@ -26,10 +26,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.camunda.operate.archiver.ArchiverJob;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.zeebeimport.archiver.Archiver;
-import org.camunda.operate.zeebeimport.archiver.ArchiverHelper;
+import org.camunda.operate.archiver.ArchiverHelper;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
@@ -56,6 +56,7 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -69,7 +70,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private ListViewReader listViewReader;
 
   @Autowired
-  private Archiver archiver;
+  private BeanFactory beanFactory;
 
   @Autowired
   private ArchiverHelper reindexHelper;
@@ -89,6 +90,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   @Autowired
   private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
 
+  private ArchiverJob archiverJob;
+
   private Random random = new Random();
 
   private DateTimeFormatter dateTimeFormatter;
@@ -99,7 +102,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   @Before
   public void before() {
     super.before();
-    dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
+    dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
+    archiverJob = beanFactory.getBean(ArchiverJob.class, partitionHolder.getPartitionIds());
     clearMetrics();
   }
 
@@ -143,9 +147,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     brokerRule.getClock().setCurrentTime(currentTime);
 
     //when
-    assertThat(archiver.archiveNextBatch()).isEqualTo(count1);
-    assertThat(archiver.archiveNextBatch()).isEqualTo(count2);
-    assertThat(archiver.archiveNextBatch()).isEqualTo(0);     //3rd run should not move anything, as the rest of the instances are not completed
+    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
+    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count2);
+    assertThat(archiverJob.archiveNextBatch()).isEqualTo(0);     //3rd run should not move anything, as the rest of the instances are not completed
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -206,9 +210,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     brokerRule.getClock().setCurrentTime(currentTime);
 
     //when
-    assertThat(archiver.archiveNextBatch()).isEqualTo(count1);
+    assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
     //2rd run should not move anything, as the rest of the instances are somcpleted less then 1 hour ago
-    assertThat(archiver.archiveNextBatch()).isEqualTo(0);
+    assertThat(archiverJob.archiveNextBatch()).isEqualTo(0);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 

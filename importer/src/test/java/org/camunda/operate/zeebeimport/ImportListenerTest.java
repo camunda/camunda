@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.NoBeansTest;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import org.camunda.operate.zeebe.ImportValueType;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;

@@ -22,9 +22,10 @@ import java.util.function.Predicate;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.TestImportListener;
+import org.camunda.operate.archiver.ArchiverHelper;
+import org.camunda.operate.archiver.ArchiverJob;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.zeebeimport.archiver.Archiver;
-import org.camunda.operate.zeebeimport.archiver.Archiver.FinishedAtDateIds;
+import org.camunda.operate.archiver.ArchiverJob.ArchiveBatch;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -35,7 +36,7 @@ import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import org.camunda.operate.zeebeimport.ImportValueType;
+import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -96,7 +97,7 @@ public class OperateTester {
   private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
   
   @Autowired
-  private Archiver archiver;
+  private ArchiverHelper archiverHelper;
 
   int waitingRound = 1;
 
@@ -371,8 +372,8 @@ public class OperateTester {
 
   public OperateTester archive() {
     try {
-      Archiver.FinishedAtDateIds finishedAtDateIds = new FinishedAtDateIds("_test_archived", Arrays.asList(workflowInstanceKey));
-      archiver.archiveNextBatch(finishedAtDateIds);
+      ArchiverJob.ArchiveBatch finishedAtDateIds = new ArchiveBatch("_test_archived", Arrays.asList(workflowInstanceKey));
+      archiverHelper.archiveNextBatch(finishedAtDateIds);
     } catch (ReindexException e) {
       return this;
     }

@@ -10,10 +10,10 @@
 
   <modules>
     <module>client</module>
-    <module>util</module>
-    <module>elasticsearch</module>
+    <module>common</module>
     <module>data-generator</module>
     <module>importer</module>
+    <module>archiver</module>
     <module>webapp</module>
     <module>qa/integration-tests</module>
     <module>distro</module>
@@ -111,14 +111,11 @@
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <version>2.22.2</version>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <version>2.22.2</version>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.1</version>
+          <configuration>
+            <forceJavacCompilerUse>true</forceJavacCompilerUse>
+          </configuration>
         </plugin>
 
         <plugin>

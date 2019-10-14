@@ -10,7 +10,7 @@ import java.util.Set;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ImportBatch;
-import org.camunda.operate.zeebeimport.ImportValueType;
+import org.camunda.operate.zeebe.ImportValueType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;

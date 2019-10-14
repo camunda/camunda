@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.webapp.sso;
 
-import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import java.util.Date;
 import java.util.List;

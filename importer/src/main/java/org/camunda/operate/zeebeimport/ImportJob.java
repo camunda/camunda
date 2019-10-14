@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.zeebeimport;
 
-import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_PROTOTYPE;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import java.util.List;
 import java.util.concurrent.Callable;

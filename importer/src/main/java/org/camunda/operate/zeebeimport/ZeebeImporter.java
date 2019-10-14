@@ -46,7 +46,7 @@ public class ZeebeImporter extends Thread {
 
   @PostConstruct
   public void startImportingData() {
-    if (operateProperties.getImportProperties().isStartLoadingDataOnStartup()) {
+    if (operateProperties.getImporter().isStartLoadingDataOnStartup()) {
       start();
     }
   }
@@ -86,9 +86,9 @@ public class ZeebeImporter extends Thread {
   @Bean("importThreadPoolExecutor")
   public ThreadPoolTaskExecutor getTaskExecutor() {
     ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(operateProperties.getImportProperties().getThreadsCount());
-    executor.setMaxPoolSize(operateProperties.getImportProperties().getThreadsCount());
-    executor.setThreadNamePrefix("import_thread_");
+    executor.setCorePoolSize(operateProperties.getImporter().getThreadsCount());
+    executor.setMaxPoolSize(operateProperties.getImporter().getThreadsCount());
+    executor.setThreadNamePrefix("import_");
     executor.initialize();
     return executor;
   }

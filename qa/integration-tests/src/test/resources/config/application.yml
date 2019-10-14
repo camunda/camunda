@@ -16,7 +16,7 @@ camunda.operate:
     host: localhost
     port: 9200
     prefix: test-record
-  importProperties:
+  importer:
     readerBackoff: 0
     schedulerBackoff: 0
     startLoadingDataOnStartup: false

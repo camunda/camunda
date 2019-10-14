@@ -14,7 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-import java.util.Set;
+import org.camunda.operate.archiver.ArchiverJob;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
@@ -32,9 +32,8 @@ import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import org.camunda.operate.zeebeimport.PartitionHolder;
-import org.camunda.operate.zeebeimport.archiver.Archiver;
-import org.camunda.operate.zeebeimport.archiver.ArchiverHelper;
+import org.camunda.operate.zeebe.PartitionHolder;
+import org.camunda.operate.archiver.ArchiverHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -44,6 +43,7 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -58,12 +58,14 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @TestPropertySource(properties = { OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false",
     OperateProperties.PREFIX + ".webappEnabled = false",
-    OperateProperties.PREFIX + ".importProperties.nodeCount = 2",
-    OperateProperties.PREFIX + ".importProperties.currentNodeId = 0" })
+    OperateProperties.PREFIX + ".clusterNode.nodeCount = 2",
+    OperateProperties.PREFIX + ".clusterNode.currentNodeId = 0" })
 public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
 
+  private ArchiverJob archiverJob;
+
   @Autowired
-  private Archiver archiver;
+  private BeanFactory beanFactory;
 
   @Autowired
   private ArchiverHelper reindexHelper;
@@ -96,7 +98,8 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   @Before
   public void before() {
     super.before();
-    dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getElasticsearch().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
+    dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
+    archiverJob = beanFactory.getBean(ArchiverJob.class, partitionHolder.getPartitionIds());
   }
 
   @Test
@@ -123,9 +126,9 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     brokerRule.getClock().setCurrentTime(currentTime);
 
     //when
-    int expectedCount = count / operateProperties.getImportProperties().getNodeCount(); // we're archiving only part of the partitions
-    assertThat(archiver.archiveNextBatch()).isGreaterThanOrEqualTo(expectedCount);
-    assertThat(archiver.archiveNextBatch()).isLessThanOrEqualTo(expectedCount + 1);
+    int expectedCount = count / operateProperties.getClusterNode().getNodeCount(); // we're archiving only part of the partitions
+    assertThat(archiverJob.archiveNextBatch()).isGreaterThanOrEqualTo(expectedCount);
+    assertThat(archiverJob.archiveNextBatch()).isLessThanOrEqualTo(expectedCount + 1);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -178,7 +181,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
       assertThat(workflowInstances).extracting(ListViewTemplate.END_DATE).allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
     }
     //assert partitions
-    Set<Integer> partitionIds = partitionHolder.getPartitionIds();
+    List<Integer> partitionIds = partitionHolder.getPartitionIds();
     assertThat(workflowInstances).extracting(ListViewTemplate.PARTITION_ID).containsOnly(partitionIds.toArray());
     //return ids
     return workflowInstances.stream().collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
