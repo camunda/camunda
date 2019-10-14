@@ -12034,7 +12034,7 @@ select-hose@^2.0.0:
   resolved "https://registry.yarnpkg.com/select-hose/-/select-hose-2.0.0.tgz#625d8658f865af43ec962bfc376a37359a4994ca"
   integrity sha1-Yl2GWPhlr0Psliv8N2o3NZpJlMo=
 
-selection-ranges@^3.0.0, selection-ranges@^3.0.2, selection-ranges@^3.0.3:
+selection-ranges@^3.0.2, selection-ranges@^3.0.3:
   version "3.0.3"
   resolved "https://registry.yarnpkg.com/selection-ranges/-/selection-ranges-3.0.3.tgz#7f346169d606b76e28e0fa721a115eb6efe97be1"
   integrity sha512-60Oqc07j16YCrp96uITgBFu7oT81JKMmL+cOOcxe3jvuGSiFSwsLpOSXNBAlITV9hGhEl1H6P/+g1bKnpfXoSw==
@@ -12824,17 +12824,6 @@ symbol-tree@^3.2.2:
   version "3.2.4"
   resolved "https://registry.yarnpkg.com/symbol-tree/-/symbol-tree-3.2.4.tgz#430637d248ba77e078883951fb9aa0eed7c63fa2"
   integrity sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==
-
-table-js@^5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/table-js/-/table-js-5.1.0.tgz#b2f2ad597321e31d9c8ffc14b07391787a01e92a"
-  integrity sha512-1M+QC3xCD1xGxFFx8ZgiKeU0Dmv+Lu5O8uJnD7KjS+S9EhSKIKs2BvWAQIB9SliU7Or+EquH/CaVpdVMc7Rw1A==
-  dependencies:
-    didi "^4.0.0"
-    ids "^0.2.0"
-    min-dash "^3.0.0"
-    min-dom "^3.0.0"
-    selection-ranges "^3.0.0"
 
 table-js@^6.0.0:
   version "6.0.0"
