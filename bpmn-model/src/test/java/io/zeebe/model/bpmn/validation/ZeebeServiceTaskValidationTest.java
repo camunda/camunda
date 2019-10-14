@@ -32,7 +32,7 @@ public class ZeebeServiceTaskValidationTest extends AbstractZeebeValidationTest 
       {
         Bpmn.createExecutableProcess("process").startEvent().serviceTask("task").endEvent().done(),
         singletonList(
-            expect("task", "Must have exactly one zeebe:taskDefinition extension element"))
+            expect("task", "Must have exactly one 'zeebe:taskDefinition' extension element"))
       },
       {
         Bpmn.createExecutableProcess("process")

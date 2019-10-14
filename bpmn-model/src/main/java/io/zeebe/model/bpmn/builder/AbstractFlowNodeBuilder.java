@@ -309,6 +309,13 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(CallActivity.class, id).builder();
   }
 
+  public CallActivityBuilder callActivity(
+      final String id, final Consumer<CallActivityBuilder> consumer) {
+    final CallActivityBuilder builder = createTarget(CallActivity.class, id).builder();
+    consumer.accept(builder);
+    return builder;
+  }
+
   public SubProcessBuilder subProcess() {
     return createTarget(SubProcess.class).builder();
   }
@@ -318,7 +325,6 @@ public abstract class AbstractFlowNodeBuilder<
   }
 
   public SubProcessBuilder subProcess(final String id, final Consumer<SubProcessBuilder> consumer) {
-
     final SubProcessBuilder builder = createTarget(SubProcess.class, id).builder();
     consumer.accept(builder);
     return builder;

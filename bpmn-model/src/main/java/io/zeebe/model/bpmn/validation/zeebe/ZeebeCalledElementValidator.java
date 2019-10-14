@@ -15,27 +15,28 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
-import io.zeebe.model.bpmn.instance.ExtensionElements;
-import io.zeebe.model.bpmn.instance.ServiceTask;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.zeebe.model.bpmn.impl.ZeebeConstants;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class ServiceTaskValidator implements ModelElementValidator<ServiceTask> {
+public class ZeebeCalledElementValidator implements ModelElementValidator<ZeebeCalledElement> {
 
   @Override
-  public Class<ServiceTask> getElementType() {
-    return ServiceTask.class;
+  public Class<ZeebeCalledElement> getElementType() {
+    return ZeebeCalledElement.class;
   }
 
   @Override
-  public void validate(ServiceTask element, ValidationResultCollector validationResultCollector) {
-    final ExtensionElements extensionElements = element.getExtensionElements();
+  public void validate(
+      final ZeebeCalledElement element, final ValidationResultCollector validationResultCollector) {
+    final String processId = element.getProcessId();
 
-    if (extensionElements == null
-        || extensionElements.getChildElementsByType(ZeebeTaskDefinition.class).size() != 1) {
+    if (processId == null || element.getProcessId().isEmpty()) {
       validationResultCollector.addError(
-          0, "Must have exactly one zeebe:taskDefinition extension element");
+          0,
+          String.format(
+              "Attribute '%s' must be present and not empty", ZeebeConstants.ATTRIBUTE_PROCESS_ID));
     }
   }
 }

@@ -18,41 +18,41 @@ package io.zeebe.model.bpmn.impl.instance.zeebe;
 import io.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
 import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
 import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-public class ZeebeSubscriptionImpl extends BpmnModelElementInstanceImpl
-    implements ZeebeSubscription {
+public class ZeebeCalledElementImpl extends BpmnModelElementInstanceImpl
+    implements ZeebeCalledElement {
 
-  private static Attribute<String> correlationKeyAttribute;
+  private static Attribute<String> processIdAttribute;
 
-  public ZeebeSubscriptionImpl(ModelTypeInstanceContext instanceContext) {
+  public ZeebeCalledElementImpl(ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
   @Override
-  public String getCorrelationKey() {
-    return correlationKeyAttribute.getValue(this);
+  public String getProcessId() {
+    return processIdAttribute.getValue(this);
   }
 
   @Override
-  public void setCorrelationKey(String correlationKey) {
-    correlationKeyAttribute.setValue(this, correlationKey);
+  public void setProcessId(String processId) {
+    processIdAttribute.setValue(this, processId);
   }
 
   public static void registerType(ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
-            .defineType(ZeebeSubscription.class, ZeebeConstants.ELEMENT_SUBSCRIPTION)
+            .defineType(ZeebeCalledElement.class, ZeebeConstants.ELEMENT_CALLED_ELEMENT)
             .namespaceUri(BpmnModelConstants.ZEEBE_NS)
-            .instanceProvider(ZeebeSubscriptionImpl::new);
+            .instanceProvider(ZeebeCalledElementImpl::new);
 
-    correlationKeyAttribute =
+    processIdAttribute =
         typeBuilder
-            .stringAttribute(ZeebeConstants.ATTRIBUTE_CORRELATION_KEY)
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_PROCESS_ID)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .required()
             .build();

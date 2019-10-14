@@ -209,6 +209,7 @@ import io.zeebe.model.bpmn.impl.instance.di.PlaneImpl;
 import io.zeebe.model.bpmn.impl.instance.di.ShapeImpl;
 import io.zeebe.model.bpmn.impl.instance.di.StyleImpl;
 import io.zeebe.model.bpmn.impl.instance.di.WaypointImpl;
+import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledElementImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeHeaderImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeInputImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeIoMappingImpl;
@@ -629,6 +630,7 @@ public class Bpmn {
     ZeebeTaskDefinitionImpl.registerType(bpmnModelBuilder);
     ZeebeTaskHeadersImpl.registerType(bpmnModelBuilder);
     ZeebeLoopCharacteristicsImpl.registerType(bpmnModelBuilder);
+    ZeebeCalledElementImpl.registerType(bpmnModelBuilder);
   }
 
   /** @return the {@link Model} instance to use */

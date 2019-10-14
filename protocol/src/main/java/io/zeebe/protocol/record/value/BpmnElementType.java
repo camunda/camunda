@@ -41,7 +41,8 @@ public enum BpmnElementType {
 
   // Other
   SEQUENCE_FLOW,
-  MULTI_INSTANCE_BODY;
+  MULTI_INSTANCE_BODY,
+  CALL_ACTIVITY;
 
   public static BpmnElementType bpmnElementTypeFor(final String elementTypeName) {
     switch (elementTypeName) {
@@ -69,6 +70,8 @@ public enum BpmnElementType {
         return BpmnElementType.PARALLEL_GATEWAY;
       case "sequenceFlow":
         return BpmnElementType.SEQUENCE_FLOW;
+      case "callActivity":
+        return BpmnElementType.CALL_ACTIVITY;
       default:
         throw new RuntimeException("Unsupported BPMN element of type " + elementTypeName);
     }

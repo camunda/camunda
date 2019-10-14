@@ -648,9 +648,11 @@ public class JsonSerializableToJsonTest {
                   .setVersion(version)
                   .setWorkflowKey(workflowKey)
                   .setWorkflowInstanceKey(workflowInstanceKey)
-                  .setFlowScopeKey(flowScopeKey);
+                  .setFlowScopeKey(flowScopeKey)
+                  .setParentWorkflowInstanceKey(11)
+                  .setParentElementInstanceKey(22);
             },
-        "{'bpmnProcessId':'test-process','version':12,'workflowKey':13,'workflowInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK'}"
+        "{'bpmnProcessId':'test-process','version':12,'workflowKey':13,'workflowInstanceKey':1234,'elementId':'activity','flowScopeKey':123,'bpmnElementType':'SERVICE_TASK','parentWorkflowInstanceKey':11,'parentElementInstanceKey':22}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -659,7 +661,7 @@ public class JsonSerializableToJsonTest {
       {
         "Empty WorkflowInstanceRecord",
         (Supplier<UnifiedRecordValue>) WorkflowInstanceRecord::new,
-        "{'bpmnProcessId':'','version':-1,'workflowKey':-1,'workflowInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED'}"
+        "{'bpmnProcessId':'','version':-1,'workflowKey':-1,'workflowInstanceKey':-1,'elementId':'','flowScopeKey':-1,'bpmnElementType':'UNSPECIFIED','parentWorkflowInstanceKey':-1,'parentElementInstanceKey':-1}"
       },
     };
   }
