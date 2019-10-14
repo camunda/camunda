@@ -11,6 +11,7 @@ import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,11 +19,6 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -51,9 +47,9 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void validLegacyLicenseShouldBeAccepted() throws IOException, URISyntaxException {
+  public void validLegacyLicenseShouldBeAccepted() {
     // given
-    String license = readFileToString("/license/ValidTestLicense.txt");
+    String license = FileReaderUtil.readValidTestLicense();
 
     // when
     Response response =
@@ -67,9 +63,9 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void unsecuredLicenseEndpointsIgnoresInvalidAuthCookie() throws IOException, URISyntaxException {
+  public void unsecuredLicenseEndpointsIgnoresInvalidAuthCookie() {
     // given
-    String license = readFileToString("/license/TestLegacyLicense_Valid.txt");
+    String license = FileReaderUtil.readValidTestLegacyLicense();
     // when
     Response response = embeddedOptimizeRule.getRequestExecutor()
       .withoutAuthentication()
@@ -83,9 +79,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void unlimitedValidLegacyLicenseShouldBeAccepted() throws IOException, URISyntaxException {
+  public void unlimitedValidLegacyLicenseShouldBeAccepted() {
     // given
-    String license = readFileToString("/license/TestLegacyLicense_Unlimited.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestLegacyLicense_Unlimited.txt");
 
     // when
     Response response =
@@ -99,9 +96,9 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void storedLicenseCanBeValidated() throws IOException, URISyntaxException {
+  public void storedLicenseCanBeValidated() {
     // given
-    String license = readFileToString("/license/TestLegacyLicense_Valid.txt");
+    String license = FileReaderUtil.readValidTestLegacyLicense();
     Response response =
       embeddedOptimizeRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
@@ -119,9 +116,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void invalidLegacyLicenseShouldThrowAnError() throws IOException, URISyntaxException {
+  public void invalidLegacyLicenseShouldThrowAnError() {
     // given
-    String license = readFileToString("/license/TestLegacyLicense_Invalid.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestLegacyLicense_Invalid.txt");
 
     // when
     String errorMessage =
@@ -134,9 +132,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void expiredLegacyLicenseShouldThrowAnError() throws IOException, URISyntaxException {
+  public void expiredLegacyLicenseShouldThrowAnError() {
     // given
-    String license = readFileToString("/license/TestLegacyLicense_ExpiredDate.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestLegacyLicense_ExpiredDate.txt");
 
     // when
     String errorMessage =
@@ -166,9 +165,9 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void notValidLicenseAndIWantToSeeRootPage() throws IOException, URISyntaxException {
+  public void notValidLicenseAndIWantToSeeRootPage() {
     // given
-    String license = readFileToString("/license/TestLegacyLicense_Valid.txt");
+    String license = FileReaderUtil.readValidTestLegacyLicense();
 
     // when
     Response response =
@@ -181,9 +180,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void validUnlimitedUnifiedLicenseWithOptimizeShouldBeAccepted() throws IOException, URISyntaxException {
+  public void validUnlimitedUnifiedLicenseWithOptimizeShouldBeAccepted() {
     // given
-    String license = readFileToString("/license/TestUnifiedLicense_UnlimitedWithOptimize.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestUnifiedLicense_UnlimitedWithOptimize.txt");
 
     // when
     Response response =
@@ -196,9 +196,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void validLimitedUnifiedLicenseWithOptimizeShouldBeAccepted() throws IOException, URISyntaxException {
+  public void validLimitedUnifiedLicenseWithOptimizeShouldBeAccepted() {
     // given
-    String license = readFileToString("/license/TestUnifiedLicense_LimitedWithOptimize.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestUnifiedLicense_LimitedWithOptimize.txt");
 
     // when
     Response response =
@@ -211,9 +212,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void validUnlimitedUnifiedLicenseWithoutOptimizeShouldReturnError() throws IOException, URISyntaxException {
+  public void validUnlimitedUnifiedLicenseWithoutOptimizeShouldReturnError() {
     // given
-    String license = readFileToString("/license/TestUnifiedLicense_UnlimitedWithoutOptimize.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestUnifiedLicense_UnlimitedWithoutOptimize.txt");
 
     // when
     String errorMessage =
@@ -226,9 +228,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void validLimitedUnifiedLicenseWithoutOptimizeShouldReturnError() throws IOException, URISyntaxException {
+  public void validLimitedUnifiedLicenseWithoutOptimizeShouldReturnError() {
     // given
-    String license = readFileToString("/license/TestUnifiedLicense_LimitedWithoutOptimize.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestUnifiedLicense_LimitedWithoutOptimize.txt");
 
     // when
     String errorMessage =
@@ -241,9 +244,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void invalidUnifiedLicenseWithOptimizeShouldReturnError() throws IOException, URISyntaxException {
+  public void invalidUnifiedLicenseWithOptimizeShouldReturnError() {
     // given
-    String license = readFileToString("/license/TestUnifiedLicense_InvalidSignatureWithOptimize.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestUnifiedLicense_InvalidSignatureWithOptimize.txt");
 
     // when
     String errorMessage =
@@ -256,9 +260,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void invalidUnifiedLicenseWithoutOptimizeShouldReturnError() throws IOException, URISyntaxException {
+  public void invalidUnifiedLicenseWithoutOptimizeShouldReturnError() {
     // given
-    String license = readFileToString("/license/TestUnifiedLicense_InvalidSignatureWithoutOptimize.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestUnifiedLicense_InvalidSignatureWithoutOptimize.txt");
 
     // when
     String errorMessage =
@@ -271,9 +276,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void expiredUnifiedLicenseWithOptimizeShouldReturnError() throws IOException, URISyntaxException {
+  public void expiredUnifiedLicenseWithOptimizeShouldReturnError() {
     // given
-    String license = readFileToString("/license/TestUnifiedLicense_ExpiredWithOptimize.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestUnifiedLicense_ExpiredWithOptimize.txt");
 
     // when
     String errorMessage =
@@ -286,9 +292,10 @@ public class LicenseCheckingRestServiceIT {
   }
 
   @Test
-  public void expiredUnifiedLicenseWithoutOptimizeShouldReturnError() throws IOException, URISyntaxException {
+  public void expiredUnifiedLicenseWithoutOptimizeShouldReturnError() {
     // given
-    String license = readFileToString("/license/TestUnifiedLicense_ExpiredWithoutOptimize.txt");
+    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      "/license/TestUnifiedLicense_ExpiredWithoutOptimize.txt");
 
     // when
     String errorMessage =
@@ -298,10 +305,6 @@ public class LicenseCheckingRestServiceIT {
 
     // then
     assertThat(errorMessage.contains("Your license has expired."), is(true));
-  }
-
-  private String readFileToString(String filePath) throws IOException, URISyntaxException {
-    return new String(Files.readAllBytes(Paths.get(getClass().getResource(filePath).toURI())), StandardCharsets.UTF_8);
   }
 
   private void assertResult(Response response, String customerId, OffsetDateTime validUntil, boolean isUnlimited) {

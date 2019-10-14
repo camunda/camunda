@@ -3,20 +3,19 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.testplugin.security.authentication;
+package org.camunda.optimize.plugin.security.authentication;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.plugin.AuthenticationExtractorProvider;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -25,11 +24,6 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,9 +50,8 @@ public class AuthenticationExtractorPluginIT {
   public RuleChain chain = RuleChain
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
   private ConfigurationService configurationService;
-  private AuthenticationExtractorProvider pluginProvider;
   private LicenseManager licenseManager;
-  private String license = readLicense();
+  private String license = FileReaderUtil.readValidTestLicense();
 
   @Before
   public void setup() {
@@ -72,17 +65,6 @@ public class AuthenticationExtractorPluginIT {
   @After
   public void resetBasePackage() {
     licenseManager.resetLicenseFromFile();
-  }
-
-  private String readLicense() {
-    try {
-      return new String(
-        Files.readAllBytes(Paths.get(getClass().getResource("/license/ValidTestLicense.txt").toURI())),
-        StandardCharsets.UTF_8
-      );
-    } catch (IOException | URISyntaxException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
   }
 
   @Test

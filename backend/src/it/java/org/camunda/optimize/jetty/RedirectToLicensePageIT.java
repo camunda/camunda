@@ -9,6 +9,7 @@ import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -16,12 +17,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_HTML_PAGE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.INDEX_PAGE;
@@ -66,22 +62,18 @@ public class RedirectToLicensePageIT {
     assertThat(location.getPath().startsWith("/license"), is(true));
   }
 
-  private String readFileToString(String filePath) throws IOException, URISyntaxException {
-    return new String(Files.readAllBytes(Paths.get(getClass().getResource(filePath).toURI())), StandardCharsets.UTF_8);
-  }
-
-  private void addLicenseToOptimize() throws IOException, URISyntaxException {
-    String license = readFileToString("/license/ValidTestLicense.txt");
+  private void addLicenseToOptimize() {
+    String license = FileReaderUtil.readValidTestLicense();
 
     Response response =
-            embeddedOptimizeRule.getRequestExecutor()
-                    .buildValidateAndStoreLicenseRequest(license)
-                    .execute();
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .execute();
     assertThat(response.getStatus(), is(200));
   }
 
   @Test
-  public void noRedirectFromLoginPageToLicensePageWithValidLicense() throws IOException, URISyntaxException {
+  public void noRedirectFromLoginPageToLicensePageWithValidLicense() {
     // given
     addLicenseToOptimize();
 
@@ -91,7 +83,7 @@ public class RedirectToLicensePageIT {
 
     // then
     assertThat(response.getStatus(), is(200));
-    assertThat(response.getLocation(),is(nullValue()));
+    assertThat(response.getLocation(), is(nullValue()));
   }
 
   @Test
@@ -107,7 +99,7 @@ public class RedirectToLicensePageIT {
   }
 
   @Test
-  public void noRedirectFromRootPageToLicensePageWithValidLicense() throws IOException, URISyntaxException {
+  public void noRedirectFromRootPageToLicensePageWithValidLicense() {
     // given
     addLicenseToOptimize();
 
@@ -143,7 +135,7 @@ public class RedirectToLicensePageIT {
   }
 
   @Test
-  public void noRedirectFromErrorPageToLicensePageWithValidLicense() throws IOException, URISyntaxException {
+  public void noRedirectFromErrorPageToLicensePageWithValidLicense() {
     // given a license
     addLicenseToOptimize();
 
@@ -177,7 +169,7 @@ public class RedirectToLicensePageIT {
   }
 
   @Test
-  public void noRedirectFromIndexHtmlPageToLicensePageWithValidLicense() throws IOException, URISyntaxException {
+  public void noRedirectFromIndexHtmlPageToLicensePageWithValidLicense() {
     // given
     addLicenseToOptimize();
 

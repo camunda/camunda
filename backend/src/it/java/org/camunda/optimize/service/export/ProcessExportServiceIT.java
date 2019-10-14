@@ -169,7 +169,7 @@ public class ProcessExportServiceIT {
   }
 
   private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance) {
-    String expectedString = FileReaderUtil.getFileContentWithReplacedNewlinesAsString(expectedCSV);
+    String expectedString = FileReaderUtil.readFileWithReplacedNewlinesAsString(expectedCSV);
     expectedString = expectedString.replace("${PI_ID}", processInstance.getId());
     expectedString = expectedString.replace("${PD_ID}", processInstance.getDefinitionId());
     return expectedString;

@@ -86,7 +86,7 @@ public class ProcessHyperMapExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+      FileReaderUtil.readFileWithReplacedNewlinesAsString(
         "/csv/process/hyper/usertask_frequency_group_by_assignee_by_usertask.csv"
       );
 
@@ -117,7 +117,7 @@ public class ProcessHyperMapExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.getFileContentWithReplacedNewlinesAsString(
+      FileReaderUtil.readFileWithReplacedNewlinesAsString(
         "/csv/process/hyper/usertask_duration_group_by_assignee_by_usertask.csv"
       );
 
@@ -144,7 +144,7 @@ public class ProcessHyperMapExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.getFileContentWithReplacedNewlinesAsString("/csv/process/hyper/hypermap_empty_result.csv");
+      FileReaderUtil.readFileWithReplacedNewlinesAsString("/csv/process/hyper/hypermap_empty_result.csv");
 
     assertThat(actualContent, is(stringExpected));
   }

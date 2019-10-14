@@ -9,6 +9,7 @@ import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,11 +18,6 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 import static org.camunda.optimize.jetty.NoCachingFilter.NO_STORE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
@@ -42,7 +38,7 @@ public class NoCachingIT {
   private LicenseManager licenseManager;
 
   @Before
-  public void setup() throws IOException, URISyntaxException {
+  public void setup() {
     licenseManager = embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class);
     addLicenseToOptimize();
   }
@@ -76,12 +72,8 @@ public class NoCachingIT {
     assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));
   }
 
-  private String readFileToString(String filePath) throws IOException, URISyntaxException {
-    return new String(Files.readAllBytes(Paths.get(getClass().getResource(filePath).toURI())), StandardCharsets.UTF_8);
-  }
-
-  private void addLicenseToOptimize() throws IOException, URISyntaxException {
-    String license = readFileToString("/license/ValidTestLicense.txt");
+  private void addLicenseToOptimize() {
+    String license = FileReaderUtil.readValidTestLicense();
 
     Response response =
       embeddedOptimizeRule.getRequestExecutor()

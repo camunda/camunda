@@ -17,10 +17,18 @@ import java.nio.file.Paths;
 public class FileReaderUtil {
 
   @SneakyThrows
-  public String getFileContentWithReplacedNewlinesAsString(String pathString) {
+  public String readFileWithReplacedNewlinesAsString(String pathString) {
     Path path = Paths.get(FileReaderUtil.class.getResource(pathString).toURI());
     byte[] content = Files.readAllBytes(path);
     // Remove \r to ensure all newlines are marked with \n so that tests also run on Windows, see OPT-2744
     return new String(content, StandardCharsets.UTF_8).replace("\r", "");
+  }
+
+  public String readValidTestLicense(){
+    return readFileWithReplacedNewlinesAsString("/license/ValidTestLicense.txt");
+  }
+
+  public String readValidTestLegacyLicense(){
+    return readFileWithReplacedNewlinesAsString("/license/TestLegacyLicense_Valid.txt");
   }
 }

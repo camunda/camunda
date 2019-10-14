@@ -22,6 +22,7 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
@@ -35,10 +36,6 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -66,7 +63,7 @@ public class ForceReimportIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
   @Test
-  public void forceReimport() throws IOException, URISyntaxException {
+  public void forceReimport() throws IOException {
 
     //given
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
@@ -150,15 +147,8 @@ public class ForceReimportIT {
       .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
-  private String readFileToString() throws IOException, URISyntaxException {
-    return new String(
-      Files.readAllBytes(Paths.get(getClass().getResource("/license/ValidTestLicense.txt").toURI())),
-      StandardCharsets.UTF_8
-    );
-  }
-
-  private void addLicense() throws IOException, URISyntaxException {
-    String license = readFileToString();
+  private void addLicense() {
+    String license = FileReaderUtil.readValidTestLicense();
 
     embeddedOptimizeRule.getRequestExecutor()
       .buildValidateAndStoreLicenseRequest(license)
