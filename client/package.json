@@ -81,7 +81,7 @@
     "eslint-plugin-testcafe": "^0.2.1",
     "glob": "^7.1.4",
     "http-proxy-middleware": "^0.20.0",
-    "husky": "^3.0.5",
+    "husky": "^3.0.9",
     "jest-enzyme": "^7.1.1",
     "jest-junit": "^8.0.0",
     "js-yaml": "^3.13.1",
