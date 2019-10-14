@@ -91,6 +91,14 @@ h5 {
   vertical-align: baseline;
 }
 
+input,
+button,
+select,
+textarea,
+option {
+  font-family: inherit;
+}
+
 h1 {
   font-size: 2em;
   font-weight: bold;
