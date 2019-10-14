@@ -135,6 +135,7 @@ export function createBarOptions({
         }
       ]
     },
+    spanGaps: true,
     // plugin property
     lineAt: targetLine
   };
