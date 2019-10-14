@@ -97,6 +97,10 @@ public class ElementInstance implements DbValue {
     return WorkflowInstanceLifecycle.isTerminating(getState());
   }
 
+  public boolean isInFinalState() {
+    return WorkflowInstanceLifecycle.isFinalState(getState());
+  }
+
   public void spawnToken() {
     activeTokens += 1;
   }

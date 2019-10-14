@@ -11,7 +11,7 @@ import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCompleted;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.client.api.response.BrokerInfo;
 import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.client.api.worker.JobWorker;

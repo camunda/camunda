@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.it.fault;
+package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
@@ -15,8 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.core.Atomix;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.GrpcClientRule;
-import io.zeebe.broker.it.clustering.ClusteringRule;
+import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;

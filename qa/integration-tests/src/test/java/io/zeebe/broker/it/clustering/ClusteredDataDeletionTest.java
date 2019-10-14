@@ -10,9 +10,12 @@ package io.zeebe.broker.it.clustering;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.DataDeleteTest;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
+import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.exporter.api.Exporter;
+import io.zeebe.exporter.api.context.Controller;
+import io.zeebe.protocol.record.Record;
 import io.zeebe.test.util.TestUtil;
 import java.io.File;
 import java.io.IOException;
@@ -21,6 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.After;
@@ -49,7 +53,8 @@ public class ClusteredDataDeletionTest {
         (Consumer<BrokerCfg>) ClusteredDataDeletionTest::configureNoExporters, "no-exporter"
       },
       new Object[] {
-        (Consumer<BrokerCfg>) DataDeleteTest::configureCustomExporter, "updating-exporter"
+        (Consumer<BrokerCfg>) ClusteredDataDeletionTest::configureCustomExporter,
+        "updating-exporter"
       }
     };
   }
@@ -73,6 +78,22 @@ public class ClusteredDataDeletionTest {
     brokerCfg.getNetwork().setMaxMessageSize("8K");
 
     brokerCfg.setExporters(Collections.EMPTY_LIST);
+  }
+
+  public static void configureCustomExporter(final BrokerCfg brokerCfg) {
+    final DataCfg data = brokerCfg.getData();
+    data.setMaxSnapshots(MAX_SNAPSHOTS);
+    data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
+    data.setLogSegmentSize("8k");
+    brokerCfg.getNetwork().setMaxMessageSize("8K");
+
+    final ExporterCfg exporterCfg = new ExporterCfg();
+    exporterCfg.setClassName(TestExporter.class.getName());
+    exporterCfg.setId("data-delete-test-exporter");
+
+    // overwrites RecordingExporter on purpose because since it doesn't update its position
+    // we wouldn't be able to delete data
+    brokerCfg.setExporters(Collections.singletonList(exporterCfg));
   }
 
   @Test
@@ -144,7 +165,7 @@ public class ClusteredDataDeletionTest {
           segmentCounts.put(nodeId, getSegmentsDirectory(b).list().length);
         });
 
-    clusteringRule.getClock().addTime(Duration.ofSeconds(DataDeleteTest.SNAPSHOT_PERIOD_SECONDS));
+    clusteringRule.getClock().addTime(Duration.ofSeconds(SNAPSHOT_PERIOD_SECONDS));
     brokers.forEach(this::waitForValidSnapshotAtBroker);
     return segmentCounts;
   }
@@ -164,5 +185,21 @@ public class ClusteredDataDeletionTest {
 
     waitUntil(
         () -> Arrays.stream(snapshotsDir.listFiles()).anyMatch(f -> !f.getName().contains("tmp")));
+  }
+
+  public static class TestExporter implements Exporter {
+    public static List<Record> records = new CopyOnWriteArrayList<>();
+    private Controller controller;
+
+    @Override
+    public void open(final Controller controller) {
+      this.controller = controller;
+    }
+
+    @Override
+    public void export(final Record record) {
+      records.add(record);
+      controller.updateLastExportedRecordPosition(record.getPosition());
+    }
   }
 }

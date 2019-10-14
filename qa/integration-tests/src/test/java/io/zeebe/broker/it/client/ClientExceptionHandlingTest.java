@@ -5,13 +5,13 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.it.util;
+package io.zeebe.broker.it.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.grpc.StatusRuntimeException;
-import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientException;
 import java.net.ConnectException;
@@ -21,7 +21,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
-public class ExceptionHandlingTest {
+public class ClientExceptionHandlingTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
