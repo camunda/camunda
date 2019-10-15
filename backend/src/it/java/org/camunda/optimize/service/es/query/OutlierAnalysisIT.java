@@ -262,7 +262,8 @@ public class OutlierAnalysisIT {
         Collections.singletonList("1"),
         Collections.singletonList(null)
       )
-      .execute(new TypeReference<HashMap<String, FindingsDto>>() {});
+      .execute(new TypeReference<HashMap<String, FindingsDto>>() {
+      });
 
     // then
     assertThat(outlierTest.size(), is(12));
@@ -495,7 +496,7 @@ public class OutlierAnalysisIT {
     // then
     assertThat(response.getStatus(), is(200));
     final String csvContent = getResponseContentAsString(response);
-    final String[] lines = csvContent.split("\\n");
+    final String[] lines = csvContent.split("\\r\\n");
     assertThat(lines.length, is(4));
     assertThat(lines[0], is("\"processInstanceId\""));
     assertThat(

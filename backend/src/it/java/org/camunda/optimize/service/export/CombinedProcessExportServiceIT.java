@@ -74,7 +74,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      FileReaderUtil.readFileWithWindowsLineSeparator(
         "/csv/process/combined/combined_flow_node_frequency_group_by_flow_node.csv");
 
     assertThat(actualContent, is(stringExpected));
@@ -104,7 +104,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      FileReaderUtil.readFileWithWindowsLineSeparator(
         "/csv/process/combined/combined_flow_node_duration_group_by_flow_node.csv"
       );
 
@@ -133,7 +133,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      FileReaderUtil.readFileWithWindowsLineSeparator(
         "/csv/process/combined/combined_flow_node_frequency_group_by_flow_node_different_order.csv"
       );
 
@@ -162,7 +162,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      FileReaderUtil.readFileWithWindowsLineSeparator(
         "/csv/process/combined/combined_pi_frequency_group_by_none.csv"
       );
 
@@ -197,7 +197,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      FileReaderUtil.readFileWithWindowsLineSeparator(
         "/csv/process/combined/combined_pi_duration_group_by_none.csv"
       );
 
@@ -223,7 +223,7 @@ public class CombinedProcessExportServiceIT {
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected =
-      FileReaderUtil.readFileWithReplacedNewlinesAsString(
+      FileReaderUtil.readFileWithWindowsLineSeparator(
         "/csv/process/combined/combined_empty_report.csv"
       );
 

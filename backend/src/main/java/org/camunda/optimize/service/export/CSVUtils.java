@@ -44,7 +44,7 @@ public class CSVUtils {
   public static byte[] mapCsvLinesToCsvBytes(final List<String[]> csvStrings) {
     final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
     final BufferedWriter bufferedWriter = new BufferedWriter(new OutputStreamWriter(arrayOutputStream));
-    final CSVWriter csvWriter = new CSVWriter(bufferedWriter);
+    final CSVWriter csvWriter = new CSVWriter(bufferedWriter, ',', '"', '\'', "\r\n");
 
     byte[] bytes = null;
     try {

@@ -135,7 +135,7 @@ public class DecisionExportServiceIT {
 
   private String getExpectedContentAsString(String decisionInstanceId,
                                             DecisionDefinitionEngineDto decisionDefinitionEngineDto) {
-    String expectedString = FileReaderUtil.readFileWithReplacedNewlinesAsString(expectedCSV);
+    String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(expectedCSV);
     expectedString = expectedString.replace("${DI_ID}", decisionInstanceId);
     expectedString = expectedString.replace("${DD_ID}", decisionDefinitionEngineDto.getId());
     return expectedString;

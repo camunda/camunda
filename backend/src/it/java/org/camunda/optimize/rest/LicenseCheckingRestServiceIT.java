@@ -81,7 +81,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void unlimitedValidLegacyLicenseShouldBeAccepted() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestLegacyLicense_Unlimited.txt");
 
     // when
@@ -118,7 +118,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void invalidLegacyLicenseShouldThrowAnError() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestLegacyLicense_Invalid.txt");
 
     // when
@@ -134,7 +134,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void expiredLegacyLicenseShouldThrowAnError() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestLegacyLicense_ExpiredDate.txt");
 
     // when
@@ -182,7 +182,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void validUnlimitedUnifiedLicenseWithOptimizeShouldBeAccepted() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestUnifiedLicense_UnlimitedWithOptimize.txt");
 
     // when
@@ -198,7 +198,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void validLimitedUnifiedLicenseWithOptimizeShouldBeAccepted() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestUnifiedLicense_LimitedWithOptimize.txt");
 
     // when
@@ -214,7 +214,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void validUnlimitedUnifiedLicenseWithoutOptimizeShouldReturnError() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestUnifiedLicense_UnlimitedWithoutOptimize.txt");
 
     // when
@@ -230,7 +230,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void validLimitedUnifiedLicenseWithoutOptimizeShouldReturnError() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestUnifiedLicense_LimitedWithoutOptimize.txt");
 
     // when
@@ -246,7 +246,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void invalidUnifiedLicenseWithOptimizeShouldReturnError() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestUnifiedLicense_InvalidSignatureWithOptimize.txt");
 
     // when
@@ -262,7 +262,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void invalidUnifiedLicenseWithoutOptimizeShouldReturnError() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestUnifiedLicense_InvalidSignatureWithoutOptimize.txt");
 
     // when
@@ -278,7 +278,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void expiredUnifiedLicenseWithOptimizeShouldReturnError() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestUnifiedLicense_ExpiredWithOptimize.txt");
 
     // when
@@ -294,7 +294,7 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void expiredUnifiedLicenseWithoutOptimizeShouldReturnError() {
     // given
-    String license = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String license = FileReaderUtil.readFile(
       "/license/TestUnifiedLicense_ExpiredWithoutOptimize.txt");
 
     // when

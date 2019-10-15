@@ -65,7 +65,7 @@ public class ExportServiceTest {
     assertThat(csvContent.isPresent(), is(true));
 
     String actualContent = new String(csvContent.get());
-    String expectedContent = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
       "/csv/process/single/raw_process_data.csv"
     );
 
@@ -90,7 +90,7 @@ public class ExportServiceTest {
     assertThat(csvContent.isPresent(), is(true));
 
     String actualContent = new String(csvContent.get());
-    String expectedContent = FileReaderUtil.readFileWithReplacedNewlinesAsString(
+    String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
       "/csv/decision/raw_decision_data.csv"
     );
     assertThat(actualContent, is(expectedContent));
