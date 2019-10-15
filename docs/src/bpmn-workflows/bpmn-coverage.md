@@ -30,7 +30,7 @@ Elements marked in orange are currently implemented by Zeebe.
   <div>
     <div class="bpmn-symbol-group">
       <h3>Subprocesses</h3>
-        <a href="/bpmn-workflows/subprocesses.html">
+        <a href="/bpmn-workflows/embedded-subprocesses/embedded-subprocesses.html">
           <div class="bpmn-symbol-container implemented">
             <svg height="90" version="1.1" width="110" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden; position: relative; left: -0.375px;">
               <rect x="5" y="5" width="100" height="80" r="5" rx="5" ry="5" fill="#ffffff" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></rect>
@@ -89,7 +89,7 @@ Elements marked in orange are currently implemented by Zeebe.
   <div>
     <div class="bpmn-symbol-group">
       <h3>Tasks</h3>
-      <a href="/bpmn-workflows/service-tasks.html">
+      <a href="/bpmn-workflows/service-tasks/service-tasks.html">
         <div class="bpmn-symbol-container implemented">
           <svg height="90" version="1.1" width="110" xmlns="http://www.w3.org/2000/svg">
             <rect x="5" y="5" width="100" height="80" r="5" rx="5" ry="5" fill="#ffffff" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></rect>
@@ -159,7 +159,7 @@ Elements marked in orange are currently implemented by Zeebe.
           <span class="glyphicon glyphicon-eye-open"></span>
         </a>
       </div>
-      <a href="/bpmn-workflows/receive-tasks.html">
+      <a href="/bpmn-workflows/receive-tasks/receive-tasks.html">
         <div class="bpmn-symbol-container implemented">
           <svg height="90" version="1.1" width="110" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden; position: relative; left: -0.375px;">
             <rect x="5" y="5" width="100" height="80" r="5" rx="5" ry="5" fill="#ffffff" stroke="#333333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></rect>
@@ -207,7 +207,7 @@ Elements marked in orange are currently implemented by Zeebe.
   <div>
     <div class="bpmn-symbol-group">
       <h3>Gateways</h3>
-      <a href="/bpmn-workflows/exclusive-gateways.html">
+      <a href="/bpmn-workflows/exclusive-gateways/exclusive-gateways.html">
         <div class="bpmn-symbol-container implemented">
           <svg height="60" version="1.1" width="60" xmlns="http://www.w3.org/2000/svg">
             <path fill="#ffffff" stroke="#333333" d="M5,25L25,5L45,25L25,45L5,25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
@@ -231,7 +231,7 @@ Elements marked in orange are currently implemented by Zeebe.
           <span class="glyphicon glyphicon-eye-open"></span>
         </a>
       </div>
-      <a href="/bpmn-workflows/parallel-gateways.html">
+      <a href="/bpmn-workflows/parallel-gateways/parallel-gateways.html">
         <div class="bpmn-symbol-container implemented">
           <svg height="60" version="1.1" width="60" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden; position: relative; left: -0.75px;">
             <path fill="#ffffff" stroke="#333333" d="M5,25L25,5L45,25L25,45L5,25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
@@ -243,7 +243,7 @@ Elements marked in orange are currently implemented by Zeebe.
           <span class="fa fa-link bpmn-symbol-link"></span>
         </div>
       </a>
-      <a href="/bpmn-workflows/event-based-gateways.html">
+      <a href="/bpmn-workflows/event-based-gateways/event-based-gateways.html">
 	      <div class="bpmn-symbol-container implemented">
 	        <svg height="60" version="1.1" width="60" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden; position: relative; left: -0.625px;">
 	          <path fill="#ffffff" stroke="#333333" d="M5,25L25,5L45,25L25,45L5,25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
@@ -394,7 +394,7 @@ Elements marked in orange are currently implemented by Zeebe.
       <td></td>
     </tr>
     <tr>
-      <td><a href="/bpmn-workflows/none-events.html">None</a></td>
+      <td><a href="/bpmn-workflows/none-events/none-events.html">None</a></td>
       <td class="implemented">
         <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
           <g class="djs-visual">
@@ -420,7 +420,7 @@ Elements marked in orange are currently implemented by Zeebe.
       </td>
     </tr>
     <tr>
-      <td><a href="/bpmn-workflows/message-events.html">Message</a></td>
+      <td><a href="/bpmn-workflows/message-events/message-events.html">Message</a></td>
       <td class="implemented">
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <g class="djs-visual">
@@ -481,7 +481,7 @@ Elements marked in orange are currently implemented by Zeebe.
       </td>
     </tr>
     <tr>
-      <td><a href="/bpmn-workflows/timer-events.html">Timer</a></td>
+      <td><a href="/bpmn-workflows/timer-events/timer-events.html">Timer</a></td>
       <td class="implemented">
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <g class="djs-visual">
