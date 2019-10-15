@@ -22,6 +22,7 @@ import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
 import io.zeebe.protocol.record.ValueType;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -50,6 +51,7 @@ public class TypedEventRegistry {
     registry.put(ValueType.VARIABLE_DOCUMENT, VariableDocumentRecord.class);
     registry.put(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationRecord.class);
     registry.put(ValueType.ERROR, ErrorRecord.class);
+    registry.put(ValueType.WORKFLOW_INSTANCE_RESULT, WorkflowInstanceResultRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
   }

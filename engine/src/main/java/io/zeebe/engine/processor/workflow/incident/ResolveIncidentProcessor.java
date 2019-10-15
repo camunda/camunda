@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.incident;
 
+import io.zeebe.engine.processor.NoopResponseWriter;
 import io.zeebe.engine.processor.SideEffectProducer;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
@@ -32,6 +33,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
   private final BpmnStepProcessor stepProcessor;
   private final ZeebeState zeebeState;
   private final SideEffectQueue queue = new SideEffectQueue();
+  private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
   public ResolveIncidentProcessor(BpmnStepProcessor stepProcessor, ZeebeState zeebeState) {
     this.stepProcessor = stepProcessor;
@@ -106,6 +108,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
           failedRecord.getValue(),
           failedRecord.getState(),
           streamWriter,
+          noopResponseWriter,
           queue::add);
 
       sideEffect.accept(queue);

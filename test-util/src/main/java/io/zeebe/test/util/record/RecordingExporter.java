@@ -35,6 +35,7 @@ import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.WorkflowInstanceResultRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
 import java.time.Duration;
 import java.util.Iterator;
@@ -210,6 +211,11 @@ public class RecordingExporter implements Exporter {
   public static WorkflowInstanceCreationRecordStream workflowInstanceCreationRecords() {
     return new WorkflowInstanceCreationRecordStream(
         records(ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationRecordValue.class));
+  }
+
+  public static WorkflowInstanceResultRecordStream workflowInstanceResultRecords() {
+    return new WorkflowInstanceResultRecordStream(
+        records(ValueType.WORKFLOW_INSTANCE_RESULT, WorkflowInstanceResultRecordValue.class));
   }
 
   public static class RecordIterator implements Iterator<Record<?>> {

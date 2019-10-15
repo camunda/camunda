@@ -25,7 +25,8 @@ public class CancelProcessor implements CommandProcessor<JobRecord> {
   }
 
   @Override
-  public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+  public boolean onCommand(
+      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
     final JobRecord job = state.getJob(jobKey);
     if (job != null) {
@@ -34,5 +35,7 @@ public class CancelProcessor implements CommandProcessor<JobRecord> {
     } else {
       commandControl.reject(RejectionType.NOT_FOUND, String.format(NO_JOB_FOUND_MESSAGE, jobKey));
     }
+
+    return true;
   }
 }

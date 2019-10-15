@@ -44,6 +44,10 @@ public class ElementInstanceState {
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong>, DbNil>
       recordParentChildColumnFamily;
 
+  private final AwaitWorkflowInstanceResultMetadata awaitResultMetada;
+  private final ColumnFamily<DbLong, AwaitWorkflowInstanceResultMetadata>
+      awaitWorkflowInstanceResultMetadataColumnFamily;
+
   private final ExpandableArrayBuffer copyBuffer = new ExpandableArrayBuffer();
 
   private final VariablesState variablesState;
@@ -84,6 +88,13 @@ public class ElementInstanceState {
             DbNil.INSTANCE);
 
     variablesState = new VariablesState(zeebeDb, dbContext, keyGenerator);
+    awaitResultMetada = new AwaitWorkflowInstanceResultMetadata();
+    awaitWorkflowInstanceResultMetadataColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.AWAIT_WORKLOW_RESULT,
+            dbContext,
+            elementInstanceKey,
+            awaitResultMetada);
   }
 
   public ElementInstance newInstance(
@@ -142,6 +153,8 @@ public class ElementInstanceState {
           });
 
       variablesState.removeScope(key);
+
+      awaitWorkflowInstanceResultMetadataColumnFamily.delete(elementInstanceKey);
 
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
@@ -264,7 +277,8 @@ public class ElementInstanceState {
         && parentChildColumnFamily.isEmpty()
         && recordColumnFamily.isEmpty()
         && recordParentChildColumnFamily.isEmpty()
-        && variablesState.isEmpty();
+        && variablesState.isEmpty()
+        && awaitWorkflowInstanceResultMetadataColumnFamily.isEmpty();
   }
 
   private void visitRecords(long scopeKey, Purpose purpose, RecordVisitor visitor) {
@@ -295,6 +309,18 @@ public class ElementInstanceState {
       return copiedElementInstance;
     }
     return null;
+  }
+
+  public void setAwaitResultRequestMetadata(
+      long workflowInstanceKey, AwaitWorkflowInstanceResultMetadata metadata) {
+    elementInstanceKey.wrapLong(workflowInstanceKey);
+    awaitWorkflowInstanceResultMetadataColumnFamily.put(elementInstanceKey, metadata);
+  }
+
+  public AwaitWorkflowInstanceResultMetadata getAwaitResultRequestMetadata(
+      long workflowInstanceKey) {
+    elementInstanceKey.wrapLong(workflowInstanceKey);
+    return awaitWorkflowInstanceResultMetadataColumnFamily.get(elementInstanceKey);
   }
 
   @FunctionalInterface

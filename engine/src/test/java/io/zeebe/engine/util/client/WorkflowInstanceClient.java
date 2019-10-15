@@ -62,6 +62,11 @@ public class WorkflowInstanceClient {
       return this;
     }
 
+    public WorkflowInstanceCreationWithResultClient withResult() {
+      return new WorkflowInstanceCreationWithResultClient(
+          environmentRule, workflowInstanceCreationRecord);
+    }
+
     public long create() {
       final long position =
           environmentRule.writeCommand(
@@ -73,6 +78,53 @@ public class WorkflowInstanceClient {
           .getFirst()
           .getValue()
           .getWorkflowInstanceKey();
+    }
+  }
+
+  public static class WorkflowInstanceCreationWithResultClient {
+    private StreamProcessorRule environmentRule;
+    private final WorkflowInstanceCreationRecord workflowInstanceCreationRecord;
+    private long requestId = 1L;
+    private int requestStreamId = 1;
+
+    public WorkflowInstanceCreationWithResultClient(
+        StreamProcessorRule environmentRule, WorkflowInstanceCreationRecord record) {
+      this.environmentRule = environmentRule;
+      this.workflowInstanceCreationRecord = record;
+    }
+
+    public WorkflowInstanceCreationWithResultClient withRequestId(long requestId) {
+      this.requestId = requestId;
+      return this;
+    }
+
+    public WorkflowInstanceCreationWithResultClient withRequestStreamId(int requestStreamId) {
+      this.requestStreamId = requestStreamId;
+      return this;
+    }
+
+    public long create() {
+      final long position =
+          environmentRule.writeCommand(
+              requestStreamId,
+              requestId,
+              WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+              workflowInstanceCreationRecord);
+
+      return RecordingExporter.workflowInstanceCreationRecords()
+          .withIntent(WorkflowInstanceCreationIntent.CREATED)
+          .withSourceRecordPosition(position)
+          .getFirst()
+          .getValue()
+          .getWorkflowInstanceKey();
+    }
+
+    public void asyncCreate() {
+      environmentRule.writeCommand(
+          requestStreamId,
+          requestId,
+          WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+          workflowInstanceCreationRecord);
     }
   }
 

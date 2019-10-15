@@ -35,6 +35,7 @@
       <validValue name="VARIABLE_DOCUMENT">18</validValue>
       <validValue name="WORKFLOW_INSTANCE_CREATION">19</validValue>
       <validValue name="ERROR">20</validValue>
+      <validValue name="WORKFLOW_INSTANCE_RESULT">21</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">

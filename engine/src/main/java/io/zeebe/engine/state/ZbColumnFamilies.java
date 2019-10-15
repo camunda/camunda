@@ -77,5 +77,7 @@ public enum ZbColumnFamilies {
 
   BLACKLIST,
 
-  EXPORTER
+  EXPORTER,
+
+  AWAIT_WORKLOW_RESULT
 }

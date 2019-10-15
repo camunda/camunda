@@ -57,6 +57,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
         record.getValue(),
         (WorkflowInstanceIntent) record.getIntent(),
         streamWriter,
+        responseWriter,
         sideEffect);
   }
 
@@ -65,8 +66,9 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
       WorkflowInstanceRecord recordValue,
       WorkflowInstanceIntent intent,
       TypedStreamWriter streamWriter,
+      TypedResponseWriter responseWriter,
       Consumer<SideEffectProducer> sideEffect) {
-    populateEventContext(key, recordValue, intent, streamWriter, sideEffect);
+    populateEventContext(key, recordValue, intent, streamWriter, responseWriter, sideEffect);
     stepHandlers.handle(context);
   }
 
@@ -75,10 +77,12 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
       WorkflowInstanceRecord recordValue,
       WorkflowInstanceIntent intent,
       TypedStreamWriter streamWriter,
+      TypedResponseWriter responseWriter,
       Consumer<SideEffectProducer> sideEffect) {
 
     context.init(key, recordValue, intent);
     context.setStreamWriter(streamWriter);
+    context.setResponseWriter(responseWriter);
 
     context.getSideEffect().clear();
     sideEffect.accept(context.getSideEffect());

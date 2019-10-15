@@ -29,7 +29,8 @@ public class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
   }
 
   @Override
-  public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+  public boolean onCommand(
+      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
     final long key = command.getKey();
     final int retries = command.getValue().getRetries();
 
@@ -44,5 +45,6 @@ public class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
       commandControl.reject(
           RejectionType.INVALID_ARGUMENT, String.format(NEGATIVE_RETRIES_MESSAGE, key, retries));
     }
+    return true;
   }
 }

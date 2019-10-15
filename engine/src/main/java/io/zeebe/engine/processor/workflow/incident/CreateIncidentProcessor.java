@@ -34,7 +34,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
   }
 
   @Override
-  public void onCommand(
+  public boolean onCommand(
       TypedRecord<IncidentRecord> command, CommandControl<IncidentRecord> commandControl) {
     final IncidentRecord incidentEvent = command.getValue();
 
@@ -44,6 +44,8 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
       final long incidentKey = commandControl.accept(IncidentIntent.CREATED, incidentEvent);
       zeebeState.getIncidentState().createIncident(incidentKey, incidentEvent);
     }
+
+    return true;
   }
 
   public boolean rejectIncidentCreation(
