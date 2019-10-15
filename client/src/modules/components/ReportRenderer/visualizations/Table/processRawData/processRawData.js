@@ -10,7 +10,7 @@ import {formatters} from 'services';
 import {sortColumns, cockpitLink, getNoDataMessage} from './service';
 import {t} from 'translation';
 
-const {convertCamelToSpaces} = formatters;
+const {convertCamelToSpaces, duration} = formatters;
 
 export default function processRawData(
   {
@@ -47,6 +47,9 @@ export default function processRawData(
       }
       if ((entry === 'startDate' || entry === 'endDate') && instance[entry]) {
         return moment.parseZone(instance[entry]).format('YYYY-MM-DD HH:mm:ss [UTC]Z');
+      }
+      if (entry === 'duration') {
+        return duration(instance[entry]);
       }
       return instance[entry];
     });

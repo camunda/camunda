@@ -99,6 +99,24 @@ it('should format start and end dates', () => {
   expect(cells[1]).toBe('2019-06-09 16:12:49 UTC+05:00');
 });
 
+it('should format duration', () => {
+  const cells = processRawData({
+    report: {
+      result: {
+        data: [
+          {
+            duration: 123023423,
+            variables: {}
+          }
+        ]
+      },
+      data
+    }
+  }).body[0];
+
+  expect(cells[0]).toBe('1d 10h 10min 23s 423ms');
+});
+
 it('should not make the processInstanceId a link if no endpoint is specified', () => {
   const cell = processRawData({
     report: {
