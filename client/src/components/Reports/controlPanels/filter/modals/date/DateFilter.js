@@ -132,51 +132,53 @@ export default class DateFilter extends React.Component {
           </ButtonGroup>
           {mode === 'static' && (
             <React.Fragment>
-              <label className="tip">{t('common.filter.dateModal.selectDates')}</label>
+              <p className="tip">{t('common.filter.dateModal.selectDates')}</p>
               <DatePicker onDateChange={this.onDateChange} initialDates={{startDate, endDate}} />
             </React.Fragment>
           )}
           {mode === 'dynamic' && (
-            <Form horizontal>
+            <React.Fragment>
               <p className="tip">
                 {t(`common.filter.dateModal.includeInstances.${this.props.filterType}`)}
               </p>
-              <Form.Group noSpacing>
-                <Labeled label={t('common.filter.dateModal.inLast')}>
-                  <Form.InputGroup>
-                    <Input
-                      value={dynamicValue}
-                      onChange={this.setDynamicValue}
-                      isInvalid={!validDate}
-                    />
+              <Form horizontal>
+                <Form.Group noSpacing>
+                  <Labeled label={t('common.filter.dateModal.inLast')}>
+                    <Form.InputGroup>
+                      <Input
+                        value={dynamicValue}
+                        onChange={this.setDynamicValue}
+                        isInvalid={!validDate}
+                      />
 
-                    <Select value={dynamicUnit} onChange={this.setDynamicUnit}>
-                      <Select.Option value="minutes">
-                        {t('common.unit.minute.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="hours">
-                        {t('common.unit.hour.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="days">
-                        {t('common.unit.day.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="weeks">
-                        {t('common.unit.week.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="months">
-                        {t('common.unit.month.label-plural')}
-                      </Select.Option>
-                      <Select.Option value="years">
-                        {t('common.unit.year.label-plural')}
-                      </Select.Option>
-                    </Select>
-                  </Form.InputGroup>
-                </Labeled>
-                {!validDate && (
-                  <ErrorMessage>{t('common.filter.dateModal.invalidInput')}</ErrorMessage>
-                )}
-              </Form.Group>
-            </Form>
+                      <Select value={dynamicUnit} onChange={this.setDynamicUnit}>
+                        <Select.Option value="minutes">
+                          {t('common.unit.minute.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="hours">
+                          {t('common.unit.hour.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="days">
+                          {t('common.unit.day.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="weeks">
+                          {t('common.unit.week.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="months">
+                          {t('common.unit.month.label-plural')}
+                        </Select.Option>
+                        <Select.Option value="years">
+                          {t('common.unit.year.label-plural')}
+                        </Select.Option>
+                      </Select>
+                    </Form.InputGroup>
+                  </Labeled>
+                  {!validDate && (
+                    <ErrorMessage>{t('common.filter.dateModal.invalidInput')}</ErrorMessage>
+                  )}
+                </Form.Group>
+              </Form>
+            </React.Fragment>
           )}
         </Modal.Content>
         <Modal.Actions>
