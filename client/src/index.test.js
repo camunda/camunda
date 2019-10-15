@@ -7,6 +7,7 @@
 const fs = require('fs');
 
 const blacklist = ['setupTests.js'];
+const whileList = ['@ibm/plex'];
 
 function getAllFilesInDirectory(dir, filelist) {
   var files = fs.readdirSync(dir);
@@ -61,7 +62,7 @@ function getImportedModules(content) {
 function getDeclaredDependencies() {
   return Object.keys(
     JSON.parse(fs.readFileSync(__dirname + '/../package.json', 'utf8')).dependencies
-  );
+  ).filter(dep => !whileList.includes(dep));
 }
 
 const allFiles = getAllFilesInDirectory(__dirname + '/');
