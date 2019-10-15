@@ -20,7 +20,6 @@ import java.util.Map.Entry;
  * Can be used to install a list of services "transactionally" (in the sense that if one of the
  * services fails to install, all services are removed again).
  */
-@SuppressWarnings({"unchecked", "rawtypes"})
 public class CompositeServiceBuilder {
   private final ServiceContainerImpl container;
   private final ServiceName<Void> compositeServiceName;
@@ -31,7 +30,7 @@ public class CompositeServiceBuilder {
       ServiceName<Void> name,
       ServiceContainer container,
       ServiceName<?>... additionalDependencies) {
-    this.compositeServiceName = name;
+    compositeServiceName = name;
     this.container = (ServiceContainerImpl) container;
 
     final ServiceBuilder<Void> installServiceBuilder =
@@ -71,7 +70,7 @@ public class CompositeServiceBuilder {
   }
 
   class ComposedServiceBuilder<S> extends ServiceBuilder<S> {
-    private ServiceName<S> serviceName;
+    private final ServiceName<S> serviceName;
 
     ComposedServiceBuilder(
         ServiceName<S> name, Service<S> service, ServiceContainerImpl serviceContainer) {
@@ -132,7 +131,10 @@ public class CompositeServiceBuilder {
                     });
               } else {
                 // check all complete
-                if (!future.isDone() && allFutures.stream().allMatch(f -> f.isDone())) {
+                if (!future.isDone()
+                    && allFutures.stream()
+                        .allMatch(f -> f.isDone() && !f.isCompletedExceptionally())) {
+
                   future.completeWith(
                       (CompletableActorFuture<S>) installFutures.get(returnedServiceName));
                   actor.close();
