@@ -13,6 +13,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.util.sched.ActorControl;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 
 public class ProcessingContext implements ReadonlyProcessingContext {
 
@@ -29,6 +30,7 @@ public class ProcessingContext implements ReadonlyProcessingContext {
   private DbContext dbContext;
 
   private BooleanSupplier abortCondition;
+  private Consumer<TypedRecord> onProcessedListener = record -> {};
 
   public ProcessingContext actor(ActorControl actor) {
     this.actor = actor;
@@ -85,6 +87,11 @@ public class ProcessingContext implements ReadonlyProcessingContext {
     return this;
   }
 
+  public ProcessingContext onProcessedListener(Consumer<TypedRecord> onProcessedListener) {
+    this.onProcessedListener = onProcessedListener;
+    return this;
+  }
+
   public ActorControl getActor() {
     return actor;
   }
@@ -127,5 +134,9 @@ public class ProcessingContext implements ReadonlyProcessingContext {
 
   public BooleanSupplier getAbortCondition() {
     return abortCondition;
+  }
+
+  public Consumer<TypedRecord> getOnProcessedListener() {
+    return onProcessedListener;
   }
 }

@@ -29,6 +29,7 @@ import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventRegistry;
+import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.StateStorageFactory;
@@ -63,6 +64,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
@@ -86,6 +88,7 @@ public class TestStreams {
   private final ActorScheduler actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
+  private final Consumer<TypedRecord> mockOnProcessedListener;
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
 
@@ -110,10 +113,15 @@ public class TestStreams {
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
 
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
+    mockOnProcessedListener = mock(Consumer.class);
   }
 
   public CommandResponseWriter getMockedResponseWriter() {
     return mockCommandResponseWriter;
+  }
+
+  public Consumer<TypedRecord> getMockedOnProcessedListener() {
+    return mockOnProcessedListener;
   }
 
   public LogStream createLogStream(final String name) {
@@ -275,6 +283,7 @@ public class TestStreams {
             .actorScheduler(actorScheduler)
             .serviceContainer(serviceContainer)
             .commandResponseWriter(mockCommandResponseWriter)
+            .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(
                 (context) -> {
                   final TypedRecordProcessors processors = factory.createProcessors(context);

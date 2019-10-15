@@ -24,6 +24,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class StreamProcessorBuilder {
 
@@ -67,6 +68,11 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder commandResponseWriter(CommandResponseWriter commandResponseWriter) {
     processingContext.commandResponseWriter(commandResponseWriter);
+    return this;
+  }
+
+  public StreamProcessorBuilder onProcessedListener(Consumer<TypedRecord> onProcessed) {
+    processingContext.onProcessedListener(onProcessed);
     return this;
   }
 

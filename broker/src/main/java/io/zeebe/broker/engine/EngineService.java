@@ -92,8 +92,8 @@ public class EngineService implements Service<EngineService> {
         .additionalDependencies(serviceContext.getServiceName())
         .zeebeDb(partition.getZeebeDb())
         .serviceContainer(serviceContainer)
-        .commandResponseWriter(
-            commandApiService.newCommandResponseWriter(partition.getPartitionId()))
+        .commandResponseWriter(commandApiService.newCommandResponseWriter())
+        .onProcessedListener(commandApiService.getOnProcessedListener(partition.getPartitionId()))
         .streamProcessorFactory(
             (processingContext) -> {
               final ActorControl actor = processingContext.getActor();
