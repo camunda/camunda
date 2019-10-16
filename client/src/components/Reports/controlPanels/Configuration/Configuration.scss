@@ -1,14 +1,25 @@
 .Configuration {
-  .Form:after {
-    content: '';
-    left: 0;
-    position: absolute;
-    width: 100%;
-    border-bottom: 1px solid #d2d2d2;
-  }
+  .Popover__dialog {
+    .Form:after {
+      content: '';
+      left: 0;
+      position: absolute;
+      width: 100%;
+      border-bottom: 1px solid #d2d2d2;
+    }
 
-  .resetButton {
-    margin-top: 15px;
-    float: right;
+    .resetButton {
+      margin-top: 15px;
+      float: right;
+    }
+
+    /* padding bottom workaround for firefox */
+    padding-bottom: 0;
+    &:after {
+      content: '';
+      height: 15px;
+      display: block;
+      clear: both;
+    }
   }
 }
