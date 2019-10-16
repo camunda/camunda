@@ -11,18 +11,23 @@ import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import Diagram from 'modules/components/Diagram';
 import IncidentsWrapper from './IncidentsWrapper';
-import {PAGE_TITLE, UNNAMED_ACTIVITY, STATE, TYPE} from 'modules/constants';
+import {
+  PAGE_TITLE,
+  UNNAMED_ACTIVITY,
+  SUBSCRIPTION_TOPIC,
+  STATE,
+  TYPE,
+  LOADING_STATE
+} from 'modules/constants';
+
 import {compactObject, immutableArraySet} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
-import {parseDiagramXML} from 'modules/utils/bpmn';
 import {formatDate} from 'modules/utils/date';
 import {isRunning} from 'modules/utils/instance';
 import * as api from 'modules/api/instances';
-import {fetchWorkflowXML} from 'modules/api/diagram';
-import {fetchEvents} from 'modules/api/events';
+import {withData} from 'modules/DataManager';
 
 import FlowNodeInstancesTree from './FlowNodeInstancesTree';
-
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
@@ -31,18 +36,16 @@ import Variables from './InstanceHistory/Variables';
 import {
   getFlowNodeStateOverlays,
   isRunningInstance,
-  fetchActivityInstancesTreeData,
-  fetchIncidents,
-  fetchVariables,
   createNodeMetaDataMap,
-  getSelectableFlowNodes
+  getSelectableFlowNodes,
+  getActivityIdToActivityInstancesMap,
+  storeResponse
 } from './service';
 import * as Styled from './styled';
 
-const POLLING_WINDOW = 5000;
-
-export default class Instance extends Component {
+class Instance extends Component {
   static propTypes = {
+    dataManager: PropTypes.object,
     match: PropTypes.shape({
       params: PropTypes.shape({
         id: PropTypes.string.isRequired
@@ -74,70 +77,166 @@ export default class Instance extends Component {
       forceInstanceSpinner: false,
       forceIncidentsSpinner: false,
       variables: null,
-      editMode: ''
+      editMode: '',
+      isPollActive: false
     };
-
     this.pollingTimer = null;
+    this.subscriptions = {
+      LOAD_INSTANCE: ({response, state}) => {
+        if (state === LOADING_STATE.LOADED) {
+          document.title = PAGE_TITLE.INSTANCE(
+            response.id,
+            getWorkflowName(response)
+          );
+
+          const {dataManager} = this.props;
+
+          // kick off all follow-up requests.
+          dataManager.getActivityInstancesTreeData(response);
+          dataManager.getWorkflowXML(response.workflowId, response);
+          dataManager.getEvents(response.id);
+          dataManager.getVariables(response.id, response.id);
+
+          if (response.state === 'INCIDENT') {
+            dataManager.getIncidents(response);
+          }
+
+          this.setState({
+            instance: response,
+            loaded: true
+          });
+        }
+      },
+      LOAD_VARIABLES: responseData =>
+        storeResponse(responseData, response => {
+          this.setState({variables: response});
+        }),
+      LOAD_INCIDENTS: responseData =>
+        storeResponse(responseData, response => {
+          this.setState({incidents: response});
+        }),
+      LOAD_EVENTS: responseData =>
+        storeResponse(responseData, response => {
+          this.setState({events: response});
+        }),
+
+      LOAD_INSTANCE_TREE: ({response, state, staticContent}) => {
+        if (state === LOADING_STATE.LOADED) {
+          this.setState({
+            activityIdToActivityInstanceMap: getActivityIdToActivityInstancesMap(
+              response
+            ),
+            activityInstancesTree: {
+              ...response,
+              id: staticContent.id,
+              type: 'WORKFLOW',
+              state: staticContent.state,
+              endDate: staticContent.endDate
+            }
+          });
+        }
+      },
+      LOAD_STATE_DEFINITIONS: ({response, state, staticContent}) => {
+        if (state === LOADING_STATE.LOADED) {
+          // Get all selectable BPMN elements
+          const nodeMetaDataMap = createNodeMetaDataMap(
+            getSelectableFlowNodes(response.bpmnElements)
+          );
+          const selection = {
+            flowNodeId: null,
+            treeRowIds: [staticContent.id]
+          };
+
+          this.setState({
+            nodeMetaDataMap: nodeMetaDataMap,
+            diagramDefinitions: response.definitions,
+            selection
+          });
+        }
+      },
+      CONSTANT_REFRESH: ({response, state}) => {
+        if (state === LOADING_STATE.LOADED) {
+          const {
+            LOAD_INSTANCE,
+            LOAD_VARIABLES,
+            LOAD_INCIDENTS,
+            LOAD_EVENTS,
+            LOAD_INSTANCE_TREE
+          } = response;
+
+          this.setState({
+            isPollActive: false,
+            instance: LOAD_INSTANCE,
+            events: LOAD_EVENTS,
+            activityInstancesTree: {
+              ...LOAD_INSTANCE_TREE,
+              id: LOAD_INSTANCE.id,
+              type: 'WORKFLOW',
+              state: LOAD_INSTANCE.state,
+              endDate: LOAD_INSTANCE.endDate
+            },
+            activityIdToActivityInstanceMap: getActivityIdToActivityInstancesMap(
+              LOAD_INSTANCE_TREE
+            ),
+            // conditional updates
+            ...(LOAD_INCIDENTS && {incidents: LOAD_INCIDENTS}),
+            ...(LOAD_VARIABLES && {variables: LOAD_VARIABLES})
+          });
+        }
+      }
+    };
   }
 
-  async componentDidMount() {
+  componentDidMount() {
+    this.props.dataManager.subscribe(this.subscriptions);
     const id = this.props.match.params.id;
-    const instance = await api.fetchWorkflowInstance(id);
+    this.props.dataManager.getWorkflowInstance(id);
+  }
 
-    document.title = PAGE_TITLE.INSTANCE(
-      instance.id,
-      getWorkflowName(instance)
-    );
-
-    const selection = {
-      flowNodeId: null,
-      treeRowIds: [instance.id]
-    };
-
-    const [
-      {activityInstancesTree, activityIdToActivityInstanceMap},
-      diagramXml,
-      events,
-      incidents,
-      variables
-    ] = await Promise.all([
-      fetchActivityInstancesTreeData(instance),
-      fetchWorkflowXML(instance.workflowId),
-      fetchEvents(instance.id),
-      fetchIncidents(instance),
-      fetchVariables(instance, selection)
-    ]);
-
-    const {bpmnElements, definitions} = await parseDiagramXML(diagramXml);
-
-    // Get all selectable BPMN elements
-    const nodeMetaDataMap = createNodeMetaDataMap(
-      getSelectableFlowNodes(bpmnElements)
-    );
-
-    this.setState(
-      {
-        loaded: true,
-        instance,
-        ...(incidents && {incidents}),
-
-        nodeMetaDataMap,
-        diagramDefinitions: definitions,
-        events,
-        activityInstancesTree,
-        activityIdToActivityInstanceMap,
-        selection,
-        variables
-      },
-      () => {
-        this.initializePolling();
-      }
-    );
+  componentDidUpdate() {
+    if (
+      this.isAllDataLoaded() &&
+      !this.state.isPollActive &&
+      isRunningInstance(this.state.instance)
+    ) {
+      this.setState({isPollActive: true}, () => {
+        this.props.dataManager.poll.start(() => this.handlePoll());
+      });
+    }
   }
 
   componentWillUnmount() {
-    this.clearPolling();
+    this.props.dataManager.unsubscribe(this.subscriptions);
+    this.props.dataManager.poll.clear();
   }
+
+  handlePoll() {
+    let updateParams = {
+      topic: SUBSCRIPTION_TOPIC.CONSTANT_REFRESH,
+      endpoints: [
+        SUBSCRIPTION_TOPIC.LOAD_INSTANCE,
+        SUBSCRIPTION_TOPIC.LOAD_VARIABLES,
+        SUBSCRIPTION_TOPIC.LOAD_INCIDENTS,
+        SUBSCRIPTION_TOPIC.LOAD_EVENTS,
+        SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE
+      ]
+    };
+    this.props.dataManager.update(updateParams);
+  }
+
+  isAllDataLoaded = () => {
+    const {
+      forceInstanceSpinner,
+      forceIncidentsSpinner,
+      editMode,
+      isPollActive,
+      ...initallyLoadedStates
+    } = this.state;
+
+    return Object.values(initallyLoadedStates).reduce((acc, stateValue) => {
+      return acc && Boolean(stateValue);
+    }, true);
+  };
 
   /**
    * Handles selecting a node row in the tree
@@ -169,8 +268,8 @@ export default class Instance extends Component {
 
     if (newSelection.treeRowIds.length === 1) {
       const scopeId = newSelection.treeRowIds[0];
-      const variables = await api.fetchVariables(instance.id, scopeId);
-      this.setState({variables, editMode: ''});
+      this.props.dataManager.getVariables(instance.id, scopeId);
+      this.setState({editMode: ''});
     }
   };
 
@@ -196,61 +295,9 @@ export default class Instance extends Component {
 
     if (treeRowIds.length === 1) {
       const scopeId = treeRowIds[0];
-      const variables = await api.fetchVariables(instance.id, scopeId);
-      this.setState({variables, editMode: ''});
+      this.props.dataManager.getVariables(instance.id, scopeId);
+      this.setState({editMode: ''});
     }
-  };
-
-  initializePolling = () => {
-    const {instance} = this.state;
-
-    if (isRunningInstance(instance.state)) {
-      this.pollingTimer = setTimeout(this.detectChangesPoll, POLLING_WINDOW);
-    }
-  };
-
-  resetPolling = () => {
-    this.clearPolling();
-    this.initializePolling();
-  };
-
-  clearPolling = () => {
-    this.pollingTimer && clearTimeout(this.pollingTimer);
-    this.pollingTimer = null;
-  };
-
-  detectChangesPoll = async () => {
-    let requestsPromises = [
-      api.fetchWorkflowInstance(this.state.instance.id),
-      fetchIncidents(this.state.instance),
-      fetchActivityInstancesTreeData(this.state.instance),
-      fetchEvents(this.state.instance.id),
-      fetchVariables(this.state.instance, this.state.selection)
-    ];
-
-    const [
-      instance,
-      incidents,
-      {activityInstancesTree, activityIdToActivityInstanceMap},
-      events,
-      variables
-    ] = await Promise.all(requestsPromises);
-
-    this.setState(
-      {
-        instance,
-        ...(incidents && {incidents}),
-        events,
-        activityInstancesTree,
-        activityIdToActivityInstanceMap,
-        ...(variables && {variables}),
-        forceInstanceSpinner: false,
-        forceIncidentsSpinner: false
-      },
-      () => {
-        this.initializePolling();
-      }
-    );
   };
 
   getCurrentMetadata = () => {
@@ -428,6 +475,16 @@ export default class Instance extends Component {
     this.setState({editMode});
   };
 
+  getSelectedFlowNodeName(selection, nodeMetaDataMap) {
+    const selectedFlowNodeId = selection && selection.flowNodeId;
+
+    const nodeMetaData = nodeMetaDataMap.get(selectedFlowNodeId);
+
+    return !selectedFlowNodeId
+      ? null
+      : (nodeMetaData && nodeMetaData.name) || selectedFlowNodeId;
+  }
+
   render() {
     const {
       loaded,
@@ -445,23 +502,6 @@ export default class Instance extends Component {
       return 'Loading';
     }
 
-    // Get extra information for the diagram
-    const selectableFlowNodes = [...activityIdToActivityInstanceMap.keys()];
-
-    const flowNodeStateOverlays = getFlowNodeStateOverlays(
-      activityIdToActivityInstanceMap
-    );
-
-    const metadata = !selection.flowNodeId ? null : this.getCurrentMetadata();
-
-    const selectedFlowNodeId = selection.flowNodeId;
-
-    const nodeMetaData = nodeMetaDataMap.get(selectedFlowNodeId);
-
-    const selectedFlowNodeName = !selectedFlowNodeId
-      ? null
-      : (nodeMetaData && nodeMetaData.name) || selectedFlowNodeId;
-
     return (
       <Fragment>
         <Header detail={<InstanceDetail instance={instance} />} />
@@ -475,32 +515,44 @@ export default class Instance extends Component {
               forceInstanceSpinner={this.state.forceInstanceSpinner}
               onInstanceOperation={this.handleInstanceOperation}
             >
-              {this.state.instance.state === 'INCIDENT' && (
-                <IncidentsWrapper
-                  incidents={this.addFLowNodeNames(incidents.incidents)}
-                  incidentsCount={this.state.incidents.count}
-                  instance={this.state.instance}
-                  forceSpinner={this.state.forceIncidentsSpinner}
-                  selectedFlowNodeInstanceIds={this.state.selection.treeRowIds}
-                  onIncidentOperation={this.handleIncidentOperation}
-                  onIncidentSelection={this.handleTreeRowSelection}
-                  flowNodes={this.mapify(
-                    incidents.flowNodes,
-                    'flowNodeId',
-                    this.addFlowNodeName
-                  )}
-                  errorTypes={this.mapify(incidents.errorTypes, 'errorType')}
-                />
-              )}
-              {diagramDefinitions && (
+              {this.state.instance.state === 'INCIDENT' &&
+                this.state.nodeMetaDataMap && (
+                  <IncidentsWrapper
+                    incidents={this.addFLowNodeNames(incidents.incidents)}
+                    incidentsCount={this.state.incidents.count}
+                    instance={this.state.instance}
+                    forceSpinner={this.state.forceIncidentsSpinner}
+                    selectedFlowNodeInstanceIds={
+                      this.state.selection.treeRowIds
+                    }
+                    onIncidentOperation={this.handleIncidentOperation}
+                    onIncidentSelection={this.handleTreeRowSelection}
+                    flowNodes={this.mapify(
+                      incidents.flowNodes,
+                      'flowNodeId',
+                      this.addFlowNodeName
+                    )}
+                    errorTypes={this.mapify(incidents.errorTypes, 'errorType')}
+                  />
+                )}
+              {diagramDefinitions && activityIdToActivityInstanceMap && (
                 <Diagram
                   onFlowNodeSelection={this.handleFlowNodeSelection}
-                  selectableFlowNodes={selectableFlowNodes}
-                  selectedFlowNodeId={selectedFlowNodeId}
-                  selectedFlowNodeName={selectedFlowNodeName}
-                  flowNodeStateOverlays={flowNodeStateOverlays}
+                  selectableFlowNodes={[
+                    ...activityIdToActivityInstanceMap.keys()
+                  ]}
+                  selectedFlowNodeId={selection.flowNodeId}
+                  selectedFlowNodeName={this.getSelectedFlowNodeName(
+                    selection,
+                    nodeMetaDataMap
+                  )}
+                  flowNodeStateOverlays={getFlowNodeStateOverlays(
+                    activityIdToActivityInstanceMap
+                  )}
                   definitions={diagramDefinitions}
-                  metadata={metadata}
+                  metadata={
+                    !selection.flowNodeId ? null : this.getCurrentMetadata()
+                  }
                 />
               )}
             </DiagramPanel>
@@ -508,13 +560,15 @@ export default class Instance extends Component {
               <Styled.Panel>
                 <Styled.FlowNodeInstanceLog>
                   <Styled.NodeContainer>
-                    <FlowNodeInstancesTree
-                      node={this.state.activityInstancesTree}
-                      getNodeWithMetaData={this.getNodeWithMetaData}
-                      treeDepth={1}
-                      selectedTreeRowIds={this.state.selection.treeRowIds}
-                      onTreeRowSelection={this.handleTreeRowSelection}
-                    />
+                    {diagramDefinitions && activityIdToActivityInstanceMap && (
+                      <FlowNodeInstancesTree
+                        node={this.state.activityInstancesTree}
+                        getNodeWithMetaData={this.getNodeWithMetaData}
+                        treeDepth={1}
+                        selectedTreeRowIds={this.state.selection.treeRowIds}
+                        onTreeRowSelection={this.handleTreeRowSelection}
+                      />
+                    )}
                   </Styled.NodeContainer>
                 </Styled.FlowNodeInstanceLog>
               </Styled.Panel>
@@ -533,3 +587,8 @@ export default class Instance extends Component {
     );
   }
 }
+
+const WrappedInstance = withData(Instance);
+WrappedInstance.WrappedComponent = Instance;
+
+export default WrappedInstance;

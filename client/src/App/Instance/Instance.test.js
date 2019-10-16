@@ -10,27 +10,47 @@ import {mount, shallow} from 'enzyme';
 
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
+import {
+  wrapperFactory,
+  mountWrappedComponent
+} from 'modules/testHelpers/wrapperFactory';
+
+import * as dataManagerHelper from 'modules/testHelpers/dataManager';
+
 import {testData} from './Instance.setup';
 
 import {PAGE_TITLE} from 'modules/constants';
 import * as instancesApi from 'modules/api/instances/instances';
-import * as diagramApi from 'modules/api/diagram/diagram';
 import * as eventsApi from 'modules/api/events/events';
 import * as activityInstanceApi from 'modules/api/activityInstances/activityInstances';
 
 import {getWorkflowName} from 'modules/utils/instance';
 import * as diagramUtils from 'modules/utils/bpmn';
 import {ThemeProvider} from 'modules/theme';
+import {DataManagerProvider} from 'modules/DataManager';
 
 import DiagramPanel from './DiagramPanel';
 import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 import InstanceHistory from './InstanceHistory';
 import Diagram from 'modules/components/Diagram';
-import Instance from './Instance';
+import Variables from './InstanceHistory/Variables';
+import IncidentsWrapper from './IncidentsWrapper';
 
-// mock data
-const diagramNodes = testData.fetch.onPageLoad.diagramNodes;
-const {workflowInstance} = testData.fetch.onPageLoad;
+import Header from '../Header';
+
+import Instance from './Instance';
+import {
+  getActivityIdToActivityInstancesMap,
+  getSelectableFlowNodes,
+  createNodeMetaDataMap,
+  isRunningInstance
+} from './service';
+
+// DataManager mock
+import {DataManager} from 'modules/DataManager/core';
+
+jest.mock('modules/DataManager/core');
+DataManager.mockImplementation(dataManagerHelper.mockDataManager);
 
 // mock modules
 
@@ -43,8 +63,14 @@ jest.mock('../Header', () => {
   };
 });
 
-jest.mock('modules/components/Diagram', () => {
+jest.mock('./DiagramPanel', () => {
   return function Diagram() {
+    return <div />;
+  };
+});
+
+jest.mock('./InstanceDetail', () => {
+  return function InstanceDetails() {
     return <div />;
   };
 });
@@ -55,792 +81,1023 @@ jest.mock('./FlowNodeInstancesTree', () => {
   };
 });
 
-const mountRenderComponent = (customProps = {}) =>
-  mount(
-    <ThemeProvider>
-      <MemoryRouter>
-        <Instance match={testData.props.match} {...customProps} />
-      </MemoryRouter>
-    </ThemeProvider>
+jest.mock(
+  './IncidentsWrapper',
+  () =>
+    function Instances(props) {
+      return <div data-test="IncidentsWrapper" />;
+    }
+);
+
+const {
+  workflowInstance,
+  workflowInstanceCompleted,
+  workflowInstanceCanceled,
+  workflowInstanceWithIncident,
+  noIncidents,
+  incidents,
+  variables,
+  // workflowXML,
+  instanceHistoryTree,
+  diagramNodes,
+  events
+} = testData.fetch.onPageLoad;
+
+const {mockDefinition} = testData.diagramData;
+
+const mountRenderComponent = (customProps = {}) => {
+  const node = mount(
+    wrapperFactory(
+      [ThemeProvider, DataManagerProvider, MemoryRouter],
+      <Instance match={testData.props.match} {...customProps} />
+    )
   );
 
-const shallowRenderComponent = (customProps = {}) =>
-  shallow(
-    <Instance
-      match={{
-        params: {id: workflowInstance.id},
-        isExact: true,
-        path: '',
-        url: ''
-      }}
-      {...customProps}
-    />
+  return node.find('Instance');
+};
+
+const shallowRenderComponent = (customProps = {}) => {
+  const node = shallow(
+    wrapperFactory(
+      [ThemeProvider, DataManagerProvider, MemoryRouter],
+      <Instance match={testData.props.match} {...customProps} />
+    )
   );
+
+  return node.find('Instance');
+};
 
 describe('Instance', () => {
-  beforeEach(() => {
-    const {
-      workflowInstance,
-      noIncidents,
-      workflowXML,
-      instanceHistoryTree,
-      events
-    } = testData.fetch.onPageLoad;
+  const {SUBSCRIPTION_TOPIC} = dataManagerHelper.constants;
 
-    // mock Api calls
-    instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(workflowInstance);
-    instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn(
-      noIncidents
-    );
-    instancesApi.fetchVariables = mockResolvedAsyncFn([]);
-    diagramApi.fetchWorkflowXML = mockResolvedAsyncFn(workflowXML);
-    activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-      instanceHistoryTree
-    );
-    eventsApi.fetchEvents = mockResolvedAsyncFn(events);
+  describe('subscriptions', () => {
+    let root;
+    let node;
+    let subscriptions;
 
-    diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
-      bpmnElements: diagramNodes,
-      definitions: {id: 'Definition1'}
-    });
-  });
-
-  it('should render properly', async () => {
-    // given
-    const node = mountRenderComponent();
-
-    await flushPromises();
-    node.update();
-
-    // then
-
-    // update document title
-    expect(document.title).toBe(
-      PAGE_TITLE.INSTANCE(
-        workflowInstance.id,
-        getWorkflowName(workflowInstance)
-      )
-    );
-
-    // Header
-    expect(node.find('Header').text()).toEqual(
-      expect.stringContaining('Instance')
-    );
-    expect(node.find('Header').text()).toEqual(
-      expect.stringContaining(workflowInstance.id)
-    );
-
-    // Diagram
-    expect(node.find('DiagramPanel')).toHaveLength(1);
-    expect(node.find('Diagram')).toHaveLength(1);
-
-    // InstanceHistory;
-    expect(node.find(InstanceHistory)).toHaveLength(1);
-
-    // FlowNodeInstancesTree;
-    expect(node.find(FlowNodeInstancesTree)).toHaveLength(1);
-
-    // Variables
-    expect(node.find('Variables')).toHaveLength(1);
-  });
-
-  it('should not display IncidentsWrapper if there is no incident', async () => {
-    // when
-    const node = mountRenderComponent();
-    await flushPromises();
-    node.update();
-
-    const IncidentsWrapper = node.find('IncidentsWrapper');
-
-    expect(IncidentsWrapper).not.toExist();
-  });
-
-  it('should pass the right incidents data to IncidentsWrapper', async () => {
-    // given
-    instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-      testData.fetch.onPageLoad.workflowInstanceWithIncident
-    );
-
-    instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn(
-      testData.fetch.onPageLoad.incidents
-    );
-
-    // when
-    const node = mountRenderComponent();
-    await flushPromises();
-    node.update();
-
-    const IncidentsWrapper = node.find('IncidentsWrapper');
-    expect(IncidentsWrapper.props()).toMatchSnapshot();
-  });
-
-  it('should fetch data from APIs', async () => {
-    // given
-    const node = mountRenderComponent();
-    await flushPromises();
-    node.update();
-    // then
-
-    // fetching the instance
-    expect(instancesApi.fetchWorkflowInstance).toBeCalled();
-    expect(instancesApi.fetchWorkflowInstance.mock.calls[0][0]).toEqual(
-      workflowInstance.id
-    );
-
-    // fetch the Activity Instances Tree
-    expect(activityInstanceApi.fetchActivityInstancesTree).toBeCalled();
-    expect(
-      activityInstanceApi.fetchActivityInstancesTree.mock.calls[0][0]
-    ).toBe(workflowInstance.id);
-
-    // fetching the xml
-    expect(diagramApi.fetchWorkflowXML).toBeCalled();
-    expect(diagramApi.fetchWorkflowXML.mock.calls[0][0]).toBe(
-      workflowInstance.workflowId
-    );
-
-    // fetch events
-    expect(eventsApi.fetchEvents).toBeCalled();
-    expect(eventsApi.fetchEvents.mock.calls[0][0]).toBe(workflowInstance.id);
-
-    expect(instancesApi.fetchWorkflowInstanceIncidents).not.toBeCalled();
-
-    // fetch variables
-    expect(instancesApi.fetchVariables).toBeCalledWith(
-      workflowInstance.id,
-      workflowInstance.id
-    );
-  });
-
-  describe('check for updates poll', () => {
     beforeEach(() => {
-      eventsApi.fetchEvents = mockResolvedAsyncFn(
-        testData.fetch.onPageLoad.events
+      root = mountWrappedComponent(
+        [
+          ThemeProvider,
+          {
+            Wrapper: DataManagerProvider,
+            props: {dataManager: new DataManager()}
+          },
+          MemoryRouter
+        ],
+        Instance,
+        {match: testData.props.match}
       );
-      jest.useFakeTimers();
+      node = root.find('Instance');
+      subscriptions = node.instance().subscriptions;
     });
 
-    afterEach(() => {
-      jest.runOnlyPendingTimers();
-      jest.clearAllTimers();
-      jest.clearAllMocks();
-    });
-
-    it('should set, for running instances, a 5s timeout after initial render', async () => {
-      // given
-      const node = mountRenderComponent();
-      const detectChangesPollSpy = jest.spyOn(
-        node.find(Instance).instance(),
-        'detectChangesPoll'
-      );
-      await flushPromises();
-      node.update();
-
-      // when
-      jest.advanceTimersByTime(5000);
-
-      // then
-      expect(detectChangesPollSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('should not set, for completed instances, a 5s timeout after initial render', async () => {
-      // given
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        testData.fetch.onPageLoad.workflowInstanceCompleted
-      );
-      const node = mountRenderComponent();
-      const detectChangesPollSpy = jest.spyOn(
-        node.find(Instance).instance(),
-        'detectChangesPoll'
-      );
-      await flushPromises();
-      node.update();
-
-      // when
-      jest.advanceTimersByTime(5000);
-
-      // then
-      expect(detectChangesPollSpy).toHaveBeenCalledTimes(0);
-      instancesApi.fetchWorkflowInstance.mockClear();
-    });
-
-    it('should not set, for canceled instances, a 5s timeout after initial render', async () => {
-      // given
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        testData.fetch.onPageLoad.workflowInstanceCanceled
-      );
-      const node = mountRenderComponent();
-      const detectChangesPollSpy = jest.spyOn(
-        node.find(Instance).instance(),
-        'detectChangesPoll'
-      );
-      await flushPromises();
-      node.update();
-
-      // when
-      jest.advanceTimersByTime(5000);
+    it('should subscribe and unsubscribe on un/mount', () => {
+      //given
+      const {dataManager} = node.instance().props;
 
       //then
-      expect(detectChangesPollSpy).toHaveBeenCalledTimes(0);
-      instancesApi.fetchWorkflowInstance.mockClear();
+      expect(dataManager.subscribe).toHaveBeenCalledWith(subscriptions);
+
+      //when
+      root.unmount();
+      //then
+      expect(dataManager.unsubscribe).toHaveBeenCalledWith(subscriptions);
     });
 
-    it('should start a polling for changes if instance.state is ACTIVE', async () => {
-      // given
-      const node = mountRenderComponent();
-      const detectChangesPollSpy = jest.spyOn(
-        node.find(Instance).instance(),
-        'detectChangesPoll'
-      );
-      await flushPromises();
-      node.update();
-      jest.clearAllMocks();
+    describe('load instance', () => {
+      it('should set the page title', () => {
+        // given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+          response: {...workflowInstance}
+        });
 
-      // when first setTimeout is ran
-      jest.advanceTimersByTime(5000);
+        // update document title
+        expect(document.title).toBe(
+          PAGE_TITLE.INSTANCE(
+            workflowInstance.id,
+            getWorkflowName(workflowInstance)
+          )
+        );
+      });
 
-      // then
-      expect(detectChangesPollSpy).toHaveBeenCalledTimes(1);
-      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalledTimes(1);
-      expect(
-        activityInstanceApi.fetchActivityInstancesTree
-      ).toHaveBeenCalledTimes(1);
-      expect(eventsApi.fetchEvents).toHaveBeenCalledTimes(1);
+      it('should always request instance tree, diagram, variables, events ', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+          response: workflowInstance
+        });
+
+        //then
+        expect(dataManager.getEvents).toHaveBeenCalledWith(workflowInstance.id);
+        expect(dataManager.getWorkflowXML).toHaveBeenCalledWith(
+          workflowInstance.workflowId,
+          workflowInstance
+        );
+        expect(dataManager.getVariables).toHaveBeenCalledWith(
+          workflowInstance.id,
+          workflowInstance.id
+        );
+        expect(dataManager.getActivityInstancesTreeData).toHaveBeenCalledWith(
+          workflowInstance
+        );
+      });
+
+      it('should request incidents', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+          response: workflowInstanceWithIncident
+        });
+
+        expect(dataManager.getIncidents).toHaveBeenCalledWith(
+          workflowInstanceWithIncident
+        );
+      });
+
+      it('should store instance in state', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+          response: workflowInstance
+        });
+
+        expect(node.instance().state.loaded).toBe(true);
+        expect(node.instance().state.instance).toEqual(workflowInstance);
+      });
     });
-
-    it('should start a polling for changes if instance.state is INCIDENT', async () => {
-      // given
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        testData.fetch.onPageLoad.workflowInstanceWithIncident
-      );
-      const node = mountRenderComponent();
-      const detectChangesPollSpy = jest.spyOn(
-        node.find(Instance).instance(),
-        'detectChangesPoll'
-      );
-      await flushPromises();
-      node.update();
-
-      // when first setTimeout is ran
-      jest.clearAllMocks();
-      jest.advanceTimersByTime(5000);
-
-      // then
-      expect(detectChangesPollSpy).toBeCalledTimes(1);
-      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalled();
-      expect(instancesApi.fetchWorkflowInstanceIncidents).toHaveBeenCalled();
-      expect(activityInstanceApi.fetchActivityInstancesTree).toHaveBeenCalled();
-      expect(eventsApi.fetchEvents).toHaveBeenCalled();
-      instancesApi.fetchWorkflowInstance.mockClear();
+    describe('load incidents', () => {
+      it('should set loaded instance in state', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INCIDENTS],
+          response: incidents
+        });
+        // then
+        expect(node.instance().state.incidents).toEqual(incidents);
+      });
     });
+    describe('load variables', () => {
+      it('should set loaded variables in state', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_VARIABLES],
+          response: variables
+        });
+        // then
+        expect(node.instance().state.variables).toEqual(variables);
+      });
+    });
+    describe('load events', () => {
+      it('should set loaded events in state', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_EVENTS],
+          response: events
+        });
+        // then
+        expect(node.instance().state.events).toEqual(events);
+      });
+    });
+    describe('load incidents', () => {
+      it('should set loaded instance in state', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INCIDENTS],
+          response: incidents
+        });
+        // then
+        expect(node.instance().state.incidents).toEqual(incidents);
+      });
+    });
+    describe('load instance tree', () => {
+      it('should set loaded instance tree in state', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE],
+          response: instanceHistoryTree,
+          staticContent: workflowInstance
+        });
+        // then
+        expect(node.instance().state.activityIdToActivityInstanceMap).toEqual(
+          getActivityIdToActivityInstancesMap(instanceHistoryTree)
+        );
+        expect(node.instance().state.activityInstancesTree).toEqual({
+          ...instanceHistoryTree,
+          id: workflowInstance.id,
+          type: 'WORKFLOW',
+          state: workflowInstance.state,
+          endDate: workflowInstance.endDate
+        });
+      });
+    });
+    describe('load instance diagram', () => {
+      it('should set loaded diagram in state', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription:
+            subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
+          response: {bpmnElements: diagramNodes, definitions: mockDefinition},
+          staticContent: {}
+        });
+        // then
+        expect(node.instance().state.nodeMetaDataMap).toEqual(
+          createNodeMetaDataMap(getSelectableFlowNodes(diagramNodes))
+        );
+        expect(node.instance().state.diagramDefinitions).toEqual(
+          mockDefinition
+        );
+      });
+      it('should set default selection in state', () => {
+        //
+      });
+    });
+    describe('load data update', () => {
+      it('should update some data by default', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
+          response: {
+            LOAD_INSTANCE: workflowInstance,
+            LOAD_EVENTS: events,
+            LOAD_INSTANCE_TREE: instanceHistoryTree
+          }
+        });
 
-    it('should stop the polling once the component has completed', async () => {
-      // given
-      instancesApi.fetchWorkflowInstance = jest
-        .fn()
-        .mockResolvedValue(testData.fetch.onPageLoad.workflowInstanceCompleted) // default
-        .mockResolvedValueOnce(workflowInstance) // 1st call
-        .mockResolvedValueOnce(
-          testData.fetch.onPageLoad.workflowInstanceCompleted
-        ); // 2nd call
+        //then
+        expect(node.instance().state.instance).toEqual(workflowInstance);
+        expect(node.instance().state.activityIdToActivityInstanceMap).toEqual(
+          getActivityIdToActivityInstancesMap(instanceHistoryTree)
+        );
+        expect(node.instance().state.events).toEqual(events);
 
-      const node = mountRenderComponent();
-      const detectChangesPollSpy = jest.spyOn(
-        node.find(Instance).instance(),
-        'detectChangesPoll'
-      );
-      await flushPromises();
-      node.update();
-      jest.clearAllMocks();
+        // don't set conditional states.
+        expect(node.instance().state.variables).toEqual(null);
+        expect(node.instance().state.incidents).toEqual(noIncidents);
+      });
 
-      // when first setTimeout is ran
-      jest.advanceTimersByTime(5000);
+      it('should update some data just if existing', () => {
+        //given
+        const {dataManager} = node.instance().props;
+        // when
+        dataManager.publish({
+          subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
+          response: {
+            LOAD_INSTANCE: workflowInstance,
+            LOAD_VARIABLES: variables,
+            LOAD_INCIDENTS: incidents,
+            LOAD_EVENTS: events,
+            LOAD_INSTANCE_TREE: instanceHistoryTree
+          }
+        });
 
-      // expect polling to stop as Instance is now completed
-      expect(detectChangesPollSpy).toBeCalledTimes(1);
-      expect(instancesApi.fetchWorkflowInstance).toHaveBeenCalled();
-      instancesApi.fetchWorkflowInstance.mockClear();
+        //then
+        //Set conditional states.
+        expect(node.instance().state.variables).toEqual(variables);
+        expect(node.instance().state.incidents).toEqual(incidents);
+      });
     });
   });
 
-  describe('Diagram', () => {
-    let mockTree;
-    let mockEvents;
-    let activityId;
-    let flowNodeName;
-    let treeNode;
-    let mockDefinition;
-    let metaDataMock;
+  describe('polling', () => {
     let node;
+    let subscriptions;
+    let dataManager;
 
-    beforeEach(async () => {
-      ({mockEvents, treeNode, mockTree} = testData.diagramDataStructure);
+    beforeEach(() => {
+      dataManager = new DataManager();
 
-      ({
-        activityId,
-        flowNodeName,
-
-        mockDefinition,
-        metaDataMock
-      } = testData.diagramData);
-
-      diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
-        bpmnElements: diagramNodes,
-        definitions: mockDefinition
-      });
-
-      eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
-      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-        mockTree
+      // directly mounted as wrapped components can not be updated.
+      node = mount(
+        <Instance.WrappedComponent
+          match={testData.props.match}
+          {...{dataManager}}
+        />
       );
-      node = mountRenderComponent();
-      await flushPromises();
-      node.update();
+      subscriptions = node.instance().subscriptions;
     });
 
-    it('should receive selectableFlowNodes', () => {
-      expect(node.find(Diagram).prop('selectableFlowNodes')).toEqual([
-        activityId
-      ]);
-    });
+    it('should poll for active instances', () => {
+      //given
+      const {dataManager} = node.instance().props;
 
-    it('should receive overlays', () => {
-      expect(node.find(Diagram).prop('flowNodeStateOverlays')).toEqual([
-        {id: activityId, state: 'ACTIVE'}
-      ]);
-    });
-
-    it('should receive definitions', async () => {
-      diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
-        bpmnElements: diagramNodes,
-        definitions: mockDefinition
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+        response: workflowInstance
       });
 
-      node = mountRenderComponent();
-      await flushPromises();
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
+        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
+        staticContent: workflowInstance
+      });
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
+        response: {
+          LOAD_INSTANCE: workflowInstance,
+          LOAD_VARIABLES: variables,
+          LOAD_INCIDENTS: incidents,
+          LOAD_EVENTS: events,
+          LOAD_INSTANCE_TREE: instanceHistoryTree
+        }
+      });
       node.update();
 
-      expect(node.find(Diagram).prop('definitions')).toEqual(mockDefinition);
+      //when
+      expect(isRunningInstance(node.instance().state.instance)).toBe(true);
+
+      //then
+      expect(dataManager.poll.start).toHaveBeenCalled();
+      expect(dataManager.update).toHaveBeenCalled();
     });
 
-    it('should receive a flow node id and name, when a related activity instance is selected', async () => {
-      // when
-      node
-        .find(Instance)
-        .instance()
-        .handleTreeRowSelection(treeNode);
+    it('should not poll for for completed instances', () => {
+      //given
+      const {dataManager} = node.instance().props;
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+        response: workflowInstanceCompleted
+      });
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
+        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
+        staticContent: workflowInstanceCompleted
+      });
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
+        response: {
+          LOAD_INSTANCE: workflowInstanceCompleted,
+          LOAD_VARIABLES: variables,
+          LOAD_INCIDENTS: incidents,
+          LOAD_EVENTS: events,
+          LOAD_INSTANCE_TREE: instanceHistoryTree
+        }
+      });
+      node.update();
+
+      //then
+      expect(dataManager.poll.start).not.toHaveBeenCalled();
+      expect(dataManager.update).not.toHaveBeenCalled();
+    });
+
+    it('should not poll for canceled instances', () => {
+      //given
+      const {dataManager} = node.instance().props;
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+        response: workflowInstanceCanceled
+      });
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
+        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
+        staticContent: workflowInstanceCompleted
+      });
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
+        response: {
+          LOAD_INSTANCE: workflowInstanceCompleted,
+          LOAD_VARIABLES: variables,
+          LOAD_INCIDENTS: incidents,
+          LOAD_EVENTS: events,
+          LOAD_INSTANCE_TREE: instanceHistoryTree
+        }
+      });
+      node.update();
+
+      expect(dataManager.poll.start).not.toHaveBeenCalled();
+      expect(dataManager.update).not.toHaveBeenCalled();
+    });
+
+    it('should not trigger a new poll while one timer is already running', () => {
+      //given
+      const {dataManager} = node.instance().props;
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+        response: workflowInstance
+      });
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
+        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
+        staticContent: workflowInstance
+      });
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
+        response: {
+          LOAD_INSTANCE: workflowInstance,
+          LOAD_VARIABLES: variables,
+          LOAD_INCIDENTS: incidents,
+          LOAD_EVENTS: events,
+          LOAD_INSTANCE_TREE: instanceHistoryTree
+        }
+      });
+      node.update();
+
+      expect(dataManager.poll.start).toHaveBeenCalled();
+      expect(dataManager.update).toHaveBeenCalled();
+
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+        response: workflowInstanceWithIncident
+      });
+
+      node.update();
+      expect(node.instance().state.isPollActive).toBe(true);
+      // second time a subscription comes in, there is no new timer started
+      // while waiting for the response data which will be more fresh.
+      expect(dataManager.poll.start).toHaveBeenCalledTimes(1);
+    });
+
+    it('should stop any timer when component unmounts', () => {
+      //given
+      const {dataManager} = node.instance().props;
+
+      //when
+      node.unmount();
+
+      //then
+      expect(dataManager.poll.clear).toHaveBeenCalled();
+    });
+  });
+
+  describe('rendering', () => {
+    let node;
+    let subscriptions;
+    let dataManager;
+
+    beforeEach(() => {
+      dataManager = new DataManager();
+
+      // directly mounted as wrapped components can not be updated.
+      node = mount(
+        <Instance.WrappedComponent
+          match={testData.props.match}
+          {...{dataManager}}
+          theme={{theme: 'dark'}}
+        />
+      );
+      subscriptions = node.instance().subscriptions;
+    });
+
+    it('should render properly', () => {
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+        response: workflowInstance
+      });
 
       node.update();
 
-      // then
-      const DiagramNode = node.find(Instance).find(Diagram);
-      expect(DiagramNode.prop('selectedFlowNodeId')).toEqual(activityId);
-      expect(DiagramNode.prop('selectedFlowNodeName')).toEqual(flowNodeName);
+      expect(node.find(Header)).toHaveLength(1);
+      expect(node.find(DiagramPanel)).toHaveLength(1);
+      expect(node.find(InstanceHistory)).toHaveLength(1);
+      expect(node.find(Variables)).toHaveLength(1);
+      expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
     });
 
-    describe('Metadata', () => {
-      it('should pass metadata to Diagram for a selected flow node with single related instance', async () => {
-        // given
-        const node = mountRenderComponent();
-        await flushPromises();
-        node.update();
+    it.skip('should display IncidentsWrapper if there is an incident', () => {
+      // diagramPanel is mocked, that's why it cant be tested here.
 
-        // when
-        node.find('Diagram').prop('onFlowNodeSelection')(activityId);
-        node.update();
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
+        response: workflowInstanceWithIncident
+      });
+      dataManager.publish({
+        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
+        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
+        staticContent: workflowInstanceWithIncident
+      });
+      node.update();
 
-        // then
-        expect(node.find('Diagram').prop('metadata')).toEqual({
-          data: metaDataMock
+      expect(node.find(Header)).toHaveLength(1);
+      expect(node.find(DiagramPanel)).toHaveLength(1);
+      expect(node.find(InstanceHistory)).toHaveLength(1);
+      expect(node.find(Variables)).toHaveLength(1);
+      expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
+    });
+  });
+
+  describe.skip('Tests to refactor', () => {
+    describe('Diagram', () => {
+      let mockTree;
+      let mockEvents;
+      let activityId;
+      let flowNodeName;
+      let treeNode;
+      let mockDefinition;
+      let metaDataMock;
+      let node;
+
+      beforeEach(async () => {
+        ({mockEvents, treeNode, mockTree} = testData.diagramDataStructure);
+
+        ({
+          activityId,
+          flowNodeName,
+
+          mockDefinition,
+          metaDataMock
+        } = testData.diagramData);
+
+        diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+          bpmnElements: diagramNodes,
+          definitions: mockDefinition
         });
-      });
 
-      it("should pass the right metadata if it's a peter case with multiple rows selected", async () => {
-        // given api response
-        eventsApi.fetchEvents = mockResolvedAsyncFn(
-          testData.diagramDataStructure.mockEventsPeterCase
-        );
-        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-          testData.diagramDataStructure.mockTreePeterCase
-        );
-
-        // given
-        const node = mountRenderComponent();
-        await flushPromises();
-        node.update();
-
-        // when
-        node.find('Diagram').prop('onFlowNodeSelection')(activityId);
-        node.update();
-
-        // then
-        expect(node.find('Diagram').prop('metadata')).toEqual(
-          testData.diagramData.expectedMetadata
-        );
-      });
-
-      it("should pass the right metadata if it's a peter case with a single row selected", async () => {
-        // Demo Data
-
-        mockEvents = testData.diagramDataStructure.mockEventsPeterCase;
-        const expectedMetadata = testData.diagramData.metaDataSingelRow;
-        mockTree = testData.diagramDataStructure.mockTreePeterCase;
-
-        // given api response
         eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
         activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
           mockTree
         );
+        node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+      });
 
+      it('should receive selectableFlowNodes', () => {
+        expect(node.find(Diagram).prop('selectableFlowNodes')).toEqual([
+          activityId
+        ]);
+      });
+
+      it('should receive overlays', () => {
+        expect(node.find(Diagram).prop('flowNodeStateOverlays')).toEqual([
+          {id: activityId, state: 'ACTIVE'}
+        ]);
+      });
+
+      it('should receive definitions', async () => {
+        diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+          bpmnElements: diagramNodes,
+          definitions: mockDefinition
+        });
+
+        node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+
+        expect(node.find(Diagram).prop('definitions')).toEqual(mockDefinition);
+      });
+
+      it('should receive a flow node id and name, when a related activity instance is selected', async () => {
+        // when
+        node
+          .find(Instance)
+          .instance()
+          .handleTreeRowSelection(treeNode);
+
+        node.update();
+
+        // then
+        const DiagramNode = node.find(Instance).find(Diagram);
+        expect(DiagramNode.prop('selectedFlowNodeId')).toEqual(activityId);
+        expect(DiagramNode.prop('selectedFlowNodeName')).toEqual(flowNodeName);
+      });
+
+      describe('Metadata', () => {
+        it('should pass metadata to Diagram for a selected flow node with single related instance', async () => {
+          // given
+          const node = mountRenderComponent();
+          await flushPromises();
+          node.update();
+
+          // when
+          node.find('Diagram').prop('onFlowNodeSelection')(activityId);
+          node.update();
+
+          // then
+          expect(node.find('Diagram').prop('metadata')).toEqual({
+            data: metaDataMock
+          });
+        });
+
+        it("should pass the right metadata if it's a peter case with multiple rows selected", async () => {
+          // given api response
+          eventsApi.fetchEvents = mockResolvedAsyncFn(
+            testData.diagramDataStructure.mockEventsPeterCase
+          );
+          activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+            testData.diagramDataStructure.mockTreePeterCase
+          );
+
+          // given
+          const node = mountRenderComponent();
+          await flushPromises();
+          node.update();
+
+          // when
+          node.find('Diagram').prop('onFlowNodeSelection')(activityId);
+          node.update();
+
+          // then
+          expect(node.find('Diagram').prop('metadata')).toEqual(
+            testData.diagramData.expectedMetadata
+          );
+        });
+
+        it("should pass the right metadata if it's a peter case with a single row selected", async () => {
+          // Demo Data
+
+          mockEvents = testData.diagramDataStructure.mockEventsPeterCase;
+          const expectedMetadata = testData.diagramData.metaDataSingelRow;
+          mockTree = testData.diagramDataStructure.mockTreePeterCase;
+
+          // given api response
+          eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+          activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+            mockTree
+          );
+
+          // given
+          const node = mountRenderComponent();
+          await flushPromises();
+          node.update();
+
+          // when
+          node.find(FlowNodeInstancesTree).prop('onTreeRowSelection')({
+            id: testData.diagramData.matchingTreeRowIds[0],
+            activityId: testData.diagramData.activityId
+          });
+          node.update();
+
+          // then
+          expect(node.find('Diagram').prop('metadata')).toEqual(
+            expectedMetadata
+          );
+        });
+
+        // it('should not pass metadata for a flow node with multiple related instances', async () => {});
+      });
+    });
+
+    describe('Instances Tree', () => {
+      it('should receive tree node data', async () => {
         // given
+
+        const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
+
+        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+          instanceHistoryTree
+        );
+
+        diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+          bpmnElements: diagramNodes,
+          definitions: {id: 'Definition1'}
+        });
+
+        const node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+
+        expect(node.find(FlowNodeInstancesTree).prop('node')).toEqual({
+          children: instanceHistoryTree.children,
+          id: workflowInstance.id,
+          type: 'WORKFLOW',
+          state: workflowInstance.state,
+          endDate: workflowInstance.endDate
+        });
+      });
+
+      it('should receive id(s) of selected activity instances', async () => {
+        // given
+        const activityId = testData.diagramData.activityId;
+        const treeRowIds = testData.diagramData.matchingTreeRowIds;
+        const rawTreeData = testData.diagramDataStructure.mockTreePeterCase;
+
+        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+          rawTreeData
+        );
         const node = mountRenderComponent();
         await flushPromises();
         node.update();
 
         // when
-        node.find(FlowNodeInstancesTree).prop('onTreeRowSelection')({
-          id: testData.diagramData.matchingTreeRowIds[0],
-          activityId: testData.diagramData.activityId
-        });
-        node.update();
-
-        // then
-        expect(node.find('Diagram').prop('metadata')).toEqual(expectedMetadata);
-      });
-
-      // it('should not pass metadata for a flow node with multiple related instances', async () => {});
-    });
-  });
-
-  describe('Instances Tree', () => {
-    it('should receive tree node data', async () => {
-      // given
-
-      const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
-
-      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-        instanceHistoryTree
-      );
-
-      diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
-        bpmnElements: diagramNodes,
-        definitions: {id: 'Definition1'}
-      });
-
-      const node = mountRenderComponent();
-      await flushPromises();
-      node.update();
-
-      expect(node.find(FlowNodeInstancesTree).prop('node')).toEqual({
-        children: instanceHistoryTree.children,
-        id: workflowInstance.id,
-        type: 'WORKFLOW',
-        state: workflowInstance.state,
-        endDate: workflowInstance.endDate
-      });
-    });
-
-    it('should receive id(s) of selected activity instances', async () => {
-      // given
-      const activityId = testData.diagramData.activityId;
-      const treeRowIds = testData.diagramData.matchingTreeRowIds;
-      const rawTreeData = testData.diagramDataStructure.mockTreePeterCase;
-
-      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-        rawTreeData
-      );
-      const node = mountRenderComponent();
-      await flushPromises();
-      node.update();
-
-      // when
-      node
-        .find(Instance)
-        .instance()
-        .handleFlowNodeSelection(activityId);
-      node.update();
-
-      // then
-      expect(
         node
           .find(Instance)
-          .find(FlowNodeInstancesTree)
-          .prop('selectedTreeRowIds')
-      ).toEqual(treeRowIds);
-    });
+          .instance()
+          .handleFlowNodeSelection(activityId);
+        node.update();
 
-    it('should receive its initial treeDepth', async () => {
-      // given
-      const node = mountRenderComponent();
-      await flushPromises();
-      node.update();
+        // then
+        expect(
+          node
+            .find(Instance)
+            .find(FlowNodeInstancesTree)
+            .prop('selectedTreeRowIds')
+        ).toEqual(treeRowIds);
+      });
 
-      expect(node.find(FlowNodeInstancesTree).prop('treeDepth')).toBe(1);
-    });
-
-    describe('row selection', () => {
-      let node;
-      let instanceNode;
-
-      beforeEach(async () => {
-        node = mountRenderComponent();
+      it('should receive its initial treeDepth', async () => {
+        // given
+        const node = mountRenderComponent();
         await flushPromises();
         node.update();
 
-        instanceNode = node.find(Instance);
+        expect(node.find(FlowNodeInstancesTree).prop('treeDepth')).toBe(1);
       });
 
-      it('should select the row when not selected already', async () => {
-        // Given
-        const nodeIdOfSelectedRow = 'someNodeId';
+      describe('row selection', () => {
+        let node;
+        let instanceNode;
 
-        instanceNode.setState({
-          selection: {treeRowIds: ['rootElementId'], flowNodeId: null},
-          instance: {id: 'rootElementId', startDate: 'some', state: 'ACTIVE'}
+        beforeEach(async () => {
+          node = mountRenderComponent();
+          await flushPromises();
+          node.update();
+
+          instanceNode = node.find(Instance);
         });
 
-        // When
-        instanceNode.instance().handleTreeRowSelection({
-          id: nodeIdOfSelectedRow,
-          activityId: null
-        });
-        instanceNode.update();
+        it('should select the row when not selected already', async () => {
+          // Given
+          const nodeIdOfSelectedRow = 'someNodeId';
 
-        // Then
-        expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
-          nodeIdOfSelectedRow
-        ]);
+          instanceNode.setState({
+            selection: {treeRowIds: ['rootElementId'], flowNodeId: null},
+            instance: {id: 'rootElementId', startDate: 'some', state: 'ACTIVE'}
+          });
+
+          // When
+          instanceNode.instance().handleTreeRowSelection({
+            id: nodeIdOfSelectedRow,
+            activityId: null
+          });
+          instanceNode.update();
+
+          // Then
+          expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
+            nodeIdOfSelectedRow
+          ]);
+        });
+
+        it('should unselect the row and jump to default when the row selected already', async () => {
+          // Given
+          const nodeIdOfSelectedRow = 'someNodeId';
+          const rootElementId = 'rootElementId';
+
+          instanceNode.setState({
+            selection: {treeRowIds: [nodeIdOfSelectedRow], flowNodeId: null},
+            instance: {id: rootElementId, startDate: 'some', state: 'ACTIVE'}
+          });
+
+          // When
+          instanceNode.instance().handleTreeRowSelection({
+            id: nodeIdOfSelectedRow,
+            activityId: null
+          });
+
+          // Then
+          expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
+            rootElementId
+          ]);
+        });
+
+        it('should deselect selected sibling rows', () => {
+          // Given
+          const nodeIdOfSelectedRow = 'someNodeId';
+
+          instanceNode.setState({
+            selection: {
+              treeRowIds: [
+                nodeIdOfSelectedRow,
+                'someNodeIdFoo',
+                'someNodeIdBar'
+              ],
+              flowNodeId: null
+            },
+            instance: {id: 'rootElementId', startDate: 'some', state: 'ACTIVE'}
+          });
+
+          // When
+          instanceNode.instance().handleTreeRowSelection({
+            id: nodeIdOfSelectedRow,
+            activityId: null
+          });
+
+          // Then
+          expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
+            nodeIdOfSelectedRow
+          ]);
+        });
       });
 
-      it('should unselect the row and jump to default when the row selected already', async () => {
-        // Given
-        const nodeIdOfSelectedRow = 'someNodeId';
-        const rootElementId = 'rootElementId';
+      describe('getNodeWithMetaData', () => {
+        it('should give the name of the instance', async () => {
+          // given
+          const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
 
-        instanceNode.setState({
-          selection: {treeRowIds: [nodeIdOfSelectedRow], flowNodeId: null},
-          instance: {id: rootElementId, startDate: 'some', state: 'ACTIVE'}
+          activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+            instanceHistoryTree
+          );
+
+          diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+            bpmnElements: diagramNodes,
+            definitions: {id: 'Definition1'}
+          });
+
+          const node = shallowRenderComponent();
+          await flushPromises();
+          const nodeWithName = node
+            .instance()
+            .getNodeWithMetaData(node.state('activityInstancesTree'));
+
+          // then
+          expect(nodeWithName.name).toBe(getWorkflowName(workflowInstance));
         });
 
-        // When
-        instanceNode.instance().handleTreeRowSelection({
-          id: nodeIdOfSelectedRow,
-          activityId: null
+        it('should give the name of an activity', async () => {
+          // given
+
+          const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
+
+          activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+            instanceHistoryTree
+          );
+
+          diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
+            bpmnElements: diagramNodes,
+            definitions: {id: 'Definition1'}
+          });
+
+          const node = shallowRenderComponent();
+          await flushPromises();
+          const nodeWithName = node
+            .instance()
+            .getNodeWithMetaData(instanceHistoryTree.children[0]);
+          const expectedName = Object.values(diagramNodes)[0].name;
+
+          // then
+          expect(nodeWithName.name).toBe(expectedName);
         });
-
-        // Then
-        expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
-          rootElementId
-        ]);
-      });
-
-      it('should deselect selected sibling rows', () => {
-        // Given
-        const nodeIdOfSelectedRow = 'someNodeId';
-
-        instanceNode.setState({
-          selection: {
-            treeRowIds: [nodeIdOfSelectedRow, 'someNodeIdFoo', 'someNodeIdBar'],
-            flowNodeId: null
-          },
-          instance: {id: 'rootElementId', startDate: 'some', state: 'ACTIVE'}
-        });
-
-        // When
-        instanceNode.instance().handleTreeRowSelection({
-          id: nodeIdOfSelectedRow,
-          activityId: null
-        });
-
-        // Then
-        expect(instanceNode.instance().state.selection.treeRowIds).toEqual([
-          nodeIdOfSelectedRow
-        ]);
       });
     });
 
-    describe('getNodeWithMetaData', () => {
-      it('should give the name of the instance', async () => {
+    describe('Operations', () => {
+      it('should show a spinner on the Instance on incident operation', async () => {
         // given
-        const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
-
-        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-          instanceHistoryTree
+        instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+          testData.fetch.onPageLoad.workflowInstanceWithIncident
         );
 
-        diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
-          bpmnElements: diagramNodes,
-          definitions: {id: 'Definition1'}
-        });
-
-        const node = shallowRenderComponent();
+        // when
+        const node = mountRenderComponent();
         await flushPromises();
-        const nodeWithName = node
-          .instance()
-          .getNodeWithMetaData(node.state('activityInstancesTree'));
+        node.update();
 
-        // then
-        expect(nodeWithName.name).toBe(getWorkflowName(workflowInstance));
+        const IncidentsWrapper = node.find('IncidentsWrapper');
+        const onIncidentOperation = IncidentsWrapper.props()
+          .onIncidentOperation;
+
+        onIncidentOperation();
+
+        await flushPromises();
+        node.update();
+
+        expect(node.find(DiagramPanel).props().forceInstanceSpinner).toBe(true);
       });
-
-      it('should give the name of an activity', async () => {
+      it('should force spinners for incidents on Instance operation', async () => {
         // given
-
-        const {instanceHistoryTree, diagramNodes} = testData.fetch.onPageLoad;
-
-        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-          instanceHistoryTree
+        instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+          testData.fetch.onPageLoad.workflowInstanceWithIncident
         );
 
-        diagramUtils.parseDiagramXML = mockResolvedAsyncFn({
-          bpmnElements: diagramNodes,
-          definitions: {id: 'Definition1'}
-        });
-
-        const node = shallowRenderComponent();
+        // when
+        const node = mountRenderComponent();
         await flushPromises();
-        const nodeWithName = node
+        node.update();
+
+        const DiagramPanelNode = node.find(DiagramPanel);
+        const onInstanceOperation = DiagramPanelNode.props()
+          .onInstanceOperation;
+
+        onInstanceOperation();
+
+        await flushPromises();
+        node.update();
+
+        expect(node.find('IncidentsWrapper').props().forceSpinner).toEqual(
+          true
+        );
+      });
+    });
+
+    describe('Incidents selection', async () => {
+      let activityId, treeRowIds;
+
+      beforeEach(() => {
+        const {mockTreePeterCase} = testData.diagramDataStructure;
+
+        treeRowIds = testData.diagramData.matchingTreeRowIds;
+        activityId = testData.diagramData.activityId;
+
+        instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
+          testData.fetch.onPageLoad.workflowInstanceWithIncident
+        );
+
+        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+          mockTreePeterCase
+        );
+      });
+
+      it('should select incidents when making a selection in tree', async () => {
+        // given
+
+        const node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+
+        // when
+        node
+          .find(Instance)
           .instance()
-          .getNodeWithMetaData(instanceHistoryTree.children[0]);
-        const expectedName = Object.values(diagramNodes)[0].name;
+          .handleFlowNodeSelection(activityId);
+        node.update();
 
         // then
-        expect(nodeWithName.name).toBe(expectedName);
+        expect(
+          node.find('IncidentsWrapper').prop('selectedFlowNodeInstanceIds')
+        ).toEqual(treeRowIds);
+      });
+
+      it('should select incidents when selecting a flow node in the diagra', async () => {
+        const node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+
+        // when
+        node
+          .find(Instance)
+          .instance()
+          .handleFlowNodeSelection(activityId);
+        node.update();
+
+        // then
+        expect(
+          node.find('IncidentsWrapper').prop('selectedFlowNodeInstanceIds')
+        ).toEqual(treeRowIds);
       });
     });
-  });
 
-  describe('Operations', () => {
-    it('should show a spinner on the Instance on incident operation', async () => {
-      // given
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        testData.fetch.onPageLoad.workflowInstanceWithIncident
-      );
+    describe('Variables', () => {
+      it('should fetch variables when single row is selected', async () => {
+        // given
+        const activityId = testData.diagramData.activityId;
+        const treeRowIds = testData.diagramData.matchingTreeRowIds;
+        const mockEvents = testData.diagramDataStructure.mockEventsPeterCase;
+        const mockTree = testData.diagramDataStructure.mockTreePeterCase;
 
-      // when
-      const node = mountRenderComponent();
-      await flushPromises();
-      node.update();
+        eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
+        activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
+          mockTree
+        );
+        const node = mountRenderComponent();
+        await flushPromises();
+        node.update();
+        instancesApi.fetchVariables.mockClear();
 
-      const IncidentsWrapper = node.find('IncidentsWrapper');
-      const onIncidentOperation = IncidentsWrapper.props().onIncidentOperation;
+        // when
+        node.find(FlowNodeInstancesTree).prop('onTreeRowSelection')({
+          id: treeRowIds[0],
+          activityId
+        });
+        node.update();
 
-      onIncidentOperation();
-
-      await flushPromises();
-      node.update();
-
-      expect(node.find(DiagramPanel).props().forceInstanceSpinner).toBe(true);
-    });
-    it('should force spinners for incidents on Instance operation', async () => {
-      // given
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        testData.fetch.onPageLoad.workflowInstanceWithIncident
-      );
-
-      // when
-      const node = mountRenderComponent();
-      await flushPromises();
-      node.update();
-
-      const DiagramPanelNode = node.find(DiagramPanel);
-      const onInstanceOperation = DiagramPanelNode.props().onInstanceOperation;
-
-      onInstanceOperation();
-
-      await flushPromises();
-      node.update();
-
-      expect(node.find('IncidentsWrapper').props().forceSpinner).toEqual(true);
-    });
-  });
-
-  describe('Incidents selection', async () => {
-    let activityId, treeRowIds;
-
-    beforeEach(() => {
-      const {mockTreePeterCase} = testData.diagramDataStructure;
-
-      treeRowIds = testData.diagramData.matchingTreeRowIds;
-      activityId = testData.diagramData.activityId;
-
-      instancesApi.fetchWorkflowInstance = mockResolvedAsyncFn(
-        testData.fetch.onPageLoad.workflowInstanceWithIncident
-      );
-
-      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-        mockTreePeterCase
-      );
-    });
-
-    it('should select incidents when making a selection in tree', async () => {
-      // given
-
-      const node = mountRenderComponent();
-      await flushPromises();
-      node.update();
-
-      // when
-      node
-        .find(Instance)
-        .instance()
-        .handleFlowNodeSelection(activityId);
-      node.update();
-
-      // then
-      expect(
-        node.find('IncidentsWrapper').prop('selectedFlowNodeInstanceIds')
-      ).toEqual(treeRowIds);
-    });
-
-    it('should select incidents when selecting a flow node in the diagra', async () => {
-      const node = mountRenderComponent();
-      await flushPromises();
-      node.update();
-
-      // when
-      node
-        .find(Instance)
-        .instance()
-        .handleFlowNodeSelection(activityId);
-      node.update();
-
-      // then
-      expect(
-        node.find('IncidentsWrapper').prop('selectedFlowNodeInstanceIds')
-      ).toEqual(treeRowIds);
-    });
-  });
-
-  describe('Variables', () => {
-    it('should fetch variables when single row is selected', async () => {
-      // given
-      const activityId = testData.diagramData.activityId;
-      const treeRowIds = testData.diagramData.matchingTreeRowIds;
-      const mockEvents = testData.diagramDataStructure.mockEventsPeterCase;
-      const mockTree = testData.diagramDataStructure.mockTreePeterCase;
-
-      eventsApi.fetchEvents = mockResolvedAsyncFn(mockEvents);
-      activityInstanceApi.fetchActivityInstancesTree = mockResolvedAsyncFn(
-        mockTree
-      );
-      const node = mountRenderComponent();
-      await flushPromises();
-      node.update();
-      instancesApi.fetchVariables.mockClear();
-
-      // when
-      node.find(FlowNodeInstancesTree).prop('onTreeRowSelection')({
-        id: treeRowIds[0],
-        activityId
+        // then
+        expect(instancesApi.fetchVariables).toBeCalledWith(
+          workflowInstance.id,
+          treeRowIds[0]
+        );
       });
-      node.update();
-
-      // then
-      expect(instancesApi.fetchVariables).toBeCalledWith(
-        workflowInstance.id,
-        treeRowIds[0]
-      );
     });
   });
 });

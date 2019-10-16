@@ -10,7 +10,6 @@ import {
   FLOWNODE_TYPE_HANDLE,
   MULTI_INSTANCE_TYPE
 } from 'modules/constants';
-import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 import * as api from 'modules/api/instances';
 import {isFlowNode} from 'modules/utils/flowNodes/flowNodes';
 
@@ -122,8 +121,8 @@ export function getFlowNodeStateOverlays(activityIdToActivityInstanceMap) {
   );
 }
 
-export function isRunningInstance(state) {
-  return state === STATE.ACTIVE || state === STATE.INCIDENT;
+export function isRunningInstance(instance) {
+  return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
 }
 
 /**
@@ -161,23 +160,6 @@ export function getActivityIdToActivityInstancesMap(
   );
 }
 
-export async function fetchActivityInstancesTreeData(instance) {
-  const activitiesInstancesTree = await fetchActivityInstancesTree(instance.id);
-
-  return {
-    activityInstancesTree: {
-      ...activitiesInstancesTree,
-      id: instance.id,
-      type: 'WORKFLOW',
-      state: instance.state,
-      endDate: instance.endDate
-    },
-    activityIdToActivityInstanceMap: getActivityIdToActivityInstancesMap(
-      activitiesInstancesTree
-    )
-  };
-}
-
 export async function fetchIncidents(instance) {
   return instance.state === 'INCIDENT'
     ? await api.fetchWorkflowInstanceIncidents(instance.id)
@@ -186,6 +168,14 @@ export async function fetchIncidents(instance) {
 
 export async function fetchVariables({id}, {treeRowIds}) {
   return treeRowIds.length === 1
-    ? await api.fetchVariables(id, treeRowIds[0])
+    ? await api.fetchVariables({instanceId: id, scopeId: treeRowIds[0]})
     : null;
+}
+
+// Subscription Handlers;
+
+export function storeResponse({response, state}, callback) {
+  if (state === 'LOADED') {
+    response && callback(response);
+  }
 }

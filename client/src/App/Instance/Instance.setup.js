@@ -12,6 +12,7 @@ import {
   createDiagramNode,
   createRawTreeNode,
   createIncident,
+  createVariables,
   createEvent,
   createEvents
 } from 'modules/testUtils';
@@ -58,7 +59,7 @@ const createDiagramNodes = () => {
   };
 };
 
-const createIncidents = () => {
+const mockIncidents = () => {
   return {
     count: 1,
     incidents: [
@@ -218,8 +219,9 @@ export const testData = {
       diagramNodes: createDiagramNodes(),
       instanceHistoryTree: createRawTree(),
       events: createEvents(createRawTree().children),
-      incidents: createIncidents(),
-      noIncidents
+      incidents: mockIncidents(),
+      noIncidents,
+      variables: createVariables()
     }
   },
   props: {

@@ -15,8 +15,8 @@ export async function fetchWorkflowInstance(id) {
   return await response.json();
 }
 
-export async function fetchWorkflowInstanceIncidents(id) {
-  const response = await get(`${URL}/${id}/incidents`);
+export async function fetchWorkflowInstanceIncidents(instance) {
+  const response = await get(`${URL}/${instance.id}/incidents`);
   return await response.json();
 }
 
@@ -113,7 +113,8 @@ export async function applyOperation(instanceId, payload) {
   return await response.json();
 }
 
-export async function fetchVariables(instanceId, scopeId) {
+export async function fetchVariables({instanceId, scopeId}) {
+  // TODO: API CHANGED - tests will fail
   const response = await get(
     `${URL}/${instanceId}/variables?scopeId=${scopeId}`
   );
