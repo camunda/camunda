@@ -78,7 +78,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2421cb43763eda6dc81d293a84172e145b800cd0832bab7d725915bd9d50973c"
+  digest = "1:614fddcc12a55031363ee3fe8e8176dd78443165f86471ee6ac4389286527762"
   name = "github.com/docker/docker"
   packages = [
     "api",
@@ -109,7 +109,7 @@
     "pkg/system",
   ]
   pruneopts = "UT"
-  revision = "d56adcf0ece542a30fad0e54ea9c1ca3b7e6915c"
+  revision = "f5bb374a0c6260721ac551b232e8eac02b7d2674"
 
 [[projects]]
   digest = "1:811c86996b1ca46729bad2724d4499014c4b9effd05ef8c71b852aad90deb0ce"
