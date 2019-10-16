@@ -11,20 +11,20 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 
 public class AbstractMultiEngineIT {
@@ -35,31 +35,36 @@ public class AbstractMultiEngineIT {
   public static final String DECISION_KEY_1 = "TestDecision1";
   public static final String DECISION_KEY_2 = "TestDecision2";
   protected final String SECOND_ENGINE_ALIAS = "secondTestEngine";
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  protected EngineIntegrationRule defaultEngineRule = new EngineIntegrationRule();
-  protected EngineIntegrationRule secondEngineRule = new EngineIntegrationRule("anotherEngine");
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule defaultEngineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EngineIntegrationExtensionRule secondaryEngineIntegrationExtensionRule = new EngineIntegrationExtensionRule("anotherEngine");
+  @RegisterExtension
+  @Order(4)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+
   private ConfigurationService configurationService;
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(defaultEngineRule).around(secondEngineRule).around(embeddedOptimizeRule);
-
-  @Before
+  @BeforeEach
   public void init() {
-    configurationService = embeddedOptimizeRule.getConfigurationService();
+    configurationService = embeddedOptimizeExtensionRule.getConfigurationService();
   }
 
-  @After
+  @AfterEach
   public void reset() {
     configurationService.getConfiguredEngines().remove(SECOND_ENGINE_ALIAS);
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
   protected void finishAllUserTasksForAllEngines() {
-    defaultEngineRule.finishAllRunningUserTasks();
-    secondEngineRule.finishAllRunningUserTasks();
+    defaultEngineIntegrationExtensionRule.finishAllRunningUserTasks();
+    secondaryEngineIntegrationExtensionRule.finishAllRunningUserTasks();
   }
 
 
@@ -81,8 +86,8 @@ public class AbstractMultiEngineIT {
         throw new OptimizeIntegrationTestException("Unsupported resourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
   }
 
   protected void deployAndStartDecisionDefinitionForAllEngines() {
@@ -90,8 +95,8 @@ public class AbstractMultiEngineIT {
   }
 
   protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2) {
-    defaultEngineRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId1);
-    secondEngineRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_2), tenantId2);
+    defaultEngineIntegrationExtensionRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId1);
+    secondaryEngineIntegrationExtensionRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_2), tenantId2);
   }
 
   protected void deployAndStartSimpleProcessDefinitionForAllEngines() {
@@ -114,7 +119,7 @@ public class AbstractMultiEngineIT {
   protected void deployAndStartProcessOnSecondEngine(final String key2, final String tenantId) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aStringVariable", "foo");
-    secondEngineRule.deployAndStartProcessWithVariables(
+    secondaryEngineIntegrationExtensionRule.deployAndStartProcessWithVariables(
       Bpmn.createExecutableProcess(key2)
         .startEvent()
         .endEvent()
@@ -127,7 +132,7 @@ public class AbstractMultiEngineIT {
   protected void deployAndStartProcessOnDefaultEngine(final String key1, final String tenantId) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aStringVariable", "foo");
-    defaultEngineRule.deployAndStartProcessWithVariables(
+    defaultEngineIntegrationExtensionRule.deployAndStartProcessWithVariables(
       Bpmn.createExecutableProcess(key1)
         .startEvent()
         .endEvent()
@@ -138,14 +143,14 @@ public class AbstractMultiEngineIT {
   }
 
   protected void deployAndStartUserTaskProcessForAllEngines() {
-    defaultEngineRule.deployAndStartProcess(
+    defaultEngineIntegrationExtensionRule.deployAndStartProcess(
       Bpmn.createExecutableProcess(PROCESS_KEY_1)
         .startEvent()
         .userTask()
         .endEvent()
         .done()
     );
-    secondEngineRule.deployAndStartProcess(
+    secondaryEngineIntegrationExtensionRule.deployAndStartProcess(
       Bpmn.createExecutableProcess(PROCESS_KEY_2)
         .startEvent()
         .userTask()
@@ -155,12 +160,12 @@ public class AbstractMultiEngineIT {
   }
 
   protected void addSecondEngineToConfiguration() {
-    addEngineToConfiguration(secondEngineRule.getEngineName());
-    embeddedOptimizeRule.reloadConfiguration();
+    addEngineToConfiguration(secondaryEngineIntegrationExtensionRule.getEngineName());
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
   protected void addSecureSecondEngineToConfiguration() {
-    addEngineToConfiguration(secondEngineRule.getEngineName(), SECURE_REST_ENDPOINT, true, "admin", "admin");
+    addEngineToConfiguration(secondaryEngineIntegrationExtensionRule.getEngineName(), SECURE_REST_ENDPOINT, true, "admin", "admin");
   }
 
   protected void addEngineToConfiguration(String engineName) {
@@ -169,7 +174,7 @@ public class AbstractMultiEngineIT {
 
   protected void addNonExistingSecondEngineToConfiguration() {
     addEngineToConfiguration("notExistingEngine", "http://localhost:9999/engine-rest", false, "", "");
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
   protected void addEngineToConfiguration(String engineName, String restEndpoint, boolean withAuthentication,
@@ -200,14 +205,14 @@ public class AbstractMultiEngineIT {
   }
 
   protected void setDefaultEngineDefaultTenant(final DefaultTenant defaultTenant) {
-    embeddedOptimizeRule.getConfigurationService()
+    embeddedOptimizeExtensionRule.getConfigurationService()
       .getConfiguredEngines()
       .get(DEFAULT_ENGINE_ALIAS)
       .setDefaultTenant(defaultTenant);
   }
 
   protected void setSecondEngineDefaultTenant(final DefaultTenant defaultTenant) {
-    embeddedOptimizeRule.getConfigurationService()
+    embeddedOptimizeExtensionRule.getConfigurationService()
       .getConfiguredEngines()
       .get(SECOND_ENGINE_ALIAS)
       .setDefaultTenant(defaultTenant);

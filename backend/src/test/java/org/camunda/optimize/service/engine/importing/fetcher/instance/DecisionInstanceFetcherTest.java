@@ -12,12 +12,12 @@ import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.EngineConstantsUtil;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Invocation;
@@ -32,7 +32,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DecisionInstanceFetcherTest {
 
   private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
@@ -50,7 +50,7 @@ public class DecisionInstanceFetcherTest {
 
   private DecisionInstanceFetcher underTest;
 
-  @Before
+  @BeforeEach
   public void before() {
     underTest = new DecisionInstanceFetcher(engineContext);
     underTest.setBackoffCalculator(backoffCalculator);

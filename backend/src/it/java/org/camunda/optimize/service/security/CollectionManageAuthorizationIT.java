@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -16,8 +14,9 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -26,13 +25,12 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(JUnitParamsRunner.class)
 public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   private static final String USER_ID_JOHN = "John";
 
-  @Test
-  @Parameters(method = MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateNameByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -51,8 +49,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = NON_MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityIsRejectedToUpdateNameByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -77,7 +75,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = createNewCollectionAsDefaultUser();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
@@ -106,8 +104,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(403));
   }
 
-  @Test
-  @Parameters(method = MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanCreateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -128,8 +126,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  @Parameters(method = NON_MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToCreateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -157,7 +155,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
@@ -171,8 +169,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  @Parameters(method = MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -192,8 +190,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = NON_MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -222,7 +220,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -233,8 +231,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -254,8 +252,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = NON_MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -284,7 +282,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -295,8 +293,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanCreateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -314,8 +312,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  @Parameters(method = NON_MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToCreateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -340,7 +338,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -351,8 +349,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  @Parameters(method = MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -371,8 +369,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = NON_MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -398,7 +396,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -409,8 +407,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -429,8 +427,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = NON_MANAGER_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = createNewCollectionAsDefaultUser();
@@ -457,7 +455,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -478,7 +476,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   private String addScopeToCollectionAsDefaultUser(final String collectionId,
                                                    final CollectionScopeEntryDto scopeEntryDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildAddScopeEntryToCollectionRequest(collectionId, scopeEntryDto)
       .execute(IdDto.class, 200)

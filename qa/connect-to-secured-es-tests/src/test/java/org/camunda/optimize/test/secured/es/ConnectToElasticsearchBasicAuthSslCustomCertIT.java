@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.test.secured.es;
 
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 
 public class ConnectToElasticsearchBasicAuthSslCustomCertIT extends AbstractConnectToElasticsearchIT {
   @Override
-  protected EmbeddedOptimizeRule getEmbeddedOptimizeRule() {
-    return new EmbeddedOptimizeRule("classpath:embeddedOptimizeContext-basic-auth-ssl-custom-cert.xml");
+  protected EmbeddedOptimizeExtensionRule getEmbeddedOptimizeExtensionRule() {
+    return new EmbeddedOptimizeExtensionRule("classpath:embeddedOptimizeContext-basic-auth-ssl-custom-cert.xml");
   }
 }

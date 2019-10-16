@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,20 +27,20 @@ public class AuthorizationClient {
   public static final String KERMIT_USER = "kermit";
   public static final String GROUP_ID = "kermitGroup";
 
-  private final EngineIntegrationRule engineRule;
+  private final EngineIntegrationExtensionRule engineIntegrationExtensionRule;
 
   public void addKermitUserAndGrantAccessToOptimize() {
     addUserAndGrantOptimizeAccess(KERMIT_USER);
   }
 
   public void addUserAndGrantOptimizeAccess(final String userId) {
-    engineRule.addUser(userId, userId);
-    engineRule.grantUserOptimizeAccess(userId);
+    engineIntegrationExtensionRule.addUser(userId, userId);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(userId);
   }
 
   public void createKermitGroupAndAddKermitToThatGroup() {
-    engineRule.createGroup(GROUP_ID);
-    engineRule.addUserToGroup(KERMIT_USER, GROUP_ID);
+    engineIntegrationExtensionRule.createGroup(GROUP_ID);
+    engineIntegrationExtensionRule.addUserToGroup(KERMIT_USER, GROUP_ID);
   }
 
   public void addGlobalAuthorizationForResource(final int resourceType) {
@@ -50,7 +50,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
     authorizationDto.setUserId(ALL_RESOURCES_RESOURCE_ID);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
   public void grantAllResourceAuthorizationsForKermitGroup(final int resourceType) {
@@ -82,7 +82,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId(groupId);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
   public void revokeAllDefinitionAuthorizationsForGroup(final String groupId, final int definitionResourceType) {
@@ -98,7 +98,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setGroupId(groupId);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
   public void grantAllResourceAuthorizationsForKermit(final int resourceType) {
@@ -134,7 +134,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
   public void revokeAllResourceAuthorizationsForKermit(final int resourceType) {
@@ -158,7 +158,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(definitionKey);
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
 }

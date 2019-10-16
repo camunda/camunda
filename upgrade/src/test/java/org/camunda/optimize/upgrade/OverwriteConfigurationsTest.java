@@ -7,9 +7,9 @@ package org.camunda.optimize.upgrade;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
@@ -18,12 +18,12 @@ import static org.hamcrest.core.Is.is;
 
 public class OverwriteConfigurationsTest {
 
-  @Before
+  @BeforeEach
   public void setUp() throws Exception {
     deleteEnvConfig();
   }
 
-  @After
+  @AfterEach
   public void cleanUp() throws Exception {
     deleteEnvConfig();
   }

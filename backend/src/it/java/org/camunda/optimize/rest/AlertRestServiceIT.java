@@ -15,12 +15,11 @@ import org.junit.Test;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 
 public class AlertRestServiceIT extends AbstractAlertIT {
 
@@ -29,7 +28,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void createNewAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildCreateAlertRequest(null)
@@ -42,7 +41,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void cantCreateWithoutReport() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateAlertRequest(new AlertCreationDto())
       .execute();
@@ -60,7 +59,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     alert.setReportId(TEST);
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateAlertRequest(id, alert)
       .execute();
@@ -76,7 +75,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     AlertCreationDto alert = createSimpleAlert(reportId);
 
     // when
-    String id = embeddedOptimizeRule
+    String id = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateAlertRequest(alert)
       .execute(String.class, 200);
@@ -93,7 +92,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     alert.setThreshold(Integer.MAX_VALUE);
 
     // when
-    String id = embeddedOptimizeRule
+    String id = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateAlertRequest(alert)
       .execute(String.class, 200);
@@ -105,7 +104,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void updateAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildUpdateAlertRequest("1", new AlertCreationDto())
@@ -121,7 +120,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String reportId = createNumberReport();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateAlertRequest("nonExistingId", createSimpleAlert(reportId))
       .execute();
@@ -140,7 +139,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateAlertRequest(id, alert)
       .execute();
@@ -152,7 +151,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void getStoredAlertsWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetAllAlertsRequest()
@@ -180,7 +179,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void deleteAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDeleteAlertRequest("1124")
@@ -198,7 +197,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String id = addAlertToOptimize(alert);
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteAlertRequest(id)
       .execute();
@@ -211,7 +210,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void deleteNonExistingAlert() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteAlertRequest("nonExistingId")
       .execute();
@@ -227,7 +226,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   private String addAlertToOptimizeAsUser(final AlertCreationDto creationDto,
                                           final String user,
                                           final String password) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateAlertRequest(creationDto)
@@ -236,7 +235,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
       .executeAndReturnList(AlertDefinitionDto.class, 200);

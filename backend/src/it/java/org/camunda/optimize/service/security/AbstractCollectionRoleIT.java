@@ -16,11 +16,11 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 
@@ -28,34 +28,29 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public abstract class AbstractCollectionRoleIT {
-  protected EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  protected ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  protected EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-
-  protected static final String ACCESS_ONLY_ROLES = "accessOnlyRoles";
+  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
 
   protected static RoleType[] accessOnlyRoles() {
     return new RoleType[]{RoleType.VIEWER};
   }
 
-  protected static final String EDIT_ROLES = "editRoles";
-
   protected static RoleType[] editRoles() {
     return new RoleType[]{RoleType.EDITOR, RoleType.MANAGER};
   }
 
-  protected static final String NON_MANAGER_ROLES = "nonManagerRoles";
-
   private static RoleType[] nonManagerRoles() {
     return new RoleType[]{RoleType.VIEWER, RoleType.EDITOR};
   }
-
-  protected static final String MANAGER_ROLES = "managerRoles";
 
   private static RoleType[] managerRoles() {
     return new RoleType[]{RoleType.MANAGER};
@@ -68,14 +63,6 @@ public abstract class AbstractCollectionRoleIT {
       .flatMap(roleType -> Arrays.stream(IdentityType.values())
         .map(identityType -> new IdentityAndRole(getDefaultIdentityDtoForType(identityType), roleType))
       )
-      .toArray(IdentityAndRole[]::new);
-  }
-
-  protected static final String ACCESS_USER_ROLES = "accessUserRoles";
-
-  protected static IdentityAndRole[] accessUserRoles() {
-    return Arrays.stream(RoleType.values())
-      .map(roleType -> new IdentityAndRole(getDefaultIdentityDtoForType(IdentityType.USER), roleType))
       .toArray(IdentityAndRole[]::new);
   }
 
@@ -144,7 +131,7 @@ public abstract class AbstractCollectionRoleIT {
   }
 
   protected OptimizeRequestExecutor getOptimizeRequestExecutorWithKermitAuthentication() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER);
   }
@@ -160,7 +147,7 @@ public abstract class AbstractCollectionRoleIT {
   }
 
   protected String addRoleToCollectionAsDefaultUser(final String collectionId, final CollectionRoleDto roleDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200)
@@ -168,7 +155,7 @@ public abstract class AbstractCollectionRoleIT {
   }
 
   protected String createNewCollectionAsDefaultUser() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)

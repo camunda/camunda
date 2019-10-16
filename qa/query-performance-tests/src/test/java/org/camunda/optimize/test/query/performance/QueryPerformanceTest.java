@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.test.query.performance;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.apache.commons.collections4.ListUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
@@ -24,20 +22,20 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +53,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Stream;
 
 import static java.time.temporal.ChronoUnit.YEARS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
@@ -62,7 +61,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
-@RunWith(JUnitParamsRunner.class)
 public class QueryPerformanceTest {
 
   private static final Logger logger = LoggerFactory.getLogger(QueryPerformanceTest.class);
@@ -72,19 +70,21 @@ public class QueryPerformanceTest {
   public static final String DOUBLE_VAR = "doubleVar";
   public static final String VARIABLE_ID = "clause1";
 
-  private static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  private static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private static EngineIntegrationRule engineRule = new EngineIntegrationRule("default", false);
-
-  @ClassRule
-  public static RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule).around(engineRule);
+  @RegisterExtension
+  @Order(1)
+  public static ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public static EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public static EngineIntegrationExtensionRule engineRule = new EngineIntegrationExtensionRule("default", false);
 
   private static String authenticationToken;
 
-  @BeforeClass
+  @BeforeAll
   public static void init() throws TimeoutException, InterruptedException {
-    elasticSearchRule.disableCleanup();
+    elasticSearchIntegrationTestExtensionRule.disableCleanup();
     // given
     importEngineData();
 
@@ -92,7 +92,7 @@ public class QueryPerformanceTest {
     // will time out and the requests will fail with a 401.
     // Therefore, we need to make sure that renew the auth header
     // after the import and before we start the tests
-    authenticationToken = embeddedOptimizeRule.getNewAuthenticationToken();
+    authenticationToken = embeddedOptimizeExtensionRule.getNewAuthenticationToken();
   }
 
   private static List<SingleReportDataDto> createAllPossibleReports() {
@@ -216,7 +216,7 @@ public class QueryPerformanceTest {
     logger.info("Start importing engine data...");
     ExecutorService executor = Executors.newSingleThreadExecutor();
     executor.execute(
-      () -> embeddedOptimizeRule.importAllEngineData()
+      () -> embeddedOptimizeExtensionRule.importAllEngineData()
     );
 
     executor.shutdown();
@@ -225,7 +225,7 @@ public class QueryPerformanceTest {
     if (!wasAbleToFinishImportInTime) {
       throw new TimeoutException("Import was not able to finish import in " + 2 + " hours!");
     }
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
     logger.info("Finished importing engine data...");
   }
 
@@ -235,8 +235,8 @@ public class QueryPerformanceTest {
     return Long.parseLong(timeoutAsString);
   }
 
-  @Test
-  @Parameters(source = ReportDataProvider.class)
+  @ParameterizedTest
+  @MethodSource("getPossibleReports")
   public void testQueryPerformance(SingleReportDataDto report) {
     // given the report to evaluate
 
@@ -256,7 +256,7 @@ public class QueryPerformanceTest {
   private long evaluateReportAndReturnEvaluationTime(SingleReportDataDto report) {
     logger.info("Evaluating report {}", report);
     Instant start = Instant.now();
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(report)
       .withGivenAuthToken(authenticationToken)
@@ -269,10 +269,7 @@ public class QueryPerformanceTest {
     return timeElapsed;
   }
 
-  public static class ReportDataProvider {
-    public static Object[] provideReportData() {
-      List<SingleReportDataDto> allReports = createAllPossibleReports();
-      return allReports.toArray();
-    }
+  private Stream<SingleReportDataDto> getPossibleReports() {
+    return createAllPossibleReports().stream();
   }
 }

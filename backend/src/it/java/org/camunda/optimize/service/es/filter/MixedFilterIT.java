@@ -15,13 +15,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -34,19 +34,19 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class MixedFilterIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   private final static String USER_TASK_ACTIVITY_ID = "userTask";
-
-  @Rule
-  public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-
 
   @Test
   public void applyAllPossibleFilters() throws Exception {
@@ -56,27 +56,27 @@ public class MixedFilterIT {
     variables.put("var", "value");
 
       // this is the process instance that should be filtered
-    ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
     final String expectedInstanceId = instanceEngineDto.getId();
-    engineRule.finishAllRunningUserTasks(expectedInstanceId);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(expectedInstanceId);
 
       // wrong not executed flow node
-    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
 
     // wrong variable
     variables.put("var", "anotherValue");
-    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
-    engineRule.finishAllRunningUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
 
     // wrong date
     Thread.sleep(1000L);
     variables.put("var", "value");
-    instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
-    engineRule.finishAllRunningUserTasks(instanceEngineDto.getId());
-    OffsetDateTime start = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
-    OffsetDateTime end = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
+    OffsetDateTime start = engineIntegrationExtensionRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
+    OffsetDateTime end = engineIntegrationExtensionRule.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filterList = ProcessFilterBuilder
@@ -125,7 +125,7 @@ public class MixedFilterIT {
   }
 
   private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReport(final ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -139,7 +139,7 @@ public class MixedFilterIT {
       .userTask(USER_TASK_ACTIVITY_ID)
       .endEvent()
       .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 }

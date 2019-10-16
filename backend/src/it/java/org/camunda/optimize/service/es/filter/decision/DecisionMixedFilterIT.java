@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Re
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 
@@ -42,7 +42,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     final String expectedCategory = "Misc";
     final String expectedAuditOutput = "false";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition(
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition(
       "dmn/invoiceBusinessDecision_withDate.xml"
     );
     startDecisionInstanceWithInputVars(
@@ -54,8 +54,8 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(expectedAmountValue, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

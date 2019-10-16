@@ -10,9 +10,9 @@ import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.testplugin.pluginloading.SharedTestPluginVariableDto;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,9 +34,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class PluginLoadingIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   private ConfigurationService configurationService;
   private ImportAdapterProvider pluginProvider;
@@ -45,17 +45,17 @@ public class PluginLoadingIT {
 
   @Before
   public void setup() {
-    configurationService = embeddedOptimizeRule.getConfigurationService();
-    pluginProvider = embeddedOptimizeRule.getApplicationContext().getBean(ImportAdapterProvider.class);
+    configurationService = embeddedOptimizeExtensionRule.getConfigurationService();
+    pluginProvider = embeddedOptimizeExtensionRule.getApplicationContext().getBean(ImportAdapterProvider.class);
   }
 
   public TemporaryFolder tempFolderRule = new TemporaryFolder();
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule)
+    .outerRule(elasticSearchIntegrationTestExtensionRule)
+    .around(engineIntegrationExtensionRule)
+    .around(embeddedOptimizeExtensionRule)
     .around(expectedExceptionRule)
     .around(tempFolderRule);
 
@@ -70,7 +70,7 @@ public class PluginLoadingIT {
     assertThat(optimizeLoadedTest.getId(), is("optimize-class"));
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -107,7 +107,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -129,7 +129,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -151,7 +151,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
   @Test(expected = RuntimeException.class)
@@ -162,7 +162,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
   @Test
@@ -171,7 +171,7 @@ public class PluginLoadingIT {
     configurationService.setPluginDirectory("nonexistingDirectory");
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -185,7 +185,7 @@ public class PluginLoadingIT {
     configurationService.setPluginDirectory(newEmptyPluginDirectory.getAbsolutePath());
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -200,14 +200,14 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // then
     assertThat(pluginProvider.getPlugins().size(), is(0));
 
     // when
     configurationService.setPluginDirectory("target/testPluginsValid");
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // then
     assertThat(pluginProvider.getPlugins().size(), is(1));
@@ -224,7 +224,7 @@ public class PluginLoadingIT {
     expectedExceptionRule.expectMessage(buildUnsupportedPluginVersionMessage("invalid_version", Version.VERSION));
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
   @Test
@@ -237,7 +237,7 @@ public class PluginLoadingIT {
     expectedExceptionRule.expectMessage(buildMissingPluginVersionMessage(Version.VERSION));
 
     // when
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
 }

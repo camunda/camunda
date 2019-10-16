@@ -5,36 +5,37 @@
  */
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class EngineVersionCheckerIT {
-  private EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  private EmbeddedOptimizeRule embeddedOptimizeRule2 =
-    new EmbeddedOptimizeRule("classpath:versionCheckContext.xml");
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule2);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule2 =
+    new EmbeddedOptimizeExtensionRule("classpath:versionCheckContext.xml");
 
   @Test
   public void engineVersionCantBeDetermined() {
-    embeddedOptimizeRule2.stopOptimize();
+    embeddedOptimizeExtensionRule2.stopOptimize();
 
     try {
-      embeddedOptimizeRule2.startOptimize();
+      embeddedOptimizeExtensionRule2.startOptimize();
     } catch (Exception e) {
       //expected
       assertThat(e.getCause().getMessage().contains("Engine version is not supported"), is(true));
@@ -44,10 +45,10 @@ public class EngineVersionCheckerIT {
     fail("Exception expected");
   }
 
-  @After
+  @AfterEach
   public void setContextBack() throws Exception {
-    embeddedOptimizeRule2.stopOptimize();
-    EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule("classpath:embeddedOptimizeContext.xml");
-    embeddedOptimizeRule.startOptimize();
+    embeddedOptimizeExtensionRule2.stopOptimize();
+    EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule("classpath:embeddedOptimizeContext.xml");
+    embeddedOptimizeExtensionRule.startOptimize();
   }
 }

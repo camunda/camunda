@@ -7,7 +7,7 @@ package org.camunda.optimize.service;
 
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -15,19 +15,19 @@ import org.junit.rules.RuleChain;
 
 import java.util.Optional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 public class IdentityServiceIT {
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
   private IdentityService identityService;
 
   @Rule
-  public RuleChain chain = RuleChain.outerRule(embeddedOptimizeRule);
+  public RuleChain chain = RuleChain.outerRule(embeddedOptimizeExtensionRule);
 
   @Before
   public void setup() {
-    identityService = embeddedOptimizeRule.getIdentityService();
+    identityService = embeddedOptimizeExtensionRule.getIdentityService();
   }
 
   @Test

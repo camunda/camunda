@@ -10,23 +10,21 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEmptyEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
-import static org.junit.Assert.fail;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
-
   private UpgradeValidationService underTest;
 
-  @Before
+  @BeforeEach
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -113,12 +111,10 @@ public class UpgradeValidationServiceIT extends AbstractUpgradeIT {
     // given
     deleteEnvConfig();
 
-    //throws
-    thrown.expect(RuntimeException.class);
-    thrown.expectMessage("Couldn't read environment-config.yaml from environment folder in Optimize root!");
-
-    //when
-    underTest.validateEnvironmentConfigInClasspath();
+    // then throws exception
+    RuntimeException exception =
+      assertThrows(RuntimeException.class, () -> underTest.validateEnvironmentConfigInClasspath());
+    assertThat(exception.getMessage(), is("Couldn't read environment-config.yaml from environment folder in Optimize root!"));
   }
 
   @Test

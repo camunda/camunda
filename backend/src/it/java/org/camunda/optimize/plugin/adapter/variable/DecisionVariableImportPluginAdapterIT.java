@@ -11,9 +11,9 @@ import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,28 +26,28 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
-import static org.camunda.optimize.test.it.rule.EngineIntegrationRule.DEFAULT_DMN_DEFINITION_PATH;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule.DEFAULT_DMN_DEFINITION_PATH;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionVariableImportPluginAdapterIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   private ConfigurationService configurationService;
 
-  @Before
-  public void setup() {
-    configurationService = embeddedOptimizeRule.getConfigurationService();
-    configurationService.setPluginDirectory("target/testPluginsValid");
-  }
-
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchIntegrationTestExtensionRule).around(engineIntegrationExtensionRule).around(embeddedOptimizeExtensionRule);
+
+  @Before
+  public void setup() {
+    configurationService = embeddedOptimizeExtensionRule.getConfigurationService();
+    configurationService.setPluginDirectory("target/testPluginsValid");
+  }
 
   @Test
   public void adaptInputs() {
@@ -56,8 +56,8 @@ public class DecisionVariableImportPluginAdapterIT {
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -72,9 +72,9 @@ public class DecisionVariableImportPluginAdapterIT {
   @Test
   public void skipInvalidAdaptedInputs() {
     addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn2.ReturnInvalidInputs");
-    engineRule.deployAndStartDecisionDefinition();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -86,9 +86,9 @@ public class DecisionVariableImportPluginAdapterIT {
   @Test
   public void pluginReturnsMoreInputVariables() {
     addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn3.ReturnMoreInputVariables");
-    engineRule.deployAndStartDecisionDefinition();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -106,8 +106,8 @@ public class DecisionVariableImportPluginAdapterIT {
       put("invoiceCategory", "Misc");
     }});
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -142,8 +142,8 @@ public class DecisionVariableImportPluginAdapterIT {
       put("invoiceCategory", "notFoo");
     }});
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -168,8 +168,8 @@ public class DecisionVariableImportPluginAdapterIT {
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -185,8 +185,8 @@ public class DecisionVariableImportPluginAdapterIT {
       put("amount", 200);
       put("invoiceCategory", "Misc");
     }});
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
@@ -202,19 +202,19 @@ public class DecisionVariableImportPluginAdapterIT {
   }
 
   private List<DecisionInstanceDto> getDecisionInstanceDtos() {
-    SearchResponse response = elasticSearchRule.getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
+    SearchResponse response = elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
     return mapHits(
       response.getHits(),
       DecisionInstanceDto.class,
-      embeddedOptimizeRule.getObjectMapper()
+      embeddedOptimizeExtensionRule.getObjectMapper()
     );
   }
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(HashMap<String, Object> variables) {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployDecisionDefinition(
       DEFAULT_DMN_DEFINITION_PATH
     );
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionEngineDto.getId(),
       variables
     );
@@ -226,7 +226,7 @@ public class DecisionVariableImportPluginAdapterIT {
       .map(s -> s.replaceFirst("\\.\\w+$", ""))
       .collect(Collectors.toList());
     configurationService.setDecisionInputImportPluginBasePackages(basePackagesList);
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
   private void addDMNOutputImportPluginBasePackagesToConfiguration(String... basePackages) {
@@ -234,6 +234,6 @@ public class DecisionVariableImportPluginAdapterIT {
       .map(s -> s.replaceFirst("\\.\\w+$", ""))
       .collect(Collectors.toList());
     configurationService.setDecisionOutputImportPluginBasePackages(basePackagesList);
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 }

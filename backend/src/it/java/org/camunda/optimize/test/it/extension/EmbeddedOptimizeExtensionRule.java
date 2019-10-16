@@ -3,9 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.test.it.rule;
+package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
@@ -36,6 +37,9 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.springframework.context.ApplicationContext;
@@ -57,10 +61,13 @@ import java.util.concurrent.TimeUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 /**
- * Helper rule to start embedded jetty with Camunda Optimize on bord.
+ * Helper to start embedded jetty with Camunda Optimize on board.
+ * This is a hybrid JUnit 4 style Rule and JUnit 5 style extension, used differently depending on the runner used
+ * in each test
  */
 @Slf4j
-public class EmbeddedOptimizeRule extends TestWatcher {
+@NoArgsConstructor
+public class EmbeddedOptimizeExtensionRule extends TestWatcher implements BeforeEachCallback, AfterEachCallback {
 
   public static final String DEFAULT_ENGINE_ALIAS = "1";
 
@@ -78,15 +85,32 @@ public class EmbeddedOptimizeRule extends TestWatcher {
    * <p>
    * NOTE: this will not store indexes in the ES.
    */
-  public EmbeddedOptimizeRule() {
-  }
 
-  public EmbeddedOptimizeRule(String context) {
+  public EmbeddedOptimizeExtensionRule(String context) {
     this.context = context;
   }
 
   @Override
   protected void starting(Description description) {
+    beforeTest();
+  }
+
+  @Override
+  protected void finished(Description description) {
+    afterTest();
+  }
+
+  @Override
+  public void beforeEach(final ExtensionContext extensionContext) throws Exception {
+    beforeTest();
+  }
+
+  @Override
+  public void afterEach(final ExtensionContext extensionContext) throws Exception {
+    afterTest();
+  }
+
+  private void beforeTest() {
     try {
       startOptimize();
       objectMapper = getApplicationContext().getBean(ObjectMapper.class);
@@ -106,8 +130,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     }
   }
 
-  @Override
-  protected void finished(Description description) {
+  private void afterTest() {
     try {
       this.getAlertService().getScheduler().clear();
       TestEmbeddedCamundaOptimize.getInstance().resetConfiguration();

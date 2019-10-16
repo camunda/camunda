@@ -8,9 +8,9 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.security.AuthCookieService;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -28,9 +28,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class LicenseCheckingRestServiceIT {
 
-  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
-  public static ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  public static ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   private static final String CUSTOMER_ID = "schrottis inn";
   private static OffsetDateTime VALID_UNTIL;
@@ -38,8 +39,9 @@ public class LicenseCheckingRestServiceIT {
   private static DateTimeFormatter sdf = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
+  public RuleChain chain = RuleChain.outerRule(elasticSearchIntegrationTestExtensionRule)
+    .around(engineIntegrationExtensionRule)
+    .around(embeddedOptimizeExtensionRule);
 
   @BeforeClass
   public static void init() {
@@ -53,7 +55,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
 
@@ -67,7 +69,7 @@ public class LicenseCheckingRestServiceIT {
     // given
     String license = FileReaderUtil.readValidTestLegacyLicense();
     // when
-    Response response = embeddedOptimizeRule.getRequestExecutor()
+    Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .withoutAuthentication()
       .addSingleCookie(AuthCookieService.OPTIMIZE_AUTHORIZATION, "invalid")
       .buildValidateAndStoreLicenseRequest(license)
@@ -86,7 +88,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
 
@@ -100,13 +102,13 @@ public class LicenseCheckingRestServiceIT {
     // given
     String license = FileReaderUtil.readValidTestLegacyLicense();
     Response response =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
     assertThat(response.getStatus(), is(200));
 
     // when
-    response = embeddedOptimizeRule
+    response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildValidateLicenseRequest()
       .execute();
@@ -123,7 +125,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute(String.class, 400);
 
@@ -139,7 +141,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute(String.class, 400);
 
@@ -150,9 +152,9 @@ public class LicenseCheckingRestServiceIT {
   @Test
   public void noLicenseAvailableShouldThrowAnError() {
     // to ensure license is refreshed from file and elasticsearch
-    embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class).init();
+    embeddedOptimizeExtensionRule.getApplicationContext().getBean(LicenseManager.class).init();
     // when
-    String errorMessage = embeddedOptimizeRule
+    String errorMessage = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildValidateLicenseRequest()
       .execute(String.class, 400);
@@ -171,7 +173,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
 
@@ -187,7 +189,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
 
@@ -203,7 +205,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
 
@@ -219,7 +221,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute(String.class, 400);
 
@@ -235,7 +237,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute(String.class, 400);
 
@@ -251,7 +253,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute(String.class, 400);
 
@@ -267,7 +269,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute(String.class, 400);
 
@@ -283,7 +285,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute(String.class, 400);
 
@@ -299,7 +301,7 @@ public class LicenseCheckingRestServiceIT {
 
     // when
     String errorMessage =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute(String.class, 400);
 

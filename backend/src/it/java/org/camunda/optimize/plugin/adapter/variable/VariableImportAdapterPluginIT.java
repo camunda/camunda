@@ -14,9 +14,9 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,24 +30,23 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class VariableImportAdapterPluginIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
   private ConfigurationService configurationService;
-
-  @Before
-  public void setup() {
-    configurationService = embeddedOptimizeRule.getConfigurationService();
-    configurationService.setPluginDirectory("target/testPluginsValid");
-  }
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchIntegrationTestExtensionRule).around(engineIntegrationExtensionRule).around(embeddedOptimizeExtensionRule);
+
+
+  @Before
+  public void setup() {
+    configurationService = embeddedOptimizeExtensionRule.getConfigurationService();
+    configurationService.setPluginDirectory("target/testPluginsValid");
+  }
 
   @Test
   public void variableImportCanBeAdaptedByPlugin() throws Exception {
@@ -60,8 +59,8 @@ public class VariableImportAdapterPluginIT {
     variables.put("var3", 1);
     variables.put("var4", 1);
     ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
@@ -83,8 +82,8 @@ public class VariableImportAdapterPluginIT {
     variables.put("var3", "bar");
     variables.put("var4", "bar");
     ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
@@ -101,8 +100,8 @@ public class VariableImportAdapterPluginIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
@@ -119,8 +118,8 @@ public class VariableImportAdapterPluginIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
@@ -136,8 +135,8 @@ public class VariableImportAdapterPluginIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
     ProcessInstanceEngineDto processDefinition = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processDefinition);
@@ -168,8 +167,8 @@ public class VariableImportAdapterPluginIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("person", complexVariableDto);
     ProcessInstanceEngineDto instanceDto = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
@@ -184,7 +183,7 @@ public class VariableImportAdapterPluginIT {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(processDefinition.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(processDefinition.getProcessDefinitionVersion());
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildProcessVariableNamesRequest(variableRequestDto)
             .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
@@ -199,15 +198,15 @@ public class VariableImportAdapterPluginIT {
           .camundaExpression("${true}")
         .endEvent()
       .done();
-    ProcessInstanceEngineDto procInstance = engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    engineRule.waitForAllProcessesToFinish();
+    ProcessInstanceEngineDto procInstance = engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    engineIntegrationExtensionRule.waitForAllProcessesToFinish();
     return procInstance;
   }
 
   private void addVariableImportPluginBasePackagesToConfiguration(String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setVariableImportPluginBasePackages(basePackagesList);
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
 }

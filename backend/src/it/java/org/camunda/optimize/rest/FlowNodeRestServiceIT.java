@@ -9,12 +9,12 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Map;
@@ -26,13 +26,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class FlowNodeRestServiceIT {
 
-  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void mapFlowNodeWithoutAuthentication() {
@@ -43,7 +45,7 @@ public class FlowNodeRestServiceIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion("1");
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
@@ -61,7 +63,7 @@ public class FlowNodeRestServiceIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion("1");
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
@@ -82,7 +84,7 @@ public class FlowNodeRestServiceIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(key);
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(version);
 
-    FlowNodeNamesResponseDto response = embeddedOptimizeRule
+    FlowNodeNamesResponseDto response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
@@ -108,7 +110,7 @@ public class FlowNodeRestServiceIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(version);
     flowNodeIdsToNamesRequestDto.setTenantId(tenantId2);
 
-    FlowNodeNamesResponseDto response = embeddedOptimizeRule
+    FlowNodeNamesResponseDto response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
@@ -132,7 +134,7 @@ public class FlowNodeRestServiceIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(version);
     flowNodeIdsToNamesRequestDto.setTenantId(tenantId1);
 
-    FlowNodeNamesResponseDto response = embeddedOptimizeRule
+    FlowNodeNamesResponseDto response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
       .withoutAuthentication()
@@ -157,7 +159,7 @@ public class FlowNodeRestServiceIT {
       .setVersion(processDefinitionVersion)
       .setTenantId(tenantId)
       .setEngine("testEngine");
-    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedProcessDefinitionId, expected);
+    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedProcessDefinitionId, expected);
     createProcessDefinitionXml(processDefinitionKey, processDefinitionVersion, flowNodeNames, tenantId);
   }
 
@@ -173,6 +175,6 @@ public class FlowNodeRestServiceIT {
       .setTenantId(tenantId)
       .setFlowNodeNames(flowNodeNames)
       .setBpmn20Xml("XML123");
-    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedProcessDefinitionId, expectedXml);
+    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedProcessDefinitionId, expectedXml);
   }
 }

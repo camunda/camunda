@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
@@ -28,7 +28,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     final String outputAuditValueToFilterFor = "true";
     final String outputVariableIdToFilterOn = OUTPUT_AUDIT_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
     // results in Audit=false
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
@@ -40,8 +40,8 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
       createInputs(2000.0, "Misc")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder

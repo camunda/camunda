@@ -13,12 +13,12 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DurationFilterIT extends AbstractDurationFilterIT {
 
@@ -65,8 +65,8 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
   public void testValidationExceptionOnNullFilterField() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
@@ -84,7 +84,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
                            .buildList());
 
 
-    Assert.assertThat(evaluateReportAndReturnResponse(reportData).getStatus(),is(500));
+    assertThat(evaluateReportAndReturnResponse(reportData).getStatus(),is(500));
   }
 
 }

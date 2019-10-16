@@ -14,12 +14,12 @@ import org.camunda.optimize.service.engine.importing.index.page.IdSetBasedImport
 import org.camunda.optimize.service.engine.importing.service.ImportService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.BeanFactory;
 
 import java.util.ArrayList;
@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Set;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ScrollBasedImportMediatorTest {
 
   @Mock
@@ -59,7 +59,7 @@ public class ScrollBasedImportMediatorTest {
   @Mock
   private ImportService<DecisionDefinitionXmlEngineDto> importService;
 
-  @Before
+  @BeforeEach
   public void init() {
     when(beanFactory.getBean(DecisionDefinitionXmlFetcher.class, engineContext))
       .thenReturn(engineEntityFetcher);

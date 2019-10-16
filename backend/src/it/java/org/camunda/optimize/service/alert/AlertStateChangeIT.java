@@ -22,21 +22,20 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class AlertStateChangeIT extends AbstractAlertIT {
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule)
-    .around(engineDatabaseRule);
+    .outerRule(elasticSearchIntegrationTestExtensionRule)
+    .around(engineIntegrationExtensionRule)
+    .around(embeddedOptimizeExtensionRule)
+    .around(engineDatabaseExtensionRule);
 
   private GreenMail greenMail;
 
   @Before
   public void cleanUp() throws Exception {
-    embeddedOptimizeRule.getAlertService().getScheduler().clear();
+    embeddedOptimizeExtensionRule.getAlertService().getScheduler().clear();
     greenMail = initGreenMail();
   }
 
@@ -103,9 +102,9 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     //when
-    engineRule.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    engineIntegrationExtensionRule.startProcessInstance(processInstance.getDefinitionId());
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
     greenMail.purgeEmailFromAllMailboxes();
 
     //then
@@ -135,9 +134,9 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     //when
-    engineRule.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    engineIntegrationExtensionRule.startProcessInstance(processInstance.getDefinitionId());
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     greenMail.purgeEmailFromAllMailboxes();
     triggerAndCompleteReminderJob(id);

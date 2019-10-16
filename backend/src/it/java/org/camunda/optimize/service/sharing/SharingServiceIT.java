@@ -17,9 +17,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -27,7 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -36,12 +34,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SharingServiceIT extends AbstractSharingIT {
 
-  @Rule
-  public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule)
-      .around(engineRule)
-      .around(embeddedOptimizeRule);
-
   @Test
   public void dashboardWithoutReportsShare() {
     //given
@@ -49,7 +41,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute(DashboardDefinitionDto.class, 200);
@@ -69,7 +61,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     // when
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute(DashboardDefinitionDto.class, 200);
@@ -93,14 +85,14 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
 
     assertThat(response.getStatus(), is(204));
 
-    HashMap evaluatedReportAsMap = embeddedOptimizeRule
+    HashMap evaluatedReportAsMap = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(reportShareId)
             .execute(HashMap.class, 200);
@@ -135,7 +127,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildFindShareForDashboardRequest(dashboardShareId)
             .execute();
@@ -143,14 +135,14 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(response.getStatus(), is(204));
 
     // then
-    HashMap evaluatedReportAsMap = embeddedOptimizeRule
+    HashMap evaluatedReportAsMap = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
             .execute(HashMap.class, 200);
 
     assertReportData(reportId, evaluatedReportAsMap);
 
-    evaluatedReportAsMap = embeddedOptimizeRule
+    evaluatedReportAsMap = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId2)
             .execute(HashMap.class, 200);
@@ -169,7 +161,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     addShareForDashboard(dashboardId);
 
     // then
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(reportId)
             .execute();
@@ -189,7 +181,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // then
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, FAKE_REPORT_ID)
             .execute();
@@ -209,7 +201,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // then
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest("fakedashboardshareid", reportId)
             .execute();
@@ -232,7 +224,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String dashboardShareId2 = addShareForDashboard(dashboardId2);
 
     // when
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId2)
             .execute(DashboardDefinitionDto.class, 200);
@@ -240,7 +232,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(dashboardShareDto.getReports().size(), is(2));
 
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
@@ -249,14 +241,14 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //then
     response =
-        embeddedOptimizeRule
+        embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute();
 
     assertThat(response.getStatus(), is(500));
 
-    dashboardShareDto = embeddedOptimizeRule
+    dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId2)
             .execute(DashboardDefinitionDto.class, 200);
@@ -277,7 +269,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     updateDashboard(dashboardWithReport, fullBoard);
 
     //then
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute(DashboardDefinitionDto.class, 200);
@@ -325,7 +317,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     updateDashboard(dashboardId, dashboard);
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute(DashboardDefinitionDto.class, 200);
@@ -353,7 +345,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     addReportToDashboard(dashboardId, reportId);
 
     //then
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute(DashboardDefinitionDto.class, 200);
@@ -369,7 +361,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardWithReport);
     String reportShareId = addShareForReport(reportId);
 
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute(DashboardDefinitionDto.class, 200);
@@ -377,7 +369,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
@@ -386,13 +378,13 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //then
     response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(dashboardReportShareId)
             .execute();
     assertThat(response.getStatus(), is(500));
 
-    HashMap evaluatedReportAsMap = embeddedOptimizeRule
+    HashMap evaluatedReportAsMap = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(reportShareId)
             .execute(HashMap.class, 200);
@@ -409,7 +401,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //when
     Response response =
-        embeddedOptimizeRule
+        embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(dashboardShareId)
             .execute();
@@ -470,7 +462,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(id, is(notNullValue()));
 
     response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildShareReportRequest(share)
             .execute();
@@ -481,7 +473,7 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void cantEvaluateNotExistingReportShare() {
     //when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(FAKE_REPORT_ID)
             .execute();
@@ -494,7 +486,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(FAKE_REPORT_ID)
             .execute();
@@ -509,7 +501,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String shareId = this.addShareForReport(reportId);
 
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
             .execute();
@@ -517,7 +509,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //when
     response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildDeleteReportShareRequest(shareId)
             .execute();
@@ -526,7 +518,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //then
     response =
-        embeddedOptimizeRule
+        embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
             .execute();
@@ -540,7 +532,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildDeleteReportShareRequest(reportShareId)
             .execute();
@@ -558,7 +550,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     this.addShareForReport(reportId);
 
     // when
-    embeddedOptimizeRule
+    embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildDeleteReportRequest(reportId)
             .execute();
@@ -576,7 +568,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     String shareId = addShareForReport(reportId);
 
     //when
-    HashMap evaluatedReportAsMap = embeddedOptimizeRule
+    HashMap evaluatedReportAsMap = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
             .execute(HashMap.class, 200);
@@ -601,7 +593,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     //when
 
     ShareSearchResultDto result =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildCheckSharingStatusRequest(statusRequest)
             .execute(ShareSearchResultDto.class, 200);
@@ -627,7 +619,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     //when
     ShareSearchResultDto result =
-        embeddedOptimizeRule
+        embeddedOptimizeExtensionRule
           .getRequestExecutor()
           .buildCheckSharingStatusRequest(statusRequest)
           .execute(ShareSearchResultDto.class, 200);
@@ -659,8 +651,8 @@ public class SharingServiceIT extends AbstractSharingIT {
   public void errorMessageIsWellStructured () {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess("aProcess");
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
@@ -678,12 +670,12 @@ public class SharingServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardWithReport);
 
     //when
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute(DashboardDefinitionDto.class, 200);
 
-    ReportEvaluationException errorResponse = embeddedOptimizeRule
+    ReportEvaluationException errorResponse = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest(
                     dashboardShareId,
@@ -698,8 +690,8 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void shareUnauthorizedDashboard() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
     String reportId1 = createReport("processDefinition1");
     String reportId2 = createReport("processDefinition2");
     String dashboardId = addEmptyDashboardToOptimize();
@@ -709,7 +701,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when I want to share the dashboard as kermit and kermit has no access to report 2
     DashboardShareDto share = createDashboardShareDto(dashboardId);
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildShareDashboardRequest(share)
             .withUserAuthentication("kermit", "kermit")

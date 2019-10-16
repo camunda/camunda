@@ -8,9 +8,8 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -18,37 +17,37 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
 public class IdentityRestServiceIT {
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Rule
-  public RuleChain chain = RuleChain.outerRule(embeddedOptimizeRule);
+  public RuleChain chain = RuleChain.outerRule(embeddedOptimizeExtensionRule);
 
   @Test
   public void searchForUser_unauthorized() {
     // when
-    final Response response = embeddedOptimizeRule.getRequestExecutor()
+    final Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .withoutAuthentication()
       .buildSearchForIdentities("baggins")
       .execute();
 
     // then the status code is not authorized
-    MatcherAssert.assertThat(response.getStatus(), CoreMatchers.is(401));
+    assertThat(response.getStatus(), CoreMatchers.is(401));
   }
 
   @Test
   public void searchForUser() {
     final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
-    embeddedOptimizeRule.getIdentityService().addIdentity(userIdentity);
-    embeddedOptimizeRule.getIdentityService().addIdentity(
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(userIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(
       new UserDto("otherId", "Bilbo", "Baggins", "bilbo.baggins@camunda.com")
     );
 
-    final List<IdentityDto> searchResult = embeddedOptimizeRule.getRequestExecutor()
+    final List<IdentityDto> searchResult = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildSearchForIdentities("frodo")
       .executeAndReturnList(IdentityDto.class, 200);
 
@@ -59,10 +58,10 @@ public class IdentityRestServiceIT {
   @Test
   public void searchForGroup() {
     final GroupDto groupIdentity = new GroupDto("hobbits", "The Hobbits");
-    embeddedOptimizeRule.getIdentityService().addIdentity(groupIdentity);
-    embeddedOptimizeRule.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs"));
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(groupIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs"));
 
-    final List<IdentityDto> searchResult = embeddedOptimizeRule.getRequestExecutor()
+    final List<IdentityDto> searchResult = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildSearchForIdentities("hobbit")
       .executeAndReturnList(IdentityDto.class, 200);
 
@@ -73,15 +72,15 @@ public class IdentityRestServiceIT {
   @Test
   public void searchForGroupAndUser() {
     final GroupDto groupIdentity = new GroupDto("group", "The Baggins Group");
-    embeddedOptimizeRule.getIdentityService().addIdentity(groupIdentity);
-    embeddedOptimizeRule.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs"));
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(groupIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs"));
     final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
-    embeddedOptimizeRule.getIdentityService().addIdentity(userIdentity);
-    embeddedOptimizeRule.getIdentityService().addIdentity(
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(userIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(
       new UserDto("otherUser", "Frodo", "NotAHobbit", "not.a.hobbit@camunda.com")
     );
 
-    final List<IdentityDto> searchResult = embeddedOptimizeRule.getRequestExecutor()
+    final List<IdentityDto> searchResult = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildSearchForIdentities("baggins")
       .executeAndReturnList(IdentityDto.class, 200);
 
@@ -93,14 +92,14 @@ public class IdentityRestServiceIT {
   @Test
   public void emptySearchStringReturnsAlphanumericSortingListEmptyNamesLast() {
     final GroupDto groupIdentity = new GroupDto("baggins", "The Baggins Group");
-    embeddedOptimizeRule.getIdentityService().addIdentity(groupIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(groupIdentity);
     final UserDto userIdentity =
       new UserDto("testUser1", "Frodo", "Baggins", "frodo.baggins@camunda.com");
-    embeddedOptimizeRule.getIdentityService().addIdentity(userIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(userIdentity);
     final UserDto emptyMetaDataUserIdentity = new UserDto("testUser2", null, null, null);
-    embeddedOptimizeRule.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
-    final List<IdentityDto> searchResult = embeddedOptimizeRule.getRequestExecutor()
+    final List<IdentityDto> searchResult = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildSearchForIdentities("")
       .executeAndReturnList(IdentityDto.class, 200);
 
@@ -111,14 +110,14 @@ public class IdentityRestServiceIT {
   @Test
   public void limitResults() {
     final GroupDto groupIdentity = new GroupDto("baggins", "The Baggins Group");
-    embeddedOptimizeRule.getIdentityService().addIdentity(groupIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(groupIdentity);
     final UserDto userIdentity =
       new UserDto("testUser1", "Frodo", "Baggins", "frodo.baggins@camunda.com");
-    embeddedOptimizeRule.getIdentityService().addIdentity(userIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(userIdentity);
     final UserDto emptyMetaDataUserIdentity = new UserDto("testUser2", null, null, null);
-    embeddedOptimizeRule.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(emptyMetaDataUserIdentity);
 
-    final List<IdentityDto> searchResult = embeddedOptimizeRule.getRequestExecutor()
+    final List<IdentityDto> searchResult = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildSearchForIdentities("", 1)
       .executeAndReturnList(IdentityDto.class, 200);
 

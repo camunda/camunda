@@ -125,7 +125,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
     server.setConnectors(connectors.toArray(new Connector[]{}));
 
-
     return server;
   }
 

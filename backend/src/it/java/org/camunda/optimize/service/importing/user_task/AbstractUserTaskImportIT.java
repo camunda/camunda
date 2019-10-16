@@ -13,24 +13,23 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
-
 
 public abstract class AbstractUserTaskImportIT {
 
@@ -39,18 +38,22 @@ public abstract class AbstractUserTaskImportIT {
   protected static final String USER_TASK_1 = "userTask1";
   protected static final String USER_TASK_2 = "userTask2";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
 
   protected ObjectMapper objectMapper;
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
-
-  @Before
+  @BeforeEach
   public void setUp() {
     if (objectMapper == null) {
       objectMapper = new ObjectMapperFactory(
@@ -62,10 +65,10 @@ public abstract class AbstractUserTaskImportIT {
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
                                             final long idleDuration) {
-    engineRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         try {
-          engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
+          engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
             historicUserTaskInstanceDto.getId(),
             historicUserTaskInstanceDto.getStartTime().plus(idleDuration, ChronoUnit.MILLIS)
           );
@@ -77,11 +80,11 @@ public abstract class AbstractUserTaskImportIT {
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
                                             final long workDuration) {
-    engineRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         if (historicUserTaskInstanceDto.getEndTime() != null) {
           try {
-            engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               historicUserTaskInstanceDto.getEndTime().minus(workDuration, ChronoUnit.MILLIS)
             );
@@ -98,7 +101,7 @@ public abstract class AbstractUserTaskImportIT {
       .userTask(USER_TASK_1)
       .endEvent(END_EVENT)
       .done();
-    return engineRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
   }
 
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {
@@ -108,7 +111,7 @@ public abstract class AbstractUserTaskImportIT {
       .userTask(USER_TASK_2)
       .endEvent(END_EVENT)
       .done();
-    return engineRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
   }
 
   protected SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) throws IOException {
@@ -121,7 +124,7 @@ public abstract class AbstractUserTaskImportIT {
       .types(elasticsearchType)
       .source(searchSourceBuilder);
 
-    return elasticSearchRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 

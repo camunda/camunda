@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.decision.frequency;
 
 import com.google.common.collect.Lists;
-import junitparams.JUnitParamsRunner;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
@@ -21,8 +20,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEva
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.Comparator;
@@ -38,7 +36,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@RunWith(JUnitParamsRunner.class)
 public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends AbstractDecisionDefinitionIT {
 
   private static final String INVOICE_RULE_1_ID = "DecisionRule_1of5a87";
@@ -52,7 +49,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   @Test
   public void reportEvaluationMultiBucketsSpecificVersionGroupByMatchedRule() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     // rule 1
     startDecisionInstanceWithInputVars(
@@ -78,11 +75,11 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     );
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -104,7 +101,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   @Test
   public void reportEvaluationMultiBuckets_resultLimitedByConfig() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     // rule 1
     startDecisionInstanceWithInputVars(
@@ -130,13 +127,13 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     );
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployAndStartDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
+    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -153,7 +150,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   @Test
   public void testCustomOrderOnMatchedRuleKeyIsApplied() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     // rule 1
     startDecisionInstanceWithInputVars(
@@ -178,8 +175,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createInputs(3000.0, "Travel Expenses")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -204,7 +201,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   @Test
   public void testCustomOrderOnMatchedRuleValueIsApplied() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     // rule 1
     startDecisionInstanceWithInputVars(
@@ -229,8 +226,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createInputs(3000.0, "Travel Expenses")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -254,7 +251,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   @Test
   public void reportEvaluationMultiBucketsAllVersionsGroupByMatchedRule() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
     // rule 1
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
@@ -279,7 +276,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     );
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployDecisionDefinition();
 
     // rule 1
     startDecisionInstanceWithInputVars(
@@ -289,8 +286,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto2.getId(), createInputs(200.0, "Misc")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -311,7 +308,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   public void reportEvaluationMultiBucketsSpecificVersionGroupByMatchedRuleFilterByInput() {
     // given
     final double inputVariableValueToFilterFor = 300.0;
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
     // rule 1
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(), createInputs(100.0, "Misc")
@@ -324,8 +321,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto.getId(), createInputs(300.0, "Misc")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -364,8 +361,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createDishInputs("Winter", 8, false)
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -384,7 +381,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   @Test
   public void reportEvaluationSingleBucketAllVersionsGroupByMatchedRuleOtherDefinitionsHaveNoSideEffect() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
     );
@@ -398,8 +395,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto2.getId(), createDishInputs("Winter", 8, true)
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -424,8 +421,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -475,7 +472,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
   }
 
   private DecisionDefinitionEngineDto deployDishDecisionDefinition() {
-    return engineRule.deployDecisionDefinition("dmn/decide-dish.xml");
+    return engineIntegrationExtensionRule.deployDecisionDefinition("dmn/decide-dish.xml");
   }
 
   private HashMap<String, InputVariableEntry> createDishInputs(final String season,

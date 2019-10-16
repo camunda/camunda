@@ -24,8 +24,8 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,13 +44,13 @@ public abstract class AbstractUpgradeIT {
   protected UpgradeExecutionDependencies upgradeDependencies;
   private ElasticsearchMetadataService metadataService;
 
-  @After
+  @AfterEach
   public void after() throws Exception {
     cleanAllDataFromElasticsearch();
     deleteEnvConfig();
   }
 
-  @Before
+  @BeforeEach
   protected void setUp() throws Exception {
     final ConfigurationService configurationService = createDefaultConfiguration();
     if (upgradeDependencies == null) {

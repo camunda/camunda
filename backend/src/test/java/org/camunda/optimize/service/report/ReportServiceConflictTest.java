@@ -19,20 +19,21 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ReportServiceConflictTest {
   @Mock
   ReportWriter reportWriter;
@@ -54,7 +55,7 @@ public class ReportServiceConflictTest {
 
   ReportService underTest;
 
-  @Before
+  @BeforeEach
   public void setUp() {
     underTest = new ReportService(
       reportWriter,
@@ -83,8 +84,8 @@ public class ReportServiceConflictTest {
     verify(reportRelationService).handleUpdated("test1", updateDto);
   }
 
-  @Test(expected = OptimizeConflictException.class)
-  public void testUpdateSingleProcessReportWithConflicts() throws OptimizeException {
+  @Test
+  public void testUpdateSingleProcessReportWithConflicts() {
     // given
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
@@ -98,7 +99,7 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForUpdatedReport(any(), any())).thenReturn(conflicts);
 
     // when
-    underTest.updateSingleProcessReport("test1", updateDto, "user1", false);
+    assertThrows(OptimizeConflictException.class, () -> underTest.updateSingleProcessReport("test1", updateDto, "user1", false));
   }
 
   @Test
@@ -117,8 +118,8 @@ public class ReportServiceConflictTest {
     verify(reportRelationService).handleUpdated("test1", updateDto);
   }
 
-  @Test(expected = OptimizeConflictException.class)
-  public void testUpdateSingleDecisionReportWithConflicts() throws OptimizeException {
+  @Test
+  public void testUpdateSingleDecisionReportWithConflicts() {
     // given
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
@@ -132,7 +133,7 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForUpdatedReport(any(), any())).thenReturn(conflicts);
 
     // when
-    underTest.updateSingleDecisionReport("test1", updateDto, "user1", false);
+    assertThrows(OptimizeConflictException.class, () -> underTest.updateSingleDecisionReport("test1", updateDto, "user1", false));
   }
 
   @Test
@@ -151,8 +152,8 @@ public class ReportServiceConflictTest {
     verify(reportRelationService).handleDeleted(testDefinition);
   }
 
-  @Test(expected = OptimizeConflictException.class)
-  public void testDeleteReportWithConflicts() throws OptimizeException {
+  @Test
+  public void testDeleteReportWithConflicts() {
     // given
     when(reportReader.getReport("test1")).thenReturn(new SingleProcessReportDefinitionDto());
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
@@ -164,6 +165,6 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForDeleteReport(any())).thenReturn(conflicts);
 
     // when
-    underTest.deleteReport("user1", "test1", false);
+    assertThrows(OptimizeConflictException.class, () -> underTest.deleteReport("user1", "test1", false));
   }
 }

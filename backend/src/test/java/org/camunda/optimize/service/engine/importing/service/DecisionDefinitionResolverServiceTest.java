@@ -8,11 +8,11 @@ package org.camunda.optimize.service.engine.importing.service;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class DecisionDefinitionResolverServiceTest {
 
   @Mock
@@ -32,7 +32,7 @@ public class DecisionDefinitionResolverServiceTest {
 
   private DecisionDefinitionResolverService underTest;
 
-  @Before
+  @BeforeEach
   public void init() {
     this.underTest = new DecisionDefinitionResolverService(decisionDefinitionReader);
   }

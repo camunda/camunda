@@ -30,9 +30,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "2.6.0";
@@ -72,7 +72,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertTrue(allProcessReports.get(0).getData().getConfiguration().getSorting().isPresent());
+    assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting(), is(notNullValue()));
     assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(), is("key"));
     assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().get().getOrder().get(), is(SortOrder.ASC));
   }
@@ -89,7 +89,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertFalse(allProcessReports.get(1).getData().getConfiguration().getSorting().isPresent());
+    assertThat(allProcessReports.get(1).getData().getConfiguration().getSorting(), is(nullValue()));
   }
 
   @Test
@@ -104,7 +104,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertTrue(allProcessReports.get(0).getData().getConfiguration().getProcessPart().isPresent());
+    assertThat(allProcessReports.get(0).getData().getConfiguration().getProcessPart(), is(notNullValue()));
     assertThat(
       allProcessReports.get(0).getData().getConfiguration().getProcessPart().get().getStart(),
       is("StartEvent_1")
@@ -127,7 +127,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertFalse(allProcessReports.get(1).getData().getConfiguration().getProcessPart().isPresent());
+    assertThat(allProcessReports.get(1).getData().getConfiguration().getProcessPart(), is(notNullValue()));
   }
 
   @Test
@@ -142,7 +142,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleDecisionReportDefinitionDto> allDecisionReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
     assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertTrue(allDecisionReports.get(0).getData().getConfiguration().getSorting().isPresent());
+    assertThat(allDecisionReports.get(0).getData().getConfiguration().getSorting(), is(notNullValue()));
     assertThat(
       allDecisionReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(),
       is("evaluationDateTime")
@@ -162,7 +162,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleDecisionReportDefinitionDto> allDecisionReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
     assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertFalse(allDecisionReports.get(1).getData().getConfiguration().getSorting().isPresent());
+    assertThat(allDecisionReports.get(1).getData().getConfiguration().getSorting(), is(notNullValue()));
   }
 
   @SneakyThrows

@@ -8,12 +8,10 @@ package org.camunda.optimize.plugin;
 import org.apache.commons.io.IOUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
@@ -22,21 +20,20 @@ import static org.camunda.optimize.plugin.PluginVersionChecker.OPTIMIZE_VERSION_
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.validatePluginVersion;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class PluginVersionCheckerTest {
-
-  @Rule
-  public ExpectedException expectedExceptionRule = ExpectedException.none();
 
   @Mock
   PluginClassLoader classLoader;
 
-
   @Test
   public void validatePluginVersion_validVersion() throws IOException {
-
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
       .thenReturn(IOUtils.toInputStream(
@@ -44,15 +41,12 @@ public class PluginVersionCheckerTest {
         "UTF-8"
       ));
 
-    // when
-    validatePluginVersion(classLoader);
-
-    // then no exception should be thrown
+    // then
+    assertDoesNotThrow(() -> validatePluginVersion(classLoader));
   }
 
   @Test
   public void validatePluginVersion_validSnapshotVersion() throws IOException {
-
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
       .thenReturn(IOUtils.toInputStream(
@@ -60,30 +54,26 @@ public class PluginVersionCheckerTest {
         "UTF-8"
       ));
 
-    // when
-    validatePluginVersion(classLoader);
-
-    // then no exception should be thrown
+    // then
+    assertDoesNotThrow(() -> validatePluginVersion(classLoader));
   }
 
   @Test
   public void validatePluginVersion_missingVersion() throws IOException {
-
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
       .thenReturn(null);
 
     // then
-    expectedExceptionRule.expect(OptimizeRuntimeException.class);
-    expectedExceptionRule.expectMessage(buildMissingPluginVersionMessage(Version.VERSION));
-
-    // when
-    validatePluginVersion(classLoader);
+    OptimizeRuntimeException exception = assertThrows(
+      OptimizeRuntimeException.class,
+      () -> validatePluginVersion(classLoader)
+    );
+    assertThat(exception.getMessage(), is(buildMissingPluginVersionMessage(Version.VERSION)));
   }
 
   @Test
   public void validatePluginVersion_invalidVersionString() throws IOException {
-
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
       .thenReturn(IOUtils.toInputStream(
@@ -92,19 +82,18 @@ public class PluginVersionCheckerTest {
       ));
 
     // then
-    expectedExceptionRule.expect(OptimizeRuntimeException.class);
-    expectedExceptionRule.expectMessage(buildUnsupportedPluginVersionMessage(
+    OptimizeRuntimeException exception = assertThrows(
+      OptimizeRuntimeException.class,
+      () -> validatePluginVersion(classLoader)
+    );
+    assertThat(exception.getMessage(), is(buildUnsupportedPluginVersionMessage(
       "nope_definitely_not_valid",
       Version.VERSION
-    ));
-
-    // when
-    validatePluginVersion(classLoader);
+    )));
   }
 
   @Test
   public void validatePluginVersion_unexpectedVersionFileEntry() throws IOException {
-
     // given
     when(classLoader.getPluginResourceAsStream(OPTIMIZE_VERSION_FILE_NAME))
       .thenReturn(IOUtils.toInputStream(
@@ -113,15 +102,15 @@ public class PluginVersionCheckerTest {
       ));
 
     // then
-    expectedExceptionRule.expect(OptimizeRuntimeException.class);
-    expectedExceptionRule.expectMessage(buildMissingPluginVersionMessage(Version.VERSION));
-
-    // when
-    validatePluginVersion(classLoader);
+    OptimizeRuntimeException exception = assertThrows(
+      OptimizeRuntimeException.class,
+      () -> validatePluginVersion(classLoader)
+    );
+    assertThat(exception.getMessage(), is(buildMissingPluginVersionMessage(Version.VERSION)));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test
   public void validatePluginVersion_nullParameter() {
-    validatePluginVersion(null);
+    assertThrows(IllegalArgumentException.class, () -> validatePluginVersion(null));
   }
 }

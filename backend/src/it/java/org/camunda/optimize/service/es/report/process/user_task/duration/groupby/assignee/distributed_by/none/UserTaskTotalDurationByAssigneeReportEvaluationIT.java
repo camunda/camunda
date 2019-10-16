@@ -16,7 +16,7 @@ import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import java.sql.SQLException;
 import java.util.List;
 
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -34,7 +34,7 @@ public class UserTaskTotalDurationByAssigneeReportEvaluationIT
                                 final String userTaskKey,
                                 final long duration) {
     try {
-      engineDatabaseRule.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration);
+      engineDatabaseExtensionRule.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration);
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
@@ -43,7 +43,7 @@ public class UserTaskTotalDurationByAssigneeReportEvaluationIT
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
     try {
-      engineDatabaseRule.changeUserTaskDuration(processInstanceDto.getId(), setDuration);
+      engineDatabaseExtensionRule.changeUserTaskDuration(processInstanceDto.getId(), setDuration);
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }

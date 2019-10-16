@@ -11,22 +11,22 @@ import org.camunda.optimize.service.engine.importing.fetcher.instance.CompletedA
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.BeanFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CompletedActivityInstanceEngineImportMediatorTest extends TimestampBasedImportMediatorTest {
 
 
@@ -44,7 +44,7 @@ public class CompletedActivityInstanceEngineImportMediatorTest extends Timestamp
 
   private ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
-  @Before
+  @BeforeEach
   public void init() {
     when(beanFactory.getBean(CompletedActivityInstanceFetcher.class, engineContext))
       .thenReturn(engineEntityFetcher);

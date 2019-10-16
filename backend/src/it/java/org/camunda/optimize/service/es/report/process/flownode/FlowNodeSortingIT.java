@@ -30,7 +30,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 
-
 public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
 
   private static final String LABEL_SUFFIX = "_label";
@@ -43,8 +42,8 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployProcessWithTwoTasksAndLabels();
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
@@ -79,8 +78,8 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // given
     final ProcessInstanceEngineDto processDefinition = deployProcessWithTwoTasksAndLabels();
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
@@ -119,10 +118,10 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
         .name(null)
       .done();
     // @formatter:on
-    ProcessInstanceEngineDto processInstanceDto = engineRule.deployAndStartProcess(modelInstance);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.deployAndStartProcess(modelInstance);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
@@ -161,10 +160,10 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
         .name("foobar2")
       .done();
     // @formatter:on
-    ProcessInstanceEngineDto processInstanceDto = engineRule.deployAndStartProcess(modelInstance);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.deployAndStartProcess(modelInstance);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
@@ -199,10 +198,10 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
       .endEvent("foobar2")
       .done();
     // @formatter:on
-    ProcessInstanceEngineDto processInstanceDto = engineRule.deployAndStartProcess(modelInstance);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.deployAndStartProcess(modelInstance);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processInstanceDto);
@@ -237,8 +236,8 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
     // given
     final ProcessInstanceEngineDto processDefinition = deployProcessWithServiceAndUserTask();
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeReport(processDefinition);
@@ -276,7 +275,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
         .name(null)
       .done();
     // @formatter:on
-    return engineRule.deployAndStartProcess(modelInstance);
+    return engineIntegrationExtensionRule.deployAndStartProcess(modelInstance);
   }
 
   private ProcessInstanceEngineDto deployProcessWithServiceAndUserTask() {
@@ -294,7 +293,7 @@ public class FlowNodeSortingIT extends AbstractProcessDefinitionIT {
         .name(null)
       .done();
     // @formatter:on
-    return engineRule.deployAndStartProcess(modelInstance);
+    return engineIntegrationExtensionRule.deployAndStartProcess(modelInstance);
   }
 
   private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeReport(ProcessInstanceEngineDto processDefinition) {

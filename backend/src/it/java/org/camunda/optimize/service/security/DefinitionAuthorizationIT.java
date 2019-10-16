@@ -6,8 +6,6 @@
 package org.camunda.optimize.service.security;
 
 import com.google.common.collect.ImmutableList;
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -15,13 +13,13 @@ import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 
@@ -34,9 +32,8 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(JUnitParamsRunner.class)
 public class DefinitionAuthorizationIT {
   public static final String PROCESS_KEY = "aprocess";
   public static final String DECISION_KEY = "aDecision";
@@ -45,17 +42,20 @@ public class DefinitionAuthorizationIT {
     return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
   }
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+  public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantGlobalAccessForAllDefinitions(int definitionResourceType) {
     //given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -70,8 +70,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantGlobalAccessForAllTenants(int definitionResourceType) {
     //given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -88,8 +88,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(2));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void revokeAllDefinitionAuthorizationsForGroup(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -106,8 +106,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantAllResourceAuthorizationsForGroup(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -123,8 +123,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void revokeAllTenantAccessForGroup(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -145,8 +145,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantAllTenantAccessForGroup(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -167,8 +167,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(2));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void revokeSingleDefinitionAuthorizationForGroup(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -188,8 +188,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantSingleDefinitionAuthorizationsForGroup(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -208,8 +208,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void revokeSingleTenantAuthorizationForGroup(int definitionResourceType) {
     // given
     final String tenantId = "tenant1";
@@ -228,8 +228,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantSingleTenantAuthorizationsForGroup(int definitionResourceType) {
     // given
     final String tenantId = "tenant1";
@@ -247,8 +247,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void revokeAllResourceAuthorizationsForUser(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -264,8 +264,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantAllDefinitionAuthorizationsForUser(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -280,8 +280,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void revokeSingleDefinitionAuthorizationForUser(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -300,8 +300,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantSingleDefinitionAuthorizationsForUser(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -319,8 +319,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void revokeSingleTenantAuthorizationForUser(int definitionResourceType) {
     // given
     final String tenantId = "tenant1";
@@ -338,8 +338,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantSingleTenantAuthorizationsForUser(int definitionResourceType) {
     // given
     final String tenantId = "tenant1";
@@ -356,8 +356,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantAllTenantAccessForUser(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -377,8 +377,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(2));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void revokeAllTenantAccessForUser(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -398,8 +398,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(0));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantAndRevokeSeveralTimes(int definitionResourceType) {
     //given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -483,32 +483,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
-  public void authorizationForOneGroupIsNotTransferredToOtherGroups(int definitionResourceType) {
-    // given
-    final String genzoUser = "genzo";
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    authorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
-    engineRule.addUser(genzoUser, genzoUser);
-    engineRule.grantUserOptimizeAccess(genzoUser);
-    engineRule.createGroup("genzoGroup");
-    engineRule.addUserToGroup(genzoUser, "genzoGroup");
-
-    deployAndImportDefinition(definitionResourceType);
-
-    // when
-    List<DefinitionOptimizeDto> genzosDefinitions = retrieveDefinitionsAsUser(
-      definitionResourceType, genzoUser, genzoUser
-    );
-
-    // then
-    assertThat(genzosDefinitions.size(), is(0));
-  }
-
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void readAndReadHistoryPermissionsGrandDefinitionAccess(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -526,8 +502,32 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(1));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
+  public void authorizationForOneGroupIsNotTransferredToOtherGroups(int definitionResourceType) {
+    // given
+    final String genzoUser = "genzo";
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
+    engineIntegrationExtensionRule.addUser(genzoUser, genzoUser);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(genzoUser);
+    engineIntegrationExtensionRule.createGroup("genzoGroup");
+    engineIntegrationExtensionRule.addUserToGroup(genzoUser, "genzoGroup");
+
+    deployAndImportDefinition(definitionResourceType);
+
+    // when
+    List<DefinitionOptimizeDto> genzosDefinitions = retrieveDefinitionsAsUser(
+      definitionResourceType, genzoUser, genzoUser
+    );
+
+    // then
+    assertThat(genzosDefinitions.size(), is(0));
+  }
+
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantReadTenantAccessForUser(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -549,8 +549,8 @@ public class DefinitionAuthorizationIT {
     assertThat(definitions.size(), is(2));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void grantAuthorizationToSingleDefinitionTransfersToAllVersions(int definitionResourceType) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -585,8 +585,8 @@ public class DefinitionAuthorizationIT {
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
   }
 
 
@@ -612,7 +612,7 @@ public class DefinitionAuthorizationIT {
   }
 
   private List<ProcessDefinitionOptimizeDto> retrieveProcessDefinitionsAsUser(String name, String password) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
       .withUserAuthentication(name, password)
@@ -620,7 +620,7 @@ public class DefinitionAuthorizationIT {
   }
 
   private List<DecisionDefinitionOptimizeDto> retrieveDecisionDefinitionsAsUser(String name, String password) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDecisionDefinitionsRequest()
       .withUserAuthentication(name, password)
@@ -632,12 +632,12 @@ public class DefinitionAuthorizationIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId).getId();
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId).getId();
   }
 
   private String deploySimpleDecisionDefinition(final String decisionKey, final String tenantId) {
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
-    return engineRule.deployDecisionDefinition(modelInstance, tenantId).getId();
+    return engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance, tenantId).getId();
   }
 
 }

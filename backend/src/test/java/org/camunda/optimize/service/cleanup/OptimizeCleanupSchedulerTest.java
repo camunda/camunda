@@ -9,13 +9,14 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -23,12 +24,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class OptimizeCleanupSchedulerTest {
 
   private ConfigurationService configurationService;
 
-  @Before
+  @BeforeEach
   public void init() {
     configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
   }
@@ -73,16 +74,16 @@ public class OptimizeCleanupSchedulerTest {
     verify(mockedCleanupService2, times(1)).doCleanup(any());
   }
 
-  @Test(expected = OptimizeConfigurationException.class)
+  @Test
   public void testFailInitOnInvalidConfig() {
     // given
     getCleanupConfiguration().setDefaultTtl(null);
 
     //when
     final OptimizeCleanupScheduler underTest = createOptimizeCleanupServiceToTest();
-    underTest.init();
 
     //then
+    assertThrows(OptimizeConfigurationException.class, underTest::init);
   }
 
   private OptimizeCleanupConfiguration getCleanupConfiguration() {

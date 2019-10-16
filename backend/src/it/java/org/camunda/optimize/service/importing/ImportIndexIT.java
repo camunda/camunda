@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ public class ImportIndexIT extends AbstractImportIT {
   @Test
   public void importIndexIsZeroIfNothingIsImportedYet() {
     // when
-    List<Long> indexes = embeddedOptimizeRule.getImportIndexes();
+    List<Long> indexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // then
     for (Long index : indexes) {
@@ -31,22 +31,22 @@ public class ImportIndexIT extends AbstractImportIT {
   public void indexLastTimestampIsEqualEvenAfterReset() throws InterruptedException {
     // given
     final int currentTimeBackOff = 1000;
-    embeddedOptimizeRule.getConfigurationService().setCurrentTimeBackoffMilliseconds(currentTimeBackOff);
+    embeddedOptimizeExtensionRule.getConfigurationService().setCurrentTimeBackoffMilliseconds(currentTimeBackOff);
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
 
     // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
     Thread.sleep(currentTimeBackOff);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    List<Long> firstRoundIndexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // then
-    embeddedOptimizeRule.resetImportStartIndexes();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+    embeddedOptimizeExtensionRule.resetImportStartIndexes();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    List<Long> secondsRoundIndexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // then
     for (int i = 0; i < firstRoundIndexes.size(); i++) {
@@ -59,21 +59,21 @@ public class ImportIndexIT extends AbstractImportIT {
     // given
     deployAndStartUserTaskProcess();
     // we need finished ones
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
     // as well as running
     deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();
-    engineRule.deployAndStartDecisionDefinition();
-    engineRule.createTenant("id", "name");
+    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    engineIntegrationExtensionRule.createTenant("id", "name");
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    List<Long> indexes = embeddedOptimizeRule.getImportIndexes();
+    embeddedOptimizeExtensionRule.stopOptimize();
+    embeddedOptimizeExtensionRule.startOptimize();
+    List<Long> indexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // then
     for (Long index : indexes) {
@@ -87,15 +87,15 @@ public class ImportIndexIT extends AbstractImportIT {
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    List<Long> firstRoundIndexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // when
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+    embeddedOptimizeExtensionRule.stopOptimize();
+    embeddedOptimizeExtensionRule.startOptimize();
+    List<Long> secondsRoundIndexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // then
     for (int i = 0; i < firstRoundIndexes.size(); i++) {
@@ -107,19 +107,19 @@ public class ImportIndexIT extends AbstractImportIT {
   public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> firstRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    List<Long> firstRoundIndexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // and
     deployAndStartSimpleServiceTask();
 
     // when
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
+    embeddedOptimizeExtensionRule.stopOptimize();
+    embeddedOptimizeExtensionRule.startOptimize();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    List<Long> secondsRoundIndexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // then
     for (int i = 0; i < firstRoundIndexes.size(); i++) {
@@ -131,16 +131,16 @@ public class ImportIndexIT extends AbstractImportIT {
   public void itIsPossibleToResetTheImportIndex() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
 
     // when
-    embeddedOptimizeRule.resetImportStartIndexes();
-    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.resetImportStartIndexes();
+    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    embeddedOptimizeRule.stopOptimize();
-    embeddedOptimizeRule.startOptimize();
-    List<Long> indexes = embeddedOptimizeRule.getImportIndexes();
+    embeddedOptimizeExtensionRule.stopOptimize();
+    embeddedOptimizeExtensionRule.startOptimize();
+    List<Long> indexes = embeddedOptimizeExtensionRule.getImportIndexes();
 
     // then
     for (Long index : indexes) {

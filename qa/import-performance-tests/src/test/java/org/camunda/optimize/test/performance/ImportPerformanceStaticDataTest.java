@@ -6,7 +6,7 @@
 package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.test.util.PropertyUtil;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -47,7 +47,7 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
   private void importEngineData() throws InterruptedException, TimeoutException {
     final ExecutorService importExecutorService = Executors.newSingleThreadExecutor();
     importExecutorService.execute(
-      () -> embeddedOptimizeRule.importAllEngineData()
+      () -> embeddedOptimizeExtensionRule.importAllEngineData()
     );
 
     ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
@@ -61,7 +61,7 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
     }
     progressReporterExecutorService.shutdown();
 
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
   }
 
 }

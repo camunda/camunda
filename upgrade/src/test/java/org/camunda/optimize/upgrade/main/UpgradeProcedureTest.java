@@ -8,7 +8,7 @@ package org.camunda.optimize.upgrade.main;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionPlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import static org.mockito.ArgumentMatchers.any;

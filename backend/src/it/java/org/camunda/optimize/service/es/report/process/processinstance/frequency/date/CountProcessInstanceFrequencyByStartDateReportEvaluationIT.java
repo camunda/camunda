@@ -33,7 +33,6 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-
 public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
   extends AbstractCountProcessInstanceFrequencyByDateReportEvaluationIT {
 
@@ -50,12 +49,12 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
   @Override
   protected void changeProcessInstanceDate(final String processInstanceId, final OffsetDateTime newDate) throws
                                                                                                          SQLException {
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceId, newDate);
+    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstanceId, newDate);
   }
 
   @Override
   protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) throws SQLException {
-    engineDatabaseRule.updateProcessInstanceStartDates(newIdToDates);
+    engineDatabaseExtensionRule.updateProcessInstanceStartDates(newIdToDates);
   }
 
   @Test
@@ -64,11 +63,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
     final OffsetDateTime startDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     final String definitionId = processInstanceDto.getDefinitionId();
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto2.getId(), startDate.minusDays(2));
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -94,31 +93,31 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
 
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
     assertThat(resultData.get(0).getValue(), is(1L));
 
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(1).getValue(), is(0L));
 
     assertThat(
       resultData.get(2).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(2).getValue(), is(1L));
 
     assertThat(
       resultData.get(3).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(3).getValue(), is(0L));
 
     assertThat(
       resultData.get(4).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(4).getValue(), is(0L));
   }
@@ -130,8 +129,8 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoRunningAndOneCompletedUserTaskProcesses(now);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()

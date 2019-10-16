@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
@@ -25,8 +23,9 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -34,16 +33,15 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertThat;
 
-@RunWith(JUnitParamsRunner.class)
 public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
-  @Test
-  @Parameters(method = ACCESS_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_IDENTITY_ROLES)
   public void containsAuthorizedCollectionsByCollectionUserRole(final IdentityAndRole accessIdentityRolePairs) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -55,7 +53,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    final List<EntityDto> authorizedEntities = embeddedOptimizeRule
+    final List<EntityDto> authorizedEntities = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllEntitiesRequest()
@@ -77,7 +75,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   public void superUserAllEntitiesAvailable() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String combinedReportId = createCombinedReportAsDefaultUser();
@@ -86,7 +84,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String dashboardId = createDashboardAsDefaultUser();
 
     // when
-    final List<EntityDto> authorizedEntities = embeddedOptimizeRule
+    final List<EntityDto> authorizedEntities = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllEntitiesRequest()
@@ -108,7 +106,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   public void superUserEntitiesNotAuthorizedForDefinitionAreHidden() {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     ProcessDefinitionEngineDto unauthorizedProcess = deploySimpleServiceTaskProcess("unauthorizedProcess");
     DecisionDefinitionEngineDto unauthorizedDecision = deploySimpleDecisionDefinition("unauthorizedDecision");
@@ -117,7 +115,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     createSingleDecisionReportForDefinitionAsDefaultUser(unauthorizedDecision);
 
     // when
-    final List<EntityDto> authorizedEntities = embeddedOptimizeRule
+    final List<EntityDto> authorizedEntities = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllEntitiesRequest()
@@ -139,7 +137,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     createDashboardAsDefaultUser();
 
     // when
-    final List<EntityDto> authorizedEntities = embeddedOptimizeRule
+    final List<EntityDto> authorizedEntities = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllEntitiesRequest()
@@ -150,7 +148,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private String createDashboardAsDefaultUser() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest()
       .execute(IdDto.class, 200)
@@ -176,7 +174,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private String createSingleDecisionReportAsDefaultUser(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -202,7 +200,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private String createSingleProcessReportAsDefaultUser(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -210,7 +208,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private String createCombinedReportAsDefaultUser() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCombinedReportRequest()
       .execute(IdDto.class, 200)
@@ -225,7 +223,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
   protected DecisionDefinitionEngineDto deploySimpleDecisionDefinition(final String definitionKey) {
@@ -235,7 +233,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
       .addInput("input", "input", "input", DecisionTypeRef.STRING)
       .addOutput("output", DecisionTypeRef.STRING)
       .buildDecision();
-    return engineRule.deployDecisionDefinition(dmnModelGenerator.build());
+    return engineIntegrationExtensionRule.deployDecisionDefinition(dmnModelGenerator.build());
   }
 
 }

@@ -5,25 +5,23 @@
  */
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(JUnitParamsRunner.class)
 public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
@@ -32,7 +30,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = createNewCollectionAsDefaultUser();
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeRule
+    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(AuthorizedResolvedCollectionDefinitionDto.class, 200);
@@ -42,8 +40,8 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(collection.getCurrentUserRole(), is(RoleType.MANAGER));
   }
 
-  @Test
-  @Parameters(method = ACCESS_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_IDENTITY_ROLES)
   public void identityIsGrantedAccessByCollectionRole(final IdentityAndRole accessIdentityRolePairs) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -57,7 +55,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeRule
+    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
@@ -83,12 +81,12 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
@@ -107,7 +105,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = createNewCollectionAsDefaultUser();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
@@ -120,7 +118,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   private String createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
     combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -130,7 +128,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   private String createDashboardInCollectionAsDefaultUser(final String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)

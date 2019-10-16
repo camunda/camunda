@@ -16,22 +16,23 @@ import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawD
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 import java.util.Optional;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ExportServiceTest {
 
   @Mock
@@ -43,7 +44,7 @@ public class ExportServiceTest {
   @InjectMocks
   private ExportService exportService;
 
-  @Before
+  @BeforeEach
   public void init() {
     when(configurationService.getExportCsvLimit()).thenReturn(100);
   }

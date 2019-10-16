@@ -9,12 +9,12 @@ import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Period;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class OptimizeCleanupConfigurationTest {
 

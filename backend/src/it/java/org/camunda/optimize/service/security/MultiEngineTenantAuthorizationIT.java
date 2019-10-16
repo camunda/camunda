@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
@@ -15,12 +13,18 @@ import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -31,15 +35,24 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-@RunWith(JUnitParamsRunner.class)
 public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
-  private static final Object[] definitionType() {
-    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
-  }
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule defaultEngineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EngineIntegrationExtensionRule secondaryEngineIntegrationExtensionRule = new EngineIntegrationExtensionRule("anotherEngine");
+  @RegisterExtension
+  @Order(4)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  private AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(defaultEngineRule);
-  private AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondEngineRule);
+  private AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(defaultEngineIntegrationExtensionRule);
+  private AuthorizationClient secondAuthorizationClient = new AuthorizationClient(
+    secondaryEngineIntegrationExtensionRule);
 
   @Test
   public void getAllStoredTenantsGrantedAccessToByAllEngines() {
@@ -47,20 +60,20 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
 
     final String tenantId1 = "tenant1";
-    defaultEngineRule.createTenant(tenantId1);
+    defaultEngineIntegrationExtensionRule.createTenant(tenantId1);
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     defaultAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
 
     final String tenantId2 = "tenant2";
-    secondEngineRule.createTenant(tenantId2);
+    secondaryEngineIntegrationExtensionRule.createTenant(tenantId2);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeRule.getTenantService().getTenantsForUser(KERMIT_USER);
+    final List<TenantDto> tenants = embeddedOptimizeExtensionRule.getTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
     assertThat(tenants.size(), is(3));
@@ -76,19 +89,19 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     addSecondEngineToConfiguration();
 
     final String tenantId1 = "tenant1";
-    defaultEngineRule.createTenant(tenantId1);
+    defaultEngineIntegrationExtensionRule.createTenant(tenantId1);
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     final String tenantId2 = "tenant2";
-    secondEngineRule.createTenant(tenantId2);
+    secondaryEngineIntegrationExtensionRule.createTenant(tenantId2);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     secondAuthorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId2, RESOURCE_TYPE_TENANT);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeRule.getTenantService().getTenantsForUser(KERMIT_USER);
+    final List<TenantDto> tenants = embeddedOptimizeExtensionRule.getTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
     assertThat(tenants.size(), is(2));
@@ -111,12 +124,12 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     setSecondEngineDefaultTenant(new DefaultTenant(tenantId2));
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    embeddedOptimizeRule.reloadConfiguration();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeRule.getTenantService().getTenantsForUser(KERMIT_USER);
+    final List<TenantDto> tenants = embeddedOptimizeExtensionRule.getTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
     assertThat(tenants.size(), is(3));
@@ -137,14 +150,14 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
 
     final String tenantId2 = "tenant2";
     setSecondEngineDefaultTenant(new DefaultTenant(tenantId2));
-    secondEngineRule.addUser(KERMIT_USER, KERMIT_USER);
+    secondaryEngineIntegrationExtensionRule.addUser(KERMIT_USER, KERMIT_USER);
 
-    embeddedOptimizeRule.reloadConfiguration();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    final List<TenantDto> tenants = embeddedOptimizeRule.getTenantService().getTenantsForUser(KERMIT_USER);
+    final List<TenantDto> tenants = embeddedOptimizeExtensionRule.getTenantService().getTenantsForUser(KERMIT_USER);
 
     // then
     assertThat(tenants.size(), is(2));
@@ -154,8 +167,8 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     );
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void getDefinitionVersionsWithTenantsForSameKeyAndDefaultTenantPerEngineByAllEngines(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
@@ -170,7 +183,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     secondAuthorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
 
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     deployStartAndImportDefinitionsWithSameKeyOnAllEngines(definitionResourceType);
 
@@ -179,18 +192,18 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
       getDefinitionVersionsWithTenantsAsKermit(definitionResourceType);
 
     //then
-    Assert.assertThat(definitions.size(), is(1));
-    Assert.assertThat(definitions.get(0).getVersions().size(), is(1));
-    Assert.assertThat(definitions.get(0).getVersions().get(0).getTenants().size(), is(2));
-    Assert.assertThat(
+    assertThat(definitions.size(), is(1));
+    assertThat(definitions.get(0).getVersions().size(), is(1));
+    assertThat(definitions.get(0).getVersions().get(0).getTenants().size(), is(2));
+    assertThat(
       definitions.get(0).getVersions().get(0)
         .getTenants().stream().map(TenantRestDto::getId).collect(Collectors.toList()),
       containsInAnyOrder(tenantId1, tenantId2)
     );
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void getDefinitionVersionsWithTenantsForSameKeyAndDefaultTenantPerEngineByOneEngine(int definitionResourceType) {
     // given
     addSecondEngineToConfiguration();
@@ -204,7 +217,7 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     setSecondEngineDefaultTenant(new DefaultTenant(tenantId2));
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     deployStartAndImportDefinitionsWithSameKeyOnAllEngines(definitionResourceType);
 
@@ -213,10 +226,10 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
       getDefinitionVersionsWithTenantsAsKermit(definitionResourceType);
 
     //then
-    Assert.assertThat(definitions.size(), is(1));
-    Assert.assertThat(definitions.get(0).getVersions().size(), is(1));
-    Assert.assertThat(definitions.get(0).getVersions().get(0).getTenants().size(), is(1));
-    Assert.assertThat(definitions.get(0).getVersions().get(0).getTenants().get(0).getId(), is(tenantId1));
+    assertThat(definitions.size(), is(1));
+    assertThat(definitions.get(0).getVersions().size(), is(1));
+    assertThat(definitions.get(0).getVersions().get(0).getTenants().size(), is(1));
+    assertThat(definitions.get(0).getVersions().get(0).getTenants().get(0).getId(), is(tenantId1));
   }
 
   private void deployStartAndImportDefinitionsWithSameKeyOnAllEngines(final int definitionResourceType) {
@@ -231,14 +244,14 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
         deployAndStartProcessOnSecondEngine(PROCESS_KEY_1, tenantId);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        defaultEngineRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId);
-        secondEngineRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId);
+        defaultEngineIntegrationExtensionRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId);
+        secondaryEngineIntegrationExtensionRule.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId);
         break;
       default:
         throw new OptimizeIntegrationTestException("Unsupported resource type: " + definitionResourceType);
     }
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
   }
 
   private List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsKermit(
@@ -246,14 +259,14 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
     final List<DefinitionVersionsWithTenantsRestDto> definitions;
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        definitions = embeddedOptimizeRule
+        definitions = embeddedOptimizeExtensionRule
           .getRequestExecutor()
           .withUserAuthentication(KERMIT_USER, KERMIT_USER)
           .buildGetProcessDefinitionVersionsWithTenants()
           .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        definitions = embeddedOptimizeRule
+        definitions = embeddedOptimizeExtensionRule
           .getRequestExecutor()
           .withUserAuthentication(KERMIT_USER, KERMIT_USER)
           .buildGetDecisionDefinitionVersionsWithTenants()
@@ -263,6 +276,10 @@ public class MultiEngineTenantAuthorizationIT extends AbstractMultiEngineIT {
         throw new OptimizeIntegrationTestException("Unsupported resource type: " + definitionResourceType);
     }
     return definitions;
+  }
+
+  private static final Stream<Integer> definitionType() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
 }

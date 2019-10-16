@@ -21,24 +21,25 @@ import org.camunda.optimize.service.engine.importing.service.mediator.IdentityLi
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -48,42 +49,28 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 
-@RunWith(Parameterized.class)
 public class UserTaskMediatorPermutationsImportIT {
-
-  @Parameterized.Parameters(name = "mediatorOrder: {0}")
-  public static Iterable<? extends Object> data() {
-    // Note: we use the simpleName here to have sane output for the junit name
-    return Collections2.permutations(
-      ImmutableList.of(
-        CompletedUserTaskEngineImportMediator.class.getSimpleName(),
-        IdentityLinkLogEngineImportMediator.class.getSimpleName(),
-        CompletedProcessInstanceEngineImportMediator.class.getSimpleName()
-      )
-    );
-  }
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
   private static final String USER_TASK_1 = "userTask1";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
 
   private ObjectMapper objectMapper;
-  private final List<Class<? extends EngineImportMediator>> mediatorOrder;
 
-  public UserTaskMediatorPermutationsImportIT(final List<String> mediatorClassOrder) {
-    this.mediatorOrder = mapToMediatorClassList(mediatorClassOrder);
-  }
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
-
-  @Before
+  @BeforeEach
   public void setUp() {
     if (objectMapper == null) {
       objectMapper = new ObjectMapperFactory(
@@ -93,21 +80,22 @@ public class UserTaskMediatorPermutationsImportIT {
     }
   }
 
-  @Test
-  public void isFullyImported() throws IOException {
+  @ParameterizedTest
+  @MethodSource("getParameters")
+  public void isFullyImported(List<String> mediatorOrder) throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployUserTaskProcess();
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
 
     // when
-    performOrderedImport();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    performOrderedImport(mediatorOrder);
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp =
-      elasticSearchRule.getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+      elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -129,8 +117,9 @@ public class UserTaskMediatorPermutationsImportIT {
     }
   }
 
-  private void performOrderedImport() {
-    for (EngineImportScheduler scheduler : embeddedOptimizeRule.getImportSchedulerFactory().getImportSchedulers()) {
+  private void performOrderedImport(List<String> mediatorOrder) {
+    for (EngineImportScheduler scheduler : embeddedOptimizeExtensionRule.getImportSchedulerFactory()
+      .getImportSchedulers()) {
       final List<EngineImportMediator> sortedMediators = scheduler
         .getImportMediators()
         .stream()
@@ -139,29 +128,14 @@ public class UserTaskMediatorPermutationsImportIT {
 
       sortedMediators.forEach(EngineImportMediator::importNextPage);
     }
-    embeddedOptimizeRule.makeSureAllScheduledJobsAreFinished();
-  }
-
-  private List<Class<? extends EngineImportMediator>> mapToMediatorClassList(final List<String> simpleMediatorNames) {
-    return simpleMediatorNames.stream()
-      .map(simpleName -> {
-        try {
-          return getClass().getClassLoader().loadClass(
-            EngineImportMediator.class.getName().replace(EngineImportMediator.class.getSimpleName(), simpleName)
-          );
-        } catch (ClassNotFoundException e) {
-          throw new RuntimeException(e);
-        }
-      })
-      .map(result -> (Class<EngineImportMediator>) result)
-      .collect(toList());
+    embeddedOptimizeExtensionRule.makeSureAllScheduledJobsAreFinished();
   }
 
   private void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto, final long idleDuration) {
-    engineRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         try {
-          engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
+          engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
             historicUserTaskInstanceDto.getId(),
             historicUserTaskInstanceDto.getStartTime().plus(idleDuration, ChronoUnit.MILLIS)
           );
@@ -177,7 +151,16 @@ public class UserTaskMediatorPermutationsImportIT {
       .userTask(USER_TASK_1)
       .endEvent(END_EVENT)
       .done();
-    return engineRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+  }
+
+  private static Stream<? extends Object> getParameters() {
+    return StreamSupport.stream(Collections2.permutations(
+      ImmutableList.of(
+        CompletedUserTaskEngineImportMediator.class.getSimpleName(),
+        IdentityLinkLogEngineImportMediator.class.getSimpleName(),
+        CompletedProcessInstanceEngineImportMediator.class.getSimpleName()
+      )).spliterator(), false);
   }
 
 }

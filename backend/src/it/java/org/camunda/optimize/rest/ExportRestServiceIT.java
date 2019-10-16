@@ -17,17 +17,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
@@ -43,22 +42,22 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.IsNot.not;
 
-
 public class ExportRestServiceIT {
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void exportWithoutAuthorization() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildCsvExportRequest("fake_id", "my_file.csv")
@@ -66,7 +65,7 @@ public class ExportRestServiceIT {
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(307));
-    Assert.assertThat(response.getLocation().getPath(), is("/login"));
+    assertThat(response.getLocation().getPath(), is("/login"));
   }
 
   @Test
@@ -79,7 +78,7 @@ public class ExportRestServiceIT {
     );
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "")
       .execute();
@@ -98,7 +97,7 @@ public class ExportRestServiceIT {
     );
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -111,14 +110,14 @@ public class ExportRestServiceIT {
   @Test
   public void exportExistingRawDecisionReport() throws IOException {
     //given
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployAndStartDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
     String reportId = createAndStoreDefaultValidRawDecisionReportDefinition(
       decisionDefinitionEngineDto.getKey(),
       String.valueOf(decisionDefinitionEngineDto.getVersion())
     );
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -141,7 +140,7 @@ public class ExportRestServiceIT {
     );
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -155,7 +154,7 @@ public class ExportRestServiceIT {
   public void exportNotExistingReport() {
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildCsvExportRequest("UFUK", "IGDE.csv")
         .execute();
@@ -218,7 +217,7 @@ public class ExportRestServiceIT {
   }
 
   private String createSingleDecisionReport(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -226,7 +225,7 @@ public class ExportRestServiceIT {
   }
 
   private String createNewProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -243,6 +242,6 @@ public class ExportRestServiceIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 }

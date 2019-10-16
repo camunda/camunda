@@ -10,9 +10,9 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationD
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.ui.TextColorType;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
@@ -21,7 +21,7 @@ import org.junit.rules.RuleChain;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -30,13 +30,14 @@ import static org.hamcrest.Matchers.greaterThan;
 
 public class UIConfigurationRestServiceIT {
 
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  private EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
 
   @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
+  public RuleChain chain = RuleChain.outerRule(elasticSearchIntegrationTestExtensionRule)
+    .around(engineIntegrationExtensionRule)
+    .around(embeddedOptimizeExtensionRule);
 
   @Test
   public void getHeaderCustomization() {
@@ -54,7 +55,7 @@ public class UIConfigurationRestServiceIT {
   @Test
   public void sharingEnabled() {
     // given
-    embeddedOptimizeRule.getConfigurationService().setSharingEnabled(true);
+    embeddedOptimizeExtensionRule.getConfigurationService().setSharingEnabled(true);
 
     // when
     final UIConfigurationDto response = getUIConfiguration();
@@ -66,7 +67,7 @@ public class UIConfigurationRestServiceIT {
   @Test
   public void sharingDisabled() {
     // given
-    embeddedOptimizeRule.getConfigurationService().setSharingEnabled(false);
+    embeddedOptimizeExtensionRule.getConfigurationService().setSharingEnabled(false);
 
     // when
     final UIConfigurationDto response = getUIConfiguration();
@@ -86,7 +87,7 @@ public class UIConfigurationRestServiceIT {
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint, Matchers.notNullValue());
     assertThat(defaultEndpoint.getEndpoint(), is("http://localhost:8080/camunda"));
-    assertThat(defaultEndpoint.getEngineName(), is(engineIntegrationRule.getEngineName()));
+    assertThat(defaultEndpoint.getEngineName(), is(engineIntegrationExtensionRule.getEngineName()));
   }
 
   @Test
@@ -104,7 +105,7 @@ public class UIConfigurationRestServiceIT {
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint, Matchers.notNullValue());
     assertThat(defaultEndpoint.getEndpoint(), is("foo"));
-    assertThat(defaultEndpoint.getEngineName(), is(engineIntegrationRule.getEngineName()));
+    assertThat(defaultEndpoint.getEngineName(), is(engineIntegrationExtensionRule.getEngineName()));
   }
 
   @Test
@@ -127,7 +128,7 @@ public class UIConfigurationRestServiceIT {
   @Test
   public void emailNotificationIsEnabled() {
     //given
-    embeddedOptimizeRule.getConfigurationService().setEmailEnabled(true);
+    embeddedOptimizeExtensionRule.getConfigurationService().setEmailEnabled(true);
 
     // when
     UIConfigurationDto response = getUIConfiguration();
@@ -139,7 +140,7 @@ public class UIConfigurationRestServiceIT {
   @Test
   public void emailNotificationIsDisabled() {
     //given
-    embeddedOptimizeRule.getConfigurationService().setEmailEnabled(false);
+    embeddedOptimizeExtensionRule.getConfigurationService().setEmailEnabled(false);
 
     // when
     UIConfigurationDto response = getUIConfiguration();
@@ -158,14 +159,14 @@ public class UIConfigurationRestServiceIT {
   }
 
   private UIConfigurationDto getUIConfiguration() {
-    return embeddedOptimizeRule.getRequestExecutor()
+    return embeddedOptimizeExtensionRule.getRequestExecutor()
       .withoutAuthentication()
       .buildGetUIConfigurationRequest()
       .execute(UIConfigurationDto.class, 200);
   }
 
   private void setWebappsEndpoint(String webappsEndpoint) {
-    embeddedOptimizeRule
+    embeddedOptimizeExtensionRule
       .getConfigurationService()
       .getConfiguredEngines()
       .get(DEFAULT_ENGINE_ALIAS)
@@ -174,7 +175,7 @@ public class UIConfigurationRestServiceIT {
   }
 
   private void setWebappsEnabled(boolean enabled) {
-    embeddedOptimizeRule
+    embeddedOptimizeExtensionRule
       .getConfigurationService()
       .getConfiguredEngines()
       .get(DEFAULT_ENGINE_ALIAS)

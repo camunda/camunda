@@ -6,9 +6,8 @@
 package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.data.generation.DataGenerationExecutor;
-import org.camunda.optimize.data.generation.Main;
 import org.camunda.optimize.test.util.PropertyUtil;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -41,7 +40,7 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
 
     // AND I start optimize & schedule imports
     logger.info("Starting import of engine data to Optimize...");
-    embeddedOptimizeRule.startContinuousImportScheduling();
+    embeddedOptimizeExtensionRule.startContinuousImportScheduling();
     ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
 
     // WHEN I start another data generation and wait for it to finish
@@ -49,15 +48,15 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     waitForDataGenerationTaskToComplete(dataGenerationTask1);
 
     // wait for data import to finish
-    embeddedOptimizeRule.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
+    embeddedOptimizeExtensionRule.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
 
     // AND wait for the double max backoff period to pass to ensure any backed off mediator runs at least once more
     Thread.sleep(2 * configurationService.getMaximumBackoff() * 1000L);
-    embeddedOptimizeRule.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
+    embeddedOptimizeExtensionRule.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
 
     progressReporterExecutorService.shutdown();
 
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
     logStats();
 
     // THEN all data from the engine should be in elasticsearch

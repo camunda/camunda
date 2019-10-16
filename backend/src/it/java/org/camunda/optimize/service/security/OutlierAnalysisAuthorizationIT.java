@@ -14,28 +14,27 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(Parameterized.class)
 public class OutlierAnalysisAuthorizationIT {
   private static final String PROCESS_DEFINITION_KEY = "outlierTest";
   private static final String ENDPOINT_FLOW_NODE_OUTLIERS = "flowNodeOutliers";
@@ -45,131 +44,143 @@ public class OutlierAnalysisAuthorizationIT {
     "significantOutlierVariableTerms/processInstanceIdsExport";
   private static final String FLOW_NODE_ID_START = "start";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+  private final AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
 
-  private final AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
-  private final String endpoint;
-
-  @Parameterized.Parameters(name = "{0}")
-  public static Collection<Object[]> endpoints() {
-    return Arrays.asList(
-      new Object[]{ENDPOINT_FLOW_NODE_OUTLIERS},
-      new Object[]{ENDPOINT_DURATION_CHART},
-      new Object[]{ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS},
-      new Object[]{ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS_PROCESS_INSTANCE_IDS_EXPORT}
+  private static Stream<String> endpoints() {
+    return Stream.of(
+      ENDPOINT_FLOW_NODE_OUTLIERS,
+      ENDPOINT_DURATION_CHART,
+      ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS,
+      ENDPOINT_SIGNIFICANT_OUTLIER_VARIABLE_TERMS_PROCESS_INSTANCE_IDS_EXPORT
     );
   }
 
-  public OutlierAnalysisAuthorizationIT(final String endpoint) {
-    this.endpoint = endpoint;
-  }
-
-  @Test
-  public void outlierEndpoint_unauthenticated() {
+  @ParameterizedTest
+  @MethodSource("endpoints")
+  public void outlierEndpoint_unauthenticated(String endpoint) {
     // given
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
 
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     final Response response = executeRequest(
-      processDefinition, embeddedOptimizeRule.getRequestExecutor().withoutAuthentication(), null
+      processDefinition,
+      embeddedOptimizeExtensionRule.getRequestExecutor().withoutAuthentication(),
+      null,
+      endpoint
     );
 
     //then
-    Assert.assertThat(response.getStatus(), is(401));
+    assertThat(response.getStatus(), is(401));
   }
 
-  @Test
-  public void outlierEndpoint_authorized() {
+  @ParameterizedTest
+  @MethodSource("endpoints")
+  public void outlierEndpoint_authorized(String endpoint) {
     // given
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
 
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
-    final Response response = executeRequest(processDefinition, embeddedOptimizeRule.getRequestExecutor(), null);
+    final Response response = executeRequest(
+      processDefinition,
+      embeddedOptimizeExtensionRule.getRequestExecutor(),
+      null,
+      endpoint
+    );
 
     //then
-    Assert.assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  public void outlierEndpoint_notAuthorizedToProcessDefinition() {
+  @ParameterizedTest
+  @MethodSource("endpoints")
+  public void outlierEndpoint_notAuthorizedToProcessDefinition(String endpoint) {
     // given
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     final Response response = executeRequest(
       processDefinition,
-      embeddedOptimizeRule.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      null
+      embeddedOptimizeExtensionRule.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
+      null,
+      endpoint
     );
 
     //then
-    Assert.assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(403));
   }
 
-  @Test
-  public void outlierEndpoint_noneTenantAuthorized() {
+  @ParameterizedTest
+  @MethodSource("endpoints")
+  public void outlierEndpoint_noneTenantAuthorized(String endpoint) {
     // given
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId));
 
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     final Response response = executeRequest(
       processDefinition,
-      embeddedOptimizeRule.getRequestExecutor(),
-      Collections.singletonList(null)
+      embeddedOptimizeExtensionRule.getRequestExecutor(),
+      Collections.singletonList(null),
+      endpoint
     );
 
     //then
-    Assert.assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  public void outlierEndpoint_authorizedTenant() {
+  @ParameterizedTest
+  @MethodSource("endpoints")
+  public void outlierEndpoint_authorizedTenant(String endpoint) {
     // given
     final String tenantId = "tenantId";
     final String activityId = "chartTestActivity";
-    engineRule.createTenant(tenantId);
+    engineIntegrationExtensionRule.createTenant(tenantId);
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId);
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -177,60 +188,64 @@ public class OutlierAnalysisAuthorizationIT {
 
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     final Response response = executeRequest(
       processDefinition,
-      embeddedOptimizeRule.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      Collections.singletonList(tenantId)
+      embeddedOptimizeExtensionRule.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
+      Collections.singletonList(tenantId),
+      endpoint
     );
 
     //then
-    Assert.assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  public void outlierEndpoint_unauthorizedTenant() {
+  @ParameterizedTest
+  @MethodSource("endpoints")
+  public void outlierEndpoint_unauthorizedTenant(String endpoint) {
     // given
     final String tenantId = "tenantId";
     final String activityId = "chartTestActivity";
-    engineRule.createTenant(tenantId);
+    engineIntegrationExtensionRule.createTenant(tenantId);
     ProcessDefinitionEngineDto processDefinition =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId);
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     final Response response = executeRequest(
       processDefinition,
-      embeddedOptimizeRule.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      Collections.singletonList(tenantId)
+      embeddedOptimizeExtensionRule.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
+      Collections.singletonList(tenantId),
+      endpoint
     );
 
     //then
-    Assert.assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(403));
   }
 
-  @Test
-  public void outlierEndpoint_partiallyUnauthorizedTenants() {
+  @ParameterizedTest
+  @MethodSource("endpoints")
+  public void outlierEndpoint_partiallyUnauthorizedTenants(String endpoint) {
     // given
     final String tenantId1 = "tenantId1";
-    engineRule.createTenant(tenantId1);
+    engineIntegrationExtensionRule.createTenant(tenantId1);
     final String tenantId2 = "tenantId2";
-    engineRule.createTenant(tenantId2);
+    engineIntegrationExtensionRule.createTenant(tenantId2);
     final String activityId = "chartTestActivity";
     ProcessDefinitionEngineDto processDefinition1 =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId1);
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId1);
     ProcessDefinitionEngineDto processDefinition2 =
-      engineRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId2);
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(activityId), tenantId2);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
@@ -238,23 +253,25 @@ public class OutlierAnalysisAuthorizationIT {
     startInstanceWithSampleVariables(processDefinition1);
     startInstanceWithSampleVariables(processDefinition2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     final Response response = executeRequest(
       processDefinition1,
-      embeddedOptimizeRule.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
-      ImmutableList.of(tenantId1, tenantId2)
+      embeddedOptimizeExtensionRule.getRequestExecutor().withUserAuthentication(KERMIT_USER, KERMIT_USER),
+      ImmutableList.of(tenantId1, tenantId2),
+      endpoint
     );
 
     //then
-    Assert.assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(403));
   }
 
   private Response executeRequest(final ProcessDefinitionEngineDto processDefinition,
                                   final OptimizeRequestExecutor optimizeRequestExecutor,
-                                  final List<String> tenants) {
+                                  final List<String> tenants,
+                                  final String endpoint) {
     switch (endpoint) {
       case ENDPOINT_FLOW_NODE_OUTLIERS:
         return optimizeRequestExecutor
@@ -304,7 +321,7 @@ public class OutlierAnalysisAuthorizationIT {
   }
 
   private void startInstanceWithSampleVariables(final ProcessDefinitionEngineDto processDefinition) {
-    engineRule.startProcessInstance(processDefinition.getId(), ImmutableMap.of("var", "value"));
+    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), ImmutableMap.of("var", "value"));
   }
 
   private BpmnModelInstance getBpmnModelInstance(String... activityId) {

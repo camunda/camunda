@@ -18,14 +18,13 @@ import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
 public class UserTaskIdleDurationByAssigneeReportEvaluationIT
   extends AbstractUserTaskDurationByAssigneeReportEvaluationIT {
-
 
   @Override
   protected UserTaskDurationTime getUserTaskDurationTime() {
@@ -34,7 +33,7 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    engineRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
         historicUserTaskInstanceDto ->
           changeUserClaimTimestamp(
@@ -48,7 +47,7 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
                                 final long duration) {
-    engineRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto ->
           changeUserClaimTimestamp(
@@ -72,7 +71,7 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
   private void changeUserClaimTimestamp(final long millis,
                                         final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     try {
-      engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
+      engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
         historicUserTaskInstanceDto.getId(),
         historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
       );

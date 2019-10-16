@@ -21,10 +21,9 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 
 public class ConfigurationServiceTest {
 
@@ -133,7 +132,7 @@ public class ConfigurationServiceTest {
       Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
 
       // then
-      assertFalse(containerHttpPort.isPresent());
+      assertThat(containerHttpPort.isPresent(), is(false));
     }
   }
 

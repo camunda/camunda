@@ -14,11 +14,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.Inp
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
-import org.camunda.optimize.test.it.rule.EngineVariableValue;
+import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
@@ -39,7 +39,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     final String categoryInputValueToFilterFor = "Travel Expenses";
     final String inputVariableIdToFilterOn = INPUT_CATEGORY_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, "Misc")
@@ -49,8 +49,8 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, categoryInputValueToFilterFor)
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -77,7 +77,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     final String secondCategoryInputValueToFilterFor = "Travel Expenses";
     final String inputVariableIdToFilterOn = INPUT_CATEGORY_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, firstCategoryInputValueToFilterFor)
@@ -91,8 +91,8 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(300.0, "Software License Costs")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -121,7 +121,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     final String categoryInputValueToExclude = "Travel Expenses";
     final String inputVariableIdToFilterOn = INPUT_CATEGORY_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, expectedCategoryInputValue)
@@ -131,8 +131,8 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, categoryInputValueToExclude)
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -163,25 +163,25 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       camInputVariable,
       DecisionTypeRef.STRING
     );
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "testValidMatch")
     );
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "whateverElse")
     );
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       Collections.singletonMap(camInputVariable, null)
     );
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       Collections.singletonMap(camInputVariable, new EngineVariableValue(null, "String"))
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -211,29 +211,29 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       DecisionTypeRef.STRING
     );
 
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       Collections.singletonMap(camInputVariable, null)
     );
 
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "testValidMatch")
     );
-    engineDatabaseRule.setDecisionOutputStringVariableValueToNull(outputClauseId, "testValidMatch");
+    engineDatabaseExtensionRule.setDecisionOutputStringVariableValueToNull(outputClauseId, "testValidMatch");
 
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "noMatchingOutputValue")
     );
 
-    engineRule.startDecisionInstance(
+    engineIntegrationExtensionRule.startDecisionInstance(
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "testValidMatch")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);

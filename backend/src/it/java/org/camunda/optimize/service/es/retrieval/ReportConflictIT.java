@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -27,16 +25,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -50,21 +49,21 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-@RunWith(JUnitParamsRunner.class)
 public class ReportConflictIT {
 
   private static final String RANDOM_KEY = "someRandomKey";
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
 
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
+  @ParameterizedTest
+  @MethodSource("provideForceParameterAsBoolean")
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
@@ -97,8 +96,8 @@ public class ReportConflictIT {
     checkCombinedReportContainsSingleReports(combinedReportId, firstSingleReportId, secondSingleReportId);
   }
 
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
+  @ParameterizedTest
+  @MethodSource("provideForceParameterAsBoolean")
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId =
@@ -127,8 +126,8 @@ public class ReportConflictIT {
     checkCombinedReportContainsSingleReports(combinedReportId, firstSingleReportId);
   }
 
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
+  @ParameterizedTest
+  @MethodSource("provideForceParameterAsBoolean")
   public void updateSingleProcessReportFailsWithConflictIfUsedInAlertAndSuitableForAlertAnymoreWhenForceSet(Boolean force) {
     // given
     ProcessReportDataDto numberReport = ProcessReportDataBuilder
@@ -162,8 +161,8 @@ public class ReportConflictIT {
     checkAlertsStillExist(expectedConflictedItemIds);
   }
 
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
+  @ParameterizedTest
+  @MethodSource("provideForceParameterAsBoolean")
   public void updateSingleDecisionReportFailsWithConflictIfUsedInAlertAndSuitableForAlertAnymoreWhenForceSet(Boolean force) {
     // given
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -204,8 +203,8 @@ public class ReportConflictIT {
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
   }
 
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
+  @ParameterizedTest
+  @MethodSource("provideForceParameterAsBoolean")
   public void deleteSingleReportsFailsWithConflictIfUsedByCombinedReportWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createProcessReport();
@@ -227,8 +226,8 @@ public class ReportConflictIT {
     checkCombinedReportContainsSingleReports(secondCombinedReportId, firstSingleReportId, secondSingleReportId);
   }
 
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
+  @ParameterizedTest
+  @MethodSource("provideForceParameterAsBoolean")
   public void deleteSingleReportsFailsWithConflictIfUsedByAlertWhenForceSet(Boolean force) {
     // given
     String reportId = createProcessReport();
@@ -246,8 +245,8 @@ public class ReportConflictIT {
     checkAlertsStillExist(expectedConflictedItemIds);
   }
 
-  @Test
-  @Parameters(source = ForceParameterProvider.class)
+  @ParameterizedTest
+  @MethodSource("provideForceParameterAsBoolean")
   public void deleteSingleReportsFailsWithConflictIfUsedByDashboardWhenForceSet(Boolean force) {
     // given
     String reportId = createProcessReport();
@@ -269,7 +268,7 @@ public class ReportConflictIT {
   private void checkDashboardsStillContainReport(String[] dashboardIds, String reportId) {
     Arrays.stream(dashboardIds)
       .forEach(dashboardId -> {
-        final DashboardDefinitionDto dashboard = embeddedOptimizeRule.getRequestExecutor()
+        final DashboardDefinitionDto dashboard = embeddedOptimizeExtensionRule.getRequestExecutor()
           .buildGetDashboardRequest(dashboardId)
           .execute(DashboardDefinitionDto.class, 200);
 
@@ -326,7 +325,7 @@ public class ReportConflictIT {
   }
 
   private String createNewDashboardAndAddReport(String reportId) {
-    String id = embeddedOptimizeRule
+    String id = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest()
       .execute(IdDto.class, 200)
@@ -337,7 +336,7 @@ public class ReportConflictIT {
     reportLocationDto.setId(reportId);
     dashboardUpdateDto.getReports().add(reportLocationDto);
 
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateDashboardRequest(id, dashboardUpdateDto)
       .execute();
@@ -358,7 +357,7 @@ public class ReportConflictIT {
     alertCreationDto.setEmail("test@camunda.com");
     alertCreationDto.setName("test alert");
     alertCreationDto.setReportId(reportId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateAlertRequest(alertCreationDto)
       .execute(IdDto.class, 200)
@@ -366,14 +365,14 @@ public class ReportConflictIT {
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
       .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
   private String createNewCombinedReportWithDefinition(String... reportIds) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(createCombinedReportDefinition(reportIds))
       .execute(IdDto.class, 200)
@@ -392,14 +391,14 @@ public class ReportConflictIT {
   }
 
   private ReportDefinitionDto getReport(String id) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(ReportDefinitionDto.class, 200);
   }
 
   private ConflictResponseDto getReportDeleteConflicts(String id) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetReportDeleteConflictsRequest(id)
       .execute(ConflictResponseDto.class, 200);
@@ -432,7 +431,7 @@ public class ReportConflictIT {
   }
 
   private ConflictResponseDto deleteReportFailWithConflict(String reportId, Boolean force) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteReportRequest(reportId, force)
       .execute(ConflictResponseDto.class, 409);
@@ -440,7 +439,7 @@ public class ReportConflictIT {
   }
 
   private String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -450,7 +449,7 @@ public class ReportConflictIT {
   private ConflictResponseDto updateReportFailWithConflict(String id,
                                                            SingleProcessReportDefinitionDto updatedReport,
                                                            Boolean force) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(id, updatedReport, force)
       .execute(ConflictResponseDto.class, 409);
@@ -459,14 +458,14 @@ public class ReportConflictIT {
   private ConflictResponseDto updateReportFailWithConflict(String id,
                                                            SingleDecisionReportDefinitionDto updatedReport,
                                                            Boolean force) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateSingleDecisionReportRequest(id, updatedReport, force)
       .execute(ConflictResponseDto.class, 409);
   }
 
-  private String createProcessReport() {
-    return embeddedOptimizeRule
+    private String createProcessReport() {
+      return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
       .execute(IdDto.class, 200)
@@ -474,7 +473,7 @@ public class ReportConflictIT {
   }
 
   private String createDecisionReport(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -482,19 +481,17 @@ public class ReportConflictIT {
   }
 
   private List<ReportDefinitionDto> getAllReports() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetAllReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 
-  public static class ForceParameterProvider {
-    public static Object[] provideForceParameterAsBoolean() {
-      return new Object[]{
-        new Object[]{null},
-        new Object[]{false},
-      };
-    }
+  private static Object[] provideForceParameterAsBoolean() {
+    return new Object[]{
+      new Object[]{null},
+      new Object[]{false},
+    };
   }
 
   private ProcessReportDataDto createRandomRawDataReport() {

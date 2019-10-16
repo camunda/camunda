@@ -10,116 +10,63 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
-@RunWith(Parameterized.class)
 public class DecisionExportServiceIT {
-
-  @Parameterized.Parameters(name = "{2}")
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][]{
-      {
-        DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(FAKE)
-          .setDecisionDefinitionVersion(FAKE)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build(),
-        "/csv/decision/raw_decision_data_grouped_by_none.csv",
-        "Raw Data Grouped By None"
-      },
-      {
-        DecisionReportDataBuilder.create()
-          .setDecisionDefinitionKey(FAKE)
-          .setDecisionDefinitionVersion(FAKE)
-          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-          .setDateInterval(GroupByDateUnit.DAY)
-          .build(),
-        "/csv/decision/count_decision_frequency_group_by_evaluation_date.csv",
-        "Count Decision Frequency grouped by evaluation date"
-      },
-      {
-        DecisionReportDataBuilder.create()
-          .setDecisionDefinitionKey(FAKE)
-          .setDecisionDefinitionVersion(FAKE)
-          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-          .build(),
-        "/csv/decision/count_decision_frequency_group_by_none.csv",
-        "Count Decision Frequency grouped by none"
-      },
-      {
-        DecisionReportDataBuilder.create()
-          .setDecisionDefinitionKey(FAKE)
-          .setDecisionDefinitionVersion(FAKE)
-          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
-          .build(),
-        "/csv/decision/count_decision_frequency_group_by_matched_rule.csv",
-        "Count Decision Frequency grouped by matched rule"
-      }
-    });
-  }
-
-  private DecisionReportDataDto currentReport;
-  private String expectedCSV;
 
   private static final String FAKE = "FAKE";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule)
-    .around(engineDatabaseRule);
-
-  public DecisionExportServiceIT(DecisionReportDataDto currentReport, String expectedCSV, String testName) {
-    this.currentReport = currentReport;
-    this.expectedCSV = expectedCSV;
-  }
-
-  @Test
-  public void reportCsvHasExpectedValue() throws Exception {
+  @ParameterizedTest
+  @MethodSource("getArguments")
+  public void reportCsvHasExpectedValue(DecisionReportDataDto currentReport, String expectedCSV) throws Exception {
     //given
     OffsetDateTime lastEvaluationDateFilter = OffsetDateTime.parse("2019-01-29T18:20:23.277+01:00");
-    DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployAndStartDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
 
     currentReport.setDecisionDefinitionKey(decisionDefinitionEngineDto.getKey());
     currentReport.setDecisionDefinitionVersion(decisionDefinitionEngineDto.getVersionAsString());
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, lastEvaluationDateFilter);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, lastEvaluationDateFilter);
     String decisionInstanceId =
-      engineDatabaseRule.getDecisionInstanceIdsWithEvaluationDateEqualTo(
+      engineDatabaseExtensionRule.getDecisionInstanceIdsWithEvaluationDateEqualTo(
         lastEvaluationDateFilter).get(0);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -128,13 +75,14 @@ public class DecisionExportServiceIT {
     assertThat(response.getStatus(), is(200));
 
     String actualContent = getResponseContentAsString(response);
-    String stringExpected = getExpectedContentAsString(decisionInstanceId, decisionDefinitionEngineDto);
+    String stringExpected = getExpectedContentAsString(decisionInstanceId, decisionDefinitionEngineDto, expectedCSV);
 
     assertThat(actualContent, is(stringExpected));
   }
 
   private String getExpectedContentAsString(String decisionInstanceId,
-                                            DecisionDefinitionEngineDto decisionDefinitionEngineDto) {
+                                              DecisionDefinitionEngineDto decisionDefinitionEngineDto,
+                                            String expectedCSV) {
     String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(expectedCSV);
     expectedString = expectedString.replace("${DI_ID}", decisionInstanceId);
     expectedString = expectedString.replace("${DD_ID}", decisionDefinitionEngineDto.getId());
@@ -155,10 +103,45 @@ public class DecisionExportServiceIT {
   }
 
   private String createNewReport(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  private static Stream<Arguments> getArguments() {
+    return Stream.of(
+      Arguments.of(DecisionReportDataBuilder
+                     .create()
+                     .setDecisionDefinitionKey(FAKE)
+                     .setDecisionDefinitionVersion(FAKE)
+                     .setReportDataType(DecisionReportDataType.RAW_DATA)
+                     .build(),
+                   "/csv/decision/raw_decision_data_grouped_by_none.csv",
+                   "Raw Data Grouped By None"),
+      Arguments.of(DecisionReportDataBuilder.create()
+                     .setDecisionDefinitionKey(FAKE)
+                     .setDecisionDefinitionVersion(FAKE)
+                     .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+                     .setDateInterval(GroupByDateUnit.DAY)
+                     .build(),
+                   "/csv/decision/count_decision_frequency_group_by_evaluation_date.csv",
+                   "Count Decision Frequency grouped by evaluation date"),
+      Arguments.of(DecisionReportDataBuilder.create()
+                     .setDecisionDefinitionKey(FAKE)
+                     .setDecisionDefinitionVersion(FAKE)
+                     .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+                     .build(),
+                   "/csv/decision/count_decision_frequency_group_by_none.csv",
+                   "Count Decision Frequency grouped by none"),
+      Arguments.of(DecisionReportDataBuilder.create()
+                     .setDecisionDefinitionKey(FAKE)
+                     .setDecisionDefinitionVersion(FAKE)
+                     .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
+                     .build(),
+                   "/csv/decision/count_decision_frequency_group_by_matched_rule.csv",
+                   "Count Decision Frequency grouped by matched rule")
+    );
   }
 }

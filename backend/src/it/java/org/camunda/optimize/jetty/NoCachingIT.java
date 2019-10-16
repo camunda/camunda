@@ -6,9 +6,9 @@
 package org.camunda.optimize.jetty;
 
 import org.camunda.optimize.service.license.LicenseManager;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -24,22 +24,21 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESO
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
-
 public class NoCachingIT {
 
-  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Rule
-  public RuleChain chain = RuleChain.outerRule(engineIntegrationRule)
-    .around(elasticSearchRule).around(embeddedOptimizeRule);
+  public RuleChain chain = RuleChain.outerRule(engineIntegrationExtensionRule)
+    .around(elasticSearchIntegrationTestExtensionRule).around(embeddedOptimizeExtensionRule);
 
   private LicenseManager licenseManager;
 
   @Before
   public void setup() {
-    licenseManager = embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class);
+    licenseManager = embeddedOptimizeExtensionRule.getApplicationContext().getBean(LicenseManager.class);
     addLicenseToOptimize();
   }
 
@@ -55,7 +54,7 @@ public class NoCachingIT {
 
       // when
       Response response =
-        embeddedOptimizeRule.rootTarget(staticResource).request().get();
+        embeddedOptimizeExtensionRule.rootTarget(staticResource).request().get();
 
       // then
       assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));
@@ -66,7 +65,7 @@ public class NoCachingIT {
   public void restApiCallResponseContainsNoCacheHeader() {
     // when
     Response response =
-      embeddedOptimizeRule.getRequestExecutor().buildCheckImportStatusRequest().execute();
+      embeddedOptimizeExtensionRule.getRequestExecutor().buildCheckImportStatusRequest().execute();
 
     // then
     assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL), is(NO_STORE));
@@ -76,7 +75,7 @@ public class NoCachingIT {
     String license = FileReaderUtil.readValidTestLicense();
 
     Response response =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
     assertThat(response.getStatus(), is(200));

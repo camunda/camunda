@@ -8,11 +8,8 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.rest.SharingEnabledDto;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
@@ -22,19 +19,12 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class SharingRestServiceIT extends AbstractSharingIT {
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule);
 
   @Test
   public void checkShareStatusWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCheckSharingStatusRequest(null)
       .withoutAuthentication()
@@ -48,7 +38,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void createNewReportShareWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildShareReportRequest(null)
         .withoutAuthentication()
@@ -61,7 +51,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void createNewDashboardShareWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildShareDashboardRequest(null)
       .withoutAuthentication()
@@ -91,7 +81,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void createNewReportShareWithSharingDisabled() {
     //given
     String reportId = createReport();
-    embeddedOptimizeRule.getConfigurationService().setSharingEnabled(false);
+    embeddedOptimizeExtensionRule.getConfigurationService().setSharingEnabled(false);
     ReportShareDto share = createReportShare(reportId);
 
     // when
@@ -122,7 +112,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteReportShareWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteReportShareRequest("1124")
       .withoutAuthentication()
@@ -135,7 +125,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteNonExistingReportShare() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildDeleteReportShareRequest("nonExistingId")
             .execute();
@@ -147,7 +137,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteDashboardShareWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteDashboardShareRequest("1124")
       .withoutAuthentication()
@@ -160,7 +150,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteNonExistingDashboardShare() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
             .getRequestExecutor()
             .buildDeleteDashboardShareRequest("nonExistingId")
             .execute();
@@ -177,7 +167,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildDeleteReportShareRequest(id)
         .execute();
@@ -196,7 +186,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildDeleteDashboardShareRequest(id)
         .execute();
@@ -226,7 +216,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     addShareForFakeReport();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildFindShareForReportRequest(FAKE_REPORT_ID)
       .withoutAuthentication()
@@ -259,7 +249,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     //when
-    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildEvaluateSharedDashboardRequest(dashboardShareId)
       .execute(DashboardDefinitionDto.class, 200);
@@ -273,7 +263,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     // when
     String reportShareId = dashboardShareDto.getReports().get(0).getId();
     HashMap evaluatedReportAsMap =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportShareId)
         .execute(HashMap.class, 200);
@@ -290,7 +280,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     addShareForDashboard(dashboardWithReport);
 
     //when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildFindShareForDashboardRequest(dashboardWithReport)
       .withoutAuthentication()
@@ -304,7 +294,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void evaluationOfNotExistingShareReturnsError() {
 
     //when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildEvaluateSharedReportRequest("123")
       .execute();
@@ -317,7 +307,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void checkSharingAuthorizationWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildDashboardShareAuthorizationCheck("1124")
         .withoutAuthentication()
@@ -335,7 +325,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildDashboardShareAuthorizationCheck(dashboardId)
         .execute();
@@ -347,14 +337,14 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void checkSharingAuthorizationResultsInForbidden() {
     //given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
     String reportId = createReport();
     String dashboardId = createDashboardWithReport(reportId);
 
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildDashboardShareAuthorizationCheck(dashboardId)
         .withUserAuthentication("kermit", "kermit")
@@ -365,7 +355,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   }
 
   private Response findShareForDashboard(String dashboardId) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildFindShareForDashboardRequest(dashboardId)
       .execute();

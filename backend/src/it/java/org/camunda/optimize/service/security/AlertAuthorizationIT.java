@@ -17,8 +17,8 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -28,8 +28,8 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   @Test
   public void getOwnAuthorizedAlertsOnly() {
     //given
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
+    engineIntegrationExtensionRule.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
 
     AlertCreationDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
@@ -38,7 +38,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeRule
+    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllAlertsRequest()
@@ -51,10 +51,10 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   @Test
   public void superUserGetAllAlerts() {
     //given
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
+    engineIntegrationExtensionRule.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     AlertCreationDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
     AlertCreationDto alert2 = setupBasicProcessAlertAsUser("processDefinition1", DEFAULT_USERNAME, DEFAULT_PASSWORD);
@@ -62,7 +62,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     final String alertId2 = addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeRule
+    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllAlertsRequest()
@@ -78,10 +78,10 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   @Test
   public void superUserGetAllAlertsOnlyForAuthorizedDefinitions() {
     //given
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
+    engineIntegrationExtensionRule.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     AlertCreationDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
     AlertCreationDto alert2 = setupBasicProcessAlertAsUser("processDefinition2", DEFAULT_USERNAME, DEFAULT_PASSWORD);
@@ -89,7 +89,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeRule
+    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllAlertsRequest()
@@ -102,21 +102,21 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   @Test
   public void superUserGetAllAlertsOfCollectionReports() {
     //given
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    engineIntegrationExtensionRule.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String definitionKey = "processDefinition1";
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, definitionKey);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     final String alertId = createAlertInCollectionAsDefaultUser(processDefinition);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeRule
+    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllAlertsRequest()
@@ -129,9 +129,9 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   @Test
   public void superUserGetAllAlertsOfCollectionReportsOnlyForAuthorizedDefinitions() {
     //given
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    engineIntegrationExtensionRule.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String definitionKey1 = "processDefinition1";
     ProcessDefinitionEngineDto processDefinition1 = deploySimpleServiceTaskProcess(definitionKey1);
@@ -140,14 +140,14 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     final String definitionKey2 = "processDefinition2";
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcess(definitionKey2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     final String authorizedAlertId = createAlertInCollectionAsDefaultUser(processDefinition1);
     createAlertInCollectionAsDefaultUser(processDefinition2);
 
     // when
-    List<AlertDefinitionDto> allAlerts = embeddedOptimizeRule
+    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetAllAlertsRequest()
@@ -170,7 +170,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   }
 
   private String createSingleProcessReportInCollection(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -178,7 +178,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   }
 
   private String createNewCollectionAsDefaultUser() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -188,7 +188,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   private String addAlertToOptimizeAsUser(final AlertCreationDto creationDto,
                                           final String user,
                                           final String password) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateAlertRequest(creationDto)

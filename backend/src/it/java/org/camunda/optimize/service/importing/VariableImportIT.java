@@ -22,7 +22,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -47,10 +47,10 @@ public class VariableImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstances();
 
     // when
-    engineRule.startProcessInstance(firstProcInst.getDefinitionId());
-    engineRule.startProcessInstance(firstProcInst.getDefinitionId());
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    engineIntegrationExtensionRule.startProcessInstance(firstProcInst.getDefinitionId());
+    engineIntegrationExtensionRule.startProcessInstance(firstProcInst.getDefinitionId());
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     assertThatEveryFlowNodeWasExecuted4Times(firstProcInst.getProcessDefinitionKey());
@@ -63,9 +63,9 @@ public class VariableImportIT extends AbstractImportIT {
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+      engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
@@ -87,9 +87,9 @@ public class VariableImportIT extends AbstractImportIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", complexVariableDto);
     ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
@@ -110,9 +110,9 @@ public class VariableImportIT extends AbstractImportIT {
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+      engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
@@ -128,9 +128,9 @@ public class VariableImportIT extends AbstractImportIT {
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariablesWithNullValues();
     ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+      engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     SearchResponse responseForAllDocumentsOfIndex =
@@ -161,9 +161,9 @@ public class VariableImportIT extends AbstractImportIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+      engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
@@ -194,9 +194,9 @@ public class VariableImportIT extends AbstractImportIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+      engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -205,7 +205,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
     List<String> variableValues =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
         .executeAndReturnList(String.class, 200);
@@ -233,9 +233,9 @@ public class VariableImportIT extends AbstractImportIT {
       .done();
     // @formatter:on
 
-    ProcessInstanceEngineDto instanceDto = engineRule.deployAndStartProcess(processModel);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto instanceDto = engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -244,7 +244,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
     List<String> variableValues =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
         .executeAndReturnList(String.class, 200);
@@ -260,7 +260,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setName("anotherVar");
     requestDto.setType(STRING);
     variableValues =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
         .executeAndReturnList(String.class, 200);
@@ -288,13 +288,13 @@ public class VariableImportIT extends AbstractImportIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+      engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    engineRule.finishAllRunningUserTasks(instanceDto.getId());
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceDto.getId());
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -303,7 +303,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
     List<String> variableValues =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
         .executeAndReturnList(String.class, 200);
@@ -325,10 +325,10 @@ public class VariableImportIT extends AbstractImportIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
-      engineRule.deployAndStartProcessWithVariables(processModel, variables);
-    engineRule.deleteVariableInstanceForProcessInstance("stringVar", instanceDto.getId());
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+      engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    engineIntegrationExtensionRule.deleteVariableInstanceForProcessInstance("stringVar", instanceDto.getId());
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -337,7 +337,7 @@ public class VariableImportIT extends AbstractImportIT {
     requestDto.setName("stringVar");
     requestDto.setType(STRING);
     List<String> variableValues =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildProcessVariableValuesRequest(requestDto)
         .executeAndReturnList(String.class, 200);
@@ -350,7 +350,7 @@ public class VariableImportIT extends AbstractImportIT {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(instanceDto.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion());
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildProcessVariableNamesRequest(variableRequestDto)
       .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
@@ -362,14 +362,14 @@ public class VariableImportIT extends AbstractImportIT {
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
-    ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(
       firstProcInst.getDefinitionId(),
       variables
     );
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
-    engineRule.deleteHistoricProcessInstance(firstProcInst.getId());
-    engineRule.deleteHistoricProcessInstance(secondProcInst.getId());
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtensionRule.deleteHistoricProcessInstance(firstProcInst.getId());
+    engineIntegrationExtensionRule.deleteHistoricProcessInstance(secondProcInst.getId());
     return firstProcInst;
   }
 
@@ -389,7 +389,7 @@ public class VariableImportIT extends AbstractImportIT {
   }
 
   private AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off

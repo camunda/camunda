@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.es;
 
-
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.InternalSettingsPreparer;
@@ -15,10 +14,10 @@ import org.elasticsearch.node.Node;
 import org.elasticsearch.node.NodeValidationException;
 import org.elasticsearch.plugins.Plugin;
 import org.glassfish.jersey.client.ClientProperties;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.runners.model.TestTimedOutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +36,7 @@ import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Verify that optimize is basically working even if ES connection
@@ -52,7 +51,7 @@ public class ResilienceTest {
   private static final int ES_HTTP_PORT = 9202;
   public static final long TIMEOUT_CONNECTION_STATUS = 10_000;
 
-  @After
+  @AfterEach
   public void tearDown() throws IOException {
     Files.walk(Paths.get(esFolder.getAbsolutePath()))
         .map(Path::toFile)
@@ -62,7 +61,7 @@ public class ResilienceTest {
     esFolder = null;
   }
 
-  @Before
+  @BeforeEach
   public void setUp() {
     File root = new File(this.getClass().getClassLoader().getResource("").getPath());
     esFolder = new File(root.getParentFile().getAbsolutePath() + "/embedded_elasticsearch_data");
@@ -70,7 +69,7 @@ public class ResilienceTest {
     esFolder.deleteOnExit();
   }
 
-  private void waitUntilIsConnectedToElasticsearch(EmbeddedOptimizeRule optimize) throws TestTimedOutException {
+  private void waitUntilIsConnectedToElasticsearch(EmbeddedOptimizeExtensionRule optimize) throws TestTimedOutException {
     ConnectionStatusDto connectionStatusDto = new ConnectionStatusDto();
     connectionStatusDto.setConnectedToElasticsearch(false);
     long startTime, requestDuration;
@@ -93,12 +92,12 @@ public class ResilienceTest {
   }
 
   // FIXME this test, see OPT-1627
-  @Ignore
+  @Disabled
   @Test
   public void testCrashOfEsDuringRuntime () throws Exception {
     //given
     Node testNode = elasticSearchTestNode();
-    EmbeddedOptimizeRule optimize = new EmbeddedOptimizeRule("classpath:unit/resilienceTestapplicationContext.xml");
+    EmbeddedOptimizeExtensionRule optimize = new EmbeddedOptimizeExtensionRule("classpath:unit/resilienceTestapplicationContext.xml");
     optimize.startOptimize();
 
     //then
@@ -144,7 +143,7 @@ public class ResilienceTest {
     }
   }
 
-  private void verifyIndexServed(EmbeddedOptimizeRule optimize) {
+  private void verifyIndexServed(EmbeddedOptimizeExtensionRule optimize) {
     //when
     Response response = optimize.rootTarget()
         .path("/index.html")
@@ -203,7 +202,7 @@ public class ResilienceTest {
     }
   }
 
-  private void verifyRedirectToError(EmbeddedOptimizeRule optimize) {
+  private void verifyRedirectToError(EmbeddedOptimizeExtensionRule optimize) {
     // when I want to go to start page
     Response response = optimize.rootTarget()
         .path("/index.html")

@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.importing.UserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -31,12 +31,12 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   public void completedUserTasksAreImported() throws IOException {
     // given
     deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllRunningUserTasks();
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -74,8 +74,8 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     deployAndStartTwoUserTasksProcess();
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -107,11 +107,11 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   public void runningAndCompletedUserTasksAreImported() throws IOException {
     // given
     deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -142,12 +142,12 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   public void onlyUserTasksRelatedToProcessInstancesAreImported() throws IOException {
     // given
     deployAndStartOneUserTaskProcess();
-    final UUID independentUserTaskId = engineRule.createIndependentUserTask();
-    engineRule.finishAllRunningUserTasks();
+    final UUID independentUserTaskId = engineIntegrationExtensionRule.createIndependentUserTask();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -171,11 +171,11 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   @Test
   public void importFinishesIfIndependentRunningUserTasksExist() throws IOException {
     // given
-    engineRule.createIndependentUserTask();
+    engineIntegrationExtensionRule.createIndependentUserTask();
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -186,16 +186,16 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   public void noSideEffectsByOtherProcessInstanceUserTasks() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllRunningUserTasks();
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
 
     final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartOneUserTaskProcess();
     // only first task finished
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -229,12 +229,12 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   @Test
   public void importFinishesIfIndependentCompletesUserTasksWithOperationsExist() throws IOException {
     // given
-    engineRule.createIndependentUserTask();
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.createIndependentUserTask();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -245,11 +245,11 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   public void defaultIdleTimeOnNoClaimOperation() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
-    engineRule.completeUserTaskWithoutClaim(processInstanceDto.getId());
+    engineIntegrationExtensionRule.completeUserTaskWithoutClaim(processInstanceDto.getId());
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -275,13 +275,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   public void idleTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartOneUserTaskProcess();
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -301,11 +301,11 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   public void defaultWorkTimeOnNoClaimOperation() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
-    engineRule.completeUserTaskWithoutClaim(processInstanceDto.getId());
+    engineIntegrationExtensionRule.completeUserTaskWithoutClaim(processInstanceDto.getId());
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
@@ -325,14 +325,14 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   public void workTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
-    engineRule.finishAllRunningUserTasks();
-    engineRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtensionRule.finishAllRunningUserTasks();
     final long workDuration = 500;
     changeUserTaskWorkDuration(processInstanceDto, workDuration);
 
     // when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);

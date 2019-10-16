@@ -14,9 +14,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.SingleReportEvaluator;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -24,9 +24,9 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayInputStream;
@@ -43,18 +43,17 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class ExportLimitsIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void exportWithLimit() throws Exception {
@@ -66,13 +65,13 @@ public class ExportLimitsIT {
     deployAndStartSimpleProcess();
     deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(1);
+    embeddedOptimizeExtensionRule.getConfigurationService().setExportCsvLimit(1);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -98,10 +97,10 @@ public class ExportLimitsIT {
     final int instanceCount = 2 * highExportCsvLimit;
     addProcessInstancesToElasticsearch(instanceCount, processDefinitionKey);
 
-    embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(highExportCsvLimit);
+    embeddedOptimizeExtensionRule.getConfigurationService().setExportCsvLimit(highExportCsvLimit);
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -128,10 +127,10 @@ public class ExportLimitsIT {
     final int instanceCount = 2 * highExportCsvLimit;
     addProcessInstancesToElasticsearch(instanceCount, processDefinitionKey);
 
-    embeddedOptimizeRule.getConfigurationService().setExportCsvLimit(highExportCsvLimit);
+    embeddedOptimizeExtensionRule.getConfigurationService().setExportCsvLimit(highExportCsvLimit);
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -166,14 +165,14 @@ public class ExportLimitsIT {
           PROCESS_INSTANCE_INDEX_NAME,
           PROCESS_INSTANCE_INDEX_NAME,
           processInstanceDto.getProcessInstanceId()
-        ).source(elasticSearchRule.getObjectMapper().writeValueAsString(processInstanceDto), XContentType.JSON);
+        ).source(elasticSearchIntegrationTestExtensionRule.getObjectMapper().writeValueAsString(processInstanceDto), XContentType.JSON);
 
         bulkInsert.add(indexRequest);
       }
 
-      elasticSearchRule.getOptimizeElasticClient().bulk(bulkInsert, RequestOptions.DEFAULT);
+      elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().bulk(bulkInsert, RequestOptions.DEFAULT);
     }
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
   }
 
   private String createAndStoreRawReportDefinition(String processDefinitionKey,
@@ -197,7 +196,7 @@ public class ExportLimitsIT {
   }
 
   private String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -214,7 +213,7 @@ public class ExportLimitsIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
 }

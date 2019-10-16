@@ -19,9 +19,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -65,19 +65,20 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   @Before
   public void init() {
-    engineRule.createGroup(FIRST_CANDIDATE_GROUP);
-    engineRule.createGroup(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.createGroup(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.createGroup(SECOND_CANDIDATE_GROUP);
   }
 
   @Test
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -112,17 +113,18 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   public void reportEvaluationForMultipleCandidateGroups() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto =
+      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
     // finish first task
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
     // finish second task with
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
-    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -150,14 +152,16 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   public void reportEvaluationForSeveralProcesses() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -182,16 +186,18 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -210,14 +216,16 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -241,14 +249,16 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -275,14 +285,16 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
-    engineRule.finishAllRunningUserTasks(processInstanceDto2.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto2.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -299,17 +311,20 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineRule.startProcessInstance(processDefinition1.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition1.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto1);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition1.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition1.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto2);
 
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto3 = engineRule.startProcessInstance(processDefinition2.getId());
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition2.getId());
     finishTwoUserTasksOneWithFirstAndSecondGroup(processInstanceDto3);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
@@ -343,8 +358,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
@@ -382,54 +397,55 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   }
 
   protected static Object[] getExecutionStateExpectedValues() {
-
-
     return new Object[]{
       new ExecutionStateTestValues(FlowNodeExecutionState.RUNNING, getExpectedResultsMap(2L, 1L)),
       new ExecutionStateTestValues(FlowNodeExecutionState.COMPLETED, getExpectedResultsMap(1L, null)),
       new ExecutionStateTestValues(FlowNodeExecutionState.ALL, getExpectedResultsMap(3L, 1L))
     };
+
   }
 
   @Test
   @Parameters(method = "getExecutionStateExpectedValues")
-  public void evaluateReportWithExecutionState(ExecutionStateTestValues testValues) {
+  public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     // finish first running task, second now runs but unclaimed
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
-    engineRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
     // claim first running task
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineRule.claimAllRunningUserTasks(processInstanceDto2.getId());
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.claimAllRunningUserTasks(processInstanceDto2.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
-    reportData.getConfiguration().setFlowNodeExecutionState(testValues.executionState);
+    reportData.getConfiguration().setFlowNodeExecutionState(executionStateTestValues.executionState);
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(
       (long) result.getData().size(),
-      is(testValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count())
+      is(executionStateTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count())
     );
     assertThat(
       result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(testValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP))
+      is(executionStateTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP))
     );
     assertThat(
       result.getEntryForKey(SECOND_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
-      is(testValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP))
+      is(executionStateTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP))
     );
     assertThat(result.getInstanceCount(), is(2L));
   }
@@ -446,15 +462,17 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
         .done();
     // @formatter:on
 
-    final ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(
       processWithMultiInstanceUserTask
     );
-    final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -475,13 +493,14 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
 
     for (int i = 0; i < 11; i++) {
-      final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-      engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-      engineRule.finishAllRunningUserTasks(processInstanceDto.getId());
+      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(
+        processDefinition.getId());
+      engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+      engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
     }
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -500,14 +519,16 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
   public void filterInReport() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineRule.startProcessInstance(processDefinition.getId());
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(
+      processDefinition.getId());
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
 
-    final OffsetDateTime processStartTime = engineRule.getHistoricProcessInstance(processInstanceDto.getId())
+    final OffsetDateTime processStartTime = engineIntegrationExtensionRule.getHistoricProcessInstance(processInstanceDto
+                                                                                                        .getId())
       .getStartTime();
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
@@ -592,22 +613,22 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
   private void finishTwoUserTasksOneWithFirstAndSecondGroup(final ProcessInstanceEngineDto processInstanceDto1) {
     // finish first task
-    engineRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineRule.finishAllRunningUserTasks(processInstanceDto1.getId());
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto1.getId());
     // finish second task with
-    engineRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
-    engineRule.finishAllRunningUserTasks(processInstanceDto1.getId());
+    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto1.getId());
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
     final String processKey = "multiTenantProcess";
     deployedTenants.stream()
       .filter(Objects::nonNull)
-      .forEach(tenantId -> engineRule.createTenant(tenantId));
+      .forEach(tenantId -> engineIntegrationExtensionRule.createTenant(tenantId));
     deployedTenants
       .forEach(tenant -> {
         final ProcessDefinitionEngineDto processDefinitionEngineDto = deployOneUserTasksDefinition(processKey, tenant);
-        engineRule.startProcessInstance(processDefinitionEngineDto.getId());
+        engineIntegrationExtensionRule.startProcessInstance(processDefinitionEngineDto.getId());
       });
 
     return processKey;
@@ -623,7 +644,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .userTask(USER_TASK_1)
       .endEvent(END_EVENT)
       .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
@@ -633,7 +654,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
       .userTask(USER_TASK_2)
       .endEvent(END_EVENT)
       .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private long getExecutedFlowNodeCount(ReportMapResultDto resultList) {

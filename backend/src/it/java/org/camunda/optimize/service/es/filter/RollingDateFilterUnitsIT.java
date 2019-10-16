@@ -10,46 +10,24 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
-
-@RunWith(Parameterized.class)
 public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
 
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][]{
-      {RelativeDateFilterUnit.DAYS, 1},
-      {RelativeDateFilterUnit.MINUTES, 1},
-      {RelativeDateFilterUnit.HOURS, 1},
-      {RelativeDateFilterUnit.WEEKS, 1},
-      {RelativeDateFilterUnit.MONTHS, 1}
-    });
-  }
-
-  private RelativeDateFilterUnit unit;
-  private int expectedPiCount;
-
-  public RollingDateFilterUnitsIT(RelativeDateFilterUnit unit, int expectedPiCount) {
-    this.unit = unit;
-    this.expectedPiCount = expectedPiCount;
-  }
-
-  @Test
-  public void rollingDateFilterInReport() {
+  @ParameterizedTest
+  @MethodSource("getData")
+  public void rollingDateFilterInReport(RelativeDateFilterUnit relativeDateFilterUnit, int amount) {
     // given
-
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
-      engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+      engineIntegrationExtensionRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // the clock of the engine and the clock of the computer running
     // the tests might not be aligned. Therefore we want to simulate
@@ -61,14 +39,22 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
       createAndEvaluateReportWithRollingStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
-        unit,
+        relativeDateFilterUnit,
         true
       );
 
-
     //then
-    assertResults(processInstance, result, expectedPiCount);
+    assertResults(processInstance, result, amount);
   }
 
+  private static Stream<Arguments> getData() {
+    return Stream.of(
+      Arguments.of(RelativeDateFilterUnit.DAYS, 1),
+      Arguments.of(RelativeDateFilterUnit.MINUTES, 1),
+      Arguments.of(RelativeDateFilterUnit.HOURS, 1),
+      Arguments.of(RelativeDateFilterUnit.WEEKS, 1),
+      Arguments.of(RelativeDateFilterUnit.MONTHS, 1)
+    );
+  }
 
 }

@@ -22,7 +22,6 @@ mvn clean test
 All the unit tests are contained in the [src/test](./src/test/java/.) folder.
 To write your own unit test, just add the springrunner class and the respective application context like this:
 ```java
-@RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/unit/applicationContext.xml"})
 public class YourCustomUnitTest {
 
@@ -88,31 +87,33 @@ This basically spins up the integration test environment using Docker. Now you s
 
 All the integration tests are contained in the [src/it](./src/it/java/.) folder.
 
-To write your own integration test, there are three rules to help you setting up the environment and interacting with it:
+To write your own integration test, there are three extensions/rules to help you setting up the environment and interacting with it:
 
-* **EngineIntegrationRule**: Cleans up the engine after each test and allows for interaction with/population of data to the engine using the rest api.
-* **EmbeddedOptimizeRule**: Starts Optimize, ensures that the configuration is always reset, allows direct interaction with Optimize components.
-* **ElasticSearchIntegrationTestRule**: Cleans up Elasticsearch after each test, allows interaction with, populating data to Elasticsearch.
+* **EngineIntegrationExtensionRule**: Cleans up the engine after each test and allows for interaction with/population of data to the engine using the rest api.
+* **EmbeddedOptimizeExtensionRule**: Starts Optimize, ensures that the configuration is always reset, allows direct interaction with Optimize components.
+* **ElasticSearchIntegrationTestExtensionRule**: Cleans up Elasticsearch after each test, allows interaction with, populating data to Elasticsearch.
 
 In addition to the rules, you need to add the the springrunner class and the respective application context to your test class. The following shows an example template for a test class:
 
 ```java
-@RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(locations = {"/it/it-applicationContext.xml"})
 public class YourCustomIT  {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension = new ElasticSearchIntegrationTestExtension();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtension embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtension();
 
   @Test
   public void myFirstCustomTest() {
     // write your test here...
   }
+}
 
   // write more tests here...
 ```

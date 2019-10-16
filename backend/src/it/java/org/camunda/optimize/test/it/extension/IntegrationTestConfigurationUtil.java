@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.test.it.rule;
+package org.camunda.optimize.test.it.extension;
 
 import lombok.experimental.UtilityClass;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

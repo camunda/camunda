@@ -20,7 +20,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationValidator.createValidatorWithoutDeprecations;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public class ConfigurationValidatorTest {

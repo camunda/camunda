@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.test.secured.es;
 
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 
@@ -19,18 +18,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractConnectToElasticsearchIT {
 
-  private EmbeddedOptimizeRule embeddedOptimizeRule = getEmbeddedOptimizeRule();
+  @RegisterExtension
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = getEmbeddedOptimizeExtensionRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(embeddedOptimizeRule);
+  protected abstract EmbeddedOptimizeExtensionRule getEmbeddedOptimizeExtensionRule();
 
-  protected abstract EmbeddedOptimizeRule getEmbeddedOptimizeRule();
-
-  @Before
+  @BeforeEach
   public void before() throws Exception {
-    getEmbeddedOptimizeRule().stopOptimize();
-    getEmbeddedOptimizeRule().startOptimize();
+    getEmbeddedOptimizeExtensionRule().stopOptimize();
+    getEmbeddedOptimizeExtensionRule().startOptimize();
   }
 
   @Test
@@ -40,7 +36,7 @@ public abstract class AbstractConnectToElasticsearchIT {
 
     // when doing a request to add the license to optimize
     Response response =
-      embeddedOptimizeRule.getRequestExecutor()
+      embeddedOptimizeExtensionRule.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .withoutAuthentication()
         .execute();

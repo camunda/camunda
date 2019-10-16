@@ -21,11 +21,13 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -43,15 +45,18 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 
 public abstract class AbstractSharingIT {
-  protected static final String SHARE = "share";
-  protected static final String FAKE_REPORT_ID = "fake";
-  private static final String EVALUATE = "evaluate";
-  protected static final String REPORT = "report";
-  protected static final String DASHBOARD = "dashboard";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  protected static final String FAKE_REPORT_ID = "fake";
+
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   protected String createReport() {
     return createReport("aProcess");
@@ -59,8 +64,8 @@ public abstract class AbstractSharingIT {
 
   protected String createReport(String definitionKey) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
@@ -104,11 +109,11 @@ public abstract class AbstractSharingIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -147,7 +152,7 @@ public abstract class AbstractSharingIT {
   }
 
   protected String addEmptyDashboardToOptimize() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest()
       .execute(IdDto.class, 200)
@@ -155,7 +160,7 @@ public abstract class AbstractSharingIT {
   }
 
   Response updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
       .execute(204);
@@ -169,14 +174,14 @@ public abstract class AbstractSharingIT {
   }
 
   protected Response createReportShareResponse(ReportShareDto share) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildShareReportRequest(share)
       .execute();
   }
 
   protected Response createDashboardShareResponse(DashboardShareDto share) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildShareDashboardRequest(share)
       .execute();
@@ -206,7 +211,7 @@ public abstract class AbstractSharingIT {
   }
 
   private Response findShareForReport(String reportId) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildFindShareForReportRequest(reportId)
       .execute();
@@ -230,7 +235,7 @@ public abstract class AbstractSharingIT {
     authorizationDto.setResourceId(definitionKey);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
 }

@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DeleteScrollBasedIndexDocumentsIT extends AbstractUpgradeIT {
   private static final String FROM_VERSION = "2.6.0";

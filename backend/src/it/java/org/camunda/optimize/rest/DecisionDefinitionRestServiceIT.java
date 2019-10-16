@@ -13,12 +13,12 @@ import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionWithTenantsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.service.TenantService;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -29,7 +29,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
-import static org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -38,7 +38,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-
 public class DecisionDefinitionRestServiceIT {
   private static final String VERSION_TAG = "aVersionTag";
   private static final String TENANT_NONE_NAME = TenantService.TENANT_NOT_DEFINED.getName();
@@ -46,15 +45,15 @@ public class DecisionDefinitionRestServiceIT {
   private static final TenantRestDto TENANT_1_DTO = new TenantRestDto("tenant1", "Tenant 1");
   private static final TenantRestDto TENANT_2_DTO = new TenantRestDto("tenant2", "Tenant 2");
 
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void getDecisionDefinitions() {
@@ -62,7 +61,7 @@ public class DecisionDefinitionRestServiceIT {
     final DecisionDefinitionOptimizeDto expectedDecisionDefinition = createDecisionDefinitionDto();
 
     // when
-    List<DecisionDefinitionOptimizeDto> definitions = embeddedOptimizeRule
+    List<DecisionDefinitionOptimizeDto> definitions = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDecisionDefinitionsRequest()
       .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
@@ -78,15 +77,15 @@ public class DecisionDefinitionRestServiceIT {
     final String kermitUser = "kermit";
     final String notAuthorizedDefinitionKey = "noAccess";
     final String authorizedDefinitionKey = "access";
-    engineRule.addUser(kermitUser, kermitUser);
-    engineRule.grantUserOptimizeAccess(kermitUser);
+    engineIntegrationExtensionRule.addUser(kermitUser, kermitUser);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(kermitUser);
     grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey);
 
     final DecisionDefinitionOptimizeDto authorizedToSee = createDecisionDefinitionDto(authorizedDefinitionKey);
     final DecisionDefinitionOptimizeDto notAuthorizedToSee = createDecisionDefinitionDto(notAuthorizedDefinitionKey);
 
     // when
-    List<DecisionDefinitionOptimizeDto> definitions = embeddedOptimizeRule
+    List<DecisionDefinitionOptimizeDto> definitions = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetDecisionDefinitionsRequest()
@@ -101,7 +100,7 @@ public class DecisionDefinitionRestServiceIT {
   @Test
   public void getDecisionDefinitionsWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetDecisionDefinitionsRequest()
@@ -118,7 +117,7 @@ public class DecisionDefinitionRestServiceIT {
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
@@ -138,7 +137,7 @@ public class DecisionDefinitionRestServiceIT {
 
     // when
     String actualXml =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(expectedDefinitionDto.getKey(), expectedDefinitionDto.getVersion())
         .execute(String.class, 200);
@@ -159,7 +158,7 @@ public class DecisionDefinitionRestServiceIT {
 
     // when
     String actualXml =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(
           firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), firstTenantDefinition.getTenantId()
@@ -181,7 +180,7 @@ public class DecisionDefinitionRestServiceIT {
 
     // when
     String actualXml =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(
           firstTenantDefinition.getKey(), firstTenantDefinition.getVersion(), null
@@ -202,7 +201,7 @@ public class DecisionDefinitionRestServiceIT {
 
     // when
     String actualXml =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(
           sharedDecisionDefinition.getKey(), sharedDecisionDefinition.getVersion(), firstTenantId
@@ -217,7 +216,7 @@ public class DecisionDefinitionRestServiceIT {
   public void getDecisionDefinitionXmlWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .withoutAuthentication()
         .buildGetDecisionDefinitionXmlRequest("foo", "bar")
@@ -233,11 +232,11 @@ public class DecisionDefinitionRestServiceIT {
     // when
     final String kermitUser = "kermit";
     final String definitionKey = "key";
-    engineRule.addUser(kermitUser, kermitUser);
-    engineRule.grantUserOptimizeAccess(kermitUser);
+    engineIntegrationExtensionRule.addUser(kermitUser, kermitUser);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(kermitUser);
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = createDecisionDefinitionDto(definitionKey);
 
-    Response response = embeddedOptimizeRule.getRequestExecutor()
+    Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetDecisionDefinitionXmlRequest(decisionDefinitionDto.getKey(), decisionDefinitionDto.getVersion())
       .execute();
@@ -254,7 +253,7 @@ public class DecisionDefinitionRestServiceIT {
 
     // when
     String message =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(expectedDefinitionDto.getKey(), "nonsenseVersion")
         .execute(String.class, 404);
@@ -271,7 +270,7 @@ public class DecisionDefinitionRestServiceIT {
 
     // when
     String message =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest("nonsenseKey", expectedDefinitionDto.getVersion())
         .execute(String.class, 404);
@@ -292,7 +291,7 @@ public class DecisionDefinitionRestServiceIT {
     createDecisionDefinitionsForKey(decDefKey2, 3, TENANT_2_DTO.getId());
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDecisionDefinitionVersionsWithTenants()
       .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
@@ -337,7 +336,7 @@ public class DecisionDefinitionRestServiceIT {
 
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDecisionDefinitionVersionsWithTenants()
       .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
@@ -360,7 +359,7 @@ public class DecisionDefinitionRestServiceIT {
     createDecisionDefinitionsForKey(decDefKey1, 3, TENANT_1_DTO.getId());
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDecisionDefinitionVersionsWithTenants()
       .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
@@ -395,7 +394,7 @@ public class DecisionDefinitionRestServiceIT {
     grantSingleDefinitionAuthorizationsForUser(tenant1UserId, decDefKey);
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(tenant1UserId, tenant1UserId)
       .buildGetDecisionDefinitionVersionsWithTenants()
@@ -427,7 +426,7 @@ public class DecisionDefinitionRestServiceIT {
     grantSingleDefinitionAuthorizationsForUser(tenant1UserId, decisionDefKey);
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(tenant1UserId, tenant1UserId)
       .buildGetDecisionDefinitionVersionsWithTenants()
@@ -463,12 +462,12 @@ public class DecisionDefinitionRestServiceIT {
     authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(type);
     authorizationDto.setUserId(tenantUser);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
   private void createOptimizeUser(final String tenantUser) {
-    engineRule.addUser(tenantUser, tenantUser);
-    engineRule.grantUserOptimizeAccess(tenantUser);
+    engineIntegrationExtensionRule.addUser(tenantUser, tenantUser);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(tenantUser);
   }
 
   private void createTenant(final TenantRestDto tenantRestDto) {
@@ -477,7 +476,7 @@ public class DecisionDefinitionRestServiceIT {
 
   private void createTenant(final String id, final String name) {
     final TenantDto tenantDto = new TenantDto(id, name, DEFAULT_ENGINE_ALIAS);
-    elasticSearchRule.addEntryToElasticsearch(TENANT_INDEX_NAME, id, tenantDto);
+    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(TENANT_INDEX_NAME, id, tenantDto);
   }
 
   private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
@@ -487,7 +486,7 @@ public class DecisionDefinitionRestServiceIT {
     authorizationDto.setResourceId(definitionKey);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(userId);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
   private void createDecisionDefinitionsForKey(String key, int count) {
@@ -533,7 +532,7 @@ public class DecisionDefinitionRestServiceIT {
   }
 
   private void addDecisionDefinitionToElasticsearch(final DecisionDefinitionOptimizeDto definitionOptimizeDto) {
-    elasticSearchRule.addEntryToElasticsearch(
+    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(
       DECISION_DEFINITION_INDEX_NAME, definitionOptimizeDto.getId(), definitionOptimizeDto
     );
   }

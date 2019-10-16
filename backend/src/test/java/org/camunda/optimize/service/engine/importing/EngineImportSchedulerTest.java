@@ -7,19 +7,19 @@ package org.camunda.optimize.service.engine.importing;
 
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.util.ImportJobExecutor;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class EngineImportSchedulerTest {
 
   @Mock
@@ -31,7 +31,7 @@ public class EngineImportSchedulerTest {
 
   private EngineImportScheduler underTest;
 
-  @Before
+  @BeforeEach
   public void before() {
     underTest = new EngineImportScheduler(
       Collections.singletonList(mockedImportMediator),

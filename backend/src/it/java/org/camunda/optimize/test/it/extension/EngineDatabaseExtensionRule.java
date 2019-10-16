@@ -3,12 +3,12 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.test.it.rule;
+package org.camunda.optimize.test.it.extension;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.rules.TestWatcher;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -28,8 +28,12 @@ import java.util.Properties;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_ASSIGNEE;
 
+/**
+ * This is a hybrid JUnit 4 style Rule and JUnit 5 style extension, used differently depending on the runner used
+ * in each test
+ */
 @Slf4j
-public class EngineDatabaseRule extends TestWatcher {
+public class EngineDatabaseExtensionRule extends org.junit.rules.TestWatcher implements TestWatcher {
   private static final String DATABASE_H2 = "h2";
   private static final String DATABASE_POSTGRESQL = "postgresql";
 
@@ -45,7 +49,7 @@ public class EngineDatabaseRule extends TestWatcher {
   private Connection connection = null;
   private Boolean usePostgresOptimizations = true;
 
-  public EngineDatabaseRule(final Properties properties) {
+  public EngineDatabaseExtensionRule(final Properties properties) {
     database = properties.getProperty("db.name");
     usePostgresOptimizations = Optional.ofNullable(properties.getProperty("db.usePostgresOptimizations"))
       .map(Boolean::valueOf)
@@ -60,7 +64,7 @@ public class EngineDatabaseRule extends TestWatcher {
     initDatabaseConnection(jdbcDriver, dbUrl, dbUser, dbPassword);
   }
 
-  public EngineDatabaseRule(@NonNull final String dataBaseName) {
+  public EngineDatabaseExtensionRule(@NonNull final String dataBaseName) {
     final String dbUrl = String.format(DB_URL_H2_TEMPLATE, dataBaseName);
     initDatabaseConnection(JDBC_DRIVER_H2, dbUrl, USER_H2, PASS_H2);
   }
@@ -323,7 +327,8 @@ public class EngineDatabaseRule extends TestWatcher {
   }
 
 
-  public void changeVariableName(String processInstanceId, String oldVariableName, String newVariableName) throws SQLException {
+  public void changeVariableName(String processInstanceId, String oldVariableName, String newVariableName) throws
+                                                                                                           SQLException {
     String sql = "UPDATE ACT_HI_DETAIL " +
       "SET NAME_ = ? WHERE PROC_INST_ID_ = ? AND NAME_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));

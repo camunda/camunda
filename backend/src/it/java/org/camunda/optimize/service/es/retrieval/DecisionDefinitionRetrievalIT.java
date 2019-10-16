@@ -10,7 +10,7 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -19,7 +19,7 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT {
 
@@ -31,13 +31,13 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       // given
       deployAndStartSimpleDecisionDefinition(DECISION_DEFINITION_KEY + i);
     }
-    embeddedOptimizeRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(11);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(11);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
@@ -52,12 +52,12 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
@@ -75,14 +75,14 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // given
     final String decisionDefinitionKey = DECISION_DEFINITION_KEY + System.currentTimeMillis();
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(modelInstance);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
@@ -102,14 +102,14 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
 
     addDecisionDefinitionWithoutXmlToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
@@ -125,13 +125,13 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // given
     final String decisionDefinitionKey = DECISION_DEFINITION_KEY + System.currentTimeMillis();
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineRule.deployDecisionDefinition(modelInstance);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    String actualXml = embeddedOptimizeRule
+    String actualXml = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDecisionDefinitionXmlRequest(
         decisionDefinitionEngineDto.getKey(),
@@ -150,19 +150,19 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // first version
     final DmnModelInstance modelInstance1 = createSimpleDmnModel(decisionDefinitionKey);
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto1 =
-      engineRule.deployDecisionDefinition(modelInstance1);
+      engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance1);
     // second version
     final DmnModelInstance modelInstance2 = createSimpleDmnModel(decisionDefinitionKey);
     modelInstance2.getDefinitions().getDrgElements().stream().findFirst()
       .ifPresent(drgElement -> drgElement.setName("Add name to ensure that this is the latest version!"));
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto2 =
-      engineRule.deployDecisionDefinition(modelInstance2);
+      engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    final String actualXml = embeddedOptimizeRule
+    final String actualXml = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDecisionDefinitionXmlRequest(decisionDefinitionEngineDto1.getKey(), ALL_VERSIONS)
       .execute(String.class, 200);
@@ -184,15 +184,15 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DmnModelInstance latestModelInstance = createSimpleDmnModel(decisionDefinitionKey);
     latestModelInstance.getDefinitions().getDrgElements().stream().findFirst()
       .ifPresent(drgElement -> drgElement.setName("Add name to ensure that this is the latest version!"));
-    engineRule.deployDecisionDefinition(latestModelInstance);
+    engineIntegrationExtensionRule.deployDecisionDefinition(latestModelInstance);
 
-    embeddedOptimizeRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(12);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(12);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     String actualXml =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(decisionDefinitionKey, ALL_VERSIONS)
         .execute(String.class, 200);
@@ -207,7 +207,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       .setId("aDecDefId")
       .setKey("aDecDefKey")
       .setVersion("aDevDefVersion");
-    elasticSearchRule.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, "fooId", decisionDefinitionWithoutXml);
+    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, "fooId", decisionDefinitionWithoutXml);
   }
 
 }

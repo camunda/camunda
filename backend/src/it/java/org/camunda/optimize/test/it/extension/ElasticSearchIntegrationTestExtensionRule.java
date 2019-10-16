@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.test.it.rule;
+package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -48,6 +48,8 @@ import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -77,8 +79,12 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
+/**
+ * This is a hybrid JUnit 4 style Rule and JUnit 5 style extension, used differently depending on the runner used
+ * in each test
+ */
 @Slf4j
-public class ElasticSearchIntegrationTestRule extends TestWatcher {
+public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher implements BeforeEachCallback {
   private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS = new ToXContent.MapParams(
     Collections.singletonMap("flat_settings", "true")
   );
@@ -94,13 +100,31 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
-  public ElasticSearchIntegrationTestRule() {
+  public ElasticSearchIntegrationTestExtensionRule() {
     this(null);
   }
 
-  public ElasticSearchIntegrationTestRule(final String customIndexPrefix) {
+  public ElasticSearchIntegrationTestExtensionRule(final String customIndexPrefix) {
     this.customIndexPrefix = customIndexPrefix;
     initEsClient();
+  }
+
+  @Override
+  protected void starting(Description description) {
+    before();
+  }
+
+  @Override
+  public void beforeEach(final ExtensionContext extensionContext) throws Exception {
+    before();
+  }
+
+  private void before() {
+    if (haveToClean) {
+      log.info("Cleaning elasticsearch...");
+      this.cleanAndVerify();
+      log.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
+    }
   }
 
   private void initEsClient() {
@@ -115,15 +139,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       );
       disableAutomaticIndexCreation();
       CLIENT_CACHE.put(customIndexPrefix, prefixAwareRestHighLevelClient);
-    }
-  }
-
-  @Override
-  protected void starting(Description description) {
-    if (haveToClean) {
-      log.info("Cleaning elasticsearch...");
-      this.cleanAndVerify();
-      log.info("All documents have been wiped out! Elasticsearch has successfully been cleaned!");
     }
   }
 

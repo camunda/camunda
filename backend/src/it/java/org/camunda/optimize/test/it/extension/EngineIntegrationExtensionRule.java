@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.test.it.rule;
+package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -58,6 +58,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomSerializer;
 import org.camunda.optimize.test.engine.EnginePluginClient;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
@@ -82,18 +84,20 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
- * Rule that performs clean up of engine on integration test startup and one more clean up after integration test.
+ * Extension/Rule that performs clean up of engine on integration test startup and one more clean up after integration test.
+ * This is a hybrid JUnit 4 style Rule and JUnit 5 style extension, used differently depending on the runner used
+ * in each test
  * <p>
  * Relies on it-plugin being deployed on cambpm platform Tomcat.
  */
 @Slf4j
-public class EngineIntegrationRule extends TestWatcher {
+public class EngineIntegrationExtensionRule extends TestWatcher implements BeforeEachCallback {
   private static final Set<String> DEPLOYED_ENGINES = new HashSet<>(Collections.singleton("default"));
 
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
@@ -109,15 +113,15 @@ public class EngineIntegrationRule extends TestWatcher {
   @Getter
   private final String engineName;
 
-  public EngineIntegrationRule() {
+  public EngineIntegrationExtensionRule() {
     this(null);
   }
 
-  public EngineIntegrationRule(final String customEngineName) {
+  public EngineIntegrationExtensionRule(final String customEngineName) {
     this(customEngineName, true);
   }
 
-  public EngineIntegrationRule(final String customEngineName, final boolean shouldCleanEngine) {
+  public EngineIntegrationExtensionRule(final String customEngineName, final boolean shouldCleanEngine) {
     this.engineName = Optional.ofNullable(customEngineName)
       .map(IntegrationTestConfigurationUtil::resolveFullEngineName)
       .orElseGet(IntegrationTestConfigurationUtil::resolveFullDefaultEngineName);
@@ -127,8 +131,15 @@ public class EngineIntegrationRule extends TestWatcher {
 
   @Override
   protected void starting(final Description description) {
-    super.starting(description);
+    before();
+  }
+  
+  @Override
+  public void beforeEach(final ExtensionContext extensionContext) throws Exception {
+    before();
+  }
 
+  private void before() {
     if (shouldCleanEngine) {
       ENGINE_PLUGIN_CLIENT.cleanEngine(engineName);
       addUser("demo", "demo");
@@ -660,7 +671,7 @@ public class EngineIntegrationRule extends TestWatcher {
     HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
     try {
-      CloseableHttpResponse response = EngineIntegrationRule.HTTP_CLIENT.execute(deploymentRequest);
+      CloseableHttpResponse response = EngineIntegrationExtensionRule.HTTP_CLIENT.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
                                      "could not create a deployment!");
@@ -788,7 +799,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(final DeploymentDto deployment) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(
-      deployment, EngineIntegrationRule.HTTP_CLIENT
+      deployment, EngineIntegrationExtensionRule.HTTP_CLIENT
     );
     assertThat("Deployment should contain only one process definition!", processDefinitions.size(), is(1));
     return processDefinitions.get(0);
@@ -873,7 +884,7 @@ public class EngineIntegrationRule extends TestWatcher {
     try {
       requestBodyAsJson = OBJECT_MAPPER.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
-      try (CloseableHttpResponse response = EngineIntegrationRule.HTTP_CLIENT.execute(post)) {
+      try (CloseableHttpResponse response = EngineIntegrationExtensionRule.HTTP_CLIENT.execute(post)) {
         if (response.getStatusLine().getStatusCode() != 200) {
           String body = "";
           if (response.getEntity() != null) {
@@ -1211,7 +1222,7 @@ public class EngineIntegrationRule extends TestWatcher {
     String decisionDefinition = Dmn.convertToString(dmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
-    try (CloseableHttpResponse response = EngineIntegrationRule.HTTP_CLIENT.execute(deploymentRequest)) {
+    try (CloseableHttpResponse response = EngineIntegrationExtensionRule.HTTP_CLIENT.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != 200) {
         String responseErrorMessage = EntityUtils.toString(response.getEntity(), "UTF-8");
         String exceptionMessage = String.format(

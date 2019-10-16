@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -19,23 +19,25 @@ import java.util.Optional;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_FLAG;
 import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_STRICT_VALUE;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AuthenticationRestServiceIT {
 
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void authenticateUser() {
@@ -43,7 +45,7 @@ public class AuthenticationRestServiceIT {
     addAdminUserAndGrantAccessPermission();
 
     //when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("admin", "admin");
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("admin", "admin");
 
     //then
     assertThat(response.getStatus(), is(200));
@@ -58,7 +60,7 @@ public class AuthenticationRestServiceIT {
     String token = authenticateAdminUser();
 
     //when
-    Response logoutResponse = embeddedOptimizeRule
+    Response logoutResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildLogOutRequest()
       .withGivenAuthToken(token)
@@ -74,7 +76,7 @@ public class AuthenticationRestServiceIT {
   public void logoutSecure() {
 
     //when
-    Response logoutResponse = embeddedOptimizeRule
+    Response logoutResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildLogOutRequest()
       .withGivenAuthToken("randomToken")
@@ -87,7 +89,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void testAuthenticationIfNotAuthenticated() {
     //when
-    Response logoutResponse = embeddedOptimizeRule
+    Response logoutResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildAuthTestRequest()
       .withoutAuthentication()
@@ -100,7 +102,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void testIfAuthenticated() {
     //when
-    Response logoutResponse = embeddedOptimizeRule
+    Response logoutResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildAuthTestRequest()
       .execute();
@@ -112,7 +114,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void cookieIsInsecureIfHttpIsEnabled() {
     //when
-    Response authResponse = embeddedOptimizeRule
+    Response authResponse = embeddedOptimizeExtensionRule
       .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     //then
@@ -123,10 +125,10 @@ public class AuthenticationRestServiceIT {
   @Test
   public void cookieIsSecureIfHttpIsDisabled() {
     // given
-    embeddedOptimizeRule.getConfigurationService().setContainerHttpPort(Optional.empty());
+    embeddedOptimizeExtensionRule.getConfigurationService().setContainerHttpPort(Optional.empty());
 
     // when
-    Response authResponse = embeddedOptimizeRule
+    Response authResponse = embeddedOptimizeExtensionRule
       .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
@@ -136,7 +138,7 @@ public class AuthenticationRestServiceIT {
   @Test
   public void cookieIsHttpOnly() {
     // when
-    Response authResponse = embeddedOptimizeRule
+    Response authResponse = embeddedOptimizeExtensionRule
       .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
@@ -146,10 +148,10 @@ public class AuthenticationRestServiceIT {
   @Test
   public void canDisableSameSiteCookieFlag() {
     // given
-    embeddedOptimizeRule.getConfigurationService().setSameSiteCookieFlagEnabled(false);
+    embeddedOptimizeExtensionRule.getConfigurationService().setSameSiteCookieFlagEnabled(false);
 
     // when
-    Response authResponse = embeddedOptimizeRule
+    Response authResponse = embeddedOptimizeExtensionRule
       .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
@@ -159,13 +161,13 @@ public class AuthenticationRestServiceIT {
     );
 
     // cleanup
-    embeddedOptimizeRule.getConfigurationService().setSameSiteCookieFlagEnabled(true);
+    embeddedOptimizeExtensionRule.getConfigurationService().setSameSiteCookieFlagEnabled(true);
   }
 
   @Test
   public void cookieHasSameSiteCookieFlagEnabledByDefault() {
     // when
-    Response authResponse = embeddedOptimizeRule
+    Response authResponse = embeddedOptimizeExtensionRule
       .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
@@ -176,12 +178,12 @@ public class AuthenticationRestServiceIT {
   }
 
   private String authenticateAdminUser() {
-    return embeddedOptimizeRule.authenticateUser("admin", "admin");
+    return embeddedOptimizeExtensionRule.authenticateUser("admin", "admin");
   }
 
   private void addAdminUserAndGrantAccessPermission() {
-    engineIntegrationRule.addUser("admin", "admin");
-    engineIntegrationRule.grantUserOptimizeAccess("admin");
+    engineIntegrationExtensionRule.addUser("admin", "admin");
+    engineIntegrationExtensionRule.grantUserOptimizeAccess("admin");
   }
 
 }

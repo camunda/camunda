@@ -5,27 +5,25 @@
  */
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(JUnitParamsRunner.class)
 public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRoleIT {
-  @Test
-  @Parameters(method = EDIT_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(EDIT_IDENTITY_ROLES)
   public void editorIdentityIsGrantedAddDashboardByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -41,8 +39,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  @Parameters(method = ACCESS_ONLY_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_ONLY_IDENTITY_ROLES)
   public void viewerIdentityIsRejectedToAddDashboardByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -58,8 +56,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(403));
   }
 
-  @Test
-  @Parameters(method = EDIT_USER_ROLES)
+  @ParameterizedTest
+  @MethodSource(EDIT_USER_ROLES)
   public void editorUserIsGrantedToAddDashboardByCollectionRoleAlthoughMemberOfViewerGroupRole(
     final IdentityAndRole identityAndRole) {
     // given
@@ -82,7 +80,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
 
@@ -93,8 +91,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  @Parameters(method = ACCESS_ONLY_USER_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_ONLY_USER_ROLES)
   public void viewerUserIsRejectedToAddDashboardByCollectionRoleAlthoughMemberOfEditorGroup(
     final IdentityAndRole identityAndRole) {
     // given
@@ -127,8 +125,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(403));
   }
 
-  @Test
-  @Parameters(method = EDIT_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(EDIT_IDENTITY_ROLES)
   public void editorIdentityIsGrantedCopyCollectionDashboardInsideCollectionByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -148,8 +146,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
   }
 
-  @Test
-  @Parameters(method = ACCESS_ONLY_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_ONLY_IDENTITY_ROLES)
   public void viewerIdentityIsRejectedToCopyCollectionDashboardInsideCollectionByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -166,8 +164,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(403));
   }
 
-  @Test
-  @Parameters(method = EDIT_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(EDIT_IDENTITY_ROLES)
   public void editorIdentityIsGrantedCopyPrivateDashboardToCollectionByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -187,8 +185,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
   }
 
-  @Test
-  @Parameters(method = ACCESS_ONLY_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_ONLY_IDENTITY_ROLES)
   public void viewerIdentityIsRejectedToCopyPrivateDashboardToCollectionByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -226,7 +224,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
 
@@ -241,8 +239,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(dashboardCopy.getOwner(), is(KERMIT_USER));
   }
 
-  @Test
-  @Parameters(method = ACCESS_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_IDENTITY_ROLES)
   public void anyRoleIdentityIsGrantedCopyCollectionDashboardAsPrivateDashboardByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -267,7 +265,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
@@ -304,7 +302,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final String dashboardId = createPrivateDashboardAsDefaultUser();
 
     // when
-    final Response response = embeddedOptimizeRule.getRequestExecutor()
+    final Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDashboardRequest(dashboardId)
       .execute();
@@ -318,12 +316,12 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String dashboardId = createPrivateDashboardAsDefaultUser();
 
     // when
-    final Response response = embeddedOptimizeRule.getRequestExecutor()
+    final Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDashboardRequest(dashboardId)
       .execute();
@@ -332,8 +330,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(200));
   }
 
-  @Test
-  @Parameters(method = ACCESS_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_IDENTITY_ROLES)
   public void anyRoleIdentityIsGrantedAccessToCollectionDashboardByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -355,7 +353,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
@@ -377,7 +375,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
 
     // when
-    final Response response = embeddedOptimizeRule.getRequestExecutor()
+    final Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDashboardRequest(dashboardId)
       .execute();
@@ -406,7 +404,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String dashboardId = createPrivateDashboardAsDefaultUser();
 
@@ -417,8 +415,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = EDIT_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(EDIT_IDENTITY_ROLES)
   public void editorIdentityIsGrantedUpdateDashboardByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -435,8 +433,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = ACCESS_ONLY_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_ONLY_IDENTITY_ROLES)
   public void viewerIdentityIsRejectedToUpdateDashboardByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -458,7 +456,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
@@ -506,7 +504,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String dashboardId = createPrivateDashboardAsDefaultUser();
 
@@ -517,8 +515,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = EDIT_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(EDIT_IDENTITY_ROLES)
   public void editorIdentityIsGrantedDeleteDashboardByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -535,8 +533,8 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     assertThat(response.getStatus(), is(204));
   }
 
-  @Test
-  @Parameters(method = ACCESS_ONLY_IDENTITY_ROLES)
+  @ParameterizedTest
+  @MethodSource(ACCESS_ONLY_IDENTITY_ROLES)
   public void viewerIdentityIsRejectedToDeleteDashboardByCollectionRole(final IdentityAndRole identityAndRole) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -558,7 +556,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String dashboardId = createDashboardInCollectionAsDefaultUser(collectionId);
@@ -595,7 +593,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   }
 
   private String createPrivateDashboardAsUser(final String user, final String password) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateDashboardRequest(null)
@@ -606,7 +604,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   private String createDashboardInCollectionAsDefaultUser(final String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
@@ -616,7 +614,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   private Response createDashboardInCollectionAsKermit(final String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildCreateDashboardRequest(dashboardDefinitionDto)
@@ -633,7 +631,7 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   }
 
   private Response copyDashboardToCollectionAsKermit(final String dashboardId, final String collectionId) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildCopyDashboardRequest(dashboardId, collectionId)
@@ -641,27 +639,27 @@ public class DashboardCollectionRoleAuthorizationIT extends AbstractCollectionRo
   }
 
   private DashboardDefinitionDto getDashboardByIdAsDefaultUser(final String dashboardId) {
-    return embeddedOptimizeRule.getRequestExecutor()
+    return embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
       .execute(DashboardDefinitionDto.class, 200);
   }
 
   private AuthorizedDashboardDefinitionDto getDashboardByIdAsKermit(final String dashboardId) {
-    return embeddedOptimizeRule.getRequestExecutor()
+    return embeddedOptimizeExtensionRule.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetDashboardRequest(dashboardId)
       .execute(AuthorizedDashboardDefinitionDto.class, 200);
   }
 
   private Response updateDashboardAsKermit(final String dashboardId) {
-    return embeddedOptimizeRule.getRequestExecutor()
+    return embeddedOptimizeExtensionRule.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildUpdateDashboardRequest(dashboardId, new DashboardDefinitionDto())
       .execute();
   }
 
   private Response deleteDashboardAsKermit(final String dashboardId) {
-    return embeddedOptimizeRule.getRequestExecutor()
+    return embeddedOptimizeExtensionRule.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDeleteDashboardRequest(dashboardId)
       .execute();

@@ -6,11 +6,11 @@
 package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerResponseContext;
@@ -20,10 +20,10 @@ import javax.ws.rs.core.MultivaluedMap;
 import java.time.OffsetDateTime;
 
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CacheRequestFilterTest {
 
   CacheRequestFilterFactory.CacheRequestFilter underTest;
@@ -34,7 +34,7 @@ public class CacheRequestFilterTest {
   @Mock
   ContainerResponseContext responseContext;
 
-  @Before
+  @BeforeEach
   public void setup() {
     underTest = new CacheRequestFilterFactory.CacheRequestFilter();
     MultivaluedMap<String, Object> headersMap = new MultivaluedHashMap<>();

@@ -136,22 +136,6 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     return setupServletContextHandler(jerseyServlet);
   }
 
-  public String getSpringContextLocation() {
-    return springContextLocation;
-  }
-
-  public void setSpringContextLocation(String springContextLocation) {
-    this.springContextLocation = springContextLocation;
-  }
-
-  public String getOptimizeRestPackage() {
-    return optimizeRestPackage;
-  }
-
-  public void setOptimizeRestPackage(String optimizeRestPackage) {
-    this.optimizeRestPackage = optimizeRestPackage;
-  }
-
   public ApplicationContext getApplicationContext() {
     return applicationContext;
   }

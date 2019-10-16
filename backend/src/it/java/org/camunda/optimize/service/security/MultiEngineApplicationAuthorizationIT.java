@@ -7,7 +7,12 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.junit.Test;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 
@@ -20,27 +25,40 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT {
 
-  public AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(defaultEngineRule);
-  public AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondEngineRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule defaultEngineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EngineIntegrationExtensionRule secondaryEngineIntegrationExtensionRule = new EngineIntegrationExtensionRule("anotherEngine");
+  @RegisterExtension
+  @Order(4)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+
+  public AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(defaultEngineIntegrationExtensionRule);
+  public AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondaryEngineIntegrationExtensionRule);
 
   @Test
   public void authorizedByAtLeastOneEngine() {
     // given
     addSecondEngineToConfiguration();
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultEngineRule.addUser("gonzo", "gonzo");
-    secondEngineRule.addUser(KERMIT_USER, KERMIT_USER);
-    secondEngineRule.grantUserOptimizeAccess("gonzo");
+    defaultEngineIntegrationExtensionRule.addUser("gonzo", "gonzo");
+    secondaryEngineIntegrationExtensionRule.addUser(KERMIT_USER, KERMIT_USER);
+    secondaryEngineIntegrationExtensionRule.grantUserOptimizeAccess("gonzo");
 
     // when
-    Response response = embeddedOptimizeRule.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(200));
     String responseEntity = response.readEntity(String.class);
     assertThat(responseEntity, is(notNullValue()));
 
-    response = embeddedOptimizeRule.authenticateUserRequest("gonzo", "gonzo");
+    response = embeddedOptimizeExtensionRule.authenticateUserRequest("gonzo", "gonzo");
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -53,7 +71,7 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    Response response = embeddedOptimizeRule.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -63,14 +81,14 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
   public void authorizedByOneEngineEvenIfCredentialsAreWrongForOtherEngine() {
     // given
     addSecondEngineToConfiguration();
-    defaultEngineRule.addUser(KERMIT_USER, "123");
-    defaultEngineRule.grantUserOptimizeAccess(KERMIT_USER);
+    defaultEngineIntegrationExtensionRule.addUser(KERMIT_USER, "123");
+    defaultEngineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    Response response1 = embeddedOptimizeRule.authenticateUserRequest(KERMIT_USER, "123");
-    secondEngineRule.unlockUser(KERMIT_USER);
-    Response response2 = embeddedOptimizeRule.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
+    Response response1 = embeddedOptimizeExtensionRule.authenticateUserRequest(KERMIT_USER, "123");
+    secondaryEngineIntegrationExtensionRule.unlockUser(KERMIT_USER);
+    Response response2 = embeddedOptimizeExtensionRule.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
 
     // then
     assertThat(response1.getStatus(), is(200));
@@ -85,7 +103,7 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    Response response = embeddedOptimizeRule.authenticateUserRequest(KERMIT_USER, "wrongPassword");
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest(KERMIT_USER, "wrongPassword");
 
     // then
     assertThat(response.getStatus(), is(401));

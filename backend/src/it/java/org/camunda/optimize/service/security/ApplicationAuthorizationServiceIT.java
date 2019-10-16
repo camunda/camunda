@@ -6,12 +6,12 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -24,23 +24,24 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ApplicationAuthorizationServiceIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-      .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void grantAccessOnGlobally() {
     // given
-    engineRule.addUser("genzo", "genzo");
+    engineIntegrationExtensionRule.addUser("genzo", "genzo");
 
     // when
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -49,7 +50,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
     authorizationDto.setUserId("*");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateThatUserCanBeAuthenticated("genzo", "genzo");
@@ -58,9 +59,9 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void grantAccessForGroupForAllResources() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup");
-    engineRule.addUserToGroup("kermit", "kermitGroup");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.createGroup("kermitGroup");
+    engineIntegrationExtensionRule.addUserToGroup("kermit", "kermitGroup");
 
     // when
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -69,7 +70,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId("kermitGroup");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateThatUserCanBeAuthenticated("kermit", "kermit");
@@ -78,9 +79,9 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void grantAccessForGroupForOptimizeResource() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup");
-    engineRule.addUserToGroup("kermit", "kermitGroup");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.createGroup("kermitGroup");
+    engineIntegrationExtensionRule.addUserToGroup("kermit", "kermitGroup");
 
     // when
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -89,7 +90,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId("kermitGroup");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateThatUserCanBeAuthenticated("kermit", "kermit");
@@ -98,7 +99,7 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void grantAccessForUserForAllResources() {
     // given
-    engineRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
 
     // when
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -107,7 +108,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId("kermit");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateThatUserCanBeAuthenticated("kermit", "kermit");
@@ -116,7 +117,7 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void grantAccessForUserForOptimizeResource() {
     // given
-    engineRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
 
     // when
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -125,7 +126,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId("kermit");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateThatUserCanBeAuthenticated("kermit", "kermit");
@@ -134,23 +135,23 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void revokeAccessForGroupForAllResources() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup");
-    engineRule.addUserToGroup("kermit", "kermitGroup");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.createGroup("kermitGroup");
+    engineIntegrationExtensionRule.addUserToGroup("kermit", "kermitGroup");
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
     authorizationDto.setUserId("*");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
     validateThatUserCanBeAuthenticated("kermit", "kermit");
 
     // when
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setGroupId("kermitGroup");
     authorizationDto.setUserId(null);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateUserIsNotAuthorized("kermit", "kermit");
@@ -159,16 +160,16 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void revokeAccessForGroupForOptimizeResource() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup");
-    engineRule.addUserToGroup("kermit", "kermitGroup");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.createGroup("kermitGroup");
+    engineIntegrationExtensionRule.addUserToGroup("kermit", "kermitGroup");
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
     authorizationDto.setUserId("*");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
     validateThatUserCanBeAuthenticated("kermit", "kermit");
 
     // when
@@ -176,7 +177,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
     authorizationDto.setGroupId("kermitGroup");
     authorizationDto.setUserId(null);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateUserIsNotAuthorized("kermit", "kermit");
@@ -185,23 +186,23 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void revokeAccessForUserForAllResources() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup");
-    engineRule.addUserToGroup("kermit", "kermitGroup");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.createGroup("kermitGroup");
+    engineIntegrationExtensionRule.addUserToGroup("kermit", "kermitGroup");
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId("kermitGroup");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
     validateThatUserCanBeAuthenticated("kermit", "kermit");
 
     // when
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setUserId("kermit");
     authorizationDto.setGroupId(null);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateUserIsNotAuthorized("kermit", "kermit");
@@ -210,16 +211,16 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void revokeAccessForUserForOptimizeResource() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup");
-    engineRule.addUserToGroup("kermit", "kermitGroup");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.createGroup("kermitGroup");
+    engineIntegrationExtensionRule.addUserToGroup("kermit", "kermitGroup");
     AuthorizationDto authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
     authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId("kermitGroup");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
     validateThatUserCanBeAuthenticated("kermit", "kermit");
 
     // when
@@ -227,7 +228,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
     authorizationDto.setUserId("kermit");
     authorizationDto.setGroupId(null);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateUserIsNotAuthorized("kermit", "kermit");
@@ -236,9 +237,9 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void grantRevokeGrantRevokeAccess() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup");
-    engineRule.addUserToGroup("kermit", "kermitGroup");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.createGroup("kermitGroup");
+    engineIntegrationExtensionRule.addUserToGroup("kermit", "kermitGroup");
 
     // when
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -247,7 +248,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
     authorizationDto.setUserId("*");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateThatUserCanBeAuthenticated("kermit", "kermit");
@@ -256,7 +257,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setGroupId("kermitGroup");
     authorizationDto.setUserId(null);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateUserIsNotAuthorized("kermit", "kermit");
@@ -268,7 +269,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId("kermitGroup");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateThatUserCanBeAuthenticated("kermit", "kermit");
@@ -278,7 +279,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
     authorizationDto.setUserId("kermit");
     authorizationDto.setGroupId(null);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateUserIsNotAuthorized("kermit", "kermit");
@@ -290,7 +291,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId("kermit");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateThatUserCanBeAuthenticated("kermit", "kermit");
@@ -299,7 +300,7 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void grantAccessIsSpecificToUsers() {
     // given
-    engineRule.addUser("genzo", "genzo");
+    engineIntegrationExtensionRule.addUser("genzo", "genzo");
 
     // when
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -308,7 +309,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId("admin");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateUserIsNotAuthorized("genzo", "genzo");
@@ -317,9 +318,9 @@ public class ApplicationAuthorizationServiceIT {
   @Test
   public void addGroupAccessAndRevokeAccessForGroupForOptimizeResource() {
     // given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.createGroup("kermitGroup");
-    engineRule.addUserToGroup("kermit", "kermitGroup");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.createGroup("kermitGroup");
+    engineIntegrationExtensionRule.addUserToGroup("kermit", "kermitGroup");
 
     // when
     AuthorizationDto authorizationDto = new AuthorizationDto();
@@ -328,7 +329,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId("kermitGroup");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
@@ -336,7 +337,7 @@ public class ApplicationAuthorizationServiceIT {
     authorizationDto.setResourceId("optimize");
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setGroupId("kermitGroup");
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     // then
     validateUserIsNotAuthorized("kermit", "kermit");
@@ -344,12 +345,12 @@ public class ApplicationAuthorizationServiceIT {
 
 
   private void validateUserIsNotAuthorized(String user, String password) {
-    Response response = embeddedOptimizeRule.authenticateUserRequest(user, password);
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest(user, password);
 
     assertThat(response.getStatus(),is(403));
   }
   private void validateThatUserCanBeAuthenticated(String user, String password) {
-    Response response = embeddedOptimizeRule.authenticateUserRequest(user, password);
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest(user, password);
 
     assertThat(response.getStatus(),is(200));
   }

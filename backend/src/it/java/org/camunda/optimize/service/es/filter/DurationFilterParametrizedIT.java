@@ -12,68 +12,32 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.util.stream.Stream;
 
-@RunWith(Parameterized.class)
 public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
 
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][] {
-        { false, null, null, "<", 1, "Seconds" },
-        { false, null, null, "<", 1, "Minutes" },
-        { false, null, null, "<", 1, "Hours" },
-        { false, null, null, "<", 1, "Half_Days" },
-        { false, null, null, "<", 1, "Days" },
-        { false, null, null, "<", 1, "Weeks" },
-        { false, null, null, "<", 1, "Months" },
-        { false, null, null, "<=", 1, "Days" },
-        { true, 0L, 2L, ">", 1, "Seconds" },
-        { true, 0L, 2L, ">=", 2, "Seconds" }
-    });
-  }
-
-  private boolean deployWithTimeShift;
-  private Long daysToShift;
-  private Long durationInSec;
-  private String operator;
-  private int duration;
-  private String unit;
-
-  public DurationFilterParametrizedIT(
-      boolean deployWithTimeShift,
-      Long daysToShift,
-      Long durationInSec,
-      String operator,
-      int duration,
-      String unit
-  ) {
-
-    this.deployWithTimeShift = deployWithTimeShift;
-    this.daysToShift = daysToShift;
-    this.durationInSec = durationInSec;
-    this.operator = operator;
-    this.duration = duration;
-    this.unit = unit;
-  }
-
-  @Test
-  public void testGetReportWithLtDurationCriteria () throws Exception {
+  @ParameterizedTest
+  @MethodSource("getArguments")
+  public void testGetReportWithLtDurationCriteria (boolean deployWithTimeShift,
+                                                   Long daysToShift,
+                                                   Long durationInSec,
+                                                   String operator,
+                                                   int duration,
+                                                   String unit) throws Exception {
     // given
     ProcessInstanceEngineDto processInstance;
-    if (this.deployWithTimeShift) {
-      processInstance = deployWithTimeShift(this.daysToShift, this.durationInSec);
+    if (deployWithTimeShift) {
+      processInstance = deployWithTimeShift(daysToShift, durationInSec);
     } else {
       processInstance = deployAndStartSimpleProcess();
     }
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -85,15 +49,30 @@ public class DurationFilterParametrizedIT extends AbstractDurationFilterIT {
     reportData.setFilter(ProcessFilterBuilder
                            .filter()
                            .duration()
-                           .unit(this.unit)
-                           .value((long) this.duration)
-                           .operator(this.operator)
+                           .unit(unit)
+                           .value((long) duration)
+                           .operator(operator)
                            .add()
                            .buildList());
     AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateReport(reportData);
 
     // then
     assertResult(processInstance, result);
+  }
+
+  private static Stream<Arguments> getArguments() {
+    return Stream.of(
+      Arguments.of(false, null, null, "<", 1, "Seconds"),
+      Arguments.of(false, null, null, "<", 1, "Minutes"),
+      Arguments.of(false, null, null, "<", 1, "Hours"),
+      Arguments.of(false, null, null, "<", 1, "Half_Days"),
+      Arguments.of(false, null, null, "<", 1, "Days"),
+      Arguments.of(false, null, null, "<", 1, "Weeks"),
+      Arguments.of(false, null, null, "<", 1, "Months"),
+      Arguments.of(false, null, null, "<", 1, "Days"),
+      Arguments.of(true, 0L, 2L, ">", 1, "Seconds"),
+      Arguments.of(true, 0L, 2L, ">=", 2, "Seconds")
+    );
   }
 
 }

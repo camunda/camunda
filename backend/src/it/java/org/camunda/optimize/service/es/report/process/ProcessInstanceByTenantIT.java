@@ -75,8 +75,8 @@ public class ProcessInstanceByTenantIT extends AbstractProcessDefinitionIT {
     // given
     final String processKey = deployAndStartMultiTenantSimpleServiceTaskProcess(deployedTenants);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder

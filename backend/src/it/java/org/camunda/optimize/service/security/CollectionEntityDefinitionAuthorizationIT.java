@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -19,8 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -28,10 +26,9 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertThat;
 
-@RunWith(JUnitParamsRunner.class)
 public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
@@ -45,7 +42,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     );
     ProcessDefinitionEngineDto unauthorizedProcessDefinition = deploySimpleServiceTaskProcess("unauthorized");
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
 
     final String collectionId = createNewCollectionAsDefaultUser();
     addRoleToCollectionAsDefaultUser(RoleType.VIEWER, new UserDto(KERMIT_USER), collectionId);
@@ -57,7 +54,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     createSingleProcessReportForDefinitionAsDefaultUser(unauthorizedProcessDefinition, collectionId);
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeRule
+    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
@@ -82,7 +79,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(reportDataDto);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -97,6 +94,6 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
   }
 }

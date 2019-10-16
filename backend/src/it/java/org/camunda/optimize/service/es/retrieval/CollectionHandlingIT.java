@@ -21,15 +21,15 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
@@ -40,25 +40,27 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
 
 public class CollectionHandlingIT {
 
-  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void collectionIsWrittenToElasticsearch() throws IOException {
@@ -67,7 +69,7 @@ public class CollectionHandlingIT {
 
     // then
     GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id);
-    GetResponse getResponse = elasticSearchRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then
     assertThat(getResponse.isExists(), is(true));
@@ -105,7 +107,7 @@ public class CollectionHandlingIT {
     final String dashboardId = createNewDashboardInCollection(collectionId);
     final String reportId = createNewSingleProcessReportInCollection(collectionId);
 
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
@@ -131,7 +133,7 @@ public class CollectionHandlingIT {
 
     final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
     combinedReportUpdate.setData(createCombinedReport(reportId1, reportId2));
-    embeddedOptimizeRule
+    embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate)
       .execute();
@@ -176,7 +178,7 @@ public class CollectionHandlingIT {
     assertThat(collection.getLastModifier(), is("demo"));
     assertThat(collection.getLastModified(), is(now));
     final ResolvedCollectionDataDto resultCollectionData = collection.getData();
-    assertEquals(resultCollectionData.getConfiguration(), configuration);
+    assertThat(resultCollectionData.getConfiguration(), equalTo(configuration));
     assertThat(resultCollectionData.getEntities().size(), is(0));
   }
 
@@ -216,7 +218,7 @@ public class CollectionHandlingIT {
     assertThat(collection.getLastModifier(), is("demo"));
     assertThat(collection.getLastModified(), is(now));
     ResolvedCollectionDataDto resultCollectionData = collection.getData();
-    assertEquals(resultCollectionData.getConfiguration(), configuration);
+    assertThat(resultCollectionData.getConfiguration(), is(configuration));
 
 
     // when (again only update name)
@@ -232,7 +234,7 @@ public class CollectionHandlingIT {
     assertThat(collection.getLastModifier(), is("demo"));
     assertThat(collection.getLastModified(), is(now));
     resultCollectionData = collection.getData();
-    assertEquals(resultCollectionData.getConfiguration(), configuration);
+    assertThat(resultCollectionData.getConfiguration(), is(configuration));
   }
 
   @Test
@@ -310,7 +312,7 @@ public class CollectionHandlingIT {
     singleProcessReportDefinitionDto.setCollectionId("invalidId");
 
     // when
-    final Response createResponse = embeddedOptimizeRule
+    final Response createResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute();
@@ -326,7 +328,7 @@ public class CollectionHandlingIT {
     singleDecisionReportDefinitionDto.setCollectionId("invalidId");
 
     // when
-    final Response createResponse = embeddedOptimizeRule
+    final Response createResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute();
@@ -342,7 +344,7 @@ public class CollectionHandlingIT {
     combinedReportDefinitionDto.setCollectionId("invalidId");
 
     // when
-    final Response createResponse = embeddedOptimizeRule
+    final Response createResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute();
@@ -358,7 +360,7 @@ public class CollectionHandlingIT {
     dashboardDefinitionDto.setCollectionId("invalidId");
 
     // when
-    final Response createResponse = embeddedOptimizeRule
+    final Response createResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute();
@@ -378,7 +380,7 @@ public class CollectionHandlingIT {
 
     updateReport(reportId1, new SingleProcessReportDefinitionDto());
 
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
@@ -416,7 +418,7 @@ public class CollectionHandlingIT {
     String singleReportIdToDelete = createNewSingleProcessReportInCollection(collectionId);
     String combinedReportIdToDelete = createNewCombinedReportInCollection(collectionId);
 
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     deleteReport(singleReportIdToDelete);
@@ -433,7 +435,7 @@ public class CollectionHandlingIT {
     String collectionId = createNewCollection();
     String dashboardIdToDelete = createNewDashboardInCollection(collectionId);
 
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     deleteDashboard(dashboardIdToDelete);
@@ -451,13 +453,13 @@ public class CollectionHandlingIT {
     String combinedReportId = createNewCombinedReportInCollection(collectionId);
     String dashboardId = createNewDashboardInCollection(collectionId);
 
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     deleteCollection(collectionId);
 
     // then
-    final Response getCollectionByIdResponse = embeddedOptimizeRule
+    final Response getCollectionByIdResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute();
@@ -469,14 +471,14 @@ public class CollectionHandlingIT {
   }
 
   private void assertReportIsDeleted(final String singleReportIdToDelete) {
-    final Response response = embeddedOptimizeRule.getRequestExecutor()
+    final Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildGetReportRequest(singleReportIdToDelete)
       .execute();
     assertThat(response.getStatus(), is(404));
   }
 
   private void assertDashboardIsDeleted(final String dashboardIdToDelete) {
-    final Response response = embeddedOptimizeRule.getRequestExecutor()
+    final Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildGetDashboardRequest(dashboardIdToDelete)
       .execute();
     assertThat(response.getStatus(), is(404));
@@ -485,7 +487,7 @@ public class CollectionHandlingIT {
   private String createNewSingleProcessReportInCollection(final String collectionId) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -495,7 +497,7 @@ public class CollectionHandlingIT {
   private String createNewSingleDecisionReportInCollection(final String collectionId) {
     SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
     singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -505,7 +507,7 @@ public class CollectionHandlingIT {
   private String createNewDashboardInCollection(final String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
@@ -515,7 +517,7 @@ public class CollectionHandlingIT {
   private String createNewCombinedReportInCollection(final String collectionId) {
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
     combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -523,13 +525,13 @@ public class CollectionHandlingIT {
   }
 
   private Response deleteCollection(String id) {
-    return embeddedOptimizeRule.getRequestExecutor()
+    return embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildDeleteCollectionRequest(id, true)
       .execute();
   }
 
   private void deleteReport(String reportId) {
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteReportRequest(reportId, true)
       .execute();
@@ -539,7 +541,7 @@ public class CollectionHandlingIT {
   }
 
   private void deleteDashboard(String dashboardId) {
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteDashboardRequest(dashboardId, true)
       .execute();
@@ -549,7 +551,7 @@ public class CollectionHandlingIT {
   }
 
   private String createNewCollection() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -557,7 +559,7 @@ public class CollectionHandlingIT {
   }
 
   private void updateCollectionRequest(String id, PartialCollectionDefinitionDto renameCollection) {
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, renameCollection)
       .execute();
@@ -570,14 +572,14 @@ public class CollectionHandlingIT {
   }
 
   private Response getUpdateReportResponse(String id, SingleProcessReportDefinitionDto updatedReport) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
   }
 
   private ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(ResolvedCollectionDefinitionDto.class, 200);

@@ -21,20 +21,19 @@ import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.reindex.ReindexRequest;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.core.IsNull.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -42,7 +41,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class EsIndexAdjusterIT {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperFactory(
@@ -59,10 +58,7 @@ public class EsIndexAdjusterIT {
   @Mock
   private OptimizeIndexNameService indexNameService;
 
-  @Rule
-  public ExpectedException expectedException = ExpectedException.none();
-
-  @Before
+  @BeforeEach
   public void init() {
     when(restClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
   }
@@ -114,9 +110,7 @@ public class EsIndexAdjusterIT {
             .getTask()).willAnswer(invocation -> { throw new IOException(); });
 
     // then an exception is thrown
-    expectedException.expect(UpgradeRuntimeException.class);
-    expectedException.expect(is(notNullValue()));
-    underTest.reindex(index1, index2, "type", "type");
+    assertThrows(UpgradeRuntimeException.class, () -> underTest.reindex(index1, index2, "type", "type"));
   }
 
   @Test
@@ -147,10 +141,9 @@ public class EsIndexAdjusterIT {
     )).thenReturn(taskStatusResponse);
 
     // then an exception is thrown
-    expectedException.expect(UpgradeRuntimeException.class);
-    expectedException.expect(is(notNullValue()));
-    expectedException.expectMessage(taskResponseWithError.getError().toString());
-    underTest.reindex(index1, index2, "type", "type");
+    UpgradeRuntimeException exception =
+      assertThrows(UpgradeRuntimeException.class, () -> underTest.reindex(index1, index2, "type", "type"));
+    assertThat(exception.getMessage(), is(taskResponseWithError.getError().toString()));
   }
 
   private Response createEsResponse(TaskResponse taskResponse) throws IOException {

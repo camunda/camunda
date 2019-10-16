@@ -10,151 +10,66 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
-@RunWith(Parameterized.class)
 public class ProcessExportServiceIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";
   private static final String FAKE = "FAKE";
 
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
 
-  @Parameterized.Parameters(name = "{2}")
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][]{
-      {
-        ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(FAKE)
-          .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build(),
-        "/csv/process/single/raw_process_data_grouped_by_none.csv",
-        "Raw Data Grouped By None"
-      },
-      {
-        ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(FAKE)
-          .setProcessDefinitionVersion(FAKE)
-          .setDateInterval(GroupByDateUnit.DAY)
-          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
-          .build(),
-        "/csv/process/single/pi_frequency_group_by_start_date.csv",
-        "Process Instance Frequency Grouped By Start Date"
-      },
-      {
-        ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(FAKE)
-          .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
-          .build(),
-        "/csv/process/single/pi_frequency_group_by_none.csv",
-        "Process Instance Frequency Grouped By None"
-      },
-      {
-        ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(FAKE)
-          .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-          .build(),
-        "/csv/process/single/flownode_frequency_group_by_flownodes.csv",
-        "Flow Node Frequency Grouped By Flow Node"
-      },
-      {
-        ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(FAKE)
-          .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
-          .build(),
-        "/csv/process/single/pi_duration_group_by_none.csv",
-        "Process Instance Duration Grouped By None"
-      },
-      {
-        ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(FAKE)
-          .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-          .build(),
-        "/csv/process/single/flownode_duration_group_by_flownodes.csv",
-        "Flow Node Duration Grouped By Flow Node"
-      },
-      {
-        createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
-        "/csv/process/single/flownode_duration_group_by_flownodes_no_values.csv",
-        "Flow Node Duration Grouped By Flow Node - Running and null duration"
-      }
-    });
-  }
-
-  private EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule)
-    .around(engineDatabaseRule);
-
-  private final ProcessReportDataDto currentReport;
-  private final String expectedCSV;
-
-  public ProcessExportServiceIT(final ProcessReportDataDto currentReport,
-                                final String expectedCSV,
-                                final String testName) {
-    this.currentReport = currentReport;
-    this.expectedCSV = expectedCSV;
-  }
-
-  @Test
-  public void reportCsvHasExpectedValue() throws Exception {
+  @ParameterizedTest
+  @MethodSource("getParameters")
+  public void reportCsvHasExpectedValue(ProcessReportDataDto currentReport, String expectedCSV) throws Exception {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     currentReport.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
     currentReport.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -163,12 +78,12 @@ public class ProcessExportServiceIT {
     assertThat(response.getStatus(), is(200));
 
     String actualContent = getResponseContentAsString(response);
-    String stringExpected = getExpectedContentAsString(processInstance);
+    String stringExpected = getExpectedContentAsString(processInstance, expectedCSV);
 
     assertThat(actualContent, is(stringExpected));
   }
 
-  private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance) {
+  private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance, String expectedCSV) {
     String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(expectedCSV);
     expectedString = expectedString.replace("${PI_ID}", processInstance.getId());
     expectedString = expectedString.replace("${PD_ID}", processInstance.getDefinitionId());
@@ -189,7 +104,7 @@ public class ProcessExportServiceIT {
   }
 
   private String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -203,10 +118,10 @@ public class ProcessExportServiceIT {
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartSimpleProcessWithVariables(variables);
 
     OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
-    engineDatabaseRule.changeActivityDuration(processInstanceEngineDto.getId(), START, 0L);
-    engineDatabaseRule.changeActivityDuration(processInstanceEngineDto.getId(), END, 0L);
+    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
+    engineDatabaseExtensionRule.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
+    engineDatabaseExtensionRule.changeActivityDuration(processInstanceEngineDto.getId(), START, 0L);
+    engineDatabaseExtensionRule.changeActivityDuration(processInstanceEngineDto.getId(), END, 0L);
     return processInstanceEngineDto;
   }
 
@@ -216,7 +131,7 @@ public class ProcessExportServiceIT {
       .startEvent(START)
       .endEvent(END)
       .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private static ProcessReportDataDto createRunningFlowNodeDurationGroupByFlowNodeTableReport() {
@@ -229,6 +144,62 @@ public class ProcessExportServiceIT {
         .build();
     reportDataDto.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
     return reportDataDto;
+  }
+
+  private static Stream<Arguments> getParameters() {
+    return Stream.of(
+      Arguments.of(ProcessReportDataBuilder
+                     .createReportData()
+                     .setProcessDefinitionKey(FAKE)
+                     .setProcessDefinitionVersion(FAKE)
+                     .setReportDataType(ProcessReportDataType.RAW_DATA)
+                     .build(),
+                   "/csv/process/single/raw_process_data_grouped_by_none.csv",
+                   "Raw Data Grouped By None"),
+      Arguments.of(ProcessReportDataBuilder
+                     .createReportData()
+                     .setProcessDefinitionKey(FAKE)
+                     .setProcessDefinitionVersion(FAKE)
+                     .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+                     .build(),
+                   "/csv/process/single/pi_frequency_group_by_none.csv",
+                   "Process Instance Frequency Grouped By None"),
+      Arguments.of(ProcessReportDataBuilder
+                     .createReportData()
+                     .setProcessDefinitionKey(FAKE)
+                     .setProcessDefinitionVersion(FAKE)
+                     .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+                     .build(),
+                   "/csv/process/single/pi_frequency_group_by_none.csv",
+                   "Process Instance Frequency Grouped By None"),
+      Arguments.of(ProcessReportDataBuilder
+                     .createReportData()
+                     .setProcessDefinitionKey(FAKE)
+                     .setProcessDefinitionVersion(FAKE)
+                     .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+                     .build(),
+                   "/csv/process/single/flownode_frequency_group_by_flownodes.csv",
+                   "Flow Node Frequency Grouped By Flow Node"),
+      Arguments.of(ProcessReportDataBuilder
+                     .createReportData()
+                     .setProcessDefinitionKey(FAKE)
+                     .setProcessDefinitionVersion(FAKE)
+                     .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+                     .build(),
+                   "/csv/process/single/pi_duration_group_by_none.csv",
+                   "Process Instance Duration Grouped By None"),
+      Arguments.of(ProcessReportDataBuilder
+                     .createReportData()
+                     .setProcessDefinitionKey(FAKE)
+                     .setProcessDefinitionVersion(FAKE)
+                     .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+                     .build(),
+                   "/csv/process/single/flownode_duration_group_by_flownodes.csv",
+                   "Flow Node Duration Grouped By Flow Node"),
+      Arguments.of(createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
+                   "/csv/process/single/flownode_duration_group_by_flownodes_no_values.csv",
+                   "Flow Node Duration Grouped By Flow Node - Running and null duration")
+    );
   }
 
 }

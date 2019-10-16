@@ -14,14 +14,12 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.OffsetDateTime;
 import java.time.Period;
@@ -35,16 +33,16 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class OptimizeDecisionCleanupServiceTest {
   @Mock
   private DecisionDefinitionReader decisionDefinitionReader;
@@ -53,7 +51,7 @@ public class OptimizeDecisionCleanupServiceTest {
 
   private ConfigurationService configurationService;
 
-  @Before
+  @BeforeEach
   public void init() {
     configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     mockDecisionDefinitions(new ArrayList<>());
@@ -146,18 +144,10 @@ public class OptimizeDecisionCleanupServiceTest {
     // and this key is not present in the known process definition keys
     mockDecisionDefinitions(generateRandomDefinitionsKeys(3));
 
-    //when I run the cleanup
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
-    OptimizeConfigurationException expectedException = null;
-    try {
-      doCleanup(underTest);
-    } catch (OptimizeConfigurationException e) {
-      expectedException = e;
-    }
-
-    //then it fails with an exception
-    MatcherAssert.assertThat(expectedException, CoreMatchers.is((notNullValue())));
-    MatcherAssert.assertThat(expectedException.getMessage(), containsString(configuredKey));
+    //when I run the cleanup then it fails with an exception
+    OptimizeConfigurationException exception =
+      assertThrows(OptimizeConfigurationException.class, () -> doCleanup(createOptimizeCleanupServiceToTest()));
+    assertThat(exception.getMessage(), containsString(configuredKey));
   }
 
   private void doCleanup(final OptimizeCleanupService underTest) {

@@ -9,9 +9,9 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,24 +23,27 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessDefinitionRetrievalIT {
 
   private final static String PROCESS_DEFINITION_KEY = "aProcess";
   private final static String VERSION_TAG = "aVersionTag";
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchIntegrationTestExtensionRule)
+    .around(engineIntegrationExtensionRule)
+    .around(embeddedOptimizeExtensionRule);
 
   @Before
   public void setUp() {
   }
-
 
   @Test
   public void getProcessDefinitionsWithMoreThenTen() {
@@ -48,13 +51,13 @@ public class ProcessDefinitionRetrievalIT {
       // given
       deploySimpleServiceTaskProcessDefinition(PROCESS_DEFINITION_KEY + System.currentTimeMillis());
     }
-    embeddedOptimizeRule.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(11);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(11);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
@@ -68,12 +71,12 @@ public class ProcessDefinitionRetrievalIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
@@ -101,13 +104,13 @@ public class ProcessDefinitionRetrievalIT {
       .endEvent()
       .done();
     // @formatter:on
-    String processDefinitionId = engineRule.deployProcessAndGetId(modelInstance);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    String processDefinitionId = engineIntegrationExtensionRule.deployProcessAndGetId(modelInstance);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
@@ -126,13 +129,13 @@ public class ProcessDefinitionRetrievalIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
     addProcessDefinitionWithoutXmlToElasticsearch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
@@ -148,14 +151,14 @@ public class ProcessDefinitionRetrievalIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
-    engineRule.startProcessInstance(processDefinitionId);
-    engineRule.startProcessInstance(processDefinitionId);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    engineIntegrationExtensionRule.startProcessInstance(processDefinitionId);
+    engineIntegrationExtensionRule.startProcessInstance(processDefinitionId);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
@@ -178,14 +181,15 @@ public class ProcessDefinitionRetrievalIT {
       .endEvent()
       .done();
     // @formatter:on
-    ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(
+      modelInstance);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     String actualXml =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), processDefinition.getVersion())
         .execute(String.class, 200);
@@ -206,7 +210,7 @@ public class ProcessDefinitionRetrievalIT {
         .camundaExpression("${true}")
       .endEvent()
       .done();
-    engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+    engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
     modelInstance = Bpmn.createExecutableProcess(processId)
       .startEvent()
         .name("Add name to ensure that this is the latest version!")
@@ -215,14 +219,15 @@ public class ProcessDefinitionRetrievalIT {
       .endEvent()
       .done();
     // @formatter:on
-    ProcessDefinitionEngineDto processDefinition = engineRule.deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(
+      modelInstance);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     String actualXml =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), ALL_VERSIONS)
         .execute(String.class, 200);
@@ -248,15 +253,15 @@ public class ProcessDefinitionRetrievalIT {
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    engineRule.deployProcessAndGetProcessDefinition(latestModelInstance);
+    engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(latestModelInstance);
 
-    embeddedOptimizeRule.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(12);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(12);
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     String actualXml =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(definitionKey, ALL_VERSIONS)
         .execute(String.class, 200);
@@ -275,7 +280,7 @@ public class ProcessDefinitionRetrievalIT {
       .endEvent()
       .done();
     // @formatter:on
-    return engineRule.deployProcessAndGetId(modelInstance);
+    return engineIntegrationExtensionRule.deployProcessAndGetId(modelInstance);
   }
 
   private void addProcessDefinitionWithoutXmlToElasticsearch() {
@@ -283,7 +288,11 @@ public class ProcessDefinitionRetrievalIT {
       .setId("aProcDefId")
       .setKey("aProcDefKey")
       .setVersion("aProcDefVersion");
-    elasticSearchRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, "fooId", processDefinitionWithoutXml);
+    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME,
+      "fooId",
+      processDefinitionWithoutXml
+    );
   }
 
 }

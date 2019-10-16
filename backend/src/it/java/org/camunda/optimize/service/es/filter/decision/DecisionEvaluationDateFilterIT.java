@@ -19,7 +19,7 @@ import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitio
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -38,15 +38,15 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   @Test
   public void resultFilterByFixedEvaluationDateStartFrom() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -71,15 +71,15 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   @Test
   public void resultFilterByFixedEvaluationDateEndWith() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -96,23 +96,23 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   @Test
   public void resultFilterByFixedEvaluationDateRange() throws SQLException {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
     // this one is from before the filter StartDate
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
     OffsetDateTime evaluationTimeOfFirstRun = OffsetDateTime.now().minusSeconds(2L);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(decisionDefinitionDto.getId(), evaluationTimeOfFirstRun);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(decisionDefinitionDto.getId(), evaluationTimeOfFirstRun);
     OffsetDateTime evaluationTimeAfterFirstRun = evaluationTimeOfFirstRun.plusSeconds(1L);
 
-    decisionDefinitionDto = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+    decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
 
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -132,11 +132,11 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   @Test
   public void resultFilterByRollingEvaluationDateStartFrom() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -153,11 +153,11 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   @Test
   public void resultFilterByRollingEvaluationDateOutOfRange() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
-    engineRule.startDecisionInstance(decisionDefinitionDto.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -182,28 +182,28 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
+    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -223,12 +223,12 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
     );
 
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
     );
   }
 
@@ -241,28 +241,28 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(1);
+    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -282,9 +282,9 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
   }
 
   private AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
-      .withGivenAuthToken(embeddedOptimizeRule.getNewAuthenticationToken())
+      .withGivenAuthToken(embeddedOptimizeExtensionRule.getNewAuthenticationToken())
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});

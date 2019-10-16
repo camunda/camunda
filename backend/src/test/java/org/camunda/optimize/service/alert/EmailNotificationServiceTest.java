@@ -11,19 +11,19 @@ import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.mail.internet.MimeMessage;
 import java.security.Security;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class EmailNotificationServiceTest {
 
   private ConfigurationService configurationService;
@@ -32,7 +32,7 @@ public class EmailNotificationServiceTest {
 
   private GreenMail greenMail;
 
-  @Before
+  @BeforeEach
   public void init() {
     configurationService = ConfigurationServiceBuilder.createConfiguration()
       .loadConfigurationFrom("service-config.yaml")
@@ -41,7 +41,7 @@ public class EmailNotificationServiceTest {
     this.notificationService = new EmailNotificationService(configurationService);
   }
 
-  @After
+  @AfterEach
   public void cleanUp() {
     if (greenMail != null) {
       greenMail.stop();

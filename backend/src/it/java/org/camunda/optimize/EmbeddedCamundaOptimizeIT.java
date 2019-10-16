@@ -6,12 +6,12 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -26,15 +26,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class EmbeddedCamundaOptimizeIT {
 
-  private EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
-  private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain.outerRule(engineIntegrationRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void onOptimizeDestroyNoRemainingZombieThreads() throws Exception {
-    embeddedOptimizeRule.stopOptimize();
+    embeddedOptimizeExtensionRule.stopOptimize();
 
     final Set<Thread> baseThreadSet = getCurrentThreads();
 
@@ -61,9 +62,9 @@ public class EmbeddedCamundaOptimizeIT {
     assertThat(getCurrentThreads(), is(baseThreadSet));
   }
 
-  @After
+  @AfterEach
   public void restartEmbeddedOptimize() throws Exception {
-    embeddedOptimizeRule.startOptimize();
+    embeddedOptimizeExtensionRule.startOptimize();
   }
 
   private Set<Thread> getCurrentThreads() {

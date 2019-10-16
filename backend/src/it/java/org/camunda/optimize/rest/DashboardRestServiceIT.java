@@ -9,12 +9,12 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -28,17 +28,20 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class DashboardRestServiceIT {
 
-  public EngineIntegrationRule engineIntegrationRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineIntegrationRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void createNewDashboardWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildCreateDashboardRequest(generateDashboardDefinitionDto())
@@ -51,7 +54,7 @@ public class DashboardRestServiceIT {
   @Test
   public void createNewDashboard() {
     // when
-    IdDto idDto = embeddedOptimizeRule
+    IdDto idDto = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest()
       .execute(IdDto.class, 200);
@@ -63,7 +66,7 @@ public class DashboardRestServiceIT {
   @Test
   public void createNewDashboardWithDefinition() {
     // when
-    IdDto idDto = embeddedOptimizeRule
+    IdDto idDto = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest(generateDashboardDefinitionDto())
       .execute(IdDto.class, 200);
@@ -79,7 +82,7 @@ public class DashboardRestServiceIT {
     createEmptyReportToDashboard(dashboardId);
 
     // when
-    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .execute(IdDto.class, 200);
 
@@ -110,7 +113,7 @@ public class DashboardRestServiceIT {
     final String testDashboardCopyName = "This is my new report copy! ;-)";
 
     // when
-    IdDto copyId = embeddedOptimizeRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("name", testDashboardCopyName)
       .execute(IdDto.class, 200);
@@ -125,7 +128,7 @@ public class DashboardRestServiceIT {
   @Test
   public void getDashboardWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetDashboardRequest("asdf")
@@ -153,7 +156,7 @@ public class DashboardRestServiceIT {
   @Test
   public void getDashboardForNonExistingIdThrowsError() {
     // when
-    String response = embeddedOptimizeRule
+    String response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDashboardRequest("fooid")
       .execute(String.class, 404);
@@ -165,7 +168,7 @@ public class DashboardRestServiceIT {
   @Test
   public void updateDashboardWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildUpdateDashboardRequest("1", null)
@@ -178,7 +181,7 @@ public class DashboardRestServiceIT {
   @Test
   public void updateNonExistingDashboard() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateDashboardRequest("nonExistingId", new DashboardDefinitionDto())
       .execute();
@@ -193,7 +196,7 @@ public class DashboardRestServiceIT {
     String id = createEmptyPrivateDashboard();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateDashboardRequest(id, new DashboardDefinitionDto())
       .execute();
@@ -211,7 +214,7 @@ public class DashboardRestServiceIT {
     String id = createDashboard(dashboardDefinitionDto);
 
     // when
-    embeddedOptimizeRule
+    embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildUpdateDashboardRequest(id, new DashboardDefinitionDto())
       .execute();
@@ -224,7 +227,7 @@ public class DashboardRestServiceIT {
   @Test
   public void deleteDashboardWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDeleteDashboardRequest("1124")
@@ -240,7 +243,7 @@ public class DashboardRestServiceIT {
     String id = createEmptyPrivateDashboard();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteDashboardRequest(id)
       .execute();
@@ -252,7 +255,7 @@ public class DashboardRestServiceIT {
   @Test
   public void deleteNonExistingDashboard() {
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildDeleteDashboardRequest("nonExistingId")
       .execute();
@@ -266,7 +269,7 @@ public class DashboardRestServiceIT {
   }
 
   private String createDashboard(final DashboardDefinitionDto dashboardDefinitionDto) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
@@ -274,14 +277,14 @@ public class DashboardRestServiceIT {
   }
 
   private DashboardDefinitionDto getDashboard(String dashboardId) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
       .execute(DashboardDefinitionDto.class, 200);
   }
 
   private String createEmptyCollectionToOptimize() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -295,13 +298,13 @@ public class DashboardRestServiceIT {
       dashboard.setReports(reports);
     }
 
-    embeddedOptimizeRule.getRequestExecutor()
+    embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboard)
       .execute(204);
   }
 
   private DashboardDefinitionDto getDashboardWithId(final String id) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildGetDashboardRequest(id)
       .execute(DashboardDefinitionDto.class, 200);
@@ -315,7 +318,7 @@ public class DashboardRestServiceIT {
   }
 
   private String createEmptySingleProcessReportToCollection() {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(new SingleProcessReportDefinitionDto())
       .execute(IdDto.class, 200)

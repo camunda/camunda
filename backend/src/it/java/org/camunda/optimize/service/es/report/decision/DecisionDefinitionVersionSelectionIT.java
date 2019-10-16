@@ -13,15 +13,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -39,17 +39,18 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   protected static final String INPUT_AMOUNT_ID = "clause1";
   private static final String VARIABLE_NAME = "amount";
 
-  private EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  private ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  private EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule)
-    .around(engineDatabaseRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
 
   @Test
   public void decisionReportAcrossAllVersions() {
@@ -58,8 +59,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     // different version
     deployDecisionAndStartInstances(2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),
@@ -82,8 +83,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     deployDecisionAndStartInstances(1);
     DecisionDefinitionEngineDto decisionDefinitionDto3 = deployDecisionAndStartInstances(3);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),
@@ -105,8 +106,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(2);
     deployDecisionAndStartInstances(1);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionReportDataDto> allPossibleReports =
       createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
@@ -121,8 +122,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     deployDecisionAndStartInstances(4);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
@@ -139,8 +140,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(1);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),
@@ -156,15 +157,15 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   }
 
   private DecisionDefinitionEngineDto deployDecisionAndStartInstances(int nInstancesToStart) {
-    DecisionDefinitionEngineDto definition = engineRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto definition = engineIntegrationExtensionRule.deployDecisionDefinition();
     IntStream.range(0, nInstancesToStart).forEach(
-      i -> engineRule.startDecisionInstance(definition.getId())
+      i -> engineIntegrationExtensionRule.startDecisionInstance(definition.getId())
     );
     return definition;
   }
 
   private AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto,
@@ -173,7 +174,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   }
 
   private Response evaluateReportWithResponse(DecisionReportDataDto reportData) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();

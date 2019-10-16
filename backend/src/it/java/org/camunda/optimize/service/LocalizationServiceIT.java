@@ -6,29 +6,27 @@
 package org.camunda.optimize.service;
 
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class LocalizationServiceIT {
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
 
-  @Rule
-  public RuleChain chain = RuleChain.outerRule(embeddedOptimizeRule);
+  @RegisterExtension
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void failOnMissingFileForAvailableLocales() {
     //given
-    embeddedOptimizeRule.getConfigurationService().getAvailableLocales().add("xyz");
+    embeddedOptimizeExtensionRule.getConfigurationService().getAvailableLocales().add("xyz");
     OptimizeConfigurationException configurationException = null;
     try {
-      embeddedOptimizeRule.reloadConfiguration();
+      embeddedOptimizeExtensionRule.reloadConfiguration();
     } catch (OptimizeConfigurationException e) {
       configurationException = e;
     } finally {
@@ -40,10 +38,10 @@ public class LocalizationServiceIT {
   @Test
   public void failOnInvalidJsonFileForAvailableLocales() {
     //given
-    embeddedOptimizeRule.getConfigurationService().getAvailableLocales().add("invalid");
+    embeddedOptimizeExtensionRule.getConfigurationService().getAvailableLocales().add("invalid");
     OptimizeConfigurationException configurationException = null;
     try {
-      embeddedOptimizeRule.reloadConfiguration();
+      embeddedOptimizeExtensionRule.reloadConfiguration();
     } catch (OptimizeConfigurationException e) {
       configurationException = e;
     } finally {
@@ -58,10 +56,10 @@ public class LocalizationServiceIT {
   @Test
   public void failOnFallbackLocaleNotPresentInAvailableLocales() {
     //given
-    embeddedOptimizeRule.getConfigurationService().setFallbackLocale("xyz");
+    embeddedOptimizeExtensionRule.getConfigurationService().setFallbackLocale("xyz");
     OptimizeConfigurationException configurationException = null;
     try {
-      embeddedOptimizeRule.reloadConfiguration();
+      embeddedOptimizeExtensionRule.reloadConfiguration();
     } catch (OptimizeConfigurationException e) {
       configurationException = e;
     } finally {

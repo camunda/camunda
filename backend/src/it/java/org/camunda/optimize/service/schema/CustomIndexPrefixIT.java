@@ -9,9 +9,9 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -33,32 +33,31 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class CustomIndexPrefixIT {
   private static final String CUSTOM_PREFIX = UUID.randomUUID().toString().substring(0, 5);
 
-  public static ElasticSearchIntegrationTestRule defaultElasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public static ElasticSearchIntegrationTestRule customPrefixElasticSearchRule = new ElasticSearchIntegrationTestRule(
-    CUSTOM_PREFIX
-  );
-  public static EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public static EngineIntegrationRule engineRule = new EngineIntegrationRule();
+  public static ElasticSearchIntegrationTestExtensionRule defaultElasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public static ElasticSearchIntegrationTestExtensionRule customPrefixElasticSearchIntegrationTestExtensionRule
+    = new ElasticSearchIntegrationTestExtensionRule(CUSTOM_PREFIX);
+  public static EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  public static EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
 
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(defaultElasticSearchRule)
-    .around(customPrefixElasticSearchRule)
-    .around(engineRule)
-    .around(embeddedOptimizeRule);
+    .outerRule(defaultElasticSearchIntegrationTestExtensionRule)
+    .around(customPrefixElasticSearchIntegrationTestExtensionRule)
+    .around(engineIntegrationExtensionRule)
+    .around(embeddedOptimizeExtensionRule);
 
   @Before
   public void setUp() {
-    prefixAwareRestHighLevelClient = embeddedOptimizeRule.getOptimizeElasticClient();
+    prefixAwareRestHighLevelClient = embeddedOptimizeExtensionRule.getOptimizeElasticClient();
   }
 
   @Test
   public void optimizeCustomPrefixIndexExistsAfterSchemaInitialization() {
     // given
-    embeddedOptimizeRule.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // when
     initializeSchema();
@@ -66,7 +65,7 @@ public class CustomIndexPrefixIT {
     // then
     assertThat(prefixAwareRestHighLevelClient.getIndexNameService().getIndexPrefix(), is(CUSTOM_PREFIX));
     assertThat(
-      embeddedOptimizeRule.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
+      embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
       is(true)
     );
   }
@@ -74,14 +73,14 @@ public class CustomIndexPrefixIT {
   @Test
   public void allTypesWithPrefixExistAfterSchemaInitialization() throws IOException {
     // given
-    embeddedOptimizeRule.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.getConfigurationService().setEsIndexPrefix(CUSTOM_PREFIX);
+    embeddedOptimizeExtensionRule.reloadConfiguration();
 
     // when
     initializeSchema();
 
     // then
-    final List<IndexMappingCreator> mappings = embeddedOptimizeRule.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator> mappings = embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().getMappings();
     assertThat(mappings.size(), is(18));
     for (IndexMappingCreator mapping : mappings) {
       final String expectedAliasName = getOptimizeIndexAliasForTypeAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);
@@ -89,7 +88,7 @@ public class CustomIndexPrefixIT {
         expectedAliasName, String.valueOf(mapping.getVersion())
       );
 
-      final RestHighLevelClient highLevelClient = customPrefixElasticSearchRule.getOptimizeElasticClient().getHighLevelClient();
+      final RestHighLevelClient highLevelClient = customPrefixElasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().getHighLevelClient();
 
       assertThat(
         "Custom prefix alias exists for type " + mapping.getIndexName(),
@@ -110,27 +109,27 @@ public class CustomIndexPrefixIT {
     // given
     deploySimpleProcess();
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    defaultElasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    defaultElasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeRule.getConfigurationService().setEsIndexPrefix(
-      customPrefixElasticSearchRule.getOptimizeElasticClient().getIndexNameService().getIndexPrefix()
+    embeddedOptimizeExtensionRule.getConfigurationService().setEsIndexPrefix(
+      customPrefixElasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().getIndexNameService().getIndexPrefix()
     );
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
     initializeSchema();
 
     deploySimpleProcess();
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    customPrefixElasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    customPrefixElasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    assertThat(defaultElasticSearchRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(1));
-    assertThat(customPrefixElasticSearchRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(2));
+    assertThat(defaultElasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(1));
+    assertThat(customPrefixElasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME), is(2));
   }
 
   private void deploySimpleProcess() {
-    engineRule.deployAndStartProcess(createSimpleProcess());
+    engineIntegrationExtensionRule.deployAndStartProcess(createSimpleProcess());
   }
 
   private BpmnModelInstance createSimpleProcess() {
@@ -147,6 +146,6 @@ public class CustomIndexPrefixIT {
   }
 
   private void initializeSchema() {
-    embeddedOptimizeRule.getElasticSearchSchemaManager().initializeSchema(prefixAwareRestHighLevelClient);
+    embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().initializeSchema(prefixAwareRestHighLevelClient);
   }
 }

@@ -15,15 +15,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,32 +32,37 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CanceledInstancesOnlyFilterIT {
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule(engineRule.getEngineName());
 
-  @Rule
-  public RuleChain chain = RuleChain
-          .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
 
   @Test
   public void mixedCanceledInstancesOnlyFilter() throws Exception {
     //given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
-    engineRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
 
-    engineRule.externallyTerminateProcessInstance(firstProcInst.getId());
-    engineDatabaseRule.changeProcessInstanceState(
+    engineIntegrationExtensionRule.externallyTerminateProcessInstance(firstProcInst.getId());
+    engineDatabaseExtensionRule.changeProcessInstanceState(
             secondProcInst.getId(),
             CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
     );
 
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(userTaskProcess);
@@ -79,21 +84,21 @@ public class CanceledInstancesOnlyFilterIT {
   public void internallyTerminatedCanceledInstancesOnlyFilter() throws Exception {
     //given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
-    engineRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
 
-    engineDatabaseRule.changeProcessInstanceState(
+    engineDatabaseExtensionRule.changeProcessInstanceState(
             firstProcInst.getId(),
             CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
     );
-    engineDatabaseRule.changeProcessInstanceState(
+    engineDatabaseExtensionRule.changeProcessInstanceState(
             secondProcInst.getId(),
             CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(userTaskProcess);
@@ -115,15 +120,15 @@ public class CanceledInstancesOnlyFilterIT {
   public void externallyTerminatedCanceledInstncesOnlyFilter() {
     //given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineRule.startProcessInstance(userTaskProcess.getId());
-    engineRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
 
-    engineRule.externallyTerminateProcessInstance(firstProcInst.getId());
-    engineRule.externallyTerminateProcessInstance(secondProcInst.getId());
+    engineIntegrationExtensionRule.externallyTerminateProcessInstance(firstProcInst.getId());
+    engineIntegrationExtensionRule.externallyTerminateProcessInstance(secondProcInst.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(userTaskProcess);
@@ -142,7 +147,7 @@ public class CanceledInstancesOnlyFilterIT {
   }
 
   private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -158,7 +163,7 @@ public class CanceledInstancesOnlyFilterIT {
             .userTask()
             .endEvent()
             .done();
-    return engineRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private ProcessReportDataDto createReport(ProcessDefinitionEngineDto userTaskProcess) {

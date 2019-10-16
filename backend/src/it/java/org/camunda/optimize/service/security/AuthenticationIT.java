@@ -7,12 +7,12 @@ package org.camunda.optimize.service.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -22,27 +22,28 @@ import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_A
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
-
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AuthenticationIT {
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void authenticateUser() {
     //given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
 
     //when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(), is(200));
@@ -51,12 +52,12 @@ public class AuthenticationIT {
   @Test
   public void rejectLockedUser() {
     //given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
 
     //when
-    embeddedOptimizeRule.authenticateUserRequest("kermit", "wrongPassword");
-    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+    embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "wrongPassword");
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(),is(401));
@@ -67,11 +68,11 @@ public class AuthenticationIT {
   @Test
   public void rejectWrongPassword() {
     //given
-    engineRule.addUser("kermit", "kermit");
-    engineRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
 
     //when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "wrong");
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "wrong");
 
     //then
     assertThat(response.getStatus(), is(401));
@@ -80,7 +81,7 @@ public class AuthenticationIT {
   @Test
   public void rejectUnknownUser() {
     //when
-    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(), is(401));
@@ -89,10 +90,10 @@ public class AuthenticationIT {
   @Test
   public void rejectOnMissingApplicationAuthorization() {
     // when
-    engineRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
 
     // then
-    Response response = embeddedOptimizeRule.authenticateUserRequest("kermit", "kermit");
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "kermit");
     assertThat(response.getStatus(), is(403));
   }
 
@@ -104,7 +105,7 @@ public class AuthenticationIT {
 
     //when
     Response testResponse =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildAuthTestRequest()
         .withoutAuthentication()
@@ -130,7 +131,7 @@ public class AuthenticationIT {
 
     //when
     Response logoutResponse =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildLogOutRequest()
         .withGivenAuthToken(selfGeneratedEvilToken)
@@ -151,7 +152,7 @@ public class AuthenticationIT {
 
     //when
     Response logoutResponse =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildLogOutRequest()
         .withGivenAuthToken(selfGeneratedEvilToken)
@@ -163,7 +164,7 @@ public class AuthenticationIT {
   @Test
   public void dontDeleteCookiesIfNoToken() {
     Response logoutResponse =
-      embeddedOptimizeRule
+      embeddedOptimizeExtensionRule
         .getRequestExecutor()
         .buildLogOutRequest()
         .withoutAuthentication()
@@ -173,11 +174,11 @@ public class AuthenticationIT {
   }
 
   private String authenticateAdminUser() {
-    return embeddedOptimizeRule.authenticateUser("admin", "admin");
+    return embeddedOptimizeExtensionRule.authenticateUser("admin", "admin");
   }
 
   private void addAdminUserAndGrantAccessPermission() {
-    engineRule.addUser("admin", "admin");
-    engineRule.grantUserOptimizeAccess("admin");
+    engineIntegrationExtensionRule.addUser("admin", "admin");
+    engineIntegrationExtensionRule.grantUserOptimizeAccess("admin");
   }
 }

@@ -13,13 +13,12 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
@@ -33,20 +32,24 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessVariableAuthorizationIT {
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   private static final String VARIABLE_NAME = "variableName";
   private static final String VARIABLE_VALUE = "variableValue";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
 
   @Test
   public void variableRequest_authorized() {
@@ -56,15 +59,15 @@ public class ProcessVariableAuthorizationIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
 
     //then
     responses.forEach(response ->
-                        Assert.assertThat(response.getStatus(), is(200))
+                        assertThat(response.getStatus(), is(200))
     );
   }
 
@@ -76,15 +79,15 @@ public class ProcessVariableAuthorizationIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition, Collections.singletonList(null));
 
     //then
     responses.forEach(response ->
-                        Assert.assertThat(response.getStatus(), is(200))
+                        assertThat(response.getStatus(), is(200))
     );
   }
 
@@ -93,18 +96,18 @@ public class ProcessVariableAuthorizationIT {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     startSimpleProcess(processDefinition);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    Response variableNameResponse = embeddedOptimizeRule
+    Response variableNameResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildProcessVariableNamesRequest(
         createVariableNameRequest("", "", Collections.emptyList())
       )
       .execute();
-    Response variableValueResponse = embeddedOptimizeRule
+    Response variableValueResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildProcessVariableValuesRequest(
@@ -114,7 +117,7 @@ public class ProcessVariableAuthorizationIT {
 
     // then
     Arrays.asList(variableNameResponse, variableValueResponse).forEach(response ->
-                                                                         Assert.assertThat(
+                                                                         assertThat(
                                                                            response.getStatus(),
                                                                            is(401)
                                                                          )
@@ -131,15 +134,15 @@ public class ProcessVariableAuthorizationIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     startSimpleProcess(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
 
     //then
     responses.forEach(response ->
-                        Assert.assertThat(response.getStatus(), is(200))
+                        assertThat(response.getStatus(), is(200))
     );
   }
 
@@ -152,15 +155,15 @@ public class ProcessVariableAuthorizationIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     startSimpleProcess(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
 
     //then
     responses.forEach(response ->
-                        Assert.assertThat(response.getStatus(), is(403))
+                        assertThat(response.getStatus(), is(403))
     );
   }
 
@@ -177,8 +180,8 @@ public class ProcessVariableAuthorizationIT {
     startSimpleProcess(processDefinition1);
     startSimpleProcess(processDefinition2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(
@@ -188,7 +191,7 @@ public class ProcessVariableAuthorizationIT {
 
     //then
     responses.forEach(response ->
-                        Assert.assertThat(response.getStatus(), is(403))
+                        assertThat(response.getStatus(), is(403))
     );
   }
 
@@ -201,7 +204,7 @@ public class ProcessVariableAuthorizationIT {
 
   private List<Response> executeVariableRequestsAsKermit(final ProcessDefinitionEngineDto processDefinition,
                                                          List<String> tenantIds) {
-    Response variableNameResponse = embeddedOptimizeRule
+    Response variableNameResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildProcessVariableNamesRequest(createVariableNameRequest(
@@ -209,7 +212,7 @@ public class ProcessVariableAuthorizationIT {
       ))
       .execute();
 
-    Response variableValueResponse = embeddedOptimizeRule
+    Response variableValueResponse = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildProcessVariableValuesRequest(createVariableValueRequest(
@@ -250,12 +253,12 @@ public class ProcessVariableAuthorizationIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   private void startSimpleProcess(ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put(VARIABLE_NAME, VARIABLE_VALUE);
-    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
   }
 }

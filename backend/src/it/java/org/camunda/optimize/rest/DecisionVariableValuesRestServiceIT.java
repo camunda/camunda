@@ -8,64 +8,41 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
-import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(Parameterized.class)
 public class DecisionVariableValuesRestServiceIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";
   private static final String TEST_VARIANT_OUTPUTS = "outputs";
 
-  @Parameterized.Parameters
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][]{
-      {TEST_VARIANT_INPUTS}, {TEST_VARIANT_OUTPUTS}
-    });
-  }
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-
-  private Function<DecisionVariableValueRequestDto, OptimizeRequestExecutor> getVariablesExecutorFunction;
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-
-  public DecisionVariableValuesRestServiceIT(String inputsOrOutputs) {
-    switch (inputsOrOutputs) {
-      case TEST_VARIANT_INPUTS:
-        getVariablesExecutorFunction = this::getInputVariableValueResponse;
-        break;
-      case TEST_VARIANT_OUTPUTS:
-        getVariablesExecutorFunction = this::getOutputVariableValueResponse;
-        break;
-      default:
-        throw new RuntimeException("unsupported type " + inputsOrOutputs);
-    }
-  }
-
-  @Test
-  public void getVariableValuesWithoutAuthentication() {
+  @ParameterizedTest
+  @MethodSource("getInputOutputArgs")
+  public void getVariableValuesWithoutAuthentication(String inputOutput) {
     // when
-    Response response = getVariablesExecutorFunction.apply(null)
+    Response response = getExecutor(inputOutput, null)
       .withoutAuthentication()
       .execute();
 
@@ -73,73 +50,97 @@ public class DecisionVariableValuesRestServiceIT {
     assertThat(response.getStatus(), is(401));
   }
 
-  @Test
-  public void getVariableValues() {
+  @ParameterizedTest
+  @MethodSource("getInputOutputArgs")
+  public void getVariableValues(String inputOutput) {
     // given
     DecisionVariableValueRequestDto request = generateDefaultVariableRequest();
 
     // when
-    List responseList = getVariablesExecutorFunction.apply(request)
+    List responseList = getExecutor(inputOutput, request)
       .executeAndReturnList(String.class, 200);
 
     // then
     assertThat(responseList.isEmpty(), is(true));
   }
 
-  @Test
-  public void missingVariableIdQueryParamThrowsError() {
+  @ParameterizedTest
+  @MethodSource("getInputOutputArgs")
+  public void missingVariableIdQueryParamThrowsError(String inputOutput) {
     // given
     DecisionVariableValueRequestDto request = generateDefaultVariableRequest();
     request.setVariableId(null);
 
     // when
-    Response response = getVariablesExecutorFunction.apply(request)
+    Response response = getExecutor(inputOutput, request)
       .execute();
 
     // then
     assertThat(response.getStatus(), is(500));
   }
 
-  @Test
-  public void missingVariableTypeQueryParamThrowsError() {
+  @ParameterizedTest
+  @MethodSource("getInputOutputArgs")
+  public void missingVariableTypeQueryParamThrowsError(String inputOutput) {
     // given
     DecisionVariableValueRequestDto request = generateDefaultVariableRequest();
     request.setVariableType(null);
 
     // when
-    Response response = getVariablesExecutorFunction.apply(request)
+    Response response = getExecutor(inputOutput, request)
       .execute();
 
     // then
     assertThat(response.getStatus(), is(500));
   }
 
-  @Test
-  public void missingDecisionDefinitionKeyQueryParamThrowsError() {
+  @ParameterizedTest
+  @MethodSource("getInputOutputArgs")
+  public void missingDecisionDefinitionKeyQueryParamThrowsError(String inputOutput) {
     // given
     DecisionVariableValueRequestDto request = generateDefaultVariableRequest();
     request.setDecisionDefinitionKey(null);
 
     // when
-    Response response = getVariablesExecutorFunction.apply(request)
+    Response response = getExecutor(inputOutput, request)
       .execute();
 
     // then
     assertThat(response.getStatus(), is(500));
   }
 
-  @Test
-  public void missingDecisionDefinitionVersionQueryParamThrowsError() {
+  @ParameterizedTest
+  @MethodSource("getInputOutputArgs")
+  public void missingDecisionDefinitionVersionQueryParamThrowsError(String inputOutput) {
     // given
     DecisionVariableValueRequestDto request = generateDefaultVariableRequest();
     request.setDecisionDefinitionVersions(null);
 
     // when
-    Response response = getVariablesExecutorFunction.apply(request)
+    Response response = getExecutor(inputOutput, request)
       .execute();
 
     // then
     assertThat(response.getStatus(), is(500));
+  }
+
+  private static Stream<String> getInputOutputArgs() {
+    return Stream.of(TEST_VARIANT_INPUTS, TEST_VARIANT_OUTPUTS);
+  }
+
+  private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableValueRequestDto requestDto) {
+    switch (inputsOrOutputs) {
+      case TEST_VARIANT_INPUTS:
+        return embeddedOptimizeExtensionRule
+          .getRequestExecutor()
+          .buildDecisionInputVariableValuesRequest(requestDto);
+      case TEST_VARIANT_OUTPUTS:
+        return embeddedOptimizeExtensionRule
+          .getRequestExecutor()
+          .buildDecisionOutputVariableValuesRequest(requestDto);
+      default:
+        throw new RuntimeException("unsupported type " + inputsOrOutputs);
+    }
   }
 
   private DecisionVariableValueRequestDto generateDefaultVariableRequest() {
@@ -149,18 +150,6 @@ public class DecisionVariableValuesRestServiceIT {
     requestDto.setVariableId("foo");
     requestDto.setVariableType(VariableType.STRING);
     return requestDto;
-  }
-
-  private OptimizeRequestExecutor getInputVariableValueResponse(DecisionVariableValueRequestDto requestDto) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildDecisionInputVariableValuesRequest(requestDto);
-  }
-
-  private OptimizeRequestExecutor getOutputVariableValueResponse(DecisionVariableValueRequestDto requestDto) {
-    return embeddedOptimizeRule
-      .getRequestExecutor()
-      .buildDecisionOutputVariableValuesRequest(requestDto);
   }
 
 }

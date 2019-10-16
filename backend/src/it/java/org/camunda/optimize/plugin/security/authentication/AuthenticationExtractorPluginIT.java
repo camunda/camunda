@@ -12,9 +12,9 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -38,26 +38,28 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class AuthenticationExtractorPluginIT {
 
   private static final String TEST_DEFINITION = "test-definition";
   private static final String KERMIT_USER = "kermit";
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+
   @Rule
   public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+    .outerRule(elasticSearchIntegrationTestExtensionRule).around(engineIntegrationExtensionRule).around(embeddedOptimizeExtensionRule);
+
   private ConfigurationService configurationService;
   private LicenseManager licenseManager;
   private String license = FileReaderUtil.readValidTestLicense();
 
   @Before
   public void setup() {
-    licenseManager = embeddedOptimizeRule.getApplicationContext().getBean(LicenseManager.class);
+    licenseManager = embeddedOptimizeExtensionRule.getApplicationContext().getBean(LicenseManager.class);
     licenseManager.setOptimizeLicense(license);
-    configurationService = embeddedOptimizeRule.getConfigurationService();
+    configurationService = embeddedOptimizeExtensionRule.getConfigurationService();
     createKermitUserAndGrantOptimizeAccess();
     configurationService.setPluginDirectory("target/testPluginsValid");
   }
@@ -75,7 +77,7 @@ public class AuthenticationExtractorPluginIT {
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
-    Response response = embeddedOptimizeRule.getRequestExecutor()
+    Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildGetAllAlertsRequest()
       .addSingleCookie(newCookie.getName(), newCookie.getValue())
       .withoutAuthentication()
@@ -94,7 +96,7 @@ public class AuthenticationExtractorPluginIT {
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
     // when
-    Response response = embeddedOptimizeRule.getRequestExecutor()
+    Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildGetAllAlertsRequest()
       .addSingleHeader("user", KERMIT_USER)
       .withoutAuthentication()
@@ -108,7 +110,7 @@ public class AuthenticationExtractorPluginIT {
   @Test
   public void withoutBasePackageThereIsNotCookieProvided() {
     // when simulate first user request with wrong header
-    Response initialOptimizeResponse = embeddedOptimizeRule
+    Response initialOptimizeResponse = embeddedOptimizeExtensionRule
       .rootTarget("/").request().header("user", KERMIT_USER).get();
     NewCookie cookieThatWillBeSetInTheBrowser =
       initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
@@ -124,7 +126,7 @@ public class AuthenticationExtractorPluginIT {
     addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
 
     // when simulate first user request with wrong header
-    Response initialOptimizeResponse = embeddedOptimizeRule
+    Response initialOptimizeResponse = embeddedOptimizeExtensionRule
       .rootTarget("/").request().header("foo", "bar").get();
     NewCookie cookieThatWillBeSetInTheBrowser =
       initialOptimizeResponse.getCookies().get(OPTIMIZE_AUTHORIZATION);
@@ -141,7 +143,7 @@ public class AuthenticationExtractorPluginIT {
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
-    Response response = embeddedOptimizeRule.getRequestExecutor()
+    Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildLogOutRequest()
       .addSingleCookie(newCookie.getName(), newCookie.getValue())
       .withoutAuthentication()
@@ -161,7 +163,7 @@ public class AuthenticationExtractorPluginIT {
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when
-    Response response = embeddedOptimizeRule.getRequestExecutor()
+    Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildGetAllAlertsRequest()
       .withGivenAuthToken("wrong token")
       .execute();
@@ -180,7 +182,7 @@ public class AuthenticationExtractorPluginIT {
     NewCookie newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // when I fetch the process definitions
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.getRequestExecutor()
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
       .addSingleCookie(newCookie.getName(), newCookie.getValue())
       .withoutAuthentication()
@@ -195,7 +197,7 @@ public class AuthenticationExtractorPluginIT {
     newCookie = simulateSingleSignOnAuthHeaderRequestAndReturnCookies(KERMIT_USER);
 
     // then kermit should have access to the authorized definition
-    definitions = embeddedOptimizeRule.getRequestExecutor()
+    definitions = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
       .addSingleCookie(newCookie.getName(), newCookie.getValue())
       .withoutAuthentication()
@@ -206,13 +208,13 @@ public class AuthenticationExtractorPluginIT {
 
   private void deployAndImportTestDefinition() {
     deploySimpleProcessDefinition();
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
   }
 
   private void createKermitUserAndGrantOptimizeAccess() {
-    engineRule.addUser(KERMIT_USER, KERMIT_USER);
-    engineRule.grantUserOptimizeAccess(KERMIT_USER);
+    engineIntegrationExtensionRule.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
   }
 
   private void moveTimeByOneDay() {
@@ -226,7 +228,7 @@ public class AuthenticationExtractorPluginIT {
     authorizationDto.setResourceId(AuthenticationExtractorPluginIT.TEST_DEFINITION);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(AuthenticationExtractorPluginIT.KERMIT_USER);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
   private void deploySimpleProcessDefinition() {
@@ -234,7 +236,7 @@ public class AuthenticationExtractorPluginIT {
       .startEvent()
       .endEvent()
       .done();
-    engineRule.deployProcessAndGetId(modelInstance);
+    engineIntegrationExtensionRule.deployProcessAndGetId(modelInstance);
   }
 
   private void optimizeAuthCookieIsBeingDeleted(Response response) {
@@ -245,7 +247,7 @@ public class AuthenticationExtractorPluginIT {
   }
 
   private NewCookie simulateSingleSignOnAuthHeaderRequestAndReturnCookies(String headerValue) {
-    Response initialOptimizeResponse = embeddedOptimizeRule
+    Response initialOptimizeResponse = embeddedOptimizeExtensionRule
       .rootTarget("/").request().header("user", headerValue).get();
 
     NewCookie cookieThatWillBeSetInTheBrowser =
@@ -257,7 +259,7 @@ public class AuthenticationExtractorPluginIT {
   private void addAuthenticationExtractorBasePackagesToConfiguration(String... basePackages) {
     List<String> basePackagesList = Arrays.asList(basePackages);
     configurationService.setAuthenticationExtractorPluginBasePackages(basePackagesList);
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
 }

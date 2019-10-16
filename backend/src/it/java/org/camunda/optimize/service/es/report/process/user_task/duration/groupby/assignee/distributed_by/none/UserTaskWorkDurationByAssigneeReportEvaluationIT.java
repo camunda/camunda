@@ -18,7 +18,7 @@ import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -33,7 +33,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
-    engineRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
         historicUserTaskInstanceDto ->
           changeUserClaimTimestamp(
@@ -47,7 +47,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
                                 final long duration) {
-    engineRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto -> {
           if (historicUserTaskInstanceDto.getEndTime() != null) {
@@ -74,7 +74,7 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   private void changeUserClaimTimestamp(final long millis,
                                         final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     try {
-      engineDatabaseRule.changeUserTaskAssigneeOperationTimestamp(
+      engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
         historicUserTaskInstanceDto.getId(),
         historicUserTaskInstanceDto.getEndTime().minus(millis, ChronoUnit.MILLIS)
       );

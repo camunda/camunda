@@ -13,7 +13,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.it.rule.IntegrationTestConfigurationUtil;
+import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;

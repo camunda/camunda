@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 
@@ -31,7 +31,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final OffsetDateTime dateTimeInputFilterStart = OffsetDateTime.parse("2019-01-01T00:00:00+00:00");
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition(
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition(
       "dmn/invoiceBusinessDecision_withDate.xml"
     );
     startDecisionInstanceWithInputVars(
@@ -43,8 +43,8 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(200.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -79,7 +79,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final OffsetDateTime dateTimeInputFilterEnd = OffsetDateTime.parse("2019-01-01T00:00:00+00:00");
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition(
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition(
       "dmn/invoiceBusinessDecision_withDate.xml"
     );
     startDecisionInstanceWithInputVars(
@@ -91,8 +91,8 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(200.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
@@ -119,7 +119,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     final OffsetDateTime dateTimeInputFilterEnd = OffsetDateTime.parse("2019-02-01T00:00:00+00:00");
     final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition(
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition(
       "dmn/invoiceBusinessDecision_withDate.xml"
     );
     startDecisionInstanceWithInputVars(
@@ -135,8 +135,8 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(300.0, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);

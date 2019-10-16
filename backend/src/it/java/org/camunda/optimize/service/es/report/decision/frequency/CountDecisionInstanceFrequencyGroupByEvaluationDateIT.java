@@ -6,8 +6,6 @@
 package org.camunda.optimize.service.es.report.decision.frequency;
 
 import com.google.common.collect.Lists;
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
@@ -25,8 +23,9 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEva
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -46,7 +45,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@RunWith(JUnitParamsRunner.class)
 public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends AbstractDecisionDefinitionIT {
 
   @Test
@@ -54,15 +52,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -83,16 +81,16 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(beforeStart, beforeStart.minusDays(1));
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(beforeStart, beforeStart.minusDays(1));
 
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -119,27 +117,27 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -152,17 +150,17 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(resultData.size(), is(3));
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
     );
     assertThat(resultData.get(0).getValue(), is(2L));
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
     );
     assertThat(resultData.get(1).getValue(), is(2L));
     assertThat(
       resultData.get(2).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS))
     );
     assertThat(resultData.get(2).getValue(), is(3L));
   }
@@ -176,27 +174,27 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -216,15 +214,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(resultData.size(), is(3));
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS))
     );
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
     );
     assertThat(
       resultData.get(2).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
     );
 
   }
@@ -238,27 +236,27 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -291,15 +289,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime secondBucketEvaluationDate = startDate.minusDays(2);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(startDate, secondBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(startDate, secondBucketEvaluationDate);
 
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
 
     // when
@@ -329,31 +327,31 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
     assertThat(resultData.get(0).getValue(), is(1L));
 
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(1).getValue(), is(0L));
 
     assertThat(
       resultData.get(2).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(2).getValue(), is(2L));
 
     assertThat(
       resultData.get(3).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(3).getValue(), is(0L));
 
     assertThat(
       resultData.get(4).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(4).getValue(), is(0L));
   }
@@ -367,28 +365,28 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minusDays(2);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    embeddedOptimizeRule.getConfigurationService().setEsAggregationBucketLimit(2);
+    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -407,8 +405,8 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(resultData.size(), is(2));
   }
 
-  @Test
-  @Parameters(method = "groupByDateUnits")
+  @ParameterizedTest
+  @MethodSource("groupByDateUnits")
   public void reportEvaluationMultiBucketsSpecificVersionGroupedByDifferentUnitsEmptyBucketBetweenTwoOthers(
     final GroupByDateUnit groupByDateUnit
   ) throws Exception {
@@ -420,22 +418,22 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minus(2, chronoUnit);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second empty bucket
     final OffsetDateTime secondBucketEvaluationDate = beforeStart.minus(1, chronoUnit);
 
     // first bucket
     lastEvaluationDateFilter = OffsetDateTime.now();
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -447,17 +445,17 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(resultData.size(), is(3));
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit))
     );
     assertThat(resultData.get(0).getValue(), is(2L));
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit))
     );
     assertThat(resultData.get(1).getValue(), is(0L));
     assertThat(
       resultData.get(2).getKey(),
-      is(embeddedOptimizeRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, chronoUnit))
+      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(thirdBucketEvaluationDate, chronoUnit))
     );
     assertThat(resultData.get(2).getValue(), is(3L));
   }
@@ -470,22 +468,22 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // third bucket
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     final OffsetDateTime thirdBucketEvaluationDate = beforeStart.minus(5, ChronoUnit.DAYS);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(beforeStart, thirdBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(beforeStart, thirdBucketEvaluationDate);
 
     // second empty bucket
 
     // first bucket
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
     final OffsetDateTime firstBucketEvaluationDate = beforeStart.minus(1, ChronoUnit.DAYS);
-    engineDatabaseRule.changeDecisionInstanceEvaluationDate(beforeStart, firstBucketEvaluationDate);
+    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(beforeStart, firstBucketEvaluationDate);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -504,15 +502,15 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   public void reportEvaluationSingleBucketAllVersionsGroupByYear() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -531,18 +529,18 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   public void reportEvaluationSingleBucketAllVersionsGroupByYearOtherDefinitionsHaveNoSideEffect() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
-    engineRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
 
     // other decision definition
     deployAndStartSimpleDecisionDefinition("key2");
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -567,8 +565,8 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -588,7 +586,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   public void reportEvaluationSingleBucketFilteredByInputValue() {
     // given
     final double inputVariableValueToFilterFor = 200.0;
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, "Misc")
@@ -602,8 +600,8 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       createInputs(inputVariableValueToFilterFor + 100.0, "Misc")
     );
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

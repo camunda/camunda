@@ -9,14 +9,14 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -30,8 +30,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_GROUP;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_USER;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -43,31 +43,33 @@ public class BasicAuthenticationEnabledIT {
   private static final String TEST_USERNAME = "genzo";
   private static final String TEST_PASSWORD = "genzo";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
-
-  @Before
+  @BeforeEach
   public void init() {
-    EngineConfiguration engineConfiguration = embeddedOptimizeRule
+    EngineConfiguration engineConfiguration = embeddedOptimizeExtensionRule
       .getConfigurationService().getConfiguredEngines().get(DEFAULT_ENGINE);
     engineConfiguration.getAuthentication().setEnabled(true);
     engineConfiguration.getAuthentication().setPassword(TEST_USERNAME);
     engineConfiguration.getAuthentication().setUser(TEST_PASSWORD);
     engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-it-plugin/basic-auth");
 
-    engineRule.addUser(TEST_USERNAME, TEST_PASSWORD);
+    engineIntegrationExtensionRule.addUser(TEST_USERNAME, TEST_PASSWORD);
     createRequiredAuthorizationsForBasicAuth();
-    embeddedOptimizeRule.reloadConfiguration();
+    embeddedOptimizeExtensionRule.reloadConfiguration();
   }
 
-  @After
+  @AfterEach
   public void cleanup() {
-    EngineConfiguration engineConfiguration = embeddedOptimizeRule
+    EngineConfiguration engineConfiguration = embeddedOptimizeExtensionRule
       .getConfigurationService().getConfiguredEngines().get(DEFAULT_ENGINE);
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(HTTP_LOCALHOST + "/engine-rest");
@@ -79,19 +81,19 @@ public class BasicAuthenticationEnabledIT {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
 
     //then
-    Integer activityCount = elasticSearchRule.getActivityCount();
+    Integer activityCount = elasticSearchIntegrationTestExtensionRule.getActivityCount();
     assertThat(activityCount, is(3));
   }
 
   @Test
   public void logInWithBasicAuthenticationWorks() {
     // when
-    Response response = embeddedOptimizeRule.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -104,7 +106,7 @@ public class BasicAuthenticationEnabledIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(TEST_USERNAME);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_DECISION_DEFINITION);
@@ -112,7 +114,7 @@ public class BasicAuthenticationEnabledIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(TEST_USERNAME);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_USER);
@@ -120,7 +122,7 @@ public class BasicAuthenticationEnabledIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(TEST_USERNAME);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_GROUP);
@@ -128,7 +130,7 @@ public class BasicAuthenticationEnabledIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(TEST_USERNAME);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
 
     authorizationDto = new AuthorizationDto();
     authorizationDto.setResourceType(RESOURCE_TYPE_AUTHORIZATION);
@@ -136,7 +138,7 @@ public class BasicAuthenticationEnabledIT {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(TEST_USERNAME);
-    engineRule.createAuthorization(authorizationDto);
+    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
   }
 
   private void deployAndStartSimpleServiceTask() {
@@ -146,6 +148,6 @@ public class BasicAuthenticationEnabledIT {
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    engineRule.deployAndStartProcess(processModel);
+    engineIntegrationExtensionRule.deployAndStartProcess(processModel);
   }
 }

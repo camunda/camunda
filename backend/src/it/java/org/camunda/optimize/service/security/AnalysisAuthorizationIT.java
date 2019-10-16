@@ -11,13 +11,12 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.junit.Assert;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -40,14 +39,17 @@ public class AnalysisAuthorizationIT {
   private static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
   private static final String END_EVENT_ID = "endEvent";
 
-  public EngineIntegrationRule engineRule = new EngineIntegrationRule();
-  public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
 
   @Test
   public void branchAnalysis_authorized() {
@@ -57,14 +59,14 @@ public class AnalysisAuthorizationIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    Assert.assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(200));
   }
 
   @Test
@@ -75,14 +77,14 @@ public class AnalysisAuthorizationIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition, Collections.singletonList(null));
 
     //then
-    Assert.assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(200));
   }
 
   @Test
@@ -90,11 +92,11 @@ public class AnalysisAuthorizationIT {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeRule
+    Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
       .buildProcessDefinitionCorrelation(
@@ -109,7 +111,7 @@ public class AnalysisAuthorizationIT {
   public void branchAnalysis_authorizedTenant() {
     // given
     final String tenantId = "tenantId";
-    engineRule.createTenant(tenantId);
+    engineIntegrationExtensionRule.createTenant(tenantId);
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition(tenantId);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
@@ -117,34 +119,34 @@ public class AnalysisAuthorizationIT {
 
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    Assert.assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(200));
   }
 
   @Test
   public void branchAnalysis_unauthorizedTenant() {
     // given
     final String tenantId = "tenantId";
-    engineRule.createTenant(tenantId);
+    engineIntegrationExtensionRule.createTenant(tenantId);
     final ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition(tenantId);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    Assert.assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(403));
   }
 
   @Test
@@ -152,8 +154,8 @@ public class AnalysisAuthorizationIT {
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    engineRule.createTenant(tenantId1);
-    engineRule.createTenant(tenantId2);
+    engineIntegrationExtensionRule.createTenant(tenantId1);
+    engineIntegrationExtensionRule.createTenant(tenantId2);
     final ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition(tenantId1);
     final ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition(tenantId2);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -162,34 +164,34 @@ public class AnalysisAuthorizationIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     //when
     Response response = executeBranchAnalysisAsKermit(processDefinition1, ImmutableList.of(tenantId1, tenantId2));
 
     //then
-    Assert.assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(403));
   }
 
   @Test
   public void branchAnalysis_notAuthorizedToProcessDefinition() {
     // given
     final String tenantId = "tenantId";
-    engineRule.createTenant(tenantId);
+    engineIntegrationExtensionRule.createTenant(tenantId);
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition(tenantId);
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
 
-    embeddedOptimizeRule.importAllEngineEntitiesFromScratch();
-    elasticSearchRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
     final Response response = executeBranchAnalysisAsKermit(processDefinition, ImmutableList.of(tenantId));
 
     // then
-    Assert.assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus(), is(403));
   }
 
   private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition) {
@@ -201,7 +203,7 @@ public class AnalysisAuthorizationIT {
 
   private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition,
                                                  List<String> tenantIds) {
-    return embeddedOptimizeRule
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildProcessDefinitionCorrelation(createAnalysisDto(
@@ -244,12 +246,12 @@ public class AnalysisAuthorizationIT {
         .connectTo(MERGE_GATEWAY_ID)
       .done();
     // @formatter:on
-    return engineRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   private void startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
   }
 }
