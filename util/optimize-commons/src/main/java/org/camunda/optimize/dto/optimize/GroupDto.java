@@ -7,10 +7,12 @@ package org.camunda.optimize.dto.optimize;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class GroupDto extends IdentityDto {
   private String name;
 

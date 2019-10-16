@@ -66,7 +66,9 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       .map(Optional::of)
       .orElseGet(() -> {
         if (applicationAuthorizationService.isAuthorizedToAccessOptimize(userId)) {
-          return Optional.of(new UserDto(userId, null, null, null));
+          final UserDto userDto = new UserDto(userId, null, null, null);
+          addIdentity(userDto);
+          return Optional.of(userDto);
         } else {
           return Optional.empty();
         }
@@ -80,6 +82,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
         .map(engineContext -> engineContext.getGroupById(groupId))
         .filter(Optional::isPresent)
         .map(Optional::get)
+        .peek(this::addIdentity)
         .findFirst()
       );
   }

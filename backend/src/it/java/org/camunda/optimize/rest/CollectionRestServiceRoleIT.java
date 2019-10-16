@@ -25,13 +25,16 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CollectionRestServiceRoleIT {
@@ -42,7 +45,8 @@ public class CollectionRestServiceRoleIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
   @RegisterExtension
   @Order(2)
   public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
@@ -84,6 +88,111 @@ public class CollectionRestServiceRoleIT {
     // then
     assertThat(roles.size(), is(1));
     assertThat(roles, is(expectedCollection.getData().getRoles()));
+  }
+
+  @Test
+  public void getRolesNoUserMetadataAvailable() {
+    //given
+    final String collectionId = createNewCollection();
+
+    // when
+    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(CollectionRoleDto.class, 200);
+
+    // then
+    assertThat(roles.size(), is(1));
+    final UserDto userDto = (UserDto) roles.get(0).getIdentity();
+    assertThat(userDto.getId(), is(DEFAULT_USERNAME));
+    assertThat(userDto.getName(), is(nullValue()));
+    assertThat(userDto.getFirstName(), is(nullValue()));
+    assertThat(userDto.getLastName(), is(nullValue()));
+    assertThat(userDto.getEmail(), is(nullValue()));
+  }
+
+  @Test
+  public void getRolesContainsUserMetadata() {
+    //given
+    final String collectionId = createNewCollection();
+
+    UserDto expectedUserDtoWithData =
+      new UserDto(DEFAULT_USERNAME, "firstName", "lastName", "me@camunda.com");
+
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(expectedUserDtoWithData);
+
+    // when
+    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(CollectionRoleDto.class, 200);
+
+    // then
+    assertThat(roles.size(), is(1));
+    final IdentityDto identityDto = roles.get(0).getIdentity();
+    assertThat(identityDto, is(instanceOf(UserDto.class)));
+    final UserDto userDto = (UserDto) identityDto;
+    assertThat(userDto.getFirstName(), is(expectedUserDtoWithData.getFirstName()));
+    assertThat(userDto.getLastName(), is(expectedUserDtoWithData.getLastName()));
+    assertThat(
+      userDto.getName(),
+      is(expectedUserDtoWithData.getFirstName() + " " + expectedUserDtoWithData.getLastName())
+    );
+    assertThat(userDto.getEmail(), is(expectedUserDtoWithData.getEmail()));
+  }
+
+  @Test
+  public void getRolesContainsGroupMetadata() {
+    //given
+    final String collectionId = createNewCollection();
+    engineIntegrationExtensionRule.createGroup(TEST_GROUP);
+
+    final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
+    addRoleToCollection(collectionId, roleDto);
+
+    final GroupDto expectedGroupDtoWithName = new GroupDto(TEST_GROUP, "myGroup");
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(expectedGroupDtoWithName);
+    // when
+    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(CollectionRoleDto.class, 200);
+
+    // then
+    final List<IdentityDto> groupIdentities = roles.stream()
+      .map(CollectionRoleDto::getIdentity)
+      .filter(identityDto -> identityDto instanceof GroupDto)
+      .collect(Collectors.toList());
+    assertThat(groupIdentities.size(), is(1));
+
+    final GroupDto groupDto = (GroupDto) groupIdentities.get(0);
+    assertThat(groupDto.getName(), is(expectedGroupDtoWithName.getName()));
+  }
+
+  @Test
+  public void getRolesNoGroupMetadataAvailable() {
+    //given
+    final String collectionId = createNewCollection();
+    engineIntegrationExtensionRule.createGroup(TEST_GROUP, null);
+
+    final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
+    addRoleToCollection(collectionId, roleDto);
+
+    // when
+    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(CollectionRoleDto.class, 200);
+
+    // then
+    final List<IdentityDto> groupIdentities = roles.stream()
+      .map(CollectionRoleDto::getIdentity)
+      .filter(identityDto -> identityDto instanceof GroupDto)
+      .collect(Collectors.toList());
+    assertThat(groupIdentities.size(), is(1));
+
+    final GroupDto groupDto = (GroupDto) groupIdentities.get(0);
+    assertThat(groupDto.getName(), is(nullValue()));
   }
 
   @Test
@@ -167,7 +276,7 @@ public class CollectionRestServiceRoleIT {
     engineIntegrationExtensionRule.createGroup(TEST_GROUP);
 
     // when
-    final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP, null), RoleType.EDITOR);
+    final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
     IdDto idDto = addRoleToCollection(collectionId, roleDto);
 
     // then

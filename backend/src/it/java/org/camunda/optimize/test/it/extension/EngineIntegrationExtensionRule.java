@@ -1139,10 +1139,14 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
     return userDto;
   }
 
-  public void createGroup(String id) {
+  public void createGroup(final String id) {
+    createGroup(id, KERMIT_GROUP_NAME);
+  }
+
+  public void createGroup(final String id, final String name) {
     GroupDto groupDto = new GroupDto();
     groupDto.setId(id);
-    groupDto.setName(KERMIT_GROUP_NAME);
+    groupDto.setName(name);
     groupDto.setType("anyGroupType");
 
     try {
