@@ -31,6 +31,7 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -188,6 +189,21 @@ public class BrokerClientImpl implements BrokerClient {
       final BrokerResponseConsumer<T> responseConsumer,
       final Consumer<Throwable> throwableConsumer) {
     requestManager.sendRequest(request, responseConsumer, throwableConsumer);
+  }
+
+  @Override
+  public <T> ActorFuture<BrokerResponse<T>> sendRequest(
+      BrokerRequest<T> request, Duration requestTimeout) {
+    return requestManager.sendRequest(request, requestTimeout);
+  }
+
+  @Override
+  public <T> void sendRequest(
+      BrokerRequest<T> request,
+      BrokerResponseConsumer<T> responseConsumer,
+      Consumer<Throwable> throwableConsumer,
+      Duration requestTimeout) {
+    requestManager.sendRequest(request, responseConsumer, throwableConsumer, requestTimeout);
   }
 
   @Override

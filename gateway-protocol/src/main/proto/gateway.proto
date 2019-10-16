@@ -113,6 +113,30 @@ message CreateWorkflowInstanceResponse {
   int64 workflowInstanceKey = 4;
 }
 
+message CreateWorkflowInstanceWithResultRequest {
+  CreateWorkflowInstanceRequest request = 1;
+  // timeout in milliseconds. the request will be closed if the workflow is not completed
+  // before the requestTimeout.
+  // if requestTimeout = 0, uses the generic requestTimeout configured in the gateway.
+  int64 requestTimeout = 2;
+}
+
+message CreateWorkflowInstanceWithResultResponse {
+  // the key of the workflow definition which was used to create the workflow instance
+  int64 workflowKey = 1;
+  // the BPMN process ID of the workflow definition which was used to create the workflow
+  // instance
+  string bpmnProcessId = 2;
+  // the version of the workflow definition which was used to create the workflow instance
+  int32 version = 3;
+  // the unique identifier of the created workflow instance; to be used wherever a request
+  // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
+  int64 workflowInstanceKey = 4;
+  // consisting of all visible variables to the root scope
+  string variables = 5;
+
+}
+
 message DeployWorkflowRequest {
   // List of workflow resources to deploy
   repeated WorkflowRequestObject workflows = 1;
@@ -327,6 +351,12 @@ service Gateway {
           JSON document where the root node is an object.
    */
   rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
+  }
+
+  /*
+    Behaves similarly to `rpc CreateWorkflowInstance`, except that a successful response is received when the workflow completes successfully.
+  */
+  rpc CreateWorkflowInstanceWithResult (CreateWorkflowInstanceWithResultRequest) returns (CreateWorkflowInstanceWithResultResponse) {
   }
 
   /*

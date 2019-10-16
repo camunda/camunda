@@ -30,6 +30,7 @@ import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -132,6 +133,21 @@ public class StubbedGateway extends Gateway {
       } catch (Exception e) {
         throwableConsumer.accept(new BrokerResponseException(e));
       }
+    }
+
+    @Override
+    public <T> ActorFuture<BrokerResponse<T>> sendRequest(
+        BrokerRequest<T> request, Duration requestTimeout) {
+      return sendRequest(request);
+    }
+
+    @Override
+    public <T> void sendRequest(
+        BrokerRequest<T> request,
+        BrokerResponseConsumer<T> responseConsumer,
+        Consumer<Throwable> throwableConsumer,
+        Duration requestTimeout) {
+      sendRequest(request, responseConsumer, throwableConsumer);
     }
 
     @Override
