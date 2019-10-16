@@ -16,8 +16,8 @@ import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.LongStream;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -43,7 +43,7 @@ public class ActivateJobsStub
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(CUSTOM_HEADERS));
   public static final DirectBuffer VARIABLES_MSGPACK =
       new UnsafeBuffer(MsgPackConverter.convertToMsgPack(VARIABLES));
-  private Map<String, Integer> availableJobs = new HashMap<>();
+  private Map<String, Integer> availableJobs = new ConcurrentHashMap<>();
 
   public long getJobBatchKey() {
     return JOB_BATCH_KEY;
