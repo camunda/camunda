@@ -29,7 +29,7 @@ func TestReadEnvWrapper(t *testing.T) {
 	_, _ = NewZBClientWithConfig(config)
 
 	// then
-	require.EqualValues(t, config.CaCertificatePath, "path")
+	require.EqualValues(t, "path", config.CaCertificatePath)
 }
 
 func TestUnsetEnv(t *testing.T) {

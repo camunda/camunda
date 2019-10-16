@@ -17,11 +17,12 @@ package zbc
 import (
 	"github.com/stretchr/testify/suite"
 	"os"
-	"strings"
 )
 
-var env = newEnvironmentWrapper()
+var env = &envWrapper{vars: make(map[string]string)}
 
+// destructive operations (e.g., set, unset) on the environment are only applied to the wrapper. Therefore unsetting a
+// variable doesn't guarantee that a subsequent get doesn't return a value since one might be set in the process env.
 type environment interface {
 	get(variable string) string
 	set(variable, value string)
@@ -40,7 +41,12 @@ func (w *envWrapper) set(variable, value string) {
 }
 
 func (w *envWrapper) get(variable string) string {
-	return w.vars[variable]
+	value := w.vars[variable]
+	if value == "" {
+		value = os.Getenv(variable)
+	}
+
+	return value
 }
 
 func (w *envWrapper) unset(variable string) {
@@ -51,6 +57,10 @@ func (w *envWrapper) unset(variable string) {
 
 func (w *envWrapper) lookup(variable string) (string, bool) {
 	value, ok := w.vars[variable]
+	if !ok {
+		value, ok = os.LookupEnv(variable)
+	}
+
 	return value, ok
 }
 
@@ -66,18 +76,6 @@ func (w *envWrapper) copy() map[string]string {
 
 func (w *envWrapper) overwrite(environ map[string]string) {
 	w.vars = environ
-}
-
-func newEnvironmentWrapper() environment {
-	environ := os.Environ()
-
-	wrapper := envWrapper{vars: make(map[string]string, len(environ))}
-	for _, envVar := range environ {
-		parts := strings.SplitN(envVar, "=", 2)
-		wrapper.vars[parts[0]] = parts[1]
-	}
-
-	return &wrapper
 }
 
 type envSuite struct {
