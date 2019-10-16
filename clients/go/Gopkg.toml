@@ -43,7 +43,8 @@ required = [
 
 [[override]]
   name = "github.com/docker/docker"
-  branch = "master"
+  version = "v19.03.3"
+	source = "github.com/docker/engine"
 
 [prune]
   go-tests = true
