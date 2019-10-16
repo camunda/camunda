@@ -31,8 +31,10 @@ test('add an alert', async t => {
 
   await t.click(Alert.newAlertButton);
 
-  await t.typeText(Alert.nameField, 'Test Alert', {replace: true});
-  await t.typeText(Alert.mailField, 'optimize-test@camunda.com', {replace: true});
+  await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test Alert', {replace: true});
+  await t.typeText(Alert.inputWithLabel('Send Email to'), 'optimize-test@camunda.com', {
+    replace: true
+  });
 
   await t.click(Alert.reportTypeahead);
   await t.click(Alert.reportTypeaheadOption('Number Report'));
@@ -48,14 +50,14 @@ test('edit an alert', async t => {
   await t.click(Alert.navItem);
   await t.click(Alert.editButton);
 
-  await t.typeText(Alert.nameField, 'Edited Alert', {replace: true});
+  await t.typeText(Alert.inputWithLabel('Alert Name'), 'Edited Alert', {replace: true});
 
   await t.click(Alert.cancelButton);
 
   await t.expect(Alert.list.textContent).notContains('Edited Alert');
 
   await t.click(Alert.editButton);
-  await t.typeText(Alert.nameField, 'Saved Alert', {replace: true});
+  await t.typeText(Alert.inputWithLabel('Alert Name'), 'Saved Alert', {replace: true});
 
   await t.click(Alert.primaryModalButton);
 

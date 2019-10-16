@@ -5,11 +5,12 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import Labeled from './Labeled';
+
 it('should pass props to label child element', () => {
-  const node = mount(
+  const node = shallow(
     <Labeled id="someId">
       <div className="test" />
     </Labeled>
@@ -18,7 +19,7 @@ it('should pass props to label child element', () => {
   expect(node.find('label')).toHaveProp('id', 'someId');
 });
 it('should include the child content', () => {
-  const node = mount(
+  const node = shallow(
     <Labeled id="someId">
       <div>some child content</div>
       <div>test</div>
@@ -29,7 +30,7 @@ it('should include the child content', () => {
 });
 
 it('should can be disabled', () => {
-  const node = mount(<Labeled id="someId" disabled />);
+  const node = shallow(<Labeled id="someId" disabled />);
 
   expect(node).toHaveProp('disabled', true);
 });

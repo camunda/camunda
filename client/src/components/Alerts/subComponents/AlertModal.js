@@ -231,7 +231,6 @@ export default function AlertModal(reports) {
               )}
               <Form.Group>
                 <LabeledInput
-                  id="name-input"
                   label={t('alert.form.name')}
                   value={name}
                   onChange={({target: {value}}) => this.setState({name: value})}
@@ -262,7 +261,6 @@ export default function AlertModal(reports) {
                     <Select.Option value="<">{t('common.below')}</Select.Option>
                   </Select>
                   <ThresholdInput
-                    id="value-input"
                     value={threshold}
                     onChange={threshold => this.setState({threshold})}
                     type={this.getReportType(reportId)}
@@ -273,7 +271,6 @@ export default function AlertModal(reports) {
                 <Labeled label={t('alert.form.frequency')}>
                   <Form.InputGroup>
                     <Input
-                      id="checkInterval-input"
                       value={checkInterval.value}
                       onChange={({target: {value}}) =>
                         this.setState(update(this.state, {checkInterval: {value: {$set: value}}}))
@@ -309,7 +306,6 @@ export default function AlertModal(reports) {
               </Form.Group>
               <Form.Group>
                 <LabeledInput
-                  id="email-input"
                   label={t('alert.form.email')}
                   placeholder={t('alert.form.emailPlaceholder')}
                   value={email}
@@ -335,7 +331,6 @@ export default function AlertModal(reports) {
                   <Labeled label={t('alert.form.reminderFrequency')}>
                     <Form.InputGroup>
                       <Input
-                        id="reminder-input"
                         value={reminder.value}
                         onChange={({target: {value}}) =>
                           this.setState(update(this.state, {reminder: {value: {$set: value}}}))

@@ -10,8 +10,10 @@ export const navItem = Selector('header a').withText('Alerts');
 export const list = Selector('.entityList');
 export const newAlertButton = Selector('.createButton');
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
-export const nameField = Selector('.Modal input[id="name-input"]');
-export const mailField = Selector('.Modal input[id="email-input"]');
+export const inputWithLabel = label =>
+  Selector('.Modal .label')
+    .withText(label)
+    .nextSibling();
 export const reportTypeahead = Selector('.Modal .Typeahead');
 export const reportTypeaheadOption = text =>
   Selector('.Modal .Typeahead .DropdownOption').withText(text);
