@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformation;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ActivityTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.BoundaryEventTransformer;
+import io.zeebe.engine.processor.workflow.deployment.model.transformer.CallActivityTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.CatchEventTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ContextProcessTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.EndEventTransformer;
@@ -52,14 +53,15 @@ public class BpmnTransformer {
   private final JsonPathQueryCompiler jsonPathQueryCompiler = new JsonPathQueryCompiler();
 
   public BpmnTransformer() {
-    this.step1Visitor = new TransformationVisitor();
+    step1Visitor = new TransformationVisitor();
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
     step1Visitor.registerHandler(new MessageTransformer());
     step1Visitor.registerHandler(new ProcessTransformer());
 
-    this.step2Visitor = new TransformationVisitor();
+    step2Visitor = new TransformationVisitor();
     step2Visitor.registerHandler(new ActivityTransformer());
     step2Visitor.registerHandler(new BoundaryEventTransformer());
+    step2Visitor.registerHandler(new CallActivityTransformer());
     step2Visitor.registerHandler(new CatchEventTransformer());
     step2Visitor.registerHandler(new ContextProcessTransformer());
     step2Visitor.registerHandler(new EndEventTransformer());
@@ -71,7 +73,7 @@ public class BpmnTransformer {
     step2Visitor.registerHandler(new StartEventTransformer());
     step2Visitor.registerHandler(new SubProcessTransformer());
 
-    this.step3Visitor = new TransformationVisitor();
+    step3Visitor = new TransformationVisitor();
     step3Visitor.registerHandler(new ContextProcessTransformer());
     step3Visitor.registerHandler(new EventBasedGatewayTransformer());
     step3Visitor.registerHandler(new ExclusiveGatewayTransformer());

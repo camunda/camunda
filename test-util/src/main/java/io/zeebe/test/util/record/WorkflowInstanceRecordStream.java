@@ -68,6 +68,15 @@ public class WorkflowInstanceRecordStream
     return valueFilter(v -> v.getBpmnElementType() == elementType);
   }
 
+  public WorkflowInstanceRecordStream withParentWorkflowInstanceKey(
+      long parentWorkflowInstanceKey) {
+    return valueFilter(v -> v.getParentWorkflowInstanceKey() == parentWorkflowInstanceKey);
+  }
+
+  public WorkflowInstanceRecordStream withParentElementInstanceKey(long parentElementInstanceKey) {
+    return valueFilter(v -> v.getParentElementInstanceKey() == parentElementInstanceKey);
+  }
+
   /**
    * @return stream with only records for the workflow instance (i.e. root scope of the instance)
    */

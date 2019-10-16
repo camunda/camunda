@@ -13,18 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.record.value;
+package io.zeebe.model.bpmn.instance.zeebe;
 
-public enum ErrorType {
-  UNKNOWN,
+import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
 
-  IO_MAPPING_ERROR,
+public interface ZeebeCalledElement extends BpmnModelElementInstance {
 
-  JOB_NO_RETRIES,
+  String getProcessId();
 
-  CONDITION_ERROR,
-
-  EXTRACT_VALUE_ERROR,
-
-  CALLED_ELEMENT_ERROR,
+  void setProcessId(String processId);
 }

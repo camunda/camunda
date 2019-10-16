@@ -16,6 +16,8 @@ import io.zeebe.engine.processor.workflow.handlers.activity.ActivityElementCompl
 import io.zeebe.engine.processor.workflow.handlers.activity.ActivityElementTerminatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.activity.ActivityElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.activity.ActivityEventOccurredHandler;
+import io.zeebe.engine.processor.workflow.handlers.callactivity.CallActivityActivatedHandler;
+import io.zeebe.engine.processor.workflow.handlers.callactivity.CallActivityActivatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementActivatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchEventElementCompletingHandler;
@@ -24,6 +26,7 @@ import io.zeebe.engine.processor.workflow.handlers.catchevent.IntermediateCatchE
 import io.zeebe.engine.processor.workflow.handlers.catchevent.StartEventEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ContainerElementActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.container.ContainerElementTerminatingHandler;
+import io.zeebe.engine.processor.workflow.handlers.container.ProcessCompletedHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
@@ -91,6 +94,7 @@ public class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.CONTAINER_ELEMENT_TERMINATING,
         new ContainerElementTerminatingHandler<>(catchEventSubscriber));
+    stepHandlers.put(BpmnStep.PROCESS_COMPLETED, new ProcessCompletedHandler());
 
     stepHandlers.put(
         BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATING,
@@ -166,6 +170,12 @@ public class BpmnStepHandlers {
     stepHandlers.put(
         BpmnStep.MULTI_INSTANCE_EVENT_OCCURRED,
         new MultiInstanceBodyEventOccurredHandler(stepHandlers::get));
+
+    stepHandlers.put(
+        BpmnStep.CALL_ACTIVITY_ACTIVATING, new CallActivityActivatingHandler(catchEventSubscriber));
+    stepHandlers.put(
+        BpmnStep.CALL_ACTIVITY_ACTIVATED,
+        new CallActivityActivatedHandler(state.getKeyGenerator()));
   }
 
   public void handle(final BpmnStepContext context) {

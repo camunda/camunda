@@ -15,6 +15,13 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.impl.ZeebeConstants;
+import io.zeebe.model.bpmn.instance.CallActivity;
+import io.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
+import io.zeebe.model.bpmn.instance.ServiceTask;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,6 +36,10 @@ public final class ZeebeDesignTimeValidators {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
     validators.add(new ActivityValidator());
     validators.add(new BoundaryEventValidator());
+    validators.add(
+        ExtensionElementsValidator.verifyThat(CallActivity.class)
+            .hasSingleExtensionElement(
+                ZeebeCalledElement.class, ZeebeConstants.ELEMENT_CALLED_ELEMENT));
     validators.add(new DefinitionsValidator());
     validators.add(new EndEventValidator());
     validators.add(new EventDefinitionValidator());
@@ -39,17 +50,25 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new IntermediateCatchEventValidator());
     validators.add(new MessageEventDefinitionValidator());
     validators.add(new MessageValidator());
-    validators.add(new MultiInstanceLoopCharacteristicsValidator());
+    validators.add(
+        ExtensionElementsValidator.verifyThat(MultiInstanceLoopCharacteristics.class)
+            .hasSingleExtensionElement(
+                ZeebeLoopCharacteristics.class, ZeebeConstants.ELEMENT_LOOP_CHARACTERISTICS));
     validators.add(new ProcessValidator());
     validators.add(new SequenceFlowValidator());
-    validators.add(new ServiceTaskValidator());
+    validators.add(
+        ExtensionElementsValidator.verifyThat(ServiceTask.class)
+            .hasSingleExtensionElement(
+                ZeebeTaskDefinition.class, ZeebeConstants.ELEMENT_TASK_DEFINITION));
     validators.add(new ReceiveTaskValidator());
     validators.add(new StartEventValidator());
     validators.add(new SubProcessValidator());
     validators.add(new TimerEventDefinitionValidator());
+
+    validators.add(new ZeebeCalledElementValidator());
+    validators.add(new ZeebeLoopCharacteristicsValidator());
     validators.add(new ZeebeTaskDefinitionValidator());
     validators.add(new ZeebeSubscriptionValidator());
-    validators.add(new ZeebeLoopCharacteristicsValidator());
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }
