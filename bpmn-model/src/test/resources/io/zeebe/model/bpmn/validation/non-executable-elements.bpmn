@@ -44,7 +44,11 @@
     </bpmn:textAnnotation>
     <bpmn:association id="Association_07hg3sq" sourceRef="EndEvent_18f6cgv"
       targetRef="TextAnnotation_0h7k2en"/>
+    <bpmn:group id="Group_1nizzst" categoryValueRef="CategoryValue_01ixrvo"/>
   </bpmn:process>
+  <bpmn:category id="Category_1t0pwwq">
+    <bpmn:categoryValue id="CategoryValue_01ixrvo" value="non-executable elements"/>
+  </bpmn:category>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="process">
       <bpmndi:BPMNShape id="TextAnnotation_0h7k2en_di" bpmnElement="TextAnnotation_0h7k2en">
