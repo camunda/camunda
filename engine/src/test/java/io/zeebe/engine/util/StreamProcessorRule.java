@@ -12,6 +12,7 @@ import static io.zeebe.engine.util.Records.workflowInstance;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -30,6 +31,7 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -146,6 +148,10 @@ public class StreamProcessorRule implements TestRule {
 
   public CommandResponseWriter getCommandResponseWriter() {
     return streams.getMockedResponseWriter();
+  }
+
+  public Consumer<TypedRecord> getProcessedListener() {
+    return streams.getMockedOnProcessedListener();
   }
 
   public ControlledActorClock getClock() {
