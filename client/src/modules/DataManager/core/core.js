@@ -9,10 +9,16 @@ import {
   fetchWorkflowInstancesBySelection,
   fetchWorkflowCoreStatistics,
   fetchWorkflowInstancesByIds,
-  fetchWorkflowInstances
+  fetchWorkflowInstance,
+  fetchWorkflowInstances,
+  fetchWorkflowInstanceIncidents,
+  fetchVariables
 } from 'modules/api/instances';
+import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
 import {fetchWorkflowXML} from 'modules/api/diagram';
+import {fetchEvents} from 'modules/api/events';
+
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
@@ -45,35 +51,68 @@ export class DataManager {
 
   /** Wrapped API calls */
 
-  async getWorkflowCoreStatistics() {
-    this.cache.set(LOAD_CORE_STATS, {
-      params: {},
-      apiCall: fetchWorkflowCoreStatistics
+  fetchAndPublish(topic, apiCall, params, staticContent) {
+    const cachedParams = this.cache.update(topic, apiCall, params);
+    this.publisher.pubLoadingStates(
+      topic,
+      () => apiCall(cachedParams),
+      staticContent
+    );
+  }
+
+  getVariables(instanceId, scopeId) {
+    this.fetchAndPublish(SUBSCRIPTION_TOPIC.LOAD_VARIABLES, fetchVariables, {
+      instanceId,
+      scopeId
     });
-    this.publisher.pubLoadingStates(LOAD_CORE_STATS, () =>
-      fetchWorkflowCoreStatistics()
+  }
+
+  getActivityInstancesTreeData(instance) {
+    this.fetchAndPublish(
+      SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE,
+      fetchActivityInstancesTree,
+      instance.id,
+      instance
     );
   }
 
-  async getWorkflowInstances(params) {
-    const cachedParams = this.cache.update(
-      LOAD_LIST_INSTANCES,
-      fetchWorkflowInstances,
-      params
-    );
-    this.publisher.pubLoadingStates(LOAD_LIST_INSTANCES, () =>
-      fetchWorkflowInstances(cachedParams)
+  getEvents(instanceId) {
+    this.fetchAndPublish(
+      SUBSCRIPTION_TOPIC.LOAD_EVENTS,
+      fetchEvents,
+      instanceId
     );
   }
 
-  async getWorkflowInstancesStatistics(params) {
-    const cachedParams = this.cache.update(
+  getIncidents(instance) {
+    this.fetchAndPublish(
+      SUBSCRIPTION_TOPIC.LOAD_INCIDENTS,
+      fetchWorkflowInstanceIncidents,
+      instance
+    );
+  }
+
+  getWorkflowInstance(instanceId) {
+    this.fetchAndPublish(
+      SUBSCRIPTION_TOPIC.LOAD_INSTANCE,
+      fetchWorkflowInstance,
+      instanceId
+    );
+  }
+
+  getWorkflowCoreStatistics() {
+    this.fetchAndPublish(LOAD_CORE_STATS, fetchWorkflowCoreStatistics, {});
+  }
+
+  getWorkflowInstances(params) {
+    this.fetchAndPublish(LOAD_LIST_INSTANCES, fetchWorkflowInstances, params);
+  }
+
+  getWorkflowInstancesStatistics(params) {
+    this.fetchAndPublish(
       LOAD_STATE_STATISTICS,
       fetchWorkflowInstancesStatistics,
       params
-    );
-    this.publisher.pubLoadingStates(LOAD_STATE_STATISTICS, () =>
-      fetchWorkflowInstancesStatistics(cachedParams)
     );
   }
 
@@ -100,7 +139,7 @@ export class DataManager {
     }
   }
 
-  async getWorkflowXML(params) {
+  getWorkflowXML(params, staticContent) {
     const fetchDiagramModel = async params => {
       const xml = await fetchWorkflowXML(params);
       return await parseDiagramXML(xml);
@@ -112,27 +151,21 @@ export class DataManager {
       params
     );
 
-    this.publisher.pubLoadingStates(LOAD_STATE_DEFINITIONS, () =>
-      fetchDiagramModel(cachedParams)
+    this.publisher.pubLoadingStates(
+      LOAD_STATE_DEFINITIONS,
+      () => fetchDiagramModel(cachedParams),
+      staticContent
     );
   }
 
-  async getWorkflowInstancesByIds(params, topic) {
-    const cachedParams = this.cache.update(
-      topic,
-      fetchWorkflowInstancesByIds,
-      params
-    );
-
-    this.publisher.pubLoadingStates(topic, () =>
-      fetchWorkflowInstancesByIds(cachedParams)
-    );
+  getWorkflowInstancesByIds(params, topic) {
+    this.fetchAndPublish(topic, fetchWorkflowInstancesByIds, params);
   }
 
   /** Update Data */
 
   // fetches the data again for all passed endpoints and publishes loading states and result to passed topic
-  async update({endpoints, topic, staticData}) {
+  update({endpoints, topic, staticData}) {
     this.publisher.publish(topic, {
       state: LOADING_STATE.LOADING
     });
@@ -140,8 +173,11 @@ export class DataManager {
     Promise.all([
       ...endpoints.map(endpointName => {
         const cachedEndpoints = this.cache.getEndpointsbyNames([endpointName]);
-        const {params, apiCall} = cachedEndpoints[endpointName];
-        return apiCall(params);
+        if (cachedEndpoints[endpointName]) {
+          const {params, apiCall} = cachedEndpoints[endpointName];
+          return apiCall(params);
+        }
+        return null;
       })
     ])
       .then(response => {

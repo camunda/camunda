@@ -10,19 +10,27 @@ import {DataManager} from './core';
 
 import * as instancesApi from 'modules/api/instances/instances';
 import * as diagramApi from 'modules/api/diagram/diagram';
-import {MOCK_TOPICS, mockParams, mockApiData} from './core.setup';
-jest.mock('modules/utils/bpmn');
 
-const mockApi = {
-  success: jest.fn(() => Promise.resolve(mockApiData.success)),
-  error: jest.fn(() => Promise.resolve(mockApiData.error))
-};
+import {fetchEvents} from 'modules/api/events';
+import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
+
+import {
+  mockParams,
+  mockScopeId,
+  MOCK_TOPICS,
+  mockStaticContent,
+  customTopic,
+  mockWorkflowInstance
+} from './core.setup';
+jest.mock('modules/utils/bpmn');
 
 // api mocks
 instancesApi.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstances = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn();
 instancesApi.fetchWorkflowInstancesByIds = mockResolvedAsyncFn();
+instancesApi.fetchWorkflowInstanceIncidents = mockResolvedAsyncFn();
+
 diagramApi.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 
 console.warn = jest.fn();
@@ -33,13 +41,23 @@ describe('DataManager', () => {
   let subscribeSpy;
   let unsubscribeSpy;
   let pubLoadingStatesSpy;
+  let cacheUpdateSpy;
+  let fetchAndPublishSpy;
 
   beforeEach(() => {
     dataManager = new DataManager();
     publishSpy = jest.spyOn(dataManager.publisher, 'publish');
     subscribeSpy = jest.spyOn(dataManager.publisher, 'subscribe');
     unsubscribeSpy = jest.spyOn(dataManager.publisher, 'unsubscribe');
-    pubLoadingStatesSpy = jest.spyOn(dataManager.publisher, 'pubLoadingStates');
+    pubLoadingStatesSpy = jest
+      .spyOn(dataManager.publisher, 'pubLoadingStates')
+      .mockImplementation((topic, apiCall, params, staticContent) => {
+        apiCall();
+      });
+    cacheUpdateSpy = jest.spyOn(dataManager.cache, 'update');
+    fetchAndPublishSpy = jest.spyOn(dataManager, 'fetchAndPublish');
+
+    fetchAndPublishSpy.mockClear();
   });
 
   describe('Publisher interface', () => {
@@ -53,17 +71,44 @@ describe('DataManager', () => {
     });
   });
 
-  describe('API calls', () => {
-    beforeEach(() => {});
+  describe('helper functions', () => {
+    it('should fetch & publish', () => {
+      const topic = MOCK_TOPICS.FETCH_STATE_FOO;
+      const apiCall = jest.fn();
 
+      //when
+      dataManager.fetchAndPublish(
+        topic,
+        apiCall,
+        mockParams,
+        mockStaticContent
+      );
+
+      //then
+      expect(cacheUpdateSpy.mock.calls[0]).toEqual([
+        topic,
+        apiCall,
+        mockParams
+      ]);
+      expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(topic);
+      expect(pubLoadingStatesSpy.mock.calls[0][2]).toEqual(mockStaticContent);
+      expect(apiCall).toHaveBeenCalled();
+    });
+  });
+
+  describe('API calls', () => {
     describe('fetch core statistics', () => {
       it('should publish loading stats to topic', () => {
         // when
         dataManager.getWorkflowCoreStatistics(mockParams);
 
-        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
           SUBSCRIPTION_TOPIC.LOAD_CORE_STATS
         );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          instancesApi.fetchWorkflowCoreStatistics
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
       });
     });
     describe('fetch workflow instances', () => {
@@ -71,9 +116,13 @@ describe('DataManager', () => {
         // when
         dataManager.getWorkflowInstances(mockParams);
 
-        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
           SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES
         );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          instancesApi.fetchWorkflowInstances
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
       });
     });
     describe('fetch workflow instance statistics', () => {
@@ -82,9 +131,13 @@ describe('DataManager', () => {
         dataManager.getWorkflowInstancesStatistics(mockParams);
 
         // then
-        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
           SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS
         );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          instancesApi.fetchWorkflowInstancesStatistics
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
       });
     });
     describe('fetch workflow XML', () => {
@@ -100,9 +153,6 @@ describe('DataManager', () => {
     });
     describe('fetch workflow instances by selection', () => {
       it('should publish loading states to topic', () => {
-        //given
-        const customTopic = 'CUSTOM_TOPIC';
-
         // when
         dataManager.getWorkflowInstancesBySelection(mockParams, customTopic);
 
@@ -114,14 +164,93 @@ describe('DataManager', () => {
     });
     describe('fetch workflow instances by Ids', () => {
       it('should publish loading states to topic', () => {
-        //given
-        const customTopic = 'CUSTOM_TOPIC';
-
         // when
         dataManager.getWorkflowInstancesByIds(mockParams, customTopic);
 
         // then
         expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(customTopic);
+
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          instancesApi.fetchWorkflowInstancesByIds
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
+      });
+    });
+
+    describe('fetch workflow instance', () => {
+      it('should fetch and publish', () => {
+        dataManager.getWorkflowInstance(mockWorkflowInstance.id);
+
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
+          SUBSCRIPTION_TOPIC.LOAD_INSTANCE
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          instancesApi.fetchWorkflowInstance
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(
+          mockWorkflowInstance.id
+        );
+      });
+    });
+
+    describe('fetch Incidents', () => {
+      it('should fetch and publish', () => {
+        dataManager.getIncidents(mockWorkflowInstance);
+
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
+          SUBSCRIPTION_TOPIC.LOAD_INCIDENTS
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          instancesApi.fetchWorkflowInstanceIncidents
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(mockWorkflowInstance);
+      });
+    });
+
+    describe('fetch Events', () => {
+      it('should fetch and publish', () => {
+        dataManager.getEvents(mockWorkflowInstance.id);
+
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
+          SUBSCRIPTION_TOPIC.LOAD_EVENTS
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(fetchEvents);
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(
+          mockWorkflowInstance.id
+        );
+      });
+    });
+
+    describe('fetch Activity Instance Tree', () => {
+      it('should fetch and publish', () => {
+        dataManager.getActivityInstancesTreeData(mockWorkflowInstance);
+
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
+          SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          fetchActivityInstancesTree
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(
+          mockWorkflowInstance.id
+        );
+      });
+    });
+
+    describe('fetch variables', () => {
+      it('should fetch and publish', () => {
+        dataManager.getVariables(mockWorkflowInstance.id, mockScopeId);
+
+        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
+          SUBSCRIPTION_TOPIC.LOAD_VARIABLES
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
+          instancesApi.fetchVariables
+        );
+        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual({
+          instanceId: mockWorkflowInstance.id,
+          scopeId: mockScopeId
+        });
       });
     });
   });

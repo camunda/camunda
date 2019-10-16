@@ -4,14 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {createInstance} from 'modules/testUtils';
+
 export const MOCK_TOPICS = {
   FETCH_STATE_FOO: 'FETCH_STATE_FOO',
   FETCH_STATE_BAR: 'FETCH_STATE_BAR'
 };
 
+export const mockWorkflowInstance = createInstance();
 export const mockParams = {};
-
-export const mockApiData = {
-  success: {data: ['someData', 'someMoreData'], error: null},
-  error: {data: [], error: 'fetchError'}
-};
+export const customTopic = 'CUSTOM_TOPIC';
+export const mockStaticContent = {data: 'someData'};
+export const mockScopeId = '1234';

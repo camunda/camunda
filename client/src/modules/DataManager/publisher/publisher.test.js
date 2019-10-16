@@ -6,20 +6,16 @@
 
 import Publisher from './publisher';
 
-import {
-  MOCK_TOPICS,
-  topicFoo,
-  topicBar,
-  callbackMockOne,
-  callbackMockTwo,
-  mockApiData
-} from './publisher.setup';
+import {MOCK_TOPICS, topicFoo, topicBar, mockApiData} from './publisher.setup';
 import {LOADING_STATE} from 'modules/constants';
 
 const mockApi = {
   success: jest.fn(() => Promise.resolve(mockApiData.success)),
   error: jest.fn(() => Promise.resolve(mockApiData.error))
 };
+
+export const callbackMockOne = jest.fn();
+export const callbackMockTwo = jest.fn();
 
 describe('Publisher', () => {
   let publisher;
@@ -28,6 +24,8 @@ describe('Publisher', () => {
   beforeEach(() => {
     publisher = new Publisher(MOCK_TOPICS, LOADING_STATE);
     pubLoadingStatesSpy = jest.spyOn(publisher, 'pubLoadingStates');
+
+    pubLoadingStatesSpy.mockClear();
   });
 
   describe('subscribe', () => {

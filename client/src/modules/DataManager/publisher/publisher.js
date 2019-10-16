@@ -47,30 +47,30 @@ export default class Publisher {
     });
   }
 
-  publish(topic, value) {
+  publish(topic, value, staticContent) {
     !this.registeredTopics[topic] && this.printWarning(topic, 'publish');
 
     this.subscriptions[topic] &&
       this.subscriptions[topic].forEach(handle => {
-        handle(value);
+        if (staticContent) {
+          handle(value, staticContent);
+        } else {
+          handle(value);
+        }
       });
   }
 
-  async pubLoadingStates(topic, callback) {
+  async pubLoadingStates(topic, callback, staticContent) {
     this.publish(topic, {state: this.loadingStates.LOADING});
 
     const response = await callback();
 
-    if (response.error) {
-      this.publish(topic, {
-        state: this.loadingStates.LOAD_FAILED,
-        response
-      });
-    } else {
-      this.publish(topic, {
-        state: this.loadingStates.LOADED,
-        response
-      });
-    }
+    this.publish(topic, {
+      state: !!response.error
+        ? this.loadingStates.LOAD_FAILED
+        : this.loadingStates.LOADED,
+      response,
+      ...(!!staticContent && {staticContent: staticContent})
+    });
   }
 }
