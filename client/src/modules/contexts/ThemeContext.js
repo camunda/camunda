@@ -89,8 +89,12 @@ const themed = Component => {
       const {forwardedRef, ...rest} = this.props;
       return (
         <ThemeConsumer>
-          {({theme}) => (
-            <Component ref={forwardedRef} {...rest} theme={theme} />
+          {props => (
+            <Component
+              ref={forwardedRef}
+              {...rest}
+              theme={props ? props.theme : 'dark'}
+            />
           )}
         </ThemeConsumer>
       );
