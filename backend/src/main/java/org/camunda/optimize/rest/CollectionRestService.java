@@ -186,6 +186,16 @@ public class CollectionRestService {
     collectionService.updateRoleOfCollection(userId, collectionId, roleEntryId, roleUpdateDto);
   }
 
+  @POST
+  @Path("/{id}/copy")
+  @Produces(MediaType.APPLICATION_JSON)
+  public IdDto copyCollection(@Context ContainerRequestContext requestContext,
+                              @PathParam("id") String collectionId,
+                              @QueryParam("name") String newCollectionName) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return collectionService.copyCollection(userId, collectionId, newCollectionName);
+  }
+
   @DELETE
   @Path("/{id}/role/{roleEntryId}")
   @Produces(MediaType.APPLICATION_JSON)

@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.DashboardReader;
+import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
@@ -49,6 +50,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final ReportService reportService;
   private final AuthorizedCollectionService collectionService;
   private final IdentityService identityService;
+  private ReportReader reportReader;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
@@ -107,6 +109,23 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                                     final String userId,
                                     final String collectionId,
                                     final String name) {
+    return copyAndMoveDashboard(dashboardId, userId, collectionId, name, new ConcurrentHashMap<>());
+  }
+
+  public IdDto copyAndMoveDashboard(final String dashboardId,
+                                    final String userId,
+                                    final String collectionId,
+                                    final String name,
+                                    final Map<String, String> uniqueReportCopies) {
+    return copyAndMoveDashboard(dashboardId, userId, collectionId, name, uniqueReportCopies, false);
+  }
+
+  public IdDto copyAndMoveDashboard(final String dashboardId,
+                                    final String userId,
+                                    final String collectionId,
+                                    final String name,
+                                    final Map<String, String> uniqueReportCopies,
+                                    final boolean keepReportNames) {
     final AuthorizedDashboardDefinitionDto authorizedDashboard = getDashboardDefinition(dashboardId, userId);
     final DashboardDefinitionDto dashboardDefinition = authorizedDashboard.getDefinitionDto();
 
@@ -115,18 +134,23 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
 
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
-      final Map<String, String> uniqueReportCopies = new ConcurrentHashMap<>();
       newDashboardReports.clear();
       dashboardDefinition.getReports().stream().sequential().forEach(reportLocationDto -> {
         if (IdGenerator.isValidId(reportLocationDto.getId())) {
           final String reportCopyId = uniqueReportCopies.computeIfAbsent(
             reportLocationDto.getId(),
-            reportId -> reportService.copyAndMoveReport(
-              reportLocationDto.getId(),
-              userId,
-              collectionId,
-              uniqueReportCopies
-            ).getId()
+            reportId -> {
+              String newReportName = keepReportNames ? reportReader.getReport(reportId).getName() : null;
+
+              return reportService.copyAndMoveReport(
+                reportLocationDto.getId(),
+                userId,
+                collectionId,
+                newReportName,
+                uniqueReportCopies,
+                keepReportNames
+              ).getId();
+            }
           );
 
           newDashboardReports.add(

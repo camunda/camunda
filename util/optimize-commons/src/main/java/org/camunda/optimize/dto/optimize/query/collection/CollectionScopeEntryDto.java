@@ -33,6 +33,14 @@ public class CollectionScopeEntryDto {
     this(DefinitionType.valueOf(id.split(ID_SEGMENT_SEPARATOR)[0].toUpperCase()), id.split(ID_SEGMENT_SEPARATOR)[1]);
   }
 
+  public CollectionScopeEntryDto(CollectionScopeEntryDto oldEntry) {
+    this.definitionKey = oldEntry.definitionKey;
+    this.definitionType = oldEntry.definitionType;
+    this.tenants = oldEntry.tenants;
+    this.versions = oldEntry.versions;
+    this.id = convertTypeAndKeyToScopeEntryId(this.definitionType, this.definitionKey);
+  }
+
   public CollectionScopeEntryDto(final DefinitionType definitionType, final String definitionKey) {
     this(definitionType, definitionKey, new ArrayList<>(), new ArrayList<>());
   }

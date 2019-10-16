@@ -8,7 +8,9 @@ package org.camunda.optimize.service.collection;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
@@ -31,11 +33,13 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -46,8 +50,10 @@ import javax.ws.rs.NotFoundException;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -57,18 +63,104 @@ public class CollectionService {
 
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
+  private final ReportService reportService;
   private final ReportReader reportReader;
+  private final DashboardService dashboardService;
   private final CollectionRelationService collectionRelationService;
   private final AuthorizedEntitiesService entitiesService;
   private final IdentityService identityService;
 
-  public IdDto createNewCollectionAndReturnId(final String userId, final PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
+  public IdDto createNewCollectionAndReturnId(final String userId,
+                                              final PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
     return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);
   }
 
   public AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
                                                                                final String collectionId) {
     return authorizedCollectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
+  }
+
+  public IdDto copyCollection(String userId, String collectionId, String newCollectionName) {
+    AuthorizedSimpleCollectionDefinitionDto simpleAuthorizedCollectionDefinition = authorizedCollectionService
+        .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+
+    ResolvedCollectionDefinitionDto collectionDefinitionDto = getResolvedCollectionDefinition(
+      userId,
+      simpleAuthorizedCollectionDefinition
+    ).getDefinitionDto();
+
+    IdDto newCollectionId = createNewCollectionAndReturnId(
+      userId,
+      new PartialCollectionDefinitionDto(newCollectionName != null ? newCollectionName :
+                                           collectionDefinitionDto.getName() + " – Copy")
+    );
+
+    copyCollectionScope(userId, collectionDefinitionDto, newCollectionId);
+    copyCollectionPermissions(userId, collectionDefinitionDto, newCollectionId);
+    copyCollectionEntities(userId, collectionDefinitionDto, newCollectionId);
+    return newCollectionId;
+  }
+
+  private void copyCollectionEntities(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
+                                      IdDto newCollectionId) {
+    final Map<String, String> uniqueReportCopies = new ConcurrentHashMap<>();
+
+    collectionDefinitionDto.getData().getEntities().forEach(e -> {
+      switch (e.getEntityType()) {
+        case REPORT:
+          uniqueReportCopies.computeIfAbsent(
+            e.getId(),
+            id -> reportService.copyAndMoveReport(
+              id,
+              userId,
+              newCollectionId.getId(),
+              e.getName(),
+              uniqueReportCopies,
+              true
+            )
+              .getId()
+          );
+          break;
+        case DASHBOARD:
+          dashboardService.copyAndMoveDashboard(
+            e.getId(),
+            userId,
+            newCollectionId.getId(),
+            e.getName(),
+            uniqueReportCopies,
+            true
+          );
+          break;
+        default:
+          throw new OptimizeRuntimeException("You can't copy a " + e.getEntityType()
+            .toString()
+            .toLowerCase() + " to a collection");
+      }
+    });
+  }
+
+  private void copyCollectionPermissions(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
+                                         IdDto newCollectionId) {
+    collectionDefinitionDto.getData().getRoles().forEach(r -> {
+      try {
+        if (!r.getIdentity().getId().equals(userId)) {
+          addRoleToCollection(userId, newCollectionId.getId(), new CollectionRoleDto(r));
+        }
+      } catch (OptimizeConflictException e) {
+        log.error(e.getMessage());
+      }
+    });
+  }
+
+  private void copyCollectionScope(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
+                                   IdDto newCollectionId) {
+    collectionDefinitionDto.getData().getScope().forEach(e -> {
+      try {
+        addScopeEntryToCollection(userId, newCollectionId.getId(), new CollectionScopeEntryDto(e));
+      } catch (OptimizeConflictException ex) {
+        log.error(ex.getMessage());
+      }
+    });
   }
 
   public List<AuthorizedSimpleCollectionDefinitionDto> getAllSimpleCollectionDefinitions(final String userId) {
@@ -85,6 +177,16 @@ public class CollectionService {
     final List<EntityDto> collectionEntities = entitiesService.getAuthorizedCollectionEntities(userId, collectionId);
 
     return mapToResolvedCollection(simpleCollectionDefinitionDto, collectionEntities);
+  }
+
+  public AuthorizedResolvedCollectionDefinitionDto getResolvedCollectionDefinition(
+    final String userId,
+    final AuthorizedSimpleCollectionDefinitionDto simpleCollectionDefinitionDto
+  ) {
+    return mapToResolvedCollection(
+      simpleCollectionDefinitionDto,
+      entitiesService.getAuthorizedCollectionEntities(userId, simpleCollectionDefinitionDto.getDefinitionDto().getId())
+    );
   }
 
 

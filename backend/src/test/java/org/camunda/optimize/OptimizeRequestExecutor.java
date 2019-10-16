@@ -457,9 +457,9 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildAddRoleToCollectionRequest(final String id,
+  public OptimizeRequestExecutor buildAddRoleToCollectionRequest(final String collectionId,
                                                                  final CollectionRoleDto roleDto) {
-    this.path = "collection/" + id + "/role/";
+    this.path = "collection/" + collectionId + "/role/";
     this.requestType = POST;
     this.body = getBody(roleDto);
     return this;
@@ -897,6 +897,19 @@ public class OptimizeRequestExecutor {
     this.requestType = GET;
     addSingleQueryParam("terms", searchTerms);
     Optional.ofNullable(limit).ifPresent(limitValue -> addSingleQueryParam("limit", limitValue));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCopyCollectionRequest(String collectionId) {
+    this.path = "/collection/" + collectionId + "/copy";
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCopyCollectionRequest(String collectionId, String newName) {
+    this.path = "/collection/" + collectionId + "/copy";
+    this.requestType = POST;
+    this.addSingleQueryParam("name", newName);
     return this;
   }
 

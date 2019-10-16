@@ -466,6 +466,28 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(204));
   }
 
+  @Test
+  public void onlyManagerCanCopyACollection() {
+    final String collectionId = createNewCollectionAsDefaultUser();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new UserDto("kermit"), RoleType.VIEWER));
+
+    authorizationClient.addUserAndGrantOptimizeAccess("gonzo");
+    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new UserDto("gonzo"), RoleType.MANAGER));
+
+    embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildCopyCollectionRequest(collectionId)
+      .withUserAuthentication("gonzo", "gonzo")
+      .execute(200);
+
+    embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildCopyCollectionRequest(collectionId)
+      .withUserAuthentication("kermit", "kermit")
+      .execute(403);
+  }
+
   private CollectionScopeEntryUpdateDto createScopeUpdate() {
     return new CollectionScopeEntryUpdateDto(Collections.singletonList("1"), Collections.singletonList("tenant1"));
   }

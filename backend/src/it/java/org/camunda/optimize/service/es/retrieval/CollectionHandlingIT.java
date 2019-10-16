@@ -5,19 +5,26 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -35,7 +42,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -54,7 +63,8 @@ public class CollectionHandlingIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
   @RegisterExtension
   @Order(2)
   public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
@@ -69,7 +79,8 @@ public class CollectionHandlingIT {
 
     // then
     GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient()
+      .get(getRequest, RequestOptions.DEFAULT);
 
     // then
     assertThat(getResponse.isExists(), is(true));
@@ -468,6 +479,236 @@ public class CollectionHandlingIT {
     assertDashboardIsDeleted(dashboardId);
     assertReportIsDeleted(singleReportId);
     assertReportIsDeleted(combinedReportId);
+  }
+
+  @Test
+  public void copyAnEmptyCollectionWithCustomPermissionsAndScope() {
+    //given
+    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
+    String collectionId = createNewCollection();
+    embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildAddRoleToCollectionRequest(collectionId, new CollectionRoleDto(new UserDto("kermit"), RoleType.EDITOR))
+      .execute();
+
+    embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildAddScopeEntryToCollectionRequest(collectionId, new CollectionScopeEntryDto("PROCESS:invoice"))
+      .execute();
+
+    //when
+    IdDto copyId = copyCollection(collectionId);
+
+    ResolvedCollectionDefinitionDto copyDefinition = getResolvedCollectionDefinitionDto(copyId);
+
+    //then
+    assertThat(copyDefinition.getName().toLowerCase().contains("copy"), is(true));
+    assertThat(copyDefinition.getData()
+                 .getRoles()
+                 .contains(new CollectionRoleDto(new UserDto("kermit"), RoleType.EDITOR)), is(true));
+    assertThat(copyDefinition.getData().getScope().contains(new CollectionScopeEntryDto("PROCESS:invoice")), is(true));
+  }
+
+  @Test
+  public void copyCollectionWithASingleReport() {
+    //given
+    String collectionId = createNewCollection();
+    String originalReportId = createNewSingleProcessReportInCollection(collectionId);
+
+    // when
+    IdDto copyId = copyCollection(collectionId);
+
+    ResolvedCollectionDefinitionDto copyDefinition = getResolvedCollectionDefinitionDto(copyId);
+
+    String reportCopyId = copyDefinition.getData().getEntities().get(0).getId();
+
+    SingleProcessReportDefinitionDto originalReport = getSingleProcessReportDefinitionDto(originalReportId);
+
+    SingleProcessReportDefinitionDto copiedReport = getSingleProcessReportDefinitionDto(reportCopyId);
+
+    //then
+    assertThat(originalReport.getData(), is(copiedReport.getData()));
+    assertThat(copiedReport.getName(), is(originalReport.getName()));
+  }
+
+  @Test
+  public void copyCollectionWithADashboard() {
+    //given
+    String collectionId = createNewCollection();
+    String originalReportId = createNewSingleProcessReportInCollection(collectionId);
+    String dashboardId = createNewDashboardInCollection(collectionId);
+
+    DashboardDefinitionDto dashboardDefinition = getDashboardDefinitionDto(dashboardId);
+
+    dashboardDefinition.setReports(Collections.singletonList(new ReportLocationDto(
+      originalReportId,
+      new PositionDto(),
+      new DimensionDto(),
+      null
+    )));
+
+    embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinition)
+      .execute();
+
+    //when
+    IdDto collectionCopyId = copyCollection(collectionId);
+
+    ResolvedCollectionDefinitionDto copiedCollectionDefinition = getResolvedCollectionDefinitionDto(collectionCopyId);
+
+    String copiedDashboardId = copiedCollectionDefinition.getData()
+      .getEntities()
+      .stream()
+      .filter(e -> e.getEntityType().equals(EntityType.DASHBOARD)).findFirst().get().getId();
+
+    String copiedReportId = copiedCollectionDefinition.getData()
+      .getEntities()
+      .stream()
+      .filter(e -> e.getEntityType().equals(EntityType.REPORT)).findFirst().get().getId();
+
+    DashboardDefinitionDto copiedDashboard = getDashboardDefinitionDto(copiedDashboardId);
+
+    SingleProcessReportDefinitionDto copiedReportDefinition = getSingleProcessReportDefinitionDto(copiedReportId);
+    SingleProcessReportDefinitionDto originalReportDefinition = getSingleProcessReportDefinitionDto(originalReportId);
+    //then
+    //the dashboard references the same report entity as the report itself
+    assertThat(copiedDashboard.getReports().get(0).getId(), is(copiedReportId));
+
+    assertThat(copiedDashboard.getName(), is(dashboardDefinition.getName()));
+    assertThat(copiedReportDefinition.getName(), is(originalReportDefinition.getName()));
+
+    assertThat(copiedCollectionDefinition.getData().getEntities().size(), is(2));
+    assertThat(copiedCollectionDefinition.getData()
+                 .getEntities()
+                 .stream()
+                 .anyMatch(e -> e.getId().equals(copiedReportId)), is(true));
+    assertThat(copiedCollectionDefinition.getData()
+                 .getEntities()
+                 .stream()
+                 .anyMatch(e -> e.getId().equals(copiedDashboardId)), is(true));
+  }
+
+  @Test
+  public void copyCollectionWithANestedReport() {
+    //given
+    String collectionId = createNewCollection();
+    String originalReportId = createNewSingleProcessReportInCollection(collectionId);
+    String combinedReportId = createNewCombinedReportInCollection(collectionId);
+    String dashboardId = createNewDashboardInCollection(collectionId);
+
+    DashboardDefinitionDto dashboardDefinition = getDashboardDefinitionDto(dashboardId);
+    CombinedReportDefinitionDto combinedReportDefinition = embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetReportRequest(combinedReportId)
+      .execute(CombinedReportDefinitionDto.class, 200);
+
+    combinedReportDefinition.getData()
+      .setReports(Collections.singletonList(new CombinedReportItemDto(originalReportId)));
+
+    embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportDefinition)
+      .execute();
+
+    ArrayList<ReportLocationDto> reportLocationDtos = new ArrayList<>();
+    reportLocationDtos.add(new ReportLocationDto(
+      combinedReportId,
+      new PositionDto(),
+      new DimensionDto(),
+      null
+    ));
+    reportLocationDtos.add(new ReportLocationDto(
+      originalReportId,
+      new PositionDto(),
+      new DimensionDto(),
+      null
+    ));
+
+    dashboardDefinition.setReports(reportLocationDtos);
+
+    embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinition)
+      .execute();
+
+    IdDto copiedCollectionId = copyCollection(collectionId);
+    ResolvedCollectionDefinitionDto copiedCollectionDefinition = getResolvedCollectionDefinitionDto(copiedCollectionId);
+    SingleProcessReportDefinitionDto originalSingleReportDefinition = getSingleProcessReportDefinitionDto(
+      originalReportId);
+
+    assertThat(copiedCollectionDefinition.getData().getEntities().size(), is(3));
+
+    List<String> copiedCollectionEntityNames = copiedCollectionDefinition.getData()
+      .getEntities()
+      .stream()
+      .map(EntityDto::getName)
+      .collect(Collectors.toList());
+
+    assertThat(
+      copiedCollectionEntityNames,
+      containsInAnyOrder(
+        dashboardDefinition.getName(), combinedReportDefinition.getName(),
+        originalSingleReportDefinition.getName()
+      )
+    );
+  }
+
+  @Test
+  public void copyCollectionWithNewName() {
+    String collectionId = createNewCollection();
+
+    IdDto copyWithoutNewNameId = copyCollection(collectionId);
+    ResolvedCollectionDefinitionDto copiedCollectionWithoutNewName = getCollectionById(copyWithoutNewNameId.getId());
+
+    IdDto copyWithNewNameId = copyCollection(collectionId, "newCoolName");
+    ResolvedCollectionDefinitionDto copiedCollectionWithNewName = getCollectionById(copyWithNewNameId.getId());
+
+    ResolvedCollectionDefinitionDto originalCollection = getCollectionById(collectionId);
+
+    assertThat(copiedCollectionWithNewName.getName(), is("newCoolName"));
+    assertThat(copiedCollectionWithoutNewName.getName().contains(originalCollection.getName()), is(true));
+    assertThat(copiedCollectionWithoutNewName.getName().toLowerCase().contains("copy"), is(true));
+  }
+
+
+  private DashboardDefinitionDto getDashboardDefinitionDto(String dashboardId) {
+    return embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetDashboardRequest(dashboardId)
+      .execute(DashboardDefinitionDto.class, 200);
+  }
+
+  private ResolvedCollectionDefinitionDto getResolvedCollectionDefinitionDto(IdDto copyId) {
+    return embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetCollectionRequest(copyId.getId())
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
+  }
+
+  private SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String originalReportId) {
+    return embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetReportRequest(originalReportId)
+      .execute(SingleProcessReportDefinitionDto.class, 200);
+  }
+
+  private IdDto copyCollection(String collectionId) {
+    return copyCollection(collectionId, null);
+  }
+
+  private IdDto copyCollection(String collectionId, String newName) {
+    OptimizeRequestExecutor executor = embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildCopyCollectionRequest(collectionId);
+
+    if (newName != null) {
+      executor.addSingleQueryParam("name", newName);
+    }
+
+    return executor
+      .execute(IdDto.class, 200);
   }
 
   private void assertReportIsDeleted(final String singleReportIdToDelete) {
