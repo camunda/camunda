@@ -4854,10 +4854,10 @@ discontinuous-range@1.0.0:
   resolved "https://registry.yarnpkg.com/discontinuous-range/-/discontinuous-range-1.0.0.tgz#e38331f0844bba49b9a9cb71c771585aab1bc65a"
   integrity sha1-44Mx8IRLukm5qctxx3FYWqsbxlo=
 
-dmn-js-decision-table@^7.0.1:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-7.0.1.tgz#2a8125e5bc934e776125b76a14413dfeb90d66bd"
-  integrity sha512-Tn7TjnkRp/sPksBKnbCy9vrcb1J/feb6nzsf03McEz20kWe1kXTQRA2U08p/qwEglnnUkJD/g61ES2qqN0C2sg==
+dmn-js-decision-table@^7.1.0:
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-7.1.0.tgz#a35d692d66ad0445680245a1eea8950749185f6e"
+  integrity sha512-nTnjT1jS0+LvF4jlljA5KIg8tO3VEA6Ep7jGxEa38YGz31vVvkgTmMYzxsgLeoBQVNBA9Db3DO7y792jcOJSjw==
   dependencies:
     css.escape "^1.5.1"
     diagram-js "^4.0.1"
@@ -4909,12 +4909,12 @@ dmn-js-shared@^7.0.0:
     selection-update "^0.1.2"
     table-js "^6.0.0"
 
-dmn-js@^7.0.1:
-  version "7.0.1"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-7.0.1.tgz#ebc0e31dcec88931f5f201c700c35894070df098"
-  integrity sha512-Bd/xR9McsD0jUeICLCHZ1AeB51SzlBWhd38fPNfGbaMfpQ7AIJSITlgXJXarsgqF6nQs2AIvj8HSQlV+OwopKg==
+dmn-js@^7.1.0:
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-7.1.0.tgz#fd7b3e63a4ee7db8f4cd27a5e09c85da284df52b"
+  integrity sha512-WXBFB9215rjei0uQ2dcpi33bL8bdWFlGVBsVoEgMwqZMOXOVJcecq/urRPnRzo14rt5MI/uBWv+HNxH6x5dorA==
   dependencies:
-    dmn-js-decision-table "^7.0.1"
+    dmn-js-decision-table "^7.1.0"
     dmn-js-drd "^7.0.0"
     dmn-js-literal-expression "^7.0.0"
     dmn-js-shared "^7.0.0"
