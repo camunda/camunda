@@ -33,7 +33,7 @@ public class InvoiceDataGenerator extends DataGenerator {
   protected void deployAdditionalDiagrams() {
     super.deployAdditionalDiagrams();
     DmnModelInstance dmnModelInstance = readDmnTableAsInstance(DMN_DIAGRAM);
-    engineClient.deployDecisionAndGetId(dmnModelInstance, tenants);
+    engineClient.deployDecisionAndGetIds(dmnModelInstance, tenants);
   }
 
   @Override
@@ -42,9 +42,10 @@ public class InvoiceDataGenerator extends DataGenerator {
     String[] invoiceCategory = new String[]{"Misc", "Travel Expenses", "Software License Costs"};
     HashMap<String, Object> variables = new HashMap<>();
     variables.put("invoiceClassification", invoiceType[ThreadLocalRandom.current().nextInt(0, 3)]);
-    variables.put("amount",ThreadLocalRandom.current().nextDouble(0, 2000));
-    variables.put("invoiceCategory",
-                  invoiceCategory[ThreadLocalRandom.current().nextInt(0, invoiceCategory.length)]
+    variables.put("amount", ThreadLocalRandom.current().nextDouble(0, 2000));
+    variables.put(
+      "invoiceCategory",
+      invoiceCategory[ThreadLocalRandom.current().nextInt(0, invoiceCategory.length)]
     );
     variables.put(DELAY_VARIABLE_NAME, ThreadLocalRandom.current().nextDouble() > 0.9);
     return variables;

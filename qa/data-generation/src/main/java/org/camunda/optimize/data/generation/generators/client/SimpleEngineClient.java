@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.ImmutableSet;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -27,6 +28,7 @@ import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
+import org.camunda.bpm.engine.rest.dto.identity.UserDto;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
@@ -47,7 +49,6 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.OffsetDateTime;
@@ -58,6 +59,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -68,13 +70,14 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 
 @Slf4j
 public class SimpleEngineClient {
-
   // @formatter:off
   private static final TypeReference<List<TaskDto>> TASK_LIST_TYPE_REFERENCE = new TypeReference<List<TaskDto>>() {};
   private static final String ENGINE_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
   // @formatter:on
   private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(ENGINE_DATE_FORMAT);
   private static final int MAX_CONNECTIONS = 150;
+  private static final Set<String> STANDARD_USERS = ImmutableSet.of("mary", "john", "peter");
+  private static final Set<String> STANDARD_GROUPS = ImmutableSet.of("accounting", "management", "sales");
   public static final String DELAY_VARIABLE_NAME = "delay";
 
   private CloseableHttpClient client;
@@ -98,16 +101,13 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
-  public void initializeStandardUserAuthorizations() {
-    for (String user : users) {
-      createGrantAllOfTypeAuthorization(RESOURCE_TYPE_APPLICATION, user);
-      createGrantAllOfTypeAuthorization(RESOURCE_TYPE_PROCESS_DEFINITION, user);
-      createGrantAllOfTypeAuthorization(RESOURCE_TYPE_DECISION_DEFINITION, user);
-    }
+  public void initializeStandardUserAndGroupAuthorizations() {
+    STANDARD_USERS.forEach(this::grantUserOptimizeAndAllDefinitionAuthorization);
+    STANDARD_GROUPS.forEach(this::grantGroupOptimizeAndAllDefinitionAuthorization);
   }
 
   @SneakyThrows
-  public void createTenantAndRandomlyAuthorizeUsersToIt(final String tenantId) {
+  public void createTenantAndRandomlyAuthorizeStandardUsersToIt(final String tenantId) {
     HttpPost createTenantPost = new HttpPost(engineRestEndpoint + "/tenant/create");
     createTenantPost.setEntity(new StringEntity("{\"id\": \"" + tenantId + "\", \"name\": \"" + tenantId + "\"}"));
     createTenantPost.addHeader("Content-Type", "application/json");
@@ -127,7 +127,7 @@ public class SimpleEngineClient {
   public List<String> deployProcesses(BpmnModelInstance modelInstance, int nVersions, List<String> tenants) {
     List<String> result = new ArrayList<>();
     IntStream.rangeClosed(1, nVersions)
-      .mapToObj(n -> deployProcessAndGetId(modelInstance, tenants))
+      .mapToObj(n -> deployProcessAndGetIds(modelInstance, tenants))
       .collect(Collectors.toList()).forEach(result::addAll);
     return result;
   }
@@ -140,9 +140,29 @@ public class SimpleEngineClient {
     }
   }
 
-  private List<String> deployProcessAndGetId(BpmnModelInstance modelInstance, List<String> tenants) {
-    List<DeploymentDto> deploymentDto = deployProcess(modelInstance, tenants);
-    return deploymentDto.stream().map(this::getProcessDefinitionId).collect(Collectors.toList());
+  @SneakyThrows
+  public void createUser(final UserDto userDto) {
+    HttpPost createUserRequest = new HttpPost(engineRestEndpoint + "/user/create");
+    createUserRequest.addHeader("Content-Type", "application/json");
+    createUserRequest.setEntity(new StringEntity(objectMapper.writeValueAsString(userDto), StandardCharsets.UTF_8));
+
+    try (CloseableHttpResponse createResponse = client.execute(createUserRequest)) {
+      if (createResponse.getStatusLine().getStatusCode() != 204) {
+        log.warn("Failed to create user with id {}", userDto.getProfile().getId());
+      }
+    }
+  }
+
+  public void grantGroupOptimizeAndAllDefinitionAuthorization(final String groupId) {
+    createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_APPLICATION, groupId);
+    createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_PROCESS_DEFINITION, groupId);
+    createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_DECISION_DEFINITION, groupId);
+  }
+
+  public void grantUserOptimizeAndAllDefinitionAuthorization(final String userId) {
+    createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_APPLICATION, userId);
+    createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_PROCESS_DEFINITION, userId);
+    createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_DECISION_DEFINITION, userId);
   }
 
   public void cleanUpDeployments() {
@@ -179,16 +199,9 @@ public class SimpleEngineClient {
     log.info("Deployment clean up finished");
   }
 
-  private String getProcessDefinitionId(DeploymentDto deployment) {
-    List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment);
-    if (processDefinitions.size() != 1) {
-      log.warn("Deployment should contain only one process definition!");
-    }
-    return processDefinitions.get(0).getId();
-  }
-
   public Optional<Boolean> getProcessInstanceDelayVariable(String procInstId) {
-    HttpGet get = new HttpGet(engineRestEndpoint+ "/process-instance/" + procInstId + "/variables/" + DELAY_VARIABLE_NAME);
+    HttpGet get =
+      new HttpGet(engineRestEndpoint + "/process-instance/" + procInstId + "/variables/" + DELAY_VARIABLE_NAME);
     VariableValue variable = new VariableValue();
     try (CloseableHttpResponse response = client.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
@@ -197,6 +210,139 @@ public class SimpleEngineClient {
       log.error("Error while trying to fetch the variable!!", e);
     }
     return Optional.ofNullable(variable.getValue()).map(Object::toString).map(Boolean::parseBoolean);
+  }
+
+  public List<String> deployDecisionAndGetIds(DmnModelInstance modelInstance, List<String> tenants) {
+    return deployDecisionDefinition(modelInstance, tenants).stream()
+      .map(this::getProcessDefinitionId)
+      .collect(Collectors.toList());
+  }
+
+  public void startProcessInstance(String procDefId, Map<String, Object> variables) {
+    HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
+    post.addHeader("content-type", "application/json");
+    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), StandardCharsets.UTF_8));
+    try (CloseableHttpResponse response = client.execute(post)) {
+      post.setURI(new URI(post.getURI().toString()));
+      if (response.getStatusLine().getStatusCode() != 200) {
+        throw new RuntimeException("Could not start the process definition " + procDefId +
+                                     ". Reason: " + response.getStatusLine().getReasonPhrase());
+      }
+    } catch (Exception e) {
+      log.error("Error during start of process instance!");
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void correlateMessage(String messageName) {
+    HttpPost post = new HttpPost(engineRestEndpoint + "/message/");
+    post.setHeader("Content-type", "application/json");
+    MessageCorrelationDto message = new MessageCorrelationDto();
+    message.setAll(true);
+    message.setMessageName(messageName);
+    StringEntity content;
+    try {
+      content = new StringEntity(objectMapper.writeValueAsString(message), StandardCharsets.UTF_8);
+      post.setEntity(content);
+      try (CloseableHttpResponse response = client.execute(post)) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        if (statusCode != 204) {
+          log.warn("Response code for correlating message should be 204, got " + statusCode + " instead");
+          final String reponseBody = Streams.copyToString(new InputStreamReader(
+            response.getEntity().getContent(), StandardCharsets.UTF_8
+          ));
+          log.warn("Response body was: " + reponseBody);
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Error while trying to correlate message for name {}!", messageName);
+    }
+  }
+
+  public List<TaskDto> getActiveTasksCreatedAfter(final String processDefinitionId,
+                                                  final OffsetDateTime afterDateTime, final int limit) {
+    HttpGet get = new HttpGet(getTaskListCreatedAfterUri(processDefinitionId, limit, afterDateTime));
+    List<TaskDto> tasks = new ArrayList<>();
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      tasks = objectMapper.readValue(responseString, TASK_LIST_TYPE_REFERENCE);
+    } catch (IOException e) {
+      log.error("Error while trying to fetch the user task!!", e);
+    }
+    return tasks;
+  }
+
+  public List<TaskDto> getActiveTasksCreatedOn(final String processDefinitionId,
+                                               final OffsetDateTime creationDateTime) {
+    HttpGet get = new HttpGet(getTaskListCreatedOnUri(processDefinitionId, creationDateTime));
+    List<TaskDto> tasks = new ArrayList<>();
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      tasks = objectMapper.readValue(responseString, TASK_LIST_TYPE_REFERENCE);
+    } catch (IOException e) {
+      log.error("Error while trying to fetch the user task!!", e);
+    }
+    return tasks;
+  }
+
+  public void claimTask(TaskDto task) throws IOException {
+    HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
+    claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
+    claimPost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse claimResponse = client.execute(claimPost)) {
+      if (claimResponse.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException("Wrong error code when claiming user tasks!");
+      }
+    }
+  }
+
+  public void addOrRemoveIdentityLinks(TaskDto task) throws IOException {
+    HttpGet identityLinksGet = new HttpGet(getTaskIdentityLinksUri(task.getId()));
+    try (CloseableHttpResponse getLinksResponse = client.execute(identityLinksGet)) {
+      String content = EntityUtils.toString(getLinksResponse.getEntity());
+      List<JsonNode> links = objectMapper.readValue(content, new TypeReference<List<JsonNode>>() {
+      });
+
+      if (links.size() == 0) {
+        HttpPost candidatePost = new HttpPost(getTaskIdentityLinksUri(task.getId()));
+        candidatePost.setEntity(
+          new StringEntity("{\"userId\":\"demo\", \"type\":\"candidate\"}")
+        );
+        candidatePost.addHeader("Content-Type", "application/json");
+        client.execute(candidatePost).close();
+      } else {
+        HttpPost candidateDeletePost = new HttpPost(getTaskIdentityLinksUri(task.getId()) + "/delete");
+        candidateDeletePost.addHeader("Content-Type", "application/json");
+        candidateDeletePost.setEntity(new StringEntity(objectMapper.writeValueAsString(links.get(0))));
+        client.execute(candidateDeletePost).close();
+      }
+    }
+  }
+
+  public void completeUserTask(TaskDto task) {
+    HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
+    completePost.setEntity(new StringEntity("{}", StandardCharsets.UTF_8));
+    completePost.addHeader("Content-Type", "application/json");
+    try (CloseableHttpResponse response = client.execute(completePost)) {
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException("Wrong error code when completing user tasks!");
+      }
+    } catch (Exception e) {
+      log.error("Could not complete user task!", e);
+    }
+  }
+
+  private List<String> deployProcessAndGetIds(BpmnModelInstance modelInstance, List<String> tenants) {
+    List<DeploymentDto> deploymentDto = deployProcess(modelInstance, tenants);
+    return deploymentDto.stream().map(this::getProcessDefinitionId).collect(Collectors.toList());
+  }
+
+  private String getProcessDefinitionId(DeploymentDto deployment) {
+    List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment);
+    if (processDefinitions.size() != 1) {
+      log.warn("Deployment should contain only one process definition!");
+    }
+    return processDefinitions.get(0).getId();
   }
 
   private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment) {
@@ -225,19 +371,6 @@ public class SimpleEngineClient {
     return result;
   }
 
-  private String getProcessDefinitionUri() {
-    return engineRestEndpoint + "/process-definition";
-  }
-
-  private String getCreateDeploymentUri() {
-    return getDeploymentUri() + "create";
-  }
-
-  private String getDeploymentUri() {
-    return engineRestEndpoint + "/deployment/";
-  }
-
-
   private List<DeploymentDto> deployProcess(BpmnModelInstance bpmnModelInstance, List<String> tenants) {
     String process = Bpmn.convertToString(bpmnModelInstance);
     List<HttpPost> deploymentRequest = createProcessDeploymentRequest(process, tenants);
@@ -256,10 +389,6 @@ public class SimpleEngineClient {
       }
       return deployment;
     }).collect(Collectors.toList());
-  }
-
-  public void deployDecisionAndGetId(DmnModelInstance modelInstance, List<String> tenants) {
-    deployDecisionDefinition(modelInstance, tenants);
   }
 
   private List<DeploymentDto> deployDecisionDefinition(DmnModelInstance dmnModelInstance, List<String> tenants) {
@@ -281,23 +410,6 @@ public class SimpleEngineClient {
     }).collect(Collectors.toList());
   }
 
-
-  public void startProcessInstance(String procDefId, Map<String, Object> variables) {
-    HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
-    post.addHeader("content-type", "application/json");
-    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables), StandardCharsets.UTF_8));
-    try (CloseableHttpResponse response = client.execute(post)) {
-      post.setURI(new URI(post.getURI().toString()));
-      if (response.getStatusLine().getStatusCode() != 200) {
-        throw new RuntimeException("Could not start the process definition " + procDefId +
-                                     ". Reason: " + response.getStatusLine().getReasonPhrase());
-      }
-    } catch (Exception e) {
-      log.error("Error during start of process instance!");
-      throw new RuntimeException(e);
-    }
-  }
-
   @SneakyThrows
   private String convertVariableMapToJsonString(Map<String, Object> plainVariables) {
     Map<String, Object> variables = new HashMap<>();
@@ -315,10 +427,6 @@ public class SimpleEngineClient {
     Map<String, Object> variableWrapper = new HashMap<>();
     variableWrapper.put("variables", variables);
     return objectMapper.writeValueAsString(variableWrapper);
-  }
-
-  private String getStartProcessInstanceUri(String procDefId) {
-    return engineRestEndpoint + "/process-definition/" + procDefId + "/start";
   }
 
   private List<HttpPost> createProcessDeploymentRequest(String process, List<String> tenants) {
@@ -370,71 +478,6 @@ public class SimpleEngineClient {
     }).collect(Collectors.toList());
   }
 
-  public void correlateMessage(String messageName) {
-    HttpPost post = new HttpPost(engineRestEndpoint + "/message/");
-    post.setHeader("Content-type", "application/json");
-    MessageCorrelationDto message = new MessageCorrelationDto();
-    message.setAll(true);
-    message.setMessageName(messageName);
-    StringEntity content;
-    try {
-      content = new StringEntity(objectMapper.writeValueAsString(message), Charset.defaultCharset());
-      post.setEntity(content);
-      try (CloseableHttpResponse response = client.execute(post)) {
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode != 204) {
-          log.warn("Response code for correlating message should be 204, got " + statusCode + " instead");
-          final String reponseBody = Streams.copyToString(new InputStreamReader(
-            response.getEntity().getContent(), StandardCharsets.UTF_8
-          ));
-          log.warn("Response body was: " + reponseBody);
-        }
-      }
-    } catch (Exception e) {
-      log.warn("Error while trying to correlate message for name {}!", messageName);
-    }
-  }
-
-  public List<TaskDto> getActiveTasksCreatedAfter(final String processDefinitionId,
-                                                  final OffsetDateTime afterDateTime, final int limit) {
-    HttpGet get = new HttpGet(getTaskListCreatedAfterUri(processDefinitionId, limit, afterDateTime));
-    List<TaskDto> tasks = new ArrayList<>();
-    try (CloseableHttpResponse response = client.execute(get)) {
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      tasks = objectMapper.readValue(responseString, TASK_LIST_TYPE_REFERENCE);
-    } catch (IOException e) {
-      log.error("Error while trying to fetch the user task!!", e);
-    }
-    return tasks;
-  }
-
-  public List<TaskDto> getActiveTasksCreatedOn(final String processDefinitionId,
-                                               final OffsetDateTime creationDateTime) {
-    HttpGet get = new HttpGet(getTaskListCreatedOnUri(processDefinitionId, creationDateTime));
-    List<TaskDto> tasks = new ArrayList<>();
-    try (CloseableHttpResponse response = client.execute(get)) {
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      tasks = objectMapper.readValue(responseString, TASK_LIST_TYPE_REFERENCE);
-    } catch (IOException e) {
-      log.error("Error while trying to fetch the user task!!", e);
-    }
-    return tasks;
-  }
-
-  private String getTaskListCreatedAfterUri(final String processDefinitionId, long limit,
-                                            final OffsetDateTime createdAfter) {
-    return engineRestEndpoint + "/task?active=true&sortBy=created&sortOrder=asc" +
-      "&processDefinitionId=" + processDefinitionId +
-      "&maxResults=" + limit +
-      "&createdAfter=" + serializeDateTimeToUrlEncodedString(createdAfter);
-  }
-
-  private String getTaskListCreatedOnUri(final String processDefinitionId, final OffsetDateTime createdOn) {
-    return engineRestEndpoint + "/task?active=true" +
-      "&processDefinitionId=" + processDefinitionId +
-      "&createdOn=" + serializeDateTimeToUrlEncodedString(createdOn);
-  }
-
   @SneakyThrows
   private String serializeDateTimeToUrlEncodedString(final OffsetDateTime createdAfter) {
     return URLEncoder.encode(DATE_TIME_FORMATTER.format(createdAfter), StandardCharsets.UTF_8.name());
@@ -449,54 +492,16 @@ public class SimpleEngineClient {
     client.execute(unclaimPost).close();
   }
 
-  public void claimTask(TaskDto task) throws IOException {
-    HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
-    claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
-    claimPost.addHeader("Content-Type", "application/json");
-    try (CloseableHttpResponse claimResponse = client.execute(claimPost)) {
-      if (claimResponse.getStatusLine().getStatusCode() != 204) {
-        throw new RuntimeException("Wrong error code when claiming user tasks!");
-      }
-    }
+  private void createGrantAllOfTypeUserAuthorization(final int resourceType, final String userId) {
+    createGrantAllOfTypeAuthorization(resourceType, userId, null);
   }
 
-  public void addOrRemoveIdentityLinks(TaskDto task) throws IOException {
-    HttpGet identityLinksGet = new HttpGet(getTaskIdentityLinksUri(task.getId()));
-    try (CloseableHttpResponse getLinksResponse = client.execute(identityLinksGet)) {
-      String content = EntityUtils.toString(getLinksResponse.getEntity());
-      List<JsonNode> links = objectMapper.readValue(content, new TypeReference<List<JsonNode>>() {
-      });
-
-      if (links.size() == 0) {
-        HttpPost candidatePost = new HttpPost(getTaskIdentityLinksUri(task.getId()));
-        candidatePost.setEntity(
-          new StringEntity("{\"userId\":\"demo\", \"type\":\"candidate\"}")
-        );
-        candidatePost.addHeader("Content-Type", "application/json");
-        client.execute(candidatePost).close();
-      } else {
-        HttpPost candidateDeletePost = new HttpPost(getTaskIdentityLinksUri(task.getId()) + "/delete");
-        candidateDeletePost.addHeader("Content-Type", "application/json");
-        candidateDeletePost.setEntity(new StringEntity(objectMapper.writeValueAsString(links.get(0))));
-        client.execute(candidateDeletePost).close();
-      }
-    }
+  private void createGrantAllOfTypeGroupAuthorization(final int resourceType, final String groupId) {
+    createGrantAllOfTypeAuthorization(resourceType, null, groupId);
   }
 
-  public void completeUserTask(TaskDto task) {
-    HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
-    completePost.setEntity(new StringEntity("{}", StandardCharsets.UTF_8));
-    completePost.addHeader("Content-Type", "application/json");
-    try (CloseableHttpResponse response = client.execute(completePost)) {
-      if (response.getStatusLine().getStatusCode() != 204) {
-        throw new RuntimeException("Wrong error code when completing user tasks!");
-      }
-    } catch (Exception e) {
-      log.error("Could not complete user task!", e);
-    }
-  }
-
-  private void createGrantAllOfTypeAuthorization(final int resourceType, final String userId) throws IOException {
+  @SneakyThrows
+  private void createGrantAllOfTypeAuthorization(final int resourceType, final String userId, final String groupId) {
     final HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
     final AuthorizationDto globalAppAuth = new AuthorizationDto(
       null, 1, Collections.singletonList("ALL"), userId, null, resourceType, "*"
@@ -515,6 +520,36 @@ public class SimpleEngineClient {
         log.warn(IOUtils.toString(createUserResponse.getEntity().getContent(), StandardCharsets.UTF_8));
       }
     }
+  }
+
+  private String getStartProcessInstanceUri(String procDefId) {
+    return engineRestEndpoint + "/process-definition/" + procDefId + "/start";
+  }
+
+  private String getTaskListCreatedAfterUri(final String processDefinitionId, long limit,
+                                            final OffsetDateTime createdAfter) {
+    return engineRestEndpoint + "/task?active=true&sortBy=created&sortOrder=asc" +
+      "&processDefinitionId=" + processDefinitionId +
+      "&maxResults=" + limit +
+      "&createdAfter=" + serializeDateTimeToUrlEncodedString(createdAfter);
+  }
+
+  private String getTaskListCreatedOnUri(final String processDefinitionId, final OffsetDateTime createdOn) {
+    return engineRestEndpoint + "/task?active=true" +
+      "&processDefinitionId=" + processDefinitionId +
+      "&createdOn=" + serializeDateTimeToUrlEncodedString(createdOn);
+  }
+
+  private String getProcessDefinitionUri() {
+    return engineRestEndpoint + "/process-definition";
+  }
+
+  private String getCreateDeploymentUri() {
+    return getDeploymentUri() + "create";
+  }
+
+  private String getDeploymentUri() {
+    return engineRestEndpoint + "/deployment/";
   }
 
   private String getClaimTaskUri(String taskId) {

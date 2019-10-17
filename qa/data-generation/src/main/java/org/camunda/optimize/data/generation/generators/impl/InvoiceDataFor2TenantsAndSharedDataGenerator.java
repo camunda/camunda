@@ -32,7 +32,7 @@ public class InvoiceDataFor2TenantsAndSharedDataGenerator extends DataGenerator 
   protected void deployAdditionalDiagrams() {
     super.deployAdditionalDiagrams();
     DmnModelInstance dmnModelInstance = readDmnTableAsInstance(DMN_DIAGRAM);
-    engineClient.deployDecisionAndGetId(dmnModelInstance, tenants);
+    engineClient.deployDecisionAndGetIds(dmnModelInstance, tenants);
   }
 
   @Override
