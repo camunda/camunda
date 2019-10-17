@@ -85,7 +85,7 @@ public class LongPollingActivateJobsRequest {
       try {
         responseObserver.onNext(grpcResponse);
       } catch (Exception e) {
-        LOG.warn("Failed to send response {}", grpcResponse, e);
+        LOG.warn("Failed to send response to client.", e);
       }
     }
   }
