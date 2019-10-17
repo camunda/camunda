@@ -14,13 +14,13 @@ import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
@@ -84,6 +84,7 @@ public class QueryPerformanceTest {
 
   @BeforeAll
   public static void init() throws TimeoutException, InterruptedException {
+    embeddedOptimizeExtensionRule.setupOptimize();
     elasticSearchIntegrationTestExtensionRule.disableCleanup();
     // given
     importEngineData();
@@ -269,7 +270,7 @@ public class QueryPerformanceTest {
     return timeElapsed;
   }
 
-  private Stream<SingleReportDataDto> getPossibleReports() {
+  private static Stream<SingleReportDataDto> getPossibleReports() {
     return createAllPossibleReports().stream();
   }
 }

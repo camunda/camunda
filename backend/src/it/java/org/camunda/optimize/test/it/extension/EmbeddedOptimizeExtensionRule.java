@@ -92,7 +92,7 @@ public class EmbeddedOptimizeExtensionRule extends TestWatcher implements Before
 
   @Override
   protected void starting(Description description) {
-    beforeTest();
+    setupOptimize();
   }
 
   @Override
@@ -102,7 +102,7 @@ public class EmbeddedOptimizeExtensionRule extends TestWatcher implements Before
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) throws Exception {
-    beforeTest();
+    setupOptimize();
   }
 
   @Override
@@ -110,7 +110,7 @@ public class EmbeddedOptimizeExtensionRule extends TestWatcher implements Before
     afterTest();
   }
 
-  private void beforeTest() {
+  public void setupOptimize() {
     try {
       startOptimize();
       objectMapper = getApplicationContext().getBean(ObjectMapper.class);
