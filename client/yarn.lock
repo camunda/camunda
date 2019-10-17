@@ -3217,15 +3217,15 @@ bpmn-font@^0.9.3:
   resolved "https://registry.yarnpkg.com/bpmn-font/-/bpmn-font-0.9.3.tgz#03c2c906dbd30653e5b1f113d92c78cab6710df4"
   integrity sha512-kzRGXGLzTROLRNCSskkOyj/+SbtTAn2unKfgB9tNt7RWJFybg/Wbe9YjK2ALotI3b64wwlCTkAalXiTiskP6dg==
 
-bpmn-js@5.0.5:
-  version "5.0.5"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-5.0.5.tgz#22122b44b383477664b6d99c72f2a3438792774f"
-  integrity sha512-2ZMmjKR06nlgwnADoL9upK5Gy4TwqSycQAYDB0aqaObdd+lgFpEhdEifXlkxFJo6s4TNaDA6HmhZp6nsXlwHQA==
+bpmn-js@5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-5.1.0.tgz#bc5aa246395dd592d7455d8d623b4b9eb700611e"
+  integrity sha512-y0NoauYD8UdJAOp3nWPzBkPY6zWpCt4BOTY3sDFg5yeiTL812feFzS6vaebj6QYYrtac73FHskfcwjEdJlmr7A==
   dependencies:
     bpmn-font "^0.9.3"
     bpmn-moddle "^6.0.0"
     css.escape "^1.5.1"
-    diagram-js "^5.0.2"
+    diagram-js "^5.1.0"
     diagram-js-direct-editing "^1.6.0"
     ids "^1.0.0"
     inherits "^2.0.1"
@@ -4793,10 +4793,10 @@ diagram-js@^4.0.1:
     path-intersection "^1.0.2"
     tiny-svg "^2.2.1"
 
-diagram-js@^5.0.2:
-  version "5.0.2"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-5.0.2.tgz#5243a57c6090912785a4c20441712bcebd2d02d9"
-  integrity sha512-N4rZPiZcZYfDvl63sYq0y7RgXaP6h/bJq3xahJsHoqHwCgFfG2F8HW98afhakirvY8K5IoHwAYmlcCort5DbSA==
+diagram-js@^5.1.0:
+  version "5.1.0"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-5.1.0.tgz#dd3c58f7bbf980f94e7880b13588c199e2c302cd"
+  integrity sha512-qaETV3Lgesb6GAL55OMdWVHbyzpnLVrPDWmWXZmuO2GEPNr5jgOnTGuYGSbfKjUozp9AgYQELxfsKxouK0dK7w==
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
