@@ -83,7 +83,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(notNullValue()));
-    assertThat(rawDataProcessInstanceDto.getDurationInMs(), is(notNullValue()));
+    assertThat(rawDataProcessInstanceDto.getDuration(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
     assertThat(rawDataProcessInstanceDto.getBusinessKey(), is(BUSINESS_KEY));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
@@ -119,7 +119,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(notNullValue()));
-    assertThat(rawDataProcessInstanceDto.getDurationInMs(), is(notNullValue()));
+    assertThat(rawDataProcessInstanceDto.getDuration(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
@@ -154,7 +154,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(nullValue()));
-    assertThat(rawDataProcessInstanceDto.getDurationInMs(), is(nullValue()));
+    assertThat(rawDataProcessInstanceDto.getDuration(), is(nullValue()));
     assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));
@@ -191,7 +191,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessInstanceId(), is(processInstance.getId()));
     assertThat(rawDataProcessInstanceDto.getStartDate(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEndDate(), is(notNullValue()));
-    assertThat(rawDataProcessInstanceDto.getDurationInMs(), is(notNullValue()));
+    assertThat(rawDataProcessInstanceDto.getDuration(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getEngineName(), is("1"));
     assertThat(rawDataProcessInstanceDto.getVariables(), is(notNullValue()));
     assertThat(rawDataProcessInstanceDto.getVariables().size(), is(0));

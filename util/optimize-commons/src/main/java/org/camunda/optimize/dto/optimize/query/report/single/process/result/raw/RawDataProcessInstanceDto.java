@@ -23,7 +23,7 @@ public class RawDataProcessInstanceDto {
   protected String businessKey;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
-  protected Long durationInMs;
+  protected Long duration; // duration in ms. Displayed in Frontend as "Duration" with appropriate unit
   protected String engineName;
   protected String tenantId;
   protected Map<String, Object> variables;

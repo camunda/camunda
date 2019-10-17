@@ -36,7 +36,7 @@ public class RawDataHelper {
     instance1.setProcessDefinitionKey("test_key");
     instance1.setStartDate(OffsetDateTime.parse(FIXED_TIME));
     instance1.setEndDate(OffsetDateTime.parse(FIXED_TIME));
-    instance1.setDurationInMs(0L);
+    instance1.setDuration(0L);
     instance1.setBusinessKey("aBusinessKey");
     instance1.setEngineName("engine");
     instance1.setTenantId("tenant");
