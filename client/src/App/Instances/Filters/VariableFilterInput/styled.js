@@ -13,14 +13,6 @@ export const VariableFilterInput = styled.div`
   position: relative;
   display: flex;
   justify-content: space-between;
-
-  ${props =>
-    props.hasError &&
-    `
-    input {
-      border-color: ${Colors.incidentsAndErrors};
-    }
-  `}
 `;
 
 export const TextInput = styled(BasicTextInput)`
@@ -28,16 +20,18 @@ export const TextInput = styled(BasicTextInput)`
   &:first-child {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
-    border-right: none;
   }
 
   &:nth-child(2) {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
+    margin-left: -1px;
   }
 
+  ${props => props.hasError && 'z-index: 2'}
+
   :focus {
-    z-index: 2;
+    z-index: 3;
   }
 `;
 

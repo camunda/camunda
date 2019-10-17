@@ -28,7 +28,8 @@ import {
   addAllVersionsOption,
   getLastVersionOfWorkflow,
   checkIsDateComplete,
-  checkIsVariableComplete,
+  checkIsVariableNameComplete,
+  checkIsVariableValueComplete,
   checkIsVariableValueValid,
   checkIsIdComplete,
   checkIsIdValid,
@@ -323,7 +324,8 @@ export default class Filters extends React.Component {
                         this.waitForTimer(this.propagateFilter)
                       }
                       onChange={this.handleVariableChange}
-                      checkIsComplete={checkIsVariableComplete}
+                      checkIsNameComplete={checkIsVariableNameComplete}
+                      checkIsValueComplete={checkIsVariableValueComplete}
                       checkIsValueValid={checkIsVariableValueValid}
                     />
                   </Styled.Field>

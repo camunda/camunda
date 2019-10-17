@@ -63,19 +63,28 @@ export function checkIsDateComplete(date) {
   return !!trimmedDate.match(/^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/);
 }
 
-export function checkIsVariableComplete(variable) {
+function isValidJson(value) {
+  try {
+    JSON.parse(value);
+  } catch (e) {
+    return false;
+  }
+  return true;
+}
+
+export function checkIsVariableNameComplete(variable) {
   variable = trimVariable(variable);
-  return !((variable.value === '') ^ (variable.name === ''));
+  return !(variable.name === '' && variable.value !== '');
+}
+
+export function checkIsVariableValueComplete(variable) {
+  variable = trimVariable(variable);
+  return !(variable.name !== '' && variable.value === '');
 }
 
 export function checkIsVariableValueValid(variable) {
   variable = trimVariable(variable);
-  try {
-    JSON.parse(variable.value);
-  } catch (e) {
-    return variable.value === '';
-  }
-  return true;
+  return variable.value === '' || isValidJson(variable.value);
 }
 
 function checkIsSingleIdValid(id) {
@@ -112,7 +121,8 @@ function sanitizeVariable(variable) {
   if (!variable) return;
   if (
     variable.name !== '' &&
-    checkIsVariableComplete(variable) &&
+    checkIsVariableNameComplete(variable) &&
+    checkIsVariableValueComplete(variable) &&
     checkIsVariableValueValid(variable)
   ) {
     return variable;

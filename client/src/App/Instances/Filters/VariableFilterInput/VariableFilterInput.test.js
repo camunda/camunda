@@ -9,24 +9,14 @@ import {mount} from 'enzyme';
 import {act} from 'react-dom/test-utils';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 import VariableFilterInput from './VariableFilterInput';
 import * as Styled from './styled';
 
+import {mockDefaultProps} from './VariableFilterInput.setup';
+
 const getStyledInput = (node, dataTestName) => {
   return node.find(Styled.TextInput).filter(`[data-test="${dataTestName}"]`);
-};
-
-const onFilterChange = mockResolvedAsyncFn();
-const onChange = jest.fn();
-const checkIsComplete = jest.fn();
-
-const mockDefaultProps = {
-  variable: {name: '', value: ''},
-  onFilterChange,
-  onChange,
-  checkIsComplete
 };
 
 const mountNode = mockCustomProps => {
@@ -90,73 +80,58 @@ describe('VariableFilterInput', () => {
     });
 
     // then
-    expect(onFilterChange).toHaveBeenCalledTimes(2);
-    expect(onChange).toHaveBeenCalledTimes(2);
-    expect(onChange).toHaveBeenNthCalledWith(1, {name, value: ''});
-    expect(onChange).toHaveBeenNthCalledWith(2, {name: '', value});
+    expect(mockDefaultProps.onFilterChange).toHaveBeenCalledTimes(2);
+    expect(mockDefaultProps.onChange).toHaveBeenCalledTimes(2);
+    expect(mockDefaultProps.onChange).toHaveBeenNthCalledWith(1, {
+      name,
+      value: ''
+    });
+    expect(mockDefaultProps.onChange).toHaveBeenNthCalledWith(2, {
+      name: '',
+      value
+    });
   });
 
-  it('should have input fields without error', async () => {
+  it('should have value input field with error (incomplete value)', async () => {
     // given
-    const checkIsComplete = jest.fn().mockImplementation(() => true);
+    const {checkIsNameComplete, checkIsValueComplete} = mockDefaultProps;
 
-    const node = mountNode({
-      checkIsComplete
-    });
+    checkIsNameComplete.mockImplementation(() => true);
+    checkIsValueComplete.mockImplementation(() => false);
 
-    let nameInput, valueInput;
+    const node = mountNode();
 
     await act(async () => {
       // when triggering input change
-      valueInput = getStyledInput(node, 'valueInput').simulate('change');
+      getStyledInput(node, 'nameInput').simulate('change');
     });
 
     node.update();
 
     // then
-    nameInput = getStyledInput(node, 'nameInput');
-    valueInput = getStyledInput(node, 'valueInput');
+    const nameInput = getStyledInput(node, 'nameInput');
+    const valueInput = getStyledInput(node, 'valueInput');
 
-    expect(checkIsComplete).toHaveBeenCalled();
+    expect(checkIsNameComplete).toHaveBeenCalled();
+    expect(checkIsValueComplete).toHaveBeenCalled();
     expect(nameInput.props().hasError).toBe(false);
-    expect(valueInput.props().hasError).toBe(false);
-  });
-
-  it('should have both input fields with error (incomplete)', async () => {
-    // given
-    const checkIsComplete = jest.fn().mockImplementation(() => false);
-
-    const node = mountNode({
-      checkIsComplete
-    });
-
-    let nameInput, valueInput;
-
-    await act(async () => {
-      // when triggering input change
-      getStyledInput(node, 'valueInput').simulate('change');
-    });
-
-    node.update();
-
-    // then
-    nameInput = getStyledInput(node, 'nameInput');
-    valueInput = getStyledInput(node, 'valueInput');
-
-    expect(checkIsComplete).toHaveBeenCalled();
-    expect(nameInput.props().hasError).toBe(true);
     expect(valueInput.props().hasError).toBe(true);
   });
 
   it('should have value input field with error (invalid value)', async () => {
     // given
-    const checkIsComplete = jest.fn().mockImplementation(() => true);
-    const checkIsValueValid = jest.fn().mockImplementation(() => false);
+    const {
+      checkIsNameComplete,
+      checkIsValueComplete,
+      checkIsValueValid
+    } = mockDefaultProps;
+
+    checkIsNameComplete.mockImplementation(() => true);
+    checkIsValueComplete.mockImplementation(() => true);
+    checkIsValueValid.mockImplementation(() => false);
 
     const node = mountNode({
-      variable: {name: 'fancyName', value: '{{{'},
-      checkIsComplete,
-      checkIsValueValid
+      variable: {name: 'fancyName', value: '{{{'}
     });
 
     let nameInput, valueInput;
@@ -173,8 +148,69 @@ describe('VariableFilterInput', () => {
     valueInput = getStyledInput(node, 'valueInput');
 
     expect(checkIsValueValid).toHaveBeenCalled();
-    expect(checkIsComplete).toHaveBeenCalled();
+    expect(checkIsNameComplete).toHaveBeenCalled();
+    expect(checkIsValueComplete).toHaveBeenCalled();
     expect(nameInput.props().hasError).toBe(false);
+    expect(valueInput.props().hasError).toBe(true);
+  });
+
+  it('should have name input field with error', async () => {
+    // given
+    const {
+      checkIsNameComplete,
+      checkIsValueComplete,
+      checkIsValueValid
+    } = mockDefaultProps;
+
+    checkIsNameComplete.mockImplementation(() => false);
+    checkIsValueComplete.mockImplementation(() => true);
+    checkIsValueValid.mockImplementation(() => true);
+
+    const node = mountNode();
+
+    await act(async () => {
+      // when triggering input change
+      getStyledInput(node, 'valueInput').simulate('change');
+    });
+
+    node.update();
+
+    // then
+    const nameInput = getStyledInput(node, 'nameInput');
+    const valueInput = getStyledInput(node, 'valueInput');
+
+    expect(checkIsNameComplete).toHaveBeenCalled();
+    expect(checkIsValueComplete).toHaveBeenCalled();
+    expect(checkIsValueValid).toHaveBeenCalled();
+    expect(nameInput.props().hasError).toBe(true);
+    expect(valueInput.props().hasError).toBe(false);
+  });
+
+  it('should have both input fields with error (incomplete)', async () => {
+    // given
+    const {checkIsNameComplete, checkIsValueComplete} = mockDefaultProps;
+
+    checkIsNameComplete.mockImplementation(() => false);
+    checkIsValueComplete.mockImplementation(() => false);
+
+    const node = mountNode();
+
+    let nameInput, valueInput;
+
+    await act(async () => {
+      // when triggering input change
+      getStyledInput(node, 'valueInput').simulate('change');
+    });
+
+    node.update();
+
+    // then
+    nameInput = getStyledInput(node, 'nameInput');
+    valueInput = getStyledInput(node, 'valueInput');
+
+    expect(checkIsNameComplete).toHaveBeenCalled();
+    expect(checkIsValueComplete).toHaveBeenCalled();
+    expect(nameInput.props().hasError).toBe(true);
     expect(valueInput.props().hasError).toBe(true);
   });
 });

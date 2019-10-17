@@ -13,18 +13,24 @@ export default function VariableFilterInput({
   onFilterChange,
   onChange,
   variable,
-  checkIsComplete,
+  checkIsNameComplete,
+  checkIsValueComplete,
   checkIsValueValid,
   ...props
 }) {
-  const [isVariableComplete, setIsVariableComplete] = useState(true);
+  const [isNameComplete, setIsNameComplete] = useState(true);
+  const [isValueComplete, setIsValueComplete] = useState(true);
   const [isValueValid, setIsValueValid] = useState(false);
 
   useEffect(() => {
     setIsValueValid(checkIsValueValid(variable));
 
-    if (checkIsComplete(variable)) {
-      setIsVariableComplete(true);
+    if (checkIsValueComplete(variable)) {
+      setIsValueComplete(true);
+    }
+
+    if (checkIsNameComplete(variable)) {
+      setIsNameComplete(true);
     }
   }, [variable]);
 
@@ -36,18 +42,19 @@ export default function VariableFilterInput({
 
     await onFilterChange();
 
-    setIsVariableComplete(checkIsComplete(newVariable));
+    setIsNameComplete(checkIsNameComplete(newVariable));
+    setIsValueComplete(checkIsValueComplete(newVariable));
   }
 
   return (
-    <Styled.VariableFilterInput {...props} hasError={!isVariableComplete}>
+    <Styled.VariableFilterInput {...props}>
       <Styled.TextInput
         value={variable.name}
         placeholder="Variable"
         name="name"
         data-test="nameInput"
         onChange={handleChange}
-        hasError={!isVariableComplete}
+        hasError={!isNameComplete}
       />
       <Styled.TextInput
         value={variable.value}
@@ -55,9 +62,9 @@ export default function VariableFilterInput({
         name="value"
         data-test="valueInput"
         onChange={handleChange}
-        hasError={(!isValueValid && isVariableComplete) || !isVariableComplete}
+        hasError={(!isValueValid && isValueComplete) || !isValueComplete}
       />
-      {(!isVariableComplete || !isValueValid) && (
+      {(!isNameComplete || !isValueComplete || !isValueValid) && (
         <Styled.WarningIcon>!</Styled.WarningIcon>
       )}
     </Styled.VariableFilterInput>
@@ -68,10 +75,12 @@ VariableFilterInput.propTypes = {
   onFilterChange: PropTypes.func.isRequired,
   variable: PropTypes.object.isRequired,
   checkIsValueValid: PropTypes.func,
-  checkIsComplete: PropTypes.func
+  checkIsNameComplete: PropTypes.func,
+  checkIsValueComplete: PropTypes.func
 };
 
 VariableFilterInput.defaultProps = {
   checkIsValueValid: () => true,
-  checkIsComplete: () => true
+  checkIsNameComplete: () => true,
+  checkIsValueComplete: () => true
 };
