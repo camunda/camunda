@@ -30,6 +30,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -71,6 +73,9 @@ public class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         CreateWorkflowInstanceRequest.class,
         r -> CreateWorkflowInstanceResponse.getDefaultInstance());
+    addRequestHandler(
+        CreateWorkflowInstanceWithResultRequest.class,
+        r -> CreateWorkflowInstanceWithResultResponse.getDefaultInstance());
     addRequestHandler(
         CancelWorkflowInstanceRequest.class,
         r -> CancelWorkflowInstanceResponse.getDefaultInstance());
@@ -142,6 +147,13 @@ public class RecordingGatewayService extends GatewayImplBase {
   public void createWorkflowInstance(
       CreateWorkflowInstanceRequest request,
       StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void createWorkflowInstanceWithResult(
+      CreateWorkflowInstanceWithResultRequest request,
+      StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -218,6 +230,24 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .setBpmnProcessId(bpmnProcessId)
                 .setVersion(version)
                 .setWorkflowInstanceKey(workflowInstanceKey)
+                .build());
+  }
+
+  public void onCreateWorkflowInstanceWithResultRequest(
+      long workflowKey,
+      String bpmnProcessId,
+      int version,
+      long workflowInstanceKey,
+      String variables) {
+    addRequestHandler(
+        CreateWorkflowInstanceWithResultRequest.class,
+        request ->
+            CreateWorkflowInstanceWithResultResponse.newBuilder()
+                .setWorkflowKey(workflowKey)
+                .setBpmnProcessId(bpmnProcessId)
+                .setVersion(version)
+                .setWorkflowInstanceKey(workflowInstanceKey)
+                .setVariables(variables)
                 .build());
   }
 
