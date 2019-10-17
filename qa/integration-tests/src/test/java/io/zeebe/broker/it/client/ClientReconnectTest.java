@@ -64,7 +64,7 @@ public class ClientReconnectTest {
 
     // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
                 .filterRootScope()
                 .withWorkflowKey(workflowKey)
                 .limit(2)
