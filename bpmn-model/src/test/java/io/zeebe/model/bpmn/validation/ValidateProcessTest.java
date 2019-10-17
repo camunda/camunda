@@ -16,52 +16,29 @@
 
 package io.zeebe.model.bpmn.validation;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import org.camunda.bpm.model.xml.instance.ModelElementInstance;
-import org.camunda.bpm.model.xml.validation.ModelElementValidator;
-import org.camunda.bpm.model.xml.validation.ValidationResult;
-import org.camunda.bpm.model.xml.validation.ValidationResultType;
-import org.camunda.bpm.model.xml.validation.ValidationResults;
-import org.junit.Test;
+import org.junit.runners.Parameterized.Parameters;
 
-/** @author Daniel Meyer */
-public class ValidateProcessTest {
+public class ValidateProcessTest extends AbstractZeebeValidationTest {
 
-  @Test
-  public void validationFailsIfNoStartEventFound() {
-
-    final List<ModelElementValidator<?>> validators = new ArrayList<ModelElementValidator<?>>();
-    validators.add(new ProcessStartEventValidator());
-
-    final BpmnModelInstance bpmnModelInstance = Bpmn.createProcess().done();
-
-    final ValidationResults validationResults = bpmnModelInstance.validate(validators);
-
-    assertThat(validationResults.hasErrors()).isTrue();
-
-    final Map<ModelElementInstance, List<ValidationResult>> results =
-        validationResults.getResults();
-    assertThat(results.size()).isEqualTo(1);
-
-    final Process process =
-        bpmnModelInstance.getDefinitions().getChildElementsByType(Process.class).iterator().next();
-    assertThat(results.containsKey(process)).isTrue();
-
-    final List<ValidationResult> resultsForProcess = results.get(process);
-    assertThat(resultsForProcess.size()).isEqualTo(1);
-
-    final ValidationResult validationResult = resultsForProcess.get(0);
-    assertThat(validationResult.getElement()).isEqualTo(process);
-    assertThat(validationResult.getCode()).isEqualTo(10);
-    assertThat(validationResult.getMessage())
-        .isEqualTo("Process does not have exactly one start event. Got 0.");
-    assertThat(validationResult.getType()).isEqualTo(ValidationResultType.ERROR);
+  @Parameters(name = "{index}: {1}")
+  public static Object[][] parameters() {
+    return new Object[][] {
+      {
+        "non-executable-elements.bpmn", emptyList() // should be valid
+      },
+      {
+        "collaboration-with-lanes.bpmn", emptyList() // should be valid
+      },
+      {
+        Bpmn.createExecutableProcess().done(),
+        singletonList(expect(Process.class, "Must have at least one start event"))
+      },
+    };
   }
 }

@@ -17,6 +17,9 @@ package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.CallActivity;
+import io.zeebe.model.bpmn.instance.DataObject;
+import io.zeebe.model.bpmn.instance.DataObjectReference;
+import io.zeebe.model.bpmn.instance.DataStoreReference;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
@@ -37,6 +40,8 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
 
   private static final Set<Class<?>> SUPPORTED_ELEMENT_TYPES = new HashSet<>();
 
+  private static final Set<Class<?>> NON_EXECUTABLE_ELEMENT_TYPES = new HashSet<>();
+
   static {
     SUPPORTED_ELEMENT_TYPES.add(BoundaryEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(EndEvent.class);
@@ -50,6 +55,10 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
     SUPPORTED_ELEMENT_TYPES.add(StartEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(SubProcess.class);
     SUPPORTED_ELEMENT_TYPES.add(CallActivity.class);
+
+    NON_EXECUTABLE_ELEMENT_TYPES.add(DataObject.class);
+    NON_EXECUTABLE_ELEMENT_TYPES.add(DataObjectReference.class);
+    NON_EXECUTABLE_ELEMENT_TYPES.add(DataStoreReference.class);
   }
 
   @Override
@@ -61,7 +70,8 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
   public void validate(FlowElement element, ValidationResultCollector validationResultCollector) {
     final Class<?> elementType = element.getElementType().getInstanceType();
 
-    if (!SUPPORTED_ELEMENT_TYPES.contains(elementType)) {
+    if (!SUPPORTED_ELEMENT_TYPES.contains(elementType)
+        && !NON_EXECUTABLE_ELEMENT_TYPES.contains(elementType)) {
       validationResultCollector.addError(0, "Elements of this type are not supported");
     }
   }
