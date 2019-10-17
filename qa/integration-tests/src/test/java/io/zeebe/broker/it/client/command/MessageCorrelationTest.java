@@ -7,8 +7,10 @@
  */
 package io.zeebe.broker.it.client.command;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
@@ -20,7 +22,6 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.Map;

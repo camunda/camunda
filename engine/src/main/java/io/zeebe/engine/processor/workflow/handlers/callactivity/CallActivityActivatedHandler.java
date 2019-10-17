@@ -42,12 +42,16 @@ public class CallActivityActivatedHandler extends ElementActivatedHandler<Execut
               bufferAsString(processId)));
     }
 
-    createInstance(workflow, context);
+    final var childWorkflowInstanceKey = createInstance(workflow, context);
+
+    final var callActivityInstanceKey = context.getKey();
+    copyVariables(callActivityInstanceKey, childWorkflowInstanceKey, workflow, context);
+
     return true;
   }
 
-  private void createInstance(
-      DeployedWorkflow workflow, BpmnStepContext<ExecutableCallActivity> context) {
+  private long createInstance(
+      final DeployedWorkflow workflow, final BpmnStepContext<ExecutableCallActivity> context) {
 
     final var parentWorkflowInstanceKey = context.getValue().getWorkflowInstanceKey();
     final var parentElementInstanceKey = context.getKey();
@@ -70,5 +74,19 @@ public class CallActivityActivatedHandler extends ElementActivatedHandler<Execut
             WorkflowInstanceIntent.ELEMENT_ACTIVATING,
             childInstanceRecord,
             workflow.getWorkflow());
+
+    return workflowInstanceKey;
+  }
+
+  private void copyVariables(
+      final long source,
+      final long target,
+      final DeployedWorkflow targetWorkflow,
+      final BpmnStepContext<ExecutableCallActivity> context) {
+
+    final var state = context.getElementInstanceState().getVariablesState();
+
+    final var variables = state.getVariablesAsDocument(source);
+    state.setVariablesFromDocument(target, targetWorkflow.getKey(), variables);
   }
 }

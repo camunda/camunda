@@ -37,6 +37,12 @@ public class ProcessCompletedHandler
                 parentElementInstanceKey,
                 WorkflowInstanceIntent.ELEMENT_COMPLETING,
                 parentElementInstance.getValue());
+
+        // propagate the variables to the parent
+        final var variablesState = context.getElementInstanceState().getVariablesState();
+
+        final var variables = variablesState.getVariablesAsDocument(context.getKey());
+        variablesState.setTemporaryVariables(parentElementInstanceKey, variables);
       }
     }
 
