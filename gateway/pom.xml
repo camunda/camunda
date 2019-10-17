@@ -149,6 +149,11 @@
       <artifactId>netty-tcnative-boringssl-static</artifactId>
       <scope>runtime</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
