@@ -5,14 +5,13 @@
  */
 package org.camunda.operate.util;
 
-import static org.assertj.core.api.Assertions.*;
-
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import org.assertj.core.util.Arrays;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.junit.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 
 public class CollectionUtilTest {
@@ -49,14 +48,28 @@ public class CollectionUtilTest {
   
   @Test
   public void testWithoutNulls() {
-    List<Object> ids = Arrays.asList(new Object[] {"id-1",null,"id3",null,null,"id5"});
+    List<Object> ids = Arrays.asList("id-1",null,"id3",null,null,"id5");
     assertThat(CollectionUtil.withoutNulls(ids)).containsExactly("id-1","id3","id5");
   }
   
   @Test
   public void testToSafeListOfStrings() {
-    List<Object> ids = Arrays.asList(new Object[] {"id-1",null,"id3",null,null,"id5"});
+    List<Object> ids = Arrays.asList("id-1",null,"id3",null,null,"id5");
     assertThat(CollectionUtil.withoutNulls(ids)).containsExactly("id-1","id3","id5");
+  }
+
+  @Test
+  public void testSplitAndGetSublist() {
+    List<Integer> partitions = Arrays.asList(1, 2, 3, 4, 5, 6);
+    assertThat(CollectionUtil.splitAndGetSublist(partitions, 2, 1)).containsExactlyInAnyOrder(4, 5, 6);
+
+    partitions = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8);
+    assertThat(CollectionUtil.splitAndGetSublist(partitions, 3, 0)).containsExactlyInAnyOrder(1, 2, 3);
+    assertThat(CollectionUtil.splitAndGetSublist(partitions, 3, 1)).containsExactlyInAnyOrder(4, 5, 6);
+    assertThat(CollectionUtil.splitAndGetSublist(partitions, 3, 2)).containsExactlyInAnyOrder(7, 8);
+
+    partitions = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8);
+    assertThat(CollectionUtil.splitAndGetSublist(partitions, 3, 4)).isEmpty();
   }
 
 }

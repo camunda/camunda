@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.assertj.core.api.Assertions;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
 import org.junit.Test;
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class PartitionHolderTest {
   
@@ -55,8 +55,8 @@ public class PartitionHolderTest {
     zeebePartitionIds = Optional.empty();
     elasticSearchPartitionIds = Optional.empty();
     
-    assertThat(partitionHolder.getPartitionIds()).isEmpty();
-    assertThat(slept).isEqualTo(PartitionHolder.MAX_RETRY);
+    Assertions.assertThat(partitionHolder.getPartitionIds()).isEmpty();
+    Assertions.assertThat(slept).isEqualTo(PartitionHolder.MAX_RETRY);
   }
   
   @Test
@@ -64,8 +64,8 @@ public class PartitionHolderTest {
     zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(5, 10)));
     elasticSearchPartitionIds = Optional.empty();
     
-    assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(5,6,7,8,9,10);
-    assertThat(slept).isEqualTo(0);
+    Assertions.assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(5,6,7,8,9,10);
+    Assertions.assertThat(slept).isEqualTo(0);
   }
   
   @Test
@@ -73,13 +73,13 @@ public class PartitionHolderTest {
     zeebePartitionIds = Optional.empty();
     elasticSearchPartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 5)));
     
-    assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(1,2,3,4,5);
-    assertThat(slept).isEqualTo(60);
+    Assertions.assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(1,2,3,4,5);
+    Assertions.assertThat(slept).isEqualTo(60);
     // But then zeebePartitions are there
     zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(2, 4)));
     slept = 0;
-    assertThat(partitionHolder.getPartitionIds()).containsAll(zeebePartitionIds.get());
-    assertThat(slept).isEqualTo(0);
+    Assertions.assertThat(partitionHolder.getPartitionIds()).containsAll(zeebePartitionIds.get());
+    Assertions.assertThat(slept).isEqualTo(0);
   }
   
   @Test
@@ -87,8 +87,8 @@ public class PartitionHolderTest {
     zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 5)));
     elasticSearchPartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 5)));
     
-    assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(1,2,3,4,5);
-    assertThat(slept).isEqualTo(0);
+    Assertions.assertThat(partitionHolder.getPartitionIds()).isNotEmpty().contains(1,2,3,4,5);
+    Assertions.assertThat(slept).isEqualTo(0);
   }
   
   @Test
@@ -96,8 +96,8 @@ public class PartitionHolderTest {
     zeebePartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 7)));
     elasticSearchPartitionIds = Optional.of(new ArrayList<>(CollectionUtil.fromTo(1, 5)));
     
-    assertThat(partitionHolder.getPartitionIds()).containsAll(zeebePartitionIds.get());
-    assertThat(slept).isEqualTo(0);
+    Assertions.assertThat(partitionHolder.getPartitionIds()).containsAll(zeebePartitionIds.get());
+    Assertions.assertThat(slept).isEqualTo(0);
   }
 
 }

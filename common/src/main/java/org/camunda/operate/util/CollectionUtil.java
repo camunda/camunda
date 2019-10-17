@@ -121,13 +121,17 @@ public abstract class CollectionUtil {
    * @return
    */
   public static <E> List<E> splitAndGetSublist(List<E> list, int subsetCount, int subsetId) {
+    if (subsetId >= subsetCount) {
+      return new ArrayList<>();
+    }
     Integer size = list.size();
-    Integer start = size / subsetCount * subsetId;
-    Integer end;
+    int bucketSize = (int) Math.round((double) size / (double) subsetCount);
+    int start = bucketSize * subsetId;
+    int end;
     if (subsetId == subsetCount - 1) {
       end = size;
     } else {
-      end = start + size / subsetCount;
+      end = start + bucketSize;
     }
     return new ArrayList<>(list.subList(start, end));
   }

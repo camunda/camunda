@@ -31,7 +31,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @Component
 public class PartitionHolder {
 
-  public static final long WAIT_TIME_IN_MS = 500L;
+  public static final long WAIT_TIME_IN_MS = 1000L;
 
   public static final int MAX_RETRY = 2 * 30;
 

@@ -74,7 +74,8 @@ public class ArchiverHelper {
 
     reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, workflowInstanceKeys);
 
-    forceMerge(destinationIndexName);
+    //seems to give performance overhead on archiving
+//    forceMerge(destinationIndexName);
 
     deleteDocuments(sourceIndexName, idFieldName, workflowInstanceKeys);
 
