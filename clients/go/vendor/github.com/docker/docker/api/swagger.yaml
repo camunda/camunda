@@ -19,10 +19,10 @@ produces:
 consumes:
   - "application/json"
   - "text/plain"
-basePath: "/v1.41"
+basePath: "/v1.40"
 info:
   title: "Docker Engine API"
-  version: "1.41"
+  version: "1.40"
   x-logo:
     url: "https://docs.docker.com/images/logo-docker-main.png"
   description: |
@@ -49,8 +49,8 @@ info:
     the URL is not supported by the daemon, a HTTP `400 Bad Request` error message
     is returned.
 
-    If you omit the version-prefix, the current version of the API (v1.41) is used.
-    For example, calling `/info` is the same as calling `/v1.41/info`. Using the
+    If you omit the version-prefix, the current version of the API (v1.40) is used.
+    For example, calling `/info` is the same as calling `/v1.40/info`. Using the
     API without a version-prefix is deprecated and will be removed in a future release.
 
     Engine releases in the near future should support this version of the API,
@@ -703,19 +703,6 @@ definitions:
             description: "A list of kernel capabilities to drop from the container. Conflicts with option 'Capabilities'"
             items:
               type: "string"
-          CgroupnsMode:
-            type: "string"
-            enum:
-              - "private"
-              - "host"
-            description: |
-                    cgroup namespace mode for the container. Possible values are:
-
-                    - `"private"`: the container runs in its own private cgroup namespace
-                    - `"host"`: use the host system's cgroup namespace
-
-                    If not specified, the daemon default is used, which can either be `"private"`
-                    or `"host"`, depending on daemon version, kernel support and configuration.
           Dns:
             type: "array"
             description: "A list of DNS servers for the container to use."
@@ -2882,18 +2869,6 @@ definitions:
             type: "object"
             additionalProperties:
               type: "string"
-          # This option is not used by Windows containers
-          Capabilities:
-            type: "array"
-            description: |
-              A list of kernel capabilities to be available for container (this overrides the default set).
-            items:
-              type: "string"
-            example:
-              - "CAP_NET_RAW"
-              - "CAP_SYS_ADMIN"
-              - "CAP_SYS_CHROOT"
-              - "CAP_SYSLOG"
       NetworkAttachmentSpec:
         description: |
           Read-only spec type for non-swarm containers attached to swarm overlay
@@ -3305,8 +3280,8 @@ definitions:
     type: "object"
     properties:
       Mode:
-        description: |
-          The mode of resolution to use for internal load balancing between tasks.
+        description: "The mode of resolution to use for internal load balancing
+      between tasks."
         type: "string"
         enum:
           - "vip"
@@ -3369,27 +3344,6 @@ definitions:
             format: "dateTime"
           Message:
             type: "string"
-      ServiceStatus:
-        description: |
-          The status of the service's tasks. Provided only when requested as
-          part of a ServiceList operation.
-        type: "object"
-        properties:
-          RunningTasks:
-            description: "The number of tasks for the service currently in the Running state"
-            type: "integer"
-            format: "uint64"
-            example: 7
-          DesiredTasks:
-            description: |
-              The number of tasks for the service desired to be running.
-              For replicated services, this is the replica count from the
-              service spec. For global services, this is computed by taking
-              count of all tasks for the service with a Desired State other
-              than Shutdown.
-            type: "integer"
-            format: "uint64"
-            example: 10
     example:
       ID: "9mnpnzenvg8p8tdbtq4wvbkcz"
       Version:
@@ -3873,17 +3827,6 @@ definitions:
           or "Windows Server 2016 Datacenter"
         type: "string"
         example: "Alpine Linux v3.5"
-      OSVersion:
-        description: |
-          Version of the host's operating system
-
-          <p><br /></p>
-
-          > **Note**: The information returned in this field, including its
-          > very existence, and the formatting of values, should not be considered
-          > stable, and may change without notice.
-        type: "string"
-        example: "16.04"
       OSType:
         description: |
           Generic type of the operating system of the host, as returned by the
@@ -4894,7 +4837,7 @@ paths:
                       Note that a running container can be _paused_. The `Running` and `Paused`
                       booleans are not mutually exclusive:
 
-                      When pausing a container (on Linux), the freezer cgroup is used to suspend
+                      When pausing a container (on Linux), the cgroups freezer is used to suspend
                       all processes in the container. Freezing the process requires the process to
                       be running. As a result, paused containers are both `Running` _and_ `Paused`.
 
@@ -5564,6 +5507,8 @@ paths:
           description: "no error"
         304:
           description: "container already started"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         404:
           description: "no such container"
           schema:
@@ -5595,6 +5540,8 @@ paths:
           description: "no error"
         304:
           description: "container already stopped"
+          schema:
+            $ref: "#/definitions/ErrorResponse"
         404:
           description: "no such container"
           schema:
@@ -5785,9 +5732,9 @@ paths:
     post:
       summary: "Pause a container"
       description: |
-        Use the freezer cgroup to suspend all processes in a container.
+        Use the cgroups freezer to suspend all processes in a container.
 
-        Traditionally, when suspending a process the `SIGSTOP` signal is used, which is observable by the process being suspended. With the freezer cgroup the process is unaware, and unable to capture, that it is being suspended, and subsequently resumed.
+        Traditionally, when suspending a process the `SIGSTOP` signal is used, which is observable by the process being suspended. With the cgroups freezer the process is unaware, and unable to capture, that it is being suspended, and subsequently resumed.
       operationId: "ContainerPause"
       responses:
         204:
@@ -6510,11 +6457,10 @@ paths:
           type: "string"
         - name: "networkmode"
           in: "query"
-          description: |
-            Sets the networking mode for the run commands during build. Supported
-            standard values are: `bridge`, `host`, `none`, and `container:<name|id>`.
-            Any other value is taken as a custom network's name or ID to which this
-            container should connect to.
+          description: "Sets the networking mode for the run commands during
+        build. Supported standard values are: `bridge`, `host`, `none`, and
+        `container:<name|id>`. Any other value is taken as a custom network's
+        name to which this container should connect to."
           type: "string"
         - name: "Content-type"
           in: "header"
@@ -9337,10 +9283,6 @@ paths:
             - `label=<service label>`
             - `mode=["replicated"|"global"]`
             - `name=<service name>`
-        - name: "status"
-          in: "query"
-          type: "boolean"
-          description: "Include service status, with count of running and desired tasks"
       tags: ["Service"]
   /services/create:
     post:
@@ -9607,19 +9549,17 @@ paths:
           type: "integer"
         - name: "registryAuthFrom"
           in: "query"
-          description: |
-            If the `X-Registry-Auth` header is not specified, this parameter
-            indicates where to find registry authorization credentials.
           type: "string"
-          enum: ["spec", "previous-spec"]
+          description: "If the X-Registry-Auth header is not specified, this
+  parameter indicates where to find registry authorization credentials. The
+  valid values are `spec` and `previous-spec`."
           default: "spec"
         - name: "rollback"
           in: "query"
-          description: |
-            Set to this parameter to `previous` to cause a server-side rollback
-            to the previous service spec. The supplied spec will be ignored in
-            this case.
           type: "string"
+          description: "Set to this parameter to `previous` to cause a
+  server-side rollback to the previous service spec. The supplied spec will be
+  ignored in this case."
         - name: "X-Registry-Auth"
           in: "header"
           description: "A base64-encoded auth configuration for pulling from private registries. [See the authentication section for details.](#section/Authentication)"
@@ -10439,9 +10379,6 @@ paths:
       description: |
         Start a new interactive session with a server. Session allows server to call back to the client for advanced capabilities.
 
-        > **Note**: This endpoint is *experimental* and only available if the daemon is started with experimental
-        > features enabled. The specifications for this endpoint may still change in a future version of the API.
-
         ### Hijacking
 
         This endpoint hijacks the HTTP connection to HTTP2 transport that allows the client to expose gPRC services on that connection.
@@ -10475,4 +10412,4 @@ paths:
           description: "server error"
           schema:
             $ref: "#/definitions/ErrorResponse"
-      tags: ["Session (experimental)"]
+      tags: ["Session"]

@@ -46,10 +46,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:33d9066d4a56cf6de4e81e37d85758f46ea154e874503cd2a0bf7a8b934fa203"
+  digest = "1:a7cc5292e3d232b040fa4a2bd4f652eb498a6a23fcde8199c696eba0a763a433"
   name = "github.com/containerd/continuity"
   packages = [
     "fs",
+    "pathdriver",
     "syscallx",
     "sysx",
   ]
@@ -77,8 +78,7 @@
   version = "v2.7.1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:614fddcc12a55031363ee3fe8e8176dd78443165f86471ee6ac4389286527762"
+  digest = "1:72097364ac85438aa671a3cb2ea106d8b4e353fc22ebbee3ff4fd208639940c3"
   name = "github.com/docker/docker"
   packages = [
     "api",
@@ -109,7 +109,9 @@
     "pkg/system",
   ]
   pruneopts = "UT"
-  revision = "f5bb374a0c6260721ac551b232e8eac02b7d2674"
+  revision = "3e077fc8667a24c854a7f693a685f2c1ed5b2c9c"
+  source = "github.com/docker/engine"
+  version = "v19.03.3"
 
 [[projects]]
   digest = "1:811c86996b1ca46729bad2724d4499014c4b9effd05ef8c71b852aad90deb0ce"
@@ -143,12 +145,12 @@
   version = "v3.6.0"
 
 [[projects]]
-  digest = "1:4882ca4e50712f367a52a467a277dcd8ef877b82acaa5973baea92fe7443f2eb"
+  digest = "1:4caab6f14c6b9654ccb7d398791d1f71a2d4e693ea508d29659a173e1b2e644a"
   name = "github.com/gogo/protobuf"
   packages = ["proto"]
   pruneopts = "UT"
-  revision = "0ca988a254f991240804bf9821f3450d87ccbb1b"
-  version = "v1.3.0"
+  revision = "5628607bb4c51c3157aacc3a50f0ab707582b805"
+  version = "v1.3.1"
 
 [[projects]]
   digest = "1:5e14df5b9539151b485eeb3ebea90a2823347516732978b0911ff17acea2842c"
@@ -299,7 +301,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:2cb35649b7280d09741d750dd9a02f488c711323e7eb598797420eee68b860ff"
+  digest = "1:01b4b713173565fe757b6049492eef37ff0b4954ac0e4a01ca5774da6e7135f5"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -313,7 +315,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "d98b1b4438230571bd7fbc5aaa89843e92937bd3"
+  revision = "da9a3fd4c5820e74b24a6cb7fb438dc9b0dd377c"
 
 [[projects]]
   branch = "master"
@@ -325,14 +327,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:c6a5cd39ef1a3642a5bf203c3d9322fd738a02a4da206264c2d3a4110bdb36ce"
+  digest = "1:9f5be1dbb5091bb62d83fbb6db8e794adb8f0e05424679d6f15a17b670e38b4c"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "5f54ce54270977bfbd7353a37e64c13d6bd6c9c9"
+  revision = "b09406accb4736d857a32bf9444cd7edae2ffa79"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -375,7 +377,7 @@
     "internal/semver",
   ]
   pruneopts = "UT"
-  revision = "af92b0ef1f128b9edffed6c0d7c6151909f11a93"
+  revision = "9c6d90b5a7d0c5de88404edf63ae60750868bf0a"
 
 [[projects]]
   branch = "master"
@@ -383,7 +385,7 @@
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
   pruneopts = "UT"
-  revision = "c459b9ce5143dd819763d9329ff92a8e35e61bd9"
+  revision = "548a555dbc03994223efbaba0090152849259498"
 
 [[projects]]
   digest = "1:6cd77d0b616d2dcebd363dfecba593f27b0151fc82cdb5fbfb96c5a7cfbc95b5"

@@ -26,10 +26,9 @@ func MkdirAllWithACL(path string, perm os.FileMode, sddl string) error {
 	return mkdirall(path, true, sddl)
 }
 
-// MkdirAll implementation that is volume path aware for Windows. It can be used
-// as a drop-in replacement for os.MkdirAll()
-func MkdirAll(path string, _ os.FileMode) error {
-	return mkdirall(path, false, "")
+// MkdirAll implementation that is volume path aware for Windows.
+func MkdirAll(path string, _ os.FileMode, sddl string) error {
+	return mkdirall(path, false, sddl)
 }
 
 // mkdirall is a custom version of os.MkdirAll modified for use on Windows
