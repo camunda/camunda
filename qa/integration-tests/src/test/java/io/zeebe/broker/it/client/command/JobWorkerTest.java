@@ -11,12 +11,12 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import java.time.Instant;
 import java.util.List;
 import org.junit.Before;
