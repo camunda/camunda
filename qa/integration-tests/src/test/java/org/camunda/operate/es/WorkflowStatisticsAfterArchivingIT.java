@@ -38,6 +38,7 @@ public class WorkflowStatisticsAfterArchivingIT extends WorkflowStatisticsIT {
     mockPartitionHolder(partitionHolder);
     ArchiverJob archiverJob = beanFactory.getBean(ArchiverJob.class, partitionHolder.getPartitionIds());
     runArchiving(archiverJob);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
   }
 
 }
