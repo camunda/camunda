@@ -7,7 +7,8 @@
 import {
   checkIsDateComplete,
   sanitizeFilter,
-  checkIsVariableComplete,
+  checkIsVariableNameComplete,
+  checkIsVariableValueComplete,
   checkIsIdComplete
 } from './service';
 import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
@@ -63,22 +64,41 @@ describe('Filters/service', () => {
     });
   });
 
-  describe('checkIsVariableComplete', () => {
+  describe('checkIsVariableNameComplete', () => {
     it('should be complete when both input fields have content ', () => {
       const variable = {name: 'fancyName', value: 'coolValue'};
-      expect(checkIsVariableComplete(variable)).toBe(true);
+      expect(checkIsVariableNameComplete(variable)).toBe(true);
     });
     it('should be complete when both input fields are empty', () => {
       const variable = {name: '', value: ''};
-      expect(checkIsVariableComplete(variable)).toBe(true);
+      expect(checkIsVariableNameComplete(variable)).toBe(true);
+    });
+    it('should be complete, if name is set and value is empty', () => {
+      const variable = {name: 'fancyName', value: ''};
+      expect(checkIsVariableNameComplete(variable)).toBe(true);
     });
     it('should not be complete, if only name is empty', () => {
       const variable = {name: '', value: 'coolValue'};
-      expect(checkIsVariableComplete(variable)).toBe(false);
+      expect(checkIsVariableNameComplete(variable)).toBe(false);
+    });
+  });
+
+  describe('checkIsVariableValueComplete', () => {
+    it('should be complete when both input fields have content ', () => {
+      const variable = {name: 'fancyName', value: 'coolValue'};
+      expect(checkIsVariableValueComplete(variable)).toBe(true);
+    });
+    it('should be complete when both input fields are empty', () => {
+      const variable = {name: '', value: ''};
+      expect(checkIsVariableValueComplete(variable)).toBe(true);
+    });
+    it('should be complete, if only name is empty', () => {
+      const variable = {name: '', value: 'coolValue'};
+      expect(checkIsVariableValueComplete(variable)).toBe(true);
     });
     it('should not be complete, if only value is empty', () => {
       const variable = {name: 'fancyName', value: ''};
-      expect(checkIsVariableComplete(variable)).toBe(false);
+      expect(checkIsVariableValueComplete(variable)).toBe(false);
     });
   });
 
@@ -191,7 +211,7 @@ describe('Filters/service', () => {
         incidents: true,
         completed: true,
         canceled: true,
-        ids: '123456789',
+        ids: '1234567891234567',
         errorMessage: 'Bad error.',
         activityId: 'Task_1',
         version: '2',
