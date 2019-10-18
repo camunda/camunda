@@ -17,7 +17,6 @@ spec:
       labels:
         app: cambpm
     spec:
-      automountServiceAccountToken: false
       nodeSelector:
         cloud.google.com/gke-nodepool: slaves
       tolerations:

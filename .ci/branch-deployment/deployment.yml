@@ -22,7 +22,6 @@ spec:
         branch: @BRANCH@
         changed: "@CHANGED@"
     spec:
-      automountServiceAccountToken: false
       nodeSelector:
         cloud.google.com/gke-nodepool: services
       volumes:
