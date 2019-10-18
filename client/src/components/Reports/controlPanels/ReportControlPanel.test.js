@@ -9,11 +9,13 @@ import {shallow} from 'enzyme';
 
 import ReportSelect from './ReportSelect';
 
-import ReportControlPanel from './ReportControlPanel';
+import ReportControlPanelWithErrorHandling from './ReportControlPanel';
 import {getFlowNodeNames, loadProcessDefinitionXml} from 'services';
 
 import * as service from './service';
 import {DefinitionSelection} from 'components';
+
+const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
 
 const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
@@ -61,9 +63,14 @@ const report = {
   }
 };
 
+const props = {
+  report,
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
+};
+
 it('should call the provided updateReport property function when a setting changes', () => {
   const spy = jest.fn();
-  const node = shallow(<ReportControlPanel report={report} updateReport={spy} />);
+  const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
 
   node
     .find(ReportSelect)
@@ -75,7 +82,7 @@ it('should call the provided updateReport property function when a setting chang
 
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
   const node = shallow(
-    <ReportControlPanel report={{...report, data: {...report.data, view: ''}}} />
+    <ReportControlPanel {...props} report={{...report, data: {...report.data, view: ''}}} />
   );
 
   expect(node.find(ReportSelect).at(1)).toBeDisabled();
@@ -83,14 +90,14 @@ it('should disable the groupBy and visualization Selects if view is not selected
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
-  const node = shallow(<ReportControlPanel report={report} />);
+  const node = shallow(<ReportControlPanel {...props} />);
 
   expect(node.find(ReportSelect).at(1)).not.toBeDisabled();
   expect(node.find(ReportSelect).at(2)).not.toBeDisabled();
 });
 
 it('should load the variables of the process', () => {
-  const node = shallow(<ReportControlPanel report={report} />);
+  const node = shallow(<ReportControlPanel {...props} />);
 
   node.setProps({
     report: {
@@ -107,7 +114,7 @@ it('should load the variables of the process', () => {
 });
 
 it('should include variables in the groupby options', () => {
-  const node = shallow(<ReportControlPanel report={report} />);
+  const node = shallow(<ReportControlPanel {...props} />);
 
   const variables = [{name: 'Var1'}, {name: 'Var2'}];
   node.setState({variables});
@@ -118,7 +125,7 @@ it('should include variables in the groupby options', () => {
 });
 
 it('should not show an "Always show tooltips" button for other visualizations', () => {
-  const node = shallow(<ReportControlPanel report={report} visualization="something" />);
+  const node = shallow(<ReportControlPanel {...props} visualization="something" />);
 
   expect(node).not.toIncludeText('Tooltips');
 });
@@ -126,6 +133,7 @@ it('should not show an "Always show tooltips" button for other visualizations', 
 it('should load the flownode names and hand them to the filter and process part', async () => {
   const node = shallow(
     <ReportControlPanel
+      {...props}
       report={{
         ...report,
         data: {...report.data, view: {entity: 'processInstance', property: 'duration'}}
@@ -144,6 +152,7 @@ it('should load the flownode names and hand them to the filter and process part'
 it('should only display process part button if view is process instance duration', () => {
   const node = shallow(
     <ReportControlPanel
+      {...props}
       report={{
         ...report,
         data: {...report.data, view: {entity: 'processInstance', property: 'duration'}}
@@ -166,6 +175,7 @@ it('should only display process part button if view is process instance duration
 it('should only display target value button if view is flownode duration', () => {
   const node = shallow(
     <ReportControlPanel
+      {...props}
       report={{
         ...report,
         data: {
@@ -188,7 +198,7 @@ it('should only display target value button if view is flownode duration', () =>
 
 it('should load the process definition xml when a new definition is selected', async () => {
   const spy = jest.fn();
-  const node = shallow(<ReportControlPanel report={report} updateReport={spy} />);
+  const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
 
   loadProcessDefinitionXml.mockClear();
 
@@ -201,6 +211,7 @@ it('should remove incompatible filters when changing the process definition', as
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
+      {...props}
       report={{
         ...report,
         data: {
@@ -226,6 +237,7 @@ it('should reset the groupby and visualization when changing process definition 
   const spy = jest.fn();
   const node = shallow(
     <ReportControlPanel
+      {...props}
       report={{...report, data: {...report.data, groupBy: {type: 'variable'}}}}
       updateReport={spy}
     />
@@ -239,7 +251,7 @@ it('should reset the groupby and visualization when changing process definition 
 
 it('should reset definition specific configurations on definition change', async () => {
   const spy = jest.fn();
-  const node = shallow(<ReportControlPanel report={report} updateReport={spy} />);
+  const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
 
   await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
 

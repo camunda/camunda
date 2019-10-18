@@ -18,16 +18,44 @@ fixture('Process Report')
 
 test('create and name a report', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
-  await u.selectView(t, 'Raw Data');
 
-  await t.typeText(e.nameEditField, 'New Name', {replace: true});
+  await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
+
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Flow Node', 'Count');
+
+  await t.resizeWindow(1350, 750);
+
+  await u.selectVisualization(t, 'Heatmap');
+
+  await t.takeScreenshot('process/single-report/report-reportEditActions.png', {fullPage: true});
+  await t.maximizeWindow();
 
   await u.save(t);
 
-  await t.expect(e.reportName.textContent).eql('New Name');
-  await t.expect(e.reportRenderer.textContent).contains('invoice');
-  await t.expect(e.reportRenderer.textContent).contains('Start Date');
+  await t.expect(e.reportName.textContent).eql('Invoice Pipeline');
+});
+
+test('sharing', async t => {
+  await t.resizeWindow(1000, 650);
+
+  await t.click(e.report);
+
+  await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
+
+  await t.click(e.shareButton);
+  await t.click(e.shareSwitch);
+
+  await t
+    .takeScreenshot('process/single-report/report-sharingPopover.png', {fullPage: true})
+    .maximizeWindow();
+
+  const shareUrl = await e.shareUrl.value;
+
+  await t.navigateTo(shareUrl);
+
+  await t.expect(e.reportRenderer.visible).ok();
+  await t.expect(e.shareHeader.textContent).contains('Invoice Pipeline');
 });
 
 test('version selection', async t => {
@@ -36,8 +64,15 @@ test('version selection', async t => {
   await t.click(e.editButton);
 
   await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'None');
 
   await t.click(e.definitionSelection);
+
+  await t.takeElementScreenshot(
+    e.definitionSelectionDialog,
+    'process/single-report/report-processDefinitionSelection.png'
+  );
+
   await t.click(e.versionPopover);
   await t.click(e.versionAll);
 
@@ -48,12 +83,26 @@ test('version selection', async t => {
   const latestNumber = +(await e.reportNumber.textContent);
 
   await t.click(e.versionSpecific);
-  await t.click(e.firstVersion);
+  await t.click(e.versionCheckbox(5));
+  await t.click(e.versionCheckbox(3));
+  await t.click(e.versionCheckbox(2));
+
+  await t.takeElementScreenshot(
+    e.definitionSelectionDialog,
+    'process/single-report/report-versionSelection.png'
+  );
 
   const rangeNumber = +(await e.reportNumber.textContent);
 
   await t.expect(allNumber > rangeNumber).ok();
   await t.expect(rangeNumber > latestNumber).ok();
+
+  await t.click(e.tenantPopover);
+
+  await t.takeElementScreenshot(
+    e.definitionSelectionDialog,
+    'process/single-report/tenantSelection.png'
+  );
 });
 
 test('sort table columns', async t => {
@@ -61,25 +110,39 @@ test('sort table columns', async t => {
   await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
-  await t.click(e.tableHeader(4));
+  await u.selectView(t, 'Raw Data');
+
+  await t.typeText(e.nameEditField, 'Table Report', {replace: true});
+
+  await t.expect(e.reportRenderer.textContent).contains('invoice');
+  await t.expect(e.reportRenderer.textContent).contains('Start Date');
+
+  await t.click(e.tableHeader(9));
+
+  await t
+    .resizeWindow(1600, 650)
+    .takeScreenshot('process/single-report/sorting.png', {fullPage: true})
+    .maximizeWindow();
 
   let a, b, c;
 
-  a = await e.tableCell(0, 4);
-  b = await e.tableCell(1, 4);
-  c = await e.tableCell(2, 4);
+  a = await e.tableCell(0, 9);
+  b = await e.tableCell(1, 9);
+  c = await e.tableCell(2, 9);
 
   await t.expect(a <= b).ok();
   await t.expect(b <= c).ok();
 
-  await t.click(e.tableHeader(4));
+  await t.click(e.tableHeader(9));
 
-  a = await e.tableCell(0, 4);
-  b = await e.tableCell(1, 4);
-  c = await e.tableCell(2, 4);
+  a = await e.tableCell(0, 9);
+  b = await e.tableCell(1, 9);
+  c = await e.tableCell(2, 9);
 
   await t.expect(a >= b).ok();
   await t.expect(b >= c).ok();
+
+  await u.save(t);
 });
 
 test('exclude raw data columns', async t => {
@@ -87,9 +150,20 @@ test('exclude raw data columns', async t => {
   await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
+  await t.resizeWindow(1600, 750);
+
   await t.click(e.configurationButton);
 
   await t.click(e.selectSwitchLabel('Start Date'));
+  await t.click(e.selectSwitchLabel('Show Instance Count'));
+  await t.click(e.selectSwitchLabel('Process Definition Key'));
+  await t.click(e.selectSwitchLabel('Business Key'));
+  await t.click(e.selectSwitchLabel('End Date'));
+  await t.click(e.selectSwitchLabel('approved'));
+
+  await t
+    .takeElementScreenshot(e.controlPanel, 'process/single-report/rawdata.png')
+    .maximizeWindow();
 
   await t.expect(e.reportRenderer.textContent).notContains('Start Date');
 });
@@ -102,24 +176,7 @@ test('cancel changes', async t => {
 
   await u.cancel(t);
 
-  await t.expect(e.reportName.textContent).eql('New Name');
-});
-
-test('sharing', async t => {
-  await t.click(e.report);
-
-  await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
-
-  await t.click(e.shareButton);
-  await t.click(e.shareSwitch);
-
-  const shareUrl = await e.shareUrl.value;
-
-  await t.navigateTo(shareUrl);
-
-  await t.expect(e.reportRenderer.visible).ok();
-  await t.expect(e.reportRenderer.textContent).contains('invoice');
-  await t.expect(e.reportRenderer.textContent).contains('Start Date');
+  await t.expect(e.reportName.textContent).notEql('Another new Name');
 });
 
 test('update definition', async t => {
@@ -165,11 +222,19 @@ test('Limit the precsion in number report', async t => {
   await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
+  await t.typeText(e.nameEditField, 'Number Report', {replace: true});
+
   await u.selectView(t, 'Process Instance', 'Duration');
   await u.selectGroupby(t, 'None');
 
   await t.click(e.configurationButton);
   await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '2', {replace: true});
+
+  await t
+    .resizeWindow(1600, 800)
+    .takeScreenshot('process/single-report/NumberConfiguration.png', {fullPage: true})
+    .maximizeWindow();
 
   await t.expect(e.reportNumber.visible).ok();
 });
@@ -265,20 +330,29 @@ test('select which flow nodes to show from the configuration', async t => {
   await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
-  await u.selectDefinition(t, 'Lead Qualification');
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
-  await t.expect(e.nodeTableCell('received').exists).ok();
+  await t.expect(e.nodeTableCell('Assign Approver Group').exists).ok();
+
+  await t.resizeWindow(1150, 800);
 
   await t.click(e.configurationButton);
 
   await t.click(e.showFlowNodesSwitch);
   await t.click(e.showFlowNodes);
+  await t.click(e.deselectAllButton);
 
-  await t.click(e.flowNode('msLeadReceived'));
+  await t.click(e.flowNode('approveInvoice'));
+  await t.click(e.flowNode('reviewInvoice'));
+  await t.click(e.flowNode('prepareBankTransfer'));
+
+  await t
+    .takeElementScreenshot(e.modalContainer, 'process/single-report/shownNodes.png')
+    .maximizeWindow();
 
   await t.click(e.primaryModalButton);
 
-  await t.expect(e.nodeTableCell('recieved').exists).notOk();
+  await t.expect(e.nodeTableCell('Assign Approver Group').exists).notOk();
 
   u.save(t);
 });
@@ -303,19 +377,41 @@ test('bar/line chart configuration', async t => {
   await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
-  await u.selectVisualization(t, 'Line Chart');
-  await t.click(e.configurationButton);
-  await t.click(e.pointMarkersSwitch);
+  await t.typeText(e.nameEditField, 'Bar Chart Report', {replace: true});
 
-  await t.click(e.pointMarkersSwitch);
-  await t.click(e.redColor);
-  await t.typeText(e.axisInputs('X Axis Label'), 'x axis label');
-  await t.typeText(e.axisInputs('Y Axis Label'), 'y axis label');
+  await u.selectDefinition(t, 'Multi-Instance Subprocess', 'All');
+
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'Start Date of Process Instance', 'Automatic');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.resizeWindow(1600, 800);
+
+  await t.click(e.configurationButton);
+  await t.click(e.cyanColor);
+
+  await t.takeScreenshot('process/single-report/chartConfiguration.png', {fullPage: true});
 
   await t.click(e.goalSwitch);
 
-  await t.typeText(e.chartGoalInput, '22', {replace: true});
+  await t.typeText(e.chartGoalInput, '6', {replace: true});
   await t.expect(e.chartGoalInput.hasAttribute('disabled')).notOk();
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await t.takeScreenshot('process/single-report/targetValue.png', {fullPage: true});
+
+  await t.click(e.configurationButton);
+  await u.selectVisualization(t, 'Line Chart');
+
+  await t.takeElementScreenshot(e.reportRenderer, 'process/single-report/targetline.png');
+
+  await t.maximizeWindow();
+
+  await t.click(e.configurationButton);
+
+  await t.typeText(e.axisInputs('X Axis Label'), 'x axis label');
+  await t.typeText(e.axisInputs('Y Axis Label'), 'y axis label');
 
   await t.expect(e.reportChart.visible).ok();
 });
@@ -359,7 +455,22 @@ test('aggregators and reset to default', async t => {
 
   const avg = await e.reportNumber.textContent;
 
-  await u.selectAggregation(t, 'Minimum');
+  await t.resizeWindow(1600, 800);
+
+  await t.click(e.configurationButton);
+
+  await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '2', {replace: true});
+
+  await t.click(e.aggregationTypeSelect);
+
+  await t.takeScreenshot('process/single-report/durationAggregation.png', {fullPage: true});
+
+  await t.click(e.aggregationOption('Minimum'));
+  await t.click(e.limitPrecisionSwitch);
+  await t.click(e.configurationButton);
+
+  await t.maximizeWindow();
 
   const min = await e.reportNumber.textContent;
 
@@ -383,10 +494,32 @@ test('progress bar', async t => {
   await t.click(e.editButton);
 
   await t.click(e.configurationButton);
+
+  await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '2', {replace: true});
+
   await t.click(e.goalSwitch);
+  await t.typeText(e.goalTargetInput, '20', {replace: true});
+  await t.click(e.goalTargetUnit);
+  await t.click(e.dropdownOption('minutes'));
+
   await t.click(e.configurationButton);
 
   await t.expect(e.reportProgressBar.visible).ok();
+
+  await t
+    .resizeWindow(1000, 530)
+    .takeElementScreenshot(e.reportRenderer, 'process/single-report/progressbar.png')
+    .maximizeWindow();
+
+  await t.click(e.configurationButton);
+  await t.typeText(e.goalTargetInput, '10', {replace: true});
+  await t.click(e.configurationButton);
+
+  await t
+    .resizeWindow(1000, 530)
+    .takeElementScreenshot(e.reportRenderer, 'process/single-report/proressbarExceeded.png')
+    .maximizeWindow();
 });
 
 test('heatmap target values', async t => {
@@ -394,39 +527,65 @@ test('heatmap target values', async t => {
   await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
+  await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
+
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
   await u.selectView(t, 'Flow Node', 'Duration');
+
+  await t.resizeWindow(1650, 850);
+
   await u.selectVisualization(t, 'Heatmap');
 
-  await t.hover(e.flowNode('UserTask_1g1zsp8'));
+  await t.hover(e.flowNode('approveInvoice'));
 
   await t.expect(e.tooltip.textContent).notContains('target\u00A0duration');
 
   await t.click(e.targetValueButton);
-  await t.typeText(e.targetValueInput('Do Basic Lead Qualification'), '1');
+  await t.typeText(e.targetValueInput('Approve Invoice'), '1');
+  await t.click(e.targetValueUnitSelect('Approve Invoice'));
+  await t.click(e.dropdownOption('minutes'));
+  await t.typeText(e.targetValueInput('Prepare Bank Transfer'), '5');
+  await t.click(e.targetValueUnitSelect('Prepare Bank Transfer'));
+  await t.click(e.dropdownOption('minutes'));
+  await t.typeText(e.targetValueInput('Review Invoice'), '1');
+
+  await t.takeElementScreenshot(e.modalContainer, 'process/single-report/targetvalue-2.png');
+
   await t.click(e.primaryModalButton);
 
-  await t.hover(e.flowNode('UserTask_1g1zsp8'));
+  await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).contains('target\u00A0duration:\u00A01h');
+  await t.expect(e.tooltip.textContent).contains('target\u00A0duration:\u00A01min');
+
+  await t.takeScreenshot('process/single-report/targetvalue-1.png', {fullPage: true});
 
   await t.click(e.targetValueButton);
 
-  await t.hover(e.flowNode('UserTask_1g1zsp8'));
+  await t.hover(e.flowNode('approveInvoice'));
 
   await t.expect(e.tooltip.textContent).notContains('target\u00A0duration');
+
+  await t.maximizeWindow();
 
   await u.save(t);
 });
 
 test('always show tooltips', async t => {
+  await t.resizeWindow(1650, 850);
+
   await t.hover(e.report);
   await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
+
+  await u.selectView(t, 'Flow Node', 'Count');
 
   await t.expect(e.tooltip.exists).notOk();
 
   await t.click(e.configurationButton);
   await t.click(e.selectSwitchLabel('Show Absolute Value'));
+  await t.click(e.selectSwitchLabel('Show Relative Value'));
+
+  await t.takeScreenshot('process/single-report/heatmap.png', {fullPage: true}).maximizeWindow();
 
   await t.expect(e.tooltip.visible).ok();
 });
@@ -494,8 +653,8 @@ test('should be able to distribute candidate group by user task', async t => {
 
   await t.click(e.option('Table'));
 
-  await t.expect(e.reportTable.textContent).contains('Conduct Discovery Call');
-  await t.expect(e.reportTable.textContent).contains('Research Lead');
+  await t.expect(e.reportTable.textContent).contains('Approve Invoice');
+  await t.expect(e.reportTable.textContent).contains('Review Invoice');
 });
 
 test('should be able to select how the time of the user task is calculated', async t => {
@@ -543,9 +702,14 @@ test('process parts', async t => {
 
   const withoutPart = await e.reportNumber.textContent;
 
+  await t.resizeWindow(1150, 700);
+
   await t.click(e.processPartButton);
-  await t.click(e.modalFlowNode('UserTask_1g1zsp8'));
-  await t.click(e.modalFlowNode('UserTask_0abh7j4'));
+  await t.click(e.modalFlowNode('assignApprover'));
+  await t.click(e.modalFlowNode('reviewInvoice'));
+
+  await t.takeElementScreenshot(e.modalContainer, 'process/single-report/process-part.png');
+  await t.maximizeWindow();
 
   await t.click(e.primaryModalButton);
 

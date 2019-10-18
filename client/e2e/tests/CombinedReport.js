@@ -17,37 +17,62 @@ fixture('Combined Report')
   .before(setup)
   .beforeEach(u.login);
 
+async function createReport(
+  t,
+  name,
+  definition = 'Lead Qualification',
+  visualization = 'Line Chart',
+  aggregation
+) {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, definition, 'All');
+
+  await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectVisualization(t, visualization);
+
+  if (aggregation) {
+    await t.click(Report.configurationButton);
+    await t.click(Report.aggregationTypeSelect);
+    await t.click(Report.aggregationOption(aggregation));
+    await t.click(Report.configurationButton);
+  }
+
+  await t.typeText(Report.nameEditField, name, {replace: true});
+
+  await u.save(t);
+
+  await u.gotoOverview(t);
+}
+
 test('combine two single number reports', async t => {
-  await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification');
-
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'None');
-
-  await t.typeText(Report.nameEditField, 'Report 1', {replace: true});
-
-  await u.save(t);
-
-  await u.gotoOverview(t);
-
-  await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
-
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'None');
-
-  await t.typeText(Report.nameEditField, 'Report 2', {replace: true});
-
-  await u.save(t);
-
-  await u.gotoOverview(t);
+  await createReport(t, 'Leads');
+  await createReport(t, 'Monthly Sales');
+  await createReport(t, 'Invoice Count');
+  await createReport(t, 'Incoming leads per day');
+  await createReport(t, 'Weekly rejection Rate');
+  await createReport(t, 'Weekly Sales');
+  await createReport(t, 'Invoice Average');
 
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
-  await t.click(Homepage.submenuOption('Combined Process Report'));
 
-  await t.click(Combined.singleReport('Report 1'));
-  await t.click(Combined.singleReport('Report 2'));
+  await t.hover(Homepage.submenuOption('Combined Process Report'));
+
+  await t.takeElementScreenshot(
+    Homepage.createNewMenu,
+    'process/combined-report/combined-report-create.png'
+  );
+
+  await t.click(Homepage.submenuOption('Combined Process Report'));
+  await t.typeText(Report.nameEditField, 'Combined Report', {replace: true});
+
+  await t
+    .resizeWindow(1150, 700)
+    .takeScreenshot('process/combined-report/combined-report.png', {fullPage: true})
+    .maximizeWindow();
+
+  await t.click(Combined.singleReport('Leads'));
+  await t.click(Combined.singleReport('Invoice Average'));
 
   await t.expect(Combined.chartRenderer.visible).ok();
 
@@ -61,42 +86,24 @@ test('combine two single number reports', async t => {
 });
 
 test('combine two single table reports', async t => {
-  await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification');
-
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'Start Date of Process Instance', 'Year');
-  await u.selectVisualization(t, 'Table');
-
-  await t.typeText(Report.nameEditField, 'Table Report 1', {replace: true});
-
-  await u.save(t);
-
-  await u.gotoOverview(t);
-
-  await u.createNewReport(t);
-  await u.selectDefinition(t, 'Lead Qualification');
-
-  await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'End Date of Process Instance', 'Year');
-  await u.selectVisualization(t, 'Table');
-
-  await t.typeText(Report.nameEditField, 'Table Report 2', {replace: true});
-
-  await u.save(t);
-
-  await u.gotoOverview(t);
+  await createReport(t, 'Another Table Report', 'Lead Qualification', 'Table');
+  await createReport(t, 'Table Report', 'Lead Qualification', 'Table', 'Minimum');
 
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Combined Process Report'));
 
-  await t.click(Combined.singleReport('Table Report 1'));
-  await t.click(Combined.singleReport('Table Report 2'));
+  await t.click(Combined.singleReport('Table Report'));
+  await t.click(Combined.singleReport('Another Table Report'));
 
   await t.expect(Combined.reportTable.visible).ok();
 
   await t.typeText(Report.nameEditField, 'Combined Table Report', {replace: true});
+
+  await t
+    .resizeWindow(1150, 700)
+    .takeScreenshot('process/combined-report/table-report.png', {fullPage: true})
+    .maximizeWindow();
 
   await u.save(t);
 });
@@ -107,43 +114,21 @@ test('reorder table reports', async t => {
   await t.click(Homepage.contextMenu(combinedChartReport));
   await t.click(Combined.editButton(combinedChartReport));
 
-  await t.dragToElement(Combined.singleReport('Table Report 1'), Combined.dragEndIndicator);
+  await t.dragToElement(Combined.singleReport('Table Report'), Combined.dragEndIndicator);
 
   await t.expect(Combined.reportTable.visible).ok();
 });
 
 test('combine two single chart reports', async t => {
-  await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
-
-  await u.selectView(t, 'Flow Node', 'Duration');
-  await u.selectVisualization(t, 'Bar Chart');
-
-  await t.typeText(Report.nameEditField, 'Chart Report 1', {replace: true});
-
-  await u.save(t);
-
-  await u.gotoOverview(t);
-
-  await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
-
-  await u.selectView(t, 'User Task', 'Duration');
-  await u.selectGroupby(t, 'Flow Nodes');
-  await u.selectVisualization(t, 'Bar Chart');
-
-  await t.typeText(Report.nameEditField, 'Chart Report 2', {replace: true});
-
-  await u.save(t);
-
-  await u.gotoOverview(t);
+  await createReport(t, 'Line Report - 1', 'Lead Qualification', 'Line Chart');
+  await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line Chart', 'Maximum');
 
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
   await t.click(Homepage.submenuOption('Combined Process Report'));
 
-  await t.click(Combined.singleReport('Chart Report 1'));
-  await t.click(Combined.singleReport('Chart Report 2'));
+  await t.click(Combined.singleReport('Line Report - 1'));
+  await t.click(Combined.singleReport('Line Report - 2'));
 
   await t.expect(Combined.reportChart.visible).ok();
 
@@ -158,7 +143,13 @@ test('change the color of one of the report in a combined chart report', async t
   await t.click(Homepage.contextMenu(combinedChartReport));
   await t.click(Combined.editButton(combinedChartReport));
 
-  await t.click(Combined.reportColorPopover('Chart Report 1'));
+  await t.resizeWindow(1150, 700);
+
+  await t.click(Combined.reportColorPopover('Line Report - 2'));
+
+  await t
+    .takeScreenshot('process/combined-report/area-chart-report.png', {fullPage: true})
+    .maximizeWindow();
 
   await t.click(Combined.redColor);
 
@@ -168,12 +159,28 @@ test('change the color of one of the report in a combined chart report', async t
 });
 
 test('open the configuration popover and add a goal line', async t => {
-  const combinedChartReport = Combined.report('Combined Chart Report');
-  await t.hover(combinedChartReport);
-  await t.click(Homepage.contextMenu(combinedChartReport));
-  await t.click(Combined.editButton(combinedChartReport));
+  await createReport(t, 'Bar Report - 1', 'Lead Qualification', 'Bar Chart');
+  await createReport(t, 'Bar Report - 2', 'Lead Qualification', 'Bar Chart', 'Maximum');
+
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.submenuOption('Combined Process Report'));
+
+  await t.click(Combined.singleReport('Bar Report - 1'));
+  await t.click(Combined.singleReport('Bar Report - 2'));
+
+  await t.typeText(Report.nameEditField, 'Combined Chart Report', {replace: true});
+
+  await t.resizeWindow(1150, 700);
+
   await t.click(Combined.configurationButton);
   await t.click(Combined.goalSwitch);
+  await t.typeText(Combined.goalInput, '1', {replace: true});
+
+  await t
+    .takeScreenshot('process/combined-report/combined-config.png', {fullPage: true})
+    .maximizeWindow();
+
   await t.click(Combined.configurationButton);
 
   await t.expect(Combined.reportChart.visible).ok();

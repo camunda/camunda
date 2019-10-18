@@ -121,7 +121,12 @@ async function startTest() {
           .createRunner()
           .src('e2e/tests/*.js')
           .browsers(browsers[i])
-          .run({skipJsErrors: true, assertionTimeout: 10000, pageLoadTimeout: 10000})
+          .run({
+            skipJsErrors: true,
+            disableScreenshots: true,
+            assertionTimeout: 10000,
+            pageLoadTimeout: 10000
+          })
       ) {
         hasFailures = true;
       }

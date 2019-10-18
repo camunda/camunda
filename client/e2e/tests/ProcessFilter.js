@@ -16,6 +16,65 @@ fixture('Process Report Filter')
   .before(setup)
   .beforeEach(u.login);
 
+test('variable filter modal dependent on variable type', async t => {
+  await u.createNewReport(t);
+
+  await u.selectDefinition(t, 'Lead Qualification', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'None');
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Variable'));
+
+  await t.click(Filter.variableFilterTypeahead);
+  await t.typeText(Filter.variableFilterTypeaheadInput, 'dc', {replace: true});
+
+  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter.png');
+
+  await t.typeText(Filter.variableFilterTypeaheadInput, 'boolVar', {replace: true});
+  await t.click(Filter.variableFilterTypeaheadOption('boolVar'));
+
+  await t.takeElementScreenshot(
+    Report.modalContainer,
+    'process/filter/variable-filter-boolean.png'
+  );
+
+  await t.typeText(Filter.variableFilterTypeaheadInput, 'stringVar', {replace: true});
+  await t.click(Filter.variableFilterTypeaheadOption('stringVar'));
+
+  await t.expect(Filter.stringValues.textContent).contains('aStringValue');
+
+  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-string.png');
+
+  await t.typeText(Filter.variableFilterTypeaheadInput, 'integerVar', {replace: true});
+  await t.click(Filter.variableFilterTypeaheadOption('integerVar'));
+
+  await t.typeText(Filter.variableFilterValueInput, '14', {replace: true});
+  await t.click(Filter.addValueButton);
+  await t.typeText(Filter.variableFilterValueInput, '30', {replace: true});
+  await t.click(Filter.addValueButton);
+  await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
+
+  await t.takeElementScreenshot(
+    Report.modalContainer,
+    'process/filter/variable-filter-numeric.png'
+  );
+
+  await t.click(Filter.nullSwitch);
+
+  await t.takeElementScreenshot(
+    Report.modalContainer,
+    'process/filter/variable-filter-undefinedOrNull.png'
+  );
+
+  await t.typeText(Filter.variableFilterTypeaheadInput, 'dateVar', {replace: true});
+  await t.click(Filter.variableFilterTypeaheadOption('dateVar'));
+  await t.click(Filter.button('Past 30 days'));
+  await t.click(Filter.dateFilterEndInput);
+
+  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-date.png');
+});
+
 test('should apply a filter to the report result', async t => {
   await u.createNewReport(t);
 
@@ -26,6 +85,12 @@ test('should apply a filter to the report result', async t => {
   const unfiltered = +(await Report.reportRenderer.textContent);
 
   await t.click(Report.filterButton);
+
+  await t
+    .resizeWindow(1400, 700)
+    .takeElementScreenshot(Report.controlPanel, 'process/filter/report-with-filterlist-open.png')
+    .maximizeWindow();
+
   await t.click(Report.filterOption('Variable'));
 
   await t.click(Filter.variableFilterTypeahead);
@@ -87,7 +152,13 @@ test('pick a start date from the predefined buttons', async t => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Start Date'));
 
-  await t.click(Filter.yearFilterButton);
+  await t.click(Filter.button('This Year'));
+
+  await t.takeElementScreenshot(
+    Report.modalContainer,
+    'process/filter/fixed-start-date-filter.png'
+  );
+
   const filterStart = await Filter.dateFilterStartInput.value;
   const filterEnd = await Filter.dateFilterEndInput.value;
   await t.expect(filterStart).eql(`${new Date().getFullYear()}-01-01`);
@@ -97,17 +168,23 @@ test('pick a start date from the predefined buttons', async t => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
-test('add relative end date filter', async t => {
+test('add relative start date filter', async t => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
   await t.click(Report.filterButton);
-  await t.click(Report.filterOption('End Date'));
+  await t.click(Report.filterOption('Start Date'));
   await t.click(Filter.relativeDateButton);
   await t.typeText(Filter.relativeDateInput, '5', {replace: true});
   await t.click(Filter.relativeDateDropdown);
   await t.click(Report.option('months'));
+
+  await t.takeElementScreenshot(
+    Report.modalContainer,
+    'process/filter/relative-start-date-filter.png'
+  );
+
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
@@ -124,6 +201,8 @@ test('add duration filter', async t => {
 
   await t.typeText(Filter.durationFilterInput, '30', {replace: true});
 
+  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/duration-filter.png');
+
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
 });
@@ -133,11 +212,18 @@ test('add Flow Node filter', async t => {
   await u.selectDefinition(t, 'Invoice Receipt');
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
+
+  await t.resizeWindow(1000, 700);
+
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Flow Node'));
 
   await t.click(Report.flowNode('approveInvoice'));
   await t.click(Report.flowNode('reviewInvoice'));
+
+  await t
+    .takeElementScreenshot(Report.modalContainer, 'process/filter/flownode-filter.png')
+    .maximizeWindow();
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();
@@ -145,7 +231,8 @@ test('add Flow Node filter', async t => {
 
 test('the filter is visible in the control panel and contains correct information', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Flow Node'));
   await t.click(Report.flowNode('approveInvoice'));
@@ -154,4 +241,20 @@ test('the filter is visible in the control panel and contains correct informatio
 
   await t.expect(controlPanelFilterText).contains('Executed Flow Node');
   await t.expect(controlPanelFilterText).contains('Approve Invoice');
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Start Date'));
+
+  await t.click(Filter.button('This Year'));
+  await t.click(Report.primaryModalButton);
+
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Running Instances Only'));
+
+  await t.resizeWindow(1300, 900);
+
+  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectVisualization(t, 'Heatmap');
+
+  await t.takeScreenshot('process/filter/combined-filter.png', {fullPage: true}).maximizeWindow();
 });

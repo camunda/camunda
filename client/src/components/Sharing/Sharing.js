@@ -80,7 +80,7 @@ export default class Sharing extends React.Component {
       <div className="Sharing">
         <div className="Sharing__header">
           <div className="Sharing__title-container">
-            <h1 className="Sharing__tilte">{evaluationResult.name}</h1>
+            <h1 className="Sharing__title">{evaluationResult.name}</h1>
             <Link
               target="_blank"
               to={`/${this.getType()}/${this.state.evaluationResult.id}`}

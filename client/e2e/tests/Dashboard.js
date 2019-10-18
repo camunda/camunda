@@ -18,12 +18,13 @@ fixture('Dashboard')
 
 test('create a report and add it to the Dashboard', async t => {
   await u.createNewReport(t);
-  await u.selectDefinition(t, 'Invoice Receipt');
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
   await u.selectView(t, 'Raw Data');
   await u.save(t);
   await u.gotoOverview(t);
   await u.createNewDashboard(t);
   await u.addReportToDashboard(t, 'New Report');
+
   await u.save(t);
 
   await t.expect(e.report.visible).ok();
@@ -99,6 +100,9 @@ test('external datasources', async t => {
   await t.click(e.editButton);
 
   await t.click(e.addButton);
+
+  await t.takeElementScreenshot(e.reportModal, 'dashboard/dashboard-addAReportModal.png');
+
   await t.click(e.externalSourceLink);
   await t.typeText(e.externalSourceInput, config.endpoint + '/license.html');
 

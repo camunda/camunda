@@ -39,18 +39,25 @@ test('add an alert', async t => {
   await t.click(Alert.newAlertButton);
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test Alert', {replace: true});
-  await t.typeText(Alert.inputWithLabel('Send Email to'), 'optimize-test@camunda.com', {
+  await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com', {
     replace: true
   });
 
   await t.click(Alert.reportTypeahead);
   await t.click(Alert.reportTypeaheadOption('Number Report'));
 
+  await t.takeElementScreenshot(Alert.modal, 'alerting/alert-modal-description.png');
+
   await t.click(Alert.primaryModalButton);
 
   await t.expect(Alert.list.textContent).contains('Test Alert');
   await t.expect(Alert.list.textContent).contains('Number Report');
-  await t.expect(Alert.list.textContent).contains('optimize-test@camunda.com');
+  await t.expect(Alert.list.textContent).contains('test@email.com');
+
+  await t
+    .resizeWindow(1200, 500)
+    .takeScreenshot('alerting/alerts-overview.png', {fullPage: true})
+    .maximizeWindow();
 });
 
 test('edit an alert', async t => {

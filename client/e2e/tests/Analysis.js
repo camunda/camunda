@@ -19,21 +19,29 @@ test('show the statistics diagram', async t => {
   await t.click(Analysis.navItem);
   await t.click(Analysis.branchAnalysisLink);
 
-  await u.selectDefinition(t, 'Lead Qualification');
+  await t.resizeWindow(1600, 750);
 
-  await t.click(Analysis.flowNode('ExclusiveGateway_0rta6cr'));
-  await t.click(Analysis.flowNode('msLeadIsOpp'));
+  await u.selectDefinition(t, 'Book Request');
+
+  await t.click(Analysis.flowNode('ExclusiveGateway_0i9u2oe'));
+  await t.click(Analysis.flowNode('EndEvent_0kcx8gn'));
 
   await t.expect(Analysis.statisticsDiagram.visible).ok();
+
+  await t
+    .takeScreenshot('process/analysis/branch-analysis/analysis-2.png', {fullPage: true})
+    .maximizeWindow();
 });
 
 test('show end event statistics on hover', async t => {
   await t.click(Analysis.navItem);
   await t.click(Analysis.branchAnalysisLink);
 
-  await u.selectDefinition(t, 'Lead Qualification');
+  await t.resizeWindow(1600, 700);
 
-  await t.hover(Analysis.flowNode('msLeadIsOpp'));
+  await u.selectDefinition(t, 'Book Request');
+
+  await t.hover(Analysis.flowNode('EndEvent_0kcx8gn'));
 
   await t.expect(Analysis.endEventOverlay.visible).ok();
   await t.expect(Analysis.endEventOverlay.textContent).contains('Process Instances Total');
@@ -43,6 +51,10 @@ test('show end event statistics on hover', async t => {
   await t
     .expect(Analysis.endEventOverlay.textContent)
     .contains('of Process Instances reached this state');
+
+  await t
+    .takeScreenshot('process/analysis/branch-analysis/analysis-1.png', {fullPage: true})
+    .maximizeWindow();
 });
 
 test('should deselect elements by clicking on the node or on the control panel', async t => {

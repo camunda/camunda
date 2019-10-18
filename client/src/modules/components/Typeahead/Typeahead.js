@@ -286,6 +286,7 @@ export default class Typeahead extends React.Component {
           ref={this.inputRef}
           disabled={this.props.disabled || !hasData}
           onClear={() => this.updateQuery('')}
+          spellCheck="false"
         />
         <Button
           className="optionsButton"

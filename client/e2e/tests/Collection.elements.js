@@ -29,9 +29,10 @@ export const alertTab = Selector('.Collection .header .navigation a').withText('
 export const addUserButton = Selector('.Collection .content .header .Button');
 export const optionsButton = Selector('.Typeahead .optionsButton');
 export const typeaheadInput = Selector('.Typeahead input');
-export const firstOption = Selector('.Typeahead .DropdownOption');
+export const typeaheadOption = text => Selector('.Typeahead .DropdownOption').withText(text);
 export const confirmModalButton = Selector('.confirm.Button');
 export const userItem = Selector('.ListItem.user');
 export const groupItem = Selector('.ListItem.group');
-export const managerOption = Selector('.Modal .LabeledInput .label.after').withText('Manager');
-export const viewerOption = Selector('.Modal .LabeledInput .label.after').withText('Viewer');
+export const roleOption = text => Selector('.Modal .LabeledInput .label.after').withText(text);
+export const userList = Selector('.UserList');
+export const addUserModal = Selector('.AddUserModal');

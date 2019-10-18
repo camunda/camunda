@@ -27,3 +27,4 @@ export const shareSwitch = Selector('.ShareEntity .Switch');
 export const shareUrl = Selector('.ShareEntity .shareLink input');
 export const deleteButton = Selector('.delete-button');
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
+export const reportModal = Selector('.ReportModal');

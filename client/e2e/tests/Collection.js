@@ -78,12 +78,31 @@ test('adding a new user', async t => {
   await t.click(e.addUserButton);
   await t.click(e.optionsButton);
   await t.typeText(e.typeaheadInput, 'sales', {replace: true});
-  await t.click(e.firstOption, {speed: 0.5});
+  await t.click(e.typeaheadOption('sales'));
   await t.click(e.confirmModalButton);
 
   await t.expect(e.groupItem.visible).ok();
+  await t.expect(e.groupItem.textContent).contains('User Group');
   await t.expect(e.groupItem.textContent).contains('Sales');
   await t.expect(e.groupItem.textContent).contains('Viewer');
+
+  await t.click(e.addUserButton);
+  await t.typeText(e.typeaheadInput, 'mary', {replace: true});
+  await t.click(e.typeaheadOption('mary'));
+  await t.takeElementScreenshot(e.addUserModal, 'homepage/addUser.png');
+  await t.click(e.roleOption('Editor'));
+  await t.click(e.confirmModalButton);
+
+  await t.click(e.addUserButton);
+  await t.typeText(e.typeaheadInput, 'peter', {replace: true});
+  await t.click(e.typeaheadOption('peter'));
+  await t.click(e.roleOption('Editor'));
+  await t.click(e.confirmModalButton);
+
+  await t
+    .resizeWindow(1150, 600)
+    .takeElementScreenshot(e.userList, 'homepage/users.png')
+    .maximizeWindow();
 });
 
 test('changing user permission', async t => {
@@ -92,8 +111,8 @@ test('changing user permission', async t => {
   await t.click(Homepage.collectionItem);
   await t.click(e.userTab);
 
-  await t.hover(e.userItem);
-  await t.expect(Homepage.contextMenu(e.userItem).exists).notOk();
+  await t.hover(e.userItem.nth(0));
+  await t.expect(Homepage.contextMenu(e.userItem.nth(0)).exists).notOk();
 
   await t.hover(e.groupItem);
   await t.expect(Homepage.contextMenu(e.groupItem).visible).ok();
@@ -101,16 +120,16 @@ test('changing user permission', async t => {
   await t.click(Homepage.contextMenu(e.groupItem));
   await t.click(Homepage.edit(e.groupItem));
 
-  await t.click(e.managerOption);
+  await t.click(e.roleOption('Manager'));
   await t.click(e.confirmModalButton);
 
-  await t.hover(e.userItem);
-  await t.expect(Homepage.contextMenu(e.userItem).visible).ok();
+  await t.hover(e.userItem.nth(0));
+  await t.expect(Homepage.contextMenu(e.userItem.nth(0)).visible).ok();
 
-  await t.click(Homepage.contextMenu(e.userItem));
-  await t.click(Homepage.edit(e.userItem));
+  await t.click(Homepage.contextMenu(e.userItem.nth(0)));
+  await t.click(Homepage.edit(e.userItem.nth(0)));
 
-  await t.click(e.viewerOption);
+  await t.click(e.roleOption('Viewer'));
   await t.click(e.confirmModalButton);
 
   await t.expect(e.addUserButton.exists).notOk();

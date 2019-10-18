@@ -13,6 +13,7 @@ exports[`should call getValue to filter and render the data when available 1`] =
     onClick={[Function]}
     onFocus={[Function]}
     onKeyDown={[Function]}
+    spellCheck="false"
     value=""
   />
   <ForwardRef(Button)
@@ -62,6 +63,7 @@ exports[`should display available options if dropdown is open 1`] = `
     onClick={[Function]}
     onFocus={[Function]}
     onKeyDown={[Function]}
+    spellCheck="false"
     value=""
   />
   <ForwardRef(Button)
@@ -111,6 +113,7 @@ exports[`should format the data based on the provided formatter 1`] = `
     onClick={[Function]}
     onFocus={[Function]}
     onKeyDown={[Function]}
+    spellCheck="false"
     value=""
   />
   <ForwardRef(Button)
@@ -182,6 +185,7 @@ exports[`should only display entries that match the typeahead value 1`] = `
     onClick={[Function]}
     onFocus={[Function]}
     onKeyDown={[Function]}
+    spellCheck="false"
     value="foo"
   />
   <ForwardRef(Button)
@@ -259,6 +263,7 @@ exports[`should only display entries that match the typeahead value, even if the
     onClick={[Function]}
     onFocus={[Function]}
     onKeyDown={[Function]}
+    spellCheck="false"
     value="foobarvar"
   />
   <ForwardRef(Button)

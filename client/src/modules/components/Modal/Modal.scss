@@ -28,6 +28,7 @@ $modal-padding-h: 40px;
   background: #fff;
   top: 15px;
   left: 50%;
+  margin-bottom: 15px;
 
   display: flex;
   flex-direction: column;
@@ -42,14 +43,6 @@ $modal-padding-h: 40px;
   /* remove focus styles since modal receives focus when opened  */
   &:focus {
     outline: none;
-  }
-
-  &:after {
-    position: absolute;
-    content: '';
-    bottom: -15px;
-    height: 15px;
-    width: 1px;
   }
 }
 
