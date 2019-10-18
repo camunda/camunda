@@ -15,9 +15,10 @@ mvn clean install
 This command runs also all the test suite, that you can skip using the
 option `-DskipTests=true`.
 
-## Run Webapp and Importer separately
+## Run modules separately
 
-In case you want to scale import to be run on several nodes, you can run Webapp and Importer separately.
+In case of high load you may need to scale importing of data from Zeebe and archiving of finished instances (this can influence UI performance).
+In order to achieve this you can run any of the modules separately: Webapp, Importer and Archiver.
 
 For this you can use following configuration parameters:
 * `camunda.operate.importerEnabled`: when `true` will include the Importer in current run, default: true
