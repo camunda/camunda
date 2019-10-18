@@ -84,7 +84,6 @@ public class QueryPerformanceTest {
 
   @BeforeAll
   public static void init() throws TimeoutException, InterruptedException {
-    embeddedOptimizeExtensionRule.setupOptimize();
     elasticSearchIntegrationTestExtensionRule.disableCleanup();
     // given
     importEngineData();

@@ -41,6 +41,7 @@ public abstract class AbstractCleanupTest {
   static {
     elasticSearchIntegrationTestExtensionRule.disableCleanup();
     embeddedOptimizeExtensionRule.setResetImportOnStart(false);
+    embeddedOptimizeExtensionRule.setupOptimize();
   }
 
   protected static void importData() {

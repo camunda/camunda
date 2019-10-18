@@ -29,6 +29,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
 
   @BeforeAll
   public static void setUp() {
+    embeddedOptimizeExtensionRule.setupOptimize();
     // given
     importData();
   }
