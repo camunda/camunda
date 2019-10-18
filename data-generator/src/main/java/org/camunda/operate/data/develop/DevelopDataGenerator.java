@@ -202,6 +202,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "develop/nonInterruptingBoundaryEvent_v_1.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "develop/timerProcess_v_1.bpmn");
+
   }
 
   @Override
