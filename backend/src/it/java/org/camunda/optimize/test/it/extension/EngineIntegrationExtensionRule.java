@@ -47,11 +47,11 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
+import org.camunda.optimize.rest.engine.dto.EngineUserDto;
 import org.camunda.optimize.rest.engine.dto.GroupDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.TaskDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
-import org.camunda.optimize.rest.engine.dto.UserDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -104,9 +104,13 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
   private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
   private static final EnginePluginClient ENGINE_PLUGIN_CLIENT = new EnginePluginClient(HTTP_CLIENT);
 
+  public static final String DEFAULT_EMAIL_DOMAIN = "@camunda.org";
+  public static final String DEFAULT_FIRSTNAME = "firstName";
+  public static final String DEFAULT_LASTNAME = "lastName";
   public static final String DEFAULT_DMN_DEFINITION_PATH = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
   private static final int MAX_WAIT = 10;
   private static final String COUNT = "count";
+  public static final String KERMIT_GROUP_NAME = "anyGroupName";
 
   private boolean shouldCleanEngine;
 
@@ -1031,7 +1035,11 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
   }
 
   public void addUser(String username, String password) {
-    UserDto userDto = constructDemoUserDto(username, password);
+    EngineUserDto userDto = constructUserDto(username, password);
+    addUser(userDto);
+  }
+
+  public void addUser(final EngineUserDto userDto) {
     try {
       HttpPost httpPost = new HttpPost(getEngineUrl() + "/user/create");
       httpPost.addHeader("Content-Type", "application/json");
@@ -1079,13 +1087,15 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
     }
   }
 
-  public void grantUserOptimizeAccess(String user) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(user);
+  public void grantUserOptimizeAccess(final String userId) {
+    AuthorizationDto authorizationDto = createOptimizeApplicationAuthorizationDto();
+    authorizationDto.setUserId(userId);
+    createAuthorization(authorizationDto);
+  }
+
+  public void grantGroupOptimizeAccess(final String groupId) {
+    AuthorizationDto authorizationDto = createOptimizeApplicationAuthorizationDto();
+    authorizationDto.setGroupId(groupId);
     createAuthorization(authorizationDto);
   }
 
@@ -1115,13 +1125,15 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
 
   }
 
-  private UserDto constructDemoUserDto(String username, String password) {
+  private EngineUserDto constructUserDto(String username, String password) {
     UserProfileDto profile = new UserProfileDto();
-    profile.setEmail("foo@camunda.org");
     profile.setId(username);
+    profile.setEmail(username + DEFAULT_EMAIL_DOMAIN);
+    profile.setFirstName(DEFAULT_FIRSTNAME);
+    profile.setLastName(DEFAULT_LASTNAME);
     UserCredentialsDto credentials = new UserCredentialsDto();
     credentials.setPassword(password);
-    UserDto userDto = new UserDto();
+    EngineUserDto userDto = new EngineUserDto();
     userDto.setProfile(profile);
     userDto.setCredentials(credentials);
     return userDto;
@@ -1130,7 +1142,7 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
   public void createGroup(String id) {
     GroupDto groupDto = new GroupDto();
     groupDto.setId(id);
-    groupDto.setName("anyGroupName");
+    groupDto.setName(KERMIT_GROUP_NAME);
     groupDto.setType("anyGroupType");
 
     try {
@@ -1159,7 +1171,6 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
       log.error("error creating group members", e);
     }
   }
-
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition(
@@ -1216,6 +1227,15 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
 
     DeploymentDto deploymentDto = deployDefinition(dmnModelInstance, tenantId);
     return getDecisionDefinitionByDeployment(deploymentDto);
+  }
+
+  private AuthorizationDto createOptimizeApplicationAuthorizationDto() {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_APPLICATION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(OPTIMIZE_APPLICATION_RESOURCE_ID);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    return authorizationDto;
   }
 
   private DeploymentDto deployDefinition(DmnModelInstance dmnModelInstance, String tenantId) {

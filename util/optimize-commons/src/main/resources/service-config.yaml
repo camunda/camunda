@@ -165,6 +165,18 @@ import:
   importIndexStorageIntervalInSec: 10
   # the time interval the import backs off from the current tip of the time, to reread potentially missed concurrent writes
   currentTimeBackoffMilliseconds: 10000
+  # The user sync enables Optimize to build up a in memory cache containing Optimize authorized users & groups.
+  # This data is used in the collection permissions to allow convenient search capabilities
+  # and to display member meta-data such as first name, last name or email.
+  # If enabled authorized users are synced from every connected engine right on startup as well as in the configured
+  # interval.
+  userSync:
+    # Whether to sync users is enabled
+    enabled: true
+    # Cron expression for when the user sync should run, defaults to every second hour.
+    cronTrigger: '0 */2 * * *'
+    # The max page size when multiple users or groups are iterated during the import.
+    maxPageSize: 10000
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.

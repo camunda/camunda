@@ -8,6 +8,7 @@ package org.camunda.optimize.service.util.configuration.cleanup;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.util.CronNormalizerUtil;
 
 import java.time.Period;
 import java.util.HashMap;
@@ -117,16 +118,7 @@ public class OptimizeCleanupConfiguration {
   }
 
   public final void setCronTrigger(String cronTrigger) {
-    this.cronTrigger = Optional.ofNullable(cronTrigger).map(this::normalizeToSixParts).orElse(null);
-  }
-
-  private String normalizeToSixParts(String cronTrigger) {
-    String[] cronParts = cronTrigger.split(" ");
-    if (cronParts.length < 6) {
-      return cronTrigger + " *";
-    } else {
-      return cronTrigger;
-    }
+    this.cronTrigger = Optional.ofNullable(cronTrigger).map(CronNormalizerUtil::normalizeToSixParts).orElse(null);
   }
 
   public void setDefaultTtl(Period defaultTtl) {

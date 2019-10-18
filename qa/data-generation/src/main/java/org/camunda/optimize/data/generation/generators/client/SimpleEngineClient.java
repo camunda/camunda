@@ -83,7 +83,6 @@ public class SimpleEngineClient {
   private CloseableHttpClient client;
   private String engineRestEndpoint;
   private ObjectMapper objectMapper = new ObjectMapper();
-  private static final String[] users = {"mary", "john", "peter"};
 
   public SimpleEngineClient(String engineRestEndpoint) {
     this.engineRestEndpoint = engineRestEndpoint;
@@ -113,7 +112,7 @@ public class SimpleEngineClient {
     createTenantPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse tenantCreatedResponse = client.execute(createTenantPost)) {
       log.info("Created tenant {}.", tenantId);
-      for (String user : users) {
+      for (String user : STANDARD_USERS) {
         if (ThreadLocalRandom.current().nextBoolean()) {
           HttpPut userTenantPut = new HttpPut(engineRestEndpoint + "/tenant/" + tenantId + "/user-members/" + user);
           try (CloseableHttpResponse userAuthorizationResponse = client.execute(userTenantPut)) {
@@ -504,7 +503,7 @@ public class SimpleEngineClient {
   private void createGrantAllOfTypeAuthorization(final int resourceType, final String userId, final String groupId) {
     final HttpPost authPost = new HttpPost(engineRestEndpoint + "/authorization/create");
     final AuthorizationDto globalAppAuth = new AuthorizationDto(
-      null, 1, Collections.singletonList("ALL"), userId, null, resourceType, "*"
+      null, 1, Collections.singletonList("ALL"), userId, groupId, resourceType, "*"
     );
     authPost.setEntity(new StringEntity(objectMapper.writeValueAsString(globalAppAuth)));
     authPost.addHeader("Content-Type", "application/json");

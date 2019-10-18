@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
+import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -162,6 +163,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public OptimizeCleanupScheduler getCleanupService() {
     return getApplicationContext().getBean(OptimizeCleanupScheduler.class);
+  }
+
+  public SyncedIdentityCacheService getSyncedIdentityCacheService() {
+    return getApplicationContext().getBean(SyncedIdentityCacheService.class);
   }
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {

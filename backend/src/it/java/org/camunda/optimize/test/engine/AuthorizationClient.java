@@ -27,20 +27,32 @@ public class AuthorizationClient {
   public static final String KERMIT_USER = "kermit";
   public static final String GROUP_ID = "kermitGroup";
 
-  private final EngineIntegrationExtensionRule engineIntegrationExtensionRule;
+  private final EngineIntegrationExtensionRule engineExtension;
+
+  public void addKermitUserWithoutAuthorizations() {
+    engineExtension.addUser(KERMIT_USER, KERMIT_USER);
+  }
 
   public void addKermitUserAndGrantAccessToOptimize() {
     addUserAndGrantOptimizeAccess(KERMIT_USER);
   }
 
   public void addUserAndGrantOptimizeAccess(final String userId) {
-    engineIntegrationExtensionRule.addUser(userId, userId);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(userId);
+    engineExtension.addUser(userId, userId);
+    engineExtension.grantUserOptimizeAccess(userId);
   }
 
   public void createKermitGroupAndAddKermitToThatGroup() {
-    engineIntegrationExtensionRule.createGroup(GROUP_ID);
-    engineIntegrationExtensionRule.addUserToGroup(KERMIT_USER, GROUP_ID);
+    createGroupAndAddUser(GROUP_ID, KERMIT_USER);
+  }
+
+  public void createGroupAndAddUser(final String groupId, final String userId) {
+    engineExtension.createGroup(groupId);
+    engineExtension.addUserToGroup(userId, groupId);
+  }
+
+  public void grantKermitGroupOptimizeAccess() {
+    engineExtension.grantGroupOptimizeAccess(GROUP_ID);
   }
 
   public void addGlobalAuthorizationForResource(final int resourceType) {
@@ -50,7 +62,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(ALL_RESOURCES_RESOURCE_ID);
     authorizationDto.setType(AUTHORIZATION_TYPE_GLOBAL);
     authorizationDto.setUserId(ALL_RESOURCES_RESOURCE_ID);
-    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
+    engineExtension.createAuthorization(authorizationDto);
   }
 
   public void grantAllResourceAuthorizationsForKermitGroup(final int resourceType) {
@@ -65,8 +77,8 @@ public class AuthorizationClient {
     revokeAllDefinitionAuthorizationsForGroup(GROUP_ID, resourceType);
   }
 
-  public void revokeSingleDefinitionAuthorizationsForKermitGroup(final String resourceID, final int resourceType) {
-    revokeSingleResourceAuthorizationsForGroup(GROUP_ID, resourceID, resourceType);
+  public void revokeSingleDefinitionAuthorizationsForKermitGroup(final String resourceId, final int resourceType) {
+    revokeSingleResourceAuthorizationsForGroup(GROUP_ID, resourceId, resourceType);
   }
 
   public void grantAllResourceAuthorizationsForGroup(final String groupId, final int resourceType) {
@@ -82,7 +94,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setGroupId(groupId);
-    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
+    engineExtension.createAuthorization(authorizationDto);
   }
 
   public void revokeAllDefinitionAuthorizationsForGroup(final String groupId, final int definitionResourceType) {
@@ -98,7 +110,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setGroupId(groupId);
-    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
+    engineExtension.createAuthorization(authorizationDto);
   }
 
   public void grantAllResourceAuthorizationsForKermit(final int resourceType) {
@@ -134,7 +146,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(userId);
-    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
+    engineExtension.createAuthorization(authorizationDto);
   }
 
   public void revokeAllResourceAuthorizationsForKermit(final int resourceType) {
@@ -158,7 +170,7 @@ public class AuthorizationClient {
     authorizationDto.setResourceId(definitionKey);
     authorizationDto.setType(AUTHORIZATION_TYPE_REVOKE);
     authorizationDto.setUserId(userId);
-    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
+    engineExtension.createAuthorization(authorizationDto);
   }
 
 }

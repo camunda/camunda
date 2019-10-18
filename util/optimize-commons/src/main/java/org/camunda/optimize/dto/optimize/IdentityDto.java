@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
@@ -22,8 +23,11 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public abstract class IdentityDto {
+  @EqualsAndHashCode.Include
   private String id;
+  @EqualsAndHashCode.Include
   private IdentityType type;
   protected String name;
 

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest.engine.dto;
 
-public class UserDto {
+public class EngineUserDto {
 
   protected UserProfileDto profile;
 

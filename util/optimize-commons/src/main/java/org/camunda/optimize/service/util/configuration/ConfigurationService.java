@@ -15,6 +15,7 @@ import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupCo
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.UserSyncConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.springframework.util.StringUtils;
 
@@ -32,6 +33,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.USER_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
@@ -161,6 +163,8 @@ public class ConfigurationService {
 
   // ui customization
   private UIConfiguration uiConfiguration;
+
+  private UserSyncConfiguration userSyncConfiguration;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -866,6 +870,13 @@ public class ConfigurationService {
       uiConfiguration = configJsonContext.read(UI_CONFIGURATION, UIConfiguration.class);
     }
     return uiConfiguration;
+  }
+
+  public UserSyncConfiguration getUserSyncConfiguration() {
+    if (userSyncConfiguration == null) {
+      userSyncConfiguration = configJsonContext.read(USER_SYNC_CONFIGURATION, UserSyncConfiguration.class);
+    }
+    return userSyncConfiguration;
   }
 
 }

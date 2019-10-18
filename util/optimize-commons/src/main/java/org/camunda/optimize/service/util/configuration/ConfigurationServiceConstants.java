@@ -99,4 +99,6 @@ public interface ConfigurationServiceConstants {
   String FALLBACK_LOCALE = "$.locales.fallbackLocale";
 
   String UI_CONFIGURATION = "$.ui";
+
+  String USER_SYNC_CONFIGURATION = "$.import.userSync";
 }

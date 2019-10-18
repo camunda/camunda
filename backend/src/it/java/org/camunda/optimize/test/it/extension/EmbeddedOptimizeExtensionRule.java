@@ -15,6 +15,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
@@ -417,6 +418,10 @@ public class EmbeddedOptimizeExtensionRule extends TestWatcher implements Before
 
   public OptimizeCleanupScheduler getCleanupScheduler() {
     return getOptimize().getCleanupService();
+  }
+
+  public SyncedIdentityCacheService getSyncedIdentityCacheService() {
+    return getOptimize().getSyncedIdentityCacheService();
   }
 
   public ObjectMapper getObjectMapper() {

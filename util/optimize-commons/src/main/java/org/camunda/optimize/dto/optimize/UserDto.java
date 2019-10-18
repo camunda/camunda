@@ -5,8 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
@@ -20,6 +23,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
 public class UserDto extends IdentityDto {
   private String firstName;
   private String lastName;
@@ -30,7 +34,11 @@ public class UserDto extends IdentityDto {
     this(id, null, null, null);
   }
 
-  public UserDto(final String id, final String firstName, final String lastName, final String email) {
+  @JsonCreator
+  public UserDto(@JsonProperty(required = true, value = "id") final String id,
+                 @JsonProperty(required = false, value = "firstName") final String firstName,
+                 @JsonProperty(required = false, value = "lastName") final String lastName,
+                 @JsonProperty(required = false, value = "email") final String email) {
     super(id, IdentityType.USER);
     this.firstName = firstName;
     this.lastName = lastName;

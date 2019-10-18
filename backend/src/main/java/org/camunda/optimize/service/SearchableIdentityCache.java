@@ -6,6 +6,7 @@
 package org.camunda.optimize.service;
 
 import com.google.common.annotations.VisibleForTesting;
+import lombok.NonNull;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -49,6 +50,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 
 import static org.apache.lucene.search.SortField.STRING_LAST;
@@ -56,6 +61,7 @@ import static org.apache.lucene.search.SortField.STRING_LAST;
 @Slf4j
 public class SearchableIdentityCache implements AutoCloseable {
   private final ByteBuffersDirectory memoryDirectory;
+  private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
 
   @SneakyThrows(IOException.class)
   public SearchableIdentityCache() {
@@ -67,23 +73,45 @@ public class SearchableIdentityCache implements AutoCloseable {
   @SneakyThrows(IOException.class)
   @Override
   public void close() {
-    this.memoryDirectory.close();
+    doWithWriteLock(() -> {
+      try {
+        this.memoryDirectory.close();
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed closing lucene in memory directory.", e);
+      }
+    });
   }
 
   @SneakyThrows(IOException.class)
-  public void addIdentity(final IdentityDto identity) {
-    try (final IndexWriter indexWriter = new IndexWriter(memoryDirectory, new IndexWriterConfig(getIndexAnalyzer()))) {
-      writeIdentityDto(indexWriter, identity);
-    }
-  }
-
-  @SneakyThrows(IOException.class)
-  public void addIdentities(final List<IdentityDto> identities) {
-    try (final IndexWriter indexWriter = new IndexWriter(memoryDirectory, new IndexWriterConfig(getIndexAnalyzer()))) {
-      identities.forEach(identity -> {
+  public void addIdentity(@NonNull final IdentityDto identity) {
+    doWithWriteLock(() -> {
+      try (final IndexWriter indexWriter =
+             new IndexWriter(memoryDirectory, new IndexWriterConfig(getIndexAnalyzer()))) {
         writeIdentityDto(indexWriter, identity);
-      });
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed writing identity [id:" + identity.getId() + "].", e);
+      }
+    });
+  }
+
+  @SneakyThrows(IOException.class)
+  public void addIdentities(@NonNull final List<? extends IdentityDto> identities) {
+    if (identities.isEmpty()) {
+      return;
     }
+
+    doWithWriteLock(() -> {
+      try (final IndexWriter indexWriter = new IndexWriter(
+        memoryDirectory,
+        new IndexWriterConfig(getIndexAnalyzer())
+      )) {
+        identities.forEach(identity -> {
+          writeIdentityDto(indexWriter, identity);
+        });
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed writing identities.", e);
+      }
+    });
   }
 
   public Optional<UserDto> getUserIdentityById(final String id) {
@@ -101,72 +129,105 @@ public class SearchableIdentityCache implements AutoCloseable {
   @SneakyThrows(IOException.class)
   public List<IdentityDto> searchIdentities(final String terms, final int resultLimit) {
     final List<IdentityDto> identities = new ArrayList<>();
-    try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
-      final IndexSearcher searcher = new IndexSearcher(indexReader);
+    doWithReadLock(() -> {
+      try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
+        final IndexSearcher searcher = new IndexSearcher(indexReader);
 
-      final SortField nameSort = new SortField(IdentityDto.Fields.name.name(), SortField.Type.STRING, false);
-      nameSort.setMissingValue(STRING_LAST);
-      final Sort scoreThanNameSort = new Sort(SortField.FIELD_SCORE, nameSort);
-      final TopDocs topDocs = searcher.search(
-        createSearchIdentityQuery(terms), resultLimit, scoreThanNameSort, true, false
-      );
+        final SortField nameSort = new SortField(IdentityDto.Fields.name.name(), SortField.Type.STRING, false);
+        nameSort.setMissingValue(STRING_LAST);
+        final Sort scoreThanNameSort = new Sort(SortField.FIELD_SCORE, nameSort);
+        final TopDocs topDocs = searcher.search(
+          createSearchIdentityQuery(terms), resultLimit, scoreThanNameSort, true, false
+        );
 
-      for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-        final Document document = searcher.doc(scoreDoc.doc);
-        final IdentityDto identityDto = mapDocumentToIdentityDto(document);
-        identities.add(identityDto);
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+          final Document document = searcher.doc(scoreDoc.doc);
+          final IdentityDto identityDto = mapDocumentToIdentityDto(document);
+          identities.add(identityDto);
+        }
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed searching for identities with terms [id:" + terms + "].", e);
       }
-
-    }
+    });
     return identities;
   }
 
   @SneakyThrows(IOException.class)
   @VisibleForTesting
   public long getCacheSizeInBytes() {
-    long size;
-    try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
-      size = Arrays.stream(memoryDirectory.listAll())
-        .map(file -> {
-          try {
-            return memoryDirectory.fileLength(file);
-          } catch (IOException e) {
-            log.error("Failed reading file from in memory directory.", e);
-            return 0L;
-          }
-        })
-        .reduce(Long::sum)
-        .orElse(0L);
+    AtomicLong size = new AtomicLong();
+    doWithReadLock(() -> {
+      try {
+        size.set(
+          Arrays.stream(memoryDirectory.listAll())
+            .map(file -> {
+              try {
+                return memoryDirectory.fileLength(file);
+              } catch (IOException e) {
+                log.error("Failed reading file from in memory directory.", e);
+                return 0L;
+              }
+            })
+            .reduce(Long::sum)
+            .orElse(0L)
+        );
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed getting size of lucene directory.", e);
+      }
+    });
+    return size.get();
+  }
+
+  private void doWithReadLock(final Runnable readOperation) throws IOException {
+    readWriteLock.readLock().lock();
+    try {
+      readOperation.run();
+    } finally {
+      readWriteLock.readLock().unlock();
     }
-    return size;
+  }
+
+  private void doWithWriteLock(final Runnable writeOperation) throws IOException {
+    readWriteLock.writeLock().lock();
+    try {
+      writeOperation.run();
+    } finally {
+      readWriteLock.writeLock().unlock();
+    }
   }
 
   @SneakyThrows(IOException.class)
   private <T extends IdentityDto> Optional<T> getTypedIdentityDtoById(final String id,
                                                                       final IdentityType identityType,
                                                                       final Function<Document, T> mapperFunction) {
-    T result = null;
-    try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
-      final IndexSearcher searcher = new IndexSearcher(indexReader);
-      final BooleanQuery.Builder searchBuilder = new BooleanQuery.Builder();
-      searchBuilder.add(
-        new TermQuery(new Term(IdentityDto.Fields.id.name(), id.toLowerCase())),
-        BooleanClause.Occur.MUST
-      );
-      searchBuilder.add(
-        new TermQuery(new Term(IdentityDto.Fields.type.name(), identityType.name())), BooleanClause.Occur.MUST
-      );
-      final TopDocs topDocs = searcher.search(searchBuilder.build(), 1);
-      if (topDocs.totalHits > 0) {
-        result = mapperFunction.apply(searcher.doc(topDocs.scoreDocs[0].doc));
+    AtomicReference<T> result = new AtomicReference<>();
+    doWithReadLock(() -> {
+      try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
+        final IndexSearcher searcher = new IndexSearcher(indexReader);
+        final BooleanQuery.Builder searchBuilder = new BooleanQuery.Builder();
+        searchBuilder.add(
+          new TermQuery(new Term(IdentityDto.Fields.id.name(), id)),
+          BooleanClause.Occur.MUST
+        );
+        searchBuilder.add(
+          new TermQuery(new Term(IdentityDto.Fields.type.name(), identityType.name())), BooleanClause.Occur.MUST
+        );
+        final TopDocs topDocs = searcher.search(searchBuilder.build(), 1);
+        if (topDocs.totalHits > 0) {
+          result.set(mapperFunction.apply(searcher.doc(topDocs.scoreDocs[0].doc)));
+        }
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Failed getting identity by [id:" + id + "].", e);
       }
-    }
-    return Optional.ofNullable(result);
+    });
+    return Optional.ofNullable(result.get());
   }
 
   @SneakyThrows
   private long writeIdentityDto(final IndexWriter indexWriter, final IdentityDto identity) {
-    return indexWriter.addDocument(mapIdentityDtoToDocument(identity));
+    return indexWriter.updateDocument(
+      new Term(IdentityDto.Fields.id.name(), identity.getId()), mapIdentityDtoToDocument(identity)
+    );
   }
 
   private BooleanQuery createSearchIdentityQuery(final String searchQuery) {
@@ -178,9 +239,10 @@ public class SearchableIdentityCache implements AutoCloseable {
     if (StringUtils.isNotEmpty(searchQuery)) {
       searchBuilder.setMinimumNumberShouldMatch(1);
 
+      // explicit to lowercase field ofr id for exact match ignoring case
+      final String allLowerCaseIdField = getAllLowerCaseFieldForDtoField(IdentityDto.Fields.id.name());
       searchBuilder.add(
-        // explicit to lowercase as we also do to lowercase on insert, for cheap case insensitivity
-        new PrefixQuery(new Term(IdentityDto.Fields.id.name(), searchQuery.toLowerCase())),
+        new PrefixQuery(new Term(allLowerCaseIdField, searchQuery.toLowerCase())),
         BooleanClause.Occur.SHOULD
       );
       // exact id matches are boosted
@@ -188,7 +250,7 @@ public class SearchableIdentityCache implements AutoCloseable {
         // as there are 2 other field clauses and this one should win even if all the others match
         // as one other field has boost of 3, boost by 4 + 2 to let this matcher always win on scoring
         // explicit to lowercase as we also do to lowercase on insert, for cheap case insensitivity
-        new BoostQuery(new TermQuery(new Term(IdentityDto.Fields.id.name(), searchQuery.toLowerCase())), 6),
+        new BoostQuery(new TermQuery(new Term(allLowerCaseIdField, searchQuery.toLowerCase())), 6),
         BooleanClause.Occur.SHOULD
       );
 
@@ -201,7 +263,9 @@ public class SearchableIdentityCache implements AutoCloseable {
 
       searchBuilder.add(
         // explicit to lowercase as we also do to lowercase on insert, for cheap case insensitivity
-        new PrefixQuery(new Term(UserDto.Fields.email.name(), searchQuery.toLowerCase())),
+        new PrefixQuery(
+          new Term(getAllLowerCaseFieldForDtoField(UserDto.Fields.email.name()), searchQuery.toLowerCase())
+        ),
         BooleanClause.Occur.SHOULD
       );
     } else {
@@ -243,11 +307,15 @@ public class SearchableIdentityCache implements AutoCloseable {
   private static Document mapIdentityDtoToDocument(final IdentityDto identity) {
     final Document document = new Document();
 
-    document.add(new StringField(IdentityDto.Fields.id.name(), identity.getId().toLowerCase(), Field.Store.YES));
+    document.add(new StringField(IdentityDto.Fields.id.name(), identity.getId(), Field.Store.YES));
+    // this all lowercase id field is used for cheap case insensitive full term/prefix search
+    document.add(new StringField(
+      getAllLowerCaseFieldForDtoField(IdentityDto.Fields.id.name()), identity.getId().toLowerCase(), Field.Store.NO)
+    );
     document.add(new StringField(IdentityDto.Fields.type.name(), identity.getType().name(), Field.Store.YES));
     Optional.ofNullable(identity.getName()).ifPresent(name -> {
       // as we want to use custom sorting based on name we need to store the name value as sorted doc field
-      document.add(new SortedDocValuesField(IdentityDto.Fields.name.name(), new BytesRef(name)));
+      document.add(new SortedDocValuesField(IdentityDto.Fields.name.name(), new BytesRef(name.toLowerCase())));
       document.add(new StringField(IdentityDto.Fields.name.name(), name, Field.Store.YES));
       document.add(
         new TextField(getNgramFieldForDtoField(IdentityDto.Fields.name.name()), name.toLowerCase(), Field.Store.YES)
@@ -264,9 +332,17 @@ public class SearchableIdentityCache implements AutoCloseable {
       );
       Optional.ofNullable(userDto.getEmail()).ifPresent(email -> {
         document.add(new StringField(UserDto.Fields.email.name(), email, Field.Store.YES));
+        // this all lowercase id field is used for cheap case insensitive full term/prefix search
+        document.add(new StringField(
+          getAllLowerCaseFieldForDtoField(UserDto.Fields.email.name()), email.toLowerCase(), Field.Store.NO)
+        );
       });
     }
     return document;
+  }
+
+  private static String getAllLowerCaseFieldForDtoField(final String fieldName) {
+    return fieldName + ".allLowerCase";
   }
 
   private static String getNgramFieldForDtoField(final String fieldName) {

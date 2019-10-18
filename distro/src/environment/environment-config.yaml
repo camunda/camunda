@@ -139,6 +139,16 @@ import:
       # Determines if the user task worker data, such as assignee or candidate group of
       # a user task, should be imported.
       enabled: true
+  # The user sync enables Optimize to build up a in memory cache containing Optimize authorized users & groups.
+  # This data is used in the collection permissions to allow convenient search capabilities
+  # and to display member meta-data such as first name, last name or email.
+  # If enabled authorized users are synced from every connected engine right on startup as well as in the configured
+  # interval.
+  userSync:
+    # Whether to sync users is enabled
+    enabled: true
+    # Cron expression for when the user sync should run, defaults to every second hour.
+    cronTrigger: '0 */2 * * *'
 
 serialization:
   # Define a custom date format that should be used for
