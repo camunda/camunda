@@ -222,7 +222,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.48</version>
+      <version>4.8.50</version>
     </dependency>
 
     <!--Test dependencies-->
