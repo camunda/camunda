@@ -57,9 +57,9 @@ void buildNotification() {
 }
 
 private static String buildDiff(String DIFF, String end) {
-    DIFF ? "${end} DEPENDENCIES CHANGED:\n" +
-            "${DIFF}\n" +
-            "----------------------------------------\n\n" :
+    DIFF ? "${end} DEPENDENCIES CHANGED:<br>" +
+            "${DIFF}<br>" +
+            "----------------------------------------<br><br>" :
             ""
 }
 
@@ -67,13 +67,13 @@ private void sendEmail(String FRONTEND_DIFF, String BACKEND_DIFF) {
     String subject = "Optimize dependencies changed - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
 
     String body =
-            "Hello Optimize team, \n\n" +
-            "while checking the dependencies of the Camunda Optimize repository, the following changes were detected:\n\n" +
+            "Hello Optimize team, <br><br>" +
+            "while checking the dependencies of the Camunda Optimize repository, the following changes were detected:<br><br>" +
             "${FRONTEND_DIFF}" +
             "${BACKEND_DIFF}" +
             "Please check if there are any unusual licenses for the new dependencies. If you are not sure if you are" +
-            " allowed to use libraries with the given dependencies please notify/ask Roman Smirnov or Ulrike Liss.\n\n" +
-            "Best\n" +
+            " allowed to use libraries with the given dependencies please notify/ask Roman Smirnov or Ulrike Liss.<br><br>" +
+            "Best<br>" +
             "Your Optimize Dependency Check Bot"
 
     emailext subject: subject, body: body, to: "optimize@camunda.com"
@@ -114,27 +114,27 @@ pipeline {
                     sh ("""
                         cd ./util/dependency-doc-creation/
                         ./createOptimizeDependencyFiles.sh useCISettings
-                        
+
                         mv backend-dependencies.md ./curr_backend-dependencies.md
                         mv frontend-dependencies.md ./curr_frontend-dependencies.md
-                        
+
                         apt-get update && \
                         apt-get -y install git openssh-client
                         mkdir -p ~/.ssh
                         ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
-            
+
                         git config --global user.email "ci@camunda.com"
                         git config --global user.name "camunda-jenkins"
-                        
+
                         git checkout `git log -1 --before=\\"\$(date -d "yesterday" +%d.%m.%Y)\\" --pretty=format:"%h"`
-                        
+
                         ./createOptimizeDependencyFiles.sh useCISettings
 
                         # diff returns status code 1 if there is difference, so the script crashes
                         # || : executes a null operator if diff fails, so the script continues running
                         diff backend-dependencies.md curr_backend-dependencies.md > backend_diff.md || :
                         diff frontend-dependencies.md curr_frontend-dependencies.md > frontend_diff.md || :
-                        
+
                         # cut first line of the diff files (first line describes the changes)
                         sed '1d' frontend_diff.md > tmpfile; mv tmpfile frontend_diff.md
                         sed '1d' backend_diff.md > tmpfile; mv tmpfile backend_diff.md
