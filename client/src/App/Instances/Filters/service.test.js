@@ -57,6 +57,10 @@ describe('Filters/service', () => {
     it('should return true for only whitespace', () => {
       expect(checkIsDateComplete('     ')).toBe(true);
     });
+
+    it('should return false for invalid date in correct format', () => {
+      expect(checkIsDateComplete('2019-99-99')).toBe(false);
+    });
   });
 
   describe('checkIsVariableComplete', () => {
@@ -78,7 +82,7 @@ describe('Filters/service', () => {
     });
   });
 
-  describe.only('checkIsIdComplete', () => {
+  describe('checkIsIdComplete', () => {
     it('should be complete on only white spaces', () => {
       expect(checkIsIdComplete('')).toBe(true);
       expect(checkIsIdComplete('      ')).toBe(true);

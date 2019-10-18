@@ -56,8 +56,14 @@ export function getLastVersionOfWorkflow(workflow = {}) {
 
 export function checkIsDateComplete(date) {
   const trimmedDate = trimValue(date);
+
   if (trimmedDate === '') {
     return true;
+  }
+
+  const parsedDate = new Date(trimmedDate);
+  if (!(parsedDate instanceof Date) || isNaN(parsedDate)) {
+    return false;
   }
 
   return !!trimmedDate.match(/^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/);
