@@ -15,7 +15,6 @@ spec:
       labels:
         app: optimize-no-import
     spec:
-      automountServiceAccountToken: false
       nodeSelector:
         cloud.google.com/gke-nodepool: slaves
       tolerations:
