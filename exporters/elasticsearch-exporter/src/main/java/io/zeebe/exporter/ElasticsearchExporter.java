@@ -52,13 +52,19 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
-    flush();
+
+    try {
+      flush();
+    } catch (Exception e) {
+      log.warn("Failed to flush records before closing exporter.", e);
+    }
 
     try {
       client.close();
     } catch (Exception e) {
       log.warn("Failed to close elasticsearch client", e);
     }
+
     log.info("Exporter closed");
   }
 
@@ -81,7 +87,12 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void flushAndReschedule() {
-    flush();
+    try {
+      flush();
+    } catch (Exception e) {
+      log.error(
+          "Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
+    }
     scheduleDelayedFlush();
   }
 
@@ -90,14 +101,10 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void flush() {
-    try {
-      if (client.flush()) {
-        controller.updateLastExportedRecordPosition(lastPosition);
-      } else {
-        log.warn("Failed to flush bulk completely");
-      }
-    } catch (Exception e) {
-      log.error("Failed to flush bulk", e);
+    if (client.flush()) {
+      controller.updateLastExportedRecordPosition(lastPosition);
+    } else {
+      log.warn("Failed to flush bulk completely");
     }
   }
 
