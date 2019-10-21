@@ -7,8 +7,8 @@
  */
 package io.zeebe.gateway.api.job;
 
-import io.zeebe.gateway.api.util.StubbedGateway;
-import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
+import io.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -25,7 +25,7 @@ public class FailJobStub extends JobRequestStub
   }
 
   @Override
-  public void registerWith(StubbedGateway gateway) {
+  public void registerWith(StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerFailJobRequest.class, this);
   }
 }

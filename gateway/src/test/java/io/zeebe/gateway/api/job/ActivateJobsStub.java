@@ -9,8 +9,8 @@ package io.zeebe.gateway.api.job;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.gateway.api.util.StubbedGateway;
-import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
+import io.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.Protocol;
@@ -148,7 +148,7 @@ public class ActivateJobsStub
   }
 
   @Override
-  public void registerWith(StubbedGateway gateway) {
+  public void registerWith(StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerActivateJobsRequest.class, this);
   }
 }

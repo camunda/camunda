@@ -31,7 +31,7 @@ public class ActivateJobsTest extends GatewayTest {
   public void shouldMapRequestAndResponse() {
     // given
     final ActivateJobsStub stub = new ActivateJobsStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final String jobType = "testJob";
     final String worker = "testWorker";
@@ -78,7 +78,7 @@ public class ActivateJobsTest extends GatewayTest {
       JsonUtil.assertEquality(job.getVariables(), stub.getVariables());
     }
 
-    final BrokerActivateJobsRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerActivateJobsRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     final JobBatchRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getMaxJobsToActivate()).isEqualTo(maxJobsToActivate);
     assertThat(brokerRequestValue.getTypeBuffer()).isEqualTo(wrapString(jobType));
@@ -93,7 +93,7 @@ public class ActivateJobsTest extends GatewayTest {
   public void shouldActivateJobsRoundRobin() {
     // given
     final ActivateJobsStub stub = new ActivateJobsStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final String type = "test";
     final int maxJobsToActivate = 2;

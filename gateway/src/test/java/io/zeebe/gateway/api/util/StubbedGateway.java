@@ -7,186 +7,59 @@
  */
 package io.zeebe.gateway.api.util;
 
-import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.grpc.ManagedChannel;
+import io.grpc.Server;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
-import io.zeebe.gateway.Gateway;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.BrokerRejectionException;
-import io.zeebe.gateway.cmd.BrokerResponseException;
-import io.zeebe.gateway.cmd.IllegalBrokerResponseException;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.BrokerResponseConsumer;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.zeebe.gateway.EndpointManager;
+import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
+import java.io.IOException;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class StubbedGateway extends Gateway {
+public class StubbedGateway {
 
   private static final String SERVER_NAME = "server";
 
-  private Map<Class<?>, RequestHandler> requestHandlers = new HashMap<>();
-  private List<BrokerRequest> brokerRequests = new ArrayList<>();
-
   private StubbedBrokerClient brokerClient;
+  private LongPollingActivateJobsHandler longPollingHandler;
+  private ActorScheduler actorScheduler;
+  private Server server;
 
-  public StubbedGateway(ActorScheduler actorScheduler) {
-    super(
-        new GatewayCfg(),
-        cfg -> null,
-        cfg -> InProcessServerBuilder.forName(SERVER_NAME),
-        actorScheduler);
+  public StubbedGateway(
+      ActorScheduler actorScheduler,
+      StubbedBrokerClient brokerClient,
+      LongPollingActivateJobsHandler longPollingHandler) {
+    this.actorScheduler = actorScheduler;
+    this.brokerClient = brokerClient;
+    this.longPollingHandler = longPollingHandler;
   }
 
-  public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
-      void registerHandler(
-          Class<?> requestType, RequestHandler<RequestT, ResponseT> requestHandler) {
-    requestHandlers.put(requestType, requestHandler);
+  public void start() throws IOException {
+    actorScheduler.submitActor(longPollingHandler);
+    final EndpointManager endpointManager = new EndpointManager(brokerClient, longPollingHandler);
+    final InProcessServerBuilder serverBuilder =
+        InProcessServerBuilder.forName(SERVER_NAME).addService(endpointManager);
+    server = serverBuilder.build();
+    server.start();
+  }
+
+  public void stop() {
+    if (server != null && !server.isShutdown()) {
+      server.shutdownNow();
+      try {
+        server.awaitTermination();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   public GatewayBlockingStub buildClient() {
     final ManagedChannel channel =
         InProcessChannelBuilder.forName(SERVER_NAME).directExecutor().build();
     return GatewayGrpc.newBlockingStub(channel);
-  }
-
-  @Override
-  public StubbedBrokerClient getBrokerClient() {
-    return brokerClient;
-  }
-
-  @Override
-  protected BrokerClient buildBrokerClient() {
-    this.brokerClient = new StubbedBrokerClient();
-    return brokerClient;
-  }
-
-  public <T extends BrokerRequest<?>> T getSingleBrokerRequest() {
-    assertThat(brokerRequests).hasSize(1);
-    return (T) brokerRequests.get(0);
-  }
-
-  public void notifyJobsAvailable(String type) {
-    brokerClient.notifyJobAvailable(type);
-  }
-
-  public interface RequestStub<
-          RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
-      extends RequestHandler<RequestT, ResponseT> {
-    void registerWith(StubbedGateway gateway);
-  }
-
-  @FunctionalInterface
-  interface RequestHandler<RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>> {
-    ResponseT handle(RequestT request) throws Exception;
-  }
-
-  private class StubbedBrokerClient implements BrokerClient {
-
-    BrokerTopologyManager topologyManager = new StubbedTopologyManager();
-    private Consumer<String> jobsAvalableHandler;
-
-    @Override
-    public void close() {}
-
-    @Override
-    public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
-      throw new UnsupportedOperationException("not implemented");
-    }
-
-    @Override
-    public <T> void sendRequest(
-        BrokerRequest<T> request,
-        BrokerResponseConsumer<T> responseConsumer,
-        Consumer<Throwable> throwableConsumer) {
-      brokerRequests.add(request);
-      try {
-        final RequestHandler requestHandler = requestHandlers.get(request.getClass());
-        final BrokerResponse<T> response = requestHandler.handle(request);
-        if (response.isResponse()) {
-          responseConsumer.accept(response.getKey(), response.getResponse());
-        } else if (response.isRejection()) {
-          throwableConsumer.accept(new BrokerRejectionException(response.getRejection()));
-        } else if (response.isError()) {
-          throwableConsumer.accept(new BrokerErrorException(response.getError()));
-        } else {
-          throwableConsumer.accept(
-              new IllegalBrokerResponseException("Unknown response received: " + response));
-        }
-      } catch (Exception e) {
-        throwableConsumer.accept(new BrokerResponseException(e));
-      }
-    }
-
-    @Override
-    public <T> ActorFuture<BrokerResponse<T>> sendRequest(
-        BrokerRequest<T> request, Duration requestTimeout) {
-      return sendRequest(request);
-    }
-
-    @Override
-    public <T> void sendRequest(
-        BrokerRequest<T> request,
-        BrokerResponseConsumer<T> responseConsumer,
-        Consumer<Throwable> throwableConsumer,
-        Duration requestTimeout) {
-      sendRequest(request, responseConsumer, throwableConsumer);
-    }
-
-    @Override
-    public BrokerTopologyManager getTopologyManager() {
-      return topologyManager;
-    }
-
-    @Override
-    public void subscribeJobAvailableNotification(String topic, Consumer<String> handler) {
-      this.jobsAvalableHandler = handler;
-    }
-
-    public void notifyJobAvailable(String type) {
-      jobsAvalableHandler.accept(type);
-    }
-  }
-
-  private class StubbedTopologyManager implements BrokerTopologyManager {
-
-    private final BrokerClusterStateImpl clusterState;
-
-    StubbedTopologyManager() {
-      this(8);
-    }
-
-    StubbedTopologyManager(int partitionsCount) {
-      clusterState = new BrokerClusterStateImpl();
-      clusterState.addBrokerIfAbsent(0);
-      clusterState.setBrokerAddressIfPresent(0, "localhost:26501");
-      for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
-        clusterState.setPartitionLeader(START_PARTITION_ID + partitionOffset, 0);
-        clusterState.addPartitionIfAbsent(START_PARTITION_ID + partitionOffset);
-      }
-      clusterState.setPartitionsCount(partitionsCount);
-    }
-
-    @Override
-    public BrokerClusterState getTopology() {
-      return clusterState;
-    }
   }
 }

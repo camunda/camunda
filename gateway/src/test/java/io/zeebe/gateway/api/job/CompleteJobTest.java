@@ -27,7 +27,7 @@ public class CompleteJobTest extends GatewayTest {
   public void shouldMapRequestAndResponse() {
     // given
     final CompleteJobStub stub = new CompleteJobStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
 
@@ -40,7 +40,7 @@ public class CompleteJobTest extends GatewayTest {
     // then
     assertThat(response).isNotNull();
 
-    final BrokerCompleteJobRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
     assertThat(brokerRequest.getIntent()).isEqualTo(JobIntent.COMPLETE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.JOB);
@@ -53,7 +53,7 @@ public class CompleteJobTest extends GatewayTest {
   public void shouldConvertEmptyVariables() {
     // given
     final CompleteJobStub stub = new CompleteJobStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final CompleteJobRequest request =
         CompleteJobRequest.newBuilder().setJobKey(stub.getKey()).setVariables("").build();
@@ -64,7 +64,7 @@ public class CompleteJobTest extends GatewayTest {
     // then
     assertThat(response).isNotNull();
 
-    final BrokerCompleteJobRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();

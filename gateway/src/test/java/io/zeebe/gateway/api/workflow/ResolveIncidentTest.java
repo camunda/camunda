@@ -23,7 +23,7 @@ public class ResolveIncidentTest extends GatewayTest {
   public void shouldMapRequestAndResponse() {
     // given
     final ResolveIncidentStub stub = new ResolveIncidentStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final ResolveIncidentRequest request =
         ResolveIncidentRequest.newBuilder().setIncidentKey(stub.getIncidentKey()).build();
@@ -34,7 +34,7 @@ public class ResolveIncidentTest extends GatewayTest {
     // then
     assertThat(response).isNotNull();
 
-    final BrokerResolveIncidentRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerResolveIncidentRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(IncidentIntent.RESOLVE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.INCIDENT);
     assertThat(brokerRequest.getKey()).isEqualTo(stub.getIncidentKey());
