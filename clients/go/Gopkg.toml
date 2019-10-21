@@ -43,7 +43,7 @@ required = [
 
 [[override]]
   name = "github.com/docker/docker"
-  version = "v19.03.3"
+  version = "v19.03.4"
 	source = "github.com/docker/engine"
 
 [prune]
