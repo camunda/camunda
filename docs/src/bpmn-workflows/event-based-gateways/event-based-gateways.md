@@ -95,5 +95,5 @@ When an event-based gateway is entered then the workflow instance waits at the g
 </details>
 
 References:
-* [Timer Events](/bpmn-workflows/timer-events.html)
-* [Message Events](/bpmn-workflows/message-events.html)
+* [Timer Events](/bpmn-workflows/timer-events/timer-events.html)
+* [Message Events](/bpmn-workflows/message-events/message-events.html)
