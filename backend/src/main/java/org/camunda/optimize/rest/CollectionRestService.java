@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -15,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.security.SessionService;
@@ -42,6 +44,7 @@ import java.util.Optional;
 @Path("/collection")
 @Component
 public class CollectionRestService {
+  private final AlertService alertService;
   private final CollectionService collectionService;
   private final SessionService sessionService;
 
@@ -54,7 +57,11 @@ public class CollectionRestService {
   public IdDto createNewCollection(@Context ContainerRequestContext requestContext,
                                    PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.createNewCollectionAndReturnId(userId, Optional.ofNullable(partialCollectionDefinitionDto).orElse(new PartialCollectionDefinitionDto()));
+    return collectionService.createNewCollectionAndReturnId(
+      userId,
+      Optional.ofNullable(partialCollectionDefinitionDto)
+        .orElse(new PartialCollectionDefinitionDto())
+    );
   }
 
   /**
@@ -117,8 +124,8 @@ public class CollectionRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public IdDto addScopeEntry(@Context ContainerRequestContext requestContext,
-                            @PathParam("id") String collectionId,
-                            @NotNull CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
+                             @PathParam("id") String collectionId,
+                             @NotNull CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final CollectionScopeEntryDto scopeEntryDto = collectionService.addScopeEntryToCollection(
       userId, collectionId, entryDto
@@ -206,5 +213,14 @@ public class CollectionRestService {
     collectionService.removeRoleFromCollection(userId, collectionId, roleEntryId);
   }
 
+  @GET
+  @Path("/{id}/alerts/")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<AlertDefinitionDto> getAlerts(@Context ContainerRequestContext requestContext,
+                                            @PathParam("id") String collectionId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return alertService.getStoredAlertsForCollection(userId, collectionId);
+  }
 }
 

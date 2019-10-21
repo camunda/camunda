@@ -81,7 +81,7 @@ public class ReportService implements CollectionReferencingService {
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final SimpleCollectionDefinitionDto definition) {
-    return reportReader.findReportsForCollection(definition.getId()).stream()
+    return reportReader.findReportsForCollectionOmitXml(definition.getId()).stream()
       .map(reportDefinitionDto -> new ConflictedItemDto(
         reportDefinitionDto.getId(), ConflictedItemType.COLLECTION, reportDefinitionDto.getName()
       ))
@@ -174,8 +174,17 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId) {
-    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml(userId);
+    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml();
     List<AuthorizedReportDefinitionDto> authorizedReports = filterAuthorizedReports(userId, reports);
+    return authorizedReports;
+  }
+
+  public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId, String collectionId) {
+    // verify user is authorized to access collection
+    collectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
+
+    List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
+    List<AuthorizedReportDefinitionDto> authorizedReports = filterAuthorizedReports(userId, reportsInCollection);
     return authorizedReports;
   }
 

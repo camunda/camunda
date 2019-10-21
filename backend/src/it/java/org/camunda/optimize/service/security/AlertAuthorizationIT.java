@@ -162,9 +162,14 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
 
   private String createAlertInCollectionAsDefaultUser(final ProcessDefinitionEngineDto processDefinition) {
     final String collectionId = createNewCollectionAsDefaultUser();
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = getNumberReportDefinitionDto(processDefinition);
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = getProcessNumberReportDefinitionDto(
+      processDefinition);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
     final String reportId = createSingleProcessReportInCollection(singleProcessReportDefinitionDto);
+
+    final SingleProcessReportDefinitionDto numberReportDefinitionDto = getProcessNumberReportDefinitionDto(
+      processDefinition);
+    updateSingleProcessReport(reportId, numberReportDefinitionDto);
 
     return addAlertToOptimizeAsUser(createSimpleAlert(reportId), DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }

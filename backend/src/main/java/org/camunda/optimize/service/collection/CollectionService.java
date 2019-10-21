@@ -166,7 +166,7 @@ public class CollectionService {
     throws NotFoundException, OptimizeConflictException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
-    List<ReportDefinitionDto> entities = reportReader.findReportsForCollection(collectionId);
+    List<ReportDefinitionDto> entities = reportReader.findReportsForCollectionOmitXml(collectionId);
     CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
 
     List<ReportDefinitionDto> conflictedItems = entities.stream()

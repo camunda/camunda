@@ -105,7 +105,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    String reportId = createAndStoreNumberReport(processDefinition);
+    String reportId = createAndStoreProcessNumberReport(processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 
     AlertInterval reminderInterval = new AlertInterval();
@@ -123,7 +123,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     );
 
     //when
-    SingleProcessReportDefinitionDto report = getNumberReportDefinitionDto(
+    SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(
       processDefinition.getKey(), String.valueOf(processDefinition.getVersion())
     );
     report.getData().setGroupBy(new FlowNodesGroupByDto());

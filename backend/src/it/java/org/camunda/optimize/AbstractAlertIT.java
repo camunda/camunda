@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.alert.SyncListener;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
@@ -47,6 +48,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -75,6 +77,11 @@ public abstract class AbstractAlertIT {
       .buildCreateAlertRequest(simpleAlert)
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  protected String createAlertForReport(String reportId) {
+    AlertCreationDto alertDto = createSimpleAlert(reportId);
+    return createAlert(alertDto);
   }
 
   protected void triggerAndCompleteCheckJob(String id) throws SchedulerException, InterruptedException {
@@ -173,27 +180,6 @@ public abstract class AbstractAlertIT {
     return createSimpleAlert(id);
   }
 
-  private String createAndStoreDecisionNumberReport(DecisionDefinitionEngineDto decisionDefinitionDto1) {
-    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-      .build();
-
-    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-    singleDecisionReportDefinitionDto.setData(reportData);
-    singleDecisionReportDefinitionDto.setId("something");
-    singleDecisionReportDefinitionDto.setLastModifier("something");
-    singleDecisionReportDefinitionDto.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    singleDecisionReportDefinitionDto.setCreated(someDate);
-    singleDecisionReportDefinitionDto.setLastModified(someDate);
-    singleDecisionReportDefinitionDto.setOwner("something");
-
-    return createNewDecisionReport(singleDecisionReportDefinitionDto);
-  }
-
   protected AlertCreationDto setupBasicProcessAlert() {
     return setupBasicProcessAlert("aProcess");
   }
@@ -211,7 +197,7 @@ public abstract class AbstractAlertIT {
     embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    String reportId = createAndStoreNumberReportAsUser(processDefinition, user, password);
+    String reportId = createAndStoreProcessNumberReportAsUser(processDefinition, user, password);
     return createSimpleAlert(reportId);
   }
 
@@ -236,7 +222,7 @@ public abstract class AbstractAlertIT {
   }
 
   private String createNewProcessReportAsUser(final String user, final String password,
-                                              SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+                                              final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(user, password)
@@ -245,44 +231,87 @@ public abstract class AbstractAlertIT {
       .getId();
   }
 
-  private String createNewDecisionReport(final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
+  private String createNewDecisionReportAsUser(final String user, final String password,
+                                               final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
+      .withUserAuthentication(user, password)
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  protected String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
-    return createAndStoreNumberReportAsUser(processDefinition, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  protected String createNumberReportForCollection(String collectionId, int resourceType) {
+    switch (resourceType) {
+      case RESOURCE_TYPE_PROCESS_DEFINITION:
+        ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess("aProcess");
+        SingleProcessReportDefinitionDto procReport = getProcessNumberReportDefinitionDto(processDefinition);
+        procReport.setCollectionId(collectionId);
+        return createNewProcessReportAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, procReport);
+
+      case RESOURCE_TYPE_DECISION_DEFINITION:
+        DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition();
+        SingleDecisionReportDefinitionDto decReport = getDecisionNumberReportDefinitionDto(decisionDefinitionDto);
+        decReport.setCollectionId(collectionId);
+        return createNewDecisionReportAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, decReport);
+
+      default:
+        throw new OptimizeRuntimeException("Unknown resource type provided.");
+    }
   }
 
-  protected String createAndStoreNumberReportAsUser(final ProcessDefinitionEngineDto processDefinition,
-                                                    final String user,
-                                                    final String password) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = getNumberReportDefinitionDto(
+  private String createAndStoreDecisionNumberReport(DecisionDefinitionEngineDto decisionDefinitionDto1) {
+    SingleDecisionReportDefinitionDto decReportDefDto = getDecisionNumberReportDefinitionDto(decisionDefinitionDto1);
+    return createNewDecisionReportAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, decReportDefDto);
+  }
+
+  protected String createAndStoreProcessNumberReport(ProcessDefinitionEngineDto processDefinition) {
+    return createAndStoreProcessNumberReportAsUser(processDefinition, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  protected String createAndStoreProcessNumberReportAsUser(final ProcessDefinitionEngineDto processDefinition,
+                                                           final String user,
+                                                           final String password) {
+    SingleProcessReportDefinitionDto procReportDefDto = getProcessNumberReportDefinitionDto(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion())
     );
-    return createNewProcessReportAsUser(user, password, singleProcessReportDefinitionDto);
+    return createNewProcessReportAsUser(user, password, procReportDefDto);
   }
 
-  private String createAndStoreDurationNumberReportAsUser(final String processDefinitionKey,
-                                                          final String processDefinitionVersion,
-                                                          final String user,
-                                                          final String password) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
-      getDurationReportDefinitionDto(processDefinitionKey, processDefinitionVersion);
-    return createNewProcessReportAsUser(user, password, singleProcessReportDefinitionDto);
+  private SingleDecisionReportDefinitionDto getDecisionNumberReportDefinitionDto(DecisionDefinitionEngineDto
+                                                                                   decisionDefinitionDto) {
+    final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto.getVersion());
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
+      .setDecisionDefinitionVersion(decisionDefinitionVersion1)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+
+    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
+    report.setData(reportData);
+    report.setId("something");
+    report.setLastModifier("something");
+    report.setName("something");
+    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
+    report.setCreated(someDate);
+    report.setLastModified(someDate);
+    report.setOwner("something");
+
+    return report;
   }
 
-  protected SingleProcessReportDefinitionDto getNumberReportDefinitionDto(ProcessDefinitionEngineDto processDefinition) {
-    return getNumberReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
+  protected SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(ProcessDefinitionEngineDto
+                                                                                   processDefinition) {
+    return getProcessNumberReportDefinitionDto(
+      processDefinition.getKey(),
+      String.valueOf(processDefinition.getVersion())
+    );
   }
 
 
-  protected SingleProcessReportDefinitionDto getNumberReportDefinitionDto(String processDefinitionKey,
-                                                                          String processDefinitionVersion) {
+  protected SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String processDefinitionKey,
+                                                                                 String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
@@ -296,7 +325,7 @@ public abstract class AbstractAlertIT {
   }
 
   protected void updateSingleProcessReport(String id,
-                                                 SingleProcessReportDefinitionDto updatedReport) {
+                                           SingleProcessReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
@@ -331,6 +360,15 @@ public abstract class AbstractAlertIT {
     return createAndStoreDurationNumberReportAsUser(
       processDefinitionKey, processDefinitionVersion, DEFAULT_USERNAME, DEFAULT_PASSWORD
     );
+  }
+
+  private String createAndStoreDurationNumberReportAsUser(final String processDefinitionKey,
+                                                          final String processDefinitionVersion,
+                                                          final String user,
+                                                          final String password) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+      getDurationReportDefinitionDto(processDefinitionKey, processDefinitionVersion);
+    return createNewProcessReportAsUser(user, password, singleProcessReportDefinitionDto);
   }
 
   private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey,

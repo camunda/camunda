@@ -103,7 +103,8 @@ public class AlertReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).types(ALERT_INDEX_NAME).source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).types(ALERT_INDEX_NAME)
+      .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -117,8 +118,29 @@ public class AlertReader {
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
+  public List<AlertDefinitionDto> findFirstAlertsForReports(List<String> reportIds) {
+    log.debug("Fetching first {} alerts using reports with ids {}", LIST_FETCH_LIMIT, reportIds);
+
+    final QueryBuilder query = QueryBuilders.termsQuery(AlertIndex.REPORT_ID, reportIds);
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .size(LIST_FETCH_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).types(ALERT_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Was not able to fetch alerts for reports with ids [%s]", reportIds);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    return ElasticsearchHelper.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
+  }
+
   private void logError(String alertId) {
     log.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
   }
-
 }

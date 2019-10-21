@@ -180,7 +180,7 @@ public class ReportReader {
     }
   }
 
-  public List<ReportDefinitionDto> getAllReportsOmitXml(String userId) {
+  public List<ReportDefinitionDto> getAllReportsOmitXml() {
     log.debug("Fetching all available reports");
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
@@ -276,13 +276,14 @@ public class ReportReader {
     }
   }
 
-  public List<ReportDefinitionDto> findReportsForCollection(String collectionId) {
+  public List<ReportDefinitionDto> findReportsForCollectionOmitXml(String collectionId) {
     log.debug("Fetching reports using collection with id {}", collectionId);
 
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
+    searchSourceBuilder.fetchSource(null, REPORT_LIST_EXCLUDES);
     SearchRequest searchRequest = new SearchRequest(
       COMBINED_REPORT_INDEX_NAME,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
@@ -302,7 +303,6 @@ public class ReportReader {
 
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
   }
-
 
   public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
     log.debug("Fetching first combined reports using simpleReport with id {}", simpleReportId);

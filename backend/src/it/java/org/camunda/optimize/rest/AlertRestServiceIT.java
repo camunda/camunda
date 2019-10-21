@@ -245,6 +245,6 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     ProcessDefinitionEngineDto engineDto = new ProcessDefinitionEngineDto();
     engineDto.setKey("Foo");
     engineDto.setVersion(1);
-    return createAndStoreNumberReport(engineDto);
+    return createAndStoreProcessNumberReport(engineDto);
   }
 }

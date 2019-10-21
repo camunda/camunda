@@ -59,7 +59,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    String reportId = createAndStoreNumberReport(processDefinition);
+    String reportId = createAndStoreProcessNumberReport(processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 
     Response response =
@@ -71,7 +71,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(200));
 
     // when
-    SingleProcessReportDefinitionDto report = getNumberReportDefinitionDto(processDefinition);
+    SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     updateSingleProcessReport(simpleAlert.getReportId(), report);
@@ -313,7 +313,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    return createAndStoreNumberReport(processDefinition);
+    return createAndStoreProcessNumberReport(processDefinition);
   }
 
 
