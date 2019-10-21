@@ -87,22 +87,16 @@ public class FsLogStorage implements LogStorage {
 
     final int segmentId = partitionId(address);
 
-    final int firstSegmentId = logSegments.initialSegmentId;
+    final int firstSegmentId = logSegments.getFirstSegmentId();
     final int lastSegmentId = logSegments.getLastSegmentId();
     if (segmentId > firstSegmentId && segmentId <= lastSegmentId) {
       // segment id has to be larger then initial id,
       // since we don't delete data within a segment
-      for (int i = logSegments.initialSegmentId; i < segmentId; i++) {
-        final FsLogSegment segmentToDelete = logSegments.getSegment(i);
-        if (segmentToDelete != null) {
-          segmentToDelete.closeSegment();
-          segmentToDelete.delete();
-        }
-      }
+      logSegments.deleteSegmentsUntil(segmentId);
+
       final int diff = segmentId - firstSegmentId;
       LOG.info("Deleted {} segments from log storage ({} to {}).", diff, firstSegmentId, segmentId);
       dirtySegmentId = Math.max(dirtySegmentId, segmentId);
-      logSegments.removeSegmentsUntil(segmentId);
     }
   }
 
@@ -185,7 +179,7 @@ public class FsLogStorage implements LogStorage {
 
   @Override
   public long lookUpApproximateAddress(final long position, LongUnaryOperator positionReader) {
-    final int firstSegmentId = logSegments.getFirst().getSegmentId();
+    final int firstSegmentId = logSegments.getFirstSegmentId();
     final int lastSegmentId = logSegments.getLastSegmentId();
 
     int segmentFound = firstSegmentId;
@@ -342,7 +336,6 @@ public class FsLogStorage implements LogStorage {
 
     if (existingSegments > 0) {
       currentSegment = readableLogSegments.get(existingSegments - 1);
-      initialSegmentId = readableLogSegments.get(0).getSegmentId();
     } else {
       initialSegmentId = config.getInitialSegmentId();
       final String initialSegmentName = config.fileName(initialSegmentId);
@@ -355,13 +348,7 @@ public class FsLogStorage implements LogStorage {
       readableLogSegments.add(initialSegment);
     }
 
-    final FsLogSegment[] segmentsArray =
-        readableLogSegments.toArray(new FsLogSegment[readableLogSegments.size()]);
-
-    final FsLogSegments logSegments = new FsLogSegments();
-    logSegments.init(initialSegmentId, segmentsArray);
-
-    this.logSegments = logSegments;
+    this.logSegments = FsLogSegments.fromFsLogSegmentsArray(readableLogSegments);
   }
 
   private void checkConsistency() {
