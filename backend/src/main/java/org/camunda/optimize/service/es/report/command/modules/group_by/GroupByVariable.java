@@ -3,24 +3,23 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.processinstance.frequency;
+package org.camunda.optimize.service.es.report.command.modules.group_by;
 
+import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.report.command.process.ProcessReportCommand;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
-import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.elasticsearch.action.search.SearchRequest;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
@@ -29,8 +28,10 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -51,90 +52,39 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
 
-public class CountProcessInstanceFrequencyByVariableCommand extends ProcessReportCommand<SingleProcessMapReportResult> {
+@RequiredArgsConstructor
+@Component
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
-  private static final String VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION = "proc_inst_count";
 
-  @Override
-  protected SingleProcessMapReportResult evaluate() {
-    final ProcessReportDataDto processReportData = getReportData();
-    logger.debug(
-      "Evaluating count process instance frequency grouped by variable report " +
-        "for process definition key [{}] and versions [{}]",
-      processReportData.getProcessDefinitionKey(),
-      processReportData.getProcessDefinitionVersions()
-    );
+  private final ConfigurationService configurationService;
+  private final IntervalAggregationService intervalAggregationService;
+  private final OptimizeElasticsearchClient esClient;
 
-    BoolQueryBuilder query = setupBaseQuery(processReportData);
-
-    VariableGroupByValueDto groupByVariable = getVariableGroupByDto();
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .fetchSource(false)
-      .aggregation(createAggregation(groupByVariable.getName(), groupByVariable.getType()))
-      .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
-
-    try {
-      final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-      final ReportMapResultDto mapResultDto = mapToReportResult(response);
-      return new SingleProcessMapReportResult(mapResultDto, reportDefinition);
-    } catch (IOException e) {
-      String reason =
-        String.format(
-          "Could not evaluate count process instance frequency grouped by variable report " +
-            "for process definition key [%s] and versions [%s]",
-          processReportData.getProcessDefinitionKey(),
-          processReportData.getProcessDefinitionVersions()
-        );
-      logger.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-
-  }
-
-  private VariableGroupByValueDto getVariableGroupByDto() {
-    final ProcessReportDataDto processReportData = getReportData();
-    return ((VariableGroupByDto) processReportData.getGroupBy()).getValue();
+  private VariableGroupByValueDto getVariableGroupByDto(final ProcessReportDataDto definitionData) {
+    return ((VariableGroupByDto) definitionData.getGroupBy()).getValue();
   }
 
   @Override
-  protected void sortResultData(final SingleProcessMapReportResult evaluationResult) {
-    ProcessReportDataDto reportData = getReportData();
-    final Optional<SortingDto> sortingOpt = reportData.getConfiguration().getSorting();
-    if (sortingOpt.isPresent()) {
-      MapResultSortingUtility.sortResultData(
-        sortingOpt.get(),
-        evaluationResult,
-        ((VariableGroupByValueDto) (reportData.getGroupBy().getValue())).getType()
-      );
+  public AggregationBuilder createAggregation(final SearchSourceBuilder searchSourceBuilder,
+                                              final ProcessReportDataDto definitionData) {
+    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
 
-    } else if (VariableType.DATE.equals(getVariableGroupByDto().getType())) {
-      MapResultSortingUtility.sortResultData(
-        new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC),
-        evaluationResult
-      );
-    }
-  }
-
-  private AggregationBuilder createAggregation(String variableName, VariableType variableType) {
     AggregationBuilder variableSubAggregation =
-      createVariableSubAggregation(variableName, variableType);
+      createVariableSubAggregation(variableGroupByDto, searchSourceBuilder.query());
 
     return nested(NESTED_AGGREGATION, VARIABLES)
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
           boolQuery()
-            .must(termQuery(getNestedVariableNameField(), variableName))
-            .must(termQuery(getNestedVariableTypeField(), variableType.getId()))
+            .must(termQuery(getNestedVariableNameField(), variableGroupByDto.getName()))
+            .must(termQuery(getNestedVariableTypeField(), variableGroupByDto.getType().getId()))
             .must(existsQuery(getNestedVariableValueField()))
         )
           .subAggregation(variableSubAggregation)
@@ -142,34 +92,33 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       );
   }
 
-  private AggregationBuilder createVariableSubAggregation(final String variableName, final VariableType variableType) {
+  private AggregationBuilder createVariableSubAggregation(final VariableGroupByValueDto variableGroupByDto,
+                                                          final QueryBuilder baseQuery) {
     AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
-      .field(getNestedVariableValueFieldForType(variableType));
+      .field(getNestedVariableValueFieldForType(variableGroupByDto.getType()));
 
-    if (variableType.equals(VariableType.DATE)) {
+    if (variableGroupByDto.getType().equals(VariableType.DATE)) {
       aggregationBuilder = createDateVariableAggregation(
         VARIABLES_AGGREGATION,
-        variableName,
+        variableGroupByDto.getName(),
         getNestedVariableNameField(),
         getNestedVariableValueFieldForType(VariableType.DATE),
         PROCESS_INSTANCE_INDEX_NAME,
         VARIABLES,
         intervalAggregationService,
         esClient,
-        setupBaseQuery(getReportData())
+        baseQuery
       );
     }
 
-    // the same process instance could have several same variable names -> do not count each but only the proc inst once
-    aggregationBuilder.subAggregation(reverseNested(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION));
+    aggregationBuilder.subAggregation(viewPart.createAggregation());
     return aggregationBuilder;
   }
 
-  private ReportMapResultDto mapToReportResult(final SearchResponse response) {
-    final ReportMapResultDto resultDto = new ReportMapResultDto();
-
+  @Override
+  public ReportMapResultDto retrieveQueryResult(SearchResponse response) {
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
@@ -179,8 +128,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
 
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
-      final ReverseNested variableProcInstCount = b.getAggregations().get(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), variableProcInstCount.getDocCount()));
+      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), viewPart.retrieveQueryResult(b.getAggregations())));
     }
 
     final ReverseNested filteredProcessInstAggr = filteredVariables.getAggregations()
@@ -194,11 +142,31 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ProcessRepor
       ));
     }
 
+    final ReportMapResultDto resultDto = new ReportMapResultDto();
     resultDto.setData(resultData);
     resultDto.setIsComplete(isResultComplete(variableTerms));
     resultDto.setInstanceCount(response.getHits().getTotalHits());
 
     return resultDto;
+  }
+
+  @Override
+  public void sortResultData(final ProcessReportDataDto reportData, final ReportMapResultDto resultDto) {
+    final Optional<SortingDto> sortingOpt = reportData.getConfiguration().getSorting();
+    if (sortingOpt.isPresent()) {
+      MapResultSortingUtility.sortResultData(
+        sortingOpt.get(),
+        resultDto,
+        ((VariableGroupByValueDto) (reportData.getGroupBy().getValue())).getType()
+      );
+
+    } else if (VariableType.DATE.equals(getVariableGroupByDto(reportData).getType())) {
+      MapResultSortingUtility.sortResultData(
+        new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC),
+        resultDto,
+        ((VariableGroupByValueDto) (reportData.getGroupBy().getValue())).getType()
+      );
+    }
   }
 
   private boolean isResultComplete(MultiBucketsAggregation variableTerms) {

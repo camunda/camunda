@@ -44,8 +44,8 @@ import org.camunda.optimize.service.es.report.command.process.processinstance.du
 import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.ProcessInstanceDurationGroupByVariableWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByEndDateCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByStartDateCommand;
-import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByVariableCommand;
-import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyGroupByNoneCommand;
+import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyGroupByNoneCmd;
+import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyGroupByVariableCmd;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.distributed_by.none.UserTaskIdleDurationByAssigneeCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.distributed_by.none.UserTaskTotalDurationByAssigneeCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.distributed_by.none.UserTaskWorkDurationByAssigneeCommand;
@@ -71,8 +71,10 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -154,12 +156,21 @@ public class SingleReportEvaluator {
   protected final IntervalAggregationService intervalAggregationService;
   protected final ProcessDefinitionReader processDefinitionReader;
   protected final DecisionDefinitionReader decisionDefinitionReader;
+  protected final ApplicationContext applicationContext;
 
-  private static void addCountProcessInstanceFrequencyReports() {
+  @PostConstruct
+  public void init() {
     commandSuppliers.put(
       createCountProcessInstanceFrequencyGroupByNoneReport().createCommandKey(),
-      CountProcessInstanceFrequencyGroupByNoneCommand::new
+      () -> applicationContext.getBean(CountProcessInstanceFrequencyGroupByNoneCmd.class)
     );
+    commandSuppliers.put(
+      createCountProcessInstanceFrequencyGroupByVariableReport().createCommandKey(),
+      () -> applicationContext.getBean(CountProcessInstanceFrequencyGroupByVariableCmd.class)
+    );
+  }
+
+  private static void addCountProcessInstanceFrequencyReports() {
     commandSuppliers.put(
       createCountProcessInstanceFrequencyGroupByStartDateReport().createCommandKey(),
       CountProcessInstanceFrequencyByStartDateCommand::new
@@ -167,10 +178,6 @@ public class SingleReportEvaluator {
     commandSuppliers.put(
       createCountProcessInstanceFrequencyGroupByEndDateReport().createCommandKey(),
       CountProcessInstanceFrequencyByEndDateCommand::new
-    );
-    commandSuppliers.put(
-      createCountProcessInstanceFrequencyGroupByVariableReport().createCommandKey(),
-      CountProcessInstanceFrequencyByVariableCommand::new
     );
   }
 

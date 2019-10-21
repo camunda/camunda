@@ -6,12 +6,8 @@
 package org.camunda.optimize.dto.optimize.query.report.single.result;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 
 @Data
 public class NumberResultDto implements DecisionReportResultDto, ProcessReportResultDto {

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.util;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -55,6 +56,14 @@ public class MapResultSortingUtility {
                                     final VariableType keyType) {
     resultData.getResultAsDto().setData(sortResultData(
       sorting, resultData.getResultAsDto().getData(), keyType
+    ));
+  }
+
+  public static void sortResultData(final SortingDto sorting,
+                                    final ReportMapResultDto resultData,
+                                    final VariableType keyType) {
+    resultData.setData(sortResultData(
+      sorting, resultData.getData(), keyType
     ));
   }
 
