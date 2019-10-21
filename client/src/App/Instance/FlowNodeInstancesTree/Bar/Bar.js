@@ -7,11 +7,17 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+import {TYPE} from 'modules/constants';
+
 import TimeStampLabel from '../TimeStampLabel';
 
 import * as Styled from './styled';
 
 const BarComponent = ({node, isSelected}) => {
+  const name = `${node.name}${
+    node.type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance ${node.id})` : ''
+  }`;
+
   return (
     <Styled.Bar showSelectionStyle={isSelected}>
       <Styled.NodeIcon
@@ -20,7 +26,7 @@ const BarComponent = ({node, isSelected}) => {
         data-test={`flowNodeIcon-${node.type}`}
       />
       <Styled.NodeName isWhite={isSelected} isBold={!!node.children.length}>
-        {node.name}
+        {name}
       </Styled.NodeName>
       <TimeStampLabel timeStamp={node.endDate} isSelected={isSelected} />
     </Styled.Bar>
