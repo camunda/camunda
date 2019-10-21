@@ -55,7 +55,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<ExporterContainer> containers;
-  private final int partitionId;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
   private final RecordExporter recordExporter;
@@ -64,7 +63,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
-  private ActorScheduler actorScheduler;
   private EventFilter eventFilter;
   private ExportersState state;
 
@@ -77,7 +75,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
     this.logStream = context.getLogStream();
-    this.partitionId = logStream.getPartitionId();
+    final int partitionId = logStream.getPartitionId();
     this.recordExporter = new RecordExporter(containers, partitionId);
     this.logStreamReader = context.getLogStreamReader();
     this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
@@ -90,7 +88,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
 
   @Override
   public void start(ServiceStartContext startContext) {
-    actorScheduler = startContext.getScheduler();
+    final ActorScheduler actorScheduler = startContext.getScheduler();
     startContext.async(actorScheduler.submitActor(this, SchedulingHints.ioBound()));
   }
 
@@ -166,7 +164,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private void recoverFromSnapshot() {
     this.state = new ExportersState(zeebeDb, zeebeDb.createContext());
 
-    final long snapshotPosition = getLowestExporterPosition();
+    final long snapshotPosition = state.getLowestPosition();
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader) {
       throw new IllegalStateException(
@@ -179,8 +177,8 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         snapshotPosition);
   }
 
-  public long getLowestExporterPosition() {
-    return state.getLowestPosition();
+  public ActorFuture<Long> getLowestExporterPosition() {
+    return actor.call(() -> state.getLowestPosition());
   }
 
   private ExporterEventFilter createEventFilter(List<ExporterContainer> containers) {
@@ -301,7 +299,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         });
   }
 
-  public boolean isClosed() {
+  private boolean isClosed() {
     return !isOpened.get();
   }
 

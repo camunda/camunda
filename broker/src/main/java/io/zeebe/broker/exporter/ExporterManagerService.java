@@ -29,6 +29,8 @@ import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.DurationUtil;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.List;
 import org.slf4j.Logger;
 
@@ -101,9 +103,9 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
     }
   }
 
-  public long getLowestExporterPosition() {
+  public ActorFuture<Long> getLowestExporterPosition() {
     if (exporterRepository.getExporters().isEmpty()) {
-      return Long.MAX_VALUE;
+      return CompletableActorFuture.completed(Long.MAX_VALUE);
     } else {
       return director.getLowestExporterPosition();
     }
