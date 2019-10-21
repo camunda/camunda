@@ -51,7 +51,7 @@ public class SearchableIdentityCacheTest {
     final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
     cache.addIdentity(userIdentity);
 
-    final List<IdentityDto> searchResult = cache.searchIdentities(userIdentity.getId());
+    final List<IdentityDto> searchResult = cache.searchIdentities(userIdentity.getId()).getResult();
     assertThat(searchResult.size(), is(1));
   }
 
@@ -62,7 +62,7 @@ public class SearchableIdentityCacheTest {
     final UserDto userIdentity2 = new UserDto("otherfrodo", "Frodo", "Frodo", "frodo.baggins@camunda.com");
     cache.addIdentity(userIdentity2);
 
-    final List<IdentityDto> searchResult = cache.searchIdentities(userIdentity1.getId());
+    final List<IdentityDto> searchResult = cache.searchIdentities(userIdentity1.getId()).getResult();
     assertThat(searchResult.size(), is(2));
     assertThat(searchResult, contains(userIdentity1, userIdentity2));
   }
@@ -122,7 +122,7 @@ public class SearchableIdentityCacheTest {
     cache.addIdentity(userIdentity);
 
     final List<IdentityDto> searchResult =
-      cache.searchIdentities(userIdentity.getFirstName() + " " + userIdentity.getLastName());
+      cache.searchIdentities(userIdentity.getFirstName() + " " + userIdentity.getLastName()).getResult();
     assertThat(searchResult.size(), is(1));
   }
 
@@ -135,8 +135,9 @@ public class SearchableIdentityCacheTest {
     // just testing one partial scenario, there is not much benefit in permutating here,
     // minimum term length matches are verified in other tests
     final List<IdentityDto> searchResult =
-      cache.searchIdentities(userIdentity.getFirstName().substring(0, 4) + " " + userIdentity.getLastName()
-        .substring(0, 2));
+      cache.searchIdentities(
+        userIdentity.getFirstName().substring(0, 4) + " " + userIdentity.getLastName().substring(0, 2)
+      ).getResult();
     assertThat(searchResult.size(), is(1));
   }
 
@@ -148,7 +149,7 @@ public class SearchableIdentityCacheTest {
     final UserDto userIdentity2 = new UserDto("frodo", "", "Baggins", "f.baggins@camunda.com");
     cache.addIdentity(userIdentity2);
 
-    final List<IdentityDto> searchResult = cache.searchIdentities("fro");
+    final List<IdentityDto> searchResult = cache.searchIdentities("fro").getResult();
     assertThat(searchResult.size(), is(2));
     assertThat(searchResult, contains(userIdentity1, userIdentity2));
   }
@@ -161,7 +162,7 @@ public class SearchableIdentityCacheTest {
     final UserDto userIdentity2 = new UserDto("testUser2", "", "Baggins", "frodo@camunda.com");
     cache.addIdentity(userIdentity2);
 
-    final List<IdentityDto> searchResult = cache.searchIdentities("Frod");
+    final List<IdentityDto> searchResult = cache.searchIdentities("Frod").getResult();
     assertThat(searchResult.size(), is(2));
     assertThat(searchResult, contains(userIdentity1, userIdentity2));
   }
@@ -174,7 +175,7 @@ public class SearchableIdentityCacheTest {
     final UserDto userIdentity2 = new UserDto("testUser2", "", "Baggins", "frodo@camunda.com");
     cache.addIdentity(userIdentity2);
 
-    final List<IdentityDto> searchResult = cache.searchIdentities("Frodo");
+    final List<IdentityDto> searchResult = cache.searchIdentities("Frodo").getResult();
     assertThat(searchResult.size(), is(2));
     assertThat(searchResult, contains(userIdentity1, userIdentity2));
   }
@@ -184,7 +185,7 @@ public class SearchableIdentityCacheTest {
     final GroupDto group = new GroupDto("testGroup", "Test Group");
     cache.addIdentity(group);
 
-    final List<IdentityDto> searchResult = cache.searchIdentities(group.getId());
+    final List<IdentityDto> searchResult = cache.searchIdentities(group.getId()).getResult();
     assertThat(searchResult.size(), is(1));
   }
 
@@ -195,7 +196,7 @@ public class SearchableIdentityCacheTest {
     final GroupDto group2 = new GroupDto("otherGroup", "testGroup");
     cache.addIdentity(group2);
 
-    final List<IdentityDto> searchResult = cache.searchIdentities(group1.getId());
+    final List<IdentityDto> searchResult = cache.searchIdentities(group1.getId()).getResult();
     assertThat(searchResult.size(), is(2));
     assertThat(searchResult, contains(group1, group2));
   }
@@ -233,7 +234,7 @@ public class SearchableIdentityCacheTest {
     assertThat(cacheSizeInMb, is(lessThan(50L)));
 
     final long beforeSearchMillis = System.currentTimeMillis();
-    final List<IdentityDto> searchResult = cache.searchIdentities("Cla");
+    final List<IdentityDto> searchResult = cache.searchIdentities("Cla").getResult();
     final long afterSearchMillis = System.currentTimeMillis();
     assertThat(searchResult.size(), is(greaterThan(0)));
     assertThat(afterSearchMillis - beforeSearchMillis, is(lessThan(1000L)));
@@ -273,11 +274,11 @@ public class SearchableIdentityCacheTest {
   }
 
   private void verifyCaseInsensitiveSearchResults(final String searchTerm, final int expectedResultCount) {
-    final List<IdentityDto> searchResult = cache.searchIdentities(searchTerm);
+    final List<IdentityDto> searchResult = cache.searchIdentities(searchTerm).getResult();
     assertThat(searchResult.size(), is(expectedResultCount));
-    final List<IdentityDto> searchResultUpperCase = cache.searchIdentities(searchTerm.toUpperCase());
+    final List<IdentityDto> searchResultUpperCase = cache.searchIdentities(searchTerm.toUpperCase()).getResult();
     assertThat(searchResultUpperCase.size(), is(expectedResultCount));
-    final List<IdentityDto> searchResultLowerCase = cache.searchIdentities(searchTerm.toLowerCase());
+    final List<IdentityDto> searchResultLowerCase = cache.searchIdentities(searchTerm.toLowerCase()).getResult();
     assertThat(searchResultLowerCase.size(), is(expectedResultCount));
   }
 

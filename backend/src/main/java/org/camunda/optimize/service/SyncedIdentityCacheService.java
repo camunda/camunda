@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.AuthorizedIdentitiesResult;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -142,7 +143,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
     return activeIdentityCache.getGroupIdentityById(id);
   }
 
-  public List<IdentityDto> searchIdentities(final String terms, final int resultLimit) {
+  public IdentitySearchResultDto searchIdentities(final String terms, final int resultLimit) {
     return activeIdentityCache.searchIdentities(terms, resultLimit);
   }
 

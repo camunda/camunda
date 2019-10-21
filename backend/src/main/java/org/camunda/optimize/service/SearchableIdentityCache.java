@@ -42,6 +42,7 @@ import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.io.IOException;
@@ -125,12 +126,12 @@ public class SearchableIdentityCache implements AutoCloseable {
     return getTypedIdentityDtoById(id, IdentityType.GROUP, SearchableIdentityCache::mapDocumentToGroupDto);
   }
 
-  public List<IdentityDto> searchIdentities(final String terms) {
+  public IdentitySearchResultDto searchIdentities(final String terms) {
     return searchIdentities(terms, 10);
   }
 
-  public List<IdentityDto> searchIdentities(final String terms, final int resultLimit) {
-    final List<IdentityDto> identities = new ArrayList<>();
+  public IdentitySearchResultDto searchIdentities(final String terms, final int resultLimit) {
+    final IdentitySearchResultDto result = new IdentitySearchResultDto();
     doWithReadLock(() -> {
       try (final IndexReader indexReader = DirectoryReader.open(memoryDirectory)) {
         final IndexSearcher searcher = new IndexSearcher(indexReader);
@@ -142,16 +143,17 @@ public class SearchableIdentityCache implements AutoCloseable {
           createSearchIdentityQuery(terms), resultLimit, scoreThanNameSort, true, false
         );
 
+        result.setTotal(topDocs.totalHits);
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
           final Document document = searcher.doc(scoreDoc.doc);
           final IdentityDto identityDto = mapDocumentToIdentityDto(document);
-          identities.add(identityDto);
+          result.getResult().add(identityDto);
         }
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Failed searching for identities with terms [id:" + terms + "].", e);
       }
     });
-    return identities;
+    return result;
   }
 
   @VisibleForTesting

@@ -10,6 +10,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.security.ApplicationAuthorizationService;
@@ -87,7 +88,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       );
   }
 
-  public List<IdentityDto> searchForIdentities(final String searchString, final int maxResults) {
+  public IdentitySearchResultDto searchForIdentities(final String searchString, final int maxResults) {
     return syncedIdentityCache.searchIdentities(searchString, maxResults);
   }
 
