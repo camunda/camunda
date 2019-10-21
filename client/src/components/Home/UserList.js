@@ -84,7 +84,7 @@ export default withErrorHandling(
                 required
                 type="text"
                 className="searchInput"
-                placeholder={t('home.search.id')}
+                placeholder={t('home.search.name')}
                 value={searchQuery}
                 onChange={({target: {value}}) => this.setState({searchQuery: value})}
                 onClear={() => this.setState({searchQuery: ''})}
@@ -127,8 +127,8 @@ export default withErrorHandling(
         return <LoadingIndicator />;
       }
 
-      const searchFilteredData = this.props.data.filter(({identity: {id}}) =>
-        id.toLowerCase().includes(this.state.searchQuery.toLowerCase())
+      const searchFilteredData = this.props.data.filter(({identity: {id, name}}) =>
+        (name || id).toLowerCase().includes(this.state.searchQuery.toLowerCase())
       );
 
       if (searchFilteredData.length === 0) {
@@ -147,7 +147,7 @@ export default withErrorHandling(
             <ListItem.Section className="icon">{getEntityIcon(identity.type)}</ListItem.Section>
             <ListItem.Section className="name">
               <div className="type">{formatType(identity.type)}</div>
-              <div className="entityName">{identity.id}</div>
+              <div className="entityName">{identity.name || identity.id}</div>
             </ListItem.Section>
             <ListItem.Section className="containedEntities" />
             <ListItem.Section className="role">{formatRole(role)}</ListItem.Section>

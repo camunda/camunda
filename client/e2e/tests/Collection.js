@@ -66,7 +66,7 @@ test('adding a new user', async t => {
   await t.click(e.confirmModalButton);
 
   await t.expect(e.groupItem.visible).ok();
-  await t.expect(e.groupItem.textContent).contains('sales');
+  await t.expect(e.groupItem.textContent).contains('Sales');
   await t.expect(e.groupItem.textContent).contains('Viewer');
 });
 

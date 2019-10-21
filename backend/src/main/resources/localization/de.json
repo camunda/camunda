@@ -40,8 +40,7 @@
     },
     "title": "Sammlungen, Dashboards, und Berichte",
     "search": {
-      "name": "Nach Namen filtern ...",
-      "id": "Nach ID filtern ..."
+      "name": "Nach Namen filtern ..."
     },
     "collectionTitle": "Dashboards und Berichte",
     "collectionTitleWithAmpersand": "Dashboards & Berichte",
