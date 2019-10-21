@@ -18,7 +18,7 @@ You will be guided through the following steps:
 ## Prerequisites
 
 * Go v1.11+ environment installed
-* [Zeebe distribution](../introduction/install.html)
+* [Zeebe distribution](/introduction/install.html)
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
 
