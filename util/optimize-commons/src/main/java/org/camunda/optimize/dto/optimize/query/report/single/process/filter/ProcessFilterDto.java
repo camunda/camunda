@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
   @JsonSubTypes.Type(value = DurationFilterDto.class, name = "processInstanceDuration"),
   @JsonSubTypes.Type(value = VariableFilterDto.class, name = "variable"),
   @JsonSubTypes.Type(value = ExecutedFlowNodeFilterDto.class, name = "executedFlowNodes"),
+  @JsonSubTypes.Type(value = ExecutingFlowNodeFilterDto.class, name = "executingFlowNodes"),
   @JsonSubTypes.Type(value = RunningInstancesOnlyFilterDto.class, name = "runningInstancesOnly"),
   @JsonSubTypes.Type(value = CompletedInstancesOnlyFilterDto.class, name = "completedInstancesOnly"),
   @JsonSubTypes.Type(value = CanceledInstancesOnlyFilterDto.class, name = "canceledInstancesOnly"),

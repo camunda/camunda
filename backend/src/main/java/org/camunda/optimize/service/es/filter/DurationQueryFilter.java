@@ -39,5 +39,4 @@ public class DurationQueryFilter implements QueryFilter<DurationFilterDataDto> {
     }
   }
 
-
 }

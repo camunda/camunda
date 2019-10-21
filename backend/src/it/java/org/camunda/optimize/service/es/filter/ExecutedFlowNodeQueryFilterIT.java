@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -13,80 +12,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ExecutedFlowNodeQueryFilterIT {
-
-  private static final String TEST_DEFINITION = "TestDefinition";
-  private final static String USER_TASK_ACTIVITY_ID = "User-Task";
-  private final static String USER_TASK_ACTIVITY_ID_2 = "User-Task2";
-  private final static String END_EVENT_ACTIVITY_ID = "endEvent";
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                 List<ProcessFilterDto> filter) {
-    ProcessReportDataDto reportData =
-      createReport(processDefinition.getKey(), processDefinition.getVersionAsString());
-    reportData.setFilter(filter);
-    return evaluateReportAndReturnResult(reportData);
-  }
-
-  private ProcessReportDataDto createReport(String key, String versionAsString) {
-    return ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(key)
-      .setProcessDefinitionVersion(versionAsString)
-      .setReportDataType(RAW_DATA)
-      .build();
-  }
-
-  private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {})
-      // @formatter:on
-      .getResult();
-  }
-
-  private Response evaluateReportAndReturnResponse(List<ProcessFilterDto> filterDto) {
-    ProcessReportDataDto reportData = createReport(ExecutedFlowNodeQueryFilterIT.TEST_DEFINITION, "1");
-    reportData.setFilter(filterDto);
-    return evaluateReportAndReturnResponse(reportData);
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
-  }
+public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
 
   @Test
   public void filterByOneFlowNode() {
@@ -197,7 +134,7 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterByMultipleAndCombinedFlowNodes() {
     // given
-    ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
     ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
     engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
@@ -229,7 +166,7 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterByMultipleAndCombinedFlowNodesWithUnequalOperator() {
     // given
-    ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
     ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
     engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
@@ -278,7 +215,7 @@ public class ExecutedFlowNodeQueryFilterIT {
   @Test
   public void filterByMultipleOrCombinedFlowNodes() {
     // given
-    ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
+    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
     ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
     engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
@@ -517,30 +454,31 @@ public class ExecutedFlowNodeQueryFilterIT {
     assertThat(resultDto.getData().size(), is(piCount));
   }
 
-
-  private ProcessDefinitionEngineDto deployProcessDefinitionWithTwoUserTasks() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent()
-      .userTask(USER_TASK_ACTIVITY_ID)
-      .userTask(USER_TASK_ACTIVITY_ID_2)
-      .endEvent(END_EVENT_ACTIVITY_ID)
-      .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
-  }
-
   private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition() {
-    return deploySimpleUserTaskProcessDefinition(USER_TASK_ACTIVITY_ID);
+    return deploySimpleUserTaskProcessDefinition(USER_TASK_ACTIVITY_ID, END_EVENT_ACTIVITY_ID);
   }
 
-  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition(String userTaskActivityId) {
+  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition(String userTaskActivityId, String endEventId) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System
       .currentTimeMillis())
       .startEvent()
       .userTask(userTaskActivityId)
-      .endEvent(END_EVENT_ACTIVITY_ID)
+      .endEvent(endEventId)
       .done();
     return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
+  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
+                                                                 List<ProcessFilterDto> filter) {
+    ProcessReportDataDto reportData = createReportWithDefinition(processDefinition);
+    reportData.setFilter(filter);
+    return evaluateReportAndReturnResult(reportData);
+  }
+
+  private Response evaluateReportAndReturnResponse(List<ProcessFilterDto> filterDto) {
+    ProcessReportDataDto reportData = createReport(TEST_DEFINITION, "1");
+    reportData.setFilter(filterDto);
+    return evaluateReportAndReturnResponse(reportData);
+  }
 
 }

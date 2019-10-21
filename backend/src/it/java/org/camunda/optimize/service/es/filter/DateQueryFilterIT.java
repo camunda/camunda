@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
@@ -16,17 +15,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -35,26 +27,13 @@ import java.util.List;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class DateQueryFilterIT {
+public class DateQueryFilterIT extends AbstractFilterIT {
 
   private static final String TEST_ACTIVITY = "testActivity";
   private static final long TIME_OFFSET_MILLS = 2000L;
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
 
   @Test
   public void testGetHeatMapWithGteStartDateCriteria() {
@@ -64,7 +43,7 @@ public class DateQueryFilterIT {
     OffsetDateTime start = processInstance.getStartTime();
 
     //when
-    ProcessReportDataDto reportData = createReport(engineDto);
+    ProcessReportDataDto reportData = createReportWithInstance(engineDto);
 
     List<ProcessFilterDto> fixedStartDateFilter =
       ProcessFilterBuilder.filter()
@@ -105,7 +84,7 @@ public class DateQueryFilterIT {
     OffsetDateTime start = processInstance.getStartTime();
 
     //when
-    ProcessReportDataDto reportData = createReport(engineDto);
+    ProcessReportDataDto reportData = createReportWithInstance(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(null)
@@ -143,7 +122,7 @@ public class DateQueryFilterIT {
     OffsetDateTime end = processInstance.getEndTime();
 
     //when
-    ProcessReportDataDto reportData = createReport(engineDto);
+    ProcessReportDataDto reportData = createReportWithInstance(engineDto);
 
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
@@ -187,7 +166,7 @@ public class DateQueryFilterIT {
     OffsetDateTime end = processInstance.getEndTime();
 
     //when
-    ProcessReportDataDto reportData = createReport(engineDto);
+    ProcessReportDataDto reportData = createReportWithInstance(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedEndDate()
                            .start(end.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
@@ -219,7 +198,7 @@ public class DateQueryFilterIT {
     OffsetDateTime start = processInstance.getStartTime();
     OffsetDateTime end = processInstance.getEndTime();
 
-    ProcessReportDataDto reportData = createReport(engineDto);
+    ProcessReportDataDto reportData = createReportWithInstance(engineDto);
     reportData.setFilter(ProcessFilterBuilder.filter()
                            .fixedStartDate()
                            .start(start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS))
@@ -306,7 +285,7 @@ public class DateQueryFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -355,7 +334,7 @@ public class DateQueryFilterIT {
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
-    final ReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -412,7 +391,7 @@ public class DateQueryFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -478,7 +457,7 @@ public class DateQueryFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResultDto result = evaluateProcessCountMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -521,36 +500,6 @@ public class DateQueryFilterIT {
     assertThat(resultMap.getData().size(), is(size));
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateProcessCountMapReport(
-    final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  private AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateProcessDurationMapReport(
-    final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
-      // @formatter:on
-  }
-
-  private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {})
-      // @formatter:on
-      .getResult();
-  }
-
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
     return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
   }
@@ -566,12 +515,4 @@ public class DateQueryFilterIT {
     return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
   }
 
-   private ProcessReportDataDto createReport(ProcessInstanceEngineDto processInstanceEngineDto) {
-    return ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(RAW_DATA)
-      .build();
-  }
 }

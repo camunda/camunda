@@ -12,11 +12,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Comp
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DurationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.NonCanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +33,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final EndDateQueryFilter endDateQueryFilter;
   private final ProcessVariableQueryFilter variableQueryFilter;
   private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
+  private final ExecutingFlowNodeQueryFilter executingFlowNodeQueryFilter;
   private final DurationQueryFilter durationQueryFilter;
   private final RunningInstancesOnlyQueryFilter runningInstancesOnlyQueryFilter;
   private final CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
@@ -44,6 +47,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
       endDateQueryFilter.addFilters(query, extractFilters(filter, EndDateFilterDto.class));
       variableQueryFilter.addFilters(query, extractFilters(filter, VariableFilterDto.class));
       executedFlowNodeQueryFilter.addFilters(query, extractFilters(filter, ExecutedFlowNodeFilterDto.class));
+      executingFlowNodeQueryFilter.addFilters(query, extractFilters(filter, ExecutingFlowNodeFilterDto.class));
       durationQueryFilter.addFilters(query, extractFilters(filter, DurationFilterDto.class));
       runningInstancesOnlyQueryFilter.addFilters(query, extractFilters(filter, RunningInstancesOnlyFilterDto.class));
       completedInstancesOnlyQueryFilter.addFilters(

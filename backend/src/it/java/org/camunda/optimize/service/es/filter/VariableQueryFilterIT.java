@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -16,17 +15,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -46,72 +38,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-
-public class VariableQueryFilterIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
-
-  private RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {})
-      // @formatter:on
-      .getResult();
-  }
-
-  private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto> filterList) {
-    final String TEST_DEFINITION_KEY = "testDefinition";
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(TEST_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .build();
-    reportData.setFilter(filterList);
-    return evaluateReportAndReturnResponse(reportData);
-  }
-
-  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute();
-  }
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                                 List<ProcessFilterDto> filterList) {
-    return this.evaluateReportWithFilter(
-      processDefinition.getKey(),
-      String.valueOf(processDefinition.getVersion()),
-      filterList
-    );
-  }
-
-  private RawDataProcessReportResultDto evaluateReportWithFilter(String processDefinitionKey,
-                                                                 String processDefinitionVersion,
-                                                                 List<ProcessFilterDto> filter) {
-    ProcessReportDataDto reportData = ProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .setFilter(filter)
-      .build();
-    return evaluateReportAndReturnResult(reportData);
-  }
+public class VariableQueryFilterIT extends AbstractFilterIT{
 
   @Test
   public void simpleVariableFilter() {
@@ -568,7 +495,6 @@ public class VariableQueryFilterIT {
 
   @Test
   public void numericLessThanEqualVariableFilter() {
-
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
 
     for (VariableType variableType : VariableType.getNumericTypes()) {
@@ -1132,7 +1058,6 @@ public class VariableQueryFilterIT {
 
   @Test
   public void validationExceptionOnNullValueField() {
-
     //given
     List<ProcessFilterDto> variableFilterDto = ProcessFilterBuilder.filter()
       .variable()
@@ -1151,7 +1076,6 @@ public class VariableQueryFilterIT {
 
   @Test
   public void validationExceptionOnNullOnAllDateValueField() {
-
     //given
     List<ProcessFilterDto> variableFilterDto = ProcessFilterBuilder.filter()
       .variable()
@@ -1171,7 +1095,6 @@ public class VariableQueryFilterIT {
 
   @Test
   public void validationExceptionOnNullNumericValuesField() {
-
     //given
     List<ProcessFilterDto> variableFilterDto = ProcessFilterBuilder
       .filter()
@@ -1192,7 +1115,6 @@ public class VariableQueryFilterIT {
 
   @Test
   public void validationExceptionOnNullNameField() {
-
     //given
     List<ProcessFilterDto> variableFilterDto = ProcessFilterBuilder.filter()
       .variable()
@@ -1239,5 +1161,38 @@ public class VariableQueryFilterIT {
     return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
+  private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto> filterList) {
+    final String TEST_DEFINITION_KEY = "testDefinition";
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(TEST_DEFINITION_KEY)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+    reportData.setFilter(filterList);
+    return evaluateReportAndReturnResponse(reportData);
+  }
+
+  private RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
+                                                                 List<ProcessFilterDto> filterList) {
+    return this.evaluateReportWithFilter(
+      processDefinition.getKey(),
+      String.valueOf(processDefinition.getVersion()),
+      filterList
+    );
+  }
+
+  private RawDataProcessReportResultDto evaluateReportWithFilter(String processDefinitionKey,
+                                                                 String processDefinitionVersion,
+                                                                 List<ProcessFilterDto> filter) {
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .setFilter(filter)
+      .build();
+    return evaluateReportAndReturnResult(reportData);
+  }
 
 }

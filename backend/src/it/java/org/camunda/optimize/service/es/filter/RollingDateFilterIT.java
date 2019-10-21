@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterUnit;
@@ -31,7 +30,6 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-
 
 public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
@@ -154,7 +152,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     reportData.setFilter(
       ProcessFilterBuilder.filter().relativeStartDate().start(10L, RelativeDateFilterUnit.DAYS).add().buildList()
     );
-    final ReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -223,7 +221,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
         .add()
         .buildList()
     );
-    final ReportMapResultDto result = evaluateProcessDurationMapReport(reportData).getResult();
+    final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
     List<MapResultEntryDto<Long>> resultData = result.getData();
@@ -252,16 +250,6 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
     }
-  }
-
-  private AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateProcessDurationMapReport(
-    final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {});
-      // @formatter:on
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

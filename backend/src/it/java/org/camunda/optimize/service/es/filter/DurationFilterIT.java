@@ -55,7 +55,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
       .buildList();
     gte.addAll(lt);
     reportData.setFilter(gte);
-    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateReport(reportData);
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result = evaluateReportWithRawDataResult(reportData);
 
     // then
     assertResult(processInstance, result);
