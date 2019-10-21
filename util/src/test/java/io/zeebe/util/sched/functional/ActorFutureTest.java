@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -656,6 +657,70 @@ public class ActorFutureTest {
     assertThatThrownBy(() -> future.completeExceptionally(message, result))
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("Throwable must not be null.");
+  }
+
+  @Test
+  public void shouldNotRunOnCompleteInMainThread() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+    // expect exception
+    // when
+    assertThatThrownBy(() -> future.onComplete((v, t) -> {}))
+        .isInstanceOf(UnsupportedOperationException.class);
+  }
+
+  @Test
+  public void shouldRunOnComplete() {
+    // given
+    final ActorB actorB = new ActorB();
+    schedulerRule.submitActor(actorB);
+    final ActorA actorA = new ActorA(actorB);
+    schedulerRule.submitActor(actorA);
+
+    // when
+    final ActorFuture<Integer> future = actorA.sumValues();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(future.isDone()).isTrue();
+    assertThat(future.join()).isEqualTo(0xCAFF);
+  }
+
+  private static class ActorA extends Actor {
+
+    private final ActorB actorB;
+
+    ActorA(ActorB actorB) {
+      this.actorB = actorB;
+    }
+
+    ActorFuture<Integer> sumValues() {
+
+      final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
+      actor.call(
+          () -> {
+            actorB
+                .getValue()
+                .onComplete(
+                    (v, t) -> {
+                      future.complete(v + 1);
+
+                      final ActorThread current = ActorThread.current();
+                      assert current != null : "Expected to run in actor thread!";
+                      assert current.getCurrentTask().getActor() == this
+                          : "Expected to run in same actor!";
+                    });
+          });
+
+      return future;
+    }
+  }
+
+  private static class ActorB extends Actor {
+    public ActorFuture<Integer> getValue() {
+      return actor.call(() -> 0xCAFE);
+    }
   }
 
   class BlockedCallActor extends Actor {
