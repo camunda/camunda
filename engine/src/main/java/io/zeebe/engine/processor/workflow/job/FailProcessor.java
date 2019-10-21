@@ -25,7 +25,8 @@ public class FailProcessor implements CommandProcessor<JobRecord> {
   }
 
   @Override
-  public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+  public boolean onCommand(
+      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
     final long key = command.getKey();
     final JobState.State jobState = state.getState(key);
 
@@ -48,5 +49,6 @@ public class FailProcessor implements CommandProcessor<JobRecord> {
       commandControl.reject(
           RejectionType.NOT_FOUND, String.format(NOT_ACTIVATED_JOB_MESSAGE, key, "does not exist"));
     }
+    return true;
   }
 }

@@ -11,6 +11,7 @@ import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.RecordValues;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
@@ -247,6 +248,10 @@ public final class EngineRule extends ExternalResource {
 
   public void writeRecords(final RecordToWrite... records) {
     environmentRule.writeBatch(records);
+  }
+
+  public CommandResponseWriter getCommandResponseWriter() {
+    return environmentRule.getCommandResponseWriter();
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////////////

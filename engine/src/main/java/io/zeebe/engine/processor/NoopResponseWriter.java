@@ -12,27 +12,29 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 
-public interface TypedResponseWriter {
+public final class NoopResponseWriter implements TypedResponseWriter {
 
-  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
+  @Override
+  public void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason) {}
 
-  void writeEvent(TypedRecord<?> event);
+  @Override
+  public void writeEvent(TypedRecord<?> event) {}
 
-  void writeEventOnCommand(
-      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
+  @Override
+  public void writeEventOnCommand(
+      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command) {}
 
-  void writeResponse(
+  @Override
+  public void writeResponse(
       long eventKey,
       Intent eventState,
       UnpackedObject eventValue,
       ValueType valueType,
       long requestId,
-      int requestStreamId);
+      int requestStreamId) {}
 
-  /**
-   * Submits the response to transport.
-   *
-   * @return false in case of backpressure, else true
-   */
-  boolean flush();
+  @Override
+  public boolean flush() {
+    return false;
+  }
 }

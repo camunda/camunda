@@ -363,23 +363,4 @@ public final class ReProcessingStateMachine {
       return 0;
     }
   }
-
-  private static final class NoopResponseWriter implements TypedResponseWriter {
-
-    @Override
-    public void writeRejectionOnCommand(
-        TypedRecord<?> command, RejectionType type, String reason) {}
-
-    @Override
-    public void writeEvent(TypedRecord<?> event) {}
-
-    @Override
-    public void writeEventOnCommand(
-        long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command) {}
-
-    @Override
-    public boolean flush() {
-      return false;
-    }
-  }
 }

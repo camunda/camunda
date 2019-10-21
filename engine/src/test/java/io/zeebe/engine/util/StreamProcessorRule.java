@@ -262,6 +262,18 @@ public class StreamProcessorRule implements TestRule {
         .write();
   }
 
+  public long writeCommand(
+      int requestStreamId, long requestId, final Intent intent, final UnpackedObject value) {
+    return streams
+        .newRecord(getLogName(startPartitionId))
+        .recordType(RecordType.COMMAND)
+        .requestId(requestId)
+        .requestStreamId(requestStreamId)
+        .intent(intent)
+        .event(value)
+        .write();
+  }
+
   private static String getLogName(final int partitionId) {
     return STREAM_NAME + partitionId;
   }

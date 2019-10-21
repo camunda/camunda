@@ -425,6 +425,26 @@ public class ElementInstanceStateTest {
     Assertions.assertThat(elementInstanceState.isEmpty()).isTrue();
   }
 
+  @Test
+  public void shouldUpdateAwaitResultMetadata() {
+    final long key = 10L;
+    final int streamId = 2;
+    final long requestId = 10000L;
+
+    // when
+    elementInstanceState.setAwaitResultRequestMetadata(
+        key,
+        new AwaitWorkflowInstanceResultMetadata()
+            .setRequestStreamId(streamId)
+            .setRequestId(requestId));
+    final AwaitWorkflowInstanceResultMetadata metadata =
+        elementInstanceState.getAwaitResultRequestMetadata(key);
+
+    // then
+    assertThat(metadata.getRequestId()).isEqualTo(requestId);
+    assertThat(metadata.getRequestStreamId()).isEqualTo(streamId);
+  }
+
   private void assertElementInstance(ElementInstance elementInstance, int childCount) {
     Assertions.assertThat(elementInstance.getKey()).isEqualTo(100);
     Assertions.assertThat(elementInstance.getState())

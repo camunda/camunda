@@ -46,12 +46,11 @@ public class CreateWorkflowInstanceProcessor
   private static final String ERROR_INVALID_VARIABLES_LOGGED_MESSAGE =
       "Expected to set variables from document, but the document is invalid";
 
+  protected final WorkflowInstanceRecord newWorkflowInstance = new WorkflowInstanceRecord();
   private final WorkflowState workflowState;
   private final ElementInstanceState elementInstanceState;
   private final VariablesState variablesState;
   private final KeyGenerator keyGenerator;
-
-  private final WorkflowInstanceRecord newWorkflowInstance = new WorkflowInstanceRecord();
 
   public CreateWorkflowInstanceProcessor(
       WorkflowState workflowState,
@@ -65,19 +64,19 @@ public class CreateWorkflowInstanceProcessor
   }
 
   @Override
-  public void onCommand(
+  public boolean onCommand(
       TypedRecord<WorkflowInstanceCreationRecord> command,
       CommandControl<WorkflowInstanceCreationRecord> controller,
       TypedStreamWriter streamWriter) {
     final WorkflowInstanceCreationRecord record = command.getValue();
     final DeployedWorkflow workflow = getWorkflow(record, controller);
     if (workflow == null || !isValidWorkflow(controller, workflow)) {
-      return;
+      return true;
     }
 
     final long workflowInstanceKey = keyGenerator.nextKey();
     if (!setVariablesFromDocument(controller, record, workflow.getKey(), workflowInstanceKey)) {
-      return;
+      return true;
     }
 
     final ElementInstance workflowInstance = createElementInstance(workflow, workflowInstanceKey);
@@ -92,6 +91,7 @@ public class CreateWorkflowInstanceProcessor
         .setVersion(workflow.getVersion())
         .setWorkflowKey(workflow.getKey());
     controller.accept(WorkflowInstanceCreationIntent.CREATED, record);
+    return true;
   }
 
   private boolean isValidWorkflow(

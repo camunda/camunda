@@ -86,6 +86,8 @@ public interface Intent {
         return WorkflowInstanceCreationIntent.from(intent);
       case ERROR:
         return ErrorIntent.from(intent);
+      case WORKFLOW_INSTANCE_RESULT:
+        return WorkflowInstanceResultIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -129,6 +131,8 @@ public interface Intent {
         return WorkflowInstanceCreationIntent.valueOf(intent);
       case ERROR:
         return ErrorIntent.valueOf(intent);
+      case WORKFLOW_INSTANCE_RESULT:
+        return WorkflowInstanceResultIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
