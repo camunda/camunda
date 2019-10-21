@@ -9,13 +9,13 @@ package io.zeebe.broker.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.response.ActivateJobsResponse;
 import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.util.ByteValue;
 import org.junit.Before;
 import org.junit.ClassRule;

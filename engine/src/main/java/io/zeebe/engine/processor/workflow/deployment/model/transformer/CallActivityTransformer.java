@@ -38,8 +38,6 @@ public class CallActivityTransformer implements ModelElementTransformer<CallActi
   private void bindLifecycle(final ExecutableCallActivity callActivity) {
     callActivity.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.CALL_ACTIVITY_ACTIVATING);
-    callActivity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CALL_ACTIVITY_ACTIVATED);
   }
 
   private void transformProcessId(CallActivity element, final ExecutableCallActivity callActivity) {

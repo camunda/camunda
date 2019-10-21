@@ -12,7 +12,6 @@ import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -22,6 +21,7 @@ import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;

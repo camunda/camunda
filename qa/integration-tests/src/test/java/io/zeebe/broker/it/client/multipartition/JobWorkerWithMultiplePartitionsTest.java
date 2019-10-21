@@ -11,11 +11,11 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;

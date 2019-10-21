@@ -11,7 +11,6 @@ import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentResolved;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCreated;
 import static io.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientException;
@@ -20,6 +19,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.IncidentRecordValue;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import org.assertj.core.api.Assertions;

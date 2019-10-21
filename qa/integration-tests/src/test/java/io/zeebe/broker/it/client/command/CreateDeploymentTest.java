@@ -10,7 +10,6 @@ package io.zeebe.broker.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientException;
@@ -18,6 +17,7 @@ import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.Workflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;

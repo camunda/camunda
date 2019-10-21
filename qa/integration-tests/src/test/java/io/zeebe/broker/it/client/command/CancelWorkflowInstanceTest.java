@@ -11,11 +11,11 @@ import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCa
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.grpc.Status.Code;
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientStatusException;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.ClassRule;

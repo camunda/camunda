@@ -7,12 +7,12 @@
  */
 package io.zeebe.broker.it.network;
 
-import io.zeebe.broker.it.util.BrokerClassRuleHelper;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.util.ByteValue;
 import java.util.Map;
 import org.junit.Before;
