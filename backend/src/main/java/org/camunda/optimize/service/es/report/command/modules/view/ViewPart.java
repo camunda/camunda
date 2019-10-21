@@ -5,12 +5,20 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
 public abstract class ViewPart {
 
-  public abstract AggregationBuilder createAggregation();
+  public void adjustBaseQuery(BoolQueryBuilder baseQuery, ProcessReportDataDto definitionData) {
+    // by default don't do anything
+  }
 
-  public abstract Long retrieveQueryResult(Aggregations aggs);
+  public abstract AggregationBuilder createAggregation(ProcessReportDataDto definitionData);
+
+  public abstract Long retrieveResult(Aggregations aggs, ProcessReportDataDto reportData);
+
+  public abstract void addViewAdjustmentsForCommandKeyGeneration(ProcessReportDataDto dataForCommandKey);
 }

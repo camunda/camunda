@@ -87,4 +87,10 @@ public abstract class ReportCommand<R extends ReportEvaluationResult, RD extends
       this::getLatestDefinitionVersionToKey
     );
   }
+
+  @Override
+  public String createCommandKey() {
+    throw new UnsupportedOperationException(
+      "This method is only being implemented for the new command structure refactoring an shouldn't be called!");
+  }
 }

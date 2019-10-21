@@ -38,14 +38,8 @@ import org.camunda.optimize.service.es.report.command.process.processinstance.du
 import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.date.ProcessInstanceDurationGroupByEndDateWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.date.ProcessInstanceDurationGroupByStartDateCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.date.ProcessInstanceDurationGroupByStartDateWithProcessPartCommand;
-import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none.ProcessInstanceDurationGroupByNoneCommand;
-import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.none.ProcessInstanceDurationGroupByNoneWithProcessPartCommand;
-import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.ProcessInstanceDurationByVariableCommand;
-import org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.ProcessInstanceDurationGroupByVariableWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByEndDateCommand;
 import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyByStartDateCommand;
-import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyGroupByNoneCmd;
-import org.camunda.optimize.service.es.report.command.process.processinstance.frequency.CountProcessInstanceFrequencyGroupByVariableCmd;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.distributed_by.none.UserTaskIdleDurationByAssigneeCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.distributed_by.none.UserTaskTotalDurationByAssigneeCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.assignee.distributed_by.none.UserTaskWorkDurationByAssigneeCommand;
@@ -76,6 +70,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
@@ -89,18 +84,12 @@ import static org.camunda.optimize.service.es.report.command.decision.util.Decis
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createRawDecisionDataReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountFlowNodeFrequencyGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByEndDateReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByStartDateReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createFlowNodeDurationGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByEndDateReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByEndDateWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByNoneReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByNoneWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByStartDateReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByStartDateWithProcessPartReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByVariableReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByVariableWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createRawDataReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskFrequencyGroupByAssigneeByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskFrequencyGroupByAssigneeReport;
@@ -158,16 +147,11 @@ public class SingleReportEvaluator {
   protected final DecisionDefinitionReader decisionDefinitionReader;
   protected final ApplicationContext applicationContext;
 
+  protected final List<Command> commands;
+
   @PostConstruct
   public void init() {
-    commandSuppliers.put(
-      createCountProcessInstanceFrequencyGroupByNoneReport().createCommandKey(),
-      () -> applicationContext.getBean(CountProcessInstanceFrequencyGroupByNoneCmd.class)
-    );
-    commandSuppliers.put(
-      createCountProcessInstanceFrequencyGroupByVariableReport().createCommandKey(),
-      () -> applicationContext.getBean(CountProcessInstanceFrequencyGroupByVariableCmd.class)
-    );
+    commands.forEach(c -> commandSuppliers.put(c.createCommandKey(), () -> applicationContext.getBean(c.getClass())));
   }
 
   private static void addCountProcessInstanceFrequencyReports() {
@@ -355,16 +339,6 @@ public class SingleReportEvaluator {
   }
 
   private static void addProcessInstanceDurationReports() {
-    // GROUP BY NONE
-    createCommandsForAllAggregationTypes(
-      (AggregationType aggro) -> createProcessInstanceDurationGroupByNoneReport(aggro).createCommandKey(),
-      ProcessInstanceDurationGroupByNoneCommand::new
-    );
-    createCommandsForAllAggregationTypes(
-      (AggregationType aggro) -> createProcessInstanceDurationGroupByNoneWithProcessPartReport(aggro).createCommandKey(),
-      ProcessInstanceDurationGroupByNoneWithProcessPartCommand::new
-    );
-
     // GROUP BY START DATE
     createCommandsForAllAggregationTypes(
       (AggregationType aggro) -> createProcessInstanceDurationGroupByStartDateReport(aggro).createCommandKey(),
@@ -383,16 +357,6 @@ public class SingleReportEvaluator {
     createCommandsForAllAggregationTypes(
       (AggregationType aggro) -> createProcessInstanceDurationGroupByEndDateWithProcessPartReport(aggro).createCommandKey(),
       ProcessInstanceDurationGroupByEndDateWithProcessPartCommand::new
-    );
-
-    // GROUP BY VARIABLE
-    createCommandsForAllAggregationTypes(
-      (AggregationType aggro) -> createProcessInstanceDurationGroupByVariableReport(aggro).createCommandKey(),
-      ProcessInstanceDurationByVariableCommand::new
-    );
-    createCommandsForAllAggregationTypes(
-      (AggregationType aggro) -> createProcessInstanceDurationGroupByVariableWithProcessPartReport(aggro).createCommandKey(),
-      ProcessInstanceDurationGroupByVariableWithProcessPartCommand::new
     );
   }
 

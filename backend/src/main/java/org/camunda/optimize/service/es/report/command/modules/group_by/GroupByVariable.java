@@ -25,6 +25,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -33,6 +34,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,6 +46,7 @@ import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedV
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getVariableUndefinedOrNullQuery;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -61,6 +64,8 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
   private static final String VARIABLES_AGGREGATION = "variables";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static final String FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
+  private static final String VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION = "proc_inst_count";
+  private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
 
   private final ConfigurationService configurationService;
   private final IntervalAggregationService intervalAggregationService;
@@ -71,14 +76,14 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
   }
 
   @Override
-  public AggregationBuilder createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                              final ProcessReportDataDto definitionData) {
+  public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
+                                                    final ProcessReportDataDto definitionData) {
     final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
 
     AggregationBuilder variableSubAggregation =
-      createVariableSubAggregation(variableGroupByDto, searchSourceBuilder.query());
+      createVariableSubAggregation(definitionData, searchSourceBuilder.query());
 
-    return nested(NESTED_AGGREGATION, VARIABLES)
+    final NestedAggregationBuilder variableAggregation = nested(NESTED_AGGREGATION, VARIABLES)
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
@@ -90,10 +95,23 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
           .subAggregation(variableSubAggregation)
           .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION))
       );
+    final AggregationBuilder undefinedOrNullVariableAggregation =
+      createUndefinedOrNullVariableAggregation(definitionData);
+    return Arrays.asList(variableAggregation, undefinedOrNullVariableAggregation);
   }
 
-  private AggregationBuilder createVariableSubAggregation(final VariableGroupByValueDto variableGroupByDto,
+  private AggregationBuilder createUndefinedOrNullVariableAggregation(final ProcessReportDataDto reportData) {
+    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(reportData);
+    return filter(
+      MISSING_VARIABLES_AGGREGATION,
+      getVariableUndefinedOrNullQuery(variableGroupByDto.getName(), variableGroupByDto.getType())
+    )
+      .subAggregation(viewPart.createAggregation(reportData));
+  }
+
+  private AggregationBuilder createVariableSubAggregation(final ProcessReportDataDto definitionData,
                                                           final QueryBuilder baseQuery) {
+    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
     AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
@@ -113,12 +131,17 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
       );
     }
 
-    aggregationBuilder.subAggregation(viewPart.createAggregation());
+    // the same process instance could have several same variable names -> do not count each but only the proc inst once
+    AggregationBuilder operationsAggregation = reverseNested(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION)
+      .subAggregation(viewPart.createAggregation(definitionData));
+
+
+    aggregationBuilder.subAggregation(operationsAggregation);
     return aggregationBuilder;
   }
 
   @Override
-  public ReportMapResultDto retrieveQueryResult(SearchResponse response) {
+  public ReportMapResultDto retrieveResult(SearchResponse response, final ProcessReportDataDto reportData) {
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
@@ -128,7 +151,10 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
 
     final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), viewPart.retrieveQueryResult(b.getAggregations())));
+      ReverseNested reverseNested = b.getAggregations().get(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
+      resultData.add(
+        new MapResultEntryDto<>(b.getKeyAsString(), viewPart.retrieveResult(reverseNested.getAggregations(), reportData))
+      );
     }
 
     final ReverseNested filteredProcessInstAggr = filteredVariables.getAggregations()
@@ -136,10 +162,15 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
     final long filteredProcInstCount = filteredProcessInstAggr.getDocCount();
 
     if (response.getHits().getTotalHits() > filteredProcInstCount) {
-      resultData.add(new MapResultEntryDto<>(
-        MISSING_VARIABLE_KEY,
-        response.getHits().getTotalHits() - filteredProcInstCount
-      ));
+
+      final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
+      final Long missingVarsOperationResult = viewPart.retrieveResult(aggregation.getAggregations(), reportData);
+
+      resultData.add(
+        new MapResultEntryDto<>(
+          MISSING_VARIABLE_KEY,
+          missingVarsOperationResult
+        ));
     }
 
     final ReportMapResultDto resultDto = new ReportMapResultDto();
@@ -167,6 +198,11 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
         ((VariableGroupByValueDto) (reportData.getGroupBy().getValue())).getType()
       );
     }
+  }
+
+  @Override
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
+    reportData.setGroupBy(new VariableGroupByDto());
   }
 
   private boolean isResultComplete(MultiBucketsAggregation variableTerms) {

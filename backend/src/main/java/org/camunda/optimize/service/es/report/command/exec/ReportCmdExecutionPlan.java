@@ -23,7 +23,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
-import java.util.Optional;
+import java.util.List;
 
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -64,8 +64,10 @@ public class ReportCmdExecutionPlan<R extends SingleReportResultDto> {
 
   public R evaluate(final ProcessReportDataDto definitionData) {
 
+    final BoolQueryBuilder baseQuery = setupBaseQuery(definitionData);
+    groupByPart.adjustBaseQuery(baseQuery, definitionData);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(setupBaseQuery(definitionData))
+      .query(baseQuery)
       .fetchSource(false)
       .size(0);
     addAggregation(searchSourceBuilder, definitionData);
@@ -94,6 +96,10 @@ public class ReportCmdExecutionPlan<R extends SingleReportResultDto> {
     return retrieveQueryResult(response, definitionData);
   }
 
+  public String generateCommandKey() {
+    return groupByPart.generateCommandKey();
+  }
+
   private R retrieveQueryResult(final SearchResponse response, final ProcessReportDataDto definitionData) {
     final R result = groupByPart.retrieveQueryResult(response, definitionData);
     result.setInstanceCount(response.getHits().getTotalHits());
@@ -102,8 +108,8 @@ public class ReportCmdExecutionPlan<R extends SingleReportResultDto> {
 
   private void addAggregation(final SearchSourceBuilder searchSourceBuilder,
                               final ProcessReportDataDto definitionData) {
-    final AggregationBuilder aggregation = groupByPart.createAggregation(searchSourceBuilder, definitionData);
-    Optional.ofNullable(aggregation).ifPresent(searchSourceBuilder::aggregation);
+    final List<AggregationBuilder> aggregations = groupByPart.createAggregation(searchSourceBuilder, definitionData);
+    aggregations.forEach(searchSourceBuilder::aggregation);
   }
 
   private String getIndexName() {

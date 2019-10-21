@@ -25,8 +25,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.AbstractProcessInstanceDurationByVariableCommand.FILTERED_VARIABLES_AGGREGATION;
-import static org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable.AbstractProcessInstanceDurationByVariableCommand.NESTED_AGGREGATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -36,7 +34,8 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.stats;
 
 public class GroupByDateVariableIntervalSelection {
   private static final String STATS = "stats";
-  private static final String VARIABLES_AGGREGATION = "variables";
+  private static final String NESTED_AGGREGATION = "nested";
+  private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   public static AggregationBuilder createDateVariableAggregation(String aggregationName,

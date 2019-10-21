@@ -5,29 +5,41 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class FrequencyCountView extends ViewPart {
-  private static final String VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION = "proc_inst_count";
+  private static final String COUNT_AGGREGATION = "_count";
 
   @Override
-  public AggregationBuilder createAggregation() {
-    // the same process instance could have several same variable names -> do not count each but only the proc inst once
-    return reverseNested(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
+  public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {
+    return filter(COUNT_AGGREGATION, QueryBuilders.matchAllQuery());
   }
 
   @Override
-  public Long retrieveQueryResult(Aggregations aggs) {
-    final ReverseNested variableProcInstCount = aggs.get(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
-    return variableProcInstCount.getDocCount();
+  public Long retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
+    final Filter count = aggs.get(COUNT_AGGREGATION);
+    return count.getDocCount();
+  }
+
+  @Override
+  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+    ProcessViewDto view = new ProcessViewDto();
+    view.setEntity(ProcessViewEntity.PROCESS_INSTANCE);
+    view.setProperty(ProcessViewProperty.FREQUENCY);
+    dataForCommandKey.setView(view);
   }
 }

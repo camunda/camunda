@@ -56,7 +56,7 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto, ProcessGroupByDto groupByDto) {
     final List<String> configsToConsiderForCommand = new ArrayList<>();
-    if (isDurationCommand(viewDto)) {
+    if (isDurationCommand(viewDto) && !(isProcessInstanceCommand(viewDto) && isGroupByVariableOrNone(groupByDto)) ) {
       configsToConsiderForCommand.add(this.aggregationType.getId());
     }
     if (isUserTaskDurationCommand(viewDto)) {
@@ -92,9 +92,19 @@ public class SingleReportConfigurationDto implements Combinable {
       viewDto.getProperty().equals(ProcessViewProperty.DURATION);
   }
 
+  private boolean isProcessInstanceCommand(ProcessViewDto viewDto) {
+    return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
+      viewDto.getEntity().equals(ProcessViewEntity.PROCESS_INSTANCE);
+  }
+
   private boolean isUserTaskCommand(ProcessViewDto viewDto) {
     return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
       viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
+  }
+
+  private boolean isGroupByVariableOrNone(ProcessGroupByDto groupByDto) {
+    return nonNull(groupByDto) && (groupByDto.getType().equals(ProcessGroupByType.NONE) || groupByDto.getType()
+      .equals(ProcessGroupByType.VARIABLE));
   }
 
   private boolean isGroupByAssigneeOrCandidateGroup(ProcessGroupByDto groupByDto) {

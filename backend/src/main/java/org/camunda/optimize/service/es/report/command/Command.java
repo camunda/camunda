@@ -13,4 +13,5 @@ public interface Command<RD extends ReportDefinitionDto> {
   
   ReportEvaluationResult evaluate(CommandContext<RD> commandContext) throws OptimizeException;
 
+  String createCommandKey();
 }
