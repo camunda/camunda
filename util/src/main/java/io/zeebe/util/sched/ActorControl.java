@@ -32,6 +32,18 @@ public class ActorControl {
     this.task = new ActorTask(actor);
   }
 
+  private ActorControl(ActorTask task) {
+    this.actor = task.actor;
+    this.task = task;
+  }
+
+  public static ActorControl current() {
+    final ActorThread actorThread =
+        ActorControl.ensureCalledFromActorThread("ActorControl#current");
+
+    return new ActorControl(actorThread.currentTask);
+  }
+
   /**
    * changes the actor's scheduling hints. For example, this makes it possible to transform a
    * cpu-bound actor into an io-bound actor and vice versa.
@@ -492,7 +504,7 @@ public class ActorControl {
     return currentJob;
   }
 
-  private ActorThread ensureCalledFromActorThread(String methodName) {
+  private static ActorThread ensureCalledFromActorThread(String methodName) {
     final ActorThread thread = ActorThread.current();
 
     if (thread == null) {

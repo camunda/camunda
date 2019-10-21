@@ -9,6 +9,7 @@ package io.zeebe.util.sched.future;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorTask;
 import io.zeebe.util.sched.ActorThread;
 import io.zeebe.util.sched.FutureUtil;
@@ -18,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Completable future implementation that is garbage free and reusable */
@@ -197,6 +199,12 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
   @Override
   public void block(ActorTask onCompletion) {
     blockedTasks.add(onCompletion);
+  }
+
+  @Override
+  public void onComplete(BiConsumer<V, Throwable> consumer) {
+    final ActorControl actorControl = ActorControl.current();
+    actorControl.runOnCompletion(this, consumer);
   }
 
   @Override

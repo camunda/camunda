@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.logstreams.delete;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.exporter.ExporterManagerService;
 import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.log.LogStream;
@@ -14,6 +15,7 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class LeaderLogStreamDeletionService implements DeletionService, Service {
   private final Injector<ExporterManagerService> exporterManagerInjector = new Injector<>();
@@ -39,12 +41,19 @@ public class LeaderLogStreamDeletionService implements DeletionService, Service 
 
   @Override
   public void delete(final long position) {
-    final long minPosition = Math.min(position, getMinimumExportedPosition());
-    logStream.delete(minPosition);
-  }
-
-  private long getMinimumExportedPosition() {
-    return exporterManagerService.getLowestExporterPosition();
+    final ActorFuture<Long> lowestExporterPosition =
+        exporterManagerService.getLowestExporterPosition();
+    lowestExporterPosition.onComplete(
+        (value, exception) -> {
+          if (exception == null) {
+            final long minPosition = Math.min(position, value);
+            logStream.delete(minPosition);
+          } else {
+            Loggers.DELETION_SERVICE.warn(
+                "Expected to retrieve lowest exporter position, but exception occurred.",
+                exception);
+          }
+        });
   }
 
   public Injector<ExporterManagerService> getExporterManagerInjector() {

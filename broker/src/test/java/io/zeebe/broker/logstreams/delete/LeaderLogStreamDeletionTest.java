@@ -9,7 +9,7 @@ package io.zeebe.broker.logstreams.delete;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +19,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,34 +59,61 @@ public class LeaderLogStreamDeletionTest {
   @Test
   public void shouldDeleteWithDelayedExporter() {
     // given
-    when(mockExporterManagerService.getLowestExporterPosition()).thenReturn(POSITION_TO_DELETE);
+    when(mockExporterManagerService.getLowestExporterPosition())
+        .thenReturn(CompletableActorFuture.completed(POSITION_TO_DELETE));
 
     // when
-    deletionService.delete(POSITION_TO_DELETE + 2);
+    actorScheduler
+        .submitActor(
+            new Actor() {
+              @Override
+              protected void onActorStarted() {
+                deletionService.delete(POSITION_TO_DELETE + 2);
+              }
+            })
+        .join();
 
     // then
-    verify(mockLogStream, times(1)).delete(POSITION_TO_DELETE);
+    verify(mockLogStream, timeout(1000)).delete(POSITION_TO_DELETE);
   }
 
   @Test
   public void shouldDeleteWithNoExporter() {
     // given
-    when(mockExporterManagerService.getLowestExporterPosition()).thenReturn(Long.MAX_VALUE);
+    when(mockExporterManagerService.getLowestExporterPosition())
+        .thenReturn(CompletableActorFuture.completed(Long.MAX_VALUE));
 
     // when
-    deletionService.delete(POSITION_TO_DELETE);
+    actorScheduler
+        .submitActor(
+            new Actor() {
+              @Override
+              protected void onActorStarted() {
+                deletionService.delete(POSITION_TO_DELETE);
+              }
+            })
+        .join();
 
     // then
-    verify(mockLogStream, times(1)).delete(POSITION_TO_DELETE);
+    verify(mockLogStream, timeout(1000)).delete(POSITION_TO_DELETE);
   }
 
   @Test
   public void shouldNotDeleteOnNegativePosition() {
     // given
-    when(mockExporterManagerService.getLowestExporterPosition()).thenReturn(Long.MAX_VALUE);
+    when(mockExporterManagerService.getLowestExporterPosition())
+        .thenReturn(CompletableActorFuture.completed(Long.MAX_VALUE));
 
     // when
-    deletionService.delete(-1);
+    actorScheduler
+        .submitActor(
+            new Actor() {
+              @Override
+              protected void onActorStarted() {
+                deletionService.delete(-1);
+              }
+            })
+        .join();
 
     // then
     verify(mockLogStream, never()).delete(POSITION_TO_DELETE);
