@@ -3527,11 +3527,11 @@ eslint-module-utils@^2.2.0:
     debug "^2.6.8"
     pkg-dir "^1.0.0"
 
-eslint-plugin-camunda-licensed@^0.4.0:
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-camunda-licensed/-/eslint-plugin-camunda-licensed-0.4.0.tgz#1df930f2580076f4c0334f03e2a916590017bfb9"
+eslint-plugin-camunda-licensed@^0.4.3:
+  version "0.4.3"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-camunda-licensed/-/eslint-plugin-camunda-licensed-0.4.3.tgz#5564cb0ab85d4b69fcbe1b8aab09f2b00166af1c"
   dependencies:
-    eslint-plugin-license-header "^0.1.1"
+    eslint-plugin-license-header "^0.2.0"
 
 eslint-plugin-flowtype@2.50.1:
   version "2.50.1"
@@ -3567,11 +3567,11 @@ eslint-plugin-jsx-a11y@6.1.2:
     has "^1.0.3"
     jsx-ast-utils "^2.0.1"
 
-eslint-plugin-license-header@^0.1.1:
-  version "0.1.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.1.1.tgz#0051f00d0e9f447d3582c4a11dad26ff5be4c44d"
+eslint-plugin-license-header@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-license-header/-/eslint-plugin-license-header-0.2.0.tgz#97bfb3da7ae9605d998ee0602c252ff14cf1de7d"
   dependencies:
-    requireindex "~1.1.0"
+    requireindex "^1.2.0"
 
 eslint-plugin-prettier@^3.1.0:
   version "3.1.0"
@@ -8873,9 +8873,9 @@ require-uncached@^1.0.3:
     caller-path "^0.1.0"
     resolve-from "^1.0.0"
 
-requireindex@~1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/requireindex/-/requireindex-1.1.0.tgz#e5404b81557ef75db6e49c5a72004893fe03e162"
+requireindex@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/requireindex/-/requireindex-1.2.0.tgz#3463cdb22ee151902635aa6c9535d4de9c2ef1ef"
 
 requires-port@^1.0.0:
   version "1.0.0"
