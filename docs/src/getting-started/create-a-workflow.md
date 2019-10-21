@@ -74,7 +74,7 @@ Next, we'll add a Message Event to the workflow:
 
 
 
-We use message catch events in Zeebe when the workflow engine needs to receive a message from an external system before the workflow instance can advance. (_[See: Message Events](https://docs.zeebe.io/bpmn-workflows/message-events.html)_)
+We use message catch events in Zeebe when the workflow engine needs to receive a message from an external system before the workflow instance can advance. (_[See: Message Events](https://docs.zeebe.io/bpmn-workflows/message-events/message-events.html)_)
 
 In the scenario we're modeling, we _initiate_ a payment with our Service Task, but we need to wait for some other external system to actually confirm that the payment was received. This confirmation comes in the form of a message that will be sent to Zeebe - asynchronously - by an external service.
 
