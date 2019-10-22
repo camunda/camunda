@@ -12,11 +12,16 @@ import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
 import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
+import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceResultIntent;
+import java.util.HashSet;
+import java.util.Set;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ProcessCompletedHandler
     extends ElementCompletedHandler<ExecutableFlowElementContainer> {
@@ -64,10 +69,10 @@ public class ProcessCompletedHandler
         context.getElementInstanceState().getAwaitResultRequestMetadata(elementInstanceKey);
     if (requestMetadata != null) {
       final DirectBuffer variablesAsDocument =
-          context
-              .getElementInstanceState()
-              .getVariablesState()
-              .getVariablesAsDocument(elementInstanceKey);
+          collectVariables(
+              context.getElementInstanceState().getVariablesState(),
+              requestMetadata,
+              elementInstanceKey);
 
       final WorkflowInstanceResultRecord resultRecord = new WorkflowInstanceResultRecord();
       resultRecord
@@ -87,6 +92,29 @@ public class ProcessCompletedHandler
           requestMetadata.getRequestStreamId());
 
       context.getSideEffect().add(responseWriter::flush);
+    }
+  }
+
+  private DirectBuffer collectVariables(
+      VariablesState variablesState,
+      AwaitWorkflowInstanceResultMetadata requestMetadata,
+      long elementInstanceKey) {
+
+    final Set<DirectBuffer> variablesToCollect = new HashSet<>();
+    if (requestMetadata.fetchVariables().iterator().hasNext()) {
+      requestMetadata
+          .fetchVariables()
+          .forEach(
+              variable -> {
+                final MutableDirectBuffer nameCopy =
+                    new UnsafeBuffer(new byte[variable.getValue().capacity()]);
+                nameCopy.putBytes(0, variable.getValue(), 0, variable.getValue().capacity());
+                variablesToCollect.add(nameCopy);
+              });
+
+      return variablesState.getVariablesAsDocument(elementInstanceKey, variablesToCollect);
+    } else {
+      return variablesState.getVariablesAsDocument(elementInstanceKey);
     }
   }
 }

@@ -7,7 +7,11 @@
  */
 package io.zeebe.engine.util.client;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
 import io.zeebe.engine.util.StreamProcessorRule;
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.Record;
@@ -17,6 +21,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 public class WorkflowInstanceClient {
@@ -83,14 +88,20 @@ public class WorkflowInstanceClient {
 
   public static class WorkflowInstanceCreationWithResultClient {
     private StreamProcessorRule environmentRule;
-    private final WorkflowInstanceCreationRecord workflowInstanceCreationRecord;
+    private final WorkflowInstanceCreationRecord record;
     private long requestId = 1L;
     private int requestStreamId = 1;
 
     public WorkflowInstanceCreationWithResultClient(
         StreamProcessorRule environmentRule, WorkflowInstanceCreationRecord record) {
       this.environmentRule = environmentRule;
-      this.workflowInstanceCreationRecord = record;
+      this.record = record;
+    }
+
+    public WorkflowInstanceCreationWithResultClient withFetchVariables(Set<String> fetchVariables) {
+      final ArrayProperty<StringValue> variablesToCollect = record.fetchVariables();
+      fetchVariables.forEach(variable -> variablesToCollect.add().wrap(wrapString(variable)));
+      return this;
     }
 
     public WorkflowInstanceCreationWithResultClient withRequestId(long requestId) {
@@ -109,7 +120,7 @@ public class WorkflowInstanceClient {
               requestStreamId,
               requestId,
               WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
-              workflowInstanceCreationRecord);
+              record);
 
       return RecordingExporter.workflowInstanceCreationRecords()
           .withIntent(WorkflowInstanceCreationIntent.CREATED)
@@ -124,7 +135,7 @@ public class WorkflowInstanceClient {
           requestStreamId,
           requestId,
           WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
-          workflowInstanceCreationRecord);
+          record);
     }
   }
 

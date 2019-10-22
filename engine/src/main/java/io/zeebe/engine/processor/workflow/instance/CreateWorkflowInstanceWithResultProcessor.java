@@ -12,6 +12,8 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
 import io.zeebe.engine.state.instance.ElementInstanceState;
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
@@ -65,9 +67,11 @@ public class CreateWorkflowInstanceWithResultProcessor
     @Override
     public long accept(Intent newState, WorkflowInstanceCreationRecord updatedValue) {
       shouldRespond = false;
+      final ArrayProperty<StringValue> fetchVariables = command.getValue().fetchVariables();
       awaitResultMetadata
           .setRequestId(command.getRequestId())
-          .setRequestStreamId(command.getRequestStreamId());
+          .setRequestStreamId(command.getRequestStreamId())
+          .setFetchVariables(fetchVariables);
 
       elementInstanceState.setAwaitResultRequestMetadata(
           updatedValue.getWorkflowInstanceKey(), awaitResultMetadata);
