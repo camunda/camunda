@@ -16,6 +16,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.CallActivityBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -272,6 +273,137 @@ public class CallActivityTest {
         .contains(tuple(callActivityInstanceKey, "x", "2"), tuple(workflowInstanceKey, "y", "2"));
   }
 
+  @Test
+  public void shouldTriggerBoundaryEvent() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "parent-wf.bpmn",
+            parentWorkflow(
+                callActivity ->
+                    callActivity
+                        .boundaryEvent(
+                            "timeout", b -> b.cancelActivity(true).timerWithDuration("PT0.1S"))
+                        .endEvent()))
+        .deploy();
+
+    // when
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .workflowInstanceRecords())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.BOUNDARY_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SEQUENCE_FLOW, WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldTerminateChildInstance() {
+    // given
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    assertThat(RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).exists())
+        .describedAs("Expected job in child instance to be created")
+        .isTrue();
+
+    // when
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .workflowInstanceRecords())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldNotPropagateVariablesOnTermination() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn", parentWorkflow(callActivity -> callActivity.zeebeInput("x", "y")))
+        .deploy();
+
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).withVariable("x", 1).create();
+
+    final var childInstanceKey = getChildInstanceOf(workflowInstanceKey).getWorkflowInstanceKey();
+
+    // when
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords())
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getName()))
+        .contains(tuple(childInstanceKey, "y"))
+        .doesNotContain(tuple(workflowInstanceKey, "y"));
+  }
+
+  @Test
+  public void shouldRejectCancelChildInstanceCommand() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-root.bpmn",
+            Bpmn.createExecutableProcess("root")
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+                .done())
+        .deploy();
+
+    final var rootInstanceKey = ENGINE.workflowInstance().ofBpmnProcessId("root").create();
+
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var childInstance = getChildInstanceOf(parentInstance.getWorkflowInstanceKey());
+
+    // when
+    final var rejection =
+        ENGINE
+            .workflowInstance()
+            .withInstanceKey(childInstance.getWorkflowInstanceKey())
+            .expectRejection()
+            .cancel();
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.INVALID_STATE)
+        .hasRejectionReason(
+            String.format(
+                "Expected to cancel a workflow instance with key '%d', "
+                    + "but it is created by a parent workflow instance. "
+                    + "Cancel the root workflow instance '%d' instead.",
+                childInstance.getWorkflowInstanceKey(), rootInstanceKey));
+  }
+
   private void completeJobWith(Map<String, Object> variables) {
 
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst().getValue();
@@ -288,7 +420,6 @@ public class CallActivityTest {
   private WorkflowInstanceRecordValue getChildInstanceOf(long workflowInstanceKey) {
 
     return RecordingExporter.workflowInstanceRecords()
-        .withBpmnProcessId(PROCESS_ID_CHILD)
         .withParentWorkflowInstanceKey(workflowInstanceKey)
         .getFirst()
         .getValue();

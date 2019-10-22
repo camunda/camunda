@@ -11,6 +11,7 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.engine.state.instance.ElementInstanceState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
@@ -18,13 +19,17 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 public class WorkflowInstanceCommandContext {
 
   private final EventOutput eventOutput;
+  private final ElementInstanceState elementInstanceState;
+
   private TypedRecord<WorkflowInstanceRecord> record;
   private ElementInstance elementInstance;
   private TypedResponseWriter responseWriter;
   private TypedStreamWriter streamWriter;
 
-  public WorkflowInstanceCommandContext(final EventOutput eventOutput) {
+  public WorkflowInstanceCommandContext(
+      final EventOutput eventOutput, ElementInstanceState elementInstanceState) {
     this.eventOutput = eventOutput;
+    this.elementInstanceState = elementInstanceState;
   }
 
   public WorkflowInstanceIntent getCommand() {
@@ -60,8 +65,12 @@ public class WorkflowInstanceCommandContext {
   }
 
   public void setStreamWriter(final TypedStreamWriter writer) {
-    this.streamWriter = writer;
-    this.eventOutput.setStreamWriter(writer);
+    streamWriter = writer;
+    eventOutput.setStreamWriter(writer);
+  }
+
+  public ElementInstanceState getElementInstanceState() {
+    return elementInstanceState;
   }
 
   public void reject(final RejectionType rejectionType, final String reason) {
