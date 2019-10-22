@@ -323,10 +323,16 @@ public class CollectionService {
           final IdentityDto roleIdentity = roleDto.getIdentity();
           switch (roleIdentity.getType()) {
             case GROUP:
-              identityService.getGroupById(roleIdentity.getId()).ifPresent(roleDto::setIdentity);
+              // Note: Method reference cannot be used here as it might trigger
+              // a compilation AssertionError on newer JDK's.
+              // See https://bugs.openjdk.java.net/browse/JDK-8210734
+              identityService.getGroupById(roleIdentity.getId()).ifPresent(groupDto -> roleDto.setIdentity(groupDto));
               break;
             case USER:
-              identityService.getUserById(roleIdentity.getId()).ifPresent(roleDto::setIdentity);
+              // Note: Method reference cannot be used here as it might trigger
+              // a compilation AssertionError on newer JDK's.
+              // See https://bugs.openjdk.java.net/browse/JDK-8210734
+              identityService.getUserById(roleIdentity.getId()).ifPresent(userDto -> roleDto.setIdentity(userDto));
               break;
             default:
               throw new OptimizeRuntimeException("Unsupported identity type " + roleIdentity.getType());
