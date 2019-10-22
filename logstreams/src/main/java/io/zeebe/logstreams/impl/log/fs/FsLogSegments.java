@@ -7,80 +7,95 @@
  */
 package io.zeebe.logstreams.impl.log.fs;
 
-public class FsLogSegments {
-  protected int initialSegmentId = -1;
+import java.util.Collection;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-  protected FsLogSegment[] segments = new FsLogSegment[0];
+public final class FsLogSegments {
 
-  protected volatile int segmentCount = 0;
+  private static final String ERROR_ALREADY_CLOSED =
+      "Expected to have at least one open segment, but seem to be closed already.";
 
-  public void init(int initialSegmentId, FsLogSegment[] initialSegments) {
-    this.segments = initialSegments;
-    this.initialSegmentId = initialSegmentId;
-    this.segmentCount = initialSegments.length; // volatile store
+  protected CopyOnWriteArrayList<FsLogSegment> segments;
+
+  private FsLogSegments(Collection<FsLogSegment> initialSegments) {
+    this.segments = new CopyOnWriteArrayList<>(initialSegments);
+  }
+
+  public static FsLogSegments fromFsLogSegmentsArray(Collection<FsLogSegment> initialSegments) {
+    if (initialSegments.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Expect at least one open FsLogSegment to create FsLogSegments.");
+    }
+
+    return new FsLogSegments(initialSegments);
   }
 
   /** invoked by the conductor after a new segment has been allocated */
   public void addSegment(FsLogSegment segment) {
-    final FsLogSegment[] newSegments = new FsLogSegment[segments.length + 1];
-
-    System.arraycopy(segments, 0, newSegments, 0, segments.length);
-    newSegments[segments.length] = segment;
-    this.segments = newSegments;
-
-    this.segmentCount = newSegments.length; // volatile store
-  }
-
-  public void removeSegmentsUntil(int segmentId) {
-    final int segmentIdx = segmentId - initialSegmentId;
-    final int newLength = segments.length - segmentIdx;
-    final FsLogSegment[] newSegments = new FsLogSegment[newLength];
-
-    System.arraycopy(segments, segmentIdx, newSegments, 0, newLength);
-    this.segments = newSegments;
-    initialSegmentId += segmentIdx;
-    this.segmentCount = newSegments.length; // volatile store
+    segments.add(segment);
   }
 
   public FsLogSegment getSegment(int segmentId) {
-    final int segmentCount = this.segmentCount; // volatile load
+    final int firstSegmentId = getFirstSegmentId();
+    final int segmentIdx = segmentId - firstSegmentId;
 
-    final FsLogSegment[] segments = this.segments;
-
-    final int segmentIdx = segmentId - initialSegmentId;
-
-    if (0 <= segmentIdx && segmentIdx < segmentCount) {
-      return segments[segmentIdx];
+    if (0 <= segmentIdx && segmentIdx < segments.size()) {
+      return segments.get(segmentIdx);
     } else {
       return null;
+    }
+  }
+
+  public void deleteSegmentsUntil(int segmentId) {
+    int firstSegmentId = getFirstSegmentId();
+    if (segmentId < firstSegmentId) {
+      return;
+    }
+
+    // we need to remove the segment from the collection as first
+    // before closing it - otherwise other threads will see the segment still in the
+    // collection when it is already closed (for example if we use #removeIf)
+    // Note: Iterator#remove is not implemented by CopyOnWriteArrayList
+    while (firstSegmentId != segmentId) {
+      final FsLogSegment segment = segments.remove(0);
+      segment.closeSegment();
+      segment.delete();
+
+      firstSegmentId = getFirstSegmentId();
+    }
+  }
+
+  public int getFirstSegmentId() {
+    if (segments.isEmpty()) {
+      throw new IllegalStateException(ERROR_ALREADY_CLOSED);
+    }
+
+    return segments.get(0).getSegmentId();
+  }
+
+  public void closeAll() {
+    final FsLogSegment[] fsLogSegments = segments.toArray(new FsLogSegment[0]);
+    segments.clear();
+
+    for (FsLogSegment segment : fsLogSegments) {
+      segment.closeSegment();
     }
   }
 
   public FsLogSegment getFirst() {
-    if (segmentCount > 0) {
-      return segments[0];
-    } else {
-      return null;
-    }
-  }
-
-  public void closeAll() {
-    final FsLogSegment[] segments = this.segments;
-
-    for (int i = 0; i < segments.length; i++) {
-      segments[i].closeSegment();
-      segments[i] = null;
+    if (segments.isEmpty()) {
+      throw new IllegalStateException(ERROR_ALREADY_CLOSED);
     }
 
-    this.segments = new FsLogSegment[0];
-    this.segmentCount = 0;
+    return segments.get(0);
   }
 
   public int getLastSegmentId() {
-    return initialSegmentId + (segmentCount - 1);
-  }
+    if (segments.isEmpty()) {
+      throw new IllegalStateException(ERROR_ALREADY_CLOSED);
+    }
 
-  public int getSegmentCount() {
-    return segmentCount;
+    final int size = segments.size();
+    return segments.get(size - 1).getSegmentId();
   }
 }
