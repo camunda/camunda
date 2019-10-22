@@ -5,14 +5,15 @@
  */
 package org.camunda.optimize.service;
 
+import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -25,21 +26,22 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.core.Is.is;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class SearchableIdentityCacheTest {
 
   private SearchableIdentityCache cache;
 
-  @Before
+  @BeforeEach
   public void before() {
-    cache = new SearchableIdentityCache();
+    cache = new SearchableIdentityCache(200_000L);
 
     // some unexpected identities, so never use z in test data :)
     cache.addIdentity(new UserDto("zzz", "zzz", "zzz", "zzz"));
     cache.addIdentity(new GroupDto("zzzz", "zzzz"));
   }
 
-  @After
+  @AfterEach
   public void after() {
     cache.close();
   }
@@ -237,6 +239,22 @@ public class SearchableIdentityCacheTest {
     assertThat(afterSearchMillis - beforeSearchMillis, is(lessThan(1000L)));
   }
 
+  @Test
+  public void failOnLimitHitAddSingleEntry() {
+    cache = new SearchableIdentityCache(1L);
+    cache.addIdentity(new GroupDto("xxxx", "xxxx"));
+    assertThrows(MaxEntryLimitHitException.class, () -> cache.addIdentity(new GroupDto("zzzz", "zzzz")));
+  }
+
+  @Test
+  public void failOnLimitHitAddEntryBatch() {
+    cache = new SearchableIdentityCache(1L);
+    cache.addIdentities(Lists.newArrayList(new GroupDto("xxxx", "xxxx")));
+    assertThrows(
+      MaxEntryLimitHitException.class,
+      () -> cache.addIdentities(Lists.newArrayList(new GroupDto("zzzz", "zzzz")))
+    );
+  }
 
   @SneakyThrows
   private void insert100kUsers() {

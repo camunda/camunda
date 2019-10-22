@@ -57,10 +57,53 @@ public class SyncedIdentityCacheServiceIT {
   }
 
   @Test
-  public void testCleanupScheduledStoppedSuccessfully() {
+  public void testSyncStoppedSuccessfully() {
     try {
       getSyncedIdentityCacheService().stopSchedulingUserSync();
       assertThat(getSyncedIdentityCacheService().isScheduledToRun(), is(false));
+    } finally {
+      getSyncedIdentityCacheService().startSchedulingUserSync();
+    }
+  }
+
+  @Test
+  public void testCacheReplacedOnNewSync() {
+    try {
+      // given
+      getSyncedIdentityCacheService().stopSchedulingUserSync();
+      authorizationClient.addKermitUserAndGrantAccessToOptimize();
+      getSyncedIdentityCacheService().synchronizeIdentities();
+
+      // when
+      final String userIdJohn = "john";
+      authorizationClient.addUserAndGrantOptimizeAccess(userIdJohn);
+      getSyncedIdentityCacheService().synchronizeIdentities();
+
+      //then
+      assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn).isPresent(), is(true));
+    } finally {
+      getSyncedIdentityCacheService().startSchedulingUserSync();
+    }
+  }
+
+  @Test
+  public void testCacheNotReplacedOnLimitHit() {
+    try {
+      // given
+      getSyncedIdentityCacheService().stopSchedulingUserSync();
+      authorizationClient.addKermitUserAndGrantAccessToOptimize();
+      getSyncedIdentityCacheService().synchronizeIdentities();
+
+      // when
+      final String userIdJohn = "john";
+      authorizationClient.addUserAndGrantOptimizeAccess(userIdJohn);
+      // we have at least two users, but limit is now 1
+      getUserSyncConfiguration().setMaxEntryLimit(1L);
+      getSyncedIdentityCacheService().synchronizeIdentities();
+
+      // then
+      assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(true));
+      assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn).isPresent(), is(false));
     } finally {
       getSyncedIdentityCacheService().startSchedulingUserSync();
     }

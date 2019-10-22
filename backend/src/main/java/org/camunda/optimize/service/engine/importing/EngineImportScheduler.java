@@ -11,7 +11,6 @@ import org.camunda.optimize.service.engine.importing.service.mediator.EngineImpo
 import org.camunda.optimize.service.engine.importing.service.mediator.ScrollBasedImportMediator;
 import org.camunda.optimize.service.util.ImportJobExecutor;
 
-import javax.annotation.PreDestroy;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +52,6 @@ public class EngineImportScheduler extends Thread {
     isEnabled = true;
   }
 
-  @PreDestroy
   public void shutdown() {
     log.debug("Scheduler for engine {} will shutdown.", engineAlias);
     getImportMediators().forEach(mediator -> mediator.getImportJobExecutor().stopExecutingImportJobs());

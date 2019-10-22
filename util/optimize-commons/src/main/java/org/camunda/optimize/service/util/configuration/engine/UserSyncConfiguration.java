@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.util.configuration.engine;
 
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.CronNormalizerUtil;
 
@@ -14,10 +15,12 @@ import java.util.Optional;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.USER_SYNC_CONFIGURATION;
 
 @Data
+@FieldNameConstants(asEnum = true)
 public class UserSyncConfiguration {
   private boolean enabled;
   private String cronTrigger;
   private int maxPageSize;
+  private long maxEntryLimit;
 
   public void validate() {
     if (enabled && (cronTrigger == null || cronTrigger.isEmpty())) {

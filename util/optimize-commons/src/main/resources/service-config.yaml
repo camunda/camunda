@@ -177,6 +177,10 @@ import:
     cronTrigger: '0 */2 * * *'
     # The max page size when multiple users or groups are iterated during the import.
     maxPageSize: 10000
+    # The entry limit of the cache, if you need more entries you can increase that limit.
+    # When increasing the limit, keep in mind to account for that by increasing the JVM heap memory as well.
+    # Please refer to the technical guide on how to configure the heap size.
+    maxEntryLimit: 100000
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.

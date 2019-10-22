@@ -32,9 +32,17 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.USER_SYNC_CONFIGURATION;
+
 @Slf4j
 @Component
 public class SyncedIdentityCacheService implements ConfigurationReloadable {
+
+  private static final String ERROR_INCREASE_CACHE_LIMIT = String.format(
+    "Please increase %s.%s in the configuration.",
+    USER_SYNC_CONFIGURATION,
+    UserSyncConfiguration.Fields.maxEntryLimit.name()
+  );
 
   private SearchableIdentityCache activeIdentityCache;
 
@@ -48,7 +56,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
                                     final EngineContextFactory engineContextFactory) {
     this.configurationService = configurationService;
     this.engineContextFactory = engineContextFactory;
-    this.activeIdentityCache = new SearchableIdentityCache();
+    this.activeIdentityCache = new SearchableIdentityCache(getUserSyncConfiguration().getMaxEntryLimit());
   }
 
   @Override
@@ -96,14 +104,36 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
   }
 
   public synchronized void synchronizeIdentities() {
-    final SearchableIdentityCache newIdentityCache = new SearchableIdentityCache();
-    engineContextFactory.getConfiguredEngines()
-      .forEach(engineContext -> populateAllAuthorizedIdentitiesForEngineToCache(engineContext, newIdentityCache));
-    replaceActiveCache(newIdentityCache);
+    try {
+      final SearchableIdentityCache newIdentityCache = new SearchableIdentityCache(
+        getUserSyncConfiguration().getMaxEntryLimit()
+      );
+      engineContextFactory.getConfiguredEngines()
+        .forEach(engineContext -> populateAllAuthorizedIdentitiesForEngineToCache(engineContext, newIdentityCache));
+      replaceActiveCache(newIdentityCache);
+    } catch (MaxEntryLimitHitException e) {
+      log.error(String.format(
+        "Could not synchronize identity cache as the limit of %s records was reached on refresh.\n"
+          + ERROR_INCREASE_CACHE_LIMIT,
+        UserSyncConfiguration.Fields.maxEntryLimit.name()
+      ));
+    }
+
   }
 
   public void addIdentity(final IdentityDto identity) {
-    activeIdentityCache.addIdentity(identity);
+    try {
+      activeIdentityCache.addIdentity(identity);
+    } catch (MaxEntryLimitHitException e) {
+      log.warn(
+        String.format(
+          "Identity [%s] could not be added to active identity cache as the limit of %s records was reached.\n"
+            + ERROR_INCREASE_CACHE_LIMIT,
+          identity,
+          getUserSyncConfiguration().getMaxEntryLimit()
+        )
+      );
+    }
   }
 
   public Optional<UserDto> getUserIdentityById(final String id) {
@@ -227,7 +257,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
   private synchronized void resetCache() {
     if (activeIdentityCache != null) {
       activeIdentityCache.close();
-      activeIdentityCache = new SearchableIdentityCache();
+      activeIdentityCache = new SearchableIdentityCache(getUserSyncConfiguration().getMaxEntryLimit());
     }
   }
 

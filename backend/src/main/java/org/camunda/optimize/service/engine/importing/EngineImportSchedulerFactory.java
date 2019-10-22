@@ -33,6 +33,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -145,8 +146,8 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     return schedulers;
   }
 
-  @Override
-  public void reloadConfiguration(ApplicationContext context) {
+  @PreDestroy
+  public void shutdown() {
     if (schedulers != null) {
       for (EngineImportScheduler oldScheduler : schedulers) {
         oldScheduler.disable();
@@ -154,6 +155,11 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
       }
     }
     engineContextFactory.close();
+  }
+
+  @Override
+  public void reloadConfiguration(ApplicationContext context) {
+    shutdown();
     engineContextFactory.init();
     importIndexHandlerProvider.reloadConfiguration();
     schedulers = this.buildSchedulers();

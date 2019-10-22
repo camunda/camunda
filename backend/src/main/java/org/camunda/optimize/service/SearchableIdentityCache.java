@@ -60,17 +60,20 @@ import static org.apache.lucene.search.SortField.STRING_LAST;
 
 @Slf4j
 public class SearchableIdentityCache implements AutoCloseable {
+  private final long maxEntryLimit;
   private final ByteBuffersDirectory memoryDirectory;
   private final ReadWriteLock readWriteLock = new ReentrantReadWriteLock(true);
 
+  private final AtomicLong entryCount = new AtomicLong(0);
+
   @SneakyThrows(IOException.class)
-  public SearchableIdentityCache() {
+  public SearchableIdentityCache(final long maxEntryLimit) {
+    this.maxEntryLimit = maxEntryLimit;
     this.memoryDirectory = new ByteBuffersDirectory();
     // this is needed for the directory to be accessible by a reader in cases where no write has happened yet
     new IndexWriter(memoryDirectory, new IndexWriterConfig(getIndexAnalyzer())).close();
   }
 
-  @SneakyThrows(IOException.class)
   @Override
   public void close() {
     doWithWriteLock(() -> {
@@ -82,32 +85,32 @@ public class SearchableIdentityCache implements AutoCloseable {
     });
   }
 
-  @SneakyThrows(IOException.class)
-  public void addIdentity(@NonNull final IdentityDto identity) {
+  public void addIdentity(@NonNull final IdentityDto identity) throws MaxEntryLimitHitException {
     doWithWriteLock(() -> {
+      enforceMaxEntryLimit(1);
       try (final IndexWriter indexWriter =
              new IndexWriter(memoryDirectory, new IndexWriterConfig(getIndexAnalyzer()))) {
         writeIdentityDto(indexWriter, identity);
+        entryCount.incrementAndGet();
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Failed writing identity [id:" + identity.getId() + "].", e);
       }
     });
   }
 
-  @SneakyThrows(IOException.class)
-  public void addIdentities(@NonNull final List<? extends IdentityDto> identities) {
+  public void addIdentities(@NonNull final List<? extends IdentityDto> identities) throws MaxEntryLimitHitException {
     if (identities.isEmpty()) {
       return;
     }
 
     doWithWriteLock(() -> {
+      enforceMaxEntryLimit(identities.size());
       try (final IndexWriter indexWriter = new IndexWriter(
         memoryDirectory,
         new IndexWriterConfig(getIndexAnalyzer())
       )) {
-        identities.forEach(identity -> {
-          writeIdentityDto(indexWriter, identity);
-        });
+        identities.forEach(identity -> writeIdentityDto(indexWriter, identity));
+        entryCount.addAndGet(identities.size());
       } catch (IOException e) {
         throw new OptimizeRuntimeException("Failed writing identities.", e);
       }
@@ -126,7 +129,6 @@ public class SearchableIdentityCache implements AutoCloseable {
     return searchIdentities(terms, 10);
   }
 
-  @SneakyThrows(IOException.class)
   public List<IdentityDto> searchIdentities(final String terms, final int resultLimit) {
     final List<IdentityDto> identities = new ArrayList<>();
     doWithReadLock(() -> {
@@ -152,7 +154,6 @@ public class SearchableIdentityCache implements AutoCloseable {
     return identities;
   }
 
-  @SneakyThrows(IOException.class)
   @VisibleForTesting
   public long getCacheSizeInBytes() {
     AtomicLong size = new AtomicLong();
@@ -178,7 +179,13 @@ public class SearchableIdentityCache implements AutoCloseable {
     return size.get();
   }
 
-  private void doWithReadLock(final Runnable readOperation) throws IOException {
+  private void enforceMaxEntryLimit(int newRecordCount) throws MaxEntryLimitHitException {
+    if (entryCount.get() + newRecordCount > maxEntryLimit) {
+      throw new MaxEntryLimitHitException();
+    }
+  }
+
+  private void doWithReadLock(final Runnable readOperation) {
     readWriteLock.readLock().lock();
     try {
       readOperation.run();
@@ -187,7 +194,7 @@ public class SearchableIdentityCache implements AutoCloseable {
     }
   }
 
-  private void doWithWriteLock(final Runnable writeOperation) throws IOException {
+  private void doWithWriteLock(final Runnable writeOperation) {
     readWriteLock.writeLock().lock();
     try {
       writeOperation.run();
@@ -196,7 +203,6 @@ public class SearchableIdentityCache implements AutoCloseable {
     }
   }
 
-  @SneakyThrows(IOException.class)
   private <T extends IdentityDto> Optional<T> getTypedIdentityDtoById(final String id,
                                                                       final IdentityType identityType,
                                                                       final Function<Document, T> mapperFunction) {
@@ -274,9 +280,8 @@ public class SearchableIdentityCache implements AutoCloseable {
     return searchBuilder.build();
   }
 
-
   @SneakyThrows(IOException.class)
-  public static List<String> tokenizeSearchQuery(final String searchTerms) {
+  private static List<String> tokenizeSearchQuery(final String searchTerms) {
     final List<String> tokens = new ArrayList<>();
     try (TokenStream tokenStream = getSearchTermAnalyzer().tokenStream(null, new StringReader(searchTerms))) {
       tokenStream.reset();
