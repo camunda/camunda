@@ -6,6 +6,7 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.junit.jupiter.api.AfterEach;
@@ -28,14 +29,18 @@ public class EmbeddedCamundaOptimizeIT {
 
   @RegisterExtension
   @Order(1)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtension
+    = new ElasticSearchIntegrationTestExtensionRule();
   @RegisterExtension
   @Order(2)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  public EngineIntegrationExtensionRule engineIntegrationExtension = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtension = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void onOptimizeDestroyNoRemainingZombieThreads() throws Exception {
-    embeddedOptimizeExtensionRule.stopOptimize();
+    embeddedOptimizeExtension.stopOptimize();
 
     final Set<Thread> baseThreadSet = getCurrentThreads();
 
@@ -64,7 +69,7 @@ public class EmbeddedCamundaOptimizeIT {
 
   @AfterEach
   public void restartEmbeddedOptimize() throws Exception {
-    embeddedOptimizeExtensionRule.startOptimize();
+    embeddedOptimizeExtension.startOptimize();
   }
 
   private Set<Thread> getCurrentThreads() {

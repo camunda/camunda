@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefi
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -31,15 +32,18 @@ public class CollectionRestServiceIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtension = new ElasticSearchIntegrationTestExtensionRule();
   @RegisterExtension
   @Order(2)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  public EngineIntegrationExtensionRule engineIntegrationExtension = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtension = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void createNewCollectionWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildCreateCollectionRequest()
@@ -52,7 +56,7 @@ public class CollectionRestServiceIT {
   @Test
   public void createNewCollection() {
     // when
-    IdDto idDto = embeddedOptimizeExtensionRule
+    IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200);
@@ -79,7 +83,7 @@ public class CollectionRestServiceIT {
     PartialCollectionDataDto partialCollectionDataDto = new PartialCollectionDataDto();
     partialCollectionDataDto.setConfiguration(configMap);
     partialCollectionDefinitionDto.setData(partialCollectionDataDto);
-    IdDto idDto = embeddedOptimizeExtensionRule
+    IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequestWithPartialDefinition(partialCollectionDefinitionDto)
       .execute(IdDto.class, 200);
@@ -99,7 +103,7 @@ public class CollectionRestServiceIT {
   @Test
   public void updateCollectionWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildUpdatePartialCollectionRequest("1", null)
@@ -112,7 +116,7 @@ public class CollectionRestServiceIT {
   @Test
   public void updateNonExistingCollection() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest("NonExistingId", new PartialCollectionDefinitionDto())
       .execute();
@@ -128,7 +132,7 @@ public class CollectionRestServiceIT {
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, collectionRenameDto)
       .execute();
@@ -140,7 +144,7 @@ public class CollectionRestServiceIT {
   @Test
   public void getCollectionWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetCollectionRequest("asdf")
@@ -167,7 +171,7 @@ public class CollectionRestServiceIT {
   @Test
   public void getCollectionForNonExistingIdThrowsError() {
     // when
-    String response = embeddedOptimizeExtensionRule
+    String response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest("fooid")
       .execute(String.class, 404);
@@ -179,7 +183,7 @@ public class CollectionRestServiceIT {
   @Test
   public void deleteCollectionWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDeleteCollectionRequest("1124")
@@ -195,7 +199,7 @@ public class CollectionRestServiceIT {
     String id = addEmptyCollectionToOptimize();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteCollectionRequest(id)
       .execute();
@@ -203,7 +207,7 @@ public class CollectionRestServiceIT {
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
 
-    final Response getByIdResponse = embeddedOptimizeExtensionRule
+    final Response getByIdResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(id)
       .execute();
@@ -213,7 +217,7 @@ public class CollectionRestServiceIT {
   @Test
   public void deleteNonExitingCollection() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteCollectionRequest("NonExistingId")
       .execute();
@@ -223,7 +227,7 @@ public class CollectionRestServiceIT {
   }
 
   private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -231,7 +235,7 @@ public class CollectionRestServiceIT {
   }
 
   private ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(ResolvedCollectionDefinitionDto.class, 200);

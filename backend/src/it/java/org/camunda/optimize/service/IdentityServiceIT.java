@@ -7,11 +7,13 @@ package org.camunda.optimize.service;
 
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Optional;
 
@@ -19,15 +21,23 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
 public class IdentityServiceIT {
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  private IdentityService identityService;
 
-  @Rule
-  public RuleChain chain = RuleChain.outerRule(embeddedOptimizeExtensionRule);
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtension
+    = new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtension = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
+  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtension = new EmbeddedOptimizeExtensionRule();
+
+  private IdentityService identityService;
 
   @Before
   public void setup() {
-    identityService = embeddedOptimizeExtensionRule.getIdentityService();
+    identityService = embeddedOptimizeExtension.getIdentityService();
   }
 
   @Test

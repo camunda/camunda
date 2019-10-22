@@ -8,10 +8,14 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
@@ -22,6 +26,16 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 
 public class IdentityRestServiceIT {
+
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtension =
+    new ElasticSearchIntegrationTestExtensionRule();
+  @RegisterExtension
+  @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtension = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
   public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Rule

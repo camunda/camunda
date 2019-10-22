@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -55,6 +56,7 @@ public class SchemaInitializerIT {
   public ExpectedException thrown = ExpectedException.none();
 
   public static ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public static EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
   public static EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
@@ -62,7 +64,9 @@ public class SchemaInitializerIT {
 
   @ClassRule
   public static RuleChain chain = RuleChain
-    .outerRule(elasticSearchIntegrationTestExtensionRule).around(embeddedOptimizeExtensionRule);
+    .outerRule(elasticSearchIntegrationTestExtensionRule)
+    .outerRule(engineIntegrationExtensionRule)
+    .around(embeddedOptimizeExtensionRule);
 
   @Before
   public void setUp() {
