@@ -12,19 +12,19 @@ import org.camunda.optimize.service.util.CronNormalizerUtil;
 
 import java.util.Optional;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.USER_SYNC_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 
 @Data
 @FieldNameConstants(asEnum = true)
-public class UserSyncConfiguration {
-  private boolean enabled;
+public class IdentitySyncConfiguration {
+  private boolean includeUserMetaData;
   private String cronTrigger;
   private int maxPageSize;
   private long maxEntryLimit;
 
   public void validate() {
-    if (enabled && (cronTrigger == null || cronTrigger.isEmpty())) {
-      throw new OptimizeConfigurationException(USER_SYNC_CONFIGURATION + ".cronTrigger must be set and not empty");
+    if (cronTrigger == null || cronTrigger.isEmpty()) {
+      throw new OptimizeConfigurationException(IDENTITY_SYNC_CONFIGURATION + ".cronTrigger must be set and not empty");
     }
   }
 

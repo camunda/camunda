@@ -100,5 +100,5 @@ public interface ConfigurationServiceConstants {
 
   String UI_CONFIGURATION = "$.ui";
 
-  String USER_SYNC_CONFIGURATION = "$.import.userSync";
+  String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
 }

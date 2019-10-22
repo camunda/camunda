@@ -15,7 +15,7 @@ import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupCo
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.service.util.configuration.engine.UserSyncConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.springframework.util.StringUtils;
 
@@ -32,8 +32,8 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationParse
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.USER_SYNC_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.getLocationsAsInputStream;
@@ -164,7 +164,7 @@ public class ConfigurationService {
   // ui customization
   private UIConfiguration uiConfiguration;
 
-  private UserSyncConfiguration userSyncConfiguration;
+  private IdentitySyncConfiguration identitySyncConfiguration;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -872,11 +872,11 @@ public class ConfigurationService {
     return uiConfiguration;
   }
 
-  public UserSyncConfiguration getUserSyncConfiguration() {
-    if (userSyncConfiguration == null) {
-      userSyncConfiguration = configJsonContext.read(USER_SYNC_CONFIGURATION, UserSyncConfiguration.class);
+  public IdentitySyncConfiguration getIdentitySyncConfiguration() {
+    if (identitySyncConfiguration == null) {
+      identitySyncConfiguration = configJsonContext.read(IDENTITY_SYNC_CONFIGURATION, IdentitySyncConfiguration.class);
     }
-    return userSyncConfiguration;
+    return identitySyncConfiguration;
   }
 
 }

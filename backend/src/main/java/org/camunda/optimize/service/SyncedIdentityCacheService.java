@@ -15,7 +15,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.engine.UserSyncConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.USER_SYNC_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
 
 @Slf4j
 @Component
@@ -40,8 +40,8 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
 
   private static final String ERROR_INCREASE_CACHE_LIMIT = String.format(
     "Please increase %s.%s in the configuration.",
-    USER_SYNC_CONFIGURATION,
-    UserSyncConfiguration.Fields.maxEntryLimit.name()
+    IDENTITY_SYNC_CONFIGURATION,
+    IdentitySyncConfiguration.Fields.maxEntryLimit.name()
   );
 
   private SearchableIdentityCache activeIdentityCache;
@@ -56,7 +56,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
                                     final EngineContextFactory engineContextFactory) {
     this.configurationService = configurationService;
     this.engineContextFactory = engineContextFactory;
-    this.activeIdentityCache = new SearchableIdentityCache(getUserSyncConfiguration().getMaxEntryLimit());
+    this.activeIdentityCache = new SearchableIdentityCache(getIdentitySyncConfiguration().getMaxEntryLimit());
   }
 
   @Override
@@ -67,11 +67,9 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
   @PostConstruct
   public void init() {
     log.info("Initializing user sync.");
-    final UserSyncConfiguration userSyncConfiguration = getUserSyncConfiguration();
-    userSyncConfiguration.validate();
-    if (userSyncConfiguration.isEnabled()) {
-      startSchedulingUserSync();
-    }
+    final IdentitySyncConfiguration identitySyncConfiguration = getIdentitySyncConfiguration();
+    identitySyncConfiguration.validate();
+    startSchedulingUserSync();
   }
 
   public synchronized void startSchedulingUserSync() {
@@ -106,7 +104,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
   public synchronized void synchronizeIdentities() {
     try {
       final SearchableIdentityCache newIdentityCache = new SearchableIdentityCache(
-        getUserSyncConfiguration().getMaxEntryLimit()
+        getIdentitySyncConfiguration().getMaxEntryLimit()
       );
       engineContextFactory.getConfiguredEngines()
         .forEach(engineContext -> populateAllAuthorizedIdentitiesForEngineToCache(engineContext, newIdentityCache));
@@ -115,7 +113,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
       log.error(String.format(
         "Could not synchronize identity cache as the limit of %s records was reached on refresh.\n"
           + ERROR_INCREASE_CACHE_LIMIT,
-        UserSyncConfiguration.Fields.maxEntryLimit.name()
+        IdentitySyncConfiguration.Fields.maxEntryLimit.name()
       ));
     }
 
@@ -130,7 +128,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
           "Identity [%s] could not be added to active identity cache as the limit of %s records was reached.\n"
             + ERROR_INCREASE_CACHE_LIMIT,
           identity,
-          getUserSyncConfiguration().getMaxEntryLimit()
+          getIdentitySyncConfiguration().getMaxEntryLimit()
         )
       );
     }
@@ -182,7 +180,9 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
         final Set<IdentityDto> currentGroupIdentities = new HashSet<>();
         consumeIdentitiesInBatches(
           currentGroupIdentities::addAll,
-          (pageStartIndex, pageLimit) -> engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, revokedGroupId),
+          (pageStartIndex, pageLimit) -> fetchPageOfGroupMembers(
+            engineContext, revokedGroupId, pageStartIndex, pageLimit
+          ),
           userDto -> true
         );
         return currentGroupIdentities.stream();
@@ -193,7 +193,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
     // then iterate all users... that's the price you pay for global access
     consumeIdentitiesInBatches(
       identityCache::addIdentities,
-      engineContext::fetchPageOfUsers,
+      (pageStartIndex, pageLimit) -> fetchPageOfUsers(engineContext, pageStartIndex, pageLimit),
       userDto ->
         // @formatter:off
         // add them if not already present
@@ -221,7 +221,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
       final Set<String> grantedGroupIdsNotYetImported = authorizedIdentities.getGrantedGroupIds().stream()
         .filter(userId -> !identityCache.getGroupIdentityById(userId).isPresent())
         .collect(Collectors.toSet());
-      Iterables.partition(grantedGroupIdsNotYetImported, getUserSyncConfiguration().getMaxPageSize())
+      Iterables.partition(grantedGroupIdsNotYetImported, getIdentitySyncConfiguration().getMaxPageSize())
         .forEach(userIdBatch -> identityCache.addIdentities(engineContext.getGroupsById(userIdBatch)));
 
       // add all members of the authorized groups (as group grants win over group revoke) except explicit revoked users
@@ -229,7 +229,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
         .forEach(groupId -> {
           consumeIdentitiesInBatches(
             identityCache::addIdentities,
-            (pageStartIndex, pageLimit) -> engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, groupId),
+            (pageStartIndex, pageLimit) -> fetchPageOfGroupMembers(engineContext, groupId, pageStartIndex, pageLimit),
             userDto -> !authorizedIdentities.getRevokedUserIds().contains(userDto.getId())
               && !identityCache.getUserIdentityById(userDto.getId()).isPresent()
           );
@@ -240,14 +240,49 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
     final Set<String> grantedUserIdsNotYetImported = authorizedIdentities.getGrantedUserIds().stream()
       .filter(userId -> !identityCache.getUserIdentityById(userId).isPresent())
       .collect(Collectors.toSet());
-    Iterables.partition(grantedUserIdsNotYetImported, getUserSyncConfiguration().getMaxPageSize())
-      .forEach(userIdBatch -> identityCache.addIdentities(engineContext.getUsersById(userIdBatch)));
+    Iterables.partition(grantedUserIdsNotYetImported, getIdentitySyncConfiguration().getMaxPageSize())
+      .forEach(userIdBatch -> identityCache.addIdentities(fetchUsersById(engineContext, userIdBatch)));
+  }
+
+  private List<UserDto> fetchPageOfUsers(final EngineContext engineContext,
+                                         final int pageStartIndex,
+                                         final int pageLimit) {
+    if (getIdentitySyncConfiguration().isIncludeUserMetaData()) {
+      return engineContext.fetchPageOfUsers(pageStartIndex, pageLimit);
+    } else {
+      return engineContext.fetchPageOfUsers(pageStartIndex, pageLimit)
+        .stream()
+        .map(userDto -> new UserDto(userDto.getId()))
+        .collect(Collectors.toList());
+    }
+  }
+
+  private List<UserDto> fetchPageOfGroupMembers(final EngineContext engineContext,
+                                                final String groupId,
+                                                final int pageStartIndex,
+                                                final int pageLimit) {
+    if (getIdentitySyncConfiguration().isIncludeUserMetaData()) {
+      return engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, groupId);
+    } else {
+      return engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, groupId)
+        .stream()
+        .map(userDto -> new UserDto(userDto.getId()))
+        .collect(Collectors.toList());
+    }
+  }
+
+  private List<UserDto> fetchUsersById(final EngineContext engineContext, final List<String> userIdBatch) {
+    if (getIdentitySyncConfiguration().isIncludeUserMetaData()) {
+      return engineContext.getUsersById(userIdBatch);
+    } else {
+      return userIdBatch.stream().map(UserDto::new).collect(Collectors.toList());
+    }
   }
 
   private <T extends IdentityDto> void consumeIdentitiesInBatches(final Consumer<List<IdentityDto>> identityBatchConsumer,
                                                                   final GetIdentityPageMethod<T> getIdentityPage,
                                                                   final Predicate<T> identityFilter) {
-    final int maxPageSize = getUserSyncConfiguration().getMaxPageSize();
+    final int maxPageSize = getIdentitySyncConfiguration().getMaxPageSize();
     int currentIndex = 0;
     List<T> currentPage;
     do {
@@ -263,16 +298,16 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
   private synchronized void resetCache() {
     if (activeIdentityCache != null) {
       activeIdentityCache.close();
-      activeIdentityCache = new SearchableIdentityCache(getUserSyncConfiguration().getMaxEntryLimit());
+      activeIdentityCache = new SearchableIdentityCache(getIdentitySyncConfiguration().getMaxEntryLimit());
     }
   }
 
-  private UserSyncConfiguration getUserSyncConfiguration() {
-    return this.configurationService.getUserSyncConfiguration();
+  private IdentitySyncConfiguration getIdentitySyncConfiguration() {
+    return this.configurationService.getIdentitySyncConfiguration();
   }
 
   private CronTrigger getCronTrigger() {
-    return new CronTrigger(getUserSyncConfiguration().getCronTrigger());
+    return new CronTrigger(getIdentitySyncConfiguration().getCronTrigger());
   }
 
   @FunctionalInterface

@@ -7,7 +7,7 @@ package org.camunda.optimize.service;
 
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.service.util.configuration.engine.UserSyncConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
@@ -29,6 +29,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtensionR
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule.KERMIT_GROUP_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SyncedIdentityCacheServiceIT {
@@ -52,7 +53,6 @@ public class SyncedIdentityCacheServiceIT {
 
   @Test
   public void verifySyncEnabledByDefault() {
-    assertThat(getUserSyncConfiguration().isEnabled(), is(true));
     assertThat(getSyncedIdentityCacheService().isScheduledToRun(), is(true));
   }
 
@@ -98,7 +98,7 @@ public class SyncedIdentityCacheServiceIT {
       final String userIdJohn = "john";
       authorizationClient.addUserAndGrantOptimizeAccess(userIdJohn);
       // we have at least two users, but limit is now 1
-      getUserSyncConfiguration().setMaxEntryLimit(1L);
+      getIdentitySyncConfiguration().setMaxEntryLimit(1L);
       getSyncedIdentityCacheService().synchronizeIdentities();
 
       // then
@@ -110,7 +110,7 @@ public class SyncedIdentityCacheServiceIT {
   }
 
   @Test
-  public void testGrantedUserIsImported() {
+  public void testGrantedUserIsImportedMetaDataAvailable() {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
@@ -122,6 +122,22 @@ public class SyncedIdentityCacheServiceIT {
     assertThat(userIdentityById.get().getFirstName(), is(DEFAULT_FIRSTNAME));
     assertThat(userIdentityById.get().getLastName(), is(DEFAULT_LASTNAME));
     assertThat(userIdentityById.get().getEmail(), containsString(DEFAULT_EMAIL_DOMAIN));
+  }
+
+  @Test
+  public void testGrantedUserIsImportedMetaNotAvailable() {
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    getIdentitySyncConfiguration().setIncludeUserMetaData(false);
+
+    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
+    syncedIdentityCacheService.synchronizeIdentities();
+
+    final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
+    assertThat(userIdentityById.isPresent(), is(true));
+    assertThat(userIdentityById.get().getName(), is(nullValue()));
+    assertThat(userIdentityById.get().getFirstName(), is(nullValue()));
+    assertThat(userIdentityById.get().getLastName(), is(nullValue()));
+    assertThat(userIdentityById.get().getEmail(), is(nullValue()));
   }
 
   @Test
@@ -286,8 +302,8 @@ public class SyncedIdentityCacheServiceIT {
     return embeddedOptimizeExtension.getSyncedIdentityCacheService();
   }
 
-  private UserSyncConfiguration getUserSyncConfiguration() {
-    return embeddedOptimizeExtension.getConfigurationService().getUserSyncConfiguration();
+  private IdentitySyncConfiguration getIdentitySyncConfiguration() {
+    return embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration();
   }
 
 }
