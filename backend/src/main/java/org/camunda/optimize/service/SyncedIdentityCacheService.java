@@ -195,15 +195,20 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
       identityCache::addIdentities,
       engineContext::fetchPageOfUsers,
       userDto ->
-        // add them if explicitly granted access
-        authorizedIdentities.getGrantedUserIds().contains(userDto.getId())
-          // @formatter:off
+        // @formatter:off
+        // add them if not already present
+        !identityCache.getUserIdentityById(userDto.getId()).isPresent()
+        // and
+        && (
+          // if explicitly granted access
+          authorizedIdentities.getGrantedUserIds().contains(userDto.getId())
           // or if they are not member of a revoked access group nor revoked by user id
           || (
             !userIdsOfRevokedGroupMembers.contains(userDto.getId())
               && !authorizedIdentities.getRevokedUserIds().contains(userDto.getId())
           )
-          // @formatter:on
+        )
+        // @formatter:on
     );
   }
 
@@ -226,6 +231,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
             identityCache::addIdentities,
             (pageStartIndex, pageLimit) -> engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, groupId),
             userDto -> !authorizedIdentities.getRevokedUserIds().contains(userDto.getId())
+              && !identityCache.getUserIdentityById(userDto.getId()).isPresent()
           );
         });
     }

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,7 +57,7 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
   }
 
   @Test
-  public void testDuplicateUserFromSecondEnginesIsImportedAlthoughNotGrantedOnDefaultEngine() {
+  public void testDuplicateUserFromSecondEngineDoesNotOverrideUserImportedFromFirstEngine() {
     addSecondEngineToConfiguration();
 
     EngineUserDto winningUserProfile = createKermitUserDtoWithEmail("Iwin@camunda.com");
@@ -66,6 +67,27 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
     EngineUserDto loosingUserProfile = createKermitUserDtoWithEmail("Iloose@camunda.com");
     secondaryEngineIntegrationExtensionRule.addUser(loosingUserProfile);
     secondaryEngineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
+
+    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
+    syncedIdentityCacheService.synchronizeIdentities();
+
+    final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
+    assertThat(userIdentityById.isPresent(), is(true));
+    // as engines are iterated in order configured, the user from the first engine is supposed to win
+    assertThat(userIdentityById.get().getEmail(), is(winningUserProfile.getProfile().getEmail()));
+  }
+
+  @Test
+  public void testDuplicateUserFromSecondEngineDoesNotOverrideUserImportedFromFirstEngine_onGlobalAuth() {
+    addSecondEngineToConfiguration();
+
+    EngineUserDto winningUserProfile = createKermitUserDtoWithEmail("Iwin@camunda.com");
+    defaultEngineAuthorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
+    defaultEngineIntegrationExtensionRule.addUser(winningUserProfile);
+
+    EngineUserDto loosingUserProfile = createKermitUserDtoWithEmail("Iloose@camunda.com");
+    secondaryEngineAuthorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
+    secondaryEngineIntegrationExtensionRule.addUser(loosingUserProfile);
 
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
