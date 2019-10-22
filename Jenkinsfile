@@ -14,7 +14,7 @@ String storeNumOfArtifacts() {
   return env.BRANCH_NAME == 'master' ? '5' : '1'
 }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+MAVEN_DOCKER_IMAGE = "maven:3.6.1-jdk-8-slim"
 
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
@@ -27,7 +27,7 @@ String getCamBpmDockerImage(String camBpmVersion) {
 
 /************************ START OF PIPELINE ***********************/
 
-String basePodSpec() {
+String basePodSpec(String mavenDockerImage = MAVEN_DOCKER_IMAGE) {
   return """
 apiVersion: v1
 kind: Pod
@@ -50,6 +50,8 @@ spec:
     configMap:
       # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
       name: ci-optimize-es-config
+  - name: gcloud2postgres
+    emptyDir: {}
   imagePullSecrets:
   - name: registry-camunda-cloud-secret
   initContainers:
@@ -70,7 +72,7 @@ spec:
           add: ["IPC_LOCK", "SYS_RESOURCE"]
   containers:
   - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
+    image: ${mavenDockerImage}
     command: ["cat"]
     tty: true
     env:
@@ -88,8 +90,20 @@ spec:
     """
 }
 
-String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
+String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST, boolean usePostgres = false) {
   String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
+  String additionalEnv = usePostgres ? """
+      - name: DB_DRIVER
+        value: "org.postgresql.Driver"
+      - name: DB_USERNAME
+        value: "camunda"
+      - name: DB_PASSWORD
+        value: "camunda"
+      - name: DB_URL
+        value: "jdbc:postgresql://localhost:5432/engine"
+      - name: WAIT_FOR
+        value: localhost:5432
+  """ : ""
   return """
   - name: cambpm
     image: ${camBpmDockerImage}
@@ -99,6 +113,7 @@ String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
         value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
+${additionalEnv}
     resources:
       limits:
         cpu: 4
@@ -174,8 +189,60 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
    """ + basicAuthConfig + sslConfig
 }
 
+String postgresContainerSpec() {
+  return """
+  - name: postgresql
+    image: postgres:11.2
+    env:
+      - name: POSTGRES_USER
+        value: camunda
+      - name: POSTGRES_PASSWORD
+        value: camunda
+      - name: POSTGRES_DB
+        value: engine
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+    volumeMounts:
+    - name: gcloud2postgres
+      mountPath: /db_dump/
+  """
+}
+
+String gcloudContainerSpec() {
+  return """
+  - name: gcloud
+    image: google/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+    volumeMounts:
+    - name: gcloud2postgres
+      mountPath: /db_dump/
+  """
+}
+
 String integrationTestPodSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
   return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec()
+}
+
+String e2eTestPodSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
+  // use Docker image with preinstalled Chrome (large) and install Maven (small)
+  // manually for performance reasons
+  return basePodSpec('selenium/node-chrome:3.141.59-xenon') +
+    camBpmContainerSpec(camBpmVersion, true) + elasticSearchContainerSpec() +
+    postgresContainerSpec() + gcloudContainerSpec()
 }
 
 pipeline {
@@ -212,6 +279,7 @@ pipeline {
             runMaven('install -Pdocs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
           }
           stash name: "optimize-stash-client", includes: "client/build/**"
+          stash name: "optimize-stash-backend", includes: "backend/target/*.jar"
           stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
         }
       }
@@ -319,6 +387,27 @@ pipeline {
           post {
             always {
               junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage('E2E') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-e2e_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml e2eTestPodSpec()
+            }
+          }
+          steps {
+            unstash name: 'optimize-stash-client'
+            unstash name: 'optimize-stash-backend'
+            unstash name: 'optimize-stash-distro'
+            e2eTestSteps()
+          }
+          post {
+            always {
+              archiveArtifacts artifacts: 'client/build/*.log'
             }
           }
         }
@@ -459,6 +548,20 @@ void dataUpgradeTestSteps() {
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation -am -Pengine-latest")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -f qa/upgrade-optimize-data -pl generator -am")
     runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
+  }
+}
+
+void e2eTestSteps() {
+  container('gcloud') {
+    sh 'gsutil -q -m cp gs://optimize-data/optimize_large_data-e2e.sqlc /db_dump/dump.sqlc'
+  }
+  container('postgresql') {
+    sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc'
+  }
+  container('maven') {
+    sh 'sudo apt-get update'
+    sh 'sudo apt-get install -y --no-install-recommends maven openjdk-8-jdk-headless'
+    runMaven('test -pl client -Pclient.e2etests-chromeheadless')
   }
 }
 

@@ -183,7 +183,7 @@ pipeline {
       steps {
         container('maven') {
           sh 'cd ./client'
-          runMaven('test -Pclient.e2etests')
+          runMaven('test -Pclient.e2etests-browserstack')
         }
       }
       post {
