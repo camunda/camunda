@@ -76,6 +76,11 @@ public class BrokerRequestManager extends Actor {
   }
 
   public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
+    return sendRequest(request, this.requestTimeout);
+  }
+
+  public <T> ActorFuture<BrokerResponse<T>> sendRequest(
+      BrokerRequest<T> request, Duration requestTimeout) {
     final ActorFuture<BrokerResponse<T>> responseFuture = new CompletableActorFuture<>();
 
     sendRequest(
@@ -86,7 +91,8 @@ public class BrokerRequestManager extends Actor {
           } else {
             responseFuture.completeExceptionally(error);
           }
-        });
+        },
+        requestTimeout);
 
     return responseFuture;
   }
@@ -95,12 +101,21 @@ public class BrokerRequestManager extends Actor {
       BrokerRequest<T> request,
       BrokerResponseConsumer<T> responseConsumer,
       Consumer<Throwable> throwableConsumer) {
+    sendRequest(request, responseConsumer, throwableConsumer, this.requestTimeout);
+  }
+
+  public <T> void sendRequest(
+      BrokerRequest<T> request,
+      BrokerResponseConsumer<T> responseConsumer,
+      Consumer<Throwable> throwableConsumer,
+      Duration requestTimeout) {
     sendRequest(
         request,
         responseConsumer,
         rejection -> throwableConsumer.accept(new BrokerRejectionException(rejection)),
         error -> throwableConsumer.accept(new BrokerErrorException(error)),
-        throwableConsumer);
+        throwableConsumer,
+        requestTimeout);
   }
 
   private <T> void sendRequest(
@@ -108,7 +123,8 @@ public class BrokerRequestManager extends Actor {
       BrokerResponseConsumer<T> responseConsumer,
       Consumer<BrokerRejection> rejectionConsumer,
       Consumer<BrokerError> errorConsumer,
-      Consumer<Throwable> throwableConsumer) {
+      Consumer<Throwable> throwableConsumer,
+      Duration requestTimeout) {
 
     sendRequest(
         request,
@@ -132,17 +148,22 @@ public class BrokerRequestManager extends Actor {
           } catch (RuntimeException e) {
             throwableConsumer.accept(new BrokerResponseException(e));
           }
-        });
+        },
+        requestTimeout);
   }
 
   private <T> void sendRequest(
-      BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer) {
+      BrokerRequest<T> request,
+      BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
+      Duration requestTimeout) {
     request.serializeValue();
-    actor.run(() -> sendRequestInternal(request, responseConsumer));
+    actor.run(() -> sendRequestInternal(request, responseConsumer, requestTimeout));
   }
 
   private <T> void sendRequestInternal(
-      BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer) {
+      BrokerRequest<T> request,
+      BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
+      Duration requestTimeout) {
     final BrokerNodeIdProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
 
     final ActorFuture<ClientResponse> responseFuture =

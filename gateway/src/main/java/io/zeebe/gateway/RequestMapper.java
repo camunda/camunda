@@ -11,6 +11,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceWithResultRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
@@ -21,6 +22,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -85,6 +87,22 @@ public class RequestMapper {
         .setKey(grpcRequest.getWorkflowKey())
         .setVersion(grpcRequest.getVersion())
         .setVariables(ensureJsonSet(grpcRequest.getVariables()));
+
+    return brokerRequest;
+  }
+
+  public static BrokerCreateWorkflowInstanceWithResultRequest
+      toCreateWorkflowInstanceWithResultRequest(
+          CreateWorkflowInstanceWithResultRequest grpcRequest) {
+    final BrokerCreateWorkflowInstanceWithResultRequest brokerRequest =
+        new BrokerCreateWorkflowInstanceWithResultRequest();
+
+    final CreateWorkflowInstanceRequest request = grpcRequest.getRequest();
+    brokerRequest
+        .setBpmnProcessId(request.getBpmnProcessId())
+        .setKey(request.getWorkflowKey())
+        .setVersion(request.getVersion())
+        .setVariables(ensureJsonSet(request.getVariables()));
 
     return brokerRequest;
   }
