@@ -337,9 +337,9 @@ public class CombinedReportHandlingIT {
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
       .getData();
     assertThat(resultMap.size(), is(2));
-    List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(3));
-    List<MapResultEntryDto<Long>> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
     assertThat(flowNodeToCount2.size(), is(3));
   }
 
@@ -362,11 +362,11 @@ public class CombinedReportHandlingIT {
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    List<MapResultEntryDto<Long>> userTaskCount1 = resultMap.get(totalDurationReportId)
+    List<MapResultEntryDto> userTaskCount1 = resultMap.get(totalDurationReportId)
       .getResult()
       .getData();
     assertThat(userTaskCount1.size(), is(1));
-    List<MapResultEntryDto<Long>> userTaskCount2 = resultMap.get(idleDurationReportId)
+    List<MapResultEntryDto> userTaskCount2 = resultMap.get(idleDurationReportId)
       .getResult()
       .getData();
     assertThat(userTaskCount2.size(), is(1));
@@ -391,11 +391,11 @@ public class CombinedReportHandlingIT {
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    List<MapResultEntryDto<Long>> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
+    List<MapResultEntryDto> userTaskCount1 = resultMap.get(userTaskTotalDurationReportId)
       .getResult()
       .getData();
     assertThat(userTaskCount1.size(), is(1));
-    List<MapResultEntryDto<Long>> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
+    List<MapResultEntryDto> userTaskCount2 = resultMap.get(flowNodeDurationReportId)
       .getResult()
       .getData();
     assertThat(userTaskCount2.size(), is(3));
@@ -432,13 +432,13 @@ public class CombinedReportHandlingIT {
 
     final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
-    final List<MapResultEntryDto<Long>> resultData1 = result1.getData();
+    final List<MapResultEntryDto> resultData1 = result1.getData();
     assertThat(resultData1, is(CoreMatchers.notNullValue()));
     assertThat(resultData1.size(), is(1));
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
-    final List<MapResultEntryDto<Long>> resultData2 = result2.getData();
+    final List<MapResultEntryDto> resultData2 = result2.getData();
     assertThat(resultData2, is(CoreMatchers.notNullValue()));
     assertThat(resultData2.size(), is(3));
   }
@@ -627,9 +627,9 @@ public class CombinedReportHandlingIT {
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getResult().getData();
     assertThat(resultMap.size(), is(2));
-    List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount = resultMap.get(singleReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(3));
-    List<MapResultEntryDto<Long>> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount2 = resultMap.get(singleReportId2).getResult().getData();
     assertThat(flowNodeToCount2.size(), is(3));
   }
 
@@ -832,13 +832,13 @@ public class CombinedReportHandlingIT {
 
     final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
-    final List<MapResultEntryDto<Long>> resultData1 = result1.getData();
+    final List<MapResultEntryDto> resultData1 = result1.getData();
     assertThat(resultData1, is(CoreMatchers.notNullValue()));
     assertThat(resultData1.size(), is(1));
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
-    final List<MapResultEntryDto<Long>> resultData2 = result2.getData();
+    final List<MapResultEntryDto> resultData2 = result2.getData();
     assertThat(resultData2, is(CoreMatchers.notNullValue()));
     assertThat(resultData2.size(), is(3));
   }

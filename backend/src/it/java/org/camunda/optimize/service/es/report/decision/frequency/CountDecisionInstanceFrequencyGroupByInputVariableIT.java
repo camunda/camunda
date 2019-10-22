@@ -157,7 +157,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     assertThat(result.getInstanceCount(), is(6L));
     assertThat(result.getIsComplete(), is(true));
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(3));
     assertThat(
@@ -252,7 +252,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<String> resultDataKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -300,7 +300,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
@@ -355,7 +355,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
     // then
     assertThat(result.getInstanceCount(), is(2L));
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getKey(), is("200.0"));
@@ -584,7 +584,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     ).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(resultData.get(0).getValue(), is(1L));
@@ -617,7 +617,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
       resultKeys,

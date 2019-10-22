@@ -452,7 +452,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(4));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -481,7 +481,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     assertThat(getExecutedFlowNodeCount(result), is(3L));
     final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
@@ -513,7 +513,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // then
     assertThat(result.getData().size(), is(3));
-    MapResultEntryDto<Long> notExecutedFlowNode =
+    MapResultEntryDto notExecutedFlowNode =
       result.getEntryForKey("endEvent").get();
     assertThat(notExecutedFlowNode.getValue(), is(nullValue()));
   }

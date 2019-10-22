@@ -382,8 +382,8 @@ public class VariableImportIT extends AbstractImportIT {
       .build();
     ReportMapResultDto result = evaluateReport(reportData).getResult();
     assertThat(result.getData(), is(notNullValue()));
-    List<MapResultEntryDto<Long>> flowNodeIdToExecutionFrequency = result.getData();
-    for (MapResultEntryDto<Long> frequency : flowNodeIdToExecutionFrequency) {
+    List<MapResultEntryDto> flowNodeIdToExecutionFrequency = result.getData();
+    for (MapResultEntryDto frequency : flowNodeIdToExecutionFrequency) {
       assertThat(frequency.getValue(), is(4L));
     }
   }

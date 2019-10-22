@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.ReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByVariable;
-import org.camunda.optimize.service.es.report.command.modules.view.FrequencyCountView;
+import org.camunda.optimize.service.es.report.command.modules.view.frequency.CountProcessInstanceFrequencyView;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,7 +29,7 @@ public class CountProcessInstanceFrequencyGroupByVariableCmd implements Command<
   public CountProcessInstanceFrequencyGroupByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
       .groupBy(GroupByVariable.class)
-      .addViewPart(FrequencyCountView.class)
+      .addViewPart(CountProcessInstanceFrequencyView.class)
       .build();
   }
 

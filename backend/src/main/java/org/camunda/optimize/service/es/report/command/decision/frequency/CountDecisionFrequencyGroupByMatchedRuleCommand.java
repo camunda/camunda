@@ -89,9 +89,9 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
     final ReportMapResultDto resultDto = new ReportMapResultDto();
 
     final Terms matchedRuleTerms = response.getAggregations().get(MATCHED_RULES_AGGREGATION);
-    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket b : matchedRuleTerms.getBuckets()) {
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
+      resultData.add(new MapResultEntryDto(b.getKeyAsString(), b.getDocCount()));
     }
 
     resultDto.setData(resultData);

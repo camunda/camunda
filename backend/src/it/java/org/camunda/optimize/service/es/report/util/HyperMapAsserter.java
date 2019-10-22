@@ -52,7 +52,7 @@ public class HyperMapAsserter {
         is(expectedResult.getData().size())
       );
       actualResult.getData().forEach(actualGroupByEntry -> {
-        Optional<HyperMapResultEntryDto<Long>> expectedGroupBy =
+        Optional<HyperMapResultEntryDto> expectedGroupBy =
           expectedResult.getDataEntryForKey(actualGroupByEntry.getKey());
         assertThat(
           String.format("Group by key [%s] should be present!", actualGroupByEntry.getKey()),
@@ -62,7 +62,7 @@ public class HyperMapAsserter {
         assertThat(actualGroupByEntry.getValue().size(), is(expectedGroupBy.get().getValue().size()));
         assertThat(actualGroupByEntry.getLabel(), is(expectedGroupBy.get().getLabel()));
         actualGroupByEntry.getValue().forEach(actualDistributedBy -> {
-          Optional<MapResultEntryDto<Long>> expectedDistributedBy = expectedGroupBy.get()
+          Optional<MapResultEntryDto> expectedDistributedBy = expectedGroupBy.get()
             .getDataEntryForKey(actualDistributedBy.getKey());
           assertThat(
             String.format("Distributed by key [%s] should be present!", actualDistributedBy.getKey()),
@@ -78,7 +78,7 @@ public class HyperMapAsserter {
       assertThat(actualResult, is(expectedResult));
     }
 
-    private void addEntryToHyperMap(HyperMapResultEntryDto<Long> entry) {
+    private void addEntryToHyperMap(HyperMapResultEntryDto entry) {
       expectedResult.getData().add(entry);
     }
 
@@ -86,7 +86,7 @@ public class HyperMapAsserter {
 
       private HyperMapAsserter asserter;
       private String groupByKey;
-      private List<MapResultEntryDto<Long>> distributedByEntry = new ArrayList<>();
+      private List<MapResultEntryDto> distributedByEntry = new ArrayList<>();
 
       public GroupByAdder(HyperMapAsserter asserter, String groupByKey) {
         this.asserter = asserter;
@@ -94,22 +94,22 @@ public class HyperMapAsserter {
       }
 
       public GroupByAdder distributedByContains(String distributedByKey, Long result) {
-        distributedByEntry.add(new MapResultEntryDto<>(distributedByKey, result, distributedByKey));
+        distributedByEntry.add(new MapResultEntryDto(distributedByKey, result, distributedByKey));
         return this;
       }
 
       public GroupByAdder distributedByContains(String distributedByKey, Long result, String label) {
-        distributedByEntry.add(new MapResultEntryDto<>(distributedByKey, result, label));
+        distributedByEntry.add(new MapResultEntryDto(distributedByKey, result, label));
         return this;
       }
 
       public GroupByAdder groupByContains(String groupByKey) {
-        asserter.addEntryToHyperMap(new HyperMapResultEntryDto<>(this.groupByKey, distributedByEntry, this.groupByKey));
+        asserter.addEntryToHyperMap(new HyperMapResultEntryDto(this.groupByKey, distributedByEntry, this.groupByKey));
         return new GroupByAdder(asserter, groupByKey);
       }
 
       public void doAssert(ReportHyperMapResultDto actualResult) {
-        asserter.addEntryToHyperMap(new HyperMapResultEntryDto<>(this.groupByKey, distributedByEntry, this.groupByKey));
+        asserter.addEntryToHyperMap(new HyperMapResultEntryDto(this.groupByKey, distributedByEntry, this.groupByKey));
         asserter.doAssert(actualResult);
       }
     }

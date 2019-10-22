@@ -84,11 +84,11 @@ public class UserTaskIdleDurationByAssigneeReportEvaluationIT
   protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
     assertThat(
-      result.getEntryForKey(DEFAULT_USERNAME).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
+      result.getEntryForKey(DEFAULT_USERNAME).orElse(new MapResultEntryDto("foo", null)).getValue(),
       is(expectedValues.getExpectedIdleDurationValues().get(DEFAULT_USERNAME))
     );
     assertThat(
-      result.getEntryForKey(SECOND_USER).orElse(new MapResultEntryDto<>("foo", null)).getValue(),
+      result.getEntryForKey(SECOND_USER).orElse(new MapResultEntryDto("foo", null)).getValue(),
       is(expectedValues.getExpectedIdleDurationValues().get(SECOND_USER))
     );
   }

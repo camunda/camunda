@@ -15,7 +15,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 @Component
@@ -26,7 +26,7 @@ public class GroupByNone extends GroupByPart<NumberResultDto> {
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ProcessReportDataDto definitionData) {
     // nothing to do here, since we don't group so just pass the view part on
-    return Arrays.asList(viewPart.createAggregation(definitionData));
+    return Collections.singletonList(viewPart.createAggregation(definitionData));
   }
 
   @Override

@@ -146,11 +146,11 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
     final Filter filteredActivities = activities.getAggregations().get(FILTERED_EVENTS_AGGREGATION);
     final Terms activityIdTerms = filteredActivities.getAggregations().get(ACTIVITY_ID_TERMS_AGGREGATION);
 
-    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket b : activityIdTerms.getBuckets()) {
 
       final long value = aggregationStrategy.getValue(b.getAggregations());
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), value));
+      resultData.add(new MapResultEntryDto(b.getKeyAsString(), value));
     }
 
     resultDto.setData(resultData);

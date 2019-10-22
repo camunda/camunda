@@ -92,7 +92,7 @@ public class ProcessInstanceDurationByEndDateWithProcessPartReportEvaluationIT
 
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(5));
 
     assertThat(

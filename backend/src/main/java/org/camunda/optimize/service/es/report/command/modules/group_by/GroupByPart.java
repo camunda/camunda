@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -32,13 +33,27 @@ public abstract class GroupByPart<R extends SingleReportResultDto> {
   public R retrieveQueryResult(final SearchResponse response,
                                final ProcessReportDataDto reportData) {
     final R result = retrieveResult(response, reportData);
-    sortResultData(reportData, result);
-    return result;
+    final R filteredResultData = filterResultData(reportData, result);
+    final R enrichedResultData = enrichResultData(reportData, filteredResultData);
+    sortResultData(reportData, enrichedResultData);
+    return enrichedResultData;
   }
 
-  protected abstract R retrieveResult(final SearchResponse response, final ProcessReportDataDto reportData);
+  protected abstract R retrieveResult(SearchResponse response, ProcessReportDataDto reportData);
 
-  protected abstract void sortResultData(final ProcessReportDataDto reportData, final R resultDto);
+  protected R filterResultData(final ProcessReportDataDto reportData, final R resultDto) {
+    return resultDto;
+  }
+
+  protected R enrichResultData(final ProcessReportDataDto reportData, final R resultDto) {
+    return resultDto;
+  }
+
+  protected void sortResultData(final ProcessReportDataDto reportData, final R resultDto) {
+    reportData.getConfiguration().getSorting().ifPresent(
+      sorting -> resultDto.sortResultData(sorting, VariableType.STRING)
+    );
+  }
 
   public String generateCommandKey() {
     final ProcessReportDataDto dataForCommandKey = new ProcessReportDataDto();

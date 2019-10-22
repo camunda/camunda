@@ -88,7 +88,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(5));
 
     assertThat(
@@ -148,7 +148,7 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
     assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getIsComplete(), is(true));
 
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
 
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(3));

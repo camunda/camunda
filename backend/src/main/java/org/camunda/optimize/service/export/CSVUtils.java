@@ -165,11 +165,11 @@ public class CSVUtils {
     return result;
   }
 
-  public static List<String[]> map(List<MapResultEntryDto<Long>> values, Integer limit, Integer offset) {
+  public static List<String[]> map(List<MapResultEntryDto> values, Integer limit, Integer offset) {
     List<String[]> result = new ArrayList<>();
 
     int currentPosition = 0;
-    for (MapResultEntryDto<Long> value : values) {
+    for (MapResultEntryDto value : values) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
       boolean offsetPassed = isOffsetPassed(offset, currentPosition);
       if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {

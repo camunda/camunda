@@ -6,9 +6,11 @@
 package org.camunda.optimize.dto.optimize.query.report.single.result.hyper;
 
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,15 +20,23 @@ import java.util.Optional;
 public class ReportHyperMapResultDto implements ProcessReportResultDto, LimitedResultDto {
 
   private long instanceCount;
-  private List<HyperMapResultEntryDto<Long>> data = new ArrayList<>();
+  private List<HyperMapResultEntryDto> data = new ArrayList<>();
   private Boolean isComplete = true;
 
-  public Optional<HyperMapResultEntryDto<Long>> getDataEntryForKey(final String key) {
+  public Optional<HyperMapResultEntryDto> getDataEntryForKey(final String key) {
     return data.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
   }
 
   @Override
   public ResultType getType() {
     return ResultType.HYPER_MAP;
+  }
+
+  @Override
+  public void sortResultData(final SortingDto sortingDto, final VariableType keyType) {
+    Optional.of(sortingDto).ifPresent(
+      sorting -> data
+        .forEach(groupByEntry -> groupByEntry.sortResultData(sorting, keyType))
+    );
   }
 }

@@ -38,9 +38,9 @@ public class CombinedProcessReportResultTest {
   public void testGetResultAsCsvForMapResult() {
     // given
     final ReportMapResultDto mapResultDto = new ReportMapResultDto();
-    final List<MapResultEntryDto<Long>> resultDtoMap = new ArrayList<>();
-    resultDtoMap.add(new MapResultEntryDto<>("900.0", 1L));
-    resultDtoMap.add(new MapResultEntryDto<>("10.99", 1L));
+    final List<MapResultEntryDto> resultDtoMap = new ArrayList<>();
+    resultDtoMap.add(new MapResultEntryDto("900.0", 1L));
+    resultDtoMap.add(new MapResultEntryDto("10.99", 1L));
     mapResultDto.setData(resultDtoMap);
     final List<SingleReportResultDto> mapResultDtos = Lists.newArrayList(
       mapResultDto,
@@ -189,9 +189,9 @@ public class CombinedProcessReportResultTest {
 
     final ReportMapResultDto durMapReportDto = new ReportMapResultDto();
 
-    List<MapResultEntryDto<Long>> data = new ArrayList<>();
-    data.add(new MapResultEntryDto<>("test1", 3L));
-    data.add(new MapResultEntryDto<>("test2", 6L));
+    List<MapResultEntryDto> data = new ArrayList<>();
+    data.add(new MapResultEntryDto("test1", 3L));
+    data.add(new MapResultEntryDto("test2", 6L));
     durMapReportDto.setData(data);
 
     final ArrayList<SingleReportResultDto> resultDtos = Lists.newArrayList(

@@ -99,7 +99,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(startDate, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
     assertThat(
@@ -146,7 +146,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
 
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(5));
 
     assertThat(
@@ -206,7 +206,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getIsComplete(), is(true));
 
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
 
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(3));
@@ -268,7 +268,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getValue(), is(runningProcInstStartDate.until(now, MILLIS)));
@@ -319,7 +319,7 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getValue(), is(runningProcInstStartDate.until(now, MILLIS)));

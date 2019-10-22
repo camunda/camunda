@@ -121,9 +121,9 @@ public class CountFlowNodeFrequencyByFlowNodeCommand extends FlowNodeFrequencyGr
     final Filter filteredActivities = activities.getAggregations().get("filteredEvents");
     final Terms activityTerms = filteredActivities.getAggregations().get("activities");
 
-    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket b : activityTerms.getBuckets()) {
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
+      resultData.add(new MapResultEntryDto(b.getKeyAsString(), b.getDocCount()));
     }
 
     resultDto.setData(resultData);

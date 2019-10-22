@@ -232,7 +232,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -282,7 +282,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
       // then
       assertThat(result.getIsComplete(), is(true));
-      final List<MapResultEntryDto<Long>> resultData = result.getData();
+      final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData.size(), is(3));
       final List<Long> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
@@ -733,7 +733,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
       // then
       assertThat(result.getData(), is(notNullValue()));
-      final List<MapResultEntryDto<Long>> resultData = result.getData();
+      final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());

@@ -345,7 +345,7 @@ public class ReportDefinitionAuthorizationIT {
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
-    List<MapResultEntryDto<Long>> flowNodeToCount = resultMap.get(authorizedReportId).getResult().getData();
+    List<MapResultEntryDto> flowNodeToCount = resultMap.get(authorizedReportId).getResult().getData();
     assertThat(flowNodeToCount.size(), is(2));
   }
 

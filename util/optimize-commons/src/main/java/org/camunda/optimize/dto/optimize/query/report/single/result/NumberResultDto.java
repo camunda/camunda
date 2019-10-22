@@ -6,8 +6,10 @@
 package org.camunda.optimize.dto.optimize.query.report.single.result;
 
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 @Data
 public class NumberResultDto implements DecisionReportResultDto, ProcessReportResultDto {
@@ -18,5 +20,10 @@ public class NumberResultDto implements DecisionReportResultDto, ProcessReportRe
   @Override
   public ResultType getType() {
     return ResultType.NUMBER;
+  }
+
+  @Override
+  public void sortResultData(final SortingDto sorting, final VariableType keyType) {
+    // nothing to sort here
   }
 }

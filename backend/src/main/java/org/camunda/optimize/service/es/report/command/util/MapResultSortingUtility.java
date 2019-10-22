@@ -60,6 +60,13 @@ public class MapResultSortingUtility {
   }
 
   public static void sortResultData(final SortingDto sorting,
+                                    final ReportMapResultDto resultData) {
+    resultData.setData(sortResultData(
+      sorting, resultData.getData(), VariableType.STRING
+    ));
+  }
+
+  public static void sortResultData(final SortingDto sorting,
                                     final ReportMapResultDto resultData,
                                     final VariableType keyType) {
     resultData.setData(sortResultData(
@@ -68,8 +75,8 @@ public class MapResultSortingUtility {
   }
 
   public static void sortResultData(final SortingDto sorting,
-                                    final HyperMapResultEntryDto<Long> resultData) {
-    final List<MapResultEntryDto<Long>> mapResultEntryDtos = sortResultData(
+                                    final HyperMapResultEntryDto resultData) {
+    final List<MapResultEntryDto> mapResultEntryDtos = sortResultData(
       sorting,
       resultData.getValue(),
       VariableType.STRING
@@ -77,15 +84,15 @@ public class MapResultSortingUtility {
     resultData.setValue(mapResultEntryDtos);
   }
 
-  private static <V extends Comparable> List<MapResultEntryDto<V>> sortResultData(
+  private static List<MapResultEntryDto> sortResultData(
     final SortingDto sorting,
-    final List<MapResultEntryDto<V>> resultData,
+    final List<MapResultEntryDto> resultData,
     final VariableType keyType) {
 
     final String sortBy = sorting.getBy().orElse(SortingDto.SORT_BY_KEY);
     final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.DESC);
 
-    final Function<MapResultEntryDto<V>, Comparable> valueToSortByExtractor;
+    final Function<MapResultEntryDto, Comparable> valueToSortByExtractor;
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
@@ -100,7 +107,7 @@ public class MapResultSortingUtility {
         break;
     }
 
-    final Comparator<MapResultEntryDto<V>> comparator;
+    final Comparator<MapResultEntryDto> comparator;
     switch (sortOrder) {
       case DESC:
         comparator = Comparator.comparing(valueToSortByExtractor, Comparator.nullsLast(Comparator.reverseOrder()));

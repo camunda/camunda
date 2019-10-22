@@ -38,16 +38,6 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
-  public static ProcessReportDataDto createUserTaskFrequencyGroupedByUserTaskReport() {
-    final ProcessViewDto view = createUserTaskFrequencyView();
-    final ProcessGroupByDto groupByDto = createGroupByFlowNode();
-
-    final ProcessReportDataDto reportData = new ProcessReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
   public static ProcessReportDataDto createUserTaskIdleDurationGroupByUserTaskReport(AggregationType aggroType) {
     return createUserTaskDurationGroupedByUserTaskReport(aggroType, UserTaskDurationTime.IDLE);
   }
@@ -73,7 +63,7 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
-  public static ProcessReportDataDto createUserTaskFrequencyGroupByAssigneeReport() {
+  private static ProcessReportDataDto createUserTaskFrequencyGroupByAssigneeReport() {
     final ProcessViewDto view = createUserTaskFrequencyView();
     final ProcessGroupByDto groupByDto = createGroupByAssignee();
 
@@ -140,7 +130,7 @@ public class ProcessReportDataCreator {
     return reportData;
   }
 
-  public static ProcessReportDataDto createUserTaskFrequencyGroupByCandidateGroupReport() {
+  private static ProcessReportDataDto createUserTaskFrequencyGroupByCandidateGroupReport() {
     final ProcessViewDto view = createUserTaskFrequencyView();
     final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
 

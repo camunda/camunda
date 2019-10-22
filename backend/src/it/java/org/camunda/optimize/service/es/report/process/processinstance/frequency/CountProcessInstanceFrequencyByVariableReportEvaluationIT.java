@@ -273,7 +273,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -311,7 +311,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
@@ -407,7 +407,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
       // then
       assertThat(result.getData(), is(notNullValue()));
-      List<MapResultEntryDto<Long>> resultData = result.getData();
+      List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
@@ -578,7 +578,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       reportData);
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = response.getResult().getData();
+    final List<MapResultEntryDto> resultData = response.getResult().getData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
       resultKeys,

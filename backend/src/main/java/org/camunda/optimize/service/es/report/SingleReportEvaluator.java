@@ -56,10 +56,7 @@ import org.camunda.optimize.service.es.report.command.process.user_task.duration
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.usertask.UserTaskTotalDurationByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.duration.groupby.usertask.UserTaskWorkDurationByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.assignee.UserTaskFrequencyByAssigneeByUserTaskCommand;
-import org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.assignee.UserTaskFrequencyByAssigneeCommand;
 import org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.candidate_group.UserTaskFrequencyByCandidateGroupByUserTaskCommand;
-import org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.candidate_group.UserTaskFrequencyByCandidateGroupCommand;
-import org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.usertask.UserTaskFrequencyByUserTaskCommand;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -92,10 +89,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createRawDataReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskFrequencyGroupByAssigneeByUserTaskReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskFrequencyGroupByAssigneeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskFrequencyGroupByCandidateGroupByUserTaskReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskFrequencyGroupByCandidateGroupReport;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskFrequencyGroupedByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskIdleDurationGroupByAssigneeByUserTaskReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskIdleDurationGroupByAssigneeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createUserTaskIdleDurationGroupByCandidateGroupByUserTaskReport;
@@ -218,19 +212,6 @@ public class SingleReportEvaluator {
   }
 
   private static void addUserTaskFrequencyReports() {
-    commandSuppliers.put(
-      createUserTaskFrequencyGroupedByUserTaskReport().createCommandKey(),
-      UserTaskFrequencyByUserTaskCommand::new
-    );
-    commandSuppliers.put(
-      createUserTaskFrequencyGroupByAssigneeReport().createCommandKey(),
-      UserTaskFrequencyByAssigneeCommand::new
-    );
-    commandSuppliers.put(
-      createUserTaskFrequencyGroupByCandidateGroupReport().createCommandKey(),
-      UserTaskFrequencyByCandidateGroupCommand::new
-    );
-
     // with distributed by
     commandSuppliers.put(
       createUserTaskFrequencyGroupByAssigneeByUserTaskReport().createCommandKey(),

@@ -13,15 +13,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -89,7 +88,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount(), is(1L));
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -123,7 +122,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(), is(GroupByDateUnit.DAY));
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -170,7 +169,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -210,7 +209,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -253,7 +252,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
 
     // then
     assertThat(result.getIsComplete(), is(true));
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<Long> resultValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
@@ -295,7 +294,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     assertThat(result.getIsComplete(), is(false));
   }
@@ -326,19 +325,19 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringToday = localDateTimeToString(startOfToday);
-    final Optional<MapResultEntryDto<Long>> todayEntry = resultData.stream()
+    final Optional<MapResultEntryDto> todayEntry = resultData.stream()
       .filter(e -> expectedStringToday.equals(e.getKey()))
       .findFirst();
     assertThat(todayEntry.isPresent(), is(true));
     assertThat(todayEntry.get().getValue(), is(2L));
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    final Optional<MapResultEntryDto<Long>> yesterdayEntry = resultData.stream()
+    final Optional<MapResultEntryDto> yesterdayEntry = resultData.stream()
       .filter(e -> expectedStringYesterday.equals(e.getKey()))
       .findFirst();
     assertThat(yesterdayEntry.isPresent(), is(true));
@@ -370,27 +369,27 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
 
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
 
     final String expectedStringToday = localDateTimeToString(startOfToday);
-    final Optional<MapResultEntryDto<Long>> todayEntry = resultData.stream()
+    final Optional<MapResultEntryDto> todayEntry = resultData.stream()
       .filter(e -> expectedStringToday.equals(e.getKey()))
       .findFirst();
     assertThat(todayEntry.isPresent(), is(true));
     assertThat(todayEntry.get().getValue(), is(2L));
 
     final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
-    final Optional<MapResultEntryDto<Long>> yesterdayEntry = resultData.stream()
+    final Optional<MapResultEntryDto> yesterdayEntry = resultData.stream()
       .filter(e -> expectedStringYesterday.equals(e.getKey()))
       .findFirst();
     assertThat(yesterdayEntry.isPresent(), is(true));
     assertThat(yesterdayEntry.get().getValue(), is(0L));
 
     final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
-    final Optional<MapResultEntryDto<Long>> dayBeforYesterdayEntry = resultData.stream()
+    final Optional<MapResultEntryDto> dayBeforYesterdayEntry = resultData.stream()
       .filter(e -> expectedStringDayBeforeYesterday.equals(e.getKey()))
       .findFirst();
     assertThat(dayBeforYesterdayEntry.isPresent(), is(true));
@@ -419,19 +418,19 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertStartDateResultMap(resultData, 5, now, ChronoUnit.HOURS);
   }
 
-  private void assertStartDateResultMap(List<MapResultEntryDto<Long>> resultData,
+  private void assertStartDateResultMap(List<MapResultEntryDto> resultData,
                                         int size,
                                         OffsetDateTime now,
                                         ChronoUnit unit) {
     assertStartDateResultMap(resultData, size, now, unit, 1L);
   }
 
-  private void assertStartDateResultMap(List<MapResultEntryDto<Long>> resultData,
+  private void assertStartDateResultMap(List<MapResultEntryDto> resultData,
                                         int size,
                                         OffsetDateTime now,
                                         ChronoUnit unit,
@@ -481,7 +480,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertStartDateResultMap(resultData, 8, now, ChronoUnit.DAYS);
   }
@@ -506,7 +505,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertStartDateResultMap(resultData, 8, now, ChronoUnit.WEEKS);
   }
@@ -531,7 +530,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertStartDateResultMap(resultData, 3, now, ChronoUnit.MONTHS);
   }
@@ -556,7 +555,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertStartDateResultMap(resultData, 8, now, ChronoUnit.YEARS);
   }
@@ -579,7 +578,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertStartDateResultMap(resultData, 1, OffsetDateTime.now(), ChronoUnit.DAYS);
   }

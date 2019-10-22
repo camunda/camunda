@@ -11,23 +11,23 @@ import lombok.NonNull;
 import lombok.Setter;
 
 @EqualsAndHashCode
-public class MapResultEntryDto<T extends Comparable> {
+public class MapResultEntryDto {
 
   // @formatter:off
   @NonNull @Getter @Setter private String key;
-  @Getter @Setter private T value;
+  @Getter @Setter private Long value;
   @Setter private String label;
   // @formatter:on
 
   protected MapResultEntryDto() {
   }
 
-  public MapResultEntryDto(@NonNull final String key, final T value) {
+  public MapResultEntryDto(@NonNull final String key, final Long value) {
     this.key = key;
     this.value = value;
   }
 
-  public MapResultEntryDto(@NonNull final String key, final T value, String label) {
+  public MapResultEntryDto(@NonNull final String key, final Long value, String label) {
     this.key = key;
     this.value = value;
     this.label = label;

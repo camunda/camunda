@@ -92,7 +92,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     ReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(resultData.get(0).getValue(), is(2L));
     assertThat(resultData.get(resultData.size() - 1).getValue(), is(1L));
@@ -134,7 +134,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     ReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Long::intValue).sum(), is(3));
     assertThat(resultData.get(0).getValue(), is(1L));
@@ -153,7 +153,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     ReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(0));
   }
 
@@ -172,7 +172,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     ReportMapResultDto result = evaluateReportAndReturnResult(reportData);
 
     // then the single data point should be grouped by month
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(1));
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
@@ -298,7 +298,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
                                              int resultSize) {
     assertThat(resultMap.size(), is(resultSize));
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
-      final List<MapResultEntryDto<Long>> resultData = result.getResult().getData();
+      final List<MapResultEntryDto> resultData = result.getResult().getData();
       assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
       assertThat(resultData.get(resultData.size() - 1).getKey(), is(localDateTimeToString(startRange)));
       assertIsInRangeOfLastInterval(resultData.get(0).getKey(), startRange, endRange);

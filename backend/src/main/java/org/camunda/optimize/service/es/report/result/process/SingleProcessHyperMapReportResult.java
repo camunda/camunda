@@ -83,7 +83,7 @@ public class SingleProcessHyperMapReportResult
   }
 
   private List<String[]> mapSingleHyperMapResultEntry(final Integer limit,
-                                                      HyperMapResultEntryDto<Long> resultEntryDto,
+                                                      HyperMapResultEntryDto resultEntryDto,
                                                       final boolean removeLabelColumn) {
     List<String[]> csvStrings = CSVUtils.map(resultEntryDto.getValue(), limit, 0);
     final String label =

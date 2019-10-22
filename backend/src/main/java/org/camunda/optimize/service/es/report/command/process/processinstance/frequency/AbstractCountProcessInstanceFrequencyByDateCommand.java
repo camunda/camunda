@@ -191,16 +191,16 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
     return resultDto;
   }
 
-  private List<MapResultEntryDto<Long>> processAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto> processAggregations(Aggregations aggregations) {
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
-    List<MapResultEntryDto<Long>> result = new ArrayList<>();
+    List<MapResultEntryDto> result = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
       final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
       for (Histogram.Bucket entry : agg.getBuckets()) {
         DateTime key = (DateTime) entry.getKey();
         long docCount = entry.getDocCount();
         String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
-        result.add(new MapResultEntryDto<>(formattedDate, docCount));
+        result.add(new MapResultEntryDto(formattedDate, docCount));
       }
     } else {
       result = processAutomaticIntervalAggregations(aggregations);
@@ -208,12 +208,12 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
     return result;
   }
 
-  private List<MapResultEntryDto<Long>> processAutomaticIntervalAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto> processAutomaticIntervalAggregations(Aggregations aggregations) {
     return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
       aggregations)
       .entrySet()
       .stream()
-      .map(stringBucketEntry -> new MapResultEntryDto<>(
+      .map(stringBucketEntry -> new MapResultEntryDto(
         stringBucketEntry.getKey(), stringBucketEntry.getValue().getDocCount()
       ))
       .collect(Collectors.toList());

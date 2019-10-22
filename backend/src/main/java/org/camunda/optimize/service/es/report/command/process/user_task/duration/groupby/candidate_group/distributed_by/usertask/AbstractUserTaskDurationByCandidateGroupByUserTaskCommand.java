@@ -150,16 +150,16 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskCommand
     final Terms byCandidateGroupAggregation = filteredUserTasks.getAggregations()
       .get(USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION);
 
-    final List<HyperMapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<HyperMapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket candidateGroupBucket : byCandidateGroupAggregation.getBuckets()) {
 
-      final List<MapResultEntryDto<Long>> byCandidateGroupEntry = new ArrayList<>();
+      final List<MapResultEntryDto> byCandidateGroupEntry = new ArrayList<>();
       final Terms byTaskIdAggregation = candidateGroupBucket.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
       for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
         final Long value = aggregationStrategy.getValue(taskBucket.getAggregations());
-        byCandidateGroupEntry.add(new MapResultEntryDto<>(taskBucket.getKeyAsString(), value));
+        byCandidateGroupEntry.add(new MapResultEntryDto(taskBucket.getKeyAsString(), value));
       }
-      resultData.add(new HyperMapResultEntryDto<>(candidateGroupBucket.getKeyAsString(), byCandidateGroupEntry));
+      resultData.add(new HyperMapResultEntryDto(candidateGroupBucket.getKeyAsString(), byCandidateGroupEntry));
     }
 
     resultDto.setData(resultData);

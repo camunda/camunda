@@ -149,16 +149,16 @@ public abstract class AbstractUserTaskDurationByAssigneeByUserTaskCommand extend
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byAssigneeAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ASSIGNEE_TERMS_AGGREGATION);
 
-    final List<HyperMapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<HyperMapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket assigneeBucket : byAssigneeAggregation.getBuckets()) {
 
-      final List<MapResultEntryDto<Long>> byAssigneeEntry = new ArrayList<>();
+      final List<MapResultEntryDto> byAssigneeEntry = new ArrayList<>();
       final Terms byTaskIdAggregation = assigneeBucket.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
       for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
         final Long value = aggregationStrategy.getValue(taskBucket.getAggregations());
-        byAssigneeEntry.add(new MapResultEntryDto<>(taskBucket.getKeyAsString(), value));
+        byAssigneeEntry.add(new MapResultEntryDto(taskBucket.getKeyAsString(), value));
       }
-      resultData.add(new HyperMapResultEntryDto<>(assigneeBucket.getKeyAsString(), byAssigneeEntry));
+      resultData.add(new HyperMapResultEntryDto(assigneeBucket.getKeyAsString(), byAssigneeEntry));
     }
 
     resultDto.setData(resultData);

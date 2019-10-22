@@ -181,9 +181,9 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
     }
 
-    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto> resultData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), b.getDocCount()));
+      resultData.add(new MapResultEntryDto(b.getKeyAsString(), b.getDocCount()));
     }
 
     final ReverseNested filteredProcessInstAggr = filteredVariables.getAggregations()
@@ -191,7 +191,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
     final long filteredProcInstCount = filteredProcessInstAggr.getDocCount();
 
     if (response.getHits().getTotalHits() > filteredProcInstCount) {
-      resultData.add(new MapResultEntryDto<>(
+      resultData.add(new MapResultEntryDto(
         MISSING_VARIABLE_KEY,
         response.getHits().getTotalHits() - filteredProcInstCount
       ));

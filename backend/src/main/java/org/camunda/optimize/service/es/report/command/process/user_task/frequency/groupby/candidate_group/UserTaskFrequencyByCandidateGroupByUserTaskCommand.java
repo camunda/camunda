@@ -120,15 +120,16 @@ public class UserTaskFrequencyByCandidateGroupByUserTaskCommand extends UserTask
     final Terms byAssigneeAggregation = filteredUserTasks.getAggregations().get(
       USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION);
 
-    final List<HyperMapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<HyperMapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket assigneeBucket : byAssigneeAggregation.getBuckets()) {
 
-      final List<MapResultEntryDto<Long>> byGroupByEntry = new ArrayList<>();
+      final List<MapResultEntryDto> byGroupByEntry = new ArrayList<>();
       final Terms byTaskIdAggregation = assigneeBucket.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
       for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
-        byGroupByEntry.add(new MapResultEntryDto<>(taskBucket.getKeyAsString(), taskBucket.getDocCount()));
+        byGroupByEntry.add(new MapResultEntryDto(taskBucket.getKeyAsString(), taskBucket.getDocCount()));
       }
-      resultData.add(new HyperMapResultEntryDto<>(assigneeBucket.getKeyAsString(), byGroupByEntry));
+
+      resultData.add(new HyperMapResultEntryDto(assigneeBucket.getKeyAsString(), byGroupByEntry));
     }
     resultDto.setData(resultData);
     resultDto.setIsComplete(byAssigneeAggregation.getSumOfOtherDocCounts() == 0L);

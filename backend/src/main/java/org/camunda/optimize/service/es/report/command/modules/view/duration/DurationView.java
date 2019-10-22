@@ -35,7 +35,7 @@ import java.util.Map;
 @Primary
 public class DurationView extends ViewPart {
 
-  protected static Map<AggregationType, AggregationStrategy> aggregationStrategyMap = new HashMap<>();
+  private static Map<AggregationType, AggregationStrategy> aggregationStrategyMap = new HashMap<>();
 
   static {
     aggregationStrategyMap.put(AggregationType.MIN, new MinAggregation());
@@ -50,7 +50,7 @@ public class DurationView extends ViewPart {
     return strategy.getAggregationBuilder().script(getScriptedAggregationField());
   }
 
-  protected AggregationStrategy getAggregationStrategy(final ProcessReportDataDto definitionData) {
+  AggregationStrategy getAggregationStrategy(final ProcessReportDataDto definitionData) {
     return aggregationStrategyMap.get(definitionData.getConfiguration().getAggregationType());
   }
 

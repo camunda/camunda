@@ -288,7 +288,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
     final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<Long>> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(1));
     assertThat(result.getIsComplete(), is(false));
 
@@ -337,7 +337,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
     final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<Long>> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     assertThat(result.getIsComplete(), is(false));
 
@@ -394,7 +394,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
     final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<Long>> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     assertThat(result.getIsComplete(), is(false));
 
@@ -460,7 +460,7 @@ public class DateQueryFilterIT extends AbstractFilterIT {
     final ReportMapResultDto result = evaluateReportWithMapResult(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<Long>> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     assertThat(result.getIsComplete(), is(false));
 

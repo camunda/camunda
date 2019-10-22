@@ -6,10 +6,11 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 import lombok.Data;
-import lombok.EqualsAndHashCode;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.List;
 
@@ -23,5 +24,10 @@ public class RawDataDecisionReportResultDto implements DecisionReportResultDto,L
   @Override
   public ResultType getType() {
     return ResultType.RAW;
+  }
+
+  @Override
+  public void sortResultData(final SortingDto sorting, final VariableType keyType) {
+    // to be implemented later
   }
 }

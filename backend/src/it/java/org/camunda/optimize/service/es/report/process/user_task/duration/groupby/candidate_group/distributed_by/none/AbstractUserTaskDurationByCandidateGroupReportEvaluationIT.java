@@ -351,7 +351,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
       final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
       // then
-      final List<MapResultEntryDto<Long>> resultData = result.getData();
+      final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData.size(), is(2));
       final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
       assertThat(
@@ -386,7 +386,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     final List<String> resultLabels = resultData.stream()
       .map(MapResultEntryDto::getLabel)
@@ -873,7 +873,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupReportEvaluationIT
   }
 
   private void assertCorrectValueOrdering(ReportMapResultDto result) {
-    List<MapResultEntryDto<Long>> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getData();
     final List<Long> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)
       .collect(Collectors.toList());

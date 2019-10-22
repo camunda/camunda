@@ -796,18 +796,18 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
   static class ExecutionStateTestValues {
     FlowNodeExecutionState executionState;
 
-    HyperMapResultEntryDto<Long> expectedIdleDurationValues;
-    HyperMapResultEntryDto<Long> expectedWorkDurationValues;
-    HyperMapResultEntryDto<Long> expectedTotalDurationValues;
+    HyperMapResultEntryDto expectedIdleDurationValues;
+    HyperMapResultEntryDto expectedWorkDurationValues;
+    HyperMapResultEntryDto expectedTotalDurationValues;
   }
 
-  private static HyperMapResultEntryDto<Long> getExpectedResultsMap(Long userTask1Result, Long userTask2Result) {
-    List<MapResultEntryDto<Long>> groupByResults = new ArrayList<>();
-    MapResultEntryDto<Long> firstUserTask = new MapResultEntryDto<>(USER_TASK_1, userTask1Result, USER_TASK_1_NAME);
+  private static HyperMapResultEntryDto getExpectedResultsMap(Long userTask1Result, Long userTask2Result) {
+    List<MapResultEntryDto> groupByResults = new ArrayList<>();
+    MapResultEntryDto firstUserTask = new MapResultEntryDto(USER_TASK_1, userTask1Result, USER_TASK_1_NAME);
     groupByResults.add(firstUserTask);
-    MapResultEntryDto<Long> secondUserTask = new MapResultEntryDto<>(USER_TASK_2, userTask2Result, USER_TASK_2_NAME);
+    MapResultEntryDto secondUserTask = new MapResultEntryDto(USER_TASK_2, userTask2Result, USER_TASK_2_NAME);
     groupByResults.add(secondUserTask);
-    return new HyperMapResultEntryDto<>(FIRST_CANDIDATE_GROUP, groupByResults);
+    return new HyperMapResultEntryDto(FIRST_CANDIDATE_GROUP, groupByResults);
   }
 
   protected static Object[] getExecutionStateExpectedValues() {

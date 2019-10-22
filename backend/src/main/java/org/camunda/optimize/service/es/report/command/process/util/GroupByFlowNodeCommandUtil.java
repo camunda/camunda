@@ -10,10 +10,10 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 
 import java.util.Comparator;
@@ -47,7 +47,7 @@ public class GroupByFlowNodeCommandUtil {
         .ifPresent(processDefinition -> {
           final Map<String, String> flowNodeNames = processDefinition.getFlowNodeNames();
 
-          final List<MapResultEntryDto<Long>> collect = evaluationResult.getResultAsDto()
+          final List<MapResultEntryDto> collect = evaluationResult.getResultAsDto()
             .getData()
             .stream()
             .filter(resultEntry -> flowNodeNames.containsKey(resultEntry.getKey()))
@@ -73,7 +73,7 @@ public class GroupByFlowNodeCommandUtil {
           evaluationResult.getResultAsDto()
             .getData()
             .forEach(hyperMapEntry -> {
-              List<MapResultEntryDto<Long>> hyperMapValue = hyperMapEntry
+              List<MapResultEntryDto> hyperMapValue = hyperMapEntry
                 .getValue()
                 .stream()
                 .filter(resultEntry -> userTaskNames.containsKey(resultEntry.getKey()))
@@ -103,7 +103,7 @@ public class GroupByFlowNodeCommandUtil {
         Set<String> allFlowNodeKeys = flowNodeNames.keySet();
         Set<String> difference = Sets.difference(allFlowNodeKeys, flowNodeKeysWithResult);
         difference.forEach(flowNodeKey -> {
-          MapResultEntryDto<Long> emptyResult = new MapResultEntryDto<>(flowNodeKey, createNewEmptyResult.get());
+          MapResultEntryDto emptyResult = new MapResultEntryDto(flowNodeKey, createNewEmptyResult.get());
           emptyResult.setLabel(flowNodeNames.get(flowNodeKey));
           evaluationResult.getResultAsDto().getData().add(emptyResult);
         });
@@ -120,7 +120,7 @@ public class GroupByFlowNodeCommandUtil {
       .ifPresent(processDefinition -> {
         final Map<String, String> flowNodeNames = processDefinition.getUserTaskNames();
 
-        List<HyperMapResultEntryDto<Long>> resultData = evaluationResult.getResultAsDto().getData();
+        List<HyperMapResultEntryDto> resultData = evaluationResult.getResultAsDto().getData();
         resultData
           .forEach(groupedByKeyEntry -> groupedByKeyEntry.getValue().forEach(
             distributedByEntry -> {
@@ -136,7 +136,7 @@ public class GroupByFlowNodeCommandUtil {
               // For those user tasks, count value is set to null since in the front-end
               // we handle the cases of null (not being executed) and
               // 0 (it might have been executed, but has a very low value) differently.
-              .add(new MapResultEntryDto<>(taskId, null, flowNodeNames.get(taskId))));
+              .add(new MapResultEntryDto(taskId, null, flowNodeNames.get(taskId))));
           groupByEntry.getValue()
             .sort(Comparator.comparing(MapResultEntryDto::getLabel));
         });

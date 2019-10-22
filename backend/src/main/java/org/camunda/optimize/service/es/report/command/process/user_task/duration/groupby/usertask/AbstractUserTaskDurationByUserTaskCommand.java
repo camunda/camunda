@@ -142,10 +142,10 @@ public abstract class AbstractUserTaskDurationByUserTaskCommand extends UserTask
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
 
-    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
       final Long value = aggregationStrategy.getValue(b.getAggregations());
-      resultData.add(new MapResultEntryDto<>(b.getKeyAsString(), value));
+      resultData.add(new MapResultEntryDto(b.getKeyAsString(), value));
     }
 
     resultDto.setData(resultData);

@@ -113,8 +113,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
 
-    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
-    final MapResultEntryDto<Long> resultEntry = resultData.get(0);
+    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final MapResultEntryDto resultEntry = resultData.get(0);
     assertThat(resultEntry, is(notNullValue()));
     assertThat(resultEntry.getKey(), is("bar"));
     assertThat(resultEntry.getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
@@ -166,8 +166,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultDto.getData(), is(notNullValue()));
     assertThat(resultDto.getData().size(), is(1));
 
-    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
-    final MapResultEntryDto<Long> resultEntry = resultData.get(0);
+    final List<MapResultEntryDto> resultData = resultDto.getData();
+    final MapResultEntryDto resultEntry = resultData.get(0);
     assertThat(resultEntry, is(notNullValue()));
     assertThat(resultEntry.getKey(), is("bar"));
     assertThat(resultEntry.getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
@@ -202,7 +202,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -244,7 +244,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
       // then
-      final List<MapResultEntryDto<Long>> resultData = result.getData();
+      final List<MapResultEntryDto> resultData = result.getData();
       assertThat(resultData.size(), is(3));
       final List<Long> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
@@ -284,7 +284,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       reportData);
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = response.getResult().getData();
+    final List<MapResultEntryDto> resultData = response.getResult().getData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
       resultKeys,
@@ -330,7 +330,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion())
     );
 
-    final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getKey(), is("bar2"));
@@ -490,7 +490,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getValue(), is(runningProcInstStartDate.until(now, MILLIS)));
@@ -543,7 +543,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getValue(), is(1000L));
@@ -591,7 +591,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(
@@ -650,7 +650,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    final List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getValue(), is(runningProcInstStartDate.until(now, MILLIS)));
@@ -703,7 +703,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion())
     );
 
-    final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(2));
     assertThat(resultData.get(0).getKey(), is("1"));
@@ -749,7 +749,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion())
     );
 
-    final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getKey(), is("bar1"));
@@ -793,7 +793,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       // then
       assertThat(resultDto.getData(), is(notNullValue()));
 
-      final List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+      final List<MapResultEntryDto> resultData = resultDto.getData();
       assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
@@ -966,7 +966,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     ReportMapResultDto resultDto = evaluateMapReport(reportData).getResult();
 
     // then
-    List<MapResultEntryDto<Long>> resultData = resultDto.getData();
+    List<MapResultEntryDto> resultData = resultDto.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(0));
 

@@ -180,7 +180,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
@@ -211,7 +211,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
     // then
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(2));
     assertThat(getExecutedFlowNodeCount(result), is(2L));
     final List<String> resultLabels = resultData.stream()
@@ -752,7 +752,7 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   }
 
   private void assertCorrectValueOrdering(ReportMapResultDto result) {
-    List<MapResultEntryDto<Long>> resultData = result.getData();
+    List<MapResultEntryDto> resultData = result.getData();
     final List<Long> bucketValues = resultData.stream()
       .map(MapResultEntryDto::getValue)
       .collect(Collectors.toList());

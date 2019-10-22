@@ -212,9 +212,9 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
     return resultDto;
   }
 
-  private List<MapResultEntryDto<Long>> processAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto> processAggregations(Aggregations aggregations) {
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
-    List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
+    List<MapResultEntryDto> resultData = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
       final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
       for (Histogram.Bucket entry : agg.getBuckets()) {
@@ -222,7 +222,7 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
         String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
 
         Long operationResult = processAggregationOperation(entry.getAggregations());
-        resultData.add(new MapResultEntryDto<>(formattedDate, operationResult));
+        resultData.add(new MapResultEntryDto(formattedDate, operationResult));
       }
     } else {
       resultData = processAutomaticIntervalAggregations(aggregations);
@@ -230,11 +230,11 @@ public abstract class AbstractProcessInstanceDurationGroupByDateCommand
     return resultData;
   }
 
-  private List<MapResultEntryDto<Long>> processAutomaticIntervalAggregations(Aggregations aggregations) {
+  private List<MapResultEntryDto> processAutomaticIntervalAggregations(Aggregations aggregations) {
     return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(aggregations)
       .entrySet()
       .stream()
-      .map(stringBucketEntry -> new MapResultEntryDto<>(
+      .map(stringBucketEntry -> new MapResultEntryDto(
         stringBucketEntry.getKey(),
         processAggregationOperation(stringBucketEntry.getValue().getAggregations())
       ))

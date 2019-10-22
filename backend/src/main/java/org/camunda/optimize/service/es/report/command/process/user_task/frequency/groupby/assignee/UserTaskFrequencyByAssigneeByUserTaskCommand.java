@@ -119,15 +119,16 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byAssigneeAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ASSIGNEE_TERMS_AGGREGATION);
 
-    final List<HyperMapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<HyperMapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket assigneeBucket : byAssigneeAggregation.getBuckets()) {
 
-      final List<MapResultEntryDto<Long>> byAssigneeEntry = new ArrayList<>();
+      final List<MapResultEntryDto> byAssigneeEntry = new ArrayList<>();
       final Terms byTaskIdAggregation = assigneeBucket.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
       for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
-        byAssigneeEntry.add(new MapResultEntryDto<>(taskBucket.getKeyAsString(), taskBucket.getDocCount()));
+        byAssigneeEntry.add(new MapResultEntryDto(taskBucket.getKeyAsString(), taskBucket.getDocCount()));
       }
-      resultData.add(new HyperMapResultEntryDto<>(assigneeBucket.getKeyAsString(), byAssigneeEntry));
+
+      resultData.add(new HyperMapResultEntryDto(assigneeBucket.getKeyAsString(), byAssigneeEntry));
     }
 
     resultDto.setData(resultData);

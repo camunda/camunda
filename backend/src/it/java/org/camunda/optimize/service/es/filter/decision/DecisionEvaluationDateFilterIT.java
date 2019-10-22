@@ -217,7 +217,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
     assertThat(resultData.size(), is(2));
 
@@ -276,7 +276,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
-    final List<MapResultEntryDto<Long>> resultData = result.getData();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(result.getIsComplete(), is(false));
     assertThat(resultData.size(), is(1));
   }

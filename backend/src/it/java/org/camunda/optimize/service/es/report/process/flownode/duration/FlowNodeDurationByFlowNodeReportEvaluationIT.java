@@ -235,7 +235,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       reportData);
 
     // then
-    List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
+    List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData.size(), is(4));
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
@@ -308,7 +308,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
           reportData);
 
       // then
-      final List<MapResultEntryDto<Long>> resultData = evaluationResponse.getResult().getData();
+      final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
       assertThat(resultData.size(), is(4));
       final List<Long> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)

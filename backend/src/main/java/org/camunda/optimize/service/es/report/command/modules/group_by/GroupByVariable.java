@@ -149,11 +149,11 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
       variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
     }
 
-    final List<MapResultEntryDto<Long>> resultData = new ArrayList<>();
+    final List<MapResultEntryDto> resultData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
       resultData.add(
-        new MapResultEntryDto<>(b.getKeyAsString(), viewPart.retrieveResult(reverseNested.getAggregations(), reportData))
+        new MapResultEntryDto(b.getKeyAsString(), viewPart.retrieveResult(reverseNested.getAggregations(), reportData))
       );
     }
 
@@ -167,7 +167,7 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
       final Long missingVarsOperationResult = viewPart.retrieveResult(aggregation.getAggregations(), reportData);
 
       resultData.add(
-        new MapResultEntryDto<>(
+        new MapResultEntryDto (
           MISSING_VARIABLE_KEY,
           missingVarsOperationResult
         ));
