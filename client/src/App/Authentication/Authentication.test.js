@@ -8,19 +8,25 @@ import React from 'react';
 import {Redirect} from 'react-router-dom';
 import {shallow} from 'enzyme';
 
-import {setResponseInterceptor} from 'modules/request';
+import * as request from 'modules/request/request';
+import * as wrappers from 'modules/request/wrappers';
 
 import AuthenticationWithRouter from './Authentication';
+import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 const {WrappedComponent: Authentication} = AuthenticationWithRouter;
 
-jest.mock('modules/request');
-
 describe('Authentication', () => {
+  request.setResponseInterceptor = jest.fn();
+  wrappers.get = mockResolvedAsyncFn({status: 200});
+
   let Child, node;
   const mockLocation = {pathname: '/some/page'};
 
   beforeEach(() => {
+    request.setResponseInterceptor.mockClear();
+    wrappers.get.mockClear();
+
     Child = () => <span>I am a child component</span>;
     node = shallow(
       <Authentication location={mockLocation}>
@@ -30,10 +36,10 @@ describe('Authentication', () => {
   });
 
   it('should attach a responseInterceptor', () => {
-    expect(setResponseInterceptor).toBeCalled();
+    expect(request.setResponseInterceptor).toBeCalled();
   });
 
-  it('should render children by default', () => {
+  it('should render children by default', async () => {
     expect(node.state('forceRedirect')).toBe(false);
     expect(node.find(Child)).toHaveLength(1);
     expect(node).toMatchSnapshot();
@@ -57,23 +63,44 @@ describe('Authentication', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it('should set forceRedirect to true on failed response', () => {
+  it('should redirect to login when check login status failed', () => {
+    // given
+    const expectedTo = {
+      pathname: '/login',
+      state: {referrer: mockLocation.pathname}
+    };
+
+    // mock resetState so we can catch the forceRedirect change in state
+    node.instance().disableForceRedirect = jest.fn();
+
+    // when
+    node.instance().checkLoginStatus(401);
+
+    // then
+    expect(node.find(Child)).toHaveLength(0);
+    const RedirectNode = node.find(Redirect);
+    expect(RedirectNode).toHaveLength(1);
+    expect(RedirectNode.prop('to')).toEqual(expectedTo);
+    expect(node).toMatchSnapshot();
+  });
+
+  it('should set forceRedirect to true on failed response', async () => {
     // given
     // mock resetState so we can catch the forceRedirect change in state
-    node.instance().resetState = jest.fn();
+    node.instance().disableForceRedirect = jest.fn();
 
     // when
     node.instance().interceptResponse({status: 401});
 
     // then
     expect(node.state().forceRedirect).toBe(true);
-    expect(node.instance().resetState).toBeCalled();
+    expect(node.instance().disableForceRedirect).toBeCalled();
   });
 
-  it('should reset falseRedirect to false when resetState is called', () => {
+  it('should reset forceRedirect to false when disableForceRedirect is called', () => {
     // when
     node.setState({forceRedirect: true});
-    node.instance().resetState();
+    node.instance().disableForceRedirect();
 
     // then
     expect(node.state('forceRedirect')).toBe(false);
