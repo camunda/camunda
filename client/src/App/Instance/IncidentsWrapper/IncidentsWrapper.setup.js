@@ -54,7 +54,7 @@ const defaultProps = {
 
 const incidentResolvedProps = {
   ...defaultProps,
-  incidents: [incidents[0]],
+  incidents: [incidents[1]],
   errorTypes: new Map(
     Object.entries({'Extract value error': errorTypes['Extract value error']})
   ),
