@@ -211,12 +211,6 @@ public class SimpleEngineClient {
     return Optional.ofNullable(variable.getValue()).map(Object::toString).map(Boolean::parseBoolean);
   }
 
-  public List<String> deployDecisionAndGetIds(DmnModelInstance modelInstance, List<String> tenants) {
-    return deployDecisionDefinition(modelInstance, tenants).stream()
-      .map(this::getProcessDefinitionId)
-      .collect(Collectors.toList());
-  }
-
   public void startProcessInstance(String procDefId, Map<String, Object> variables) {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
     post.addHeader("content-type", "application/json");
@@ -331,6 +325,25 @@ public class SimpleEngineClient {
     }
   }
 
+  public List<DeploymentDto> deployDecisionDefinition(DmnModelInstance dmnModelInstance, List<String> tenants) {
+    String decision = Dmn.convertToString(dmnModelInstance);
+    List<HttpPost> deploymentRequest = createDecisionDeploymentRequest(decision, tenants);
+    return deploymentRequest.stream().map(d -> {
+      DeploymentDto deployment = new DeploymentDto();
+      try (CloseableHttpResponse response = client.execute(d)) {
+        if (response.getStatusLine().getStatusCode() != 200) {
+          throw new RuntimeException("Something really bad happened during deployment, " +
+                                       "could not create a deployment!");
+        }
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        deployment = objectMapper.readValue(responseString, DeploymentDto.class);
+      } catch (IOException e) {
+        log.error("Error during deployment request! Could not deploy the given dmn model!", e);
+      }
+      return deployment;
+    }).collect(Collectors.toList());
+  }
+
   private List<String> deployProcessAndGetIds(BpmnModelInstance modelInstance, List<String> tenants) {
     List<DeploymentDto> deploymentDto = deployProcess(modelInstance, tenants);
     return deploymentDto.stream().map(this::getProcessDefinitionId).collect(Collectors.toList());
@@ -385,25 +398,6 @@ public class SimpleEngineClient {
         deployment = objectMapper.readValue(responseString, DeploymentDto.class);
       } catch (IOException e) {
         log.error("Error during deployment request! Could not deploy the given process model!", e);
-      }
-      return deployment;
-    }).collect(Collectors.toList());
-  }
-
-  private List<DeploymentDto> deployDecisionDefinition(DmnModelInstance dmnModelInstance, List<String> tenants) {
-    String decision = Dmn.convertToString(dmnModelInstance);
-    List<HttpPost> deploymentRequest = createDecisionDeploymentRequest(decision, tenants);
-    return deploymentRequest.stream().map(d -> {
-      DeploymentDto deployment = new DeploymentDto();
-      try (CloseableHttpResponse response = client.execute(d)) {
-        if (response.getStatusLine().getStatusCode() != 200) {
-          throw new RuntimeException("Something really bad happened during deployment, " +
-                                       "could not create a deployment!");
-        }
-        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        deployment = objectMapper.readValue(responseString, DeploymentDto.class);
-      } catch (IOException e) {
-        log.error("Error during deployment request! Could not deploy the given dmn model!", e);
       }
       return deployment;
     }).collect(Collectors.toList());
