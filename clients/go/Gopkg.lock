@@ -109,9 +109,9 @@
     "pkg/system",
   ]
   pruneopts = "UT"
-  revision = "3e077fc8667a24c854a7f693a685f2c1ed5b2c9c"
+  revision = "adfac697dc5b74998c6a5229f1e4e9b2e0406af4"
   source = "github.com/docker/engine"
-  version = "v19.03.3"
+  version = "v19.03.4"
 
 [[projects]]
   digest = "1:811c86996b1ca46729bad2724d4499014c4b9effd05ef8c71b852aad90deb0ce"
@@ -315,7 +315,7 @@
     "trace",
   ]
   pruneopts = "UT"
-  revision = "da9a3fd4c5820e74b24a6cb7fb438dc9b0dd377c"
+  revision = "ec77196f6094c3492a8b61f2c11cf937f78992ae"
 
 [[projects]]
   branch = "master"
@@ -327,14 +327,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:9f5be1dbb5091bb62d83fbb6db8e794adb8f0e05424679d6f15a17b670e38b4c"
+  digest = "1:3fa58f7377e1d95d496db43dd3281ddcea4185eb46c6394f89fec1cfa4ec3244"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows",
   ]
   pruneopts = "UT"
-  revision = "b09406accb4736d857a32bf9444cd7edae2ffa79"
+  revision = "742c48ecaeb7c624c475e02f3eb0827ebb4970d4"
 
 [[projects]]
   digest = "1:8d8faad6b12a3a4c819a3f9618cb6ee1fa1cfc33253abeeea8b55336721e3405"
@@ -363,7 +363,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:6db6b3d8d0cfe99d898e8ee1cdd86dc2b772ea11cfa27513721a0abeb55a934c"
+  digest = "1:eadaf87b399c633c5a226abf0c6119a0769c1d0efd0b8ec01c27d1e066c43ebe"
   name = "golang.org/x/tools"
   packages = [
     "go/ast/astutil",
@@ -375,9 +375,10 @@
     "internal/fastwalk",
     "internal/gopathwalk",
     "internal/semver",
+    "internal/span",
   ]
   pruneopts = "UT"
-  revision = "9c6d90b5a7d0c5de88404edf63ae60750868bf0a"
+  revision = "774d2ec196ee4082e0fea972d57235b31f42a478"
 
 [[projects]]
   branch = "master"
