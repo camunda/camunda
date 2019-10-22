@@ -6,41 +6,51 @@
 
 import React from 'react';
 import classnames from 'classnames';
-import {Input, Dropdown, Icon, Button} from 'components';
+import {Input, Dropdown, Icon, Button, LoadingIndicator} from 'components';
 import {formatters} from 'services';
+import debounce from 'debounce';
 
 import './Typeahead.scss';
-
-const valuesShownInBox = 10;
-const valueHeight = 30;
+import {t} from 'translation';
 
 export default class Typeahead extends React.Component {
   state = {
     query: '',
     optionsVisible: false,
     selectedValueIdx: -1,
-    firstShownOptionIdx: 0,
-    lastCommittedValue: ''
+    lastCommittedValue: '',
+    values: this.props.values || [],
+    loading: false,
+    hasData: true
   };
 
   componentDidMount() {
     document.body.addEventListener('click', this.close);
-    if (this.props.initialValue) {
-      this.applyInitialValue();
-    }
+    this.loadInitialValues();
   }
 
-  applyInitialValue() {
-    const value = this.getFormatter()(this.props.initialValue);
+  isAsync = () => typeof this.props.values === 'function';
+
+  loadInitialValues = async () => {
+    const {initialValue, values} = this.props;
+
+    const query = initialValue ? this.format(initialValue).text : '';
+    const newValues = this.isAsync() ? await values(query) : values;
+
     this.setState({
-      query: value,
-      lastCommittedValue: value
+      query,
+      lastCommittedValue: query,
+      values: newValues,
+      hasData: newValues.length
     });
-  }
+  };
 
   componentDidUpdate(prevProps) {
-    if (this.props.initialValue && this.props.initialValue !== prevProps.initialValue) {
-      this.applyInitialValue();
+    if (
+      (this.props.initialValue && this.props.initialValue !== prevProps.initialValue) ||
+      this.props.values !== prevProps.values
+    ) {
+      this.loadInitialValues();
     }
     if (this.props.disabled !== prevProps.disabled) {
       this.setState({
@@ -69,6 +79,10 @@ export default class Typeahead extends React.Component {
       this.setState({
         optionsVisible: true
       });
+
+      if (this.isAsync() && !this.state.values.length) {
+        this.updateQuery(this.state.query);
+      }
     }
   };
 
@@ -80,29 +94,38 @@ export default class Typeahead extends React.Component {
     }
   };
 
-  updateValues = () => {
-    this.setState({
-      selectedValueIdx: -1,
-      firstShownOptionIdx: 0
-    });
-  };
-
   updateQuery = async query => {
-    this.setState({query});
+    this.setState({query, selectedValueIdx: -1});
+    if (this.isAsync()) {
+      this.setState({loading: true});
+      await this.loadNewValues(query);
+    }
     this.showOptions();
-    this.updateValues();
   };
 
-  getFormatter = () => this.props.formatter || (v => v);
+  loadNewValues = debounce(async query => {
+    const values = await this.props.values(query);
+    this.setState({values, loading: false});
+  }, 500);
+
+  format = value => {
+    const {formatter} = this.props;
+    if (!formatter) {
+      return {text: value};
+    }
+    const formatted = this.props.formatter(value);
+    if (typeof formatted === 'string') {
+      return {text: formatted};
+    }
+    return formatted;
+  };
 
   selectValue = value => () => {
-    const formatter = this.getFormatter();
-    const formattedValue = formatter(value);
+    const formattedValue = this.format(value).text;
     this.setState({
       query: formattedValue,
       lastCommittedValue: formattedValue,
       selectedValueIdx: -1,
-      firstShownOptionIdx: 0,
       optionsVisible: false
     });
 
@@ -110,10 +133,6 @@ export default class Typeahead extends React.Component {
       this.props.onSelect(value);
     }
     this.close();
-  };
-
-  resetToLastCommitted = () => {
-    this.setState({query: this.state.lastCommittedValue});
   };
 
   handleKeyPress = evt => {
@@ -157,49 +176,51 @@ export default class Typeahead extends React.Component {
         selectedValueIdx = selectedValueIdx - 1 < 0 ? values.length - 1 : selectedValueIdx - 1;
       }
 
-      const firstShownOptionIdx = this.scrollIntoView(selectedValueIdx);
+      if (this.optionsList) {
+        const selectedItem = this.optionsList.querySelectorAll('.searchResult')[selectedValueIdx];
+        if (selectedItem) {
+          selectedItem.scrollIntoView({block: 'nearest', inline: 'nearest'});
+        }
+      }
 
       this.setState({
-        selectedValueIdx,
-        firstShownOptionIdx
+        selectedValueIdx
       });
     }
   };
 
-  scrollIntoView = selectedValueIdx => {
-    let {firstShownOptionIdx} = this.state;
-    const values = this.getFilteredValues();
+  renderOption = (value, index) => {
+    const {query, selectedValueIdx} = this.state;
+    const {text, tag, subTexts} = this.format(value);
 
-    if (this.optionsList) {
-      if (selectedValueIdx === 0) {
-        this.optionsList.scrollTop = 0;
-        firstShownOptionIdx = 0;
-      }
-
-      if (selectedValueIdx === values.length - 1) {
-        this.optionsList.scrollTop = this.optionsList.scrollHeight;
-        firstShownOptionIdx = values.length - valuesShownInBox;
-      }
-
-      if (selectedValueIdx >= firstShownOptionIdx + valuesShownInBox) {
-        this.optionsList.scrollTop = (firstShownOptionIdx + 1) * valueHeight;
-        firstShownOptionIdx++;
-      }
-
-      if (selectedValueIdx < firstShownOptionIdx) {
-        firstShownOptionIdx--;
-        this.optionsList.scrollTop = selectedValueIdx * valueHeight;
-      }
-    }
-
-    return firstShownOptionIdx;
+    return (
+      <Dropdown.Option
+        className={classnames('searchResult', {
+          isActive: index === selectedValueIdx
+        })}
+        onMouseDown={evt => evt.preventDefault()}
+        onClick={this.selectValue(value)}
+        key={value && value.id ? value.id : text}
+      >
+        {formatters.getHighlightedText(text, query)}
+        {tag}
+        {subTexts && (
+          <span className="subTexts">
+            {subTexts
+              .filter(text => text)
+              .map((text, i) => (
+                <span className="subText" key={i}>
+                  {formatters.getHighlightedText(text, query, true)}
+                </span>
+              ))}
+          </span>
+        )}
+      </Dropdown.Option>
+    );
   };
 
   optionsListRef = optionsList => {
     this.optionsList = optionsList;
-    if (optionsList) {
-      this.optionsList.highestWidth = this.optionsList.offsetWidth;
-    }
   };
 
   containerRef = container => {
@@ -210,37 +231,34 @@ export default class Typeahead extends React.Component {
     this.input = input;
   };
 
-  getFilteredValues = () =>
-    this.props.values.filter(value =>
-      this.getFormatter()(value)
-        .toLowerCase()
-        .includes(this.state.query.toLowerCase())
+  getFilteredValues = () => {
+    const {values, query} = this.state;
+    // we do not filter the values for this case because they are filtered by the backend
+    if (this.isAsync()) {
+      return values;
+    }
+
+    return values.filter(value =>
+      this.format(value)
+        .text.toLowerCase()
+        .includes(query.toLowerCase())
     );
+  };
+
+  resetToLastCommitted = () => {
+    this.setState({query: this.state.lastCommittedValue});
+  };
 
   render() {
-    const formatter = this.getFormatter();
-
-    const {query, selectedValueIdx, optionsVisible} = this.state;
+    const {query, optionsVisible, loading, hasData} = this.state;
     const values = this.getFilteredValues();
-
-    const searchResultContainerStyle = {
-      maxHeight: valueHeight * valuesShownInBox + 'px',
-      maxWidth: this.optionsList && this.optionsList.highestWidth + 'px'
-    };
-
-    const valueStyle = {
-      height: valueHeight + 'px',
-      minWidth: this.input && this.input.clientWidth + 'px'
-    };
-
-    const hasNoValues = this.props.values.length === 0;
-    const noValuesMessage = this.props.noValuesMessage || 'No results found';
+    const noValuesMessage = this.props.noValuesMessage || t('common.notFound');
 
     return (
       <div ref={this.containerRef} className={classnames('Typeahead', this.props.className)}>
         <Input
-          className={classnames({isInvalid: this.props.isInvalid})}
-          value={hasNoValues ? noValuesMessage : query}
+          className={classnames('typeaheadInput', {isInvalid: this.props.isInvalid})}
+          value={hasData ? query : noValuesMessage}
           onChange={({target: {value}}) => this.updateQuery(value)}
           onClick={this.showOptions}
           onFocus={this.showOptions}
@@ -248,38 +266,23 @@ export default class Typeahead extends React.Component {
           onBlur={this.resetToLastCommitted}
           placeholder={this.props.placeholder}
           ref={this.inputRef}
-          disabled={this.props.disabled || hasNoValues}
+          disabled={this.props.disabled || !hasData}
           onClear={() => this.updateQuery('')}
         />
         <Button
           className="optionsButton"
           onClick={this.showOptions}
-          disabled={this.props.disabled || hasNoValues}
+          disabled={this.props.disabled || !hasData}
         >
           <Icon type="down" className="downIcon" />
         </Button>
-        {optionsVisible && values.length > 0 && (
+        {optionsVisible && hasData && (
           <div
-            style={searchResultContainerStyle}
             className="searchResultsList"
             ref={this.optionsListRef}
             onMouseUp={this.returnFocusToInput}
           >
-            {values.map((value, index) => {
-              return (
-                <Dropdown.Option
-                  className={classnames('searchResult', {
-                    isActive: index === selectedValueIdx
-                  })}
-                  style={valueStyle}
-                  onMouseDown={evt => evt.preventDefault()}
-                  onClick={this.selectValue(value)}
-                  key={value && value.id ? value.id : formatter(value)}
-                >
-                  {formatters.getHighlightedText(formatter(value), this.state.query)}
-                </Dropdown.Option>
-              );
-            })}
+            {loading ? <LoadingIndicator /> : values.map(this.renderOption)}
           </div>
         )}
       </div>

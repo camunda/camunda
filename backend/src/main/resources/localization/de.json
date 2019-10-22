@@ -73,8 +73,7 @@
       "existing-group-error": "Eine Gruppe mit dieser ID existiert schon in dieser Sammlung"
     },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
-    "empty": "Es wurde noch nichts erstellt",
-    "notFound": "keine Ergebnisse gefunden"
+    "empty": "Es wurde noch nichts erstellt"
   },
   "report": {
     "label": "Bericht",
@@ -380,7 +379,6 @@
     "saving": "Speichern ... ",
     "creating": "Erstellen ...",
     "select": "Auswählen ...",
-    "selectWithoutEllipsis": "Wählen Sie",
     "enableAll": "Alle aktivieren",
     "disableAll": "Alle deaktivieren",
     "selectAll": "Alle auswählen",
@@ -393,6 +391,7 @@
     "above": "über",
     "below": "unter",
     "viewDetails": "Details anzeigen",
+    "notFound": "keine Ergebnisse gefunden",
     "multiSelect": {
       "available": "Verfügbare Elemente",
       "selected": "Ausgewählte Elemente",
@@ -439,6 +438,9 @@
         "editBtn": "Sammlung bearbeiten",
         "inputLabel": "Name der Sammlung",
         "defaultName": "Neue Sammlung"
+      },
+      "addUserModal": {
+        "searchPlaceholder": "Suche nach Name, E-Mail oder ID ..."
       }
     },
     "sharing": {

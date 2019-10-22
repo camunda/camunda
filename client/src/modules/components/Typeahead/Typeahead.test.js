@@ -22,7 +22,12 @@ it('should display available options if dropdown is open', () => {
 });
 
 it('should format the data based on the provided formatter', () => {
-  const node = shallow(<Typeahead values={['foo', 'bar']} formatter={v => v + v} />);
+  const node = shallow(
+    <Typeahead
+      values={['foo', 'bar']}
+      formatter={v => ({text: v + v, tag: ' (User Group)', subTexts: [null, 'id']})}
+    />
+  );
 
   node.setState({
     optionsVisible: true
@@ -44,7 +49,7 @@ it('should only display entries that match the typeahead value', () => {
 
 it('should only display entries that match the typeahead value, even if there is a formatter', () => {
   const node = shallow(
-    <Typeahead values={['varFoo', 'varBar', 'varFoobar']} formatter={v => v + v} />
+    <Typeahead values={['varFoo', 'varBar', 'varFoobar']} formatter={v => ({text: v + v})} />
   );
 
   node.setState({
@@ -106,7 +111,23 @@ it('should show a no results message if no values are provided', () => {
 });
 
 it('should show the initial value if provided on mount', () => {
-  const node = shallow(<Typeahead initialValue="foo" values={['bar']} formatter={v => v} />);
+  const node = shallow(<Typeahead initialValue="foo" values={['bar']} />);
 
   expect(node.find(Input)).toHaveValue('foo');
+});
+
+it('should call getValue to filter and render the data when available', async () => {
+  const spy = jest.fn().mockReturnValue(['item1', 'item2']);
+  const node = shallow(<Typeahead values={spy} />);
+
+  await node
+    .find(Input)
+    .props()
+    .onChange({target: {value: 'test'}});
+
+  node.instance().loadNewValues.flush();
+
+  expect(spy).toHaveBeenCalledWith('test');
+  await node.update();
+  expect(node).toMatchSnapshot();
 });

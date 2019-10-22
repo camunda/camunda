@@ -61,8 +61,9 @@ test('adding a new user', async t => {
   await t.click(e.userTab);
 
   await t.click(e.addUserButton);
-  await t.click(e.groupNameInput);
-  await t.typeText(e.groupNameInput, 'sales', {replace: true});
+  await t.click(e.optionsButton);
+  await t.typeText(e.typeaheadInput, 'sales', {replace: true});
+  await t.click(e.firstOption, {speed: 0.5});
   await t.click(e.confirmModalButton);
 
   await t.expect(e.groupItem.visible).ok();

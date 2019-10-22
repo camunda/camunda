@@ -56,10 +56,9 @@ it('should call the onConfirm function when enter is pressed', () => {
     </Modal>
   );
 
-  const event = new KeyboardEvent('keydown', {key: 'Enter', bubbles: true});
-  node.instance().el.dispatchEvent(event);
+  node.find('.Modal').simulate('keydown', {key: 'Enter'});
 
-  expect(spy).toHaveBeenCalledWith(event);
+  expect(spy).toHaveBeenCalled();
 });
 
 it('should not call the onConfirm function when enter is pressed but the modal is not open', () => {

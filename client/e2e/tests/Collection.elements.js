@@ -23,7 +23,9 @@ export const entityTab = Selector('.Collection .header .navigation a').withText(
 );
 export const userTab = Selector('.Collection .header .navigation a').withText('Users');
 export const addUserButton = Selector('.Collection .content .header .Button');
-export const groupNameInput = Selector('.groupIdInput input');
+export const optionsButton = Selector('.Typeahead .optionsButton');
+export const typeaheadInput = Selector('.Typeahead input');
+export const firstOption = Selector('.Typeahead .DropdownOption');
 export const confirmModalButton = Selector('.confirm.Button');
 export const userItem = Selector('.ListItem.user');
 export const groupItem = Selector('.ListItem.group');

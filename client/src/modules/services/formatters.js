@@ -135,12 +135,16 @@ export function convertToMilliseconds(value, unit) {
   return value * timeUnits[unit].value;
 }
 
-export function getHighlightedText(text, highlight) {
+export function getHighlightedText(text, highlight, matchFromStart) {
   if (!highlight) {
     return text;
   }
+  let regex = highlight;
+  if (matchFromStart) {
+    regex = '^' + regex;
+  }
   // Split on highlight term and include term into parts, ignore case
-  const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+  const parts = text.split(new RegExp(`(${regex})`, 'gi'));
   return parts.map((part, i) => (
     <span
       key={i}

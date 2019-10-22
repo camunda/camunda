@@ -32,11 +32,9 @@ export default class Modal extends React.Component {
     this.setFocus();
     new MutationObserver(this.fixPositioning).observe(this.el, {childList: true, subtree: true});
     window.addEventListener('resize', this.fixPositioning);
-    this.el.addEventListener('keydown', this.handleKeyPress);
   }
 
   componentWillUnmount() {
-    this.el.removeEventListener('keydown', this.handleKeyPress);
     document.body.removeChild(this.el);
     window.removeEventListener('resize', this.fixPositioning);
   }
@@ -61,7 +59,7 @@ export default class Modal extends React.Component {
       // - the first primary button
       // - any focusable element
       const defaultElement =
-        container.querySelector('input[type="text"]') ||
+        container.querySelector('input[type="text"]:not(.typeaheadInput)') ||
         container.querySelector('.primary') ||
         container.querySelector('input, button, textarea, select');
       if (defaultElement) {
@@ -115,7 +113,12 @@ export default class Modal extends React.Component {
     if (open) {
       return ReactDOM.createPortal(
         <ModalContext.Provider value={this.modalContext}>
-          <div className="Modal" role="dialog" onClick={this.onBackdropClick}>
+          <div
+            className="Modal"
+            role="dialog"
+            onClick={this.onBackdropClick}
+            onKeyDown={this.handleKeyPress}
+          >
             <div className="Modal__scroll-container">
               <div tabIndex="0" onFocus={() => this.focusTrap.current.focus()} />
               <div

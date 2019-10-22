@@ -12,46 +12,14 @@ exports[`should match snapshot 1`] = `
   </Component>
   <Component>
     <Form>
-      Select
+      Users and User Groups
       <FormGroup>
-        <FormGroup
-          noSpacing={true}
-        >
-          <ForwardRef(Input)
-            checked={true}
-            onChange={[Function]}
-            type="radio"
-          />
-          <LabeledInput
-            autoComplete="off"
-            className="userIdInput"
-            label="User ID"
-            onChange={[Function]}
-            onClick={[Function]}
-            type="text"
-            value=""
-          />
-        </FormGroup>
-        <FormGroup
-          noSpacing={true}
-        >
-          <ForwardRef(Input)
-            checked={false}
-            className="groupIdRadio"
-            onChange={[Function]}
-            type="radio"
-          />
-          <LabeledInput
-            autoComplete="off"
-            className="groupIdInput"
-            isInvalid={false}
-            label="User Group ID"
-            onChange={[Function]}
-            onClick={[Function]}
-            type="text"
-            value=""
-          />
-        </FormGroup>
+        <Typeahead
+          formatter={[Function]}
+          onSelect={[Function]}
+          placeholder="Search for name, email or ID ..."
+          values={[Function]}
+        />
       </FormGroup>
       User role
       <FormGroup>

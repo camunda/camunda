@@ -158,6 +158,14 @@ describe('getHighlightedText', () => {
     const results = getHighlightedText('test text', '');
     expect(results).toBe('test text');
   });
+
+  it('the regex should match only from the start of the text if specified', () => {
+    const notMatch = getHighlightedText('test text', 'text', true);
+    expect(notMatch.length).toBe(1);
+    const results = getHighlightedText('test text', 'test', true);
+    expect(results[1].props.children).toBe('test');
+    expect(results[1].props.className).toBe('textBold');
+  });
 });
 
 const exampleDurationReport = {

@@ -1,11 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should display available options if dropdown is open 1`] = `
+exports[`should call getValue to filter and render the data when available 1`] = `
 <div
   className="Typeahead"
 >
   <ForwardRef(Input)
-    className=""
+    className="typeaheadInput"
     disabled={false}
     onBlur={[Function]}
     onChange={[Function]}
@@ -28,24 +28,61 @@ exports[`should display available options if dropdown is open 1`] = `
   <div
     className="searchResultsList"
     onMouseUp={[Function]}
-    style={
-      Object {
-        "maxHeight": "300px",
-        "maxWidth": undefined,
-      }
-    }
+  >
+    <ForwardRef(DropdownOption)
+      className="searchResult"
+      key="item1"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      item1
+    </ForwardRef(DropdownOption)>
+    <ForwardRef(DropdownOption)
+      className="searchResult"
+      key="item2"
+      onClick={[Function]}
+      onMouseDown={[Function]}
+    >
+      item2
+    </ForwardRef(DropdownOption)>
+  </div>
+</div>
+`;
+
+exports[`should display available options if dropdown is open 1`] = `
+<div
+  className="Typeahead"
+>
+  <ForwardRef(Input)
+    className="typeaheadInput"
+    disabled={false}
+    onBlur={[Function]}
+    onChange={[Function]}
+    onClear={[Function]}
+    onClick={[Function]}
+    onFocus={[Function]}
+    onKeyDown={[Function]}
+    value=""
+  />
+  <ForwardRef(Button)
+    className="optionsButton"
+    disabled={false}
+    onClick={[Function]}
+  >
+    <Icon
+      className="downIcon"
+      type="down"
+    />
+  </ForwardRef(Button)>
+  <div
+    className="searchResultsList"
+    onMouseUp={[Function]}
   >
     <ForwardRef(DropdownOption)
       className="searchResult"
       key="foo"
       onClick={[Function]}
       onMouseDown={[Function]}
-      style={
-        Object {
-          "height": "30px",
-          "minWidth": undefined,
-        }
-      }
     >
       foo
     </ForwardRef(DropdownOption)>
@@ -54,12 +91,6 @@ exports[`should display available options if dropdown is open 1`] = `
       key="bar"
       onClick={[Function]}
       onMouseDown={[Function]}
-      style={
-        Object {
-          "height": "30px",
-          "minWidth": undefined,
-        }
-      }
     >
       bar
     </ForwardRef(DropdownOption)>
@@ -72,7 +103,7 @@ exports[`should format the data based on the provided formatter 1`] = `
   className="Typeahead"
 >
   <ForwardRef(Input)
-    className=""
+    className="typeaheadInput"
     disabled={false}
     onBlur={[Function]}
     onChange={[Function]}
@@ -95,40 +126,44 @@ exports[`should format the data based on the provided formatter 1`] = `
   <div
     className="searchResultsList"
     onMouseUp={[Function]}
-    style={
-      Object {
-        "maxHeight": "300px",
-        "maxWidth": undefined,
-      }
-    }
   >
     <ForwardRef(DropdownOption)
       className="searchResult"
       key="foofoo"
       onClick={[Function]}
       onMouseDown={[Function]}
-      style={
-        Object {
-          "height": "30px",
-          "minWidth": undefined,
-        }
-      }
     >
       foofoo
+       (User Group)
+      <span
+        className="subTexts"
+      >
+        <span
+          className="subText"
+          key="0"
+        >
+          id
+        </span>
+      </span>
     </ForwardRef(DropdownOption)>
     <ForwardRef(DropdownOption)
       className="searchResult"
       key="barbar"
       onClick={[Function]}
       onMouseDown={[Function]}
-      style={
-        Object {
-          "height": "30px",
-          "minWidth": undefined,
-        }
-      }
     >
       barbar
+       (User Group)
+      <span
+        className="subTexts"
+      >
+        <span
+          className="subText"
+          key="0"
+        >
+          id
+        </span>
+      </span>
     </ForwardRef(DropdownOption)>
   </div>
 </div>
@@ -139,7 +174,7 @@ exports[`should only display entries that match the typeahead value 1`] = `
   className="Typeahead"
 >
   <ForwardRef(Input)
-    className=""
+    className="typeaheadInput"
     disabled={false}
     onBlur={[Function]}
     onChange={[Function]}
@@ -162,24 +197,12 @@ exports[`should only display entries that match the typeahead value 1`] = `
   <div
     className="searchResultsList"
     onMouseUp={[Function]}
-    style={
-      Object {
-        "maxHeight": "300px",
-        "maxWidth": undefined,
-      }
-    }
   >
     <ForwardRef(DropdownOption)
       className="searchResult"
       key="varFoo"
       onClick={[Function]}
       onMouseDown={[Function]}
-      style={
-        Object {
-          "height": "30px",
-          "minWidth": undefined,
-        }
-      }
     >
       <span
         key="0"
@@ -201,12 +224,6 @@ exports[`should only display entries that match the typeahead value 1`] = `
       key="varFoobar"
       onClick={[Function]}
       onMouseDown={[Function]}
-      style={
-        Object {
-          "height": "30px",
-          "minWidth": undefined,
-        }
-      }
     >
       <span
         key="0"
@@ -234,7 +251,7 @@ exports[`should only display entries that match the typeahead value, even if the
   className="Typeahead"
 >
   <ForwardRef(Input)
-    className=""
+    className="typeaheadInput"
     disabled={false}
     onBlur={[Function]}
     onChange={[Function]}
@@ -257,24 +274,12 @@ exports[`should only display entries that match the typeahead value, even if the
   <div
     className="searchResultsList"
     onMouseUp={[Function]}
-    style={
-      Object {
-        "maxHeight": "300px",
-        "maxWidth": undefined,
-      }
-    }
   >
     <ForwardRef(DropdownOption)
       className="searchResult"
       key="varFoobarvarFoobar"
       onClick={[Function]}
       onMouseDown={[Function]}
-      style={
-        Object {
-          "height": "30px",
-          "minWidth": undefined,
-        }
-      }
     >
       <span
         key="0"

@@ -22,18 +22,10 @@ it('should match snapshot', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should activate the radio button when clicking the input field', () => {
-  const node = shallow(<AddUserModal {...props} />);
-
-  node.find('.groupIdInput').simulate('click');
-
-  expect(node.find('.groupIdRadio')).toBeChecked();
-});
-
 it('should call the onConfirm prop', () => {
   const node = shallow(<AddUserModal {...props} />);
 
-  node.setState({userName: 'testUser', activeRole: 'editor'});
+  node.setState({selectedIdentity: {id: 'testUser', type: 'user'}, activeRole: 'editor'});
 
   node.find('.confirm').simulate('click');
 
@@ -45,7 +37,7 @@ it('should show an error message when trying to add a user that already exists',
     <AddUserModal {...props} existingUsers={[{identity: {id: 'testUser', type: 'user'}}]} />
   );
 
-  node.setState({userName: 'testUser', activeRole: 'editor'});
+  node.setState({selectedIdentity: {id: 'testUser', type: 'user'}, activeRole: 'editor'});
 
   expect(node.find('ErrorMessage')).toExist();
 });

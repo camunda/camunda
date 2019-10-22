@@ -73,8 +73,7 @@
       "existing-group-error": "A group with this id already exists in this collection"
     },
     "data-hint": "Missing data? The last update introduced user permissions. Ask your administrator for access rights.",
-    "empty": "There are no items created yet",
-    "notFound": "No results found"
+    "empty": "There are no items created yet"
   },
   "report": {
     "label": "Report",
@@ -380,7 +379,6 @@
     "saving": "Saving...",
     "creating": "Creating...",
     "select": "Select...",
-    "selectWithoutEllipsis": "Select",
     "enableAll": "Enable All",
     "disableAll": "Disable All",
     "selectAll": "Select All",
@@ -393,6 +391,7 @@
     "above": "above",
     "below": "below",
     "viewDetails": "View Details",
+    "notFound": "No results found",
     "multiSelect": {
       "available": "Available items",
       "selected": "Selected items",
@@ -439,6 +438,9 @@
         "editBtn": "Edit Collection",
         "inputLabel": "Collection Name",
         "defaultName": "New Collection"
+      },
+      "addUserModal": {
+        "searchPlaceholder": "Search for name, email or ID ..."
       }
     },
     "sharing": {

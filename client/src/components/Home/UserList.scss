@@ -178,10 +178,6 @@
 .AddUserModal,
 .EditUserModal {
   .FormGroup {
-    .Input[type='radio'] {
-      vertical-align: top;
-    }
-
     .LabeledInput {
       display: inline-block;
       width: 90%;
@@ -190,10 +186,6 @@
         font-size: 0.8em;
         color: gray;
         margin-top: 0;
-      }
-
-      &.userIdInput {
-        margin-bottom: 1em;
       }
     }
   }

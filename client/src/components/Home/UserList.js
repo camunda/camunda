@@ -132,7 +132,7 @@ export default withErrorHandling(
       );
 
       if (searchFilteredData.length === 0) {
-        return <div className="empty">{t('home.notFound')}</div>;
+        return <div className="empty">{t('common.notFound')}</div>;
       }
 
       const numberOfManagers = this.props.data.filter(({role}) => role === 'manager').length;

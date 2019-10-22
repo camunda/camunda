@@ -6,13 +6,13 @@
 
 import React, {Component} from 'react';
 
-import {Button, LabeledInput, Modal, Form, Input, ErrorMessage} from 'components';
+import {Button, LabeledInput, Modal, Form, Typeahead, ErrorMessage} from 'components';
+import {searchIdentities} from './service';
+
 import {t} from 'translation';
 
 const defaultState = {
-  userName: '',
-  groupName: '',
-  activeInput: 'user',
+  selectedIdentity: null,
   activeRole: 'viewer'
 };
 
@@ -20,12 +20,12 @@ export default class AddUserModal extends Component {
   state = defaultState;
 
   onConfirm = () => {
+    const {selectedIdentity, activeRole} = this.state;
     if (!this.isValid()) {
       return;
     }
-    const {userName, groupName, activeInput, activeRole} = this.state;
 
-    this.props.onConfirm(activeInput === 'user' ? userName : groupName, activeInput, activeRole);
+    this.props.onConfirm(selectedIdentity.id, selectedIdentity.type, activeRole);
     this.reset();
   };
 
@@ -38,25 +38,22 @@ export default class AddUserModal extends Component {
     this.setState(defaultState);
   };
 
-  getActiveName = () => {
-    const {userName, groupName, activeInput} = this.state;
-
-    return activeInput === 'user' ? userName : groupName;
-  };
-
   alreadyExists = () => {
-    const activeName = this.getActiveName();
+    const {selectedIdentity} = this.state;
+    if (!selectedIdentity) {
+      return false;
+    }
 
     return this.props.existingUsers.find(
-      ({identity: {id, type}}) => type === this.state.activeInput && id === activeName
+      ({identity: {id, type}}) => type === selectedIdentity.type && id === selectedIdentity.id
     );
   };
 
-  isValid = () => !this.alreadyExists() && this.getActiveName();
+  isValid = () => this.state.selectedIdentity && !this.alreadyExists();
 
   render() {
     const {open} = this.props;
-    const {userName, groupName, activeInput, activeRole} = this.state;
+    const {selectedIdentity, activeRole} = this.state;
 
     const alreadyExists = this.alreadyExists();
 
@@ -67,51 +64,24 @@ export default class AddUserModal extends Component {
         <Modal.Header>{t('home.roles.addUserTitle')}</Modal.Header>
         <Modal.Content>
           <Form>
-            {t('common.selectWithoutEllipsis')}
+            {t('home.userTitle')}
             <Form.Group>
-              <Form.Group noSpacing>
-                <Input
-                  type="radio"
-                  onChange={() => this.setState({activeInput: 'user'})}
-                  checked={activeInput === 'user'}
-                />
-                <LabeledInput
-                  type="text"
-                  label={t('common.user.id')}
-                  className="userIdInput"
-                  value={userName}
-                  isInvalid={activeInput === 'user' && alreadyExists}
-                  onClick={() => this.setState({activeInput: 'user'})}
-                  onChange={({target: {value}}) => this.setState({userName: value})}
-                  autoComplete="off"
-                >
-                  {activeInput === 'user' && alreadyExists && (
-                    <ErrorMessage>{t('home.roles.existing-user-error')}</ErrorMessage>
-                  )}
-                </LabeledInput>
-              </Form.Group>
-              <Form.Group noSpacing>
-                <Input
-                  type="radio"
-                  className="groupIdRadio"
-                  onChange={() => this.setState({activeInput: 'group'})}
-                  checked={activeInput === 'group'}
-                />
-                <LabeledInput
-                  type="text"
-                  label={t('common.user-group.id')}
-                  className="groupIdInput"
-                  value={groupName}
-                  isInvalid={activeInput === 'group' && alreadyExists}
-                  onClick={() => this.setState({activeInput: 'group'})}
-                  onChange={({target: {value}}) => this.setState({groupName: value})}
-                  autoComplete="off"
-                >
-                  {activeInput === 'group' && alreadyExists && (
-                    <ErrorMessage>{t('home.roles.existing-group-error')}</ErrorMessage>
-                  )}
-                </LabeledInput>
-              </Form.Group>
+              <Typeahead
+                placeholder={t('common.collection.addUserModal.searchPlaceholder')}
+                values={searchIdentities}
+                onSelect={identity => this.setState({selectedIdentity: identity})}
+                formatter={({name, email, id, type}) => ({
+                  text: name || email || id,
+                  tag: type === 'group' && ' (User Group)',
+                  subTexts: [email, id]
+                })}
+              />
+              {alreadyExists && selectedIdentity.type === 'user' && (
+                <ErrorMessage>{t('home.roles.existing-user-error')}</ErrorMessage>
+              )}
+              {alreadyExists && selectedIdentity.type === 'group' && (
+                <ErrorMessage>{t('home.roles.existing-group-error')}</ErrorMessage>
+              )}
             </Form.Group>
             {t('home.roles.userRole')}
             <Form.Group>
