@@ -49,21 +49,21 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
   @Test
   @Parameters(method = "definitionTypes")
-  public void getAlertsForAuthorizedCollection(final int definitionResourceType) {
+  public void getAlertsForAuthorizedCollection(final int definitionType) {
     // given
     final String collectionId1 = createNewCollection();
-    final String reportId1 = createNumberReportForCollection(collectionId1, definitionResourceType);
-    final String reportId2 = createNumberReportForCollection(collectionId1, definitionResourceType);
+    final String reportId1 = createNumberReportForCollection(collectionId1, definitionType);
+    final String reportId2 = createNumberReportForCollection(collectionId1, definitionType);
     final String alertId1 = createAlertForReport(reportId1);
     final String alertId2 = createAlertForReport(reportId1);
     final String alertId3 = createAlertForReport(reportId2);
 
     final String collectionId2 = createNewCollection();
-    final String reportId3 = createNumberReportForCollection(collectionId2, definitionResourceType);
+    final String reportId3 = createNumberReportForCollection(collectionId2, definitionType);
     createAlertForReport(reportId3);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
+    authorizationClient.addGlobalAuthorizationForResource(definitionType);
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId1);
 
     // when
@@ -121,14 +121,6 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     // then
     assertThat(response.getStatus(), is(403));
-  }
-
-  private String createNewCollection() {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
   }
 
   private OptimizeRequestExecutor getAlertsRequestAsKermit(final String collectionId) {

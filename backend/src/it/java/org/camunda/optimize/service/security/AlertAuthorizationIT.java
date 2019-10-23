@@ -33,7 +33,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
 
     AlertCreationDto alert1 = setupBasicProcessAlertAsUser("processDefinition1", KERMIT_USER, KERMIT_USER);
-    AlertCreationDto alert2 = setupBasicProcessAlertAsUser("processDefinition1", DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    AlertCreationDto alert2 = setupBasicProcessAlertAsUser("processDefinition2", DEFAULT_USERNAME, DEFAULT_PASSWORD);
     final String ownAlertId = addAlertToOptimizeAsUser(alert1, KERMIT_USER, KERMIT_USER);
     addAlertToOptimizeAsUser(alert2, DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
@@ -163,12 +163,15 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   private String createAlertInCollectionAsDefaultUser(final ProcessDefinitionEngineDto processDefinition) {
     final String collectionId = createNewCollectionAsDefaultUser();
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = getProcessNumberReportDefinitionDto(
-      processDefinition);
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
+      collectionId,
+      processDefinition
+    );
     final String reportId = createSingleProcessReportInCollection(singleProcessReportDefinitionDto);
 
     final SingleProcessReportDefinitionDto numberReportDefinitionDto = getProcessNumberReportDefinitionDto(
-      processDefinition);
+      collectionId,
+      processDefinition
+    );
     updateSingleProcessReport(reportId, numberReportDefinitionDto);
 
     return addAlertToOptimizeAsUser(createSimpleAlert(reportId), DEFAULT_USERNAME, DEFAULT_PASSWORD);

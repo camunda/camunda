@@ -53,13 +53,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void reportUpdateToNotNumberRemovesAlert() throws Exception {
     //given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-
+    ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    String reportId = createAndStoreProcessNumberReport(processDefinition);
+    String collectionId = createNewCollection();
+    String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 
     Response response =
@@ -71,7 +70,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(200));
 
     // when
-    SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(processDefinition);
+    SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     updateSingleProcessReport(simpleAlert.getReportId(), report);
@@ -305,17 +304,15 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(content, containsString("http://test.de:8090/#/report/" + reportId));
   }
 
-
   private String startProcessAndCreateReport() {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
 
     embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    return createAndStoreProcessNumberReport(processDefinition);
+    String collectionId = createNewCollection();
+    return createNewProcessReportAsUser(collectionId, processDefinition);
   }
-
 
   @Test
   public void testCronMinutesInterval() throws Exception {

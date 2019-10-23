@@ -27,6 +27,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -57,9 +58,13 @@ public class ReportConflictIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
   @RegisterExtension
   @Order(2)
+  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
+  @RegisterExtension
+  @Order(3)
   public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @ParameterizedTest
@@ -100,8 +105,9 @@ public class ReportConflictIT {
   @MethodSource("provideForceParameterAsBoolean")
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
+    String collectionId = createNewCollection();
     String firstSingleReportId =
-      createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
+      createAndStoreProcessReportWithDefinition(collectionId, createRandomRawDataReport());
     String combinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId);
     String[] expectedReportIds = new String[]{firstSingleReportId, combinedReportId};
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
@@ -136,7 +142,8 @@ public class ReportConflictIT {
       .setProcessDefinitionVersion(RANDOM_VERSION)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    String reportId = createAndStoreProcessReportWithDefinition(numberReport);
+    String collectionId = createNewCollection();
+    String reportId = createAndStoreProcessReportWithDefinition(collectionId, numberReport);
     String alertForReport = createNewAlertForReport(reportId);
     String[] expectedReportIds = new String[]{reportId};
     String[] expectedConflictedItemIds = new String[]{alertForReport};
@@ -168,7 +175,8 @@ public class ReportConflictIT {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    String reportId = createAndStoreDefaultDecisionReportDefinition(reportData);
+    String collectionId = createNewCollection();
+    String reportId = createAndStoreDefaultDecisionReportDefinition(collectionId, reportData);
     String alertForReport = createNewAlertForReport(reportId);
     String[] expectedReportIds = new String[]{reportId};
     String[] expectedConflictedItemIds = new String[]{alertForReport};
@@ -230,7 +238,8 @@ public class ReportConflictIT {
   @MethodSource("provideForceParameterAsBoolean")
   public void deleteSingleReportsFailsWithConflictIfUsedByAlertWhenForceSet(Boolean force) {
     // given
-    String reportId = createProcessReport();
+    String collectionId = createNewCollection();
+    String reportId = createAndStoreProcessReportWithDefinition(collectionId, createRandomRawDataReport());
     String firstAlertForReport = createNewAlertForReport(reportId);
     String secondAlertForReport = createNewAlertForReport(reportId);
     String[] expectedReportIds = {reportId};
@@ -405,6 +414,11 @@ public class ReportConflictIT {
   }
 
   private String createAndStoreProcessReportWithDefinition(ProcessReportDataDto reportDataViewRawAsTable) {
+    return createAndStoreProcessReportWithDefinition(null, reportDataViewRawAsTable);
+  }
+
+  private String createAndStoreProcessReportWithDefinition(String collectionId,
+                                                           ProcessReportDataDto reportDataViewRawAsTable) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(reportDataViewRawAsTable);
     singleProcessReportDefinitionDto.setId(RANDOM_STRING);
@@ -414,10 +428,11 @@ public class ReportConflictIT {
     singleProcessReportDefinitionDto.setCreated(someDate);
     singleProcessReportDefinitionDto.setLastModified(someDate);
     singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
-  private String createAndStoreDefaultDecisionReportDefinition(DecisionReportDataDto reportData) {
+  private String createAndStoreDefaultDecisionReportDefinition(String collectionId, DecisionReportDataDto reportData) {
     SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
     singleDecisionReportDefinitionDto.setData(reportData);
     singleDecisionReportDefinitionDto.setId(RANDOM_STRING);
@@ -427,6 +442,7 @@ public class ReportConflictIT {
     singleDecisionReportDefinitionDto.setCreated(someDate);
     singleDecisionReportDefinitionDto.setLastModified(someDate);
     singleDecisionReportDefinitionDto.setOwner(RANDOM_STRING);
+    singleDecisionReportDefinitionDto.setCollectionId(collectionId);
     return createDecisionReport(singleDecisionReportDefinitionDto);
   }
 
@@ -464,8 +480,16 @@ public class ReportConflictIT {
       .execute(ConflictResponseDto.class, 409);
   }
 
-    private String createProcessReport() {
-      return embeddedOptimizeExtensionRule
+  private String createNewCollection() {
+    return embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String createProcessReport() {
+    return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
       .execute(IdDto.class, 200)

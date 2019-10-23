@@ -51,7 +51,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     long daysToShift = 0L;
     long durationInSec = 2L;
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
-    String reportId = createAndStoreDurationNumberReport(processInstance);
+    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
     String id = createAlert(simpleAlert);
 
@@ -94,7 +94,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
     // when
-    String reportId = createAndStoreDurationNumberReport(processInstance);
+    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
 
     String id = createAlert(simpleAlert);
@@ -125,7 +125,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
     // when
-    String reportId = createAndStoreDurationNumberReport(processInstance);
+    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);
     simpleAlert.setFixNotification(true);
 

@@ -54,7 +54,8 @@ public class ForceReimportIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
   @RegisterExtension
   @Order(2)
   public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
@@ -66,8 +67,9 @@ public class ForceReimportIT {
   public void forceReimport() throws IOException {
 
     //given
+    String collectionId = createNewCollection();
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
-    String reportId = createAndStoreNumberReport(processDefinitionEngineDto);
+    String reportId = createAndStoreNumberReport(collectionId, processDefinitionEngineDto);
     AlertCreationDto alert = setupBasicAlert(reportId);
     embeddedOptimizeExtensionRule
       .getRequestExecutor().buildCreateAlertRequest(alert).execute();
@@ -133,7 +135,8 @@ public class ForceReimportIT {
     GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME, LICENSE_INDEX_NAME, LICENSE_INDEX_NAME);
     GetResponse getResponse;
     try {
-      getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
+      getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient()
+        .get(getRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not retrieve license!", e);
     }
@@ -162,11 +165,12 @@ public class ForceReimportIT {
     return createSimpleAlert(reportId);
   }
 
-  private String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
+  private String createAndStoreNumberReport(String collectionId, ProcessDefinitionEngineDto processDefinition) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = getReportDefinitionDto(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion())
     );
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return createNewReport(singleProcessReportDefinitionDto);
   }
 
@@ -258,4 +262,11 @@ public class ForceReimportIT {
     return processDefinitionEngineDto;
   }
 
+  private String createNewCollection() {
+    return embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
 }

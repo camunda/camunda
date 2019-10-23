@@ -72,14 +72,6 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     assertThat(allAlerts.size(), is(0));
   }
 
-  private String createNewCollection() {
-    return embeddedOptimizeExtensionRule
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
   private List<AlertDefinitionDto> getAlertsForCollectionAsDefaultUser(final String collectionId) {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()

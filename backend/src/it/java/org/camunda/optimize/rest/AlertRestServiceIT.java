@@ -5,25 +5,34 @@
  */
 package org.camunda.optimize.rest;
 
+import junitparams.JUnitParamsRunner;
+import junitparams.Parameters;
 import org.camunda.optimize.AbstractAlertIT;
-import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+@RunWith(JUnitParamsRunner.class)
 public class AlertRestServiceIT extends AbstractAlertIT {
 
   private static final String TEST = "test";
+
+  private static final Object[] definitionType() {
+    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
+  }
 
   @Test
   public void createNewAlertWithoutAuthentication() {
@@ -51,9 +60,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   @Test
-  public void cantUpdateWithoutReport() {
+  @Parameters(method = "definitionType")
+  public void cantUpdateWithoutReport(final int definitionType) {
     //given
-    String reportId = createNumberReport();
+    String collectionId = createNewCollection();
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
     alert.setReportId(TEST);
@@ -69,9 +80,28 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   @Test
-  public void createNewAlert() {
+  @Parameters(method = "definitionType")
+  public void cantCreateAlertForPrivateReports(final int definitionType) {
     //given
-    String reportId = createNumberReport();
+    String reportId = createNumberReportForCollection(null, definitionType);
+    AlertCreationDto alert = createSimpleAlert(reportId);
+
+    // when
+    Response response = embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildCreateAlertRequest(alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(400));
+  }
+
+  @Test
+  @Parameters(method = "definitionType")
+  public void createNewAlert(final int definitionType) {
+    //given
+    String collectionId = createNewCollection();
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
 
     // when
@@ -80,14 +110,16 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .buildCreateAlertRequest(alert)
       .execute(String.class, 200);
 
-    // then the status code is okay
+    // then
     assertThat(id, is(notNullValue()));
   }
 
   @Test
-  public void createNewAlertAllowsMaxInt() {
+  @Parameters(method = "definitionType")
+  public void createNewAlertAllowsMaxInt(final int definitionType) {
     //given
-    String reportId = createNumberReport();
+    String collectionId = createNewCollection();
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     alert.setThreshold(Integer.MAX_VALUE);
 
@@ -97,7 +129,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .buildCreateAlertRequest(alert)
       .execute(String.class, 200);
 
-    // then the status code is okay
+    // then
     assertThat(id, is(notNullValue()));
   }
 
@@ -115,9 +147,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   @Test
-  public void updateNonExistingAlert() {
+  @Parameters(method = "definitionType")
+  public void updateNonExistingAlert(final int definitionType) {
     // given
-    String reportId = createNumberReport();
+    String collectionId = createNewCollection();
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
 
     // when
     Response response = embeddedOptimizeExtensionRule
@@ -130,9 +164,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   @Test
-  public void updateAlert() {
+  @Parameters(method = "definitionType")
+  public void updateAlert(final int definitionType) {
     //given
-    String reportId = createNumberReport();
+    String collectionId = createNewCollection();
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
     alert.setEmail("new@camunda.com");
@@ -162,9 +198,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   @Test
-  public void getStoredAlerts() {
+  @Parameters(method = "definitionType")
+  public void getStoredAlerts(final int definitionType) {
     //given
-    String reportId = createNumberReport();
+    String collectionId = createNewCollection();
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
 
@@ -190,9 +228,11 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   @Test
-  public void deleteNewAlert() {
+  @Parameters(method = "definitionType")
+  public void deleteNewAlert(final int definitionType) {
     //given
-    String reportId = createNumberReport();
+    String collectionId = createNewCollection();
+    String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
 
@@ -239,12 +279,5 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
       .executeAndReturnList(AlertDefinitionDto.class, 200);
-  }
-
-  private String createNumberReport() {
-    ProcessDefinitionEngineDto engineDto = new ProcessDefinitionEngineDto();
-    engineDto.setKey("Foo");
-    engineDto.setVersion(1);
-    return createAndStoreProcessNumberReport(engineDto);
   }
 }

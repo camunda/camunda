@@ -89,7 +89,6 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     assertThat(getAllAlerts().get(0).getReminder(), is(nullValue()));
   }
 
-
   private List<AlertDefinitionDto> getAllAlerts() {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
@@ -99,13 +98,12 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reminderJobsAreRemovedOnReportUpdate() throws Exception {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-
+    ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
-    String reportId = createAndStoreProcessNumberReport(processDefinition);
+    String collectionId = createNewCollection();
+    String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 
     AlertInterval reminderInterval = new AlertInterval();
@@ -123,9 +121,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     );
 
     //when
-    SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(
-      processDefinition.getKey(), String.valueOf(processDefinition.getVersion())
-    );
+    SingleProcessReportDefinitionDto report = getProcessNumberReportDefinitionDto(collectionId, processDefinition);
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(ProcessVisualization.HEAT);
     updateSingleProcessReport(simpleAlert.getReportId(), report);
@@ -146,8 +142,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     ProcessInstanceEngineDto processInstance = deployWithTimeShift(daysToShift, durationInSec);
 
     // when
-    String reportId =
-      createAndStoreDurationNumberReport(processInstance);
+    String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId, 10, "Seconds");
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
@@ -278,6 +273,4 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       is(2)
     );
   }
-
-
 }

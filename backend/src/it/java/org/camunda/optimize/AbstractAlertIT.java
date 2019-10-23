@@ -171,33 +171,26 @@ public abstract class AbstractAlertIT {
   }
 
   protected AlertCreationDto setupBasicDecisionAlert() {
-    DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition();
-
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
-
-    String id = createAndStoreDecisionNumberReport(decisionDefinitionDto);
+    String collectionId = createNewCollection();
+    String id = createNumberReportForCollection(collectionId, RESOURCE_TYPE_DECISION_DEFINITION);
     return createSimpleAlert(id);
   }
 
   protected AlertCreationDto setupBasicProcessAlert() {
-    return setupBasicProcessAlert("aProcess");
-  }
-
-  protected AlertCreationDto setupBasicProcessAlert(String definitionKey) {
-    return setupBasicProcessAlertAsUser(definitionKey, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    return setupBasicProcessAlertAsUser("aProcess", DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
   protected AlertCreationDto setupBasicProcessAlertAsUser(final String definitionKey,
                                                           final String user,
                                                           final String password) {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
-
-    String reportId = createAndStoreProcessNumberReportAsUser(processDefinition, user, password);
+    String collectionId = createNewCollection(user, password);
+    String reportId = createNumberReportForCollection(
+      definitionKey,
+      collectionId,
+      RESOURCE_TYPE_PROCESS_DEFINITION,
+      user,
+      password
+    );
     return createSimpleAlert(reportId);
   }
 
@@ -221,6 +214,24 @@ public abstract class AbstractAlertIT {
     return alertCreationDto;
   }
 
+  protected String createNewProcessReportAsUser(final String collectionId,
+                                              final ProcessDefinitionEngineDto processDefinition) {
+    SingleProcessReportDefinitionDto procReport = getProcessNumberReportDefinitionDto(
+      collectionId,
+      processDefinition
+    );
+    return createNewProcessReportAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, procReport);
+  }
+
+  private String createNewProcessReportAsUser(final String user, final String password, final String collectionId,
+                                              final ProcessDefinitionEngineDto processDefinition) {
+    SingleProcessReportDefinitionDto procReport = getProcessNumberReportDefinitionDto(
+      collectionId,
+      processDefinition
+    );
+    return createNewProcessReportAsUser(user, password, procReport);
+  }
+
   private String createNewProcessReportAsUser(final String user, final String password,
                                               final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtensionRule
@@ -231,56 +242,86 @@ public abstract class AbstractAlertIT {
       .getId();
   }
 
-  private String createNewDecisionReportAsUser(final String user, final String password,
-                                               final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
+  private String createNewDecisionReportAsUser(final String user, final String password, final String collectionId,
+                                               final DecisionDefinitionEngineDto decisionDefinitionDto) {
+    SingleDecisionReportDefinitionDto decReport = getDecisionNumberReportDefinitionDto(
+      collectionId,
+      decisionDefinitionDto
+    );
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withUserAuthentication(user, password)
-      .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
+      .buildCreateSingleDecisionReportRequest(decReport)
       .execute(IdDto.class, 200)
       .getId();
   }
 
-  protected String createNumberReportForCollection(String collectionId, int resourceType) {
+  protected String createAndStoreDurationNumberReportInNewCollection(final ProcessInstanceEngineDto instanceEngineDto) {
+    String collectionId = createNewCollection();
+    return createAndStoreDurationNumberReport(
+      collectionId,
+      instanceEngineDto.getProcessDefinitionKey(),
+      instanceEngineDto.getProcessDefinitionVersion()
+    );
+  }
+
+  private String createAndStoreDurationNumberReport(final String collectionId, final String processDefinitionKey,
+                                                    final String processDefinitionVersion) {
+    return createAndStoreDurationNumberReportAsUser(
+      collectionId, processDefinitionKey, processDefinitionVersion, DEFAULT_USERNAME, DEFAULT_PASSWORD
+    );
+  }
+
+  private String createAndStoreDurationNumberReportAsUser(final String collectionId,
+                                                          final String processDefinitionKey,
+                                                          final String processDefinitionVersion,
+                                                          final String user,
+                                                          final String password) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+      getDurationReportDefinitionDto(collectionId, processDefinitionKey, processDefinitionVersion);
+    return createNewProcessReportAsUser(user, password, singleProcessReportDefinitionDto);
+  }
+
+  protected String createNumberReportForCollection(final String collectionId, final int resourceType) {
+    return createNumberReportForCollection("aProcess", collectionId, resourceType, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
+
+  protected String createNumberReportForCollection(final String definitionKey, final String collectionId,
+                                                   final int resourceType,
+                                                   final String user, final String password) {
     switch (resourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess("aProcess");
-        SingleProcessReportDefinitionDto procReport = getProcessNumberReportDefinitionDto(processDefinition);
-        procReport.setCollectionId(collectionId);
-        return createNewProcessReportAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, procReport);
+        ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(definitionKey);
+        embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+        elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+        return createNewProcessReportAsUser(user, password, collectionId, processDefinition);
 
       case RESOURCE_TYPE_DECISION_DEFINITION:
         DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition();
-        SingleDecisionReportDefinitionDto decReport = getDecisionNumberReportDefinitionDto(decisionDefinitionDto);
-        decReport.setCollectionId(collectionId);
-        return createNewDecisionReportAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, decReport);
+        embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+        elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+        return createNewDecisionReportAsUser(user, password, collectionId, decisionDefinitionDto);
 
       default:
         throw new OptimizeRuntimeException("Unknown resource type provided.");
     }
   }
 
-  private String createAndStoreDecisionNumberReport(DecisionDefinitionEngineDto decisionDefinitionDto1) {
-    SingleDecisionReportDefinitionDto decReportDefDto = getDecisionNumberReportDefinitionDto(decisionDefinitionDto1);
-    return createNewDecisionReportAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD, decReportDefDto);
+  protected String createNewCollection() {
+    return createNewCollection(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  protected String createAndStoreProcessNumberReport(ProcessDefinitionEngineDto processDefinition) {
-    return createAndStoreProcessNumberReportAsUser(processDefinition, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  protected String createNewCollection(final String user, final String password) {
+    return embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .withUserAuthentication(user, password)
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
-  protected String createAndStoreProcessNumberReportAsUser(final ProcessDefinitionEngineDto processDefinition,
-                                                           final String user,
-                                                           final String password) {
-    SingleProcessReportDefinitionDto procReportDefDto = getProcessNumberReportDefinitionDto(
-      processDefinition.getKey(),
-      String.valueOf(processDefinition.getVersion())
-    );
-    return createNewProcessReportAsUser(user, password, procReportDefDto);
-  }
-
-  private SingleDecisionReportDefinitionDto getDecisionNumberReportDefinitionDto(DecisionDefinitionEngineDto
-                                                                                   decisionDefinitionDto) {
+  private SingleDecisionReportDefinitionDto getDecisionNumberReportDefinitionDto(String collectionId,
+                                                                                 DecisionDefinitionEngineDto decisionDefinitionDto) {
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto.getVersion());
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
@@ -297,20 +338,23 @@ public abstract class AbstractAlertIT {
     report.setCreated(someDate);
     report.setLastModified(someDate);
     report.setOwner("something");
+    report.setCollectionId(collectionId);
 
     return report;
   }
 
-  protected SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(ProcessDefinitionEngineDto
-                                                                                   processDefinition) {
+  protected SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String collectionId,
+                                                                                 ProcessDefinitionEngineDto processDefinition) {
     return getProcessNumberReportDefinitionDto(
+      collectionId,
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion())
     );
   }
 
 
-  protected SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String processDefinitionKey,
+  protected SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String collectionId,
+                                                                                 String processDefinitionKey,
                                                                                  String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
@@ -321,6 +365,7 @@ public abstract class AbstractAlertIT {
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setName("something");
+    report.setCollectionId(collectionId);
     return report;
   }
 
@@ -334,8 +379,14 @@ public abstract class AbstractAlertIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    return deploySimpleServiceTaskProcess("aProcess");
+  protected ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskProcess() {
+    return deployAndStartSimpleServiceTaskProcess("aProcess");
+  }
+
+  protected ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskProcess(final String definitionKey) {
+    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
+    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    return processDefinition;
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
@@ -349,29 +400,8 @@ public abstract class AbstractAlertIT {
     return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  protected String createAndStoreDurationNumberReport(ProcessInstanceEngineDto instanceEngineDto) {
-    return createAndStoreDurationNumberReport(
-      instanceEngineDto.getProcessDefinitionKey(),
-      instanceEngineDto.getProcessDefinitionVersion()
-    );
-  }
-
-  private String createAndStoreDurationNumberReport(String processDefinitionKey, String processDefinitionVersion) {
-    return createAndStoreDurationNumberReportAsUser(
-      processDefinitionKey, processDefinitionVersion, DEFAULT_USERNAME, DEFAULT_PASSWORD
-    );
-  }
-
-  private String createAndStoreDurationNumberReportAsUser(final String processDefinitionKey,
-                                                          final String processDefinitionVersion,
-                                                          final String user,
-                                                          final String password) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
-      getDurationReportDefinitionDto(processDefinitionKey, processDefinitionVersion);
-    return createNewProcessReportAsUser(user, password, singleProcessReportDefinitionDto);
-  }
-
-  private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey,
+  private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String collectionId,
+                                                                          String processDefinitionKey,
                                                                           String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
@@ -382,6 +412,7 @@ public abstract class AbstractAlertIT {
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
     report.setData(reportData);
     report.setName("something");
+    report.setCollectionId(collectionId);
     return report;
   }
 

@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import javax.ws.rs.BadRequestException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -221,6 +222,12 @@ public class AlertService implements ReportReferencingService {
       logger.error(errorMessage);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
+
+    if (report.getCollectionId() == null || report.getCollectionId().isEmpty()) {
+      throw new BadRequestException(
+        "Alerts cannot be created for private reports, only for reports within a collection.");
+    }
+
     ValidationHelper.ensureNotEmpty("report", report);
 
     ValidationHelper.ensureNotEmpty("operator", toCreate.getThresholdOperator());
