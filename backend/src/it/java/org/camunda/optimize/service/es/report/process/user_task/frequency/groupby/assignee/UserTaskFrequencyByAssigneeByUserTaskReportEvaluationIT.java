@@ -322,8 +322,8 @@ public class UserTaskFrequencyByAssigneeByUserTaskReportEvaluationIT extends Abs
   public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition1.getId());
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtensionRule.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtensionRule.startProcessInstance(processDefinition1.getId());
     engineIntegrationExtensionRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();

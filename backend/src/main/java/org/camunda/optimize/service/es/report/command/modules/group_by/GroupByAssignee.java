@@ -17,6 +17,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
@@ -67,6 +68,7 @@ public class GroupByAssignee extends GroupByPart {
             AggregationBuilders
               .terms(USER_TASK_ASSIGNEE_TERMS_AGGREGATION)
               .size(configurationService.getEsAggregationBucketLimit())
+              .order(BucketOrder.key(true))
               .field(USER_TASKS + "." + USER_TASK_ASSIGNEE)
               .subAggregation(distributedByPart.createAggregation(definitionData))
           )

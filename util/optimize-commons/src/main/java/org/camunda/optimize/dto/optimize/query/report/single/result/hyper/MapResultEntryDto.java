@@ -9,8 +9,10 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.ToString;
 
 @EqualsAndHashCode
+@ToString
 public class MapResultEntryDto {
 
   // @formatter:off

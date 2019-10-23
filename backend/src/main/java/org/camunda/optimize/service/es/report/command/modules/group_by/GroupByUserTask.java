@@ -93,7 +93,8 @@ public class GroupByUserTask extends GroupByPart {
       if (userTaskNames.containsKey(userTaskKey)) {
         final List<DistributedByResult> singleResult =
           distributedByPart.retrieveResult(b.getAggregations(), reportData);
-        groupedData.add(GroupByResult.createGroupByResult(userTaskKey, singleResult));
+        String label = userTaskNames.get(userTaskKey);
+        groupedData.add(GroupByResult.createGroupByResult(userTaskKey, label, singleResult));
         userTaskNames.remove(userTaskKey);
       }
     }

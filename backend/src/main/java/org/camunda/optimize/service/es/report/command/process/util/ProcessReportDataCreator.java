@@ -23,7 +23,6 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createCountProcessInstanceFrequencyView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createRawDataView;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskDurationView;
-import static org.camunda.optimize.service.es.report.command.process.util.ProcessViewDtoCreator.createUserTaskFrequencyView;
 
 public class ProcessReportDataCreator {
 
@@ -60,22 +59,6 @@ public class ProcessReportDataCreator {
     reportData.setGroupBy(groupByDto);
     reportData.getConfiguration().setAggregationType(aggroType);
     reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
-    return reportData;
-  }
-
-  private static ProcessReportDataDto createUserTaskFrequencyGroupByAssigneeReport() {
-    final ProcessViewDto view = createUserTaskFrequencyView();
-    final ProcessGroupByDto groupByDto = createGroupByAssignee();
-
-    final ProcessReportDataDto reportData = new ProcessReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
-  public static ProcessReportDataDto createUserTaskFrequencyGroupByAssigneeByUserTaskReport() {
-    final ProcessReportDataDto reportData = createUserTaskFrequencyGroupByAssigneeReport();
-    reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
     return reportData;
   }
 
@@ -126,22 +109,6 @@ public class ProcessReportDataCreator {
     reportData.setGroupBy(groupByDto);
     reportData.getConfiguration().setAggregationType(aggroType);
     reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
-    reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
-    return reportData;
-  }
-
-  private static ProcessReportDataDto createUserTaskFrequencyGroupByCandidateGroupReport() {
-    final ProcessViewDto view = createUserTaskFrequencyView();
-    final ProcessGroupByDto groupByDto = createGroupByCandidateGroup();
-
-    final ProcessReportDataDto reportData = new ProcessReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
-  public static ProcessReportDataDto createUserTaskFrequencyGroupByCandidateGroupByUserTaskReport() {
-    final ProcessReportDataDto reportData = createUserTaskFrequencyGroupByCandidateGroupReport();
     reportData.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
     return reportData;
   }

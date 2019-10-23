@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.result;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
@@ -32,6 +33,7 @@ public class CompositeCommandResult {
     this.groups = singletonList(groupByResult);
   }
 
+  @AllArgsConstructor(access = AccessLevel.PROTECTED)
   @Data
   public static class GroupByResult {
     private String key;
@@ -39,36 +41,49 @@ public class CompositeCommandResult {
     private List<DistributedByResult> distributions;
 
     public static GroupByResult createResultWithEmptyValue(final String key) {
-      return new GroupByResult(key, singletonList(DistributedByResult.createResultWithEmptyValue()));
+      return new GroupByResult(key, null, singletonList(DistributedByResult.createResultWithEmptyValue(null)));
     }
 
     public static GroupByResult createEmptyGroupBy(List<DistributedByResult> distributions) {
-      return new GroupByResult(null, distributions);
+      return new GroupByResult(null, null, distributions);
+    }
+
+    public static GroupByResult createGroupByResult(final String key, final String label,
+                                                    final List<DistributedByResult> distributions) {
+      return new GroupByResult(key, label, distributions);
     }
 
     public static GroupByResult createGroupByResult(final String key, final List<DistributedByResult> distributions) {
-      return new GroupByResult(key, distributions);
+      return new GroupByResult(key, null, distributions);
     }
 
-    protected GroupByResult(final String key, final List<DistributedByResult> distributions) {
-      this.key = key;
-      this.distributions = distributions;
+    public String getLabel() {
+      return label != null && !label.isEmpty() ? label : key;
     }
   }
 
-  @AllArgsConstructor
+  @AllArgsConstructor(access = AccessLevel.PROTECTED)
   @Data
   public static class DistributedByResult {
 
     private String key;
+    private String label;
     private ViewResult viewResult;
 
-    public static DistributedByResult createResultWithEmptyValue() {
-      return new DistributedByResult(null, new ViewResult(null));
+    public static DistributedByResult createResultWithEmptyValue(String key) {
+      return new DistributedByResult(key, null, new ViewResult(null));
     }
 
     public static DistributedByResult createEmptyDistributedBy(ViewResult viewResult) {
-      return new DistributedByResult(null, viewResult);
+      return new DistributedByResult(null, null, viewResult);
+    }
+
+    public static DistributedByResult createDistributedByResult(String key, String label, ViewResult viewResult) {
+      return new DistributedByResult(key, label, viewResult);
+    }
+
+    public String getLabel() {
+      return label != null && !label.isEmpty() ? label : key;
     }
 
     public Long getValueAsLong() {
@@ -76,7 +91,7 @@ public class CompositeCommandResult {
     }
 
     public MapResultEntryDto getValueAsMapResultEntry() {
-      return new MapResultEntryDto(this.key, getValueAsLong());
+      return new MapResultEntryDto(this.key, getValueAsLong(), this.label);
     }
   }
 
