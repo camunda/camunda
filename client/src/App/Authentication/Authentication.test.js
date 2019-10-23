@@ -16,16 +16,17 @@ import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 const {WrappedComponent: Authentication} = AuthenticationWithRouter;
 
+jest.mock('modules/request/request');
+jest.mock('modules/request/wrappers');
+
 describe('Authentication', () => {
-  request.setResponseInterceptor = jest.fn();
   wrappers.get = mockResolvedAsyncFn({status: 200});
 
   let Child, node;
   const mockLocation = {pathname: '/some/page'};
 
   beforeEach(() => {
-    request.setResponseInterceptor.mockClear();
-    wrappers.get.mockClear();
+    jest.clearAllMocks();
 
     Child = () => <span>I am a child component</span>;
     node = shallow(
