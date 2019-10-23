@@ -57,7 +57,6 @@ class Header extends React.Component {
             linksTo="/analysis"
             active={['/analysis/', '/analysis/*']}
           />
-          <HeaderNav.Item name={t('alert.label-plural')} linksTo="/alerts" active="/alerts" />
         </HeaderNav>
         <LogoutButton />
       </header>

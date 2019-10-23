@@ -54,11 +54,6 @@ exports[`matches the snapshot 1`] = `
       linksTo="/analysis"
       name="Analysis"
     />
-    <NavItem
-      active="/alerts"
-      linksTo="/alerts"
-      name="Alerts"
-    />
   </HeaderNav>
   <LogoutButtonErrorHandler />
 </header>

@@ -11,6 +11,7 @@
 
   &:last-child {
     margin-right: 0;
+    border-right: 1px solid rgba($color: #000, $alpha: 0.1);
   }
 
   .breadcrumb {

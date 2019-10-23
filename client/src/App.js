@@ -14,7 +14,6 @@ import {
   Footer,
   Home,
   Collection,
-  Alerts,
   Report,
   Dashboard,
   Analysis,
@@ -94,7 +93,6 @@ class App extends React.Component {
                       <Switch>
                         <PrivateRoute exact path="/" component={Home} />
                         <PrivateRoute path="/analysis" component={Analysis} />
-                        <PrivateRoute exact path="/alerts" component={Alerts} />
                         <Route exact path="/share/:type/:id" component={Sharing} />
                         <PrivateRoute
                           path="/(report|dashboard|collection)/*"

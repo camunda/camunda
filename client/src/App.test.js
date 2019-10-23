@@ -22,7 +22,7 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
 
-it('should include a header for the Alert page', async () => {
+it('should include a header and footer page', async () => {
   const node = shallow(<App {...props} />);
   await node.update();
   const content = shallow(node.find('Route').prop('render')({location: {pathname: '/'}}));

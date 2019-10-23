@@ -7,6 +7,10 @@
   margin-bottom: 10px;
   display: block;
 
+  &.clickable {
+    cursor: pointer;
+  }
+
   .indicator {
     width: 8px;
     height: calc(100% + 2px);

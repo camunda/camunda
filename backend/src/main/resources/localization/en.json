@@ -290,7 +290,7 @@
     "newAlert": "New Alert",
     "edit": "Edit Alert",
     "delete": "Delete Alert",
-    "description": "Alert <span>{email}</span> when Report <span>{name}</span> has a value <span>{aboveOrBelow} {thresholdValue}</span>",
+    "description": "\"{name}\" has a value {aboveOrBelow} {thresholdValue}",
     "emailWarning": "The email notification service is not configured. Optimize won't be able to inform you about critical values. Please check out the <a href='{docsLink}'>Optimize documentation</a> on how to enable the notification service.",
     "form": {
       "name": "Alert Name",

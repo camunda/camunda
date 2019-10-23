@@ -16,6 +16,7 @@ export const dashboardItem = Selector('.ListItem.dashboard');
 export const collectionItem = Selector('.ListItem.collection');
 export const edit = element => element.find('.DropdownOption').withText('Edit');
 export const copy = element => element.find('.DropdownOption').withText('Copy');
+export const del = element => element.find('.DropdownOption').withText('Delete');
 export const setupNotice = Selector('.SetupNotice');
 export const reportControlPanel = Selector('.ReportControlPanel');
 export const editButton = Selector('.edit-button');

@@ -10,6 +10,8 @@ import * as u from '../utils';
 
 import * as Report from './ProcessReport.elements.js';
 import * as Alert from './Alerts.elements.js';
+import * as Homepage from './Homepage.elements.js';
+import * as Collection from './Collection.elements.js';
 
 fixture('Alerts')
   .page(config.endpoint)
@@ -17,6 +19,10 @@ fixture('Alerts')
   .beforeEach(u.login);
 
 test('add an alert', async t => {
+  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
+  await t.typeText(Homepage.modalNameInput, 'Test Collection', {replace: true});
+  await t.click(Homepage.confirmButton);
+
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
 
@@ -27,7 +33,8 @@ test('add an alert', async t => {
 
   await u.save(t);
 
-  await t.click(Alert.navItem);
+  await t.click(Collection.collectionBreadcrumb);
+  await t.click(Collection.alertTab);
 
   await t.click(Alert.newAlertButton);
 
@@ -47,8 +54,10 @@ test('add an alert', async t => {
 });
 
 test('edit an alert', async t => {
-  await t.click(Alert.navItem);
-  await t.click(Alert.editButton);
+  await t.click(Homepage.collectionItem);
+  await t.click(Collection.alertTab);
+
+  await t.click(Alert.listItem);
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Edited Alert', {replace: true});
 
@@ -56,7 +65,7 @@ test('edit an alert', async t => {
 
   await t.expect(Alert.list.textContent).notContains('Edited Alert');
 
-  await t.click(Alert.editButton);
+  await t.click(Alert.listItem);
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Saved Alert', {replace: true});
 
   await t.click(Alert.primaryModalButton);
@@ -65,8 +74,13 @@ test('edit an alert', async t => {
 });
 
 test('delete an alert', async t => {
-  await t.click(Alert.navItem);
-  await t.click(Alert.deleteButton);
+  await t.click(Homepage.collectionItem);
+  await t.click(Collection.alertTab);
+
+  await t.hover(Alert.listItem);
+  await t.click(Homepage.contextMenu(Alert.listItem));
+  await t.click(Homepage.del(Alert.listItem));
+
   await t.click(Alert.primaryModalButton);
 
   await t.expect(Alert.list.textContent).notContains('Saved Alert');

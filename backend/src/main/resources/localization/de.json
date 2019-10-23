@@ -290,7 +290,7 @@
     "newAlert": "Neuer Alarm",
     "edit": "Alarm bearbeiten",
     "delete": "Alarm löschen",
-    "description": "Alarmiere <span>{email}</span>, wenn Bericht <span>{name}</span> einen Wert <span>{aboveOrBelow} {thresholdValue}</span> aufweist",
+    "description": "\"{name}\" hat einen Wert {aboveOrBelow} {thresholdValue}",
     "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a href='{docsLink}'>Optimize Dokumentation</a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
     "form": {
       "name": "Alarm Name",

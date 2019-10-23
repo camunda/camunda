@@ -80,6 +80,15 @@ exports[`should match snapshot 1`] = `
         className=""
       >
         <Link
+          to="alerts"
+        >
+          Alerts
+        </Link>
+      </li>
+      <li
+        className=""
+      >
+        <Link
           to="users"
         >
           Users
@@ -205,6 +214,15 @@ exports[`should render content depending on the selected tab 1`] = `
           to="."
         >
           Dashboards & Reports
+        </Link>
+      </li>
+      <li
+        className=""
+      >
+        <Link
+          to="alerts"
+        >
+          Alerts
         </Link>
       </li>
       <li

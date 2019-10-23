@@ -13,6 +13,9 @@
   &.text-light {
     .NavItem {
       border-left: 1px solid $border-light;
+      &:last-child {
+        border-right: 1px solid $border-light;
+      }
 
       a {
         color: $text-light;

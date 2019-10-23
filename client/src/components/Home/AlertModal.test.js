@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import AlertModalFunc from './AlertModal';
+import AlertModal from './AlertModal';
 
 import ThresholdInput from './ThresholdInput';
 
@@ -32,7 +32,7 @@ jest.mock('services', () => {
   };
 });
 
-const entity = {
+const initialAlert = {
   id: '71395',
   name: 'Sample Alert',
   email: 'test@camunda.com',
@@ -57,12 +57,10 @@ const reports = [
   }
 ];
 
-const AlertModal = AlertModalFunc(reports);
-
 it('should apply the alert property to the state when changing props', () => {
   const node = shallow(<AlertModal reports={reports} />);
 
-  node.setProps({entity});
+  node.setProps({initialAlert});
 
   expect(node.state()).toEqual({
     id: '71395',
@@ -85,7 +83,7 @@ it('should call the onConfirm method', () => {
   const spy = jest.fn();
   const node = shallow(<AlertModal reports={reports} onConfirm={spy} />);
 
-  node.setProps({entity});
+  node.setProps({initialAlert});
 
   node.find({variant: 'primary'}).simulate('click');
 
@@ -95,7 +93,7 @@ it('should call the onConfirm method', () => {
 it('should disable the submit button if the name is empty', () => {
   const node = shallow(<AlertModal reports={reports} />);
 
-  node.setProps({entity});
+  node.setProps({initialAlert});
   node.setState({name: ''});
 
   expect(node.find({variant: 'primary'})).toBeDisabled();
@@ -104,7 +102,7 @@ it('should disable the submit button if the name is empty', () => {
 it('should disable the submit button if the email is not valid', () => {
   const node = shallow(<AlertModal reports={reports} />);
 
-  node.setProps({entity});
+  node.setProps({initialAlert});
   node.setState({email: 'this is not a valid email'});
   expect(node.find({variant: 'primary'})).toBeDisabled();
 });
@@ -112,7 +110,7 @@ it('should disable the submit button if the email is not valid', () => {
 it('should disable the submit button if no report is selected', () => {
   const node = shallow(<AlertModal reports={reports} />);
 
-  node.setProps({entity});
+  node.setProps({initialAlert});
   node.setState({reportId: ''});
   expect(node.find({variant: 'primary'})).toBeDisabled();
 });
@@ -120,7 +118,7 @@ it('should disable the submit button if no report is selected', () => {
 it('should disable the submit button if the threshold is not a number', () => {
   const node = shallow(<AlertModal reports={reports} />);
 
-  node.setProps({entity});
+  node.setProps({initialAlert});
   node.setState({threshold: 'five'});
   expect(node.find({variant: 'primary'})).toBeDisabled();
 });
@@ -128,7 +126,7 @@ it('should disable the submit button if the threshold is not a number', () => {
 it('should disable the submit button if the check interval is negative', () => {
   const node = shallow(<AlertModal reports={reports} />);
 
-  node.setProps({entity});
+  node.setProps({initialAlert});
   node.setState({
     checkInterval: {
       value: '-7',
@@ -160,7 +158,7 @@ it('should convert a duration threshold when opening', async () => {
   await node.instance().componentDidMount();
 
   node.setProps({
-    entity: {
+    initialAlert: {
       name: 'New Alert',
       id: '1234',
       email: '',
@@ -198,7 +196,7 @@ it('should contain a threshold input', () => {
 });
 
 it('should pass the selected report as initial value to the typeahead', () => {
-  const node = shallow(<AlertModal reports={reports} entity={entity} />);
+  const node = shallow(<AlertModal reports={reports} initialAlert={initialAlert} />);
 
   expect(node.find('Typeahead').props().initialValue.name).toBe('Nice report');
 });

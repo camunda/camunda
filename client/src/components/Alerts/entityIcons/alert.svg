@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="28" height="20" viewBox="0 0 28 20">
-  <g fill="none" fill-rule="evenodd">
-    <polyline stroke="#9CA4B0" points="1 1 13 11 15 11 27 1"/>
-    <path stroke="#9CA4B0" d="M1 19L11.5 9.5M16.5 9.5L27 19"/>
-    <path fill="#6A727E" fill-rule="nonzero" d="M0,0 L28,0 L28,20 L0,20 L0,0 Z M2,2 L2,18 L26,18 L26,2 L2,2 Z"/>
-    <circle cx="14" cy="10" r="8" fill="#FFF" fill-rule="nonzero"/>
-    <path fill="#6A727E" d="M14,17 C10.1340068,17 7,13.8659932 7,10 C7,6.13400675 10.1340068,3 14,3 C17.8659932,3 21,6.13400675 21,10 C21,13.8659932 17.8659932,17 14,17 Z M13,12 L13,14 L15,14 L15,12 L13,12 Z M13.2610545,11 L14.7550268,11 L15.5,6 L12.5,6 L13.2610545,11 Z"/>
-  </g>
-</svg>

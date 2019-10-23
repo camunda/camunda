@@ -6,9 +6,9 @@
 
 import {Selector} from 'testcafe';
 
-export const navItem = Selector('header a').withText('Alerts');
-export const list = Selector('.entityList');
-export const newAlertButton = Selector('.createButton');
+export const list = Selector('.AlertList .content');
+export const listItem = Selector('.ListItem');
+export const newAlertButton = Selector('.AlertList .header .Button');
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
 export const inputWithLabel = label =>
   Selector('.Modal .label')

@@ -1,4 +1,6 @@
-.EntityList {
+.EntityList,
+.UserList,
+.AlertList {
   width: 1000px;
   height: 100%;
   margin: auto;
@@ -32,7 +34,8 @@
       margin: 0;
     }
 
-    .CreateNewButton {
+    > .CreateNewButton,
+    > .Button {
       margin-left: 20px;
     }
 
@@ -66,26 +69,6 @@
 
   .ListItem {
     position: relative;
-
-    &.report .indicator {
-      background-color: #00acac;
-    }
-    &.dashboard .indicator {
-      background-color: #0565b2;
-    }
-    &.collection .indicator {
-      background-color: #5b2e96;
-    }
-
-    > ul {
-      margin-left: -25px;
-
-      > a {
-        height: 100%;
-        display: inline-block;
-        padding-left: 25px;
-      }
-    }
 
     .contextMenu {
       position: absolute;
@@ -174,6 +157,35 @@
       }
     }
 
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.EntityList {
+  .ListItem {
+    &.report .indicator {
+      background-color: #00acac;
+    }
+    &.dashboard .indicator {
+      background-color: #0565b2;
+    }
+    &.collection .indicator {
+      background-color: #5b2e96;
+    }
+
+    > ul {
+      margin-left: -25px;
+
+      > a {
+        height: 100%;
+        display: inline-block;
+        padding-left: 25px;
+      }
+    }
+  }
+
+  .ListItemSection {
     &.containedEntities,
     &.modifiedDate,
     &.users {

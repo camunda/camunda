@@ -22,6 +22,7 @@ export const entityTab = Selector('.Collection .header .navigation a').withText(
   'Dashboards & Reports'
 );
 export const userTab = Selector('.Collection .header .navigation a').withText('Users');
+export const alertTab = Selector('.Collection .header .navigation a').withText('Alerts');
 export const addUserButton = Selector('.Collection .content .header .Button');
 export const optionsButton = Selector('.Typeahead .optionsButton');
 export const typeaheadInput = Selector('.Typeahead input');

@@ -11,11 +11,7 @@ import license from './license';
 
 export default async function setup() {
   await ensureLicense();
-
-  const sessionToken = await getSession();
-
-  await cleanAlerts(sessionToken);
-  await cleanEntities(sessionToken);
+  await cleanEntities();
 }
 
 async function ensureLicense() {
@@ -37,22 +33,8 @@ async function getSession() {
   return await resp.text();
 }
 
-async function cleanAlerts(sessionToken) {
-  const headers = {Cookie: `X-Optimize-Authorization="Bearer ${sessionToken}"`};
-
-  const response = await fetch(`${config.endpoint}/api/alert`, {headers});
-  const alerts = await response.json();
-
-  for (let i = 0; i < alerts.length; i++) {
-    await fetch(`${config.endpoint}/api/alert/${alerts[i].id}`, {
-      method: 'DELETE',
-      headers
-    });
-  }
-}
-
-async function cleanEntities(sessionToken) {
-  const headers = {Cookie: `X-Optimize-Authorization="Bearer ${sessionToken}"`};
+async function cleanEntities() {
+  const headers = {Cookie: `X-Optimize-Authorization="Bearer ${await getSession()}"`};
 
   const response = await fetch(`${config.endpoint}/api/entities`, {headers});
   const entities = await response.json();

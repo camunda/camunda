@@ -19,6 +19,7 @@ import {ReactComponent as CollectionIcon} from './icons/collection.svg';
 
 import EntityList from './EntityList';
 import UserList from './UserList';
+import AlertList from './AlertList';
 import CollectionModal from './CollectionModal';
 
 import './Collection.scss';
@@ -86,7 +87,9 @@ export default withErrorHandling(
     render() {
       const {collection, deleting, deleteInProgress, editingCollection, goBack} = this.state;
 
+      const homeTab = this.props.match.params.viewMode === undefined;
       const userTab = this.props.match.params.viewMode === 'users';
+      const alertTab = this.props.match.params.viewMode === 'alerts';
 
       if (goBack) {
         return <Redirect to="/" />;
@@ -122,8 +125,11 @@ export default withErrorHandling(
               </div>
             </div>
             <ul className="navigation">
-              <li className={classnames({active: !userTab})}>
+              <li className={classnames({active: homeTab})}>
                 <Link to=".">{t('home.collectionTitleWithAmpersand')}</Link>
+              </li>
+              <li className={classnames({active: alertTab})}>
+                <Link to="alerts">{t('alert.label-plural')}</Link>
               </li>
               <li className={classnames({active: userTab})}>
                 <Link to="users">{t('common.user.label-plural')}</Link>
@@ -131,12 +137,18 @@ export default withErrorHandling(
             </ul>
           </div>
           <div className="content">
-            {!userTab && (
+            {homeTab && (
               <EntityList
                 readOnly={!collection || collection.currentUserRole === 'viewer'}
                 data={collection ? collection.data.entities : null}
                 onChange={this.loadCollection}
                 collection={collection ? collection.id : null}
+              />
+            )}
+            {alertTab && collection && (
+              <AlertList
+                readOnly={collection.currentUserRole === 'viewer'}
+                collection={collection.id}
               />
             )}
             {userTab && collection && (

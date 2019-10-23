@@ -80,7 +80,7 @@ jest.mock('services', () => {
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  match: {params: {id: 'aCollectionId', viewMode: ''}}
+  match: {params: {id: 'aCollectionId'}}
 };
 
 it('should match snapshot', () => {

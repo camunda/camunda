@@ -1,0 +1,14 @@
+.AlertList {
+  .ListItemSection {
+    &.email {
+      width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    &.condition {
+      width: 400px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+}

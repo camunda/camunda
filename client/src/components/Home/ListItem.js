@@ -9,15 +9,15 @@ import classnames from 'classnames';
 
 import './ListItem.scss';
 
-export default function ListItem({className, children}) {
+export default function ListItem({className, children, onClick}) {
   return (
-    <li className={classnames('ListItem', className)}>
+    <li className={classnames('ListItem', className, {clickable: onClick})} onClick={onClick}>
       <div className="indicator" />
       <ul>{children}</ul>
     </li>
   );
 }
 
-ListItem.Section = function ListItemSection({className, children}) {
-  return <li className={classnames('ListItemSection', className)}>{children}</li>;
+ListItem.Section = function ListItemSection({className, ...props}) {
+  return <li className={classnames('ListItemSection', className)} {...props} />;
 };

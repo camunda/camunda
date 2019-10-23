@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import {Redirect} from 'react-router-dom';
 
 import {Dropdown} from 'components';
 import {checkDeleteConflict, updateEntity, deleteEntity} from 'services';
