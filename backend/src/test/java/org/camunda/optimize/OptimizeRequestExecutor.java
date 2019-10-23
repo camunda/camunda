@@ -482,6 +482,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetReportsForCollectionRequest(String id) {
+    this.path = "collection/" + id + "/reports/";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetDashboardRequest(String id) {
     this.path = "dashboard/" + id;
     this.requestType = GET;

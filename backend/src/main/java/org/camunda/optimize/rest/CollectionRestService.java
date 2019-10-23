@@ -13,12 +13,14 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -47,6 +49,7 @@ public class CollectionRestService {
   private final AlertService alertService;
   private final CollectionService collectionService;
   private final SessionService sessionService;
+  private final ReportService reportService;
 
   /**
    * Creates a new collection.
@@ -215,12 +218,19 @@ public class CollectionRestService {
 
   @GET
   @Path("/{id}/alerts/")
-  @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
   public List<AlertDefinitionDto> getAlerts(@Context ContainerRequestContext requestContext,
                                             @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return alertService.getStoredAlertsForCollection(userId, collectionId);
   }
-}
 
+  @GET
+  @Path("/{id}/reports/")
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<AuthorizedReportDefinitionDto> getReports(@Context ContainerRequestContext requestContext,
+                                                        @PathParam("id") String collectionId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return reportService.findAndFilterReports(userId, collectionId);
+  }
+}
