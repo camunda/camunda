@@ -116,8 +116,30 @@ it('should show the initial value if provided on mount', () => {
   expect(node.find(Input)).toHaveValue('foo');
 });
 
+it('should show no results options if there are not results', () => {
+  const node = shallow(<Typeahead values={['a']} />);
+
+  node
+    .find(Input)
+    .props()
+    .onChange({target: {value: 'not found value'}});
+
+  expect(node.find('.searchResult')).toMatchSnapshot();
+});
+
+it('should show an info message if there are more result than the shown', async () => {
+  const node = shallow(
+    <Typeahead values={() => ({result: ['a'], total: 25})} listInfo="there are more" />
+  );
+
+  await node.update();
+  node.find(Input).prop('onFocus')();
+
+  expect(node.find('.searchResult')).toMatchSnapshot();
+});
+
 it('should call getValue to filter and render the data when available', async () => {
-  const spy = jest.fn().mockReturnValue(['item1', 'item2']);
+  const spy = jest.fn().mockReturnValue({result: ['item1', 'item2']});
   const node = shallow(<Typeahead values={spy} />);
 
   await node

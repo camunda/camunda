@@ -16,6 +16,7 @@ exports[`should match snapshot 1`] = `
       <FormGroup>
         <Typeahead
           formatter={[Function]}
+          listInfo="Displaying 25 results only. Search to refine."
           onSelect={[Function]}
           placeholder="Search for name, email or ID ..."
           values={[Function]}

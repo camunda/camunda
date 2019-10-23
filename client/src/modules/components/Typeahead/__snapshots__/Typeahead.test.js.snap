@@ -301,3 +301,29 @@ exports[`should only display entries that match the typeahead value, even if the
   </div>
 </div>
 `;
+
+exports[`should show an info message if there are more result than the shown 1`] = `
+Array [
+  <ForwardRef(DropdownOption)
+    className="searchResult"
+    key="a"
+    onClick={[Function]}
+    onMouseDown={[Function]}
+  >
+    a
+  </ForwardRef(DropdownOption)>,
+  <ForwardRef(DropdownOption)
+    className="searchResult message"
+  >
+    there are more
+  </ForwardRef(DropdownOption)>,
+]
+`;
+
+exports[`should show no results options if there are not results 1`] = `
+<ForwardRef(DropdownOption)
+  className="searchResult message"
+>
+  No results found
+</ForwardRef(DropdownOption)>
+`;

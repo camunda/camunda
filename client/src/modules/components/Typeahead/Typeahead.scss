@@ -72,6 +72,19 @@
           }
         }
       }
+
+      &.message {
+        color: grey;
+        padding-top: 10px;
+        padding-bottom: 10px;
+
+        &:hover,
+        &:focus {
+          color: grey;
+          background-color: #fff;
+          cursor: auto;
+        }
+      }
     }
   }
 

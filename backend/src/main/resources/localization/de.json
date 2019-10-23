@@ -440,7 +440,8 @@
         "defaultName": "Neue Sammlung"
       },
       "addUserModal": {
-        "searchPlaceholder": "Suche nach Name, E-Mail oder ID ..."
+        "searchPlaceholder": "Suche nach Name, E-Mail oder ID ...",
+        "searchForMore": "Es werden nur {count} Einträge angezeigt. Suche verfeinern."
       }
     },
     "sharing": {

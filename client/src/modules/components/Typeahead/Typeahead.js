@@ -19,9 +19,10 @@ export default class Typeahead extends React.Component {
     optionsVisible: false,
     selectedValueIdx: -1,
     lastCommittedValue: '',
-    values: this.props.values || [],
+    values: [],
     loading: false,
-    hasData: true
+    hasData: true,
+    total: 0
   };
 
   componentDidMount() {
@@ -35,13 +36,22 @@ export default class Typeahead extends React.Component {
     const {initialValue, values} = this.props;
 
     const query = initialValue ? this.format(initialValue).text : '';
-    const newValues = this.isAsync() ? await values(query) : values;
+
+    let newValues = values;
+    let total = values.length;
+
+    if (this.isAsync()) {
+      const valuesData = await values(query);
+      newValues = valuesData.result;
+      total = valuesData.total;
+    }
 
     this.setState({
       query,
       lastCommittedValue: query,
+      hasData: newValues.length > 0,
       values: newValues,
-      hasData: newValues.length
+      total: total
     });
   };
 
@@ -104,7 +114,7 @@ export default class Typeahead extends React.Component {
   };
 
   loadNewValues = debounce(async query => {
-    const values = await this.props.values(query);
+    const values = (await this.props.values(query)).result;
     this.setState({values, loading: false});
   }, 500);
 
@@ -181,6 +191,11 @@ export default class Typeahead extends React.Component {
         if (selectedItem) {
           selectedItem.scrollIntoView({block: 'nearest', inline: 'nearest'});
         }
+
+        // scroll to end on the last element to show the info message
+        if (selectedValueIdx === values.length - 1) {
+          this.optionsList.scrollTop = this.optionsList.scrollHeight;
+        }
       }
 
       this.setState({
@@ -246,13 +261,16 @@ export default class Typeahead extends React.Component {
   };
 
   resetToLastCommitted = () => {
-    this.setState({query: this.state.lastCommittedValue});
+    this.setState({query: this.state.lastCommittedValue, optionsVisible: false});
   };
 
   render() {
-    const {query, optionsVisible, loading, hasData} = this.state;
+    const {query, optionsVisible, loading, hasData, total} = this.state;
     const values = this.getFilteredValues();
     const noValuesMessage = this.props.noValuesMessage || t('common.notFound');
+
+    const messageOption = message =>
+      !loading && <Dropdown.Option className="searchResult message">{message}</Dropdown.Option>;
 
     return (
       <div ref={this.containerRef} className={classnames('Typeahead', this.props.className)}>
@@ -283,6 +301,12 @@ export default class Typeahead extends React.Component {
             onMouseUp={this.returnFocusToInput}
           >
             {loading ? <LoadingIndicator /> : values.map(this.renderOption)}
+            {this.props.listInfo &&
+              !query &&
+              total > values.length &&
+              messageOption(this.props.listInfo)}
+
+            {values.length <= 0 && messageOption(t('common.notFound'))}
           </div>
         )}
       </div>
