@@ -283,21 +283,25 @@ alerting:
     jobStore: 'org.quartz.simpl.RAMJobStore'
 
 email:
-  #A switch to control email sending process.
+  # A switch to control email sending process.
   enabled: false
-  # Username of your smtp server
-  username: ''
-  # Corresponding password to the given user of your smtp server
-  password: ''
   # Email address that can be used to send alerts
   address: ''
   # The smtp server name
   hostname: ''
   # The smtp server port. This one is also used as SSL port for the security connection.
   port: 587
-  # States how the connection to the server should be secured.
-  # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
-  securityProtocol: 'NONE'
+  # Define configuration properties for the authentication of the email server
+  authentication:
+    # A switch to control whether the email server requires authentication
+    enabled: true
+    # Username of your smtp server
+    username: ''
+    # Corresponding password to the given user of your smtp server
+    password: ''
+    # States how the connection to the server should be secured.
+    # Possible values are 'NONE', 'STARTTLS' or 'SSL/TLS'
+    securityProtocol: 'NONE'
 
 export:
   csv:

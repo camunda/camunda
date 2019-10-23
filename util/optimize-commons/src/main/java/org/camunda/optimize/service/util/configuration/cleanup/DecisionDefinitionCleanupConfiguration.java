@@ -7,24 +7,19 @@ package org.camunda.optimize.service.util.configuration.cleanup;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Period;
 
-@JsonIgnoreProperties(ignoreUnknown = false)
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties
+@Getter
 public class DecisionDefinitionCleanupConfiguration {
+
   @JsonProperty("ttl")
   private Period ttl;
-
-  protected DecisionDefinitionCleanupConfiguration() {
-  }
-
-  public DecisionDefinitionCleanupConfiguration(Period ttl) {
-    this.ttl = ttl;
-
-  }
-
-  public Period getTtl() {
-    return ttl;
-  }
 
 }

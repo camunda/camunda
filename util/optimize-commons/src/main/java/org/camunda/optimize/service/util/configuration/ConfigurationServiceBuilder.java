@@ -24,11 +24,6 @@ public class ConfigurationServiceBuilder {
     return new ConfigurationServiceBuilder();
   }
 
-  public ConfigurationServiceBuilder validateConfiguration(boolean validate) {
-    this.configurationValidator = validate? this.configurationValidator : null;
-    return this;
-  }
-
   public ConfigurationServiceBuilder loadConfigurationFrom(String... configLocations) {
     this.configLocations = configLocations;
     return this;

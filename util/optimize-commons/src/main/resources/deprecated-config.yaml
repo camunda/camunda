@@ -1,4 +1,3 @@
-alerting.email: '/technical-guide/setup/configuration/#email'
 es.clusterName: '/technical-guide/setup/configuration/#connection-settings'
 es.host: '/technical-guide/setup/configuration/#connection-settings'
 es.ports.tcp: '/technical-guide/setup/configuration/#connection-settings'
@@ -9,3 +8,7 @@ es.connection.clusterName: '/technical-guide/setup/configuration/#connection-set
 es.connection.samplerInterval: '/technical-guide/setup/configuration/#connection-settings'
 es.security.ssl.key: '/technical-guide/setup/configuration/#security-settings'
 es.security.ssl.verification_mode: '/technical-guide/setup/configuration/#security-settings'
+alerting.email: '/technical-guide/setup/configuration/#email'
+email.username: '/technical-guide/setup/configuration/#email'
+email.password: '/technical-guide/setup/configuration/#email'
+email.securityProtocol: '/technical-guide/setup/configuration/#email'

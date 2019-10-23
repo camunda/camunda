@@ -11,6 +11,8 @@ import org.apache.commons.mail.Email;
 import org.apache.commons.mail.EmailException;
 import org.apache.commons.mail.SimpleEmail;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
+import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
@@ -22,40 +24,44 @@ public class EmailNotificationService implements NotificationService {
 
   @Override
   public void notifyRecipient(String text, String destination) {
-    log.debug("sending email [{}] to [{}]", text, destination);
     if (configurationService.getEmailEnabled()) {
       try {
+        log.debug("sending email [{}] to [{}]", text, destination);
         sendEmail(destination, text);
       } catch (EmailException e) {
-        log.error("Was not able to send email from [{}] to [{}]!",
-            configurationService.getAlertEmailAddress(),
-            destination,
-            e);
+        log.error(
+          "Was not able to send email from [{}] to [{}]!",
+          configurationService.getAlertEmailAddress(),
+          destination,
+          e
+        );
       }
     } else {
       log.warn("The email service is not enabled and thus no email could be send. " +
-          "Please check the Optimize documentation on how to enable email notifications!");
+                 "Please check the Optimize documentation on how to enable email notifications!");
     }
   }
 
   private void sendEmail(String to, String body) throws EmailException {
-
     Email email = new SimpleEmail();
     email.setHostName(configurationService.getAlertEmailHostname());
     email.setSmtpPort(configurationService.getAlertEmailPort());
-    email.setAuthentication(
-      configurationService.getAlertEmailUsername(),
-      configurationService.getAlertEmailPassword()
-    );
-    email.setFrom(configurationService.getAlertEmailAddress());
-
-    String securityProtocol = configurationService.getAlertEmailProtocol();
-    if (securityProtocol.equals("STARTTLS")) {
-      email.setStartTLSEnabled(true);
-    } else if(securityProtocol.equals("SSL/TLS")) {
-      email.setSSLOnConnect(true);
-      email.setSslSmtpPort(configurationService.getAlertEmailPort().toString());
+    EmailAuthenticationConfiguration emailAuthenticationConfiguration =
+      configurationService.getEmailAuthenticationConfiguration();
+    if (emailAuthenticationConfiguration.getEnabled()) {
+      email.setAuthentication(
+        emailAuthenticationConfiguration.getUsername(),
+        emailAuthenticationConfiguration.getPassword()
+      );
+      EmailSecurityProtocol securityProtocol = emailAuthenticationConfiguration.getSecurityProtocol();
+      if (securityProtocol.equals(EmailSecurityProtocol.STARTTLS)) {
+        email.setStartTLSEnabled(true);
+      } else if (securityProtocol.equals(EmailSecurityProtocol.SSL_TLS)) {
+        email.setSSLOnConnect(true);
+        email.setSslSmtpPort(configurationService.getAlertEmailPort().toString());
+      }
     }
+    email.setFrom(configurationService.getAlertEmailAddress());
 
     email.setCharset("utf-8");
     email.setSubject("[Camunda-Optimize] - Report status");

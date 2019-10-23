@@ -23,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.alert.SyncListener;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
@@ -46,6 +47,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -418,13 +420,17 @@ public abstract class AbstractAlertIT {
 
   protected void setEmailConfiguration() {
     embeddedOptimizeExtensionRule.getConfigurationService().setEmailEnabled(true);
-    embeddedOptimizeExtensionRule.getConfigurationService().setAlertEmailUsername("demo");
-    embeddedOptimizeExtensionRule.getConfigurationService().setAlertEmailPassword("demo");
     embeddedOptimizeExtensionRule.getConfigurationService().setAlertEmailAddress("from@localhost.com");
     embeddedOptimizeExtensionRule.getConfigurationService().setAlertEmailHostname("127.0.0.1");
     embeddedOptimizeExtensionRule.getConfigurationService()
       .setAlertEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
-    embeddedOptimizeExtensionRule.getConfigurationService().setAlertEmailProtocol("NONE");
+    EmailAuthenticationConfiguration emailAuthenticationConfiguration =
+      embeddedOptimizeExtensionRule.getConfigurationService()
+      .getEmailAuthenticationConfiguration();
+    emailAuthenticationConfiguration.setEnabled(true);
+    emailAuthenticationConfiguration.setUsername("demo");
+    emailAuthenticationConfiguration.setPassword("demo");
+    emailAuthenticationConfiguration.setSecurityProtocol(NONE);
   }
 
   protected GreenMail initGreenMail() {

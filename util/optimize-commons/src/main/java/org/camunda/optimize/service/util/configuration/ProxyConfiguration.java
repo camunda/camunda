@@ -7,11 +7,19 @@ package org.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_PROXY;
 
-@JsonIgnoreProperties(ignoreUnknown = false)
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
+@Setter
+@JsonIgnoreProperties
 public class ProxyConfiguration {
   @JsonProperty("enabled")
   private boolean enabled;
@@ -21,16 +29,6 @@ public class ProxyConfiguration {
   private Integer port;
   @JsonProperty("sslEnabled")
   private boolean sslEnabled;
-
-  public ProxyConfiguration() {
-  }
-
-  public ProxyConfiguration(final boolean enabled, final String host, final Integer port, final boolean sslEnabled) {
-    this.enabled = enabled;
-    this.host = host;
-    this.port = port;
-    this.sslEnabled = sslEnabled;
-  }
 
   public void validate() {
     if (this.enabled) {
@@ -47,35 +45,5 @@ public class ProxyConfiguration {
     }
   }
 
-  public boolean isEnabled() {
-    return enabled;
-  }
-
-  public void setEnabled(final boolean enabled) {
-    this.enabled = enabled;
-  }
-
-  public String getHost() {
-    return host;
-  }
-
-  public void setHost(final String host) {
-    this.host = host;
-  }
-
-  public Integer getPort() {
-    return port;
-  }
-
-  public void setPort(final Integer port) {
-    this.port = port;
-  }
-
-  public boolean isSslEnabled() {
-    return sslEnabled;
-  }
-
-  public void setSslEnabled(final boolean sslEnabled) {
-    this.sslEnabled = sslEnabled;
-  }
 }
+

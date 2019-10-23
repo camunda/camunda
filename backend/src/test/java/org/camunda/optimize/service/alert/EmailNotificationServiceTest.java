@@ -11,15 +11,23 @@ import com.icegreen.greenmail.util.GreenMailUtil;
 import com.icegreen.greenmail.util.ServerSetup;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
+import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import javax.mail.internet.MimeMessage;
 import java.security.Security;
+import java.util.stream.Stream;
 
+import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
+import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.SSL_TLS;
+import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.STARTTLS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -38,6 +46,9 @@ public class EmailNotificationServiceTest {
       .loadConfigurationFrom("service-config.yaml")
       .build();
     configurationService.setEmailEnabled(true);
+    configurationService.setAlertEmailAddress("from@localhost.com");
+    configurationService.setAlertEmailHostname("127.0.0.1");
+    configurationService.setAlertEmailPort(4444);
     this.notificationService = new EmailNotificationService(configurationService);
   }
 
@@ -48,19 +59,18 @@ public class EmailNotificationServiceTest {
     }
   }
 
-  private void initGreenMail(int port, String protocol) {
-    greenMail = new GreenMail(new ServerSetup(port, null, protocol));
+  private void initGreenMail(String protocol) {
+    greenMail = new GreenMail(new ServerSetup(4444, null, protocol));
     greenMail.start();
     greenMail.setUser("from@localhost.com", "demo", "demo");
-    greenMail.setUser("to@localhost.com", "demo", "demo");
   }
 
-  @Test
-  public void sendEmailWithoutSecureConnection() {
-
+  @ParameterizedTest(name = "test send email with security protocol = {0}")
+  @MethodSource("getSecurityProtocolVariations")
+  public void sendEmailWithSecurityProtocolVariations(EmailSecurityProtocol emailSecurityProtocol) {
     // given
-    mockConfig("demo", "demo", "from@localhost.com", "127.0.0.1", 6666, "NONE");
-    initGreenMail(6666, ServerSetup.PROTOCOL_SMTP);
+    mockConfig(true, "demo", "demo", emailSecurityProtocol);
+    initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
     notificationService.notifyRecipient("some body text", "to@localhost.com");
@@ -75,8 +85,8 @@ public class EmailNotificationServiceTest {
   public void sendEmailWithSSLTLSProtocol() {
     // given
     Security.setProperty("ssl.SocketFactory.provider", DummySSLSocketFactory.class.getName());
-    mockConfig("demo", "demo", "from@localhost.com", "127.0.0.1", 5555, "SSL/TLS");
-    initGreenMail(5555, ServerSetup.PROTOCOL_SMTPS);
+    mockConfig(true, "demo", "demo", SSL_TLS);
+    initGreenMail(ServerSetup.PROTOCOL_SMTPS);
 
     // when
     notificationService.notifyRecipient("some body text", "to@localhost.com");
@@ -87,15 +97,48 @@ public class EmailNotificationServiceTest {
     assertThat(GreenMailUtil.getBody(emails[0]), is("some body text"));
   }
 
-  private void mockConfig(String username, String password, String address, String hostname, int port,
-                          String protocol) {
-    configurationService.setAlertEmailUsername(username);
-    configurationService.setAlertEmailPassword(password);
-    configurationService.setAlertEmailAddress(address);
-    configurationService.setAlertEmailHostname(hostname);
-    configurationService.setAlertEmailPort(port);
-    configurationService.setAlertEmailProtocol(protocol);
+  @Test
+  public void sendEmailWithoutAuthenticationEnabled() {
+    // given
+    mockConfig(false, null, null, NONE);
+    initGreenMail(ServerSetup.PROTOCOL_SMTP);
+
+    // when
+    notificationService.notifyRecipient("some body text", "to@localhost.com");
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails.length, is(1));
+    assertThat(GreenMailUtil.getBody(emails[0]), is("some body text"));
   }
 
+  @Test
+  public void notifyRecipientWithEmailDisabledDoesNotSendEmail() {
+    // given
+    configurationService.setEmailEnabled(false);
+    mockConfig(true, "demo", "demo", NONE);
+    initGreenMail(ServerSetup.PROTOCOL_SMTPS);
+
+    // when
+    notificationService.notifyRecipient("some body text", "to@localhost.com");
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails.length, is(0));
+  }
+
+  private static Stream<EmailSecurityProtocol> getSecurityProtocolVariations() {
+    return Stream.of(NONE, STARTTLS);
+  }
+
+  private void mockConfig(boolean authenticationEnabled, String username, String password,
+                          EmailSecurityProtocol securityProtocol) {
+    EmailAuthenticationConfiguration emailAuthenticationConfiguration =
+      configurationService.getEmailAuthenticationConfiguration();
+    emailAuthenticationConfiguration.setEnabled(authenticationEnabled);
+    emailAuthenticationConfiguration.setUsername(username);
+    emailAuthenticationConfiguration.setPassword(password);
+    emailAuthenticationConfiguration.setSecurityProtocol(securityProtocol);
+  }
 
 }

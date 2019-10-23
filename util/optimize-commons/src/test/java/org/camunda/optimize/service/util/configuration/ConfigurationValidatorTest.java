@@ -22,7 +22,6 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationValid
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class ConfigurationValidatorTest {
 
   @Rule

@@ -101,21 +101,21 @@ public class ConfigurationServiceTest {
   @Test(expected = OptimizeConfigurationException.class)
   public void unresolvedLogoPathThrowsErrorOnConfigCreation() {
     String[] locations = {defaultConfigFile(), "config-samples/ui_config/overwrite-ui-config-with-unknown-logo.yaml"};
-    ConfigurationService underTest = createConfiguration(locations);
+    createConfiguration(locations);
   }
 
   @Test(expected = OptimizeConfigurationException.class)
   public void wrongBackgroundColorThrowsErrorOnConfigCreation() {
     String[] locations = {defaultConfigFile(),
       "config-samples/ui_config/overwrite-ui-config-with-wrong-background-color-option.yaml"};
-    ConfigurationService underTest = createConfiguration(locations);
+    createConfiguration(locations);
   }
 
   @Test(expected = MappingException.class)
   public void wrongTextColorThrowsErrorOnConfigCreation() {
     String[] locations = {defaultConfigFile(),
       "config-samples/ui_config/overwrite-ui-config-with-wrong-text-color-option.yaml"};
-    ConfigurationService underTest = createConfiguration(locations);
+    createConfiguration(locations);
   }
 
   @Test

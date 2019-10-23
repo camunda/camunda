@@ -57,6 +57,7 @@ public class ConfigurationValidator {
   public void validate(ConfigurationService configurationService) {
     validateNoDeprecatedConfigKeysUsed(configurationService.getConfigJsonContext());
     validateUIConfiguration(configurationService);
+    configurationService.getEmailAuthenticationConfiguration().validate();
   }
 
   public static ConfigurationValidator createValidatorWithoutDeprecations() {

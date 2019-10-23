@@ -138,15 +138,12 @@ public class ConfigurationService {
   private Optional<Integer> containerHttpPort;
 
   private Integer maxStatusConnections;
-  private Boolean checkMetadata;
 
   private Boolean emailEnabled;
-  private String alertEmailUsername;
-  private String alertEmailPassword;
   private String alertEmailAddress;
   private String alertEmailHostname;
   private Integer alertEmailPort;
-  private String alertEmailProtocol;
+  private EmailAuthenticationConfiguration emailAuthenticationConfiguration;
 
   private Integer exportCsvLimit;
 
@@ -711,25 +708,21 @@ public class ConfigurationService {
     return quartzProperties;
   }
 
-  public String getAlertEmailUsername() {
-    if (alertEmailUsername == null) {
-      alertEmailUsername = configJsonContext.read(ConfigurationServiceConstants.EMAIL_USERNAME);
-    }
-    return alertEmailUsername;
-  }
-
-  public String getAlertEmailPassword() {
-    if (alertEmailPassword == null) {
-      alertEmailPassword = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PASSWORD);
-    }
-    return alertEmailPassword;
-  }
-
   public boolean getEmailEnabled() {
     if (emailEnabled == null) {
       emailEnabled = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED, Boolean.class);
     }
     return emailEnabled;
+  }
+
+  public EmailAuthenticationConfiguration getEmailAuthenticationConfiguration() {
+    if (emailAuthenticationConfiguration == null) {
+      emailAuthenticationConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.EMAIL_AUTHENTICATION,
+        EmailAuthenticationConfiguration.class
+      );
+    }
+    return emailAuthenticationConfiguration;
   }
 
   public Boolean getImportDmnDataEnabled() {
@@ -768,13 +761,6 @@ public class ConfigurationService {
       alertEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT, Integer.class);
     }
     return alertEmailPort;
-  }
-
-  public String getAlertEmailProtocol() {
-    if (alertEmailProtocol == null) {
-      alertEmailProtocol = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PROTOCOL);
-    }
-    return alertEmailProtocol;
   }
 
   public Integer getExportCsvLimit() {

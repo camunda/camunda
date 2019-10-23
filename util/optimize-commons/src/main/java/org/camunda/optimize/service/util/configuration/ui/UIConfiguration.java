@@ -7,7 +7,6 @@ package org.camunda.optimize.service.util.configuration.ui;
 
 import lombok.Data;
 
-
 @Data
 public class UIConfiguration {
 

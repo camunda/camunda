@@ -19,13 +19,12 @@ public interface ConfigurationServiceConstants {
 
   String QUARTZ_JOB_STORE_CLASS = "$.alerting.quartz.jobStore";
 
-  String EMAIL_USERNAME = "$.email.username";
-  String EMAIL_PASSWORD = "$.email.password";
   String EMAIL_ADDRESS = "$.email.address";
   String EMAIL_ENABLED = "$.email.enabled";
   String EMAIL_HOSTNAME = "$.email.hostname";
   String EMAIL_PORT = "$.email.port";
-  String EMAIL_PROTOCOL = "$.email.securityProtocol";
+
+  String EMAIL_AUTHENTICATION = "$.email.authentication";
 
   String ELASTICSEARCH_MAX_JOB_QUEUE_SIZE = "$.import.elasticsearchJobExecutorQueueSize";
   String ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT = "$.import.elasticsearchJobExecutorThreadCount";

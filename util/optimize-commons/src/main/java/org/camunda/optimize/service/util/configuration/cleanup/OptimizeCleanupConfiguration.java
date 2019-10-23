@@ -7,6 +7,9 @@ package org.camunda.optimize.service.util.configuration.cleanup;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.CronNormalizerUtil;
 
@@ -19,6 +22,7 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.HISTORY_CLEANUP;
 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @JsonIgnoreProperties(ignoreUnknown = false)
 public class OptimizeCleanupConfiguration {
   @JsonProperty("enabled")
@@ -33,9 +37,6 @@ public class OptimizeCleanupConfiguration {
   private Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration = new HashMap<>();
   @JsonProperty("perDecisionDefinitionConfig")
   private Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration = new HashMap<>();
-
-  protected OptimizeCleanupConfiguration() {
-  }
 
   public OptimizeCleanupConfiguration(boolean enabled,
                                       String cronTrigger,
