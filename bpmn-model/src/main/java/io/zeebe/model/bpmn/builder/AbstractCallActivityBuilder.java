@@ -46,4 +46,11 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
     calledElement.setProcessId(processId);
     return myself;
   }
+
+  public B zeebeProcessIdExpression(String processIdExpression) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setProcessIdExpression(processIdExpression);
+    return myself;
+  }
 }

@@ -22,4 +22,8 @@ public interface ZeebeCalledElement extends BpmnModelElementInstance {
   String getProcessId();
 
   void setProcessId(String processId);
+
+  String getProcessIdExpression();
+
+  void setProcessIdExpression(String processIdExpression);
 }
