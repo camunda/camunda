@@ -29,7 +29,7 @@ public class DeployWorkflowTest extends GatewayTest {
   public void shouldMapRequestAndResponse() {
     // given
     final DeployWorkflowStub stub = new DeployWorkflowStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final String bpmnName = "testProcess.bpmn";
     final String yamlName = "testProcess.yaml";
@@ -67,7 +67,7 @@ public class DeployWorkflowTest extends GatewayTest {
     assertThat(workflow.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
     assertThat(workflow.getVersion()).isEqualTo(stub.getWorkflowVersion());
 
-    final BrokerDeployWorkflowRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerDeployWorkflowRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.DEPLOYMENT);
   }
@@ -76,7 +76,7 @@ public class DeployWorkflowTest extends GatewayTest {
   public void shouldDetermineResourceTypeBasedOnFileExtension() {
     // given
     final DeployWorkflowStub stub = new DeployWorkflowStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final Builder builder = DeployWorkflowRequest.newBuilder();
     builder
@@ -94,7 +94,7 @@ public class DeployWorkflowTest extends GatewayTest {
     client.deployWorkflow(request);
 
     // then
-    final BrokerDeployWorkflowRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerDeployWorkflowRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     final DeploymentRecord record = brokerRequest.getRequestWriter();
 
     assertThat(record.resources())
@@ -108,7 +108,7 @@ public class DeployWorkflowTest extends GatewayTest {
   public void shouldAcceptProvidedResourceTypes() {
     // given
     final DeployWorkflowStub stub = new DeployWorkflowStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final Builder builder = DeployWorkflowRequest.newBuilder();
     builder
@@ -128,7 +128,7 @@ public class DeployWorkflowTest extends GatewayTest {
     client.deployWorkflow(request);
 
     // then
-    final BrokerDeployWorkflowRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerDeployWorkflowRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     final DeploymentRecord record = brokerRequest.getRequestWriter();
 
     assertThat(record.resources())

@@ -7,8 +7,8 @@
  */
 package io.zeebe.gateway.api.workflow;
 
-import io.zeebe.gateway.api.util.StubbedGateway;
-import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
+import io.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
@@ -23,7 +23,7 @@ public class CreateWorkflowInstanceStub
   public static final long WORKFLOW_KEY = 456;
 
   @Override
-  public void registerWith(StubbedGateway gateway) {
+  public void registerWith(StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerCreateWorkflowInstanceRequest.class, this);
   }
 

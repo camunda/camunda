@@ -89,8 +89,7 @@ public class Gateway {
 
     brokerClient = buildBrokerClient();
 
-    final LongPollingActivateJobsHandler longPollingHandler =
-        LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
+    final LongPollingActivateJobsHandler longPollingHandler = buildLongPollingHandler(brokerClient);
     actorScheduler.submitActor(longPollingHandler);
 
     final EndpointManager endpointManager = new EndpointManager(brokerClient, longPollingHandler);
@@ -152,6 +151,10 @@ public class Gateway {
 
   protected BrokerClient buildBrokerClient() {
     return brokerClientFactory.apply(gatewayCfg);
+  }
+
+  protected LongPollingActivateJobsHandler buildLongPollingHandler(BrokerClient brokerClient) {
+    return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
   }
 
   public void listenAndServe() throws InterruptedException, IOException {

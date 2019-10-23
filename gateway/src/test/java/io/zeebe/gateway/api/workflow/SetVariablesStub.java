@@ -7,8 +7,8 @@
  */
 package io.zeebe.gateway.api.workflow;
 
-import io.zeebe.gateway.api.util.StubbedGateway;
-import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
+import io.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerSetVariablesRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
@@ -17,7 +17,7 @@ public class SetVariablesStub
     implements RequestStub<BrokerSetVariablesRequest, BrokerResponse<VariableDocumentRecord>> {
 
   @Override
-  public void registerWith(StubbedGateway gateway) {
+  public void registerWith(StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerSetVariablesRequest.class, this);
   }
 

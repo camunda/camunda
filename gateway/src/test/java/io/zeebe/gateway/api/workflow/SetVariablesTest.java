@@ -28,7 +28,7 @@ public class SetVariablesTest extends GatewayTest {
   public void shouldMapRequestAndResponse() {
     // given
     final SetVariablesStub stub = new SetVariablesStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
 
@@ -46,7 +46,7 @@ public class SetVariablesTest extends GatewayTest {
     // then
     assertThat(response).isNotNull();
 
-    final BrokerSetVariablesRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerSetVariablesRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getKey()).isEqualTo(-1);
     assertThat(brokerRequest.getIntent()).isEqualTo(VariableDocumentIntent.UPDATE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.VARIABLE_DOCUMENT);

@@ -7,8 +7,8 @@
  */
 package io.zeebe.gateway.api.workflow;
 
-import io.zeebe.gateway.api.util.StubbedGateway;
-import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
+import io.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -18,7 +18,7 @@ public class CancelWorkflowInstanceStub
         BrokerCancelWorkflowInstanceRequest, BrokerResponse<WorkflowInstanceRecord>> {
 
   @Override
-  public void registerWith(StubbedGateway gateway) {
+  public void registerWith(StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerCancelWorkflowInstanceRequest.class, this);
   }
 

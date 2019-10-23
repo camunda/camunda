@@ -9,8 +9,8 @@ package io.zeebe.gateway.api.workflow;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.gateway.api.util.StubbedGateway;
-import io.zeebe.gateway.api.util.StubbedGateway.RequestStub;
+import io.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestStub;
 import io.zeebe.gateway.impl.broker.request.BrokerResolveIncidentRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -25,7 +25,7 @@ public class ResolveIncidentStub
   public static final DirectBuffer PROCESS_ID = wrapString("process");
 
   @Override
-  public void registerWith(StubbedGateway gateway) {
+  public void registerWith(StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerResolveIncidentRequest.class, this);
   }
 
