@@ -178,13 +178,6 @@ String integrationTestPodSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
   return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec()
 }
 
- String securityTestPodSpec() {
-  esConfigBasicAuthAndSsl = elasticSearchContainerSpec(true, true, 9200)
-  esConfigSsl = elasticSearchContainerSpec(true, false, 9201)
-  esConfigBasicAuth = elasticSearchContainerSpec(false, true, 9202)
-  return basePodSpec() + camBpmContainerSpec() + esConfigBasicAuthAndSsl + esConfigSsl + esConfigBasicAuth
-}
-
 pipeline {
   agent {
     kubernetes {
@@ -321,48 +314,6 @@ pipeline {
             retry(2) {
               unstash name: "optimize-stash-client"
               integrationTestSteps('latest')
-            }
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage('IT 7.9') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.9.12')
-            }
-          }
-          steps {
-            retry(2) {
-              unstash name: "optimize-stash-client"
-              integrationTestSteps('7.9')
-            }
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
-        stage('IT 7.10') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.10_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.10.6')
-            }
-          }
-          steps {
-            retry(2) {
-              unstash name: "optimize-stash-client"
-              integrationTestSteps('7.10')
             }
           }
           post {
