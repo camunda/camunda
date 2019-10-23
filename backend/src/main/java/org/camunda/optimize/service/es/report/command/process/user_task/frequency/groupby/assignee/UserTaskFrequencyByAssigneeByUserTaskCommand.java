@@ -122,8 +122,9 @@ public class UserTaskFrequencyByAssigneeByUserTaskCommand extends UserTaskDistri
     final List<HyperMapResultEntryDto> resultData = new ArrayList<>();
     for (Terms.Bucket assigneeBucket : byAssigneeAggregation.getBuckets()) {
 
-      final List<MapResultEntryDto> byAssigneeEntry = new ArrayList<>();
       final Terms byTaskIdAggregation = assigneeBucket.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
+
+      final List<MapResultEntryDto> byAssigneeEntry = new ArrayList<>();
       for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
         byAssigneeEntry.add(new MapResultEntryDto(taskBucket.getKeyAsString(), taskBucket.getDocCount()));
       }

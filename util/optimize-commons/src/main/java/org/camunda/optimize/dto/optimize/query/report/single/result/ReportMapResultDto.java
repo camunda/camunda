@@ -38,7 +38,7 @@ public class ReportMapResultDto implements LimitedResultDto, DecisionReportResul
 
   public void sortResultData(
     final SortingDto sorting,
-    final VariableType keyType) {
+    final boolean keyIsOfNumericType) {
 
     final String sortBy = sorting.getBy().orElse(SortingDto.SORT_BY_KEY);
     final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.DESC);
@@ -47,8 +47,8 @@ public class ReportMapResultDto implements LimitedResultDto, DecisionReportResul
     switch (sortBy) {
       default:
       case SortingDto.SORT_BY_KEY:
-        valueToSortByExtractor = VariableType.getNumericTypes().contains(keyType)
-          ? entry -> Double.valueOf(entry.getKey()) : entry -> entry.getKey().toLowerCase();
+        valueToSortByExtractor = keyIsOfNumericType?
+          entry -> Double.valueOf(entry.getKey()) : entry -> entry.getKey().toLowerCase();
         break;
       case SortingDto.SORT_BY_VALUE:
         valueToSortByExtractor = MapResultEntryDto::getValue;

@@ -27,7 +27,7 @@ public class RawDataProcessReportResultDto implements ProcessReportResultDto, Li
   }
 
   @Override
-  public void sortResultData(final SortingDto sorting, final VariableType keyType) {
+  public void sortResultData(final SortingDto sorting, final boolean keyIsOfNumericType) {
     // to be implemented later
   }
 }

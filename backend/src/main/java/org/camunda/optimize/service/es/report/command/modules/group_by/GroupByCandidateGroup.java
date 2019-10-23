@@ -9,9 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.CandidateGroupGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -30,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
+import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
@@ -41,7 +41,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class GroupByCandidateGroup extends GroupByPart<ReportMapResultDto> {
+public class GroupByCandidateGroup extends GroupByPart {
 
   private static final String USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION = "candidateGroups";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
@@ -68,33 +68,31 @@ public class GroupByCandidateGroup extends GroupByPart<ReportMapResultDto> {
               .terms(USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION)
               .size(configurationService.getEsAggregationBucketLimit())
               .field(USER_TASKS + "." + USER_TASK_CANDIDATE_GROUPS)
-              .subAggregation(viewPart.createAggregation(definitionData))
+              .subAggregation(distributedByPart.createAggregation(definitionData))
           )
       );
     return Collections.singletonList(groupByAssigneeAggregation);
   }
 
   @Override
-  protected ReportMapResultDto retrieveResult(final SearchResponse response, final ProcessReportDataDto reportData) {
-    final ReportMapResultDto resultDto = new ReportMapResultDto();
-
+  public CompositeCommandResult retrieveQueryResult(final SearchResponse response, final ProcessReportDataDto reportData) {
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations()
       .get(USER_TASK_CANDIDATE_GROUP_TERMS_AGGREGATION);
 
-    final List<MapResultEntryDto> resultData = new ArrayList<>();
+    final List<GroupByResult> groupedData = new ArrayList<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
-      final Long singleResult = viewPart.retrieveResult(b.getAggregations(), reportData);
-      resultData.add(new MapResultEntryDto(b.getKeyAsString(), singleResult));
+      final List<DistributedByResult> singleResult = distributedByPart.retrieveResult(b.getAggregations(), reportData);
+      groupedData.add(GroupByResult.createGroupByResult(b.getKeyAsString(), singleResult));
     }
 
-    resultDto.setData(resultData);
-    resultDto.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
-    resultDto.setInstanceCount(response.getHits().getTotalHits());
+    CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
+    compositeCommandResult.setGroups(groupedData);
+    compositeCommandResult.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
 
-    return resultDto;
+    return compositeCommandResult;
   }
 
   @Override
@@ -102,10 +100,4 @@ public class GroupByCandidateGroup extends GroupByPart<ReportMapResultDto> {
     reportData.setGroupBy(new CandidateGroupGroupByDto());
   }
 
-  @Override
-  public void sortResultData(final ProcessReportDataDto reportData, final ReportMapResultDto resultDto) {
-    reportData.getConfiguration().getSorting().ifPresent(
-      sorting -> MapResultSortingUtility.sortResultData(sorting, resultDto)
-    );
-  }
 }

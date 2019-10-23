@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -31,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_KEY;
@@ -38,6 +40,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -183,6 +186,24 @@ public class ProcessDefinitionReader {
       objectMapper,
       esClient,
       configurationService.getElasticsearchScrollTimeout()
+    );
+  }
+
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionIfAvailable(
+    final ProcessReportDataDto reportData) {
+
+    String mostRecentValidVersion = convertToValidDefinitionVersion(
+      reportData.getDefinitionKey(),
+      reportData.getDefinitionVersions(),
+      this::getLatestVersionToKey
+    );
+    return this.getFullyImportedProcessDefinition(
+      reportData.getProcessDefinitionKey(),
+      mostRecentValidVersion,
+      reportData.getTenantIds().stream()
+        // to get a null value if the first element is either absent or null
+        .map(Optional::ofNullable).findFirst().flatMap(Function.identity())
+        .orElse(null)
     );
   }
 

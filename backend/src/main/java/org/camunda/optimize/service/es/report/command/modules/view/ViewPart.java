@@ -6,9 +6,12 @@
 package org.camunda.optimize.service.es.report.command.modules.view;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
+
+import java.util.function.Supplier;
 
 public abstract class ViewPart {
 
@@ -18,7 +21,7 @@ public abstract class ViewPart {
 
   public abstract AggregationBuilder createAggregation(ProcessReportDataDto definitionData);
 
-  public abstract Long retrieveResult(Aggregations aggs, ProcessReportDataDto reportData);
+  public abstract ViewResult retrieveResult(Aggregations aggs, ProcessReportDataDto reportData);
 
   public abstract void addViewAdjustmentsForCommandKeyGeneration(ProcessReportDataDto dataForCommandKey);
 }

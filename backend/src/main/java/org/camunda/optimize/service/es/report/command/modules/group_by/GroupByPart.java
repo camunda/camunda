@@ -6,60 +6,46 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by;
 
 import lombok.Setter;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.util.List;
+import java.util.Optional;
 
 
-public abstract class GroupByPart<R extends SingleReportResultDto> {
+public abstract class GroupByPart {
 
   @Setter
-  protected ViewPart viewPart;
+  protected DistributedByPart distributedByPart;
 
   public void adjustBaseQuery(final BoolQueryBuilder baseQuery, final ProcessReportDataDto definitionData) {
-    viewPart.adjustBaseQuery(baseQuery, definitionData);
+    distributedByPart.adjustBaseQuery(baseQuery, definitionData);
   }
 
   public abstract List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                              final ProcessReportDataDto definitionData);
 
-  public R retrieveQueryResult(final SearchResponse response,
-                               final ProcessReportDataDto reportData) {
-    final R result = retrieveResult(response, reportData);
-    final R filteredResultData = filterResultData(reportData, result);
-    final R enrichedResultData = enrichResultData(reportData, filteredResultData);
-    sortResultData(reportData, enrichedResultData);
-    return enrichedResultData;
-  }
-
-  protected abstract R retrieveResult(SearchResponse response, ProcessReportDataDto reportData);
-
-  protected R filterResultData(final ProcessReportDataDto reportData, final R resultDto) {
-    return resultDto;
-  }
-
-  protected R enrichResultData(final ProcessReportDataDto reportData, final R resultDto) {
-    return resultDto;
-  }
-
-  protected void sortResultData(final ProcessReportDataDto reportData, final R resultDto) {
-    reportData.getConfiguration().getSorting().ifPresent(
-      sorting -> resultDto.sortResultData(sorting, VariableType.STRING)
-    );
-  }
+  public abstract CompositeCommandResult retrieveQueryResult(SearchResponse response, ProcessReportDataDto reportData);
 
   public String generateCommandKey() {
     final ProcessReportDataDto dataForCommandKey = new ProcessReportDataDto();
     addGroupByAdjustmentsForCommandKeyGeneration(dataForCommandKey);
-    viewPart.addViewAdjustmentsForCommandKeyGeneration(dataForCommandKey);
+    distributedByPart.addDistributedByAdjustmentsForCommandKeyGeneration(dataForCommandKey);
     return dataForCommandKey.createCommandKey();
+  }
+
+  public boolean getSortByKeyIsOfNumericType(final ProcessReportDataDto definitionData) {
+    return false;
+  }
+
+  public Optional<SortingDto> getSorting(final ProcessReportDataDto definitionData) {
+    return definitionData.getConfiguration().getSorting();
   }
 
   protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey);

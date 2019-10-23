@@ -33,10 +33,10 @@ public class ReportHyperMapResultDto implements ProcessReportResultDto, LimitedR
   }
 
   @Override
-  public void sortResultData(final SortingDto sortingDto, final VariableType keyType) {
+  public void sortResultData(final SortingDto sortingDto, final boolean keyIsOfNumericType) {
     Optional.of(sortingDto).ifPresent(
       sorting -> data
-        .forEach(groupByEntry -> groupByEntry.sortResultData(sorting, keyType))
+        .forEach(groupByEntry -> groupByEntry.sortResultData(sorting, keyIsOfNumericType))
     );
   }
 }

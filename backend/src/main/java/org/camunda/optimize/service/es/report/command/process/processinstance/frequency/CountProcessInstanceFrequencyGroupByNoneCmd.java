@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.ReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByNone;
 import org.camunda.optimize.service.es.report.command.modules.view.frequency.CountProcessInstanceFrequencyView;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
@@ -27,8 +28,10 @@ public class CountProcessInstanceFrequencyGroupByNoneCmd
   @Autowired
   public CountProcessInstanceFrequencyGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
+      .view(CountProcessInstanceFrequencyView.class)
       .groupBy(GroupByNone.class)
-      .addViewPart(CountProcessInstanceFrequencyView.class)
+      .distributedBy(DistributedByNone.class)
+      .resultAsNumber()
       .build();
   }
 

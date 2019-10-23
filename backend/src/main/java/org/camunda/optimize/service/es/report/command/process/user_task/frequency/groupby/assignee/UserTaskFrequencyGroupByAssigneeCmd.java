@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.ReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByAssignee;
 import org.camunda.optimize.service.es.report.command.modules.view.frequency.CountUserTaskFrequencyView;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
@@ -27,8 +28,10 @@ public class UserTaskFrequencyGroupByAssigneeCmd
   @Autowired
   public UserTaskFrequencyGroupByAssigneeCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
+      .view(CountUserTaskFrequencyView.class)
       .groupBy(GroupByAssignee.class)
-      .addViewPart(CountUserTaskFrequencyView.class)
+      .distributedBy(DistributedByNone.class)
+      .resultAsMap()
       .build();
   }
 

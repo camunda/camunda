@@ -11,12 +11,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
-import org.camunda.optimize.service.es.report.command.util.MapResultSortingUtility;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -39,6 +38,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
+import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
@@ -58,7 +58,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseN
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
+public class GroupByVariable extends GroupByPart {
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
@@ -106,7 +106,7 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
       MISSING_VARIABLES_AGGREGATION,
       getVariableUndefinedOrNullQuery(variableGroupByDto.getName(), variableGroupByDto.getType())
     )
-      .subAggregation(viewPart.createAggregation(reportData));
+      .subAggregation(distributedByPart.createAggregation(reportData));
   }
 
   private AggregationBuilder createVariableSubAggregation(final ProcessReportDataDto definitionData,
@@ -133,7 +133,7 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
 
     // the same process instance could have several same variable names -> do not count each but only the proc inst once
     AggregationBuilder operationsAggregation = reverseNested(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION)
-      .subAggregation(viewPart.createAggregation(definitionData));
+      .subAggregation(distributedByPart.createAggregation(definitionData));
 
 
     aggregationBuilder.subAggregation(operationsAggregation);
@@ -141,7 +141,7 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
   }
 
   @Override
-  public ReportMapResultDto retrieveResult(SearchResponse response, final ProcessReportDataDto reportData) {
+  public CompositeCommandResult retrieveQueryResult(SearchResponse response, final ProcessReportDataDto reportData) {
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
@@ -149,12 +149,12 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
       variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
     }
 
-    final List<MapResultEntryDto> resultData = new ArrayList<>();
+    final List<GroupByResult> groupedData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
-      resultData.add(
-        new MapResultEntryDto(b.getKeyAsString(), viewPart.retrieveResult(reverseNested.getAggregations(), reportData))
-      );
+      final List<DistributedByResult> distribution =
+        distributedByPart.retrieveResult(reverseNested.getAggregations(), reportData);
+      groupedData.add(GroupByResult.createGroupByResult(b.getKeyAsString(), distribution));
     }
 
     final ReverseNested filteredProcessInstAggr = filteredVariables.getAggregations()
@@ -164,39 +164,29 @@ public class GroupByVariable extends GroupByPart<ReportMapResultDto> {
     if (response.getHits().getTotalHits() > filteredProcInstCount) {
 
       final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
-      final Long missingVarsOperationResult = viewPart.retrieveResult(aggregation.getAggregations(), reportData);
-
-      resultData.add(
-        new MapResultEntryDto (
-          MISSING_VARIABLE_KEY,
-          missingVarsOperationResult
-        ));
+      final List<DistributedByResult> missingVarsOperationResult =
+        distributedByPart.retrieveResult(aggregation.getAggregations(), reportData);
+      groupedData.add(GroupByResult.createGroupByResult(MISSING_VARIABLE_KEY, missingVarsOperationResult));
     }
 
-    final ReportMapResultDto resultDto = new ReportMapResultDto();
-    resultDto.setData(resultData);
-    resultDto.setIsComplete(isResultComplete(variableTerms));
-    resultDto.setInstanceCount(response.getHits().getTotalHits());
+    CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
+    compositeCommandResult.setGroups(groupedData);
+    compositeCommandResult.setIsComplete(isResultComplete(variableTerms));
 
-    return resultDto;
+    return compositeCommandResult;
   }
 
   @Override
-  public void sortResultData(final ProcessReportDataDto reportData, final ReportMapResultDto resultDto) {
-    final Optional<SortingDto> sortingOpt = reportData.getConfiguration().getSorting();
-    if (sortingOpt.isPresent()) {
-      MapResultSortingUtility.sortResultData(
-        sortingOpt.get(),
-        resultDto,
-        ((VariableGroupByValueDto) (reportData.getGroupBy().getValue())).getType()
-      );
+  public boolean getSortByKeyIsOfNumericType(final ProcessReportDataDto definitionData) {
+    return VariableType.getNumericTypes().contains(getVariableGroupByDto(definitionData).getType());
+  }
 
-    } else if (VariableType.DATE.equals(getVariableGroupByDto(reportData).getType())) {
-      MapResultSortingUtility.sortResultData(
-        new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC),
-        resultDto,
-        ((VariableGroupByValueDto) (reportData.getGroupBy().getValue())).getType()
-      );
+  @Override
+  public Optional<SortingDto> getSorting(final ProcessReportDataDto definitionData) {
+    if(VariableType.DATE.equals(getVariableGroupByDto(definitionData).getType())) {
+      return Optional.of(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
+    } else {
+      return super.getSorting(definitionData);
     }
   }
 

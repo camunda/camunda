@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.view.duration;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -32,8 +33,12 @@ public class DurationOnProcessPartView extends DurationView {
   }
 
   @Override
-  public Long retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
-    return processProcessPartAggregationOperations(aggs, getAggregationStrategy(reportData).getAggregationType());
+  public ViewResult retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
+    final Long durationInMs = processProcessPartAggregationOperations(
+      aggs,
+      getAggregationStrategy(reportData).getAggregationType()
+    );
+    return new ViewResult(durationInMs);
   }
 
   @Override

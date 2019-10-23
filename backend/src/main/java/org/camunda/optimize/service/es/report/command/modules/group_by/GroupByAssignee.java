@@ -9,8 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -40,7 +41,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class GroupByAssignee extends GroupByPart<ReportMapResultDto> {
+public class GroupByAssignee extends GroupByPart {
 
   private static final String USER_TASK_ASSIGNEE_TERMS_AGGREGATION = "assignees";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
@@ -67,32 +68,32 @@ public class GroupByAssignee extends GroupByPart<ReportMapResultDto> {
               .terms(USER_TASK_ASSIGNEE_TERMS_AGGREGATION)
               .size(configurationService.getEsAggregationBucketLimit())
               .field(USER_TASKS + "." + USER_TASK_ASSIGNEE)
-              .subAggregation(viewPart.createAggregation(definitionData))
+              .subAggregation(distributedByPart.createAggregation(definitionData))
           )
       );
     return Collections.singletonList(groupByAssigneeAggregation);
   }
 
   @Override
-  protected ReportMapResultDto retrieveResult(final SearchResponse response, final ProcessReportDataDto reportData) {
-    final ReportMapResultDto resultDto = new ReportMapResultDto();
+  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
+                                                    final ProcessReportDataDto reportData) {
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ASSIGNEE_TERMS_AGGREGATION);
 
-    final List<MapResultEntryDto> resultData = new ArrayList<>();
+    final List<GroupByResult> groupedData = new ArrayList<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
-      final Long singleResult = viewPart.retrieveResult(b.getAggregations(), reportData);
-      resultData.add(new MapResultEntryDto(b.getKeyAsString(), singleResult));
+      final List<DistributedByResult> singleResult = distributedByPart.retrieveResult(b.getAggregations(), reportData);
+      groupedData.add(GroupByResult.createGroupByResult(b.getKeyAsString(), singleResult));
     }
 
-    resultDto.setData(resultData);
-    resultDto.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
-    resultDto.setInstanceCount(response.getHits().getTotalHits());
+    CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
+    compositeCommandResult.setGroups(groupedData);
+    compositeCommandResult.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
 
-    return resultDto;
+    return compositeCommandResult;
   }
 
   @Override

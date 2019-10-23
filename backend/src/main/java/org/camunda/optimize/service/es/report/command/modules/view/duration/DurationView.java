@@ -15,6 +15,7 @@ import org.camunda.optimize.service.es.report.command.aggregations.AvgAggregatio
 import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -63,8 +64,8 @@ public class DurationView extends ViewPart {
   }
 
   @Override
-  public Long retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
-    return getAggregationStrategy(reportData).getValue(aggs);
+  public ViewResult retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
+    return new ViewResult(getAggregationStrategy(reportData).getValue(aggs));
   }
 
   @Override

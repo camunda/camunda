@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.view.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -23,8 +24,8 @@ public abstract class FrequencyCountView extends ViewPart {
   }
 
   @Override
-  public Long retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
+  public ViewResult retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
     final Filter count = aggs.get(COUNT_AGGREGATION);
-    return count.getDocCount();
+    return new ViewResult(count.getDocCount());
   }
 }

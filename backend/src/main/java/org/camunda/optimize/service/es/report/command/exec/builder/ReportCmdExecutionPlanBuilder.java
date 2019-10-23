@@ -7,14 +7,21 @@ package org.camunda.optimize.service.es.report.command.exec.builder;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ReportCmdExecutionPlan;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
+import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+
+import java.util.function.Function;
 
 @RequiredArgsConstructor
 @Component
@@ -25,46 +32,104 @@ public class ReportCmdExecutionPlanBuilder {
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
 
-  public AddResultTypeBuilder createExecutionPlan() {
-    return new AddResultTypeBuilder();
+  public AddViewPartBuilder createExecutionPlan() {
+    return new AddViewPartBuilder();
   }
 
-  public class AddResultTypeBuilder {
-    public <R extends SingleReportResultDto> AddModulesBuilder<R> groupBy(Class<? extends GroupByPart<R>> groupByPart) {
-      return new AddModulesBuilder<>(groupByPart);
+  public class AddViewPartBuilder {
+
+    public AddGroupByBuilder view(Class<? extends ViewPart> viewPartClass) {
+      return new AddGroupByBuilder(viewPartClass);
     }
   }
 
-  public class AddModulesBuilder<R extends SingleReportResultDto> {
+  public class AddGroupByBuilder {
 
-    private Class<? extends GroupByPart<R>> groupByPartClass;
+    private Class<? extends ViewPart> viewPartClass;
 
-    private AddModulesBuilder(final Class<? extends GroupByPart<R>> groupByPartClass) {
+    private AddGroupByBuilder(final Class<? extends ViewPart> viewPartClass) {
+      this.viewPartClass = viewPartClass;
+    }
+
+    public AddDistributedByBuilder groupBy(Class<? extends GroupByPart> groupByPartClass) {
+      return new AddDistributedByBuilder(viewPartClass, groupByPartClass);
+    }
+  }
+
+  public class AddDistributedByBuilder {
+
+    private Class<? extends ViewPart> viewPartClass;
+    private Class<? extends GroupByPart> groupByPartClass;
+
+    public AddDistributedByBuilder(final Class<? extends ViewPart> viewPartClass,
+                                   final Class<? extends GroupByPart> groupByPartClass) {
+      this.viewPartClass = viewPartClass;
       this.groupByPartClass = groupByPartClass;
     }
 
-    public ExecuteBuildBuilder<R> addViewPart(Class<? extends ViewPart> viewPartClass) {
-      return new ExecuteBuildBuilder<>(groupByPartClass, viewPartClass);
+    public ReportResultTypeBuilder distributedBy(Class<? extends DistributedByPart> distributedByPartClass) {
+      return new ReportResultTypeBuilder(viewPartClass, groupByPartClass, distributedByPartClass);
+    }
+  }
+
+  public class ReportResultTypeBuilder {
+
+    private Class<? extends ViewPart> viewPartClass;
+    private Class<? extends GroupByPart> groupByPartClass;
+    private Class<? extends DistributedByPart> distributedByPartClass;
+
+    public ReportResultTypeBuilder(final Class<? extends ViewPart> viewPartClass,
+                                   final Class<? extends GroupByPart> groupByPartClass, final Class<?
+      extends DistributedByPart> distributedByPartClass) {
+      this.viewPartClass = viewPartClass;
+      this.groupByPartClass = groupByPartClass;
+      this.distributedByPartClass = distributedByPartClass;
+    }
+
+    public ExecuteBuildBuilder<NumberResultDto> resultAsNumber() {
+      return new ExecuteBuildBuilder<>(
+        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToNumber
+      );
+    }
+
+    public ExecuteBuildBuilder<ReportMapResultDto> resultAsMap() {
+      return new ExecuteBuildBuilder<>(
+        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToMap
+      );
+    }
+
+    public ExecuteBuildBuilder<ReportHyperMapResultDto> resultAsHyperMap() {
+      return new ExecuteBuildBuilder<>(
+        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToHyperMap
+      );
     }
   }
 
   public class ExecuteBuildBuilder<R extends SingleReportResultDto> {
 
-    private Class<? extends GroupByPart<R>> groupByPartClass;
     private Class<? extends ViewPart> viewPartClass;
+    private Class<? extends GroupByPart> groupByPartClass;
+    private Class<? extends DistributedByPart> distributedByPartClass;
+    private Function<CompositeCommandResult, R> mapToReportResult;
 
-    private ExecuteBuildBuilder(final Class<? extends GroupByPart<R>> groupByPartClass,
-                        final Class<? extends ViewPart> viewPartClass) {
-      this.groupByPartClass = groupByPartClass;
+    public ExecuteBuildBuilder(final Class<? extends ViewPart> viewPartClass,
+                               final Class<? extends GroupByPart> groupByPartClass, final Class<?
+      extends DistributedByPart> distributedByPartClass, final Function<CompositeCommandResult, R> mapToReportResult) {
       this.viewPartClass = viewPartClass;
+      this.groupByPartClass = groupByPartClass;
+      this.distributedByPartClass = distributedByPartClass;
+      this.mapToReportResult = mapToReportResult;
     }
 
     public ReportCmdExecutionPlan<R> build() {
-      final GroupByPart<R> groupByPart = context.getBean(this.groupByPartClass);
       final ViewPart viewPart = context.getBean(this.viewPartClass);
+      final GroupByPart groupByPart = context.getBean(this.groupByPartClass);
+      final DistributedByPart distributedByPart = context.getBean(this.distributedByPartClass);
       return new ReportCmdExecutionPlan<>(
-        groupByPart,
         viewPart,
+        groupByPart,
+        distributedByPart,
+        mapToReportResult,
         esClient,
         processDefinitionReader,
         processQueryFilterEnhancer

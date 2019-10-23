@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.ReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByVariable;
 import org.camunda.optimize.service.es.report.command.modules.view.duration.DurationOnProcessPartView;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
@@ -28,8 +29,10 @@ public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd implements C
   @Autowired
   public ProcessInstanceDurationOnProcessPartGroupByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
+      .view(DurationOnProcessPartView.class)
       .groupBy(GroupByVariable.class)
-      .addViewPart(DurationOnProcessPartView.class)
+      .distributedBy(DistributedByNone.class)
+      .resultAsMap()
       .build();
   }
 

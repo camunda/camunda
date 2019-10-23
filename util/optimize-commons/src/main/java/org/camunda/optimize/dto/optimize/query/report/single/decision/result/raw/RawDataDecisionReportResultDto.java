@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.List;
 
@@ -27,7 +26,7 @@ public class RawDataDecisionReportResultDto implements DecisionReportResultDto,L
   }
 
   @Override
-  public void sortResultData(final SortingDto sorting, final VariableType keyType) {
+  public void sortResultData(final SortingDto sorting, final boolean keyIsOfNumericType) {
     // to be implemented later
   }
 }
