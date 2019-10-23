@@ -44,7 +44,7 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.13</version.commons-codec>
-    <version.elasticsearch>6.8.3</version.elasticsearch>
+    <version.elasticsearch>6.8.4</version.elasticsearch>
     <version.error-prone>2.3.3</version.error-prone>
     <version.grpc>1.24.0</version.grpc>
     <version.gson>2.8.6</version.gson>
