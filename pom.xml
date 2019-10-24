@@ -44,7 +44,7 @@
     <hamcrest.version>1.3</hamcrest.version>
     <junit.jupiter.version>5.5.2</junit.jupiter.version>
     <junit.platform.version>1.5.2</junit.platform.version>
-    <quartz.version>2.3.1</quartz.version>
+    <quartz.version>2.3.2</quartz.version>
 
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.28</slf4j.version>
