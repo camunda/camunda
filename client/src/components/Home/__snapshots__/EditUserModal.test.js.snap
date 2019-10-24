@@ -8,7 +8,7 @@ exports[`should match snapshot 1`] = `
   open={true}
 >
   <Component>
-    Edit user
+    Edit User
   </Component>
   <Component>
     <Form>

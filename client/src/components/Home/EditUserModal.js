@@ -23,12 +23,15 @@ export default class EditUserModal extends Component {
   };
 
   render() {
-    const {identity, onClose} = this.props;
+    const {
+      identity: {name, id},
+      onClose
+    } = this.props;
     const {role} = this.state;
 
     return (
       <Modal className="EditUserModal" open onClose={onClose} onConfirm={this.onConfirm}>
-        <Modal.Header>{t('common.editName', {name: identity.id})}</Modal.Header>
+        <Modal.Header>{t('common.editName', {name: name || id})}</Modal.Header>
         <Modal.Content>
           <Form>
             {t('home.roles.userRole')}

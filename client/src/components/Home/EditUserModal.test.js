@@ -14,7 +14,8 @@ const props = {
   onClose: jest.fn(),
   onConfirm: jest.fn(),
   identity: {
-    id: 'user'
+    id: 'user',
+    name: 'User'
   }
 };
 
