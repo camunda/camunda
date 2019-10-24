@@ -501,7 +501,8 @@
         "completed": "Nur abgeschlossene Prozessinstanzen",
         "canceled": "Nur abgebrochene Prozessinstanzen",
         "nonCanceled": "Nur nicht abgebrochene Prozessinstanzen",
-        "executedFlowNode": "Ausgeführter Prozessknoten"
+        "executedFlowNode": "Ausgeführter Prozessknoten",
+        "executingFlowNode": "Prozessknoten in Ausführung"
       },
       "instanceCount": {
         "label": "{count} Instanz im aktuellen Filter",
@@ -565,6 +566,7 @@
       "nodeModal": {
         "executed": "wurde ausgeführt",
         "notExecuted": "wurde nicht ausgeführt",
+        "executing": "wartend oder in Ausführung",
         "previewLabel": "Das ist der Filter, der gerade erstellt wird: "
       },
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."

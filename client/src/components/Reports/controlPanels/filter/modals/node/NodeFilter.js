@@ -34,14 +34,9 @@ export default class NodeFilter extends React.Component {
 
   createFilter = () => {
     const values = this.state.selectedNodes.map(node => node.id);
-
-    this.props.addFilter({
-      type: 'executedFlowNodes',
-      data: {
-        operator: this.state.operator,
-        values
-      }
-    });
+    const {operator} = this.state;
+    const type = operator ? 'executedFlowNodes' : 'executingFlowNodes';
+    this.props.addFilter({type, data: {operator, values}});
   };
 
   isNodeSelected = () => {
@@ -53,19 +48,20 @@ export default class NodeFilter extends React.Component {
   };
 
   createPreviewList = () => {
+    const {operator, selectedNodes} = this.state;
     const previewList = [];
 
-    this.state.selectedNodes.forEach((selectedNode, idx) => {
+    selectedNodes.forEach((selectedNode, idx) => {
       previewList.push(
         <li key={idx} className="previewItem">
           <span key={idx}>
             {' '}
             <span className="previewItemValue">{selectedNode.name || selectedNode.id}</span>{' '}
-            {idx < this.state.selectedNodes.length - 1 &&
+            {idx < selectedNodes.length - 1 &&
               this.createOperator(
-                this.state.operator === 'in'
-                  ? t('common.filter.list.operators.or')
-                  : t('common.filter.list.operators.nor')
+                operator === 'not in'
+                  ? t('common.filter.list.operators.nor')
+                  : t('common.filter.list.operators.or')
               )}
           </span>
         </li>
@@ -74,13 +70,17 @@ export default class NodeFilter extends React.Component {
     return (
       <div className="preview">
         <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
-        <span className="parameterName">{t('common.filter.list.executedFlowNode')}</span>
+        <span className="parameterName">
+          {!operator
+            ? t('common.filter.list.executingFlowNode')
+            : t('common.filter.list.executedFlowNode')}
+        </span>
         {this.createOperator(
-          this.state.operator === 'in'
-            ? t('common.filter.list.operators.is')
-            : this.state.selectedNodes.length > 1
-            ? t('common.filter.list.operators.neither')
-            : t('common.filter.list.operators.not')
+          operator === 'not in'
+            ? selectedNodes.length > 1
+              ? t('common.filter.list.operators.neither')
+              : t('common.filter.list.operators.not')
+            : t('common.filter.list.operators.is')
         )}
         <ul className="previewList">{previewList}</ul>
       </div>
@@ -110,6 +110,9 @@ export default class NodeFilter extends React.Component {
         <Modal.Content className="modalContent">
           {this.createPreviewList()}
           <ButtonGroup>
+            <Button active={!this.state.operator} onClick={() => this.setState({operator: null})}>
+              {t('common.filter.nodeModal.executing')}
+            </Button>
             <Button
               active={this.state.operator === 'in'}
               onClick={() => this.setState({operator: 'in'})}

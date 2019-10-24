@@ -54,7 +54,7 @@ it('should remove a selected node from the selectedNodes on toggle', () => {
   expect(node.state().selectedNodes).not.toContain(flowNode);
 });
 
-it('should create a new filter', () => {
+it('should create an executed node filter when operator is specified', () => {
   const spy = jest.fn();
   const node = shallow(<NodeFilter addFilter={spy} />);
 
@@ -79,6 +79,35 @@ it('should create a new filter', () => {
     data: {
       operator: 'in',
       values: [flowNode1.id, flowNode2.id]
+    }
+  });
+});
+
+it('should create executing node filter when operator is null', () => {
+  const spy = jest.fn();
+  const node = shallow(<NodeFilter addFilter={spy} />);
+
+  const flowNode1 = {
+    name: 'foo',
+    id: 'bar'
+  };
+
+  node
+    .find(Button)
+    .at(0)
+    .simulate('click');
+
+  node.setState({
+    selectedNodes: [flowNode1]
+  });
+
+  node.find({variant: 'primary'}).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    type: 'executingFlowNodes',
+    data: {
+      operator: null,
+      values: [flowNode1.id]
     }
   });
 });
@@ -143,8 +172,7 @@ it('should create preview of selected nodes linked by or', () => {
 it('should contain buttons to switch between executed and not executed mode', () => {
   const node = shallow(<NodeFilter />);
 
-  expect(node.find(Button).at(0)).toIncludeText('was executed');
-  expect(node.find(Button).at(1)).toIncludeText('was not executed');
+  expect(node.find('ButtonGroup')).toMatchSnapshot();
 });
 
 it('should set the operator when clicking the operator buttons', () => {
@@ -152,13 +180,13 @@ it('should set the operator when clicking the operator buttons', () => {
 
   node
     .find(Button)
-    .at(0)
+    .at(1)
     .simulate('click');
   expect(node.state().operator).toBe('in');
 
   node
     .find(Button)
-    .at(1)
+    .at(2)
     .simulate('click');
   expect(node.state().operator).toBe('not in');
 });

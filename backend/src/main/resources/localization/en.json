@@ -501,7 +501,8 @@
         "completed": "Completed Process Instances Only",
         "canceled": "Canceled Process Instances Only",
         "nonCanceled": "Non Canceled Process Instances Only",
-        "executedFlowNode": "Executed Flow Node"
+        "executedFlowNode": "Executed Flow Node",
+        "executingFlowNode": "Executing Flow Node"
       },
       "instanceCount": {
         "label": "{count} instance in current filter",
@@ -565,6 +566,7 @@
       "nodeModal": {
         "executed": "was executed",
         "notExecuted": "was not executed",
+        "executing": "pending or executing",
         "previewLabel": "This is the filter you are about to create: "
       },
       "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"

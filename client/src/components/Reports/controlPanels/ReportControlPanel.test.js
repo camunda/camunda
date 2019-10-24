@@ -205,7 +205,12 @@ it('should remove incompatible filters when changing the process definition', as
         ...report,
         data: {
           ...report.data,
-          filter: [{type: 'startDate'}, {type: 'executedFlowNodes'}, {type: 'variable'}]
+          filter: [
+            {type: 'startDate'},
+            {type: 'executingFlowNodes'},
+            {type: 'executedFlowNodes'},
+            {type: 'variable'}
+          ]
         }
       }}
       updateReport={spy}

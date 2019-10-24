@@ -1,0 +1,24 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should contain buttons to switch between executed and not executed mode 1`] = `
+<ButtonGroup>
+  <ForwardRef(Button)
+    active={false}
+    onClick={[Function]}
+  >
+    pending or executing
+  </ForwardRef(Button)>
+  <ForwardRef(Button)
+    active={true}
+    onClick={[Function]}
+  >
+    was executed
+  </ForwardRef(Button)>
+  <ForwardRef(Button)
+    active={false}
+    onClick={[Function]}
+  >
+    was not executed
+  </ForwardRef(Button)>
+</ButtonGroup>
+`;

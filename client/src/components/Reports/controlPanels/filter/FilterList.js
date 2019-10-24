@@ -208,7 +208,7 @@ export default class FilterList extends React.Component {
               </li>
             );
           }
-        } else if (filter.type === 'executedFlowNodes') {
+        } else if (['executedFlowNodes', 'executingFlowNodes'].includes(filter.type)) {
           const {values, operator} = filter.data;
           const flowNodes = this.props.flowNodeNames;
 
@@ -226,14 +226,16 @@ export default class FilterList extends React.Component {
                 className="FilterList__action-item"
               >
                 <span className="FilterList__parameter-name">
-                  {t('common.filter.list.executedFlowNode')}
+                  {filter.type === 'executingFlowNodes'
+                    ? t('common.filter.list.executingFlowNode')
+                    : t('common.filter.list.executedFlowNode')}
                 </span>
                 {this.createOperator(
-                  operator === 'in'
-                    ? t('common.filter.list.operators.is')
-                    : values.length > 1
-                    ? t('common.filter.list.operators.neither')
-                    : t('common.filter.list.operators.not')
+                  operator === 'not in'
+                    ? values.length > 1
+                      ? t('common.filter.list.operators.neither')
+                      : t('common.filter.list.operators.not')
+                    : t('common.filter.list.operators.is')
                 )}
                 {values.map((value, idx) => {
                   return (
@@ -245,9 +247,9 @@ export default class FilterList extends React.Component {
                       </span>
                       {idx < values.length - 1 &&
                         this.createOperator(
-                          operator === 'in'
-                            ? t('common.filter.list.operators.or')
-                            : t('common.filter.list.operators.nor')
+                          operator === 'not in'
+                            ? t('common.filter.list.operators.nor')
+                            : t('common.filter.list.operators.or')
                         )}
                     </span>
                   );

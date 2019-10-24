@@ -110,7 +110,11 @@ export default class ReportControlPanel extends React.Component {
               : null
         }
       },
-      filter: {$set: filter.filter(({type}) => type !== 'executedFlowNodes' && type !== 'variable')}
+      filter: {
+        $set: filter.filter(
+          ({type}) => !['executedFlowNodes', 'executingFlowNodes', 'variable'].includes(type)
+        )
+      }
     };
 
     if (groupBy && groupBy.type === 'variable') {
