@@ -43,6 +43,6 @@ public class ProcessTransformer implements ModelElementTransformer<Process> {
     workflow.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.CONTAINER_ELEMENT_TERMINATING);
     workflow.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ELEMENT_TERMINATED);
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROCESS_TERMINATED);
   }
 }
