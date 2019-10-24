@@ -5,22 +5,25 @@
  */
 package org.camunda.optimize.service.util;
 
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_DATE;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_DOUBLE;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.MULTIVALUE_FIELD_LONG;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_CLAUSE_ID;
-import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_CLAUSE_NAME;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_VALUE;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.VARIABLE_VALUE_TYPE;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class DecisionVariableHelper {
   private static final List<VariableType> MULTIVALUE_TYPE_FIELDS = Collections.unmodifiableList(Arrays.asList(
@@ -32,14 +35,6 @@ public class DecisionVariableHelper {
 
   public static String getVariableValueField(final String variablePath) {
     return variablePath + "." + VARIABLE_VALUE;
-  }
-
-  public static String getInputVariableValueFieldForType(final VariableType type) {
-    return getVariableValueFieldForType(INPUTS, type);
-  }
-
-  public static String getOutputVariableValueFieldForType(final VariableType type) {
-    return getVariableValueFieldForType(OUTPUTS, type);
   }
 
   public static List<VariableType> getVariableMultivalueFields() {
@@ -72,12 +67,35 @@ public class DecisionVariableHelper {
     return variablePath + "." + VARIABLE_CLAUSE_ID;
   }
 
-  public static String getVariableNameField(final String variablePath) {
-    return variablePath + "." + VARIABLE_CLAUSE_NAME;
-  }
-
   public static String getVariableTypeField(final String variablePath) {
     return variablePath + "." + VARIABLE_VALUE_TYPE;
+  }
+
+  public static BoolQueryBuilder getVariableUndefinedOrNullQuery(final String clauseId,
+                                                                 final String variablePath,
+                                                                 final VariableType variableType) {
+    final String variableTypeId = variableType.getId();
+    return boolQuery()
+      .should(
+        // undefined
+        boolQuery().mustNot(nestedQuery(
+          variablePath,
+          boolQuery()
+            .must(termQuery(getVariableClauseIdField(variablePath), clauseId))
+            .must(termQuery(getVariableTypeField(variablePath), variableTypeId)),
+          ScoreMode.None
+        )))
+      .should(
+        // or null value
+        boolQuery().must(nestedQuery(
+          variablePath,
+          boolQuery()
+            .must(termQuery(getVariableClauseIdField(variablePath), clauseId))
+            .must(termQuery(getVariableTypeField(variablePath), variableTypeId))
+            .mustNot(existsQuery(getVariableValueField(variablePath))),
+          ScoreMode.None
+        )))
+      .minimumShouldMatch(1);
   }
 
 }

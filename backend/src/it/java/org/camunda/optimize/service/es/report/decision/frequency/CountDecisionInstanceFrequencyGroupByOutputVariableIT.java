@@ -65,7 +65,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_CLASSIFICATION_ID
+      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_CLASSIFICATION_ID, VariableType.STRING
     ).getResult();
 
     // then
@@ -106,7 +106,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID
+      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, VariableType.BOOLEAN
     ).getResult();
 
     // then
@@ -152,7 +152,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID
+      decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, VariableType.BOOLEAN
     ).getResult();
 
     // then
@@ -196,6 +196,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(OUTPUT_AUDIT_ID)
+      .setVariableType(VariableType.BOOLEAN)
       .setFilter(Lists.newArrayList(createBooleanOutputVariableFilter(
         OUTPUT_AUDIT_ID, "true"
       )))
@@ -237,7 +238,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_CLASSIFICATION_ID
+      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_CLASSIFICATION_ID, VariableType.STRING
     ).getResult();
 
     // then
@@ -275,7 +276,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_AUDIT_ID
+      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_AUDIT_ID, VariableType.BOOLEAN
     ).getResult();
 
     // then
@@ -313,7 +314,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_AUDIT_ID
+      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, OUTPUT_AUDIT_ID, VariableType.BOOLEAN
     ).getResult();
 
     // then
@@ -345,6 +346,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setTenantIds(selectedTenants)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
+      .setVariableType(VariableType.STRING)
       .build();
     ReportMapResultDto result = evaluateMapReport(reportData).getResult();
 
@@ -388,6 +390,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
+      .setVariableType(VariableType.STRING)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
@@ -439,6 +442,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_OUTPUT_VARIABLE)
       .setVariableId(OUTPUT_CLASSIFICATION_ID)
+      .setVariableType(VariableType.STRING)
       .build();
     reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final ReportMapResultDto result = evaluateMapReport(reportData).getResult();
@@ -470,7 +474,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     // when
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> result =
       evaluateDecisionInstanceFrequencyByOutputVariable(
-        decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, "audit"
+        decisionDefinitionDto1, decisionDefinitionVersion1, OUTPUT_AUDIT_ID, "audit", VariableType.BOOLEAN
       );
 
     // then
@@ -659,19 +663,10 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
   private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
-    final String variableId) {
-    return evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto, decisionDefinitionVersion, variableId, null, null
-    );
-  }
-
-  private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByOutputVariable(
-    final DecisionDefinitionEngineDto decisionDefinitionDto,
-    final String decisionDefinitionVersion,
     final String variableId,
-    final String variableName) {
+    final VariableType variableType) {
     return evaluateDecisionInstanceFrequencyByOutputVariable(
-      decisionDefinitionDto, decisionDefinitionVersion, variableId, variableName, null
+      decisionDefinitionDto, decisionDefinitionVersion, variableId, null, variableType
     );
   }
 

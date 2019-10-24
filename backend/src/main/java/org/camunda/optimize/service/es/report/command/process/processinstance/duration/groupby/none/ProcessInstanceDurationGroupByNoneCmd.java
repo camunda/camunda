@@ -11,11 +11,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
-import org.camunda.optimize.service.es.report.command.exec.ReportCmdExecutionPlan;
+import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
-import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByNone;
-import org.camunda.optimize.service.es.report.command.modules.view.duration.DurationView;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByNone;
+import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessDurationView;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,14 +24,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessInstanceDurationGroupByNoneCmd implements Command<SingleProcessReportDefinitionDto> {
 
-  private final ReportCmdExecutionPlan<NumberResultDto> executionPlan;
+  private final ProcessReportCmdExecutionPlan<NumberResultDto> executionPlan;
 
   @Autowired
   public ProcessInstanceDurationGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
-      .view(DurationView.class)
-      .groupBy(GroupByNone.class)
-      .distributedBy(DistributedByNone.class)
+      .processCommand()
+      .view(ProcessDurationView.class)
+      .groupBy(ProcessGroupByNone.class)
+      .distributedBy(ProcessDistributedByNone.class)
       .resultAsNumber()
       .build();
   }

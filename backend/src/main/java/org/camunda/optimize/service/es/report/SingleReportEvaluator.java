@@ -26,11 +26,6 @@ import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregatio
 import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
 import org.camunda.optimize.service.es.report.command.decision.RawDecisionDataCommand;
-import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByEvaluationDateTimeCommand;
-import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByInputVariableCommand;
-import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByMatchedRuleCommand;
-import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByNoneCommand;
-import org.camunda.optimize.service.es.report.command.decision.frequency.CountDecisionFrequencyGroupByOutputVariableCommand;
 import org.camunda.optimize.service.es.report.command.process.RawProcessDataCommand;
 import org.camunda.optimize.service.es.report.command.process.flownode.duration.FlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.process.flownode.frequency.CountFlowNodeFrequencyByFlowNodeCommand;
@@ -71,11 +66,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByEvaluationDateTimeReport;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByInputVariableReport;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByMatchedRuleReport;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByNoneReport;
-import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createCountFrequencyGroupByOutputVariableReport;
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createRawDecisionDataReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountFlowNodeFrequencyGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessReportDataCreator.createCountProcessInstanceFrequencyGroupByEndDateReport;
@@ -122,8 +112,6 @@ public class SingleReportEvaluator {
 
     // decision reports
     commandSuppliers.put(createRawDecisionDataReport().createCommandKey(), RawDecisionDataCommand::new);
-
-    addDecisionCountFrequencyReports();
   }
 
   protected final ConfigurationService configurationService;
@@ -321,29 +309,6 @@ public class SingleReportEvaluator {
     createCommandsForAllAggregationTypes(
       (AggregationType aggro) -> createProcessInstanceDurationGroupByEndDateWithProcessPartReport(aggro).createCommandKey(),
       ProcessInstanceDurationGroupByEndDateWithProcessPartCommand::new
-    );
-  }
-
-  private static void addDecisionCountFrequencyReports() {
-    commandSuppliers.put(
-      createCountFrequencyGroupByNoneReport().createCommandKey(),
-      CountDecisionFrequencyGroupByNoneCommand::new
-    );
-    commandSuppliers.put(
-      createCountFrequencyGroupByEvaluationDateTimeReport().createCommandKey(),
-      CountDecisionFrequencyGroupByEvaluationDateTimeCommand::new
-    );
-    commandSuppliers.put(
-      createCountFrequencyGroupByInputVariableReport().createCommandKey(),
-      CountDecisionFrequencyGroupByInputVariableCommand::new
-    );
-    commandSuppliers.put(
-      createCountFrequencyGroupByOutputVariableReport().createCommandKey(),
-      CountDecisionFrequencyGroupByOutputVariableCommand::new
-    );
-    commandSuppliers.put(
-      createCountFrequencyGroupByMatchedRuleReport().createCommandKey(),
-      CountDecisionFrequencyGroupByMatchedRuleCommand::new
     );
   }
 

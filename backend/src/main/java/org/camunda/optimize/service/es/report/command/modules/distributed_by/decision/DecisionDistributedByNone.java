@@ -3,10 +3,10 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.distributed_by;
+package org.camunda.optimize.service.es.report.command.modules.distributed_by.decision;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -20,22 +20,22 @@ import java.util.List;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DistributedByNone extends DistributedByPart {
+public class DecisionDistributedByNone extends DecisionDistributedByPart {
 
   @Override
-  public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {
+  public AggregationBuilder createAggregation(final DecisionReportDataDto definitionData) {
     return viewPart.createAggregation(definitionData);
   }
 
   @Override
   public List<DistributedByResult> retrieveResult(final Aggregations aggregations,
-                                                  final ProcessReportDataDto reportData) {
+                                                  final DecisionReportDataDto reportData) {
     final ViewResult viewResult = viewPart.retrieveResult(aggregations, reportData);
     return Collections.singletonList(DistributedByResult.createEmptyDistributedBy(viewResult));
   }
 
   @Override
-  protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  protected void addAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
     dataForCommandKey.getConfiguration().setDistributedBy(DistributedBy.NONE);
   }
 }

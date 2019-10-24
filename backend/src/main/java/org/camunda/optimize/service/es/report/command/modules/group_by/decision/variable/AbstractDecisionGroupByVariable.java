@@ -3,16 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.group_by;
+package org.camunda.optimize.service.es.report.command.modules.group_by.decision.variable;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.modules.group_by.decision.DecisionGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -28,9 +29,6 @@ import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuil
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,13 +39,12 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.process.util.GroupByDateVariableIntervalSelection.createDateVariableAggregation;
 import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.getVariableUndefinedOrNullQuery;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableStringValueField;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableTypeField;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableUndefinedOrNullQuery;
+import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -56,83 +53,82 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
 
 @RequiredArgsConstructor
-@Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class GroupByVariable extends GroupByPart {
+public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPart {
 
   private static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
-  private static final String FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
-  private static final String VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION = "proc_inst_count";
+  private static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
+  private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "proc_inst_count";
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
 
   private final ConfigurationService configurationService;
   private final IntervalAggregationService intervalAggregationService;
   private final OptimizeElasticsearchClient esClient;
 
-  private VariableGroupByValueDto getVariableGroupByDto(final ProcessReportDataDto definitionData) {
-    return ((VariableGroupByDto) definitionData.getGroupBy()).getValue();
-  }
+  protected abstract DecisionGroupByVariableValueDto getVariableGroupByDto(final DecisionReportDataDto definitionData);
+
+  protected abstract DecisionGroupByDto<DecisionGroupByVariableValueDto> getDecisionGroupByVariableType();
+
+  protected abstract String getVariablePath();
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ProcessReportDataDto definitionData) {
-    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
+                                                    final DecisionReportDataDto definitionData) {
+    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
 
     AggregationBuilder variableSubAggregation =
       createVariableSubAggregation(definitionData, searchSourceBuilder.query());
 
-    final NestedAggregationBuilder variableAggregation = nested(NESTED_AGGREGATION, VARIABLES)
+    final NestedAggregationBuilder variableAggregation = nested(NESTED_AGGREGATION, getVariablePath())
       .subAggregation(
         filter(
           FILTERED_VARIABLES_AGGREGATION,
           boolQuery()
-            .must(termQuery(getNestedVariableNameField(), variableGroupByDto.getName()))
-            .must(termQuery(getNestedVariableTypeField(), variableGroupByDto.getType().getId()))
-            .must(existsQuery(getNestedVariableValueField()))
+            .must(termQuery(getVariableClauseIdField(getVariablePath()), variableGroupByDto.getId()))
+            .must(termQuery(getVariableTypeField(getVariablePath()), variableGroupByDto.getType().getId()))
+            .must(existsQuery(getVariableStringValueField(getVariablePath())))
         )
           .subAggregation(variableSubAggregation)
-          .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION))
+          .subAggregation(reverseNested(FILTERED_INSTANCE_COUNT_AGGREGATION))
       );
     final AggregationBuilder undefinedOrNullVariableAggregation =
       createUndefinedOrNullVariableAggregation(definitionData);
     return Arrays.asList(variableAggregation, undefinedOrNullVariableAggregation);
   }
 
-  private AggregationBuilder createUndefinedOrNullVariableAggregation(final ProcessReportDataDto reportData) {
-    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(reportData);
+  private AggregationBuilder createUndefinedOrNullVariableAggregation(final DecisionReportDataDto reportData) {
+    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(reportData);
     return filter(
       MISSING_VARIABLES_AGGREGATION,
-      getVariableUndefinedOrNullQuery(variableGroupByDto.getName(), variableGroupByDto.getType())
+      getVariableUndefinedOrNullQuery(variableGroupByDto.getId(), getVariablePath(), variableGroupByDto.getType())
     )
       .subAggregation(distributedByPart.createAggregation(reportData));
   }
 
-  private AggregationBuilder createVariableSubAggregation(final ProcessReportDataDto definitionData,
+  private AggregationBuilder createVariableSubAggregation(final DecisionReportDataDto definitionData,
                                                           final QueryBuilder baseQuery) {
-    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
+    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
     AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
-      .field(getNestedVariableValueFieldForType(variableGroupByDto.getType()));
+      .field(getVariableStringValueField(getVariablePath()));
 
-    if (variableGroupByDto.getType().equals(VariableType.DATE)) {
+    if (VariableType.DATE.equals(variableGroupByDto.getType())) {
       aggregationBuilder = createDateVariableAggregation(
         VARIABLES_AGGREGATION,
-        variableGroupByDto.getName(),
-        getNestedVariableNameField(),
-        getNestedVariableValueFieldForType(VariableType.DATE),
-        PROCESS_INSTANCE_INDEX_NAME,
-        VARIABLES,
+        variableGroupByDto.getId(),
+        getVariableClauseIdField(getVariablePath()),
+        getVariableValueFieldForType(getVariablePath(), VariableType.DATE),
+        DECISION_INSTANCE_INDEX_NAME,
+        getVariablePath(),
         intervalAggregationService,
         esClient,
         baseQuery
       );
     }
 
-    // the same process instance could have several same variable names -> do not count each but only the proc inst once
-    AggregationBuilder operationsAggregation = reverseNested(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION)
+    AggregationBuilder operationsAggregation = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
       .subAggregation(distributedByPart.createAggregation(definitionData));
 
 
@@ -141,7 +137,7 @@ public class GroupByVariable extends GroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(SearchResponse response, final ProcessReportDataDto reportData) {
+  public CompositeCommandResult retrieveQueryResult(SearchResponse response, final DecisionReportDataDto reportData) {
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
@@ -151,15 +147,15 @@ public class GroupByVariable extends GroupByPart {
 
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
-      ReverseNested reverseNested = b.getAggregations().get(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
+      ReverseNested reverseNested = b.getAggregations().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
       final List<DistributedByResult> distribution =
         distributedByPart.retrieveResult(reverseNested.getAggregations(), reportData);
       groupedData.add(GroupByResult.createGroupByResult(b.getKeyAsString(), distribution));
     }
 
-    final ReverseNested filteredProcessInstAggr = filteredVariables.getAggregations()
-      .get(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION);
-    final long filteredProcInstCount = filteredProcessInstAggr.getDocCount();
+    final ReverseNested filteredInstAggr = filteredVariables.getAggregations()
+      .get(FILTERED_INSTANCE_COUNT_AGGREGATION);
+    final long filteredProcInstCount = filteredInstAggr.getDocCount();
 
     if (response.getHits().getTotalHits() > filteredProcInstCount) {
 
@@ -177,13 +173,13 @@ public class GroupByVariable extends GroupByPart {
   }
 
   @Override
-  public boolean getSortByKeyIsOfNumericType(final ProcessReportDataDto definitionData) {
+  public boolean getSortByKeyIsOfNumericType(final DecisionReportDataDto definitionData) {
     return VariableType.getNumericTypes().contains(getVariableGroupByDto(definitionData).getType());
   }
 
   @Override
-  public Optional<SortingDto> getSorting(final ProcessReportDataDto definitionData) {
-    if(VariableType.DATE.equals(getVariableGroupByDto(definitionData).getType())) {
+  public Optional<SortingDto> getSorting(final DecisionReportDataDto definitionData) {
+    if (VariableType.DATE.equals(getVariableGroupByDto(definitionData).getType())) {
       return Optional.of(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
     } else {
       return super.getSorting(definitionData);
@@ -191,9 +187,10 @@ public class GroupByVariable extends GroupByPart {
   }
 
   @Override
-  protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
-    reportData.setGroupBy(new VariableGroupByDto());
+  protected void addGroupByAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto reportData) {
+    reportData.setGroupBy(getDecisionGroupByVariableType());
   }
+
 
   private boolean isResultComplete(MultiBucketsAggregation variableTerms) {
     return !(variableTerms instanceof Terms) || ((Terms) variableTerms).getSumOfOtherDocCounts() == 0L;

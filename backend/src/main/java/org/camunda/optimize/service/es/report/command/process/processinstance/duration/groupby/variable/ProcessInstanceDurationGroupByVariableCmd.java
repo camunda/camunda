@@ -10,11 +10,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
-import org.camunda.optimize.service.es.report.command.exec.ReportCmdExecutionPlan;
+import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
-import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByVariable;
-import org.camunda.optimize.service.es.report.command.modules.view.duration.DurationView;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByVariable;
+import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessDurationView;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,14 +22,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class ProcessInstanceDurationGroupByVariableCmd implements Command<SingleProcessReportDefinitionDto> {
 
-  private final ReportCmdExecutionPlan<ReportMapResultDto> executionPlan;
+  private final ProcessReportCmdExecutionPlan<ReportMapResultDto> executionPlan;
 
   @Autowired
   public ProcessInstanceDurationGroupByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
-      .view(DurationView.class)
-      .groupBy(GroupByVariable.class)
-      .distributedBy(DistributedByNone.class)
+      .processCommand()
+      .view(ProcessDurationView.class)
+      .groupBy(ProcessGroupByVariable.class)
+      .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()
       .build();
   }

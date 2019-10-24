@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.distributed_by;
+package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
@@ -35,7 +35,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DistributedByUserTask extends DistributedByPart {
+public class ProcessDistributedByUserTask extends ProcessDistributedByPart {
 
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
 

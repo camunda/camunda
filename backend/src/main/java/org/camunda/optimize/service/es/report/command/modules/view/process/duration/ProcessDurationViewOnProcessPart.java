@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.view.duration;
+package org.camunda.optimize.service.es.report.command.modules.view.process.duration;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -22,7 +22,7 @@ import static org.camunda.optimize.service.es.report.command.process.processinst
 
 @Component()
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DurationOnProcessPartView extends DurationView {
+public class ProcessDurationViewOnProcessPart extends ProcessDurationView {
 
   @Override
   public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {

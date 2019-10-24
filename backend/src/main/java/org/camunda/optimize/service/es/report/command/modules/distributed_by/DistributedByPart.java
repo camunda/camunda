@@ -6,34 +6,33 @@
 package org.camunda.optimize.service.es.report.command.modules.distributed_by;
 
 import lombok.Setter;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.Collections;
 import java.util.List;
 
-public abstract class DistributedByPart {
+public abstract class DistributedByPart<Data extends SingleReportDataDto> {
 
   @Setter
-  protected ViewPart viewPart;
+  protected ViewPart<Data> viewPart;
 
-  public void adjustBaseQuery(final BoolQueryBuilder baseQuery, final ProcessReportDataDto definitionData) {
+  public void adjustBaseQuery(final BoolQueryBuilder baseQuery, final Data definitionData) {
     viewPart.adjustBaseQuery(baseQuery, definitionData);
   }
 
-  public abstract AggregationBuilder createAggregation(final ProcessReportDataDto definitionData);
+  public abstract AggregationBuilder createAggregation(final Data definitionData);
 
   public abstract List<DistributedByResult> retrieveResult(final Aggregations aggregations,
-                                                           final ProcessReportDataDto reportData);
+                                                           final Data reportData);
 
-  public void addDistributedByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
+  public void addDistributedByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey) {
     addAdjustmentsForCommandKeyGeneration(dataForCommandKey);
     viewPart.addViewAdjustmentsForCommandKeyGeneration(dataForCommandKey);
   }
 
-  protected abstract void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey);
+  protected abstract void addAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);
 }

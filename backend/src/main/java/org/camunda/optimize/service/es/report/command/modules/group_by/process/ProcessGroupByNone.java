@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.group_by;
+package org.camunda.optimize.service.es.report.command.modules.group_by.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
@@ -23,7 +23,7 @@ import static org.camunda.optimize.service.es.report.command.modules.result.Comp
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class GroupByNone extends GroupByPart {
+public class ProcessGroupByNone extends ProcessGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,

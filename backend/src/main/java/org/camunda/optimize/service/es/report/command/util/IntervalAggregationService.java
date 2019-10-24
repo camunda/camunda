@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -51,7 +50,7 @@ public class IntervalAggregationService {
   private final OptimizeElasticsearchClient esClient;
   private final DateTimeFormatter dateTimeFormatter;
 
-  public DateHistogramInterval getDateHistogramInterval(GroupByDateUnit interval) throws OptimizeException {
+  public DateHistogramInterval getDateHistogramInterval(GroupByDateUnit interval) {
     switch (interval) {
       case YEAR:
         return DateHistogramInterval.YEAR;
@@ -67,7 +66,7 @@ public class IntervalAggregationService {
         return DateHistogramInterval.MINUTE;
       default:
         log.error("Unknown interval [{}]. Please state a valid interval", interval);
-        throw new OptimizeException("Unknown interval used. Please state a valid interval.");
+        throw new OptimizeRuntimeException("Unknown interval used. Please state a valid interval.");
     }
   }
 

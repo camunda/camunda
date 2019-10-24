@@ -5,23 +5,21 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.view;
 
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
-import java.util.function.Supplier;
+public abstract class ViewPart<Data extends SingleReportDataDto> {
 
-public abstract class ViewPart {
-
-  public void adjustBaseQuery(BoolQueryBuilder baseQuery, ProcessReportDataDto definitionData) {
+  public void adjustBaseQuery(BoolQueryBuilder baseQuery, Data definitionData) {
     // by default don't do anything
   }
 
-  public abstract AggregationBuilder createAggregation(ProcessReportDataDto definitionData);
+  public abstract AggregationBuilder createAggregation(Data definitionData);
 
-  public abstract ViewResult retrieveResult(Aggregations aggs, ProcessReportDataDto reportData);
+  public abstract ViewResult retrieveResult(Aggregations aggs, Data reportData);
 
-  public abstract void addViewAdjustmentsForCommandKeyGeneration(ProcessReportDataDto dataForCommandKey);
+  public abstract void addViewAdjustmentsForCommandKeyGeneration(Data dataForCommandKey);
 }

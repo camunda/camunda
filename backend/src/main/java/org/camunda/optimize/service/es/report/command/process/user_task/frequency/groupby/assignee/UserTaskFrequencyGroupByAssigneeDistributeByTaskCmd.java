@@ -10,11 +10,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
-import org.camunda.optimize.service.es.report.command.exec.ReportCmdExecutionPlan;
+import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
-import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByUserTask;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByAssignee;
-import org.camunda.optimize.service.es.report.command.modules.view.frequency.CountUserTaskFrequencyView;
+import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByUserTask;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByAssignee;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountUserTaskFrequency;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,14 +23,15 @@ import org.springframework.stereotype.Component;
 public class UserTaskFrequencyGroupByAssigneeDistributeByTaskCmd
   implements Command<SingleProcessReportDefinitionDto> {
 
-  private final ReportCmdExecutionPlan<ReportHyperMapResultDto> executionPlan;
+  private final ProcessReportCmdExecutionPlan<ReportHyperMapResultDto> executionPlan;
 
   @Autowired
   public UserTaskFrequencyGroupByAssigneeDistributeByTaskCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
-      .view(CountUserTaskFrequencyView.class)
-      .groupBy(GroupByAssignee.class)
-      .distributedBy(DistributedByUserTask.class)
+      .processCommand()
+      .view(ProcessViewCountUserTaskFrequency.class)
+      .groupBy(ProcessGroupByAssignee.class)
+      .distributedBy(ProcessDistributedByUserTask.class)
       .resultAsHyperMap()
       .build();
   }

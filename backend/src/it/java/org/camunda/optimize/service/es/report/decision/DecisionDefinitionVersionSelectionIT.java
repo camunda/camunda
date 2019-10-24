@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
@@ -189,6 +190,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
         .setDecisionDefinitionVersions(definitionVersions)
         .setVariableId(INPUT_AMOUNT_ID)
         .setVariableName(VARIABLE_NAME)
+        .setVariableType(VariableType.DOUBLE)
         .setDateInterval(GroupByDateUnit.DAY)
         .setReportDataType(reportDataType)
         .build();

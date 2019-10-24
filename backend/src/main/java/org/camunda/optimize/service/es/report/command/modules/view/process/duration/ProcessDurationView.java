@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.view.duration;
+package org.camunda.optimize.service.es.report.command.modules.view.process.duration;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -16,7 +16,7 @@ import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregatio
 import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
-import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
+import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -34,7 +34,7 @@ import java.util.Map;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @Primary
-public class DurationView extends ViewPart {
+public class ProcessDurationView extends ProcessViewPart {
 
   private static Map<AggregationType, AggregationStrategy> aggregationStrategyMap = new HashMap<>();
 

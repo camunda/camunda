@@ -16,7 +16,8 @@ public class DecisionGroupByVariableValueDto implements DecisionGroupByValueDto 
 
   @Getter @Setter protected String id;
   @Setter protected String name;
-  @Getter @Setter protected VariableType type;
+  @Getter @Setter
+  protected VariableType type;
 
   public Optional<String> getName() {
     return Optional.ofNullable(name);
