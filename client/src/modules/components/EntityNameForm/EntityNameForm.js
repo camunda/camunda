@@ -63,7 +63,7 @@ export default class EntityNameForm extends Component {
           <Link
             disabled={this.props.disabledButtons}
             className="Button tool-button cancel-button"
-            to={isNew ? '/' : './'}
+            to={isNew ? '../../' : './'}
             onClick={this.props.onCancel}
           >
             <Icon type="stop" />
