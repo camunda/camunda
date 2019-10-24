@@ -152,7 +152,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
         distributeDeploymentToPartitions(partitionsToDistribute, pushRequest);
 
     if (remainingPartitions.isEmpty()) {
-      LOG.trace("Pushed deployment {} to all partitions.", pushRequest.deploymentKey());
+      LOG.debug("Pushed deployment {} to all partitions.", pushRequest.deploymentKey());
       return;
     }
 
@@ -238,7 +238,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
                 final CompletableFuture future = new CompletableFuture();
                 actor.call(
                     () -> {
-                      LOG.debug("Receiving deployment response on topic {}", topic);
+                      LOG.trace("Receiving deployment response on topic {}", topic);
 
                       handleResponse(response, deploymentKey, topic);
                       future.complete(null);
@@ -271,7 +271,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
 
   private void handleRetry(
       int partitionLeaderId, int partition, final PushDeploymentRequest pushRequest) {
-    LOG.debug("Retry deployment push to partition {} after {}", partition, RETRY_DELAY);
+    LOG.trace("Retry deployment push to partition {} after {}", partition, RETRY_DELAY);
 
     actor.runDelayed(
         RETRY_DELAY,
@@ -303,7 +303,7 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
           pushDeploymentResponse.partitionId());
 
       if (remainingPartitions == 0) {
-        LOG.debug("Deployment {} pushed to all partitions successfully.", deploymentKey);
+        LOG.debug("Deployment {} distributed to all partitions successfully.", deploymentKey);
         pendingDeploymentFutures.remove(deploymentKey).complete(null);
       }
     } else {

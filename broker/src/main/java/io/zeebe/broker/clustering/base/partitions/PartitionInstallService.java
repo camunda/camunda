@@ -83,6 +83,11 @@ public class PartitionInstallService extends Actor
   }
 
   @Override
+  public String getName() {
+    return "PartitionInstallService";
+  }
+
+  @Override
   public void start(final ServiceStartContext startContext) {
     this.startContext = startContext;
 

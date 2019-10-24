@@ -52,7 +52,12 @@ public class PartitionLeaderElection extends Actor
     startContext.getScheduler().submitActor(this);
     startContext.async(startFuture, true);
 
-    LOG.debug("Creating leader election for partition {} in node {}", partitionId, memberId);
+    LOG.debug("Broker {} created leader election service for partition {}.", memberId, partitionId);
+  }
+
+  @Override
+  public String getName() {
+    return "partition-" + partitionId + "-leader-election";
   }
 
   @Override

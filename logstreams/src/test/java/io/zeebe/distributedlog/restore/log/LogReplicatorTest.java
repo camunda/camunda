@@ -26,7 +26,7 @@ public class LogReplicatorTest {
   private final Executor executor = Runnable::run;
   private final MemberId server = MemberId.anonymous();
 
-  private final LogReplicator replicator = new LogReplicator(appender, client, executor);
+  private final LogReplicator replicator = new LogReplicator(1, appender, client, executor);
 
   @Before
   public void setUp() {
@@ -176,7 +176,7 @@ public class LogReplicatorTest {
   @Test
   public void shouldCompleteExceptionallyIfAppenderReturnsNegativeResult() {
     // given
-    final LogReplicator replicator = new LogReplicator((p, b) -> -1, client, executor);
+    final LogReplicator replicator = new LogReplicator(1, (p, b) -> -1, client, executor);
     final LogReplicationResponse response = newResponse(false);
 
     // when
@@ -196,6 +196,7 @@ public class LogReplicatorTest {
     final RuntimeException error = new RuntimeException();
     final LogReplicator replicator =
         new LogReplicator(
+            1,
             (p, b) -> {
               throw error;
             },

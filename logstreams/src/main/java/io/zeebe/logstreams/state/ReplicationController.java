@@ -75,7 +75,7 @@ public final class ReplicationController {
     final long snapshotCounter =
         receivedSnapshots.computeIfAbsent(snapshotPosition, k -> START_VALUE);
     if (snapshotCounter == INVALID_SNAPSHOT) {
-      LOG.debug(
+      LOG.trace(
           "Ignore snapshot chunk {}, because snapshot {} is marked as invalid.",
           chunkName,
           snapshotName);
@@ -113,7 +113,7 @@ public final class ReplicationController {
         validSnapshotListener.onNewValidSnapshot();
       }
     } else {
-      LOG.debug(
+      LOG.trace(
           "Waiting for more snapshot chunks, currently have {}/{}.",
           currentChunks,
           totalChunkCount);

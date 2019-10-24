@@ -29,14 +29,17 @@ public class RestoreController {
   private final RestoreNodeProvider nodeProvider;
   private final LogReplicator logReplicator;
   private final RestoreSnapshotReplicator snapshotReplicator;
+  private final int partitionId;
 
   public RestoreController(
+      int partitionId,
       RestoreClient restoreClient,
       RestoreNodeProvider nodeProvider,
       LogReplicator logReplicator,
       RestoreSnapshotReplicator snapshotReplicator,
       ThreadContext restoreThreadContext,
       Logger logger) {
+    this.partitionId = partitionId;
     this.restoreClient = restoreClient;
     this.nodeProvider = nodeProvider;
     this.logReplicator = logReplicator;
@@ -96,10 +99,11 @@ public class RestoreController {
         break;
       case EVENTS:
         logger.debug(
-            "Restoring events {} - {} from server {}",
+            "Restoring events for partition {} ({} - {}) from Broker {}",
+            partitionId,
             request.getLatestLocalPosition(),
             request.getBackupPosition(),
-            server);
+            server.id());
         result.complete(
             () ->
                 logReplicator.replicate(
@@ -107,11 +111,12 @@ public class RestoreController {
         break;
       case NONE:
       default:
-        logger.debug(
-            "Restore server {} reports {} as restore info for request {}",
-            server,
+        logger.trace(
+            "Broker {} reports {} as restore info for request {} and partitionId {}",
+            server.id(),
             response.getReplicationTarget(),
-            request);
+            request,
+            partitionId);
         result.complete(() -> CompletableFuture.completedFuture(request.getLatestLocalPosition()));
         break;
     }

@@ -181,7 +181,7 @@ public class DefaultDistributedLogstreamService
   @Override
   public boolean claimLeaderShip(String nodeId, long term) {
     logger.debug(
-        "Node {} claiming leadership for LogStream partition {} at term {}.",
+        "Broker {} claiming leadership for partition {} at term {}.",
         nodeId,
         logStream.getPartitionId(),
         term);
@@ -289,7 +289,7 @@ public class DefaultDistributedLogstreamService
     final RestoreClient restoreClient = restoreFactory.createClient(partitionId);
     final RestoreNodeProvider nodeProvider = restoreFactory.createNodeProvider(partitionId);
     final LogReplicator logReplicator =
-        new LogReplicator(this, restoreClient, restoreThreadContext);
+        new LogReplicator(partitionId, this, restoreClient, restoreThreadContext);
 
     final SnapshotRestoreContext snapshotRestoreContext =
         restoreFactory.createSnapshotRestoreContext(partitionId, logger);
@@ -300,6 +300,7 @@ public class DefaultDistributedLogstreamService
         new RestoreSnapshotReplicator(
             restoreClient, snapshotRestoreContext, snapshotConsumer, restoreThreadContext, logger);
     return new RestoreController(
+        partitionId,
         restoreClient,
         nodeProvider,
         logReplicator,
