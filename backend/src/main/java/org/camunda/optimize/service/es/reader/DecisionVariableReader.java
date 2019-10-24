@@ -97,7 +97,6 @@ public class DecisionVariableReader {
       .size(0);
 
     final SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
-      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {

@@ -15,7 +15,7 @@ import java.io.IOException;
 
 @Component
 public class TenantIndex extends StrictIndexMappingCreator {
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {

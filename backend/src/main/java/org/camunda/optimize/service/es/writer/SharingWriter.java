@@ -41,7 +41,8 @@ public class SharingWriter {
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(REPORT_SHARE_INDEX_NAME, REPORT_SHARE_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(REPORT_SHARE_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -68,7 +69,8 @@ public class SharingWriter {
     String id = IdGenerator.getNextId();
     createSharingDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_INDEX_NAME, DASHBOARD_SHARE_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(createSharingDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -97,7 +99,8 @@ public class SharingWriter {
   public void updateDashboardShare(DashboardShareDto updatedShare) {
     String id = updatedShare.getId();
     try {
-      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_INDEX_NAME, DASHBOARD_SHARE_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(DASHBOARD_SHARE_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(updatedShare), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -125,7 +128,8 @@ public class SharingWriter {
   public void deleteReportShare(String shareId) {
     log.debug("Deleting report share with id [{}]", shareId);
     DeleteRequest request =
-      new DeleteRequest(REPORT_SHARE_INDEX_NAME, REPORT_SHARE_INDEX_NAME, shareId)
+      new DeleteRequest(REPORT_SHARE_INDEX_NAME)
+        .id(shareId)
         .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
@@ -149,7 +153,8 @@ public class SharingWriter {
 
   public void deleteDashboardShare(String shareId) {
     log.debug("Deleting dashboard share with id [{}]", shareId);
-    DeleteRequest request = new DeleteRequest(DASHBOARD_SHARE_INDEX_NAME, DASHBOARD_SHARE_INDEX_NAME, shareId)
+    DeleteRequest request = new DeleteRequest(DASHBOARD_SHARE_INDEX_NAME)
+      .id(shareId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;

@@ -14,7 +14,7 @@ import java.io.IOException;
 
 @Component
 public class LicenseIndex extends StrictIndexMappingCreator {
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String LICENSE = "license";
 

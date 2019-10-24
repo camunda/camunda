@@ -83,9 +83,7 @@ public abstract class CountDecisionFrequencyGroupByVariableCommand
       .fetchSource(false)
       .aggregation(createAggregation(groupBy.getId(), groupBy.getType()))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
-      .types(DECISION_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse response;
     try {

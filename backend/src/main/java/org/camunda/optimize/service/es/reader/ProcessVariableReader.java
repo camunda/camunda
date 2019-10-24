@@ -89,7 +89,6 @@ public class ProcessVariableReader {
       .query(query)
       .size(0);
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     addVariableNameAggregation(searchSourceBuilder, requestDto);
@@ -183,7 +182,6 @@ public class ProcessVariableReader {
       .size(0);
 
     final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {

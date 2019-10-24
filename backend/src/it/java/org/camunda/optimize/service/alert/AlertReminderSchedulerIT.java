@@ -36,7 +36,6 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
   @Test
   public void reminderJobsAreRemovedOnAlertDeletion() throws Exception {
-
     // given
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
     String id = createAlert(simpleAlert);
@@ -83,7 +82,6 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     //when
     embeddedOptimizeExtensionRule.stopOptimize();
     embeddedOptimizeExtensionRule.startOptimize();
-
 
     //then
     assertThat(getAllAlerts().get(0).getReminder(), is(nullValue()));
@@ -159,6 +157,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
       is(greaterThanOrEqualTo(2))
     );
+
     //when
     engineIntegrationExtensionRule.startProcessInstance(processInstance.getDefinitionId());
     embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
@@ -186,6 +185,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
       is(greaterThanOrEqualTo(2))
     );
+
     //when
     simpleAlert.getCheckInterval().setValue(30);
 
@@ -273,4 +273,5 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
       is(2)
     );
   }
+
 }

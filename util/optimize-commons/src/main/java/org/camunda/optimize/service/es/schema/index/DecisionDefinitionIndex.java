@@ -15,7 +15,7 @@ import java.io.IOException;
 @Component
 public class DecisionDefinitionIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String DECISION_DEFINITION_ID = "id";
   public static final String DECISION_DEFINITION_KEY = "key";

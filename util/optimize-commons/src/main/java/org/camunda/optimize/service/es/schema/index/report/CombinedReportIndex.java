@@ -15,7 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_RE
 @Component
 public class CombinedReportIndex extends AbstractReportIndex {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String VISUALIZATION = "visualization";
   public static final String CONFIGURATION = "configuration";

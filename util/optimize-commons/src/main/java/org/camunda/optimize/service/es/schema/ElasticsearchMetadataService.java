@@ -66,6 +66,7 @@ public class ElasticsearchMetadataService {
     Optional<MetadataDto> result = Optional.empty();
 
     final SearchRequest searchRequest = new SearchRequest(METADATA_INDEX_NAME);
+    searchRequest.types(METADATA_INDEX_NAME);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
     searchRequest.source(searchSourceBuilder);
@@ -103,7 +104,8 @@ public class ElasticsearchMetadataService {
       final String source = objectMapper.writeValueAsString(metadataDto);
 
       final IndexRequest request =
-        new IndexRequest(METADATA_INDEX_NAME, METADATA_INDEX_NAME, ID)
+        new IndexRequest(METADATA_INDEX_NAME)
+          .id(ID)
           .source(source, XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE);
 

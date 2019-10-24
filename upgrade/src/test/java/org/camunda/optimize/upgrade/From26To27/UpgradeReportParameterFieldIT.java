@@ -166,9 +166,9 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
   }
 
   @SneakyThrows
-  private <T extends ReportDefinitionDto> List<T> getAllReports(String reportEsType, Class<T> returnClass) {
+  private <T extends ReportDefinitionDto> List<T> getAllReports(String indexName, Class<T> returnClass) {
     final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(reportEsType).source(new SearchSourceBuilder().size(10000)),
+      new SearchRequest(indexName).source(new SearchSourceBuilder().size(10000)),
       RequestOptions.DEFAULT
     );
     return Arrays

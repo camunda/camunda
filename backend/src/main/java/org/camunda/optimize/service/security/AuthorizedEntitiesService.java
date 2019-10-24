@@ -49,7 +49,6 @@ public class AuthorizedEntitiesService {
       })
       .map(Pair::getValue)
       .collect(Collectors.toList());
-
   }
 
   public List<EntityDto> getAuthorizedCollectionEntities(final String userId, final String collectionId) {

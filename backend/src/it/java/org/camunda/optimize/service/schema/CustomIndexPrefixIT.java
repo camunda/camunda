@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
-import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForTypeAndPrefix;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexAliasForIndexNameAndPrefix;
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -83,7 +83,7 @@ public class CustomIndexPrefixIT {
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().getMappings();
     assertThat(mappings.size(), is(18));
     for (IndexMappingCreator mapping : mappings) {
-      final String expectedAliasName = getOptimizeIndexAliasForTypeAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);
+      final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);
       final String expectedIndexName = getOptimizeIndexNameForAliasAndVersion(
         expectedAliasName, String.valueOf(mapping.getVersion())
       );

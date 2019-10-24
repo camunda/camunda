@@ -40,7 +40,7 @@ public class DashboardReader {
 
   public DashboardDefinitionDto getDashboard(String dashboardId) {
     log.debug("Fetching dashboard with id [{}]", dashboardId);
-    GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, dashboardId);
+    GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(dashboardId);
 
     GetResponse getResponse;
     try {
@@ -78,7 +78,6 @@ public class DashboardReader {
     searchSourceBuilder.query(QueryBuilders.termQuery(COLLECTION_ID, collectionId));
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
-      .types(DASHBOARD_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -107,7 +106,6 @@ public class DashboardReader {
     searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(DASHBOARD_INDEX_NAME)
-      .types(DASHBOARD_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

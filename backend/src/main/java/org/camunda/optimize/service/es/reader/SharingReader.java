@@ -53,9 +53,7 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_INDEX_NAME)
-      .types(REPORT_SHARE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -84,7 +82,7 @@ public class SharingReader {
   public Optional<ReportShareDto> getReportShare(String shareId) {
     Optional<ReportShareDto> result = Optional.empty();
     log.debug("Fetching report share with id [{}]", shareId);
-    GetRequest getRequest = new GetRequest(REPORT_SHARE_INDEX_NAME, REPORT_SHARE_INDEX_NAME, shareId);
+    GetRequest getRequest = new GetRequest(REPORT_SHARE_INDEX_NAME).id(shareId);
 
     GetResponse getResponse;
     try {
@@ -110,7 +108,7 @@ public class SharingReader {
   public Optional<DashboardShareDto> findDashboardShare(String shareId) {
     Optional<DashboardShareDto> result = Optional.empty();
     log.debug("Fetching dashboard share with id [{}]", shareId);
-    GetRequest getRequest = new GetRequest(DASHBOARD_SHARE_INDEX_NAME, DASHBOARD_SHARE_INDEX_NAME, shareId);
+    GetRequest getRequest = new GetRequest(DASHBOARD_SHARE_INDEX_NAME).id(shareId);
 
     GetResponse getResponse;
     try {
@@ -173,9 +171,7 @@ public class SharingReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(boolQueryBuilder);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_INDEX_NAME)
-      .types(DASHBOARD_SHARE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -193,9 +189,8 @@ public class SharingReader {
       .query(query)
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_INDEX_NAME)
-        .types(REPORT_SHARE_INDEX_NAME)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     SearchResponse scrollResp;
     try {
@@ -238,9 +233,8 @@ public class SharingReader {
       .query(query)
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_INDEX_NAME)
-        .types(DASHBOARD_SHARE_INDEX_NAME)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .source(searchSourceBuilder)
+      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
     SearchResponse scrollResp;
     try {

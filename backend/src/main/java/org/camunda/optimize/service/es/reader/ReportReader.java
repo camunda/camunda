@@ -100,13 +100,9 @@ public class ReportReader {
 
   private MultiGetResponse performGetReportRequest(String reportId) {
     MultiGetRequest request = new MultiGetRequest();
-    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, reportId));
-    request.add(new MultiGetRequest.Item(
-      SINGLE_DECISION_REPORT_INDEX_NAME,
-      SINGLE_DECISION_REPORT_INDEX_NAME,
-      reportId
-    ));
-    request.add(new MultiGetRequest.Item(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, reportId));
+    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_INDEX_NAME, null, reportId));
+    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_INDEX_NAME, null, reportId));
+    request.add(new MultiGetRequest.Item(COMBINED_REPORT_INDEX_NAME, null, reportId));
 
     MultiGetResponse multiGetItemResponses;
     try {
@@ -121,11 +117,7 @@ public class ReportReader {
 
   public SingleProcessReportDefinitionDto getSingleProcessReport(String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(
-      SINGLE_PROCESS_REPORT_INDEX_NAME,
-      SINGLE_PROCESS_REPORT_INDEX_NAME,
-      reportId
-    );
+    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME).id(reportId);
 
     GetResponse getResponse;
     try {
@@ -152,10 +144,7 @@ public class ReportReader {
 
   public SingleDecisionReportDefinitionDto getSingleDecisionReport(String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(
-      SINGLE_DECISION_REPORT_INDEX_NAME,
-      SINGLE_DECISION_REPORT_INDEX_NAME, reportId
-    );
+    GetRequest getRequest = new GetRequest(SINGLE_DECISION_REPORT_INDEX_NAME).id(reportId);
 
     GetResponse getResponse;
     try {
@@ -264,7 +253,6 @@ public class ReportReader {
     searchSourceBuilder.fetchSource(null, REPORT_LIST_EXCLUDES);
 
     final SearchRequest searchRequest = new SearchRequest(SINGLE_PROCESS_REPORT_INDEX_NAME)
-      .types(SINGLE_PROCESS_REPORT_INDEX_NAME)
       .source(searchSourceBuilder);
 
     try {
@@ -288,9 +276,7 @@ public class ReportReader {
       COMBINED_REPORT_INDEX_NAME,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SINGLE_DECISION_REPORT_INDEX_NAME
-    )
-      .types(COMBINED_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME)
-      .source(searchSourceBuilder);
+    ).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -319,9 +305,7 @@ public class ReportReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(getCombinedReportsBySimpleReportIdQuery);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(COMBINED_REPORT_INDEX_NAME)
-      .types(COMBINED_REPORT_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(COMBINED_REPORT_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

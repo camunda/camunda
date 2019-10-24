@@ -74,9 +74,7 @@ public class FlowNodeDurationByFlowNodeCommand extends FlowNodeDurationGroupingC
       .fetchSource(false)
       .aggregation(createAggregation(processReportData.getConfiguration().getFlowNodeExecutionState()))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-        .types(PROCESS_INSTANCE_INDEX_NAME)
-        .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

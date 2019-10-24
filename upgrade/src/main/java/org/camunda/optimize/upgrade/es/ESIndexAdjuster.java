@@ -39,10 +39,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 
 public class ESIndexAdjuster {
 
@@ -66,14 +69,11 @@ public class ESIndexAdjuster {
   }
 
   public void reindex(final String sourceIndex,
-                      final String destinationIndex,
-                      final String sourceType,
-                      final String destType) {
+                      final String destinationIndex) {
     this.reindex(
       sourceIndex,
       destinationIndex,
-      sourceType,
-      destType,
+      null,
       null
     );
   }
@@ -88,23 +88,26 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void reindex(final String sourceIndex,
-                      final String destinationIndex,
+  public void reindex(final String sourceIndexName,
+                      final String destinationIndexName,
                       final String sourceType,
-                      final String destType,
                       final String mappingScript) {
     logger.debug(
       "Reindexing from index [{}] to [{}] using the mapping script [{}].",
-      sourceIndex,
-      destinationIndex,
+      sourceIndexName,
+      destinationIndexName,
       mappingScript
     );
 
+    Set<String> sourceTypes = new HashSet<>();
+    sourceTypes.add(DEFAULT_INDEX_TYPE);
+    Optional.ofNullable(sourceType).ifPresent(sourceTypes::add);
+
     ReindexRequest reindexRequest = new ReindexRequest()
-      .setSourceIndices(sourceIndex)
-      .setSourceDocTypes(sourceType)
-      .setDestIndex(destinationIndex)
-      .setDestDocType(destType)
+      .setSourceIndices(sourceIndexName)
+      .setSourceDocTypes(sourceTypes.toArray(new String[sourceTypes.size()]))
+      .setDestIndex(destinationIndexName)
+      .setDestDocType(DEFAULT_INDEX_TYPE)
       .setRefresh(true);
 
     if (mappingScript != null) {
@@ -117,18 +120,18 @@ public class ESIndexAdjuster {
       if (taskId == null) {
         throw new UpgradeRuntimeException(String.format(
           "Could not start reindexing of data from index [%s] to [%s]!",
-          sourceIndex,
-          destinationIndex
+          sourceIndexName,
+          destinationIndexName
         ));
       }
     } catch (IOException e) {
       throw new UpgradeRuntimeException(String.format(
         "Error while trying to reindex data from index [%s] to [%s]!",
-        sourceIndex,
-        destinationIndex
+        sourceIndexName,
+        destinationIndexName
       ), e);
     }
-    waitUntilReindexingTaskIsFinished(taskId, sourceIndex, destinationIndex);
+    waitUntilReindexingTaskIsFinished(taskId, sourceIndexName, destinationIndexName);
   }
 
   private void waitUntilReindexingTaskIsFinished(final String taskId,
@@ -184,15 +187,15 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void createIndex(final IndexMappingCreator mapping) {
-    final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping);
+  public void createIndex(final IndexMappingCreator indexMapping) {
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMapping);
     logger.debug(
       "Creating index [{}] and mapping [{}].",
-      indexName, Strings.toString(mapping.getSource())
+      indexName, Strings.toString(indexMapping.getSource())
     );
 
     final CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexName);
-    createIndexRequest.mapping(mapping.getIndexName(), mapping.getSource());
+    createIndexRequest.mapping(DEFAULT_INDEX_TYPE, indexMapping.getSource());
     createIndexRequest.settings(createIndexSettings());
 
     try {
@@ -214,7 +217,7 @@ public class ESIndexAdjuster {
 
   public void addAlias(final IndexMappingCreator mapping) {
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
-    final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping);
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
     logger.debug("Adding alias [{}] to index [{}].", indexAlias, indexName);
 
     try {
@@ -230,12 +233,13 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void insertDataByTypeName(final IndexMappingCreator type, final String data) {
-    String aliasName = indexNameService.getOptimizeIndexAliasForIndex(type.getIndexName());
+  public void insertDataByIndexName(final IndexMappingCreator indexMapping, final String data) {
+    String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
     logger.debug("Inserting data to indexAlias [{}]. Data payload is [{}]", aliasName, data);
     try {
-      final IndexRequest indexRequest = new IndexRequest(aliasName, type.getIndexName());
+      final IndexRequest indexRequest = new IndexRequest(aliasName);
       indexRequest.source(data, XContentType.JSON);
+      indexRequest.type(DEFAULT_INDEX_TYPE);
       indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       restClient.index(indexRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -244,10 +248,10 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void updateDataByTypeName(final String indexName,
-                                   final QueryBuilder query,
-                                   final String updateScript,
-                                   final Map<String, Object> parameters) {
+  public void updateDataByIndexName(final String indexName,
+                                    final QueryBuilder query,
+                                    final String updateScript,
+                                    final Map<String, Object> parameters) {
     String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexName);
     logger.debug(
       "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
@@ -270,8 +274,8 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void deleteDataByTypeName(final String indexName,
-                                   final QueryBuilder query) {
+  public void deleteDataByIndexName(final String indexName,
+                                    final QueryBuilder query) {
     String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexName);
     logger.debug(
       "Deleting data for indexAlias [{}] with query [{}].", aliasName, query.toString()
@@ -281,6 +285,7 @@ public class ESIndexAdjuster {
       DeleteByQueryRequest request = new DeleteByQueryRequest(aliasName);
       request.setRefresh(true);
       request.setQuery(query);
+      request.setDocTypes(DEFAULT_INDEX_TYPE);
       restClient.deleteByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String errorMessage = String.format("Could not delete data for indexAlias [%s] with query [%s]!", aliasName, query);
@@ -288,8 +293,8 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void updateIndexDynamicSettingsAndMappings(IndexMappingCreator index) {
-    final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(index);
+  public void updateIndexDynamicSettingsAndMappings(IndexMappingCreator indexMapping) {
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
@@ -297,16 +302,16 @@ public class ESIndexAdjuster {
       updateSettingsRequest.settings(indexSettings);
       restClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not update index settings for type [%s].", index.getIndexName());
+      String message = String.format("Could not update index settings for index [%s].", indexMapping.getIndexName());
       throw new UpgradeRuntimeException(message, e);
     }
 
     try {
       final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
-      putMappingRequest.type(index.getIndexName()).source(index.getSource());
+      putMappingRequest.type(DEFAULT_INDEX_TYPE).source(indexMapping.getSource());
       restClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not update index mappings for type [%s].", index.getIndexName());
+      String message = String.format("Could not update index mappings for index [%s].", indexMapping.getIndexName());
       throw new UpgradeRuntimeException(message, e);
     }
   }

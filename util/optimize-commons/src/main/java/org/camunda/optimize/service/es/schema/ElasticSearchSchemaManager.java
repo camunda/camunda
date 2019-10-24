@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
-
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 
 @RequiredArgsConstructor
 @Component
@@ -73,22 +73,22 @@ public class ElasticSearchSchemaManager {
   }
 
   public boolean schemaAlreadyExists(OptimizeElasticsearchClient esClient) {
-    String[] types = new String[mappings.size()];
+    String[] indices = new String[mappings.size()];
     int i = 0;
     for (IndexMappingCreator creator : mappings) {
-      types[i] = creator.getIndexName();
+      indices[i] = creator.getIndexName();
       i = ++i;
     }
 
     GetIndexRequest request = new GetIndexRequest();
-    request.indices(types);
+    request.indices(indices);
 
     try {
       return esClient.exists(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String message = String.format(
         "Could not check if [%s] index(es) already exist.",
-        String.join(",", types)
+        String.join(",", indices)
       );
       throw new OptimizeRuntimeException(message, e);
     }
@@ -102,14 +102,14 @@ public class ElasticSearchSchemaManager {
   public void createOptimizeIndices(RestHighLevelClient esClient) {
     for (IndexMappingCreator mapping : mappings) {
       final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
-      final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(mapping);
+      final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
       final Settings indexSettings = createIndexSettings();
       try {
         try {
           CreateIndexRequest request = new CreateIndexRequest(indexName);
           request.alias(new Alias(aliasName));
           request.settings(indexSettings);
-          request.mapping(mapping.getIndexName(), mapping.getSource());
+          request.mapping(DEFAULT_INDEX_TYPE, mapping.getSource());
           esClient.indices().create(request, RequestOptions.DEFAULT);
         } catch (ElasticsearchStatusException e) {
           if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
@@ -182,8 +182,8 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-  private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, IndexMappingCreator typeMapping) {
-    final String indexName = indexNameService.getVersionedOptimizeIndexNameForTypeMapping(typeMapping);
+  private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, IndexMappingCreator indexMapping) {
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
@@ -191,16 +191,16 @@ public class ElasticSearchSchemaManager {
       updateSettingsRequest.settings(indexSettings);
       esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not update index settings for type [%s].", typeMapping.getIndexName());
+      String message = String.format("Could not update index settings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
     }
 
     try {
       final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
-      putMappingRequest.type(typeMapping.getIndexName()).source(typeMapping.getSource());
+      putMappingRequest.type(DEFAULT_INDEX_TYPE).source(indexMapping.getSource());
       esClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not update index mappings for type [%s].", typeMapping.getIndexName());
+      String message = String.format("Could not update index mappings for index [%s].", indexMapping.getIndexName());
       throw new OptimizeRuntimeException(message, e);
     }
   }

@@ -12,7 +12,7 @@ import java.io.IOException;
 
 public class UserTestUpdatedMappingIndex extends StrictIndexMappingCreator {
 
-  private static final int VERSION = 1;
+  private static final int VERSION = 2;
 
   @Override
   public String getIndexName() {

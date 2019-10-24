@@ -75,11 +75,9 @@ public class DecisionDefinitionWriter {
       decisionDefinitionDto,
       objectMapper
     );
-    final UpdateRequest request = new UpdateRequest(
-      DECISION_DEFINITION_INDEX_NAME,
-      DECISION_DEFINITION_INDEX_NAME,
-      decisionDefinitionDto.getId()
-    )
+    final UpdateRequest request = new UpdateRequest()
+      .index(DECISION_DEFINITION_INDEX_NAME)
+      .id(decisionDefinitionDto.getId())
       .script(updateScript)
       .upsert(objectMapper.convertValue(decisionDefinitionDto, Map.class))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

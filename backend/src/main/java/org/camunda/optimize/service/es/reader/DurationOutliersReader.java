@@ -119,7 +119,6 @@ public class DurationOutliersReader {
 
     SearchRequest searchRequest =
       new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-        .types(PROCESS_INSTANCE_INDEX_NAME)
         .source(searchSourceBuilder);
 
     SearchResponse search;
@@ -164,7 +163,6 @@ public class DurationOutliersReader {
       .size(0);
 
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     Aggregations flowNodeDurationStatAggregations;
@@ -254,7 +252,6 @@ public class DurationOutliersReader {
       .size(recordLimit > MAX_RESPONSE_SIZE_LIMIT ? MAX_RESPONSE_SIZE_LIMIT : recordLimit);
 
     final SearchRequest scrollSearchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -426,7 +423,6 @@ public class DurationOutliersReader {
       .size(0);
 
     return new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
   }
 
@@ -537,7 +533,6 @@ public class DurationOutliersReader {
       });
 
     final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
     try {
       final Aggregations allFlowNodesPercentileRanks = esClient.search(searchRequest, RequestOptions.DEFAULT)
@@ -629,7 +624,6 @@ public class DurationOutliersReader {
 
     SearchRequest searchRequest =
       new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-        .types(PROCESS_INSTANCE_INDEX_NAME)
         .source(searchSourceBuilder);
 
     SearchResponse search;

@@ -9,7 +9,6 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
 public class UpgradePlanBuilder {
 
-
   public static AddUpgradeDependenciesBuilder createUpgradePlan() {
     UpgradeExecutionPlan upgradeExecutionPlan = new UpgradeExecutionPlan();
     return new UpgradePlanBuilder().startUpgradePlanBuild(upgradeExecutionPlan);

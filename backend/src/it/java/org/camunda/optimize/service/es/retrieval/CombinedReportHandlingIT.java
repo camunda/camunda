@@ -102,7 +102,7 @@ public class CombinedReportHandlingIT {
     String id = createNewCombinedReport();
 
     // then
-    GetRequest getRequest = new GetRequest(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, id);
+    GetRequest getRequest = new GetRequest(COMBINED_REPORT_INDEX_NAME).id(id);
     GetResponse getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     assertThat(getResponse.isExists(), is(true));

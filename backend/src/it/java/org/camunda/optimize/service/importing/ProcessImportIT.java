@@ -526,7 +526,6 @@ public class ProcessImportIT extends AbstractImportIT {
 
     SearchRequest searchRequest = new SearchRequest()
       .indices(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse response = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);

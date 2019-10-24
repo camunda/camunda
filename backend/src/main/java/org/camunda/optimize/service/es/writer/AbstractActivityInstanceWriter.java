@@ -85,10 +85,9 @@ public abstract class AbstractActivityInstanceWriter {
         .setEngine(e.getEngineAlias())
         .setEvents(simpleEvents);
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
-      final UpdateRequest request = new UpdateRequest(
-        PROCESS_INSTANCE_INDEX_NAME,
-        PROCESS_INSTANCE_INDEX_NAME, activityInstanceId
-      )
+      final UpdateRequest request = new UpdateRequest()
+        .index(PROCESS_INSTANCE_INDEX_NAME)
+        .id(activityInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

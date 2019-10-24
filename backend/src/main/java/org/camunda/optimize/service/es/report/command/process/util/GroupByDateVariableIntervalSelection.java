@@ -78,7 +78,7 @@ public class GroupByDateVariableIntervalSelection {
   }
 
   private static Stats getMinMaxStats(QueryBuilder query,
-                                      String esType,
+                                      String indexName,
                                       String nestedPath,
                                       String field,
                                       OptimizeElasticsearchClient esClient,
@@ -105,9 +105,7 @@ public class GroupByDateVariableIntervalSelection {
       .fetchSource(false)
       .aggregation(statsAgg)
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(esType)
-      .types(esType)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
 
     SearchResponse response;
     try {

@@ -15,7 +15,7 @@ import java.io.IOException;
 @Component
 public class ProcessDefinitionIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String PROCESS_DEFINITION_ID = "id";
   public static final String PROCESS_DEFINITION_KEY = "key";

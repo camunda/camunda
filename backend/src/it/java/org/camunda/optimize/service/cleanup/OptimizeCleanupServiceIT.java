@@ -312,7 +312,6 @@ public class OptimizeCleanupServiceIT {
 
     SearchRequest searchRequest = new SearchRequest()
       .indices(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
@@ -338,7 +337,6 @@ public class OptimizeCleanupServiceIT {
 
     SearchRequest searchRequest = new SearchRequest()
       .indices(DECISION_INSTANCE_INDEX_NAME)
-      .types(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);

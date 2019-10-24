@@ -47,7 +47,6 @@ public class AlertReader {
     searchSourceBuilder.query(QueryBuilders.matchAllQuery());
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME)
-      .types(ALERT_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -71,7 +70,7 @@ public class AlertReader {
 
   public AlertDefinitionDto findAlert(String alertId) {
     log.debug("Fetching alert with id [{}]", alertId);
-    GetRequest getRequest = new GetRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, alertId);
+    GetRequest getRequest = new GetRequest(ALERT_INDEX_NAME).id(alertId);
 
     GetResponse getResponse;
     try {
@@ -103,8 +102,7 @@ public class AlertReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).types(ALERT_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {
@@ -125,8 +123,7 @@ public class AlertReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .size(LIST_FETCH_LIMIT);
-    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).types(ALERT_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(ALERT_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse searchResponse;
     try {

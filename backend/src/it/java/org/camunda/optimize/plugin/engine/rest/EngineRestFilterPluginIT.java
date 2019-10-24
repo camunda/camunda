@@ -111,18 +111,17 @@ public class EngineRestFilterPluginIT {
   }
 
   private void allEntriesInElasticsearchHaveAllDataWithCount(String elasticsearchType, long count) throws IOException {
-    SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(elasticsearchType);
+    SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(elasticsearchType);
     assertThat(idsResp.getHits().getTotalHits(), is(count));
   }
 
-  private SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) throws IOException {
+  private SearchResponse getSearchResponseForAllDocumentsOfIndex(String indexName) throws IOException {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(elasticsearchType)
-      .types(elasticsearchType)
+      .indices(indexName)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);

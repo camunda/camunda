@@ -15,7 +15,7 @@ import java.io.IOException;
 @Component
 public class ImportIndexIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String IMPORT_INDEX = "importIndex";
   public static final String ENGINE = "engine";

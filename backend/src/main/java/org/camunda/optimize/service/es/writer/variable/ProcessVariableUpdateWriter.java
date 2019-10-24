@@ -245,10 +245,9 @@ public class ProcessVariableUpdateWriter {
     }
 
     if (newEntryIfAbsent != null) {
-      UpdateRequest request = new UpdateRequest(
-        PROCESS_INSTANCE_INDEX_NAME,
-        PROCESS_INSTANCE_INDEX_NAME, processInstanceId
-      )
+      UpdateRequest request = new UpdateRequest()
+        .index(PROCESS_INSTANCE_INDEX_NAME)
+        .id(processInstanceId)
         .script(updateScript)
         .upsert(newEntryIfAbsent, XContentType.JSON)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

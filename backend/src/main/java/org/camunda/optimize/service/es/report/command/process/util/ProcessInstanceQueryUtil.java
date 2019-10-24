@@ -35,9 +35,7 @@ public class ProcessInstanceQueryUtil {
       .query(baseQuery)
       .sort(SortBuilders.fieldSort(dateField).order(SortOrder.DESC))
       .size(1);
-    final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

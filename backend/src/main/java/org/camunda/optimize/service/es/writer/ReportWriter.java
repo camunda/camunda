@@ -95,7 +95,8 @@ public class ReportWriter {
     reportDefinitionDto.setCollectionId(collectionId);
 
     try {
-      IndexRequest request = new IndexRequest(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(COMBINED_REPORT_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -136,7 +137,8 @@ public class ReportWriter {
     reportDefinitionDto.setCollectionId(collectionId);
 
     try {
-      IndexRequest request = new IndexRequest(SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_PROCESS_REPORT_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(SINGLE_PROCESS_REPORT_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -176,7 +178,8 @@ public class ReportWriter {
     reportDefinitionDto.setCollectionId(collectionId);
 
     try {
-      IndexRequest request = new IndexRequest(SINGLE_DECISION_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(SINGLE_DECISION_REPORT_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(reportDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -209,7 +212,7 @@ public class ReportWriter {
     updateReport(updatedReport, COMBINED_REPORT_INDEX_NAME);
   }
 
-  private void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType) {
+  private void updateReport(ReportDefinitionUpdateDto updatedReport, String indexName) {
     log.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     try {
       Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
@@ -218,7 +221,9 @@ public class ReportWriter {
         objectMapper
       );
       final UpdateRequest request =
-        new UpdateRequest(elasticsearchType, elasticsearchType, updatedReport.getId())
+        new UpdateRequest()
+          .index(indexName)
+          .id(updatedReport.getId())
           .script(updateScript)
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -300,7 +305,8 @@ public class ReportWriter {
   public void deleteCombinedReport(final String reportId) {
     log.debug("Deleting combined report with id [{}]", reportId);
 
-    DeleteRequest request = new DeleteRequest(COMBINED_REPORT_INDEX_NAME, COMBINED_REPORT_INDEX_NAME, reportId)
+    DeleteRequest request = new DeleteRequest(COMBINED_REPORT_INDEX_NAME)
+      .id(reportId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;

@@ -202,7 +202,7 @@ public class DecisionVariableImportPluginAdapterIT {
   }
 
   private List<DecisionInstanceDto> getDecisionInstanceDtos() {
-    SearchResponse response = elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_INDEX_NAME);
+    SearchResponse response = elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
     return mapHits(
       response.getHits(),
       DecisionInstanceDto.class,

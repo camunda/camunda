@@ -27,8 +27,8 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
 @AllArgsConstructor
 @Component
@@ -68,7 +68,8 @@ public class ImportIndexWriter {
       currentTimeStamp, importIndex.getEsTypeIndexRefersTo()
     );
     try {
-      return new IndexRequest(TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TIMESTAMP_BASED_IMPORT_INDEX_TYPE, getId(importIndex))
+      return new IndexRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
+        .id(getId(importIndex))
         .source(objectMapper.writeValueAsString(importIndex), XContentType.JSON);
     } catch (JsonProcessingException e) {
       log.error("Was not able to write definition based import index of type [{}] to Elasticsearch. Reason: {}",
@@ -93,7 +94,8 @@ public class ImportIndexWriter {
         .field(ImportIndexIndex.ENGINE, importIndex.getEngine())
         .field(ImportIndexIndex.IMPORT_INDEX, importIndex.getImportIndex())
         .endObject();
-      return new IndexRequest(IMPORT_INDEX_INDEX_NAME, IMPORT_INDEX_INDEX_NAME, getId(importIndex))
+      return new IndexRequest(IMPORT_INDEX_INDEX_NAME)
+        .id(getId(importIndex))
         .source(sourceToAdjust);
     } catch (IOException e) {
       log.error(

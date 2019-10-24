@@ -9,9 +9,6 @@ import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -19,9 +16,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.hamcrest.CoreMatchers;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -36,11 +31,11 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
-import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_OF_LAST_ENTITY;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -48,19 +43,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 
 public class MultiEngineImportIT extends AbstractMultiEngineIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule defaultEngineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EngineIntegrationExtensionRule secondaryEngineIntegrationExtensionRule = new EngineIntegrationExtensionRule("anotherEngine");
-  @RegisterExtension
-  @Order(4)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void allProcessDefinitionXmlsAreImported() {
@@ -175,7 +157,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfType(TENANT_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), CoreMatchers.is(2L));
     final Map<Object, List<Map<String, Object>>> tenantsByEngine = Arrays.stream(idsResp.getHits().getHits())
       .map(SearchHit::getSourceAsMap)
@@ -207,7 +189,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // then
-    SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_TYPE);
+    SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
 
     assertThat(searchResponse.getHits().getTotalHits(), is(18L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
@@ -239,14 +221,13 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     }
   }
 
-  private SearchResponse performProcessDefinitionSearchRequest(String procDefType) {
+  private SearchResponse performProcessDefinitionSearchRequest(String indexName) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(procDefType)
-      .types(procDefType)
+      .indices(indexName)
       .source(searchSourceBuilder);
 
     try {

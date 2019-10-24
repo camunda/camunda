@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
@@ -35,11 +35,10 @@ public class TimestampBasedImportIndexReader {
     GetResponse getResponse = null;
     TimestampBasedImportIndexDto dto;
     try {
-      GetRequest getRequest = new GetRequest(
-        TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
-        TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
-        EsHelper.constructKey(typeIndexComesFrom, engineAlias)
-      );
+      GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(
+        typeIndexComesFrom,
+        engineAlias
+      ));
       getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
     } catch (Exception ignored) {
     }

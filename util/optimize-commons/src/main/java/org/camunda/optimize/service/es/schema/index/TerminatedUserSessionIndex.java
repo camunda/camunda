@@ -17,7 +17,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 @Component
 public class TerminatedUserSessionIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String ID = "id";
   public static final String TERMINATION_TIMESTAMP = "terminationTimestamp";

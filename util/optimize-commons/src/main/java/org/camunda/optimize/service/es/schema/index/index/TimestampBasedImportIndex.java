@@ -13,22 +13,20 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
 @Component
 public class TimestampBasedImportIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String TIMESTAMP_OF_LAST_ENTITY = "timestampOfLastEntity";
   public static final String ES_TYPE_INDEX_REFERS_TO = "esTypeIndexRefersTo";
   private static final String ENGINE = "engine";
 
-  public static final String TIMESTAMP_BASED_IMPORT_INDEX_TYPE =
-    ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-
   @Override
   public String getIndexName() {
-    return TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+    return TIMESTAMP_BASED_IMPORT_INDEX_NAME;
   }
 
   @Override

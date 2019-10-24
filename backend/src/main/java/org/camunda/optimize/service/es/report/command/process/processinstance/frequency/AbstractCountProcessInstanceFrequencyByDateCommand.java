@@ -82,9 +82,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateCommand
       .fetchSource(false)
       .aggregation(createAggregation(getGroupByDateUnit(processReportData), query))
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

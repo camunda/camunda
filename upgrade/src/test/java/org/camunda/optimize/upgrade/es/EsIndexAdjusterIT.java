@@ -95,7 +95,7 @@ public class EsIndexAdjusterIT {
     )).thenReturn(inProgressResponse).thenReturn(completedResponse);
 
     // then no exceptions are thrown
-    underTest.reindex(index1, index2, "type", "type");
+    underTest.reindex(index1, index2);
   }
 
   @Test
@@ -110,7 +110,7 @@ public class EsIndexAdjusterIT {
             .getTask()).willAnswer(invocation -> { throw new IOException(); });
 
     // then an exception is thrown
-    assertThrows(UpgradeRuntimeException.class, () -> underTest.reindex(index1, index2, "type", "type"));
+    assertThrows(UpgradeRuntimeException.class, () -> underTest.reindex(index1, index2));
   }
 
   @Test
@@ -142,7 +142,7 @@ public class EsIndexAdjusterIT {
 
     // then an exception is thrown
     UpgradeRuntimeException exception =
-      assertThrows(UpgradeRuntimeException.class, () -> underTest.reindex(index1, index2, "type", "type"));
+      assertThrows(UpgradeRuntimeException.class, () -> underTest.reindex(index1, index2));
     assertThat(exception.getMessage(), is(taskResponseWithError.getError().toString()));
   }
 

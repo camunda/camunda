@@ -9,7 +9,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
@@ -53,10 +52,10 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
       .collect(Collectors.toList());
   }
 
-  protected Script createUpdateScript(List<UserTaskInstanceDto> userTasks){
+  protected Script createUpdateScript(List<UserTaskInstanceDto> userTasks) {
     final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, mapToParameterSet(userTasks));
     return createDefaultScript(createInlineUpdateScript(), scriptParameters);
-  };
+  }
 
   protected abstract String createInlineUpdateScript();
 
@@ -144,10 +143,9 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    UpdateRequest request = new UpdateRequest(
-      PROCESS_INSTANCE_INDEX_NAME,
-      PROCESS_INSTANCE_INDEX_NAME, activiyInstanceId
-    )
+    UpdateRequest request = new UpdateRequest()
+      .index(PROCESS_INSTANCE_INDEX_NAME)
+      .id(activiyInstanceId)
       .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

@@ -10,7 +10,6 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
-
 public class DeleteIndexStep implements UpgradeStep {
   private final IndexMappingCreator index;
 

@@ -28,10 +28,10 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
   }
 
   public String getOptimizeIndexAliasForIndex(String index) {
-    return getOptimizeIndexAliasForTypeAndPrefix(index, indexPrefix);
+    return getOptimizeIndexAliasForIndexNameAndPrefix(index, indexPrefix);
   }
 
-  public String getVersionedOptimizeIndexNameForTypeMapping(final IndexMappingCreator indexMappingCreator) {
+  public String getVersionedOptimizeIndexNameForIndexMapping(final IndexMappingCreator indexMappingCreator) {
     return getOptimizeIndexNameForAliasAndVersion(
       getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
       String.valueOf(indexMappingCreator.getVersion())
@@ -48,7 +48,7 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     return indexAlias + versionSuffix;
   }
 
-  public static String getOptimizeIndexAliasForTypeAndPrefix(final String indexName, final String indexPrefix) {
+  public static String getOptimizeIndexAliasForIndexNameAndPrefix(final String indexName, final String indexPrefix) {
     String original = String.join("-", indexPrefix, indexName);
     return original.toLowerCase();
   }

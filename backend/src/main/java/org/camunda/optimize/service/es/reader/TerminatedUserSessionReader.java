@@ -26,9 +26,7 @@ public class TerminatedUserSessionReader {
   public boolean exists(final String sessionId) {
     log.debug("Fetching terminated user session with id [{}]", sessionId);
     try {
-      final GetRequest sessionByIdRequest = new GetRequest(
-        TERMINATED_USER_SESSION_INDEX_NAME, TERMINATED_USER_SESSION_INDEX_NAME, sessionId
-      );
+      final GetRequest sessionByIdRequest = new GetRequest(TERMINATED_USER_SESSION_INDEX_NAME).id(sessionId);
       sessionByIdRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
       return esClient.get(sessionByIdRequest, RequestOptions.DEFAULT).isExists();
     } catch (Exception e) {

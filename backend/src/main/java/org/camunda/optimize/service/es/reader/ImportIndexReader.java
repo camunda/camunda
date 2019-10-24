@@ -31,7 +31,7 @@ public class ImportIndexReader {
   public Optional<AllEntitiesBasedImportIndexDto> getImportIndex(String id) {
     log.debug("Fetching import index of type [{}]", id);
 
-    GetRequest getRequest = new GetRequest(IMPORT_INDEX_INDEX_NAME, IMPORT_INDEX_INDEX_NAME, id);
+    GetRequest getRequest = new GetRequest(IMPORT_INDEX_INDEX_NAME).id(id);
 
     GetResponse getResponse = null;
     try {

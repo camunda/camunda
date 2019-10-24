@@ -21,7 +21,7 @@ public class InsertDataStep implements UpgradeStep {
 
   @Override
   public void execute(final ESIndexAdjuster ESIndexAdjuster) {
-    ESIndexAdjuster.insertDataByTypeName(index, data);
+    ESIndexAdjuster.insertDataByIndexName(index, data);
   }
 
 }

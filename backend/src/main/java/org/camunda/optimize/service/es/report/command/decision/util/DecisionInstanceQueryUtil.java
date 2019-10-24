@@ -36,9 +36,7 @@ public class DecisionInstanceQueryUtil {
       .sort(SortBuilders.fieldSort(EVALUATION_DATE_TIME).order(SortOrder.DESC))
       .fetchSource(false)
       .size(1);
-    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
-      .types(DECISION_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
 
     SearchResponse response;
     try {

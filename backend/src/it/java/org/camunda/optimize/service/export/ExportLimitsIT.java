@@ -47,7 +47,8 @@ public class ExportLimitsIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
   @RegisterExtension
   @Order(2)
   public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
@@ -161,11 +162,13 @@ public class ExportLimitsIT {
       for (int j = alreadyInsertedInstanceCount; j < endOfThisBatchCount && j < totalInstanceCount; j++) {
         processInstanceDto.setProcessInstanceId(UUID.randomUUID().toString());
 
-        final IndexRequest indexRequest = new IndexRequest(
-          PROCESS_INSTANCE_INDEX_NAME,
-          PROCESS_INSTANCE_INDEX_NAME,
-          processInstanceDto.getProcessInstanceId()
-        ).source(elasticSearchIntegrationTestExtensionRule.getObjectMapper().writeValueAsString(processInstanceDto), XContentType.JSON);
+        final IndexRequest indexRequest =
+          new IndexRequest(PROCESS_INSTANCE_INDEX_NAME)
+            .id(processInstanceDto.getProcessInstanceId())
+            .source(
+              elasticSearchIntegrationTestExtensionRule.getObjectMapper().writeValueAsString(processInstanceDto),
+              XContentType.JSON
+          );
 
         bulkInsert.add(indexRequest);
       }

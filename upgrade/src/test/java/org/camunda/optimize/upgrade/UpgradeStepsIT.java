@@ -9,7 +9,9 @@ import com.google.common.collect.Lists;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.indexes.UserTestIndex;
 import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -20,21 +22,33 @@ import org.camunda.optimize.upgrade.steps.document.InsertDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
+import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.stream.Stream;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -44,8 +58,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
   private static final IndexMappingCreator TEST_INDEX = new UserTestIndex();
   private static final IndexMappingCreator TEST_INDEX_WITH_UPDATED_MAPPING = new UserTestUpdatedMappingIndex();
 
-  private static final String FROM_VERSION = "2.0.0";
-  private static final String TO_VERSION = "2.1.0";
+  private static final String FROM_VERSION = "2.6.0";
+  private static final String TO_VERSION = "2.7.0";
 
   @BeforeEach
   @Override
@@ -209,7 +223,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     String jsonPathToNewField = String.format(
       "$.%s.mappings.%s.properties",
       getTestIndexName(TEST_INDEX_WITH_UPDATED_MAPPING),
-      TEST_INDEX_WITH_UPDATED_MAPPING.getIndexName()
+      DEFAULT_INDEX_TYPE
     );
     return JsonPath.parse(responseBody).read(jsonPathToNewField);
   }
@@ -240,10 +254,44 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     );
   }
 
+  @ParameterizedTest
+  @MethodSource("getIndexMapperAndType")
+  public void indexTypeIsUpdatedToOrRetainsDefaultValue(IndexMappingCreator indexMapper, String type) throws
+                                                                                                      IOException {
+    //given index exists with previous version
+    createAndPopulateOptimizeIndexWithTypeAndVersion(indexMapper, type, indexMapper.getVersion() - 1);
+
+    UpgradePlan upgradePlan =
+      UpgradePlanBuilder.createUpgradePlan()
+        .addUpgradeDependencies(upgradeDependencies)
+        .fromVersion(FROM_VERSION)
+        .toVersion(TO_VERSION)
+        .addUpgradeStep(buildUpdateIndexStep(indexMapper))
+        .build();
+
+    // when
+    upgradePlan.execute();
+
+    // then the type and index name are as expected and the data is reindexed
+    final SearchResponse searchResponse = prefixAwareClient.search(
+      new SearchRequest(indexMapper.getIndexName()),
+      RequestOptions.DEFAULT
+    );
+    assertThat(searchResponse.getHits().getHits().length, is(1));
+    assertThat(searchResponse.getHits().getHits()[0].getType(), is(DEFAULT_INDEX_TYPE));
+  }
+
   private InsertDataStep buildInsertDataStep() {
     return new InsertDataStep(
       TEST_INDEX,
       UpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json")
+    );
+  }
+
+  private UpdateIndexStep buildUpdateIndexStep(IndexMappingCreator indexMapping) {
+    return new UpdateIndexStep(
+      indexMapping,
+      null
     );
   }
 
@@ -273,8 +321,43 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     );
   }
 
-  private DeleteIndexStep buildDeleteIndexStep(final IndexMappingCreator index) {
-    return new DeleteIndexStep(index);
+  private DeleteIndexStep buildDeleteIndexStep(final IndexMappingCreator indexMapping) {
+    return new DeleteIndexStep(indexMapping);
   }
 
+  private void createAndPopulateOptimizeIndexWithTypeAndVersion(IndexMappingCreator indexMapping,
+                                                                String type,
+                                                                int version) throws IOException {
+    final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
+    final String indexName =
+      indexNameService.getOptimizeIndexNameForAliasAndVersion(indexNameService.getOptimizeIndexAliasForIndex(
+        indexMapping.getIndexName()), String.valueOf(version));
+    final Settings indexSettings = createIndexSettings();
+
+    CreateIndexRequest request = new CreateIndexRequest(indexName);
+    request.alias(new Alias(aliasName));
+    request.settings(indexSettings);
+    request.mapping(type, indexMapping.getSource());
+    prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+
+    final IndexRequest indexRequest = new IndexRequest(indexName, type);
+    indexRequest.source(UpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json"), XContentType.JSON);
+    indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+    prefixAwareClient.getHighLevelClient().index(indexRequest, RequestOptions.DEFAULT);
+  }
+
+  private Settings createIndexSettings() {
+    try {
+      return IndexSettingsBuilder.buildAllSettings(configurationService);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not create index settings");
+    }
+  }
+
+  private static Stream<Arguments> getIndexMapperAndType() {
+    return Stream.of(
+      Arguments.of(TEST_INDEX, TEST_INDEX.getIndexName()),
+      Arguments.of(TEST_INDEX, DEFAULT_INDEX_TYPE)
+    );
+  }
 }

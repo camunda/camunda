@@ -90,7 +90,8 @@ public class LicenseManager {
       throw new OptimizeException("Could not parse given license. Please check the encoding!");
     }
 
-    IndexRequest request = new IndexRequest(LICENSE_INDEX_NAME, LICENSE_INDEX_NAME, licenseDocumentId)
+    IndexRequest request = new IndexRequest(LICENSE_INDEX_NAME)
+      .id(licenseDocumentId)
       .source(builder)
       .setRefreshPolicy(IMMEDIATE);
 
@@ -139,7 +140,7 @@ public class LicenseManager {
 
   private String retrieveStoredOptimizeLicense() {
     log.debug("Retrieving stored optimize license!");
-    GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME, LICENSE_INDEX_NAME, licenseDocumentId);
+    GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME).id(licenseDocumentId);
 
     GetResponse getResponse;
     try {

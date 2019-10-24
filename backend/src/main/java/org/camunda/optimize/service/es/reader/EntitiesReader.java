@@ -15,6 +15,12 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
@@ -66,10 +72,11 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @Slf4j
 public class EntitiesReader {
 
-  private static final String AGG_BY_TYPE_COUNT = "byTypeCount";
+  private static final String AGG_BY_INDEX_COUNT = "byIndexCount";
   private static final String[] ENTITY_LIST_EXCLUDES = {REPORT_DATA_XML_PROPERTY};
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
+  private final OptimizeIndexNameService optimizeIndexNameService;
   private final ObjectMapper objectMapper;
 
   public List<CollectionEntity> getAllPrivateEntities() {
@@ -133,8 +140,8 @@ public class EntitiesReader {
       final FilterAggregationBuilder byCollectionIdFilterAggregation =
         filter(collectionId, boolQuery().filter(termQuery(COLLECTION_ID, collectionId)));
       searchSourceBuilder.aggregation(byCollectionIdFilterAggregation);
-      final TermsAggregationBuilder byEntityTypeAggregation = terms(AGG_BY_TYPE_COUNT).field("_type");
-      byCollectionIdFilterAggregation.subAggregation(byEntityTypeAggregation);
+      final TermsAggregationBuilder byIndexNameAggregation = terms(AGG_BY_INDEX_COUNT).field("_index");
+      byCollectionIdFilterAggregation.subAggregation(byIndexNameAggregation);
     });
 
     final SearchRequest searchRequest = createReportAndDashboardSearchRequest().source(searchSourceBuilder);
@@ -144,7 +151,7 @@ public class EntitiesReader {
       return searchResponse.getAggregations().asList().stream()
         .map(agg -> (Filter) agg)
         .map(collectionFilterAggregation -> new AbstractMap.SimpleEntry<>(
-          collectionFilterAggregation.getName(), extractEntityTypeCounts(collectionFilterAggregation)
+          collectionFilterAggregation.getName(), extractEntityIndexCounts(collectionFilterAggregation)
         ))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     } catch (IOException e) {
@@ -186,20 +193,21 @@ public class EntitiesReader {
     return result;
   }
 
-  private Map<EntityType, Long> extractEntityTypeCounts(final Filter collectionFilterAggregation) {
-    final Terms byTypeTerms = collectionFilterAggregation.getAggregations().get(AGG_BY_TYPE_COUNT);
-    final long singleProcessReportCount = getDocCountForIndex(byTypeTerms, SINGLE_PROCESS_REPORT_INDEX_NAME);
-    final long combinedProcessReportCount = getDocCountForIndex(byTypeTerms, COMBINED_REPORT_INDEX_NAME);
-    final long singleDecisionReportCount = getDocCountForIndex(byTypeTerms, SINGLE_DECISION_REPORT_INDEX_NAME);
-    final long dashboardCount = getDocCountForIndex(byTypeTerms, DASHBOARD_INDEX_NAME);
+  private Map<EntityType, Long> extractEntityIndexCounts(final Filter collectionFilterAggregation) {
+    final Terms byIndexNameTerms = collectionFilterAggregation.getAggregations().get(AGG_BY_INDEX_COUNT);
+    final long singleProcessReportCount = getDocCountForIndex(byIndexNameTerms, new SingleProcessReportIndex());
+    final long combinedProcessReportCount = getDocCountForIndex(byIndexNameTerms, new CombinedReportIndex());
+    final long singleDecisionReportCount = getDocCountForIndex(byIndexNameTerms, new SingleDecisionReportIndex());
+    final long dashboardCount = getDocCountForIndex(byIndexNameTerms, new DashboardIndex());
     return ImmutableMap.of(
       EntityType.DASHBOARD, dashboardCount,
       EntityType.REPORT, singleProcessReportCount + singleDecisionReportCount + combinedProcessReportCount
     );
   }
 
-  private long getDocCountForIndex(final Terms byTypeTerms, final String singleProcessReportIndexName) {
-    return Optional.ofNullable(byTypeTerms.getBucketByKey(singleProcessReportIndexName))
+  private long getDocCountForIndex(final Terms byIndexNameTerms, final IndexMappingCreator indexMapper) {
+    return Optional.ofNullable(byIndexNameTerms.getBucketByKey(
+      optimizeIndexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMapper)))
       .map(MultiBucketsAggregation.Bucket::getDocCount)
       .orElse(0L);
   }
@@ -242,7 +250,7 @@ public class EntitiesReader {
     if (entityId != null) {
       request.add(new MultiGetRequest.Item(
         entityIndexName,
-        entityIndexName,
+        null,
         entityId
       ));
     }

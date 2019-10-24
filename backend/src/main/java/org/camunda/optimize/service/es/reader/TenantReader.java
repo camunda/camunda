@@ -43,7 +43,6 @@ public class TenantReader {
       .query(QueryBuilders.matchAllQuery())
       .size(LIST_FETCH_LIMIT);
     final SearchRequest searchRequest = new SearchRequest(TENANT_INDEX_NAME)
-      .types(TENANT_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

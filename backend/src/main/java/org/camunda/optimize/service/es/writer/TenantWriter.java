@@ -54,7 +54,9 @@ public class TenantWriter {
     final String id = tenantDto.getId();
     final Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(FIELDS_TO_UPDATE, tenantDto, objectMapper);
     final UpdateRequest request =
-      new UpdateRequest(TENANT_INDEX_NAME, TENANT_INDEX_NAME, id)
+      new UpdateRequest()
+        .index(TENANT_INDEX_NAME)
+        .id(id)
         .script(updateScript)
         .upsert(objectMapper.convertValue(tenantDto, Map.class))
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

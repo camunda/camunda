@@ -60,12 +60,14 @@ public class DashboardWriter {
     dashboardDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     dashboardDefinitionDto.setOwner(userId);
-    dashboardDefinitionDto.setName(Optional.ofNullable(dashboardDefinitionDto.getName()).orElse(DEFAULT_DASHBOARD_NAME));
+    dashboardDefinitionDto.setName(Optional.ofNullable(dashboardDefinitionDto.getName())
+                                     .orElse(DEFAULT_DASHBOARD_NAME));
     dashboardDefinitionDto.setLastModifier(userId);
     dashboardDefinitionDto.setId(id);
 
     try {
-      IndexRequest request = new IndexRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(DASHBOARD_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(dashboardDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -90,7 +92,9 @@ public class DashboardWriter {
   public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) {
     log.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     try {
-      UpdateRequest request = new UpdateRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id)
+      UpdateRequest request = new UpdateRequest()
+        .index(DASHBOARD_INDEX_NAME)
+        .id(id)
         .doc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE)
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -162,12 +166,14 @@ public class DashboardWriter {
       QueryBuilders.termQuery(COLLECTION_ID, collectionId),
       deletedItemName,
       deletedItemIdentifier,
-      DASHBOARD_INDEX_NAME);
+      DASHBOARD_INDEX_NAME
+    );
   }
 
   public void deleteDashboard(String dashboardId) {
     log.debug("Deleting dashboard with id [{}]", dashboardId);
-    DeleteRequest request = new DeleteRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, dashboardId)
+    DeleteRequest request = new DeleteRequest(DASHBOARD_INDEX_NAME)
+      .id(dashboardId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;

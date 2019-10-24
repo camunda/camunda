@@ -7,6 +7,25 @@ package org.camunda.optimize.upgrade.main.impl;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.AlertIndex;
+import org.camunda.optimize.service.es.schema.index.CollectionIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.LicenseIndex;
+import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
+import org.camunda.optimize.service.es.schema.index.TenantIndex;
+import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
+import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
+import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -14,6 +33,7 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.index.query.QueryBuilders;
 
 import java.util.stream.Collectors;
@@ -47,6 +67,24 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeStep(moveParameterFieldsForProcessReport())
       .addUpgradeStep(removeDocumentsForImportIndexWithId("decisionDefinitionXmlImportIndex"))
       .addUpgradeStep(removeDocumentsForImportIndexWithId("processDefinitionXmlImportIndex"))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new DecisionInstanceIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new CollectionIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new TimestampBasedImportIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new AlertIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new DecisionDefinitionIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new ProcessInstanceIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new MetadataIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new ImportIndexIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new TerminatedUserSessionIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new ProcessDefinitionIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new SingleDecisionReportIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new SingleProcessReportIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new CombinedReportIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new ReportShareIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new LicenseIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new TenantIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new DashboardIndex()))
+      .addUpgradeStep(updateTypeForDocumentsInIndex(new DashboardShareIndex()))
       .build();
   }
 
@@ -119,6 +157,10 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       IMPORT_INDEX_INDEX_NAME,
       QueryBuilders.idsQuery().addIds(documentIdsToRemove)
     );
+  }
+
+  private UpgradeStep updateTypeForDocumentsInIndex(StrictIndexMappingCreator index) {
+    return new UpdateIndexStep(index, null);
   }
 
 }

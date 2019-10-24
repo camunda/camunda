@@ -57,11 +57,10 @@ public abstract class AbstractProcessInstanceWriter<T extends OptimizeDto> {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    UpdateRequest request = new UpdateRequest(
-      PROCESS_INSTANCE_INDEX_NAME,
-      PROCESS_INSTANCE_INDEX_NAME,
-      procInst.getProcessInstanceId()
-    ).script(updateScript)
+    UpdateRequest request = new UpdateRequest()
+      .index(PROCESS_INSTANCE_INDEX_NAME)
+      .id(procInst.getProcessInstanceId())
+      .script(updateScript)
       .upsert(newEntryIfAbsent, XContentType.JSON)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 

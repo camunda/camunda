@@ -180,7 +180,6 @@ public class BranchAnalysisReader {
       .size(0)
       .fetchSource(false);
     SearchRequest searchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

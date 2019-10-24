@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -18,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.InvalidParameterException;
-import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
@@ -33,7 +31,7 @@ public abstract class AbstractProcessDefinitionWriter {
   abstract Script createUpdateScript(ProcessDefinitionOptimizeDto processDefinitionDtos);
 
   protected void addImportProcessDefinitionToRequest(final BulkRequest bulkRequest,
-                                                    final OptimizeDto optimizeDto) {
+                                                     final OptimizeDto optimizeDto) {
     if (!(optimizeDto instanceof ProcessDefinitionOptimizeDto)) {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
@@ -41,10 +39,9 @@ public abstract class AbstractProcessDefinitionWriter {
 
     final Script updateScript = createUpdateScript(processDefinitionDto);
 
-    final UpdateRequest updateRequest = new UpdateRequest(
-      PROCESS_DEFINITION_INDEX_NAME,
-      PROCESS_DEFINITION_INDEX_NAME,
-      processDefinitionDto.getId())
+    final UpdateRequest updateRequest = new UpdateRequest()
+      .index(PROCESS_DEFINITION_INDEX_NAME)
+      .id(processDefinitionDto.getId())
       .script(updateScript)
       .upsert(objectMapper.convertValue(processDefinitionDto, Map.class))
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

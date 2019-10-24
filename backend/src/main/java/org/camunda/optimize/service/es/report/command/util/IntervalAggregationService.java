@@ -71,7 +71,7 @@ public class IntervalAggregationService {
     }
   }
 
-  public Stats getMinMaxStats(QueryBuilder query, String esType, String field) {
+  public Stats getMinMaxStats(QueryBuilder query, String indexName, String field) {
     AggregationBuilder statsAgg = AggregationBuilders
       .stats(STATS_AGGREGATION)
       .field(field)
@@ -82,9 +82,7 @@ public class IntervalAggregationService {
       .fetchSource(false)
       .aggregation(statsAgg)
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(esType)
-      .types(esType)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
 
     SearchResponse response;
     try {

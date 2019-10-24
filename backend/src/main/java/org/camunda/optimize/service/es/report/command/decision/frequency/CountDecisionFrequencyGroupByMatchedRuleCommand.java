@@ -50,9 +50,7 @@ public class CountDecisionFrequencyGroupByMatchedRuleCommand
       .fetchSource(false)
       .aggregation(createAggregation())
       .size(0);
-    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME)
-      .types(DECISION_INSTANCE_INDEX_NAME)
-      .source(searchSourceBuilder);
+    SearchRequest searchRequest = new SearchRequest(DECISION_INSTANCE_INDEX_NAME).source(searchSourceBuilder);
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

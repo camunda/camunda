@@ -18,7 +18,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TY
 @Component
 public class MetadataIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String SCHEMA_VERSION = METADATA_TYPE_SCHEMA_VERSION;
 
@@ -26,6 +26,7 @@ public class MetadataIndex extends StrictIndexMappingCreator {
   public String getIndexName() {
     return ElasticsearchConstants.METADATA_INDEX_NAME;
   }
+
 
   @Override
   public int getVersion() {

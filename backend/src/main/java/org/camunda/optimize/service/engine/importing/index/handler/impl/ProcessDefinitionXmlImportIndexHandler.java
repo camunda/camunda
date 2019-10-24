@@ -100,7 +100,6 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
       .sort(SortBuilders.fieldSort(PROCESS_DEFINITION_ID).order(SortOrder.DESC))
       .size(configurationService.getEngineImportProcessDefinitionXmlMaxPageSize());
     SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
-      .types(PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

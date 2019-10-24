@@ -46,7 +46,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-
 public class DashboardHandlingIT {
 
   @RegisterExtension
@@ -75,7 +74,7 @@ public class DashboardHandlingIT {
     String id = addEmptyPrivateDashboard();
 
     // when
-    GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME, DASHBOARD_INDEX_NAME, id);
+    GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(id);
     GetResponse getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then

@@ -15,7 +15,7 @@ import java.io.IOException;
 @Component
 public class DashboardShareIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String ID = "id";
   public static final String DASHBOARD_ID = "dashboardId";

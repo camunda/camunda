@@ -93,7 +93,6 @@ public abstract class AbstractImportIT {
 
     SearchRequest searchRequest = new SearchRequest()
       .indices(elasticsearchIndex)
-      .types(elasticsearchIndex)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);

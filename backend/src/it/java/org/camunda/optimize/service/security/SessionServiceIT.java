@@ -256,7 +256,7 @@ public class SessionServiceIT {
 
       // when
       // provoke failure for terminated session check
-      elasticSearchIntegrationTestExtensionRule.deleteIndexOfType(new TerminatedUserSessionIndex());
+      elasticSearchIntegrationTestExtensionRule.deleteIndexOfMapping(new TerminatedUserSessionIndex());
 
       final Response getReportsResponse =
         embeddedOptimizeExtensionRule

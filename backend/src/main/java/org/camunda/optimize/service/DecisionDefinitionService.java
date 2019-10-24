@@ -6,7 +6,6 @@
 
 package org.camunda.optimize.service;
 
-
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
@@ -22,7 +21,6 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 public class DecisionDefinitionService extends AbstractDefinitionService {
-
 
   private final DecisionDefinitionReader decisionDefinitionReader;
 

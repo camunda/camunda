@@ -83,7 +83,6 @@ public class DecisionDefinitionReader {
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
     SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
-      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -130,7 +129,6 @@ public class DecisionDefinitionReader {
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
     SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
-      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -167,7 +165,6 @@ public class DecisionDefinitionReader {
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
-      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -213,7 +210,6 @@ public class DecisionDefinitionReader {
       .size(1);
 
     SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
-      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

@@ -16,7 +16,6 @@ import java.io.InputStream;
 
 import static org.camunda.optimize.service.util.ESVersionChecker.checkESVersionSupport;
 
-
 public class UpgradeValidationService {
   private static final String ENVIRONMENT_CONFIG_FILE = "environment-config.yaml";
   private static final Logger logger = LoggerFactory.getLogger(UpgradeValidationService.class);
@@ -31,7 +30,6 @@ public class UpgradeValidationService {
   }
 
   public void validateSchemaVersions(final String fromVersion, final String toVersion) {
-
     final String schemaVersion = metadataService.readMetadata(prefixAwareClient)
       .orElseThrow(() -> new UpgradeRuntimeException("No Optimize Metadata present."))
       .getSchemaVersion();

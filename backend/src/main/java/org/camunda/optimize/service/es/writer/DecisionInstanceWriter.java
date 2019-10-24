@@ -17,15 +17,11 @@ import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.security.InvalidParameterException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -76,9 +72,8 @@ public class DecisionInstanceWriter {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    final IndexRequest request = new IndexRequest(
-      DECISION_INSTANCE_INDEX_NAME,
-      DECISION_INSTANCE_INDEX_NAME, decisionInstanceId)
+    final IndexRequest request = new IndexRequest(DECISION_INSTANCE_INDEX_NAME)
+      .id(decisionInstanceId)
       .source(source, XContentType.JSON);
 
     bulkRequest.add(request);

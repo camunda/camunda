@@ -17,7 +17,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 @Component
 public class DecisionInstanceIndex extends StrictIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";

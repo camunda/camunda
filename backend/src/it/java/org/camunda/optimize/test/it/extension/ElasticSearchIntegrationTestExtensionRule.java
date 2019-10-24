@@ -65,11 +65,11 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -168,29 +168,29 @@ public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher imple
    * field name in ES and every content of that variable is going to be the
    * content of the field.
    *
-   * @param type  where the entry is added.
+   * @param indexName  where the entry is added.
    * @param id    under which the entry is added.
    * @param entry a POJO specifying field names and their contents.
    */
-  public void addEntryToElasticsearch(String type, String id, Object entry) {
+  public void addEntryToElasticsearch(String indexName, String id, Object entry) {
     try {
       String json = OBJECT_MAPPER.writeValueAsString(entry);
-      IndexRequest request = new IndexRequest(type, type, id)
+      IndexRequest request = new IndexRequest(indexName)
+        .id(id)
         .source(json, XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE); // necessary because otherwise I can't search for the entry immediately
       getOptimizeElasticClient().index(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Unable to add an entry to elasticsearch", e);
     }
-    addEntryToTracker(type, id);
+    addEntryToTracker(indexName, id);
   }
 
   public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
-    GetRequest getRequest = new GetRequest(
-      TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
-      TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
-      EsHelper.constructKey(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME, "1")
-    );
+    GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(
+      ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME,
+      "1"
+    ));
 
     String content = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT).getSourceAsString();
     TimestampBasedImportIndexDto timestampBasedImportIndexDto = OBJECT_MAPPER.readValue(
@@ -216,32 +216,30 @@ public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher imple
   }
 
   @SneakyThrows
-  public SearchResponse getSearchResponseForAllDocumentsOfType(final String elasticsearchType) {
+  public SearchResponse getSearchResponseForAllDocumentsOfIndex(final String indexName) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(elasticsearchType)
-      .types(elasticsearchType)
+      .indices(indexName)
       .source(searchSourceBuilder);
 
     return prefixAwareRestHighLevelClient.search(searchRequest, RequestOptions.DEFAULT);
   }
 
-  public Integer getDocumentCountOf(final String elasticsearchType) {
-    return getDocumentCountOf(elasticsearchType, QueryBuilders.matchAllQuery());
+  public Integer getDocumentCountOf(final String indexName) {
+    return getDocumentCountOf(indexName, QueryBuilders.matchAllQuery());
   }
 
-  public Integer getDocumentCountOf(final String elasticsearchType, final QueryBuilder documentQuery) {
+  public Integer getDocumentCountOf(final String indexName, final QueryBuilder documentQuery) {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(documentQuery)
       .fetchSource(false)
       .size(0);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(elasticsearchType)
-      .types(elasticsearchType)
+      .indices(indexName)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -272,7 +270,6 @@ public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher imple
 
     SearchRequest searchRequest = new SearchRequest()
       .indices(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -302,7 +299,6 @@ public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher imple
 
     SearchRequest searchRequest = new SearchRequest()
       .indices(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     searchSourceBuilder.aggregation(
@@ -340,7 +336,6 @@ public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher imple
 
     SearchRequest searchRequest = new SearchRequest()
       .indices(PROCESS_INSTANCE_INDEX_NAME)
-      .types(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
     String VARIABLE_COUNT_AGGREGATION = VARIABLES + "_count";
@@ -380,10 +375,10 @@ public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher imple
     }
   }
 
-  public void deleteIndexOfType(final IndexMappingCreator type) {
+  public void deleteIndexOfMapping(final IndexMappingCreator indexMapping) {
     try {
       getOptimizeElasticClient().getHighLevelClient().indices().delete(
-        new DeleteIndexRequest(getIndexNameService().getVersionedOptimizeIndexNameForTypeMapping(type)),
+        new DeleteIndexRequest(getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(indexMapping)),
         RequestOptions.DEFAULT
       );
     } catch (IOException e) {
@@ -451,15 +446,15 @@ public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher imple
     }
   }
 
-  private void addEntryToTracker(String type, String id) {
-    if (!documentEntriesTracker.containsKey(type)) {
+  private void addEntryToTracker(String indexName, String id) {
+    if (!documentEntriesTracker.containsKey(indexName)) {
       List<String> idList = new LinkedList<>();
       idList.add(id);
-      documentEntriesTracker.put(type, idList);
+      documentEntriesTracker.put(indexName, idList);
     } else {
-      List<String> ids = documentEntriesTracker.get(type);
+      List<String> ids = documentEntriesTracker.get(indexName);
       ids.add(id);
-      documentEntriesTracker.put(type, ids);
+      documentEntriesTracker.put(indexName, ids);
     }
   }
 

@@ -21,6 +21,8 @@ public class ElasticsearchConstants {
   public static final String DECISION_DEFINITION_INDEX_NAME = "decision-definition";
   public static final String DECISION_INSTANCE_INDEX_NAME = "decision-instance";
 
+  public static final String DEFAULT_INDEX_TYPE = "_doc";
+
   public static final String SINGLE_PROCESS_REPORT_INDEX_NAME = "single-process-report";
   public static final String SINGLE_DECISION_REPORT_INDEX_NAME = "single-decision-report";
   public static final String COMBINED_REPORT_INDEX_NAME = "combined-report";
@@ -32,7 +34,7 @@ public class ElasticsearchConstants {
   public static final String LICENSE_INDEX_NAME = "license";
   public static final String ALERT_INDEX_NAME = "alert";
   public static final String REPORT_SHARE_INDEX_NAME = "report-share";
-  public static final String DASHBOARD_SHARE_INDEX_NAME =  "dashboard-share";
+  public static final String DASHBOARD_SHARE_INDEX_NAME = "dashboard-share";
   public static final String TIMESTAMP_BASED_IMPORT_INDEX_NAME = "timestamp-based-import-index";
   public static final String METADATA_INDEX_NAME = "metadata";
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";

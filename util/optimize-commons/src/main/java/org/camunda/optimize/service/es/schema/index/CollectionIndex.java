@@ -23,7 +23,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 @Component
 public class CollectionIndex extends StrictIndexMappingCreator {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   @Override
   public String getIndexName() {

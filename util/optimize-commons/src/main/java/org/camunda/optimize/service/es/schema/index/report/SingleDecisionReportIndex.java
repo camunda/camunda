@@ -15,7 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECI
 @Component
 public class SingleDecisionReportIndex extends AbstractReportIndex {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {

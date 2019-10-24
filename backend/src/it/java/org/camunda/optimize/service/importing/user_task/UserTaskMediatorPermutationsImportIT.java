@@ -95,7 +95,7 @@ public class UserTaskMediatorPermutationsImportIT {
 
     // then
     final SearchResponse idsResp =
-      elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfType(PROCESS_INSTANCE_INDEX_NAME);
+      elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(

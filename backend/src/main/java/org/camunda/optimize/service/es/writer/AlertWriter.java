@@ -49,7 +49,8 @@ public class AlertWriter {
     String id = IdGenerator.getNextId();
     alertDefinitionDto.setId(id);
     try {
-      IndexRequest request = new IndexRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(ALERT_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(alertDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -75,10 +76,12 @@ public class AlertWriter {
     log.debug("Updating alert with id [{}] in Elasticsearch", alertUpdate.getId());
     try {
       UpdateRequest request =
-        new UpdateRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, alertUpdate.getId())
-        .doc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
-        .setRefreshPolicy(IMMEDIATE)
-        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
+        new UpdateRequest()
+          .index(ALERT_INDEX_NAME)
+          .id(alertUpdate.getId())
+          .doc(objectMapper.writeValueAsString(alertUpdate), XContentType.JSON)
+          .setRefreshPolicy(IMMEDIATE)
+          .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
       UpdateResponse updateResponse = esClient.update(request, RequestOptions.DEFAULT);
 
@@ -111,8 +114,9 @@ public class AlertWriter {
   public void deleteAlert(String alertId) {
     log.debug("Deleting alert with id [{}]", alertId);
     DeleteRequest request =
-      new DeleteRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, alertId)
-      .setRefreshPolicy(IMMEDIATE);
+      new DeleteRequest(ALERT_INDEX_NAME)
+        .id(alertId)
+        .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
     try {
@@ -143,7 +147,9 @@ public class AlertWriter {
           .field(AlertIndex.TRIGGERED, alertStatus)
           .endObject();
       UpdateRequest request =
-        new UpdateRequest(ALERT_INDEX_NAME, ALERT_INDEX_NAME, alertId)
+        new UpdateRequest()
+          .index(ALERT_INDEX_NAME)
+          .id(alertId)
           .doc(docFieldToUpdate)
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -166,6 +172,7 @@ public class AlertWriter {
       QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),
       deletedItemName,
       deletedItemIdentifier,
-      ALERT_INDEX_NAME);
+      ALERT_INDEX_NAME
+    );
   }
 }

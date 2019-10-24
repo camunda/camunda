@@ -43,7 +43,8 @@ public class TerminatedUserSessionWriter {
       final String jsonSource = objectMapper.writeValueAsString(sessionDto);
 
       final IndexRequest request =
-        new IndexRequest(TERMINATED_USER_SESSION_INDEX_NAME, TERMINATED_USER_SESSION_INDEX_NAME, sessionDto.getId())
+        new IndexRequest(TERMINATED_USER_SESSION_INDEX_NAME)
+          .id(sessionDto.getId())
           .source(jsonSource, XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE);
 

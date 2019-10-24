@@ -26,12 +26,12 @@ import java.util.Collections;
 import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
-import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -276,7 +276,6 @@ public class DecisionImportIT extends AbstractImportIT {
 
     SearchRequest searchRequest = new SearchRequest()
       .indices(IMPORT_INDEX_INDEX_NAME)
-      .types(IMPORT_INDEX_INDEX_NAME)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
@@ -288,8 +287,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(TIMESTAMP_BASED_IMPORT_INDEX_TYPE)
-      .types(TIMESTAMP_BASED_IMPORT_INDEX_TYPE)
+      .indices(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);

@@ -82,7 +82,6 @@ public class ProcessDefinitionReader {
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
     SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
-      .types(PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -133,7 +132,6 @@ public class ProcessDefinitionReader {
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
     SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
-      .types(PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -168,7 +166,6 @@ public class ProcessDefinitionReader {
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =
       new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
-        .types(PROCESS_DEFINITION_INDEX_NAME)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -220,7 +217,6 @@ public class ProcessDefinitionReader {
       .size(1);
 
     SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
-      .types(PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;

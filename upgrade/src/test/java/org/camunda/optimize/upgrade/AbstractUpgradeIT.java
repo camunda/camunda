@@ -42,6 +42,7 @@ public abstract class AbstractUpgradeIT {
   protected OptimizeElasticsearchClient prefixAwareClient;
   protected OptimizeIndexNameService indexNameService;
   protected UpgradeExecutionDependencies upgradeDependencies;
+  protected ConfigurationService configurationService;
   private ElasticsearchMetadataService metadataService;
 
   @AfterEach
@@ -52,7 +53,7 @@ public abstract class AbstractUpgradeIT {
 
   @BeforeEach
   protected void setUp() throws Exception {
-    final ConfigurationService configurationService = createDefaultConfiguration();
+    configurationService = createDefaultConfiguration();
     if (upgradeDependencies == null) {
       upgradeDependencies = UpgradeUtil.createUpgradeDependencies();
       objectMapper = upgradeDependencies.getObjectMapper();

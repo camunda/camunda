@@ -114,18 +114,16 @@ public abstract class AbstractUserTaskImportIT {
     return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
   }
 
-  protected SearchResponse getSearchResponseForAllDocumentsOfType(String elasticsearchType) throws IOException {
+  protected SearchResponse getSearchResponseForAllDocumentsOfIndex(String indexName) throws IOException {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
       .size(100);
 
     SearchRequest searchRequest = new SearchRequest()
-      .indices(elasticsearchType)
-      .types(elasticsearchType)
+      .indices(indexName)
       .source(searchSourceBuilder);
 
     return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
-
 
 }

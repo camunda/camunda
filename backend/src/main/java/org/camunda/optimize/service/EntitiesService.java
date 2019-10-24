@@ -44,11 +44,11 @@ public class EntitiesService {
       collectionDefinitions.stream()
         .map(AuthorizedSimpleCollectionDefinitionDto::toEntityDto)
         .peek(entityDto -> entityDto.getData().setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
-      privateEntities.stream()
-    ).sorted(
-      Comparator.comparing(EntityDto::getEntityType)
-        .thenComparing(EntityDto::getLastModified, Comparator.reverseOrder())
-    ).collect(Collectors.toList());
+      privateEntities.stream())
+      .sorted(
+        Comparator.comparing(EntityDto::getEntityType)
+          .thenComparing(EntityDto::getLastModified, Comparator.reverseOrder())
+      ).collect(Collectors.toList());
   }
 
   public EntityNameDto getEntityNames(final EntityNameRequestDto requestDto) {

@@ -33,7 +33,7 @@ public class UpdateDataStep implements UpgradeStep {
 
   @Override
   public void execute(ESIndexAdjuster ESIndexAdjuster) {
-    ESIndexAdjuster.updateDataByTypeName(indexName, query, updateScript, parameters);
+    ESIndexAdjuster.updateDataByIndexName(indexName, query, updateScript, parameters);
   }
 
 }

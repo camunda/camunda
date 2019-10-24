@@ -99,7 +99,6 @@ public class DecisionDefinitionXmlImportIndexHandler extends ScrollBasedImportIn
       .sort(SortBuilders.fieldSort(DECISION_DEFINITION_ID).order(SortOrder.DESC))
       .size(configurationService.getEngineImportDecisionDefinitionXmlMaxPageSize());
     SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
-      .types(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

@@ -20,7 +20,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
@@ -39,26 +38,9 @@ public class CollectionReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-  public boolean checkIfCollectionExists(String collectionId) {
-    log.debug("Checking if collection with id [{}] exists", collectionId);
-
-    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId);
-    getRequest.fetchSourceContext(FetchSourceContext.DO_NOT_FETCH_SOURCE);
-
-    final GetResponse getResponse;
-    try {
-      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Could not check if collection with id [%s] exists", collectionId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    return getResponse.isExists();
-  }
-
   public SimpleCollectionDefinitionDto getCollection(String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
-    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId);
+    GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME).id(collectionId);
 
     GetResponse getResponse;
     try {
@@ -96,7 +78,6 @@ public class CollectionReader {
       .sort(SimpleCollectionDefinitionDto.Fields.name.name(), SortOrder.ASC)
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(COLLECTION_INDEX_NAME)
-      .types(COLLECTION_INDEX_NAME)
       .source(searchSourceBuilder)
       .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 

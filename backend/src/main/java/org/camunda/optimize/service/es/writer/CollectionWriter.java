@@ -49,7 +49,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
-
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -81,7 +80,8 @@ public class CollectionWriter {
     simpleCollectionDefinitionDto.setData(newCollectionDataDto);
 
     try {
-      IndexRequest request = new IndexRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id)
+      IndexRequest request = new IndexRequest(COLLECTION_INDEX_NAME)
+        .id(id)
         .source(objectMapper.writeValueAsString(simpleCollectionDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
@@ -107,7 +107,9 @@ public class CollectionWriter {
 
     try {
       UpdateRequest request =
-        new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, id)
+        new UpdateRequest()
+          .index(COLLECTION_INDEX_NAME)
+          .id(id)
           .doc(objectMapper.writeValueAsString(collection), XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE)
           .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -143,7 +145,8 @@ public class CollectionWriter {
 
   public void deleteCollection(String collectionId) {
     log.debug("Deleting collection with id [{}]", collectionId);
-    DeleteRequest request = new DeleteRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
+    DeleteRequest request = new DeleteRequest(COLLECTION_INDEX_NAME)
+      .id(collectionId)
       .setRefreshPolicy(IMMEDIATE);
 
     DeleteResponse deleteResponse;
@@ -294,7 +297,9 @@ public class CollectionWriter {
 
   private UpdateResponse executeUpdateRequest(String collectionId, Script updateEntityScript, String errorMessage)
     throws IOException {
-    final UpdateRequest request = new UpdateRequest(COLLECTION_INDEX_NAME, COLLECTION_INDEX_NAME, collectionId)
+    final UpdateRequest request = new UpdateRequest()
+      .index(COLLECTION_INDEX_NAME)
+      .id(collectionId)
       .script(updateEntityScript)
       .setRefreshPolicy(IMMEDIATE)
       .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);

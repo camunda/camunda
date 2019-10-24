@@ -41,7 +41,7 @@ public class ReimportPreparation {
 
   private static ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
 
-  private static final List<IndexMappingCreator> TYPES_TO_CLEAR = Lists.newArrayList(
+  private static final List<IndexMappingCreator> INDICES_TO_CLEAR = Lists.newArrayList(
     new ImportIndexIndex(), new TimestampBasedImportIndex(),
     new ProcessDefinitionIndex(), new ProcessInstanceIndex(),
     new DecisionDefinitionIndex(), new DecisionInstanceIndex()
@@ -80,8 +80,8 @@ public class ReimportPreparation {
   private static void deleteImportAndEngineDataIndexes(OptimizeElasticsearchClient prefixAwareClient) {
     logger.info("Deleting import and engine data indexes from Optimize...");
 
-    TYPES_TO_CLEAR.stream()
-      .map(type -> prefixAwareClient.getIndexNameService().getVersionedOptimizeIndexNameForTypeMapping(type))
+    INDICES_TO_CLEAR.stream()
+      .map(index -> prefixAwareClient.getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(index))
       .forEach(indexName -> {
         final Request request = new Request("DELETE", "/" + indexName);
         try {
@@ -103,7 +103,7 @@ public class ReimportPreparation {
       new ElasticsearchMetadataService(objectMapper),
       configurationService,
       prefixAwareClient.getIndexNameService(),
-      TYPES_TO_CLEAR,
+      INDICES_TO_CLEAR,
       objectMapper
     );
 
