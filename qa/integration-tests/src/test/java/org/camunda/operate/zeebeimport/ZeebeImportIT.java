@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.camunda.operate.entities.ActivityState;
@@ -25,6 +25,9 @@ import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.util.OperateZeebeIntegrationTest;
+import org.camunda.operate.util.TestUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
@@ -32,9 +35,6 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
-import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.TestUtil;
-import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Test;
@@ -74,13 +74,11 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     final Long workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     //1st load workflow instance index, then deployment
-    processAllEvents(10, ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ImportValueType.DEPLOYMENT);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCreatedCheck, workflowInstanceKey);
+    processImportTypeAndWait(ImportValueType.DEPLOYMENT, workflowIsDeployedCheck, workflowKey);
 
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
@@ -89,8 +87,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
   }
 
-  protected void processAllEvents(int expectedMinEventsCount, ImportValueType workflowInstance) {
-    elasticsearchTestRule.processAllEvents(expectedMinEventsCount, workflowInstance);
+  protected void processImportTypeAndWait(ImportValueType importValueType,Predicate<Object[]> waitTill, Object... arguments) {
+    elasticsearchTestRule.processRecordsWithTypeAndWait(importValueType,waitTill, arguments);
   }
   
   @Test
@@ -107,8 +105,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     
     final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCreatedCheck, workflowInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");    
 
     // then it should returns the processId instead of an empty name 
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
@@ -127,14 +124,14 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     //1st load incident 
-    processAllEvents(1, ImportValueType.INCIDENT);
+    processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, workflowInstanceKey);
+    
     //and then workflow instance events
-    processAllEvents(8, ImportValueType.WORKFLOW_INSTANCE);
-
+    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCreatedCheck, workflowInstanceKey);
+    
     //then
     final WorkflowInstanceForListViewEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceByKey(workflowInstanceKey);
     assertWorkflowInstanceListViewEntityWithIncident(workflowInstanceEntity,"Demo process",workflowKey,workflowInstanceKey);
@@ -209,14 +206,13 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     String activityId = "taskA";
     String processId = "demoProcess";
     deployWorkflow("demoProcess_v_1.bpmn");
-    ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
     ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3, "Some error");
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     //load only incidents
-    processAllEvents(1, ImportValueType.INCIDENT);
+    processImportTypeAndWait(ImportValueType.INCIDENT,incidentIsActiveCheck, workflowInstanceKey);
 
     assertListViewResponse();
     //if nothing is returned in list view - there is no way to access the workflow instance, no need to check other queries
@@ -266,8 +262,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     ZeebeTestUtil.resolveIncident(zeebeClient, jobKey, incidentKey);
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}");
 
-    processAllEvents(20, ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ImportValueType.INCIDENT);
+    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE,workflowInstancesAreFinishedCheck, List.of(workflowInstanceKey));
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsResolvedCheck, workflowInstanceKey);
 
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
@@ -320,9 +316,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
 
-    processAllEvents(20, ImportValueType.WORKFLOW_INSTANCE);
-    processAllEvents(2, ImportValueType.INCIDENT);
-
+    processImportTypeAndWait(ImportValueType.WORKFLOW_INSTANCE, workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    processImportTypeAndWait(ImportValueType.INCIDENT, incidentIsResolvedCheck,workflowInstanceKey);
     //then
     final List<IncidentEntity> allIncidents = incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey);
     assertThat(allIncidents).hasSize(0);

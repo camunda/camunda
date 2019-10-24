@@ -6,6 +6,8 @@
 package org.camunda.operate.zeebeimport;
 
 import java.io.IOException;
+import java.util.Collection;
+
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
@@ -70,13 +72,17 @@ public class ZeebeImporter extends Thread {
       }
     }
   }
-
-  public int performOneRoundOfImport() throws IOException {
+  
+  public int performOneRoundOfImportFor(Collection<RecordsReader> readers) throws IOException {
     int countRecords = 0;
-    for (RecordsReader recordsReader: recordsReaderHolder.getActiveRecordsReaders()) {
+    for (RecordsReader recordsReader: readers) {
       countRecords += importOneBatch(recordsReader);
     }
     return countRecords;
+  }
+
+  public int performOneRoundOfImport() throws IOException {
+    return performOneRoundOfImportFor(recordsReaderHolder.getActiveRecordsReaders());
   }
 
   public int importOneBatch(RecordsReader recordsReader) throws IOException {

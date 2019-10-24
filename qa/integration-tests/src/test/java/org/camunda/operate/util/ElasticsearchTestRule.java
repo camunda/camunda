@@ -6,8 +6,6 @@
 package org.camunda.operate.util;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import org.camunda.operate.TestImportListener;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
@@ -23,17 +22,20 @@ import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.ActivityInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
 import org.camunda.operate.zeebeimport.RecordsReaderHolder;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -42,7 +44,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.IndexNotFoundException;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
@@ -50,7 +51,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
+import static org.camunda.operate.util.CollectionUtil.*;
 
 public class ElasticsearchTestRule extends TestWatcher {
 
@@ -91,8 +95,11 @@ public class ElasticsearchTestRule extends TestWatcher {
   private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
-  private TestImportListener testImportListener;
-
+  TestImportListener testImportListener;
+  
+  @Autowired
+  ElasticsearchConnector esConnector;
+  
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
   protected boolean failed = false;
@@ -107,53 +114,85 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   @Override
   protected void starting(Description description) {
-    operateProperties.getElasticsearch().setIndexPrefix(TestUtil.createRandomString(10) + "-operate");
+    String indexPrefix = TestUtil.createRandomString(10) + "-operate";
+    operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     elasticsearchSchemaManager.createIndices();
     elasticsearchSchemaManager.createTemplates();
-    // OPE-579
-    //waitThatElasticsearchIsReady();
+    assertThat(areElasticsearchIndicesCreated(indexPrefix,5))
+      .describedAs("Elasticsearch %s (min %d) indices are created",indexPrefix,5)
+      .isTrue();
   }
 
   @Override
   protected void finished(Description description) {
     if (!failed) {
-      TestUtil.removeAllIndices(esClient, operateProperties.getElasticsearch().getIndexPrefix());
+      String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+      TestUtil.removeAllIndices(esClient,indexPrefix);
+      assertThat(areElasticsearchIndicesEmpty(indexPrefix)).describedAs("Elasticsearch '%s' indexes are deleted.",indexPrefix).isTrue();
     }
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
   }
-
-
-  public void refreshIndexesInElasticsearch() {
-    try {
-      esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
-      zeebeEsClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
-    } catch (IndexNotFoundException | IOException e) {
-      logger.error(e.getMessage(), e);
-      //      nothing to do
-    }
+  
+  public void assertZeebeESIsRunning() {
+    assertThat(esConnector.checkHealth(zeebeEsClient, true)).describedAs("Zeebe Elasticsearch is running").isTrue();
   }
 
-  public void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
+  public void assertOperateESIsRunning() {
+    assertThat(esConnector.checkHealth(esClient, true)).describedAs("Operator Elasticsearch is running").isTrue();
+  }
+
+  public void refreshIndexesInElasticsearch() {
+    refreshZeebeESIndices();
+    refreshOperateESIndices();
+  }
+  
+  public void refreshZeebeESIndices() {
+    try {
+      zeebeEsClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);   
+    } catch (Throwable t) {
+      logger.error("Could not refresh Zeebe Elasticsearch indices", t);
+    }
+  }
+  
+  public void refreshOperateESIndices() {
+    try {
+      esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);   
+    } catch (Throwable t) {
+      logger.error("Could not refresh Operate Elasticsearch indices", t);
+    }
+  }
+  
+  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, arguments);
+  }
+ 
+  public void processRecordsWithTypeAndWait(ImportValueType importValueType,Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(getRecordsReaders(importValueType), predicate, arguments);
+  }
+  
+  public void processRecordsAndWaitFor(Collection<RecordsReader> readers,Predicate<Object[]> predicate, Object... arguments) {
     long shouldImportCount = 0;
     int maxRounds = 500;
-    boolean found = waitTill.test(arguments);
+    boolean found = predicate.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
       testImportListener.resetCounters();
       shouldImportCount = 0;
       try {
-        shouldImportCount += zeebeImporter.performOneRoundOfImport();
+        refreshZeebeESIndices();
+        shouldImportCount +=  zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (Exception e) {
         logger.error(e.getMessage(), e);
       }
       long imported = testImportListener.getImported();
-      //long failed = zeebeImporter.getFailedCount();
       int waitForImports = 0;
-      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 10) {
+      // Wait for imports max 30 sec (60 * 500 ms)
+      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
         waitForImports++;
         try {
           Thread.sleep(500L);
-          shouldImportCount += zeebeImporter.performOneRoundOfImport();
+          refreshZeebeESIndices();
+          shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
         } catch (Exception e) {
           waitingRound = 1;
           testImportListener.resetCounters();
@@ -161,11 +200,10 @@ public class ElasticsearchTestRule extends TestWatcher {
           logger.error(e.getMessage(), e);
         }
         imported = testImportListener.getImported();
+        logger.debug(" {} of {} imports processed", imported, shouldImportCount);
       }
-      if(shouldImportCount!=0) {
-        logger.debug("Imported {} of {} records", imported, shouldImportCount);
-      }
-      found = waitTill.test(arguments);
+      refreshOperateESIndices();
+      found = predicate.test(arguments);
       waitingRound++;
     }
     if(found) {
@@ -174,117 +212,58 @@ public class ElasticsearchTestRule extends TestWatcher {
     waitingRound = 1;
     testImportListener.resetCounters();
     if (waitingRound >=  maxRounds) {
-      logTimeout();
+      throw new OperateRuntimeException("Timeout exception");
     }
   }
-
-  /* TODO this part must be reworked */
-  public void processAllEvents(int expectedMinEventsCount, ImportValueType importValueType) {
-    try {
-      int entitiesCount;
-      int totalCount = 0;
-      int emptyAttempts = 0;
-      do {
-        Thread.sleep(1000L);
-        entitiesCount = importOneType(importValueType);
-        totalCount += entitiesCount;
-        if (entitiesCount > 0) {
-          emptyAttempts = 0;
-        } else {
-          emptyAttempts++;
-        }
-      } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
-      if (totalCount < expectedMinEventsCount && emptyAttempts == 5) {
-        logTimeout();
-      } else {
-        //wait till queues are empty
-        waitForQueuesEmptiness(getRecordsReaders(importValueType));
-      }
-    } catch (Exception e) {
-      logger.error(e.getMessage(), e);
-    }
-  }
-
-  public int processImportTypeAndWait(ImportValueType importValueType, Predicate<Object[]> waitTill, Object... arguments) {
-    int imported = 0;
+  
+  public boolean areElasticsearchIndicesCreated(String indexPrefix, int minCountOfIndices) {
+    boolean areCreated = false;
+    int maxAttempts = 5 * 60; // about 60 seconds 
     int attempts = 0;
-    int maxAttempts = 100;
-    try {
-      boolean found = false;
-      do {
-        Thread.sleep(100);
-        refreshIndexesInElasticsearch();
-        imported += importOneType(importValueType);
-        found = waitTill.test(arguments);
-        attempts++;
-      } while (!found && attempts < maxAttempts);
-      logger.debug("{} attempts to fulfill condition", attempts);
-      waitForQueuesEmptiness(getRecordsReaders(importValueType));
-    } catch (Throwable t) {
-      logger.error(t.getMessage(), t);
-    }
-    return imported;
-  }
-
-  public void waitThatElasticsearchIsReady() {
-    boolean isReady = false;
-    int maxAttempts = 100;
-    int attempts = 0;
-    while (!isReady || attempts == maxAttempts) {
+    while (!areCreated && attempts <= maxAttempts) {
       attempts++;
       try {
-        GetIndexResponse response = esClient.indices().get(new GetIndexRequest("*-operate-*"), RequestOptions.DEFAULT);
+        GetIndexResponse response = esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
         List<String> indices = List.of(response.getIndices());
-        isReady = indices.stream().filter(index -> index.contains("-operate-")).collect(Collectors.toList()).size() > 5;
+        areCreated = filter(indices,index -> index.contains(indexPrefix)).size() > minCountOfIndices;
       } catch (Throwable t) {
-        logger.error("Elasticsearch is not ready yet. Waiting {}/{}", attempts, maxAttempts);
+        logger.error("Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, attempts, maxAttempts);
         try {
-          Thread.sleep(100);
+          Thread.sleep(200);
         } catch (InterruptedException e) {
+          logger.error(e.getMessage(),e);
         }
       }
     }
-    logger.info("Elasticsearch is ready after {} checks", attempts);
+    logger.debug("Elasticsearch indices are created after {} checks", attempts);
+    return areCreated;
   }
-
-  private void waitForQueuesEmptiness(Collection<RecordsReader> recordsReaders) throws InterruptedException {
+  
+  public boolean areElasticsearchIndicesEmpty(String indexPrefix) {
+    boolean isEmpty = false;
+    int maxAttempts = 10 * 60; // about 60 seconds 
     int attempts = 0;
-    int maxAttempts = 10;
-    boolean queuesAreEmpty = true;
-    do {
-      Thread.sleep(100);
-      for (RecordsReader reader : recordsReaders) {
-        queuesAreEmpty = queuesAreEmpty && reader.getImportJobs().size() == 0;
-      }
+    while (!isEmpty && attempts <= maxAttempts) {
       attempts++;
-    } while (!queuesAreEmpty && attempts < maxAttempts);
-    if (!queuesAreEmpty && attempts == maxAttempts) {
-      logTimeout();
-    } else {
-      logger.debug("{} attempts until queues are empty.", attempts);
+      try {
+        esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
+      } catch (ElasticsearchStatusException e) {
+        isEmpty = true;
+      } catch (IOException e) {
+      }
+      logger.error("Elasticsearch indices are not empty yet. Waiting {}/{}", attempts, maxAttempts);
+      try {
+          Thread.sleep(100);
+      } catch (InterruptedException e) {
+      }
     }
-  }
-
-  public int importOneType(ImportValueType importValueType) throws IOException {
-    List<RecordsReader> readers = getRecordsReaders(importValueType);
-    int count = 0;
-    for (RecordsReader reader: readers) {
-      count += zeebeImporter.importOneBatch(reader);
-    }
-    return count;
+    logger.debug("Elasticsearch indices are empty after {} checks", attempts);
+    return isEmpty;
   }
 
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
-  }
-  /* END - TODO this part must be reworked */
-
-  private void logTimeout() {
-    StringWriter sw = new StringWriter();
-    PrintWriter pw = new PrintWriter(sw);
-    new Throwable().printStackTrace(pw);
-    logger.warn("Condition not reached: " + sw.toString());
   }
 
   public void persistNew(OperateEntity... entitiesToPersist) {

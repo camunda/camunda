@@ -5,7 +5,6 @@
  */
 package org.camunda.operate.it;
 
-import static org.assertj.core.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -18,6 +17,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
@@ -37,6 +37,8 @@ import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.ImportValueType;
+import org.camunda.operate.zeebeimport.RecordsReader;
+import org.camunda.operate.zeebeimport.RecordsReaderHolder;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -99,9 +101,9 @@ public class OperateTester {
   @Autowired
   private ArchiverHelper archiverHelper;
 
+  @Autowired
+  private RecordsReaderHolder recordsReaderHolder;
   int waitingRound = 1;
-
-  private Long jobKey;
 
   private MockMvcTestRule mockMvcTestRule;
   
@@ -185,7 +187,7 @@ public class OperateTester {
   }
   
   public OperateTester failTask(String taskName, String errorMessage) {
-    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
+    /*jobKey =*/ ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
     return this;
   }
  
@@ -218,7 +220,8 @@ public class OperateTester {
       long imported = testImportListener.getImported();
       //long failed = zeebeImporter.getFailedCount();
       int waitForImports = 0;
-      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 10) {
+      // Wait for imports max 30 sec (60 * 500 ms)
+      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
         waitForImports++;
         try {
           Thread.sleep(500L);
@@ -325,7 +328,7 @@ public class OperateTester {
     try {
       while (entitiesCount == 0) {
         try {
-          entitiesCount = elasticsearchTestRule.importOneType(importValueType);
+          entitiesCount = importOneType(importValueType);
           updateMap(countImported,importValueType,entitiesCount);
         } catch (Throwable e) {
           
@@ -334,7 +337,7 @@ public class OperateTester {
       }
       while (entitiesCount > 0) {
         try {
-          entitiesCount = elasticsearchTestRule.importOneType(importValueType);
+          entitiesCount = importOneType(importValueType);
           updateMap(countImported,importValueType,entitiesCount);
         } catch (Throwable e) {
          
@@ -345,6 +348,20 @@ public class OperateTester {
       logger.error(ie.getMessage(), ie);
     }
     return this;
+  }
+  
+  public int importOneType(ImportValueType importValueType) throws IOException {
+    List<RecordsReader> readers = getRecordsReaders(importValueType);
+    int count = 0;
+    for (RecordsReader reader: readers) {
+      count += zeebeImporter.importOneBatch(reader);
+    }
+    return count;
+  }
+  
+  public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
+    return recordsReaderHolder.getAllRecordsReaders().stream()
+        .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
   }
 
   public OperateTester then() {
