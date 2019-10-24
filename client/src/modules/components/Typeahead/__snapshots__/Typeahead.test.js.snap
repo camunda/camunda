@@ -315,7 +315,7 @@ Array [
   <ForwardRef(DropdownOption)
     className="searchResult message"
   >
-    there are more
+    Displaying 25 results only. Search to refine.
   </ForwardRef(DropdownOption)>,
 ]
 `;

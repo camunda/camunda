@@ -128,9 +128,7 @@ it('should show no results options if there are not results', () => {
 });
 
 it('should show an info message if there are more result than the shown', async () => {
-  const node = shallow(
-    <Typeahead values={() => ({result: ['a'], total: 25})} listInfo="there are more" />
-  );
+  const node = shallow(<Typeahead values={() => ({result: ['a'], total: 25})} />);
 
   await node.update();
   node.find(Input).prop('onFocus')();

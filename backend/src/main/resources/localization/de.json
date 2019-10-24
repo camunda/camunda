@@ -392,6 +392,7 @@
     "below": "unter",
     "viewDetails": "Details anzeigen",
     "notFound": "keine Ergebnisse gefunden",
+    "searchForMore": "Es werden nur {count} Einträge angezeigt. Suche verfeinern.",
     "multiSelect": {
       "available": "Verfügbare Elemente",
       "selected": "Ausgewählte Elemente",
@@ -440,8 +441,7 @@
         "defaultName": "Neue Sammlung"
       },
       "addUserModal": {
-        "searchPlaceholder": "Suche nach Name, E-Mail oder ID ...",
-        "searchForMore": "Es werden nur {count} Einträge angezeigt. Suche verfeinern."
+        "searchPlaceholder": "Suche nach Name, E-Mail oder ID ..."
       }
     },
     "sharing": {

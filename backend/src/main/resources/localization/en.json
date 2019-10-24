@@ -392,6 +392,7 @@
     "below": "below",
     "viewDetails": "View Details",
     "notFound": "No results found",
+    "searchForMore": "Displaying {count} results only. Search to refine.",
     "multiSelect": {
       "available": "Available items",
       "selected": "Selected items",
@@ -440,8 +441,7 @@
         "defaultName": "New Collection"
       },
       "addUserModal": {
-        "searchPlaceholder": "Search for name, email or ID ...",
-        "searchForMore": "Displaying {count} results only. Search to refine."
+        "searchPlaceholder": "Search for name, email or ID ..."
       }
     },
     "sharing": {

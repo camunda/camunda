@@ -114,8 +114,8 @@ export default class Typeahead extends React.Component {
   };
 
   loadNewValues = debounce(async query => {
-    const values = (await this.props.values(query)).result;
-    this.setState({values, loading: false});
+    const {result, total} = await this.props.values(query);
+    this.setState({values: result, total, loading: false});
   }, 500);
 
   format = value => {
@@ -301,11 +301,9 @@ export default class Typeahead extends React.Component {
             onMouseUp={this.returnFocusToInput}
           >
             {loading ? <LoadingIndicator /> : values.map(this.renderOption)}
-            {this.props.listInfo &&
-              !query &&
+            {this.isAsync() &&
               total > values.length &&
-              messageOption(this.props.listInfo)}
-
+              messageOption(t('common.searchForMore', {count: 25}))}
             {values.length <= 0 && messageOption(t('common.notFound'))}
           </div>
         )}

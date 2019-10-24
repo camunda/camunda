@@ -75,7 +75,6 @@ export default class AddUserModal extends Component {
                   tag: type === 'group' && ' (User Group)',
                   subTexts: [email, id]
                 })}
-                listInfo={t('common.collection.addUserModal.searchForMore', {count: 25})}
               />
               {alreadyExists && selectedIdentity.type === 'user' && (
                 <ErrorMessage>{t('home.roles.existing-user-error')}</ErrorMessage>
