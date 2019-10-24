@@ -35,6 +35,7 @@ import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletingHand
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatedHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
+import io.zeebe.engine.processor.workflow.handlers.eventsubproc.EventSubProcessEventOccurredHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementActivatingHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementCompletedHandler;
 import io.zeebe.engine.processor.workflow.handlers.gateway.EventBasedGatewayElementCompletingHandler;
@@ -149,6 +150,9 @@ public class BpmnStepHandlers {
 
     stepHandlers.put(
         BpmnStep.START_EVENT_EVENT_OCCURRED, new StartEventEventOccurredHandler<>(state));
+
+    stepHandlers.put(
+        BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED, new EventSubProcessEventOccurredHandler<>());
 
     stepHandlers.put(
         BpmnStep.PARALLEL_MERGE_SEQUENCE_FLOW_TAKEN, new ParallelMergeSequenceFlowTaken<>());

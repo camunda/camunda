@@ -17,6 +17,7 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -85,7 +86,7 @@ public class TransformingDeploymentCreateProcessor
   private void createTimerIfTimerStartEvent(
       TypedRecord<DeploymentRecord> record, TypedStreamWriter streamWriter) {
     for (final Workflow workflow : record.getValue().workflows()) {
-      final List<ExecutableCatchEventElement> startEvents =
+      final List<ExecutableStartEvent> startEvents =
           workflowState.getWorkflowByKey(workflow.getKey()).getWorkflow().getStartEvents();
       boolean hasAtLeastOneTimer = false;
 

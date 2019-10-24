@@ -50,6 +50,11 @@ public class BpmnTransformer {
    */
   private final TransformationVisitor step3Visitor;
 
+  /*
+   * Step 4: Modify elements based on containing elements
+   */
+  private final TransformationVisitor step4Visitor;
+
   private final JsonPathQueryCompiler jsonPathQueryCompiler = new JsonPathQueryCompiler();
 
   public BpmnTransformer() {
@@ -71,14 +76,16 @@ public class BpmnTransformer {
     step2Visitor.registerHandler(new ServiceTaskTransformer());
     step2Visitor.registerHandler(new ReceiveTaskTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());
-    step2Visitor.registerHandler(new SubProcessTransformer());
 
     step3Visitor = new TransformationVisitor();
     step3Visitor.registerHandler(new ContextProcessTransformer());
     step3Visitor.registerHandler(new EventBasedGatewayTransformer());
     step3Visitor.registerHandler(new ExclusiveGatewayTransformer());
     step3Visitor.registerHandler(new IntermediateCatchEventTransformer());
-    step3Visitor.registerHandler(new MultiInstanceActivityTransformer());
+    step3Visitor.registerHandler(new SubProcessTransformer());
+
+    step4Visitor = new TransformationVisitor();
+    step4Visitor.registerHandler(new MultiInstanceActivityTransformer());
   }
 
   public List<ExecutableWorkflow> transformDefinitions(BpmnModelInstance modelInstance) {
@@ -94,6 +101,9 @@ public class BpmnTransformer {
 
     step3Visitor.setContext(context);
     walker.walk(step3Visitor);
+
+    step4Visitor.setContext(context);
+    walker.walk(step4Visitor);
 
     return context.getWorkflows();
   }

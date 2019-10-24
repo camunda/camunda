@@ -76,9 +76,9 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
   }
 
   private IndexedRecord getDeferredRecord(final BpmnStepContext<T> context) {
-    final long wfInstanceKey = context.getValue().getWorkflowInstanceKey();
+    final long scopeKey = context.getKey();
     final List<IndexedRecord> deferredRecords =
-        context.getElementInstanceState().getDeferredRecords(wfInstanceKey);
+        context.getElementInstanceState().getDeferredRecords(scopeKey);
 
     if (deferredRecords.isEmpty()) {
       throw new IllegalStateException(
@@ -91,7 +91,7 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     final IndexedRecord deferredRecord = deferredRecords.get(0);
     workflowState
         .getElementInstanceState()
-        .removeStoredRecord(wfInstanceKey, deferredRecord.getKey(), Purpose.DEFERRED);
+        .removeStoredRecord(scopeKey, deferredRecord.getKey(), Purpose.DEFERRED);
     return deferredRecord;
   }
 }

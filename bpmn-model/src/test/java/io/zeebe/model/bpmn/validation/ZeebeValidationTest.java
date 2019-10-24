@@ -19,10 +19,13 @@ import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractCatchEventBuilder;
+import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.SignalEventDefinition;
 import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -98,6 +101,37 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
                 "task",
                 "Multiple message boundary events with the same name 'message' are not allowed."))
       },
+      {
+        eventSubprocWithNoneStart(),
+        singletonList(
+            expect(
+                "subprocess",
+                "Start events in event subprocesses must be of type message or timer"))
+      },
+      {
+        eventSubprocWithSignalStart(),
+        Arrays.asList(
+            expect(SignalEventDefinition.class, "Event definition of this type is not supported"),
+            expect(
+                "subprocess", "Start events in event subprocesses must of type message or timer"))
+      }
     };
+  }
+
+  private static BpmnModelInstance eventSubprocWithNoneStart() {
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess("process");
+    processBuilder.startEvent().endEvent();
+    return processBuilder.eventSubProcess("subprocess").startEvent("start_event").endEvent().done();
+  }
+
+  private static BpmnModelInstance eventSubprocWithSignalStart() {
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess("process");
+    processBuilder.startEvent().endEvent();
+    return processBuilder
+        .eventSubProcess("subprocess")
+        .startEvent("start_event")
+        .signal("signal")
+        .endEvent()
+        .done();
   }
 }

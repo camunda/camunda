@@ -18,7 +18,6 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private final List<ExecutableCatchEvent> events = Collections.singletonList(this);
 
   private ExecutableMessage message;
-
   private Timer timer;
 
   public ExecutableCatchEventElement(String id) {
