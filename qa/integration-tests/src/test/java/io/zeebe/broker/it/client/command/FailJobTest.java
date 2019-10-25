@@ -7,13 +7,11 @@
  */
 package io.zeebe.broker.it.client.command;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientStatusException;
 import io.zeebe.client.api.response.ActivatedJob;
@@ -39,8 +37,6 @@ public class FailJobTest {
   @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String jobType;
-  private RecordingJobHandler jobHandler;
-  private ActivatedJob jobEvent;
   private long jobKey;
 
   @Before
@@ -48,13 +44,7 @@ public class FailJobTest {
     jobType = helper.getJobType();
     CLIENT_RULE.createSingleJob(jobType);
 
-    jobHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(jobType).handler(jobHandler).open();
-
-    waitUntil(() -> jobHandler.getHandledJobs().size() >= 1);
-
-    jobEvent = jobHandler.getHandledJobs().get(0);
-    jobKey = jobEvent.getKey();
+    jobKey = activateJob().getKey();
   }
 
   @Test
@@ -67,9 +57,7 @@ public class FailJobTest {
         jobRecords(JobIntent.FAILED).withRecordKey(jobKey).getFirst();
     Assertions.assertThat(record.getValue()).hasRetries(2).hasErrorMessage("");
 
-    waitUntil(() -> jobHandler.getHandledJobs().size() >= 2);
-    final var activatedJob = jobHandler.getHandledJobs().get(1);
-
+    final var activatedJob = activateJob();
     assertThat(activatedJob.getKey()).isEqualTo(jobKey);
     assertThat(activatedJob.getRetries()).isEqualTo(2);
   }
@@ -99,5 +87,22 @@ public class FailJobTest {
             () -> CLIENT_RULE.getClient().newFailCommand(jobKey).retries(1).send().join())
         .isInstanceOf(ClientStatusException.class)
         .hasMessageContaining(expectedMessage);
+  }
+
+  private ActivatedJob activateJob() {
+    final var activateResponse =
+        CLIENT_RULE
+            .getClient()
+            .newActivateJobsCommand()
+            .jobType(jobType)
+            .maxJobsToActivate(1)
+            .send()
+            .join();
+
+    assertThat(activateResponse.getJobs())
+        .describedAs("Expected one job to be activated")
+        .hasSize(1);
+
+    return activateResponse.getJobs().get(0);
   }
 }
