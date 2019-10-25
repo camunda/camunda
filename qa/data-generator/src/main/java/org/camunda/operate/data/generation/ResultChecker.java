@@ -8,7 +8,7 @@ package org.camunda.operate.data.generation;
 import java.io.IOException;
 import java.util.function.Supplier;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
-import org.camunda.operate.zeebeimport.ZeebeESConstants;
+import org.camunda.operate.zeebe.ZeebeESConstants;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
