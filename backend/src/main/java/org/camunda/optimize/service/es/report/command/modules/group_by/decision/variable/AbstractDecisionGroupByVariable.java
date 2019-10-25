@@ -58,8 +58,8 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
   private static final String NESTED_AGGREGATION = "nested";
   private static final String VARIABLES_AGGREGATION = "variables";
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
-  private static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredProcInstCount";
-  private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "proc_inst_count";
+  private static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";
+  private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
 
   private final ConfigurationService configurationService;

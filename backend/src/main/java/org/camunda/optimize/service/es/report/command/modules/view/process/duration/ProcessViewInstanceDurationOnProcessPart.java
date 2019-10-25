@@ -22,7 +22,7 @@ import static org.camunda.optimize.service.es.report.command.process.processinst
 
 @Component()
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDurationViewOnProcessPart extends ProcessDurationView {
+public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanceDuration {
 
   @Override
   public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {

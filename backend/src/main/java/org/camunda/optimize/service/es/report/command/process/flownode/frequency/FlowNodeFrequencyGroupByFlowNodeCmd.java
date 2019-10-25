@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable;
+package org.camunda.optimize.service.es.report.command.process.flownode.frequency;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -13,23 +13,27 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByVariable;
-import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewInstanceDuration;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByFlowNode;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByUserTask;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountFlowNodeFrequency;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountInstanceFrequency;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountUserTaskFrequency;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ProcessInstanceDurationGroupByVariableCmd implements Command<SingleProcessReportDefinitionDto> {
+public class FlowNodeFrequencyGroupByFlowNodeCmd
+  implements Command<SingleProcessReportDefinitionDto> {
 
   private final ProcessReportCmdExecutionPlan<ReportMapResultDto> executionPlan;
 
   @Autowired
-  public ProcessInstanceDurationGroupByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public FlowNodeFrequencyGroupByFlowNodeCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
       .processCommand()
-      .view(ProcessViewInstanceDuration.class)
-      .groupBy(ProcessGroupByVariable.class)
+      .view(ProcessViewCountFlowNodeFrequency.class)
+      .groupBy(ProcessGroupByFlowNode.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()
       .build();
@@ -37,7 +41,7 @@ public class ProcessInstanceDurationGroupByVariableCmd implements Command<Single
 
   @Override
   public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
-    final ReportMapResultDto evaluate = this.executionPlan.evaluate(commandContext.getReportDefinition().getData());
+    final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext.getReportDefinition().getData());
     return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
   }
 

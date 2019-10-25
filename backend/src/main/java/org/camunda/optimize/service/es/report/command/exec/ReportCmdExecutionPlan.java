@@ -96,13 +96,13 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
 
   protected abstract Supplier<Data> getDataDtoSupplier();
 
-  private R retrieveQueryResult(final SearchResponse response, final Data definitionData) {
-    final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, definitionData);
+  private R retrieveQueryResult(final SearchResponse response, final Data reportData) {
+    final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, reportData);
     final R reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits());
-    final Optional<SortingDto> sorting = groupByPart.getSorting(definitionData);
+    final Optional<SortingDto> sorting = groupByPart.getSorting(reportData);
     sorting.ifPresent(
-      sortingDto -> reportResult.sortResultData(sortingDto, groupByPart.getSortByKeyIsOfNumericType(definitionData))
+      sortingDto -> reportResult.sortResultData(sortingDto, groupByPart.getSortByKeyIsOfNumericType(reportData))
     );
     return reportResult;
   }

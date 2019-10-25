@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecu
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByVariable;
-import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessDurationViewOnProcessPart;
+import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewInstanceDurationOnProcessPart;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd implements C
   public ProcessInstanceDurationOnProcessPartGroupByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
       .processCommand()
-      .view(ProcessDurationViewOnProcessPart.class)
+      .view(ProcessViewInstanceDurationOnProcessPart.class)
       .groupBy(ProcessGroupByVariable.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()

@@ -110,7 +110,7 @@ public class CompositeCommandResult {
       List<MapResultEntryDto> distribution = group.distributions.stream()
         .map(DistributedByResult::getValueAsMapResultEntry)
         .collect(Collectors.toList());
-      resultDto.getData().add(new HyperMapResultEntryDto(group.getKey(), distribution));
+      resultDto.getData().add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
     }
     return resultDto;
   }
@@ -122,7 +122,7 @@ public class CompositeCommandResult {
       final List<DistributedByResult> distributions = group.getDistributions();
       if (distributions.size() == 1) {
         final Long value = distributions.get(0).getValueAsLong();
-        resultDto.getData().add(new MapResultEntryDto(group.getKey(), value));
+        resultDto.getData().add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedBy.class));
       }

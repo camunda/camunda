@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -56,12 +55,6 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto, ProcessGroupByDto groupByDto) {
     final List<String> configsToConsiderForCommand = new ArrayList<>();
-    if (isDurationCommand(viewDto) && !(isProcessInstanceCommand(viewDto) && isGroupByVariableOrNone(groupByDto)) ) {
-      configsToConsiderForCommand.add(this.aggregationType.getId());
-    }
-    if (isUserTaskDurationCommand(viewDto)) {
-      configsToConsiderForCommand.add(this.userTaskDurationTime.getId());
-    }
     if (isUserTaskCommand(viewDto) && isGroupByAssigneeOrCandidateGroup(groupByDto)) {
       configsToConsiderForCommand.add(this.distributedBy.getId());
     }
@@ -83,28 +76,9 @@ public class SingleReportConfigurationDto implements Combinable {
     return (distributedBy != DistributedBy.USER_TASK && that.distributedBy != DistributedBy.USER_TASK);
   }
 
-  private boolean isUserTaskDurationCommand(ProcessViewDto viewDto) {
-    return isUserTaskCommand(viewDto) && isDurationCommand(viewDto);
-  }
-
-  private boolean isDurationCommand(ProcessViewDto viewDto) {
-    return nonNull(viewDto) && nonNull(viewDto.getProperty()) &&
-      viewDto.getProperty().equals(ProcessViewProperty.DURATION);
-  }
-
-  private boolean isProcessInstanceCommand(ProcessViewDto viewDto) {
-    return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
-      viewDto.getEntity().equals(ProcessViewEntity.PROCESS_INSTANCE);
-  }
-
   private boolean isUserTaskCommand(ProcessViewDto viewDto) {
     return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
       viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
-  }
-
-  private boolean isGroupByVariableOrNone(ProcessGroupByDto groupByDto) {
-    return nonNull(groupByDto) && (groupByDto.getType().equals(ProcessGroupByType.NONE) || groupByDto.getType()
-      .equals(ProcessGroupByType.VARIABLE));
   }
 
   private boolean isGroupByAssigneeOrCandidateGroup(ProcessGroupByDto groupByDto) {

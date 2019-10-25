@@ -15,11 +15,11 @@ public class ReportCmdExecutionPlanBuilder {
   private final ProcessExecutionPlanBuilder processExecutionPlanBuilder;
   private final DecisionExecutionPlanBuilder decisionExecutionPlanBuilder;
 
-  public DecideCommandTypeBuilder createExecutionPlan() {
-    return new DecideCommandTypeBuilder();
+  public DetermineCommandTypeBuilder createExecutionPlan() {
+    return new DetermineCommandTypeBuilder();
   }
 
-  public class DecideCommandTypeBuilder {
+  public class DetermineCommandTypeBuilder {
 
     public ProcessExecutionPlanBuilder.AddViewPartBuilder processCommand() {
       return processExecutionPlanBuilder.createExecutionPlan();

@@ -7,9 +7,6 @@ package org.camunda.optimize.service.es.report.command.modules.view.process.dura
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.es.report.command.aggregations.AggregationStrategy;
 import org.camunda.optimize.service.es.report.command.aggregations.AvgAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregation;
@@ -18,23 +15,15 @@ import org.camunda.optimize.service.es.report.command.aggregations.MinAggregatio
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Primary;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-@Primary
-public class ProcessDurationView extends ProcessViewPart {
+public abstract class ProcessViewDuration extends ProcessViewPart {
 
   private static Map<AggregationType, AggregationStrategy> aggregationStrategyMap = new HashMap<>();
 
@@ -48,31 +37,27 @@ public class ProcessDurationView extends ProcessViewPart {
   @Override
   public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {
     final AggregationStrategy strategy = getAggregationStrategy(definitionData);
-    return strategy.getAggregationBuilder().script(getScriptedAggregationField());
+    return strategy.getAggregationBuilder().script(getScriptedAggregationField(definitionData));
   }
 
   AggregationStrategy getAggregationStrategy(final ProcessReportDataDto definitionData) {
     return aggregationStrategyMap.get(definitionData.getConfiguration().getAggregationType());
   }
 
-  private Script getScriptedAggregationField() {
+  private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
     return ExecutionStateAggregationUtil.getDurationAggregationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      ProcessInstanceIndex.DURATION,
-      ProcessInstanceIndex.START_DATE
+      getDurationFieldName(reportData),
+      getReferenceDateFieldName(reportData)
     );
   }
+
+  protected abstract String getReferenceDateFieldName(final ProcessReportDataDto reportData);
+
+  protected abstract String getDurationFieldName(final ProcessReportDataDto reportData);
 
   @Override
   public ViewResult retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
     return new ViewResult(getAggregationStrategy(reportData).getValue(aggs));
-  }
-
-  @Override
-  public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    ProcessViewDto view = new ProcessViewDto();
-    view.setEntity(ProcessViewEntity.PROCESS_INSTANCE);
-    view.setProperty(ProcessViewProperty.DURATION);
-    dataForCommandKey.setView(view);
   }
 }

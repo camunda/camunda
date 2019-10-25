@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecu
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByNone;
-import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessDurationView;
+import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewInstanceDuration;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class ProcessInstanceDurationGroupByNoneCmd implements Command<SingleProc
   public ProcessInstanceDurationGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
     this.executionPlan = builder.createExecutionPlan()
       .processCommand()
-      .view(ProcessDurationView.class)
+      .view(ProcessViewInstanceDuration.class)
       .groupBy(ProcessGroupByNone.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsNumber()

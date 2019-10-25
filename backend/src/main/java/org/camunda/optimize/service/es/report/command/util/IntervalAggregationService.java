@@ -65,8 +65,10 @@ public class IntervalAggregationService {
       case MINUTE:
         return DateHistogramInterval.MINUTE;
       default:
-        log.error("Unknown interval [{}]. Please state a valid interval", interval);
-        throw new OptimizeRuntimeException("Unknown interval used. Please state a valid interval.");
+        final String errorMessage =
+          String.format("Unknown date interval [%s] for creating a histogram aggregation.", interval);
+        log.error(errorMessage);
+        throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
