@@ -207,7 +207,7 @@ public class SessionService implements ConfigurationReloadable {
   }
 
   private String generateAuthToken(final String sessionId, final String userId) {
-    final Instant issuedAt = LocalDateUtil.getCurrentDateTime().toInstant();
+    final Instant issuedAt = LocalDateUtil.getCurrentLocalDateTime().atZone(ZoneId.systemDefault()).toInstant();
     return JWT.create()
       .withJWTId(sessionId)
       .withIssuer(ISSUER)
