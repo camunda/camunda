@@ -9,6 +9,7 @@ import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior} from 'components
 
 import './NodeFilter.scss';
 import {t} from 'translation';
+import NodeListPreview from './NodeListPreview';
 
 export default class NodeFilter extends React.Component {
   constructor(props) {
@@ -43,50 +44,6 @@ export default class NodeFilter extends React.Component {
     return this.state.selectedNodes.length > 0;
   };
 
-  createOperator = name => {
-    return <span className="previewItemOperator"> {name} </span>;
-  };
-
-  createPreviewList = () => {
-    const {operator, selectedNodes} = this.state;
-    const previewList = [];
-
-    selectedNodes.forEach((selectedNode, idx) => {
-      previewList.push(
-        <li key={idx} className="previewItem">
-          <span key={idx}>
-            {' '}
-            <span className="previewItemValue">{selectedNode.name || selectedNode.id}</span>{' '}
-            {idx < selectedNodes.length - 1 &&
-              this.createOperator(
-                operator === 'not in'
-                  ? t('common.filter.list.operators.nor')
-                  : t('common.filter.list.operators.or')
-              )}
-          </span>
-        </li>
-      );
-    });
-    return (
-      <div className="preview">
-        <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
-        <span className="parameterName">
-          {!operator
-            ? t('common.filter.list.executingFlowNode')
-            : t('common.filter.list.executedFlowNode')}
-        </span>
-        {this.createOperator(
-          operator === 'not in'
-            ? selectedNodes.length > 1
-              ? t('common.filter.list.operators.neither')
-              : t('common.filter.list.operators.not')
-            : t('common.filter.list.operators.is')
-        )}
-        <ul className="previewList">{previewList}</ul>
-      </div>
-    );
-  };
-
   setSelectedNodes = nodes => {
     this.setState({
       selectedNodes: nodes
@@ -94,6 +51,7 @@ export default class NodeFilter extends React.Component {
   };
 
   render() {
+    const {selectedNodes, operator} = this.state;
     return (
       <Modal
         open={true}
@@ -108,9 +66,15 @@ export default class NodeFilter extends React.Component {
           })}
         </Modal.Header>
         <Modal.Content className="modalContent">
-          {this.createPreviewList()}
+          <div className="preview">
+            <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
+            <NodeListPreview nodes={selectedNodes} operator={operator} />
+          </div>
           <ButtonGroup>
-            <Button active={!this.state.operator} onClick={() => this.setState({operator: null})}>
+            <Button
+              active={!this.state.operator}
+              onClick={() => this.setState({operator: undefined})}
+            >
               {t('common.filter.nodeModal.executing')}
             </Button>
             <Button

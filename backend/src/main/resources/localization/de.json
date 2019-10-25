@@ -486,7 +486,7 @@
           "more": "ist mehr als",
           "less": "ist weniger als",
           "greater": "ist größer als",
-          "lessAgo": "ist weniger als <span class='highlighted'>{duration}</span> her",
+          "lessAgo": "ist weniger als <span class='previewItemValue'>{duration}</span> her",
           "is": "ist",
           "not": "ist nicht",
           "neither": "ist weder",

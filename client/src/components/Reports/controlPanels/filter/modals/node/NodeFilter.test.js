@@ -83,7 +83,7 @@ it('should create an executed node filter when operator is specified', () => {
   });
 });
 
-it('should create executing node filter when operator is null', () => {
+it('should create executing node filter when operator is undefined', () => {
   const spy = jest.fn();
   const node = shallow(<NodeFilter addFilter={spy} />);
 
@@ -106,7 +106,7 @@ it('should create executing node filter when operator is null', () => {
   expect(spy).toHaveBeenCalledWith({
     type: 'executingFlowNodes',
     data: {
-      operator: null,
+      operator: undefined,
       values: [flowNode1.id]
     }
   });
@@ -121,7 +121,7 @@ it('should disable create filter button if no node was selected', () => {
   expect(node.find({variant: 'primary'}).prop('disabled')).toBeTruthy(); // create filter
 });
 
-it('should create preview of selected node', () => {
+it('should create preview list of selected node', () => {
   const node = shallow(<NodeFilter />);
 
   const flowNode = {
@@ -131,42 +131,10 @@ it('should create preview of selected node', () => {
 
   node.instance().toggleNode(flowNode);
 
-  expect(node.find('.previewItemValue')).toIncludeText(flowNode.name);
-});
-
-it('should show the id of the flow node if the name is null', () => {
-  const node = shallow(<NodeFilter />);
-
-  const flowNode = {
-    name: null,
-    id: 'bar'
-  };
-
-  node.instance().toggleNode(flowNode);
-
-  expect(node.find('.previewItemValue')).toIncludeText(flowNode.id);
-});
-
-it('should create preview of selected nodes linked by or', () => {
-  const node = shallow(<NodeFilter />);
-
-  const flowNode1 = {
-    name: 'foo',
-    id: 'bar'
-  };
-
-  const flowNode2 = {
-    name: 'foo',
-    id: 'bar'
-  };
-
-  node.instance().toggleNode(flowNode1);
-  node.instance().toggleNode(flowNode2);
-
-  const content = node.find('.preview');
-  expect(content).toIncludeText(flowNode1.name);
-  expect(content).toIncludeText('or');
-  expect(content).toIncludeText(flowNode2.name);
+  expect(node.find('NodeListPreview').props()).toEqual({
+    nodes: [{id: 'bar', name: 'foo'}],
+    operator: 'in'
+  });
 });
 
 it('should contain buttons to switch between executed and not executed mode', () => {

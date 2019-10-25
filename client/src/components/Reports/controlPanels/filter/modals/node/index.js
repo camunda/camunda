@@ -5,3 +5,4 @@
  */
 
 export {default as NodeFilter} from './NodeFilter';
+export {default as NodeListPreview} from './NodeListPreview';

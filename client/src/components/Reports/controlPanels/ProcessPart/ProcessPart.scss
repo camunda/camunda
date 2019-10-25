@@ -1,3 +1,5 @@
+@import 'shared-styles/shared-styles.scss';
+
 .ProcessPartModal .Modal__content {
   display: flex;
   flex-direction: column;
@@ -15,4 +17,8 @@
 .ProcessPart__current {
   cursor: pointer;
   white-space: pre-wrap;
+
+  .ActionItem span.highlighted {
+    @include highlighted;
+  }
 }

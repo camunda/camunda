@@ -1,0 +1,148 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should create preview of nodes 1`] = `
+<Fragment>
+  <span
+    className="parameterName"
+  >
+    Executed Flow Node
+  </span>
+  <span
+    className="previewItemOperator"
+  >
+     
+    is
+     
+  </span>
+  <ul
+    className="previewList"
+  >
+    <li
+      className="previewItem"
+      key="0"
+    >
+      <span>
+         
+        <span
+          className="previewItemValue"
+        >
+          foo
+        </span>
+         
+      </span>
+    </li>
+  </ul>
+</Fragment>
+`;
+
+exports[`should create preview of selected nodes linked by nor 1`] = `
+<Fragment>
+  <span
+    className="parameterName"
+  >
+    Executed Flow Node
+  </span>
+  <span
+    className="previewItemOperator"
+  >
+     
+    is neither
+     
+  </span>
+  <ul
+    className="previewList"
+  >
+    <li
+      className="previewItem"
+      key="0"
+    >
+      <span>
+         
+        <span
+          className="previewItemValue"
+        >
+          foo
+        </span>
+         
+        <span
+          className="previewItemOperator"
+        >
+           
+          nor
+           
+        </span>
+      </span>
+    </li>
+    <li
+      className="previewItem"
+      key="1"
+    >
+      <span>
+         
+        <span
+          className="previewItemValue"
+        >
+          foo
+        </span>
+         
+      </span>
+    </li>
+  </ul>
+</Fragment>
+`;
+
+exports[`should create preview of selected nodes linked by or 1`] = `
+<Fragment>
+  <span
+    className="parameterName"
+  >
+    Executed Flow Node
+  </span>
+  <span
+    className="previewItemOperator"
+  >
+     
+    is
+     
+  </span>
+  <ul
+    className="previewList"
+  >
+    <li
+      className="previewItem"
+      key="0"
+    >
+      <span>
+         
+        <span
+          className="previewItemValue"
+        >
+          foo
+        </span>
+         
+        <span
+          className="previewItemOperator"
+        >
+           
+          or
+           
+        </span>
+      </span>
+    </li>
+    <li
+      className="previewItem"
+      key="1"
+    >
+      <span>
+         
+        <span
+          className="previewItemValue"
+        >
+          foo
+        </span>
+         
+      </span>
+    </li>
+  </ul>
+</Fragment>
+`;
