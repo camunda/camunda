@@ -47,7 +47,10 @@ export async function copyEntity(type, id, name, collectionId) {
     query.collectionId = collectionId;
   }
 
-  return await post(`api/${type}/${id}/copy`, undefined, {query});
+  const response = await post(`api/${type}/${id}/copy`, undefined, {query});
+  const json = await response.json();
+
+  return json.id;
 }
 
 export async function searchIdentities(terms) {

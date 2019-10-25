@@ -1,5 +1,51 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should hide option to move the copy for collection entities 1`] = `
+<Modal
+  className="CopyModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Copy collection
+  </Component>
+  <Component>
+    <Form>
+      <FormGroup>
+        <LabeledInput
+          autoComplete="off"
+          label="Name of Copy"
+          onChange={[Function]}
+          type="text"
+          value="collection (copy)"
+        />
+      </FormGroup>
+      <span>
+        All contained items will be copied, and all assigned users will be added to the new collection, too.
+      </span>
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={false}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Copy
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;
+
 exports[`should match snapshot 1`] = `
 <Modal
   className="CopyModal"

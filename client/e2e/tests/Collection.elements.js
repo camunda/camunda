@@ -15,6 +15,9 @@ export const collectionContextMenu = Selector('.Collection .header .Dropdown but
 export const editCollectionNameButton = Selector(
   '.Collection .header .Dropdown .DropdownOption'
 ).withText('Edit');
+export const copyCollectionButton = Selector(
+  '.Collection .header .Dropdown .DropdownOption'
+).withText('Copy');
 export const deleteCollectionButton = Selector(
   '.Collection .header .Dropdown .DropdownOption'
 ).withText('Delete');

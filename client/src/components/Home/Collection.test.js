@@ -13,6 +13,10 @@ import {loadEntity, deleteEntity, updateEntity} from 'services';
 
 import CollectionWithErrorHandling from './Collection';
 import CollectionModal from './CollectionModal';
+import CopyModal from './CopyModal';
+import {copyEntity} from './service';
+
+jest.mock('./service', () => ({copyEntity: jest.fn()}));
 
 const Collection = CollectionWithErrorHandling.WrappedComponent;
 
@@ -94,7 +98,7 @@ it('should show delete modal when clicking delete button', () => {
 
   node
     .find(Dropdown.Option)
-    .at(1)
+    .at(2)
     .simulate('click');
 
   expect(node.find(ConfirmationModal).prop('open')).toBe(true);
@@ -153,4 +157,33 @@ it('should render content depending on the selected tab', () => {
   );
 
   expect(node).toMatchSnapshot();
+});
+
+it('should show the copy modal when clicking the copy button', () => {
+  const node = shallow(<Collection {...props} />);
+
+  node
+    .find(Dropdown.Option)
+    .at(1)
+    .simulate('click');
+
+  expect(node.find(CopyModal)).toExist();
+});
+
+it('should copy entity and redirect to collection', () => {
+  copyEntity.mockReturnValue('copyCollectionID');
+  const node = shallow(<Collection {...props} />);
+
+  node
+    .find(Dropdown.Option)
+    .at(1)
+    .simulate('click');
+
+  node.find(CopyModal).prop('onConfirm')('new Name', true);
+
+  expect(copyEntity).toHaveBeenCalledWith('collection', 'aCollectionId', 'new Name');
+
+  expect(node.find('Redirect').props().to).toBe('/collection/copyCollectionID/');
+
+  expect(node.find(CopyModal)).not.toExist();
 });

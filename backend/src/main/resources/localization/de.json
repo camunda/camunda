@@ -52,7 +52,8 @@
       "moveLabel": "Verschiebe Kopie nach …",
       "noCollections": "Es wurden keine Sammlungen erstellt",
       "pleaseSelect": "Bitte auswählen",
-      "gotoNew": "Gehe zu Zielort"
+      "gotoNew": "Gehe zu Zielort",
+      "copyCollectionInfo": "Alle enthaltenen Elemente werden kopiert und alle zugehörigen benutzer werden ebenfalls der neuen Sammlung hinzugefügt."
     },
     "types": {
       "process": "Prozessbericht",
@@ -430,6 +431,7 @@
     "collection": {
       "label": "Sammlung",
       "label-plural": "Sammlungen",
+      "created": "\"{name}\" wurde erfolgreich erstellt",
       "modal": {
         "title": {
           "new": "Neue Sammlung erstellen",

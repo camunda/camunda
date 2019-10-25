@@ -87,7 +87,7 @@ export default withErrorHandling(
     openCopyModal = entity => this.setState({copying: entity});
     closeCopyModal = () => this.setState({copying: null});
 
-    copyEntity = (name, destination, redirect) => {
+    copyEntity = (name, redirect, destination) => {
       const {id, entityType} = this.state.copying;
       this.props.mightFail(
         copyEntity(entityType, id, name, destination),
@@ -197,6 +197,7 @@ export default withErrorHandling(
               collection={collection || null}
               onClose={this.closeCopyModal}
               onConfirm={this.copyEntity}
+              jumpToEntity={copying.entityType !== 'collection'}
             />
           )}
         </div>
@@ -273,12 +274,10 @@ export default withErrorHandling(
                       {t('common.edit')}
                     </Dropdown.Option>
                   )}
-                  {entityType !== 'collection' && (
-                    <Dropdown.Option onClick={() => this.openCopyModal(entity)}>
-                      <Icon type="copy-document" />
-                      {t('common.copy')}
-                    </Dropdown.Option>
-                  )}
+                  <Dropdown.Option onClick={() => this.openCopyModal(entity)}>
+                    <Icon type="copy-document" />
+                    {t('common.copy')}
+                  </Dropdown.Option>
                   {canEdit && (
                     <Dropdown.Option onClick={() => this.confirmDelete(entity)}>
                       <Icon type="delete" />

@@ -90,17 +90,35 @@ it('should load available collections', () => {
 });
 
 it('should offer to move the copy', () => {
-  const node = shallow(<CopyModal {...props} />);
+  const node = shallow(<CopyModal {...props} jumpToEntity />);
 
   node.find(Switch).simulate('change', {target: {checked: true}});
 
   expect(node).toMatchSnapshot();
 });
 
+it('should hide option to move the copy for collection entities', () => {
+  const node = shallow(
+    <CopyModal {...props} entity={{name: 'collection', entityType: 'collection'}} />
+  );
+
+  expect(node).toMatchSnapshot();
+});
+
 it('should call the onConfirm action', () => {
-  const node = shallow(<CopyModal {...props} />);
+  const node = shallow(<CopyModal {...props} jumpToEntity />);
 
   node.find('.confirm').simulate('click');
 
-  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', false, false);
+  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', true, false);
+});
+
+it('should hide the jump checkbox if jumpToEntity property is not added', () => {
+  const node = shallow(<CopyModal {...props} />);
+
+  expect(node.find('LabeledInput[type="checkbox"]')).not.toExist();
+
+  node.find('.confirm').simulate('click');
+
+  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', undefined, false);
 });

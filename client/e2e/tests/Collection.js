@@ -54,6 +54,21 @@ test('renaming the collection', async t => {
   await t.expect(e.collectionTitle.textContent).contains('another Collection Name');
 });
 
+test('copy the collection', async t => {
+  await login(t);
+
+  await t.click(Homepage.collectionItem);
+
+  await t.click(e.collectionContextMenu);
+  await t.click(e.copyCollectionButton);
+
+  await t.typeText(Homepage.modalNameInput, 'copied collection', {replace: true});
+
+  await t.click(Homepage.confirmButton);
+
+  await t.expect(e.collectionTitle.textContent).contains('copied collection');
+});
+
 test('adding a new user', async t => {
   await login(t);
 

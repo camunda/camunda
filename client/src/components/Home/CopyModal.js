@@ -30,25 +30,28 @@ export default withErrorHandling(
     }
 
     componentDidMount() {
-      this.props.mightFail(
-        loadEntities(),
-        entities =>
-          this.setState({
-            availableCollections: [
-              {id: null, entityType: 'collection', name: t('navigation.homepage')},
-              ...entities
-            ].filter(
-              ({entityType, id}) => entityType === 'collection' && id !== this.props.collection
-            )
-          }),
-        showError
-      );
+      if (this.props.entity.entityType !== 'collection') {
+        this.props.mightFail(
+          loadEntities(),
+          entities =>
+            this.setState({
+              availableCollections: [
+                {id: null, entityType: 'collection', name: t('navigation.homepage')},
+                ...entities
+              ].filter(
+                ({entityType, id}) => entityType === 'collection' && id !== this.props.collection
+              )
+            }),
+          showError
+        );
+      }
     }
 
     onConfirm = () => {
       const {name, moving, collection, gotoNew} = this.state;
       if (name && (!moving || collection)) {
-        this.props.onConfirm(name, moving && collection.id, moving && gotoNew);
+        const {jumpToEntity} = this.props;
+        this.props.onConfirm(name, jumpToEntity && gotoNew, moving && collection.id);
       }
     };
 
@@ -64,11 +67,43 @@ export default withErrorHandling(
       }
     };
 
-    render() {
-      const {onClose, entity} = this.props;
-      const {name, moving, availableCollections, collection, gotoNew} = this.state;
-
+    renderMoveOption = () => {
+      const {moving, availableCollections, collection} = this.state;
       const multicopyText = this.getMulticopyText();
+
+      return (
+        <>
+          <Form.Group className="moveSection">
+            <Switch
+              label={t('home.copy.moveLabel')}
+              checked={moving}
+              onChange={({target: {checked}}) => this.setState({moving: checked})}
+            />
+          </Form.Group>
+          {moving && (
+            <>
+              <Form.Group noSpacing>
+                <Typeahead
+                  initialValue={collection}
+                  noValuesMessage={t('home.copy.noCollections')}
+                  placeholder={t('home.copy.pleaseSelect')}
+                  values={availableCollections}
+                  formatter={({name}) => name}
+                  onSelect={collection => this.setState({collection})}
+                />
+              </Form.Group>
+              {multicopyText && <Form.Group>{multicopyText}</Form.Group>}
+            </>
+          )}
+        </>
+      );
+    };
+
+    render() {
+      const {onClose, entity, jumpToEntity} = this.props;
+      const {name, moving, collection, gotoNew} = this.state;
+
+      const isCollection = entity.entityType === 'collection';
 
       return (
         <Modal className="CopyModal" open onClose={onClose} onConfirm={this.onConfirm}>
@@ -84,35 +119,17 @@ export default withErrorHandling(
                   onChange={({target: {value}}) => this.setState({name: value})}
                 />
               </Form.Group>
-              <Form.Group className="moveSection">
-                <Switch
-                  label={t('home.copy.moveLabel')}
-                  checked={moving}
-                  onChange={({target: {checked}}) => this.setState({moving: checked})}
-                />
-              </Form.Group>
-              {moving && (
-                <>
-                  <Form.Group noSpacing>
-                    <Typeahead
-                      initialValue={collection}
-                      noValuesMessage={t('home.copy.noCollections')}
-                      placeholder={t('home.copy.pleaseSelect')}
-                      values={availableCollections}
-                      formatter={({name}) => name}
-                      onSelect={collection => this.setState({collection})}
-                    />
-                  </Form.Group>
-                  {multicopyText && <Form.Group>{multicopyText}</Form.Group>}
-                  <Form.Group>
-                    <LabeledInput
-                      label={t('home.copy.gotoNew')}
-                      type="checkbox"
-                      checked={gotoNew}
-                      onChange={({target: {checked}}) => this.setState({gotoNew: checked})}
-                    />
-                  </Form.Group>
-                </>
+              {isCollection && <span>{t('home.copy.copyCollectionInfo')}</span>}
+              {!isCollection && this.renderMoveOption()}
+              {jumpToEntity && (isCollection || moving) && (
+                <Form.Group>
+                  <LabeledInput
+                    label={t('home.copy.gotoNew')}
+                    type="checkbox"
+                    checked={gotoNew}
+                    onChange={({target: {checked}}) => this.setState({gotoNew: checked})}
+                  />
+                </Form.Group>
               )}
             </Form>
           </Modal.Content>

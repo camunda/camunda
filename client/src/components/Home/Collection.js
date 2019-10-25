@@ -12,8 +12,10 @@ import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {Icon, Dropdown, ConfirmationModal} from 'components';
 import {loadEntity, updateEntity, deleteEntity} from 'services';
-import {showError} from 'notifications';
+import {showError, addNotification} from 'notifications';
 import {refreshBreadcrumbs} from 'components/navigation';
+import {copyEntity} from './service';
+import CopyModal from './CopyModal';
 
 import {ReactComponent as CollectionIcon} from './icons/collection.svg';
 
@@ -30,8 +32,9 @@ export default withErrorHandling(
       collection: null,
       editingCollection: false,
       deleting: false,
-      goBack: false,
-      deleteInProgress: false
+      redirect: '',
+      deleteInProgress: false,
+      copying: null
     };
 
     componentDidMount() {
@@ -40,6 +43,7 @@ export default withErrorHandling(
 
     componentDidUpdate(prevProps) {
       if (prevProps.match.params.id !== this.props.match.params.id) {
+        this.setState({redirect: null});
         this.loadCollection();
       }
     }
@@ -71,7 +75,7 @@ export default withErrorHandling(
       this.props.mightFail(
         deleteEntity('collection', this.state.collection.id),
         () => {
-          this.setState({goBack: true});
+          this.setState({redirect: '/'});
         },
         error => {
           showError(error);
@@ -84,15 +88,42 @@ export default withErrorHandling(
       this.setState({deleting: false, deleteInProgress: false});
     };
 
+    openCopyModal = entity => this.setState({copying: {...entity, entityType: 'collection'}});
+
+    closeCopyModal = () => this.setState({copying: null});
+
+    copyEntity = (name, redirect) => {
+      const {id, entityType} = this.state.copying;
+      this.props.mightFail(
+        copyEntity(entityType, id, name),
+        newCollectionId => {
+          if (redirect) {
+            this.setState({redirect: newCollectionId ? `/collection/${newCollectionId}/` : '/'});
+          } else {
+            addNotification({type: 'success', text: t('common.collection.created', {name})});
+          }
+        },
+        showError
+      );
+      this.closeCopyModal();
+    };
+
     render() {
-      const {collection, deleting, deleteInProgress, editingCollection, goBack} = this.state;
+      const {
+        collection,
+        deleting,
+        deleteInProgress,
+        editingCollection,
+        redirect,
+        copying
+      } = this.state;
 
       const homeTab = this.props.match.params.viewMode === undefined;
       const userTab = this.props.match.params.viewMode === 'users';
       const alertTab = this.props.match.params.viewMode === 'alerts';
 
-      if (goBack) {
-        return <Redirect to="/" />;
+      if (redirect) {
+        return <Redirect to={redirect} />;
       }
 
       return (
@@ -113,6 +144,10 @@ export default withErrorHandling(
                         <Dropdown.Option onClick={this.startEditingCollection}>
                           <Icon type="edit" />
                           {t('common.edit')}
+                        </Dropdown.Option>
+                        <Dropdown.Option onClick={() => this.openCopyModal(collection)}>
+                          <Icon type="copy-document" />
+                          {t('common.copy')}
                         </Dropdown.Option>
                         <Dropdown.Option onClick={this.confirmDelete}>
                           <Icon type="delete" />
@@ -179,6 +214,14 @@ export default withErrorHandling(
                 this.stopEditingCollection();
                 refreshBreadcrumbs();
               }}
+            />
+          )}
+          {copying && (
+            <CopyModal
+              entity={copying}
+              onClose={this.closeCopyModal}
+              onConfirm={this.copyEntity}
+              jumpToEntity
             />
           )}
         </div>

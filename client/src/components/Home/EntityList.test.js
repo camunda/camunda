@@ -163,7 +163,7 @@ it('should copy entity', () => {
     .at(1)
     .simulate('click');
 
-  node.find(CopyModal).prop('onConfirm')('new Name', 'someCollectionId', true);
+  node.find(CopyModal).prop('onConfirm')('new Name', true, 'someCollectionId');
 
   expect(copyEntity).toHaveBeenCalledWith(
     'dashboard',
