@@ -12,22 +12,6 @@ export async function loadEntity(type, id) {
   return await response.json();
 }
 
-export async function loadEntities(api, sortBy, numResults) {
-  const url = `api/${api}`;
-
-  const params = {};
-  if (sortBy) {
-    params['orderBy'] = sortBy;
-  }
-
-  if (numResults) {
-    params['numResults'] = numResults;
-  }
-
-  const response = await get(url, params);
-  return await response.json();
-}
-
 export async function createEntity(type, initialValues = {}) {
   const response = await post('api/' + type, initialValues);
   const json = await response.json();
@@ -47,4 +31,13 @@ export async function updateEntity(type, id, data, options = {}) {
 
 export async function deleteEntity(type, id) {
   return await del(`api/${type}/${id}`, {force: true});
+}
+
+export async function loadReports(collection) {
+  let url = 'api/report';
+  if (collection) {
+    url = `api/collection/${collection}/reports`;
+  }
+  const response = await get(url);
+  return await response.json();
 }

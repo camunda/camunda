@@ -17,9 +17,7 @@ import {
   Labeled,
   Form
 } from 'components';
-import {getCollection} from 'services';
-
-import {loadReports, loadReportsInCollection} from './service';
+import {getCollection, loadReports} from 'services';
 import {t} from 'translation';
 
 export default withRouter(
@@ -35,7 +33,7 @@ export default withRouter(
       const collection = getCollection(this.props.location.pathname);
 
       this.setState({
-        availableReports: await (collection ? loadReportsInCollection(collection) : loadReports())
+        availableReports: await loadReports(collection)
       });
     };
 

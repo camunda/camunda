@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import {loadEntities} from 'services';
+import {loadReports, getCollection} from 'services';
 import CombinedReportPanel from './CombinedReportPanel';
 
 jest.mock('react-router-dom', () => {
@@ -25,7 +25,8 @@ jest.mock('services', () => {
     formatters: {
       getHighlightedText: text => text
     },
-    loadEntities: jest.fn()
+    loadReports: jest.fn(),
+    getCollection: jest.fn()
   };
 });
 
@@ -107,7 +108,7 @@ const reportsList = [
   }
 ];
 
-loadEntities.mockReturnValue(reportsList);
+loadReports.mockReturnValue(reportsList);
 
 const props = {
   updateReport: jest.fn(),
@@ -116,18 +117,19 @@ const props = {
   location: '/report/1'
 };
 
-it('should invoke loadEntities to load all reports when it is mounted', async () => {
+it('should invoke loadReports to load all reports when it is mounted', async () => {
   const node = await shallow(<CombinedReportPanel {...props} />);
   await node.update();
 
-  expect(loadEntities).toHaveBeenCalled();
+  expect(loadReports).toHaveBeenCalledWith(null);
 });
 
-it('should only include combinable reports in the same collection', async () => {
+it('should invoke loadReports with the collection id when available', async () => {
+  getCollection.mockReturnValueOnce('collectionId');
   const node = await shallow(<CombinedReportPanel {...props} />);
   await node.update();
 
-  expect(node.find('TypeaheadMultipleSelection').prop('availableValues')).toMatchSnapshot();
+  expect(loadReports).toHaveBeenCalledWith('collectionId');
 });
 
 it('should have input checkbox for only single report items in the list', async () => {

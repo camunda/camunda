@@ -9,7 +9,7 @@ import React from 'react';
 import {t} from 'translation';
 import {LoadingIndicator, Icon, Dropdown, Input, ConfirmationModal, Button} from 'components';
 import {showError} from 'notifications';
-import {formatters, loadEntities, isDurationReport} from 'services';
+import {formatters, loadReports, isDurationReport} from 'services';
 import {withErrorHandling} from 'HOC';
 
 import AlertModal from './AlertModal';
@@ -51,12 +51,11 @@ export default withErrorHandling(
 
     loadReports = () => {
       this.props.mightFail(
-        loadEntities('report'),
+        loadReports(this.props.collection),
         reports =>
           this.setState({
             reports: reports.filter(
-              ({combined, collectionId, data: {visualization}}) =>
-                !combined && visualization === 'number' && collectionId === this.props.collection
+              ({combined, data: {visualization}}) => !combined && visualization === 'number'
             )
           }),
         error => {

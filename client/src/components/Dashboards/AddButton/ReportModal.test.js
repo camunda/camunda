@@ -8,8 +8,8 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportModal from './ReportModal';
-import {loadReports, loadReportsInCollection} from './service';
 import {Button} from 'components';
+import {loadReports} from 'services';
 
 jest.mock('react-router-dom', () => {
   const rest = jest.requireActual('react-router-dom');
@@ -19,10 +19,13 @@ jest.mock('react-router-dom', () => {
   };
 });
 
-jest.mock('./service', () => ({
-  loadReports: jest.fn().mockReturnValue([]),
-  loadReportsInCollection: jest.fn().mockReturnValue([])
-}));
+jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+  return {
+    ...rest,
+    loadReports: jest.fn().mockReturnValue([])
+  };
+});
 
 const props = {
   location: {pathname: '/dashboard/1'}
@@ -37,7 +40,7 @@ it('should load the available reports', () => {
 it('should load only reports in the same collection', () => {
   shallow(<ReportModal location={{pathname: '/collection/123/dashboard/1'}} />);
 
-  expect(loadReportsInCollection).toHaveBeenCalledWith('123');
+  expect(loadReports).toHaveBeenCalledWith('123');
 });
 
 it('should render a Typeahead element with the available reports as options', () => {

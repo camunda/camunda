@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {Button, Dropdown} from 'components';
-import {loadEntities} from 'services';
+import {loadReports} from 'services';
 
 import AlertListWithErrorHandling from './AlertList';
 import AlertModal from './AlertModal';
@@ -20,7 +20,7 @@ jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    loadEntities: jest
+    loadReports: jest
       .fn()
       .mockReturnValue([
         {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
@@ -53,7 +53,7 @@ const props = {
 it('should load existing reports', () => {
   shallow(<AlertList {...props} />);
 
-  expect(loadEntities).toHaveBeenCalled();
+  expect(loadReports).toHaveBeenCalled();
 });
 
 it('should only save single number reports', async () => {
@@ -99,7 +99,7 @@ it('should show a loading indicator', () => {
 it('should load data', () => {
   shallow(<AlertList {...props} />);
 
-  expect(loadEntities).toHaveBeenCalled();
+  expect(loadReports).toHaveBeenCalled();
 });
 
 it('should show information about alerts', async () => {

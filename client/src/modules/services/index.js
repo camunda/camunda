@@ -21,7 +21,7 @@ export {flatten} from './tableServices';
 export {default as getTooltipText} from './getTooltipText';
 export {
   loadEntity,
-  loadEntities,
+  loadReports,
   createEntity,
   updateEntity,
   deleteEntity,

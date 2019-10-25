@@ -7,7 +7,7 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 
-import {loadEntities, getCollection} from 'services';
+import {loadReports, getCollection} from 'services';
 import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
 import {Configuration} from './Configuration';
 
@@ -30,10 +30,9 @@ export default withRouter(
 
       const collection = getCollection(this.props.location.pathname) || null;
 
-      const reports = (await loadEntities('report', 'lastModified')).filter(
+      const reports = (await loadReports(collection)).filter(
         report =>
           !report.combined &&
-          report.collectionId === collection &&
           report.reportType === 'process' &&
           acceptedVisualizations.includes(report.data.visualization) &&
           (report.data.configuration.distributedBy === 'none' ||
