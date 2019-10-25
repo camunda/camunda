@@ -22,6 +22,7 @@ public class EngineConstantsUtil {
   public static final String OCCURRED_AT = "occurredAt";
 
   public static final String MEMBER = "member";
+  public static final String MEMBER_OF_GROUP = "memberOfGroup";
 
   public static final String VARIABLE_UPDATE_ENDPOINT = "/optimize/variable-update";
   public static final String COMPLETED_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/completed";
@@ -41,6 +42,7 @@ public class EngineConstantsUtil {
   public static final String GROUP_BY_ID_ENDPOINT_TEMPLATE = "/group/{id}";
   public static final String USER_ENDPOINT = "/user";
   public static final String USER_BY_ID_ENDPOINT_TEMPLATE = "/user/{id}/profile";
+  public static final String USER_COUNT_ENDPOINT = "/user/count";
 
   public static final String ALL_PERMISSION = "ALL";
   public static final String ACCESS_PERMISSION = "ACCESS";

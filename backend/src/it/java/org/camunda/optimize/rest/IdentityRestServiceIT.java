@@ -66,9 +66,9 @@ public class IdentityRestServiceIT {
 
   @Test
   public void searchForGroup() {
-    final GroupDto groupIdentity = new GroupDto("hobbits", "The Hobbits");
+    final GroupDto groupIdentity = new GroupDto("hobbits", "The Hobbits", 4L);
     embeddedOptimizeExtensionRule.getIdentityService().addIdentity(groupIdentity);
-    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs"));
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs", 1000L));
 
     final IdentitySearchResultDto searchResult = embeddedOptimizeExtensionRule.getRequestExecutor()
       .buildSearchForIdentities("hobbit")
@@ -81,9 +81,9 @@ public class IdentityRestServiceIT {
 
   @Test
   public void searchForGroupAndUser() {
-    final GroupDto groupIdentity = new GroupDto("group", "The Baggins Group");
+    final GroupDto groupIdentity = new GroupDto("group", "The Baggins Group", 2L);
     embeddedOptimizeExtensionRule.getIdentityService().addIdentity(groupIdentity);
-    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs"));
+    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(new GroupDto("orcs", "The Orcs", 1000L));
     final UserDto userIdentity = new UserDto("testUser", "Frodo", "Baggins", "frodo.baggins@camunda.com");
     embeddedOptimizeExtensionRule.getIdentityService().addIdentity(userIdentity);
     embeddedOptimizeExtensionRule.getIdentityService().addIdentity(
@@ -102,7 +102,7 @@ public class IdentityRestServiceIT {
 
   @Test
   public void emptySearchStringReturnsAlphanumericSortingListEmptyNamesLast() {
-    final GroupDto groupIdentity = new GroupDto("baggins", "The Baggins Group");
+    final GroupDto groupIdentity = new GroupDto("baggins", "The Baggins Group", 5L);
     embeddedOptimizeExtensionRule.getIdentityService().addIdentity(groupIdentity);
     final UserDto userIdentity =
       new UserDto("testUser1", "Frodo", "Baggins", "frodo.baggins@camunda.com");
@@ -121,7 +121,7 @@ public class IdentityRestServiceIT {
 
   @Test
   public void limitResults() {
-    final GroupDto groupIdentity = new GroupDto("baggins", "The Baggins Group");
+    final GroupDto groupIdentity = new GroupDto("baggins", "The Baggins Group", 4L);
     embeddedOptimizeExtensionRule.getIdentityService().addIdentity(groupIdentity);
     final UserDto userIdentity =
       new UserDto("testUser1", "Frodo", "Baggins", "frodo.baggins@camunda.com");

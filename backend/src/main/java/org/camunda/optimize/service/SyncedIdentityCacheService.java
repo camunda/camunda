@@ -227,14 +227,12 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
 
       // add all members of the authorized groups (as group grants win over group revoke) except explicit revoked users
       authorizedIdentities.getGrantedGroupIds()
-        .forEach(groupId -> {
-          consumeIdentitiesInBatches(
-            identityCache::addIdentities,
-            (pageStartIndex, pageLimit) -> fetchPageOfGroupMembers(engineContext, groupId, pageStartIndex, pageLimit),
-            userDto -> !authorizedIdentities.getRevokedUserIds().contains(userDto.getId())
-              && !identityCache.getUserIdentityById(userDto.getId()).isPresent()
-          );
-        });
+        .forEach(groupId -> consumeIdentitiesInBatches(
+          identityCache::addIdentities,
+          (pageStartIndex, pageLimit) -> fetchPageOfGroupMembers(engineContext, groupId, pageStartIndex, pageLimit),
+          userDto -> !authorizedIdentities.getRevokedUserIds().contains(userDto.getId())
+            && !identityCache.getUserIdentityById(userDto.getId()).isPresent()
+        ));
     }
 
     // finally add explicitly granted users, not yet in the cache already

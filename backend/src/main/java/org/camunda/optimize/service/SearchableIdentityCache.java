@@ -17,6 +17,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
@@ -344,6 +345,11 @@ public class SearchableIdentityCache implements AutoCloseable {
           getAllLowerCaseFieldForDtoField(UserDto.Fields.email.name()), email.toLowerCase(), Field.Store.NO)
         );
       });
+    } else if (identity instanceof GroupDto) {
+      final GroupDto groupDto = (GroupDto) identity;
+      Optional.ofNullable(groupDto.getMemberCount()).ifPresent(
+        memberCount -> document.add(new StoredField(GroupDto.Fields.memberCount.name(), memberCount))
+      );
     }
     return document;
   }
@@ -371,7 +377,8 @@ public class SearchableIdentityCache implements AutoCloseable {
   private static GroupDto mapDocumentToGroupDto(final Document document) {
     return new GroupDto(
       document.get(IdentityDto.Fields.id.name()),
-      document.get(IdentityDto.Fields.name.name())
+      document.get(IdentityDto.Fields.name.name()),
+      Optional.ofNullable(document.get(GroupDto.Fields.memberCount.name())).map(Long::valueOf).orElse(null)
     );
   }
 

@@ -145,13 +145,15 @@ public class CollectionRestServiceRoleIT {
   public void getRolesContainsGroupMetadata() {
     //given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.createGroup(TEST_GROUP);
+    engineIntegrationExtensionRule.createGroup(TEST_GROUP, TEST_GROUP);
+    engineIntegrationExtensionRule.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtensionRule.addUserToGroup(USER_KERMIT, TEST_GROUP);
+    engineIntegrationExtensionRule.addUser(USER_MISS_PIGGY, USER_MISS_PIGGY);
+    engineIntegrationExtensionRule.addUserToGroup(USER_MISS_PIGGY, TEST_GROUP);
 
     final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
 
-    final GroupDto expectedGroupDtoWithName = new GroupDto(TEST_GROUP, "myGroup");
-    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(expectedGroupDtoWithName);
     // when
     List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
       .getRequestExecutor()
@@ -165,8 +167,9 @@ public class CollectionRestServiceRoleIT {
       .collect(Collectors.toList());
     assertThat(groupIdentities.size(), is(1));
 
-    final GroupDto groupDto = (GroupDto) groupIdentities.get(0);
-    assertThat(groupDto.getName(), is(expectedGroupDtoWithName.getName()));
+    final GroupDto expectedGroupDto = new GroupDto(TEST_GROUP, TEST_GROUP, 2L);
+    final GroupDto actualGroupDto = (GroupDto) groupIdentities.get(0);
+    assertThat(actualGroupDto, is(expectedGroupDto));
   }
 
   @Test
@@ -273,7 +276,7 @@ public class CollectionRestServiceRoleIT {
   public void addGroupRole() {
     // given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.createGroup(TEST_GROUP);
+    engineIntegrationExtensionRule.createGroup(TEST_GROUP, TEST_GROUP);
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);

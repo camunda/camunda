@@ -10,9 +10,9 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Optional;
@@ -35,7 +35,7 @@ public class IdentityServiceIT {
 
   private IdentityService identityService;
 
-  @Before
+  @BeforeEach
   public void setup() {
     identityService = embeddedOptimizeExtension.getIdentityService();
   }
@@ -53,9 +53,9 @@ public class IdentityServiceIT {
 
   @Test
   public void getGroupByIdFromCache() {
-    final GroupDto groupIdentity = new GroupDto("hobbits", "The Hobbits");
+    final GroupDto groupIdentity = new GroupDto("hobbits", "The Hobbits", 4L);
     identityService.addIdentity(groupIdentity);
-    identityService.addIdentity(new GroupDto("orcs", "The Orcs"));
+    identityService.addIdentity(new GroupDto("orcs", "The Orcs", 1000L));
 
     final Optional<GroupDto> retrievedUserDto = identityService.getGroupById("hobbits");
     assertThat(retrievedUserDto.isPresent(), is(true));

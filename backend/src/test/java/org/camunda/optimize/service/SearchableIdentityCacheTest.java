@@ -38,7 +38,7 @@ public class SearchableIdentityCacheTest {
 
     // some unexpected identities, so never use z in test data :)
     cache.addIdentity(new UserDto("zzz", "zzz", "zzz", "zzz"));
-    cache.addIdentity(new GroupDto("zzzz", "zzzz"));
+    cache.addIdentity(new GroupDto("zzzz", "zzzz", 2L));
   }
 
   @AfterEach
@@ -182,18 +182,30 @@ public class SearchableIdentityCacheTest {
 
   @Test
   public void searchGroupById() {
-    final GroupDto group = new GroupDto("testGroup", "Test Group");
+    final GroupDto group = new GroupDto("testGroup", "Test Group", 5L);
     cache.addIdentity(group);
 
     final List<IdentityDto> searchResult = cache.searchIdentities(group.getId()).getResult();
-    assertThat(searchResult.size(), is(1));
+    assertThat(searchResult, contains(group));
   }
 
   @Test
   public void searchGroupById_exactIdMatchBoostedOverMatchesOnOtherFields() {
-    final GroupDto group1 = new GroupDto("testGroup", "Test Group");
+    final GroupDto group1 = new GroupDto("testGroup", "Test Group", 5L);
     cache.addIdentity(group1);
-    final GroupDto group2 = new GroupDto("otherGroup", "testGroup");
+    final GroupDto group2 = new GroupDto("otherGroup", "testGroup", 5L);
+    cache.addIdentity(group2);
+
+    final List<IdentityDto> searchResult = cache.searchIdentities(group1.getId()).getResult();
+    assertThat(searchResult.size(), is(2));
+    assertThat(searchResult, contains(group1, group2));
+  }
+
+  @Test
+  public void searchGroupById_resultsUnaffectedByMemberCountExists() {
+    final GroupDto group1 = new GroupDto("testGroup", "Test Group", 5L);
+    cache.addIdentity(group1);
+    final GroupDto group2 = new GroupDto("otherGroup", "testGroup", null);
     cache.addIdentity(group2);
 
     final List<IdentityDto> searchResult = cache.searchIdentities(group1.getId()).getResult();
@@ -203,7 +215,7 @@ public class SearchableIdentityCacheTest {
 
   @Test
   public void searchGroupByIdPrefix() {
-    final GroupDto group = new GroupDto("testGroup", "HobbitGroup");
+    final GroupDto group = new GroupDto("testGroup", "HobbitGroup", 5L);
     cache.addIdentity(group);
 
     verifyCaseInsensitiveSearchResults(group.getId().substring(0, 3), 1);
@@ -211,7 +223,7 @@ public class SearchableIdentityCacheTest {
 
   @Test
   public void searchGroupByName() {
-    final GroupDto group = new GroupDto("testGroup", "Test Group");
+    final GroupDto group = new GroupDto("testGroup", "Test Group", 5L);
     cache.addIdentity(group);
 
     verifyCaseInsensitiveSearchResults(group.getName(), 1);
@@ -219,7 +231,7 @@ public class SearchableIdentityCacheTest {
 
   @Test
   public void searchGroupByPartialName() {
-    final GroupDto group = new GroupDto("testGroup", "Test Group");
+    final GroupDto group = new GroupDto("testGroup", "Test Group", 5L);
     cache.addIdentity(group);
 
     assertSearchResultsPresentForPartialSearchTerm(group.getName(), 1);
@@ -243,17 +255,17 @@ public class SearchableIdentityCacheTest {
   @Test
   public void failOnLimitHitAddSingleEntry() {
     cache = new SearchableIdentityCache(1L);
-    cache.addIdentity(new GroupDto("xxxx", "xxxx"));
-    assertThrows(MaxEntryLimitHitException.class, () -> cache.addIdentity(new GroupDto("zzzz", "zzzz")));
+    cache.addIdentity(new GroupDto("xxxx", "xxxx", 5L));
+    assertThrows(MaxEntryLimitHitException.class, () -> cache.addIdentity(new GroupDto("zzzz", "zzzz", 5L)));
   }
 
   @Test
   public void failOnLimitHitAddEntryBatch() {
     cache = new SearchableIdentityCache(1L);
-    cache.addIdentities(Lists.newArrayList(new GroupDto("xxxx", "xxxx")));
+    cache.addIdentities(Lists.newArrayList(new GroupDto("xxxx", "xxxx", 5L)));
     assertThrows(
       MaxEntryLimitHitException.class,
-      () -> cache.addIdentities(Lists.newArrayList(new GroupDto("zzzz", "zzzz")))
+      () -> cache.addIdentities(Lists.newArrayList(new GroupDto("zzzz", "zzzz", 5L)))
     );
   }
 

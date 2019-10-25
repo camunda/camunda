@@ -46,7 +46,7 @@ public class CollectionRoleDto {
       );
     } else {
       GroupDto oldGroupDto = (GroupDto) oldRole.getIdentity();
-      this.identity = new GroupDto(oldGroupDto.getId(), oldGroupDto.getName());
+      this.identity = new GroupDto(oldGroupDto.getId(), oldGroupDto.getName(), oldGroupDto.getMemberCount());
     }
 
     this.role = oldRole.role;

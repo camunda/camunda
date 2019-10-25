@@ -162,6 +162,7 @@ public class SyncedIdentityCacheServiceIT {
     final Optional<GroupDto> groupIdentityById = getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID);
     assertThat(groupIdentityById.isPresent(), is(true));
     assertThat(groupIdentityById.get().getName(), is(KERMIT_GROUP_NAME));
+    assertThat(groupIdentityById.get().getMemberCount(), is(1L));
   }
 
   @Test

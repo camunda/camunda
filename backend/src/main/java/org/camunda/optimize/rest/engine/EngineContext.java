@@ -8,6 +8,7 @@ package org.camunda.optimize.rest.engine;
 import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.EngineGroupDto;
 import org.camunda.optimize.dto.engine.EngineListUserDto;
 import org.camunda.optimize.dto.optimize.GroupDto;
@@ -35,6 +36,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.GROUP_BY_ID_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.GROUP_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MEMBER;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.MEMBER_OF_GROUP;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
@@ -42,6 +44,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_BY_ID_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_COUNT_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.USER_ENDPOINT;
 
 @Slf4j
@@ -200,7 +203,28 @@ public class EngineContext {
       log.error("Could not fetch group with id [{}]", groupId, e);
     }
     return Optional.ofNullable(groupDto)
-      .map(group -> new GroupDto(group.getId(), group.getName()));
+      .map(group -> new GroupDto(
+        group.getId(),
+        group.getName(),
+        getUserCountForUserGroup(group.getId()).orElse(null)
+      ));
+  }
+
+  private Optional<Long> getUserCountForUserGroup(String userGroupId) {
+    try {
+      Response response = getEngineClient()
+        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .queryParam(MEMBER_OF_GROUP, userGroupId)
+        .path(USER_COUNT_ENDPOINT)
+        .request(MediaType.APPLICATION_JSON)
+        .get();
+      if (response.getStatus() == 200) {
+        return Optional.of(response.readEntity(CountDto.class).getCount());
+      }
+    } catch (Exception e) {
+      log.error("Could not get user count for user group [{}]", userGroupId, e);
+    }
+    return Optional.empty();
   }
 
   public List<GroupDto> fetchPageOfGroups(final int pageStartIndex, final int pageLimit) {
@@ -216,7 +240,9 @@ public class EngineContext {
     if (response.getStatus() == 200) {
       // @formatter:off
       return response.readEntity(new GenericType<List<EngineGroupDto>>() {}).stream()
-        .map(engineGroupDto -> new GroupDto(engineGroupDto.getId(), engineGroupDto.getName()))
+        .map(engineGroupDto -> new GroupDto(engineGroupDto.getId(),
+                                            engineGroupDto.getName(),
+                                            getUserCountForUserGroup(engineGroupDto.getId()).orElse(null)))
         .collect(toList());
       // @formatter:on
     } else {
