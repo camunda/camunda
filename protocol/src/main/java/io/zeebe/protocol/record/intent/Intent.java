@@ -29,7 +29,6 @@ public interface Intent {
           MessageIntent.class,
           MessageSubscriptionIntent.class,
           WorkflowInstanceSubscriptionIntent.class,
-          ExporterIntent.class,
           JobBatchIntent.class,
           TimerIntent.class,
           VariableIntent.class,
@@ -72,8 +71,6 @@ public interface Intent {
         return MessageStartEventSubscriptionIntent.from(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.from(intent);
-      case EXPORTER:
-        return ExporterIntent.from(intent);
       case JOB_BATCH:
         return JobBatchIntent.from(intent);
       case TIMER:
@@ -117,8 +114,6 @@ public interface Intent {
         return MessageStartEventSubscriptionIntent.valueOf(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.valueOf(intent);
-      case EXPORTER:
-        return ExporterIntent.valueOf(intent);
       case JOB_BATCH:
         return JobBatchIntent.valueOf(intent);
       case TIMER:

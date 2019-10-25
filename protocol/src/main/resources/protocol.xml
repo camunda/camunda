@@ -27,7 +27,6 @@
       <validValue name="MESSAGE">10</validValue>
       <validValue name="MESSAGE_SUBSCRIPTION">11</validValue>
       <validValue name="WORKFLOW_INSTANCE_SUBSCRIPTION">12</validValue>
-      <validValue name="EXPORTER">13</validValue>
       <validValue name="JOB_BATCH">14</validValue>
       <validValue name="TIMER">15</validValue>
       <validValue name="MESSAGE_START_EVENT_SUBSCRIPTION">16</validValue>
