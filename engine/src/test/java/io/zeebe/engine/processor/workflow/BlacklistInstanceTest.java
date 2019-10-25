@@ -20,7 +20,6 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
-import io.zeebe.protocol.record.intent.ExporterIntent;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
@@ -71,11 +70,6 @@ public class BlacklistInstanceTest {
       {ValueType.DEPLOYMENT, DeploymentIntent.CREATED, false},
       {ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, false},
       {ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTED, false},
-
-      ////////////////////////////////////////
-      /////////////// EXPORTER ///////////////
-      ////////////////////////////////////////
-      {ValueType.EXPORTER, ExporterIntent.EXPORTED, false},
 
       ////////////////////////////////////////
       ////////////// INCIDENTS ///////////////
