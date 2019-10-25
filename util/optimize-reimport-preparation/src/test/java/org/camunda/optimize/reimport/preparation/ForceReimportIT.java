@@ -13,9 +13,9 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
@@ -65,7 +65,6 @@ public class ForceReimportIT {
 
   @Test
   public void forceReimport() throws IOException {
-
     //given
     String collectionId = createNewCollection();
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
@@ -84,7 +83,7 @@ public class ForceReimportIT {
     elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<AuthorizedReportDefinitionDto> reports = getAllReportsInCollection(collectionId);
     DashboardDefinitionDto dashboard = getDashboardById(dashboardId);
     List<AlertDefinitionDto> alerts = getAllAlerts();
 
@@ -98,7 +97,7 @@ public class ForceReimportIT {
     // when
     forceReimportOfEngineData();
 
-    reports = getAllReports();
+    reports = getAllReportsInCollection(collectionId);
     dashboard = getDashboardById(dashboardId);
     alerts = getAllAlerts();
 
@@ -228,16 +227,11 @@ public class ForceReimportIT {
       .execute(DashboardDefinitionDto.class, 200);
   }
 
-  private List<ReportDefinitionDto> getAllReports() {
-    return getAllReportsWithQueryParam(new HashMap<>());
-  }
-
-  private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
+  private List<AuthorizedReportDefinitionDto> getAllReportsInCollection(String collectionId) {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
-      .buildGetAllReportsRequest()
-      .addQueryParams(queryParams)
-      .executeAndReturnList(ReportDefinitionDto.class, 200);
+      .buildGetReportsForCollectionRequest(collectionId)
+      .executeAndReturnList(AuthorizedReportDefinitionDto.class, 200);
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTask() {

@@ -166,11 +166,14 @@ public class ReportService implements CollectionReferencingService {
     return new AuthorizedReportDefinitionDto(report, currentUserRole);
   }
 
-  public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId,
-                                                                  MultivaluedMap<String, String> queryParameters) {
-    List<AuthorizedReportDefinitionDto> reports = findAndFilterReports(userId);
-    reports = QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(reports, queryParameters);
-    return reports;
+  public List<AuthorizedReportDefinitionDto> findAndFilterPrivateReports(String userId,
+                                                                         MultivaluedMap<String, String> queryParameters) {
+    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml()
+      .stream()
+      .filter(report -> report.getCollectionId() == null)
+      .collect(Collectors.toList());
+    List<AuthorizedReportDefinitionDto> authorizedReports = filterAuthorizedReports(userId, reports);
+    return QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(authorizedReports, queryParameters);
   }
 
   public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId) {
@@ -388,9 +391,7 @@ public class ReportService implements CollectionReferencingService {
       }
     } else {
       CombinedReportDefinitionDto combinedReportDefinition = (CombinedReportDefinitionDto) originalReportDefinition;
-      return copyAndMoveCombinedReport(
-        userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData(), existingReportCopies, keepReportNames
-      );
+      return copyAndMoveCombinedReport(userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData(), existingReportCopies, keepReportNames);
     }
   }
 
@@ -412,7 +413,8 @@ public class ReportService implements CollectionReferencingService {
       oldCombinedReportData.getReports().stream().sequential().forEach(combinedReportItemDto -> {
         String reportName = keepReportNames ? reportReader.getReport(combinedReportItemDto.getId()).getName() : null;
         final String reportCopyId = existingReportCopies.computeIfAbsent(
-          combinedReportItemDto.getId(), reportId -> copyAndMoveReport(reportId, userId, newCollectionId, reportName).getId()
+          combinedReportItemDto.getId(),
+          reportId -> copyAndMoveReport(reportId, userId, newCollectionId, reportName).getId()
         );
         newReports.add(
           combinedReportItemDto.toBuilder().id(reportCopyId).color(combinedReportItemDto.getColor()).build()

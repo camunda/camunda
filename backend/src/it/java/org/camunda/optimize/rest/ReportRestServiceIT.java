@@ -51,6 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class ReportRestServiceIT {
+
   private static final String PROCESS_DEFINITION_XML_WITH_NAME = "bpmn/simple_withName.bpmn";
   private static final String PROCESS_DEFINITION_XML_WO_NAME = "bpmn/simple_woName.bpmn";
   private static final String DECISION_DEFINITION_XML = "dmn/invoiceBusinessDecision_withName_and_versionTag.xml";
@@ -68,7 +69,8 @@ public class ReportRestServiceIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
+    new ElasticSearchIntegrationTestExtensionRule();
   @RegisterExtension
   @Order(2)
   public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
@@ -196,12 +198,30 @@ public class ReportRestServiceIT {
   }
 
   @Test
-  public void getStoredReportsWithoutAuthentication() {
+  public void getStoredPrivateReportsExcludesNonPrivateReports() {
+    //given
+    String collectionId = addEmptyCollectionToOptimize();
+    String privateDecisionReportId = addEmptyDecisionReport();
+    String privateProcessReportId = addEmptyProcessReport();
+    addEmptyProcessReport(collectionId);
+
+    // when
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
+
+    // then the returned list excludes reports in collections
+    assertThat(
+      reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()),
+      containsInAnyOrder(privateDecisionReportId, privateProcessReportId)
+    );
+  }
+
+  @Test
+  public void getStoredPrivateReportsWithoutAuthentication() {
     // when
     Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildGetAllReportsRequest()
+      .buildGetAllPrivateReportsRequest()
       .execute();
 
     // then the status code is not authorized
@@ -217,7 +237,7 @@ public class ReportRestServiceIT {
     updateReportWithValidXml(idDecisionReport, DECISION);
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(2));
@@ -262,7 +282,7 @@ public class ReportRestServiceIT {
       .execute();
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(2));
@@ -348,7 +368,7 @@ public class ReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
-    assertThat(getAllReports().size(), is(0));
+    assertThat(getAllPrivateReports().size(), is(0));
   }
 
   @Test
@@ -954,10 +974,10 @@ public class ReportRestServiceIT {
       .getId();
   }
 
-  private List<ReportDefinitionDto> getAllReports() {
+  private List<ReportDefinitionDto> getAllPrivateReports() {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
-      .buildGetAllReportsRequest()
+      .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 

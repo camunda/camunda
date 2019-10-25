@@ -370,7 +370,7 @@ public class OptimizeRequestExecutor {
     return buildDeleteReportRequest(id, null);
   }
 
-  public OptimizeRequestExecutor buildGetAllReportsRequest() {
+  public OptimizeRequestExecutor buildGetAllPrivateReportsRequest() {
     this.requestType = GET;
     this.path = "/report";
     return this;

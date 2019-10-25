@@ -45,6 +45,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -97,7 +98,7 @@ public class ReportConflictIT {
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
+    checkPrivateReportsStillExist(expectedReportIds);
     checkCombinedReportContainsSingleReports(combinedReportId, firstSingleReportId, secondSingleReportId);
   }
 
@@ -106,10 +107,8 @@ public class ReportConflictIT {
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String collectionId = createNewCollection();
-    String firstSingleReportId =
-      createAndStoreProcessReportWithDefinition(collectionId, createRandomRawDataReport());
-    String combinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId);
-    String[] expectedReportIds = new String[]{firstSingleReportId, combinedReportId};
+    String singleReportId = createAndStoreProcessReportWithDefinition(collectionId, createRandomRawDataReport());
+    String combinedReportId = createNewCombinedReportWithDefinition(singleReportId);
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
     // when
@@ -121,15 +120,16 @@ public class ReportConflictIT {
     userTaskReport.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
     reportUpdate.setData(userTaskReport);
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
-      firstSingleReportId,
+      singleReportId,
       reportUpdate,
       force
     );
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
-    checkCombinedReportContainsSingleReports(combinedReportId, firstSingleReportId);
+    checkReportStillExistsInCollection(singleReportId, collectionId);
+    checkPrivateReportsStillExist(expectedConflictedItemIds);
+    checkCombinedReportContainsSingleReports(combinedReportId, singleReportId);
   }
 
   @ParameterizedTest
@@ -145,7 +145,6 @@ public class ReportConflictIT {
     String collectionId = createNewCollection();
     String reportId = createAndStoreProcessReportWithDefinition(collectionId, numberReport);
     String alertForReport = createNewAlertForReport(reportId);
-    String[] expectedReportIds = new String[]{reportId};
     String[] expectedConflictedItemIds = new String[]{alertForReport};
 
     // when
@@ -164,7 +163,7 @@ public class ReportConflictIT {
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.ALERT, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
+    checkReportStillExistsInCollection(reportId, collectionId);
     checkAlertsStillExist(expectedConflictedItemIds);
   }
 
@@ -178,7 +177,6 @@ public class ReportConflictIT {
     String collectionId = createNewCollection();
     String reportId = createAndStoreDefaultDecisionReportDefinition(collectionId, reportData);
     String alertForReport = createNewAlertForReport(reportId);
-    String[] expectedReportIds = new String[]{reportId};
     String[] expectedConflictedItemIds = new String[]{alertForReport};
 
     // when
@@ -191,7 +189,7 @@ public class ReportConflictIT {
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.ALERT, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
+    checkReportStillExistsInCollection(reportId, collectionId);
     checkAlertsStillExist(expectedConflictedItemIds);
   }
 
@@ -229,7 +227,7 @@ public class ReportConflictIT {
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
+    checkPrivateReportsStillExist(expectedReportIds);
     checkCombinedReportContainsSingleReports(firstCombinedReportId, firstSingleReportId, secondSingleReportId);
     checkCombinedReportContainsSingleReports(secondCombinedReportId, firstSingleReportId, secondSingleReportId);
   }
@@ -242,7 +240,6 @@ public class ReportConflictIT {
     String reportId = createAndStoreProcessReportWithDefinition(collectionId, createRandomRawDataReport());
     String firstAlertForReport = createNewAlertForReport(reportId);
     String secondAlertForReport = createNewAlertForReport(reportId);
-    String[] expectedReportIds = {reportId};
     String[] expectedConflictedItemIds = {firstAlertForReport, secondAlertForReport};
 
     // when
@@ -250,7 +247,7 @@ public class ReportConflictIT {
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.ALERT, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
+    checkReportStillExistsInCollection(reportId, collectionId);
     checkAlertsStillExist(expectedConflictedItemIds);
   }
 
@@ -269,7 +266,7 @@ public class ReportConflictIT {
 
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.DASHBOARD, expectedConflictedItemIds);
-    checkReportsStillExist(expectedReportIds);
+    checkPrivateReportsStillExist(expectedReportIds);
     checkDashboardsStillContainReport(expectedConflictedItemIds, reportId);
   }
 
@@ -324,8 +321,20 @@ public class ReportConflictIT {
     );
   }
 
-  private void checkReportsStillExist(String[] expectedReportIds) {
-    List<ReportDefinitionDto> reports = getAllReports();
+  private void checkReportStillExistsInCollection(String reportId, String collectionId) {
+    List<ReportDefinitionDto> reportDefinitionDtos =
+      embeddedOptimizeExtensionRule
+      .getRequestExecutor()
+      .buildGetReportsForCollectionRequest(collectionId)
+      .executeAndReturnList(ReportDefinitionDto.class, 200);
+    assertThat(
+      reportDefinitionDtos.stream().map(ReportDefinitionDto::getId).collect(Collectors.toSet()),
+      hasItems(reportId)
+    );
+  }
+
+  private void checkPrivateReportsStillExist(String[] expectedReportIds) {
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
     assertThat(reports.size(), is(expectedReportIds.length));
     assertThat(
       reports.stream().map(ReportDefinitionDto::getId).collect(Collectors.toSet()),
@@ -504,10 +513,10 @@ public class ReportConflictIT {
       .getId();
   }
 
-  private List<ReportDefinitionDto> getAllReports() {
+  private List<ReportDefinitionDto> getAllPrivateReports() {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
-      .buildGetAllReportsRequest()
+      .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 

@@ -59,7 +59,7 @@ public class EntitiesRestServiceIT {
     Response response = embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildGetAllReportsRequest()
+      .buildGetAllPrivateReportsRequest()
       .execute();
 
     // then the status code is not authorized

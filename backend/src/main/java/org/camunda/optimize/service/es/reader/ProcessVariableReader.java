@@ -53,7 +53,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
-
 @RequiredArgsConstructor
 @Component
 @Slf4j

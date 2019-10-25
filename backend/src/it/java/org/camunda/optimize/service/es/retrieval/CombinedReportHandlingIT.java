@@ -122,7 +122,7 @@ public class CombinedReportHandlingIT {
     String combinedReportId = createNewCombinedReport();
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     Set<String> resultSet = reports.stream()
@@ -156,7 +156,7 @@ public class CombinedReportHandlingIT {
 
     // when
     updateReport(id, report);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(2));
@@ -313,7 +313,7 @@ public class CombinedReportHandlingIT {
 
     // when
     deleteReport(reportId);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(0));
@@ -474,7 +474,7 @@ public class CombinedReportHandlingIT {
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToDelete, remainingSingleReportId);
     deleteReport(singleReportIdToDelete, true);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     Set<String> resultSet = reports.stream()
@@ -514,7 +514,7 @@ public class CombinedReportHandlingIT {
     countFlowNodeFrequencyGroupByFlowNode.setVisualization(ProcessVisualization.TABLE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     Set<String> resultSet = reports.stream()
@@ -553,7 +553,7 @@ public class CombinedReportHandlingIT {
     countFlowNodeFrequencyGroupByFlowNode.getGroupBy().setType(ProcessGroupByType.START_DATE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     Set<String> resultSet = reports.stream()
@@ -592,7 +592,7 @@ public class CombinedReportHandlingIT {
     countFlowNodeFrequencyGroupByFlowNode.getView().setEntity(ProcessViewEntity.PROCESS_INSTANCE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report, true);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     Set<String> resultSet = reports.stream()
@@ -1158,15 +1158,15 @@ public class CombinedReportHandlingIT {
       .execute();
   }
 
-  private List<ReportDefinitionDto> getAllReports() {
-    return getAllReportsWithQueryParam(new HashMap<>());
+  private List<ReportDefinitionDto> getAllPrivateReports() {
+    return getAllPrivateReportsWithQueryParam(new HashMap<>());
   }
 
-  private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
+  private List<ReportDefinitionDto> getAllPrivateReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
       .addQueryParams(queryParams)
-      .buildGetAllReportsRequest()
+      .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 

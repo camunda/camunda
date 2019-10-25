@@ -122,16 +122,16 @@ public class ReportRestService {
   }
 
   /**
-   * Get a list of all available reports.
+   * Get a list of all private reports for current user
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<AuthorizedReportDefinitionDto> getAuthorizedReports(@Context UriInfo uriInfo,
-                                                                  @Context ContainerRequestContext requestContext) {
+  public List<AuthorizedReportDefinitionDto> getAuthorizedPrivateReports(@Context UriInfo uriInfo,
+                                                                         @Context ContainerRequestContext requestContext) {
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return reportService.findAndFilterReports(userId, queryParameters);
+    return reportService.findAndFilterPrivateReports(userId, queryParameters);
   }
 
   /**

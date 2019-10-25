@@ -88,14 +88,14 @@ public class SessionServiceIT {
     assertThat(logoutResponse.getStatus(), is(200));
 
     // then
-    final Response getReportsResponse =
+    final Response getPrivateReportsResponse =
       embeddedOptimizeExtensionRule
         .getRequestExecutor()
-        .buildGetAllReportsRequest()
+        .buildGetAllPrivateReportsRequest()
         .withGivenAuthToken(secondToken)
         .execute();
 
-    assertThat(getReportsResponse.getStatus(), is(200));
+    assertThat(getPrivateReportsResponse.getStatus(), is(200));
   }
 
   @Test
@@ -129,14 +129,14 @@ public class SessionServiceIT {
     assertThat(logoutResponse.getStatus(), is(200));
 
     // then
-    final Response getReportsResponse =
+    final Response getPrivateReportsResponse =
       embeddedOptimizeExtensionRule
         .getRequestExecutor()
-        .buildGetAllReportsRequest()
+        .buildGetAllPrivateReportsRequest()
         .withGivenAuthToken(token)
         .execute();
 
-    assertThat(getReportsResponse.getStatus(), is(401));
+    assertThat(getPrivateReportsResponse.getStatus(), is(401));
   }
 
   @Test
@@ -172,14 +172,14 @@ public class SessionServiceIT {
     assertThat(logoutResponse.getStatus(), is(200));
 
     //then
-    final Response getReportsResponse =
+    final Response getPrivateReportsResponse =
       embeddedOptimizeExtensionRule
         .getRequestExecutor()
-        .buildGetAllReportsRequest()
+        .buildGetAllPrivateReportsRequest()
         .withGivenAuthToken(newToken)
         .execute();
 
-    assertThat(getReportsResponse.getStatus(), is(401));
+    assertThat(getPrivateReportsResponse.getStatus(), is(401));
   }
 
   @Test
@@ -258,16 +258,16 @@ public class SessionServiceIT {
       // provoke failure for terminated session check
       elasticSearchIntegrationTestExtensionRule.deleteIndexOfMapping(new TerminatedUserSessionIndex());
 
-      final Response getReportsResponse =
+      final Response getPrivateReportsResponse =
         embeddedOptimizeExtensionRule
           .getRequestExecutor()
-          .buildGetAllReportsRequest()
+          .buildGetAllPrivateReportsRequest()
           .withGivenAuthToken(token)
           .execute();
 
       // then
 
-      assertThat(getReportsResponse.getStatus(), is(200));
+      assertThat(getPrivateReportsResponse.getStatus(), is(200));
     } finally {
       embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().initializeSchema(
         embeddedOptimizeExtensionRule.getOptimizeElasticClient()

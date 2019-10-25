@@ -546,36 +546,13 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final String reportId = createPrivateReportAsDefaultUser(reportScenario);
+    createPrivateReportAsDefaultUser(reportScenario);
 
     // when
     final List<AuthorizedReportDefinitionDto> authorizedReports = listReportsAsKermit();
 
     // then
     assertThat(authorizedReports.size(), is(0));
-  }
-
-  @ParameterizedTest
-  @MethodSource(ACCESS_IDENTITY_ROLES_AND_REPORT_TYPES)
-  public void listReportsContainsReportsFromAuthorizedCollections(final IdentityRoleAndReportScenario identityAndReport) {
-    // given
-    final IdentityAndRole identityAndRole = identityAndReport.identityAndRole;
-    authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-
-    final String collectionId = createNewCollectionAsDefaultUser();
-    createReportInCollectionAsDefaultUser(identityAndReport.reportScenario, collectionId);
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
-
-    // when
-    final List<AuthorizedReportDefinitionDto> authorizedReports = listReportsAsKermit();
-
-    // then
-    assertThat(authorizedReports.size(), is(1));
-    assertThat(
-      authorizedReports.get(0).getCurrentUserRole(),
-      is(getExpectedResourceRoleForCollectionRole(identityAndRole))
-    );
   }
 
   @ParameterizedTest
@@ -586,7 +563,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
     final String collectionId = createNewCollectionAsDefaultUser();
-    final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
+    createReportInCollectionAsDefaultUser(reportScenario, collectionId);
 
     // when
     final List<AuthorizedReportDefinitionDto> authorizedReports = listReportsAsKermit();
@@ -597,28 +574,26 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   @ParameterizedTest
   @MethodSource(REPORT_SCENARIOS)
-  public void superUserListReportsContainsOtherUsersPrivateReportsAsWellAsCollectionReports(
-    final ReportScenario reportScenario) {
+  public void superUserListReportsContainsOtherUsersPrivateReports(final ReportScenario reportScenario) {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
-    final String privateReportId = createPrivateReportAsDefaultUser(reportScenario);
-    final String collectionId = createNewCollectionAsDefaultUser();
-    final String collectionReportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
+    final String kermitReportId = createPrivateReportAsKermit(reportScenario);
+    final String otherReportId = createPrivateReportAsDefaultUser(reportScenario);
 
     // when
     final List<AuthorizedReportDefinitionDto> authorizedReports = listReportsAsKermit();
 
-    // then
+    // then only private reports are included in the results
     assertThat(authorizedReports.size(), is(2));
     assertThat(
       authorizedReports.stream()
         .map(AuthorizedReportDefinitionDto::getDefinitionDto)
         .map(ReportDefinitionDto::getId)
         .collect(Collectors.toList()),
-      containsInAnyOrder(privateReportId, collectionReportId)
+      containsInAnyOrder(otherReportId, kermitReportId)
     );
   }
 
@@ -955,7 +930,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   private List<AuthorizedReportDefinitionDto> listReportsAsUser(final String user, final String password) {
     return embeddedOptimizeExtensionRule.getRequestExecutor()
       .withUserAuthentication(user, password)
-      .buildGetAllReportsRequest()
+      .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(AuthorizedReportDefinitionDto.class, 200);
   }
 

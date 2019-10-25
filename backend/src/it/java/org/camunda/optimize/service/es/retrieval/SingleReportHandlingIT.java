@@ -112,7 +112,7 @@ public class SingleReportHandlingIT {
     String id = createNewReport();
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports, is(notNullValue()));
@@ -130,7 +130,7 @@ public class SingleReportHandlingIT {
     ids.add(id2);
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports, is(notNullValue()));
@@ -146,7 +146,7 @@ public class SingleReportHandlingIT {
   public void noReportAvailableReturnsEmptyList() {
 
     // when
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports, is(notNullValue()));
@@ -181,7 +181,7 @@ public class SingleReportHandlingIT {
 
     // when
     updateSingleProcessReport(id, report);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(1));
@@ -223,7 +223,7 @@ public class SingleReportHandlingIT {
     // when
     configuration.getHeatmapTargetValue().setValues(new HashMap<>());
     updateSingleProcessReport(id, report);
-    final List<ReportDefinitionDto> reports = getAllReports();
+    final List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(1));
@@ -255,7 +255,7 @@ public class SingleReportHandlingIT {
 
     // when
     updateSingleDecisionReport(id, report);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(1));
@@ -332,7 +332,7 @@ public class SingleReportHandlingIT {
 
     // when
     updateSingleProcessReport(id, report);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(1));
@@ -370,7 +370,7 @@ public class SingleReportHandlingIT {
 
     // when
     updateSingleProcessReport(id, report);
-    List<ReportDefinitionDto> reports = getAllReports();
+    List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
     assertThat(reports.size(), is(1));
@@ -452,7 +452,7 @@ public class SingleReportHandlingIT {
     // when
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("orderBy", "name");
-    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(3));
@@ -462,7 +462,7 @@ public class SingleReportHandlingIT {
 
     // when
     queryParam.put("sortOrder", "desc");
-    reports = getAllReportsWithQueryParam(queryParam);
+    reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(3));
@@ -485,7 +485,7 @@ public class SingleReportHandlingIT {
     // when
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("orderBy", "lastModified");
-    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(3));
@@ -495,7 +495,7 @@ public class SingleReportHandlingIT {
 
     //when
     queryParam.put("sortOrder", "desc");
-    reports = getAllReportsWithQueryParam(queryParam);
+    reports = getAllPrivateReportsWithQueryParam(queryParam);
     // then
     assertThat(reports.size(), is(3));
     assertThat(reports.get(0).getId(), is(id2));
@@ -518,7 +518,7 @@ public class SingleReportHandlingIT {
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("orderBy", "lastModified");
     queryParam.put("sortOrder", "desc");
-    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(3));
@@ -542,7 +542,7 @@ public class SingleReportHandlingIT {
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("resultOffset", 1);
     queryParam.put("orderBy", "lastModified");
-    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(2));
@@ -574,7 +574,7 @@ public class SingleReportHandlingIT {
     Map<String, Object> queryParam = new HashMap<>();
     queryParam.put("numResults", 2);
     queryParam.put("orderBy", "lastModified");
-    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(2));
@@ -599,7 +599,7 @@ public class SingleReportHandlingIT {
     queryParam.put("orderBy", "lastModified");
     queryParam.put("reverseOrder", true);
     queryParam.put("resultOffset", 1);
-    List<ReportDefinitionDto> reports = getAllReportsWithQueryParam(queryParam);
+    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
     assertThat(reports.size(), is(1));
@@ -651,14 +651,14 @@ public class SingleReportHandlingIT {
     // @formatter:on
   }
 
-  private List<ReportDefinitionDto> getAllReports() {
-    return getAllReportsWithQueryParam(new HashMap<>());
+  private List<ReportDefinitionDto> getAllPrivateReports() {
+    return getAllPrivateReportsWithQueryParam(new HashMap<>());
   }
 
-  private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
+  private List<ReportDefinitionDto> getAllPrivateReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeExtensionRule
       .getRequestExecutor()
-      .buildGetAllReportsRequest()
+      .buildGetAllPrivateReportsRequest()
       .addQueryParams(queryParams)
       .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
