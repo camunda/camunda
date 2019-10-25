@@ -18,6 +18,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private long workflowInstanceKey;
   private long flowScopeKey;
   private BpmnElementType bpmnElementType;
+  private long parentWorkflowInstanceKey;
+  private long parentElementInstanceKey;
 
   public WorkflowInstanceRecordValueImpl() {
   }
@@ -58,6 +60,16 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
+  public long getParentWorkflowInstanceKey() {
+    return parentWorkflowInstanceKey;
+  }
+
+  @Override
+  public long getParentElementInstanceKey() {
+    return parentElementInstanceKey;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o)
       return true;
@@ -80,7 +92,11 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
       return false;
     if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null)
       return false;
-    return bpmnElementType == that.bpmnElementType;
+    if (bpmnElementType != that.bpmnElementType)
+      return false;
+    if (parentWorkflowInstanceKey != that.parentWorkflowInstanceKey)
+      return false;
+    return parentElementInstanceKey != that.parentElementInstanceKey;
   }
 
   @Override
@@ -93,6 +109,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     result = 31 * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
     result = 31 * result + (int) (flowScopeKey ^ (flowScopeKey >>> 32));
     result = 31 * result + (bpmnElementType != null ? bpmnElementType.hashCode() : 0);
+    result = 31 * result + (int) (parentWorkflowInstanceKey ^ (parentWorkflowInstanceKey >>> 32));
+    result = 31 * result + (int) (parentElementInstanceKey ^ (parentElementInstanceKey >>> 32));
     return result;
   }
 
@@ -100,6 +118,6 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   public String toString() {
     return "WorkflowInstanceRecordValueImpl{" + "bpmnProcessId='" + bpmnProcessId + '\'' + ", elementId='" + elementId + '\'' + ", version=" + version
       + ", workflowKey=" + workflowKey + ", workflowInstanceKey=" + workflowInstanceKey + ", flowScopeKey=" + flowScopeKey + ", bpmnElementType="
-      + bpmnElementType + "} " + super.toString();
+      + bpmnElementType + ", parentWorkflowInstanceKey=" + parentWorkflowInstanceKey + ", parentElementInstanceKey=" + parentElementInstanceKey + "} " + super.toString();
   }
 }
