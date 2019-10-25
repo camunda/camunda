@@ -111,7 +111,9 @@ public class OptimizeElasticsearchClient {
 
   public final IndexResponse index(final IndexRequest indexRequest, final RequestOptions options) throws IOException {
     applyIndexPrefix(indexRequest);
-    indexRequest.type(DEFAULT_INDEX_TYPE);
+    if (indexRequest.type() == null) {
+      indexRequest.type(DEFAULT_INDEX_TYPE);
+    }
 
     return highLevelClient.index(indexRequest, options);
   }

@@ -98,6 +98,11 @@
             <configuration>
               <skip>${skip.tests}</skip>
               <target xmlns:ac="antlib:net.sf.antcontrib">
+                <!-- ensure elasticsearch is clean -->
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:9200/_all" />
+                </exec>
                 <ac:for list="${upgrade.versions}" param="currentVersion">
                   <sequential>
                     <ac:if>

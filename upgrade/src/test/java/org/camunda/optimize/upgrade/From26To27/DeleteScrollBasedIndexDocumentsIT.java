@@ -5,12 +5,9 @@
  */
 package org.camunda.optimize.upgrade.From26To27;
 
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
-import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom26To27;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -19,8 +16,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -33,25 +30,20 @@ import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DeleteScrollBasedIndexDocumentsIT extends AbstractUpgradeIT {
-  private static final String FROM_VERSION = "2.6.0";
 
-  private static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
-  private static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
-  private static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
-
-  @Before
+  @BeforeEach
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      SINGLE_DECISION_REPORT_INDEX,
-      SINGLE_PROCESS_REPORT_INDEX,
-      IMPORT_INDEX_INDEX
-    ));
-
-    setMetadataIndexVersion(FROM_VERSION);
+    for (StrictIndexMappingCreator index : ALL_INDICES) {
+      createAndPopulateOptimizeIndexWithTypeAndVersion(
+        index,
+        index.getIndexName(),
+        index.getVersion() - 1
+      );
+    }
+    setMetadataIndexVersionWithType(FROM_VERSION, METADATA_INDEX.getIndexName());
 
     executeBulk("steps/imports/26-import-indexes");
   }
@@ -69,7 +61,8 @@ public class DeleteScrollBasedIndexDocumentsIT extends AbstractUpgradeIT {
     assertThat(idsToImportIndexDtos.size(), is(3));
     assertThat(idsToImportIndexDtos.keySet(), not(hasItems(
       "processDefinitionXmlImportIndex-camunda-bpm",
-      "decisionDefinitionXmlImportIndex-camunda-bpm")));
+      "decisionDefinitionXmlImportIndex-camunda-bpm"
+    )));
   }
 
   @SneakyThrows
@@ -83,14 +76,15 @@ public class DeleteScrollBasedIndexDocumentsIT extends AbstractUpgradeIT {
       .collect(Collectors.toMap(
         SearchHit::getId,
         doc -> {
-        try {
-          return objectMapper.readValue(
-            doc.getSourceAsString(), AllEntitiesBasedImportIndexDto.class
-          );
-        } catch (IOException e) {
-          throw new RuntimeException(e);
+          try {
+            return objectMapper.readValue(
+              doc.getSourceAsString(), AllEntitiesBasedImportIndexDto.class
+            );
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
         }
-      }));
+      ));
   }
 
 }

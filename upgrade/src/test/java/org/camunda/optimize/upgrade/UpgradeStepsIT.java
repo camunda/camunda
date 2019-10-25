@@ -9,9 +9,8 @@ import com.google.common.collect.Lists;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.indexes.UserTestIndex;
 import org.camunda.optimize.upgrade.indexes.UserTestUpdatedMappingIndex;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -25,18 +24,12 @@ import org.camunda.optimize.upgrade.steps.schema.DeleteIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
-import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -254,10 +247,9 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     );
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "indexMapper is updated from type {1}")
   @MethodSource("getIndexMapperAndType")
-  public void indexTypeIsUpdatedToOrRetainsDefaultValue(IndexMappingCreator indexMapper, String type) throws
-                                                                                                      IOException {
+  public void indexTypeIsUpdatedToOrRetainsDefaultValue(StrictIndexMappingCreator indexMapper, String type) throws IOException {
     //given index exists with previous version
     createAndPopulateOptimizeIndexWithTypeAndVersion(indexMapper, type, indexMapper.getVersion() - 1);
 
@@ -325,39 +317,11 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     return new DeleteIndexStep(indexMapping);
   }
 
-  private void createAndPopulateOptimizeIndexWithTypeAndVersion(IndexMappingCreator indexMapping,
-                                                                String type,
-                                                                int version) throws IOException {
-    final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
-    final String indexName =
-      indexNameService.getOptimizeIndexNameForAliasAndVersion(indexNameService.getOptimizeIndexAliasForIndex(
-        indexMapping.getIndexName()), String.valueOf(version));
-    final Settings indexSettings = createIndexSettings();
-
-    CreateIndexRequest request = new CreateIndexRequest(indexName);
-    request.alias(new Alias(aliasName));
-    request.settings(indexSettings);
-    request.mapping(type, indexMapping.getSource());
-    prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
-
-    final IndexRequest indexRequest = new IndexRequest(indexName, type);
-    indexRequest.source(UpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json"), XContentType.JSON);
-    indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-    prefixAwareClient.getHighLevelClient().index(indexRequest, RequestOptions.DEFAULT);
-  }
-
-  private Settings createIndexSettings() {
-    try {
-      return IndexSettingsBuilder.buildAllSettings(configurationService);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not create index settings");
-    }
-  }
-
   private static Stream<Arguments> getIndexMapperAndType() {
     return Stream.of(
       Arguments.of(TEST_INDEX, TEST_INDEX.getIndexName()),
       Arguments.of(TEST_INDEX, DEFAULT_INDEX_TYPE)
     );
   }
+
 }

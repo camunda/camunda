@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
@@ -100,11 +101,16 @@ public class ElasticsearchMetadataService {
   }
 
   public void writeMetadata(final OptimizeElasticsearchClient esClient, final MetadataDto metadataDto) {
+    writeMetadata(esClient, metadataDto, DEFAULT_INDEX_TYPE);
+  }
+
+  public void writeMetadata(final OptimizeElasticsearchClient esClient, final MetadataDto metadataDto, String type) {
     try {
       final String source = objectMapper.writeValueAsString(metadataDto);
 
       final IndexRequest request =
         new IndexRequest(METADATA_INDEX_NAME)
+          .type(type)
           .id(ID)
           .source(source, XContentType.JSON)
           .setRefreshPolicy(IMMEDIATE);

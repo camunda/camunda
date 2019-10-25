@@ -63,10 +63,6 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      .addUpgradeStep(moveParameterFieldsForDecisionReport())
-      .addUpgradeStep(moveParameterFieldsForProcessReport())
-      .addUpgradeStep(removeDocumentsForImportIndexWithId("decisionDefinitionXmlImportIndex"))
-      .addUpgradeStep(removeDocumentsForImportIndexWithId("processDefinitionXmlImportIndex"))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new DecisionInstanceIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new CollectionIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new TimestampBasedImportIndex()))
@@ -85,6 +81,10 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeStep(updateTypeForDocumentsInIndex(new TenantIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new DashboardIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new DashboardShareIndex()))
+      .addUpgradeStep(moveParameterFieldsForDecisionReport())
+      .addUpgradeStep(moveParameterFieldsForProcessReport())
+      .addUpgradeStep(removeDocumentsForImportIndexWithId("decisionDefinitionXmlImportIndex"))
+      .addUpgradeStep(removeDocumentsForImportIndexWithId("processDefinitionXmlImportIndex"))
       .build();
   }
 

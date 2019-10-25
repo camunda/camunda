@@ -5,15 +5,12 @@
  */
 package org.camunda.optimize.upgrade.From26To27;
 
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom26To27;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -21,8 +18,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,31 +27,25 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
-  private static final String FROM_VERSION = "2.6.0";
 
-  private static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
-  private static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
-  private static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
   private static final int EXPECTED_NUMBER_OF_REPORTS = 2;
 
-  @Before
+  @BeforeEach
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
-    initSchema(Lists.newArrayList(
-      METADATA_INDEX,
-      SINGLE_DECISION_REPORT_INDEX,
-      SINGLE_PROCESS_REPORT_INDEX,
-      IMPORT_INDEX_INDEX
-    ));
-
-    setMetadataIndexVersion(FROM_VERSION);
+    for (StrictIndexMappingCreator index : ALL_INDICES) {
+      createAndPopulateOptimizeIndexWithTypeAndVersion(
+        index,
+        index.getIndexName(),
+        index.getVersion() - 1
+      );
+    }
+    setMetadataIndexVersionWithType(FROM_VERSION, METADATA_INDEX.getIndexName());
 
     executeBulk("steps/report_data/26-single-decision-report-bulk");
     executeBulk("steps/report_data/26-single-process-report-bulk");
@@ -72,7 +63,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting(), is(notNullValue()));
+    assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().isPresent(), is(true));
     assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(), is("key"));
     assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().get().getOrder().get(), is(SortOrder.ASC));
   }
@@ -89,7 +80,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertThat(allProcessReports.get(1).getData().getConfiguration().getSorting(), is(nullValue()));
+    assertThat(allProcessReports.get(1).getData().getConfiguration().getSorting().isPresent(), is(false));
   }
 
   @Test
@@ -104,7 +95,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertThat(allProcessReports.get(0).getData().getConfiguration().getProcessPart(), is(notNullValue()));
+    assertThat(allProcessReports.get(0).getData().getConfiguration().getProcessPart().isPresent(), is(true));
     assertThat(
       allProcessReports.get(0).getData().getConfiguration().getProcessPart().get().getStart(),
       is("StartEvent_1")
@@ -127,7 +118,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
     assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertThat(allProcessReports.get(1).getData().getConfiguration().getProcessPart(), is(notNullValue()));
+    assertThat(allProcessReports.get(1).getData().getConfiguration().getProcessPart().isPresent(), is(false));
   }
 
   @Test
@@ -142,7 +133,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleDecisionReportDefinitionDto> allDecisionReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
     assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertThat(allDecisionReports.get(0).getData().getConfiguration().getSorting(), is(notNullValue()));
+    assertThat(allDecisionReports.get(0).getData().getConfiguration().getSorting().isPresent(), is(true));
     assertThat(
       allDecisionReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(),
       is("evaluationDateTime")
@@ -162,7 +153,7 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     List<SingleDecisionReportDefinitionDto> allDecisionReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
     assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
-    assertThat(allDecisionReports.get(1).getData().getConfiguration().getSorting(), is(notNullValue()));
+    assertThat(allDecisionReports.get(1).getData().getConfiguration().getSorting().isPresent(), is(false));
   }
 
   @SneakyThrows
