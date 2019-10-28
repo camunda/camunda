@@ -10,15 +10,15 @@ import classnames from 'classnames';
 import {Input} from 'components';
 import './Switch.scss';
 
-export default function Switch(props) {
+export default function Switch({label, ...props}) {
   return (
     <label
       title={props.title}
-      className={classnames('Switch', {withLabel: props.label}, props.className)}
+      className={classnames('Switch', {withLabel: label}, props.className)}
     >
       <Input type="checkbox" {...props} className="Switch__Input" />
       <span className={classnames('Switch__Slider--round', {disabled: props.disabled})} />
-      {props.label && <span className="label">{props.label}</span>}
+      {label && <span className="label">{label}</span>}
     </label>
   );
 }
