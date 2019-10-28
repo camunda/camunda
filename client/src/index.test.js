@@ -7,7 +7,6 @@
 const fs = require('fs');
 
 const blacklist = ['setupTests.js'];
-const whileList = ['@ibm/plex'];
 
 function getAllFilesInDirectory(dir, filelist) {
   var files = fs.readdirSync(dir);
@@ -30,12 +29,21 @@ function isJavascriptFile(filename) {
   return /^(?!.*test\.js).*\.js$/g.test(filename);
 }
 
+function isStyleFile(filename) {
+  return /^.*\.(css|scss)$/g.test(filename);
+}
+
 function isFileNotBlacklisted(filename) {
   return !blacklist.some(blacklistEntry => filename.includes(blacklistEntry));
 }
 
-function getImportedModules(content) {
-  const regex = RegExp('import\\s[^"\'`]*["\'`]([^.][^"\'`\\s]*)', 'g');
+function getImportedModules(content, fileType) {
+  let regex;
+  if (fileType === 'javascript') {
+    regex = RegExp('import\\s[^"\'`]*["\'`]([^.][^"\'`\\s]*)', 'g');
+  } else if (fileType === 'style') {
+    regex = RegExp('import\\s*["\'`][~]([^.][^"\'`\\s]*)', 'g');
+  }
 
   const matches = [];
   let result = regex.exec(content);
@@ -62,19 +70,24 @@ function getImportedModules(content) {
 function getDeclaredDependencies() {
   return Object.keys(
     JSON.parse(fs.readFileSync(__dirname + '/../package.json', 'utf8')).dependencies
-  ).filter(dep => !whileList.includes(dep));
+  );
 }
 
-const allFiles = getAllFilesInDirectory(__dirname + '/');
-const filesToCheck = allFiles.filter(isJavascriptFile).filter(isFileNotBlacklisted);
+const allFiles = getAllFilesInDirectory(__dirname + '/').filter(isFileNotBlacklisted);
+const javascriptFiles = allFiles.filter(isJavascriptFile);
+const styleFiles = allFiles.filter(isStyleFile);
 const usedModules = new Set();
+addUsedModules(javascriptFiles, 'javascript', usedModules);
+addUsedModules(styleFiles, 'style', usedModules);
 
-filesToCheck.forEach(filename => {
-  const fileContent = fs.readFileSync(filename, 'utf8');
-  const imports = getImportedModules(fileContent);
+function addUsedModules(filesToCheck, fileType, usedModules) {
+  filesToCheck.forEach(filename => {
+    const fileContent = fs.readFileSync(filename, 'utf8');
+    const imports = getImportedModules(fileContent, fileType);
 
-  imports.forEach(entry => usedModules.add(entry));
-});
+    imports.forEach(entry => usedModules.add(entry));
+  });
+}
 
 getInternalModules(__dirname + '/modules/').forEach(internalModule => {
   usedModules.delete(internalModule);
