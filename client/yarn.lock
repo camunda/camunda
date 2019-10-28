@@ -3217,10 +3217,10 @@ bpmn-font@^0.9.3:
   resolved "https://registry.yarnpkg.com/bpmn-font/-/bpmn-font-0.9.3.tgz#03c2c906dbd30653e5b1f113d92c78cab6710df4"
   integrity sha512-kzRGXGLzTROLRNCSskkOyj/+SbtTAn2unKfgB9tNt7RWJFybg/Wbe9YjK2ALotI3b64wwlCTkAalXiTiskP6dg==
 
-bpmn-js@5.1.1:
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-5.1.1.tgz#91e548e940f961a2e675ef96382cafce9a82e1b4"
-  integrity sha512-9jNnUBjffjzyKo08dKu0lmoyvivmIVQYNMMkA20yKY00rI4TLk4v32dRPFfuFuJ1VDzFNZgmmhr+68EEgibFGQ==
+bpmn-js@5.1.2:
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-5.1.2.tgz#b449d1efa734b4a4faf2f1d865c2254101d7252c"
+  integrity sha512-s674cn+N4zhmlGMBOBFp6zAGV3Qd23ss13bW+Hy6gg23wxExVqlY/xRwE/FnrfvYmRag4Pz1c+lyP7OYD8VwuA==
   dependencies:
     bpmn-font "^0.9.3"
     bpmn-moddle "^6.0.0"
