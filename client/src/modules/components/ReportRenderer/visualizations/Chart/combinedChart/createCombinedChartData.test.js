@@ -79,7 +79,7 @@ it('should return correct chart data object for a combined report', () => {
   expect(chartData).toMatchSnapshot();
 });
 
-it('should return correct chart data object for a combined report', () => {
+it('should return correct chart data object for a combined report with correct date order', () => {
   const reportA = {
     data: [{key: '2017-12-27T14:21:56.000', value: 123, label: 'Dec 2017'}],
     color: 'blue'

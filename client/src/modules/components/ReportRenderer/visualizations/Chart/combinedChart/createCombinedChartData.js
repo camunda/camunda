@@ -49,6 +49,10 @@ export function extractCombinedData({report, theme, targetValue}) {
     )
   );
 
+  if (data.groupBy.type.includes('Date')) {
+    keys.sort((a, b) => new Date(a) - new Date(b));
+  }
+
   const unitedResults = uniteResults(resultArr, keys);
   const labels = keys.map(key => labelsMap[key] || key);
 

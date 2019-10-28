@@ -28,7 +28,7 @@ Object {
 }
 `;
 
-exports[`should return correct chart data object for a combined report 2`] = `
+exports[`should return correct chart data object for a combined report with correct date order 1`] = `
 Object {
   "datasets": Array [
     Object {
@@ -47,8 +47,8 @@ Object {
     },
   ],
   "labels": Array [
-    "Dec 2017",
     "Mar 2017",
+    "Dec 2017",
   ],
 }
 `;
