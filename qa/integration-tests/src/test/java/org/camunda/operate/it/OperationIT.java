@@ -501,7 +501,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    //elasticsearchTestRule.refreshIndexesInElasticsearch();
     workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
@@ -533,7 +533,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
     //Thread.sleep(1000L);  //sometimes the JOB RETRIES_UPDATED event is not there yet -> wait a little
     //elasticsearchTestRule.processAllEvents(2);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    //elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     final ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
     final List<OperationDto> operations = workflowInstance.getOperations();
@@ -566,7 +566,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //the state of 1st operation is COMPLETED and the 2nd - FAILED
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
     elasticsearchTestRule.processAllRecordsAndWait(incidentIsResolvedCheck, workflowInstanceKey);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    //elasticsearchTestRule.refreshIndexesInElasticsearch();
     ListViewResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     assertThat(workflowInstances.getWorkflowInstances().get(0).isHasActiveOperation()).isEqualTo(false);
@@ -661,7 +661,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     deployWorkflow(startEndProcess, "startEndProcess.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(super.getClient(), bpmnProcessId, null);
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    //elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     //we call CANCEL_WORKFLOW_INSTANCE operation on instance

@@ -55,6 +55,7 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,8 +97,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   private DateTimeFormatter dateTimeFormatter;
 
-  @Autowired
-  OperateTester tester;
+  @Rule
+  public OperateTester tester = new OperateTester();
   
   @Before
   public void before() {
@@ -302,8 +303,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   @Test
   public void testArchivedOperationsWillNotBeLocked() throws Exception {
       // given (set up) : disabled OperationExecutor
-      tester.setElasticsearchTestrule(elasticsearchTestRule)
-            .setMockMvcTestRule(mockMvcTestRule)
+      tester.setMockMvcTestRule(mockMvcTestRule)
             .setZeebeClient(getClient())
             .disableOperationExecutor();
       // and given workflowInstance

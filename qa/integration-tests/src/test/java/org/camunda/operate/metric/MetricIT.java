@@ -18,6 +18,7 @@ import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +36,8 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   @Autowired
   private UpdateVariableHandler updateVariableHandler;
 
-  @Autowired
-  private OperateTester operateTester;
+  @Rule
+  public OperateTester operateTester = new OperateTester();
 
   @Before
   public void before() {

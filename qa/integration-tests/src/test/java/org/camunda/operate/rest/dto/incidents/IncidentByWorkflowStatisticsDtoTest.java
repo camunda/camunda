@@ -71,7 +71,7 @@ public class IncidentByWorkflowStatisticsDtoTest {
   
   protected IncidentByWorkflowStatisticsDto newWithInstancesAndIncidents(int instances,int incidents) {
     IncidentByWorkflowStatisticsDto newObject = new IncidentByWorkflowStatisticsDto();
-    newObject.setActiveInstancesCount(new Long(instances));
+    newObject.setActiveInstancesCount(Long.valueOf(instances));
     newObject.setInstancesWithActiveIncidentsCount(incidents);
     return newObject;
   }

@@ -92,9 +92,6 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
 
   private DateTimeFormatter dateTimeFormatter;
 
-  @Autowired
-  OperateTester tester;
-
   @Before
   public void before() {
     super.before();

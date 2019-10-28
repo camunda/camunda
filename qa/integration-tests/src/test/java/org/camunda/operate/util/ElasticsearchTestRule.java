@@ -58,7 +58,7 @@ import static org.camunda.operate.util.CollectionUtil.*;
 
 public class ElasticsearchTestRule extends TestWatcher {
 
-  private static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
+  protected static final Logger logger = LoggerFactory.getLogger(ElasticsearchTestRule.class);
 
   @Autowired
   protected RestHighLevelClient esClient;
@@ -80,19 +80,19 @@ public class ElasticsearchTestRule extends TestWatcher {
   private IncidentTemplate incidentTemplate;
 
   @Autowired
-  private OperateProperties operateProperties;
+  protected OperateProperties operateProperties;
 
   @Autowired
   private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
   @Autowired
-  private ZeebeImporter zeebeImporter;
+  protected ZeebeImporter zeebeImporter;
 
   @Autowired
   private ObjectMapper objectMapper;
 
   @Autowired
-  private RecordsReaderHolder recordsReaderHolder;
+  protected RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
   TestImportListener testImportListener;
@@ -104,7 +104,7 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   protected boolean failed = false;
   
-  int waitingRound = 1;
+  private int waitingRound = 1;
   
   @Override
   protected void failed(Throwable e, Description description) {
@@ -133,13 +133,13 @@ public class ElasticsearchTestRule extends TestWatcher {
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
   }
   
-  public void assertZeebeESIsRunning() {
-    assertThat(esConnector.checkHealth(zeebeEsClient, true)).describedAs("Zeebe Elasticsearch is running").isTrue();
-  }
+//  public void assertZeebeESIsRunning() {
+//    assertThat(esConnector.checkHealth(zeebeEsClient, true)).describedAs("Zeebe Elasticsearch is running").isTrue();
+//  }
 
-  public void assertOperateESIsRunning() {
-    assertThat(esConnector.checkHealth(esClient, true)).describedAs("Operator Elasticsearch is running").isTrue();
-  }
+//  public void assertOperateESIsRunning() {
+//    assertThat(esConnector.checkHealth(esClient, true)).describedAs("Operator Elasticsearch is running").isTrue();
+//  }
 
   public void refreshIndexesInElasticsearch() {
     refreshZeebeESIndices();

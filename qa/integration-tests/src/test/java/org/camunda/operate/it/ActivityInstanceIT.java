@@ -32,7 +32,7 @@ public class ActivityInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow("nonInterruptingBoundaryEvent_v_2.bpmn");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     //let the boundary event happen
-    Thread.sleep(1500L);
+    //Thread.sleep(1500L);
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "task2");
 
     //when

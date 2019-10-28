@@ -100,7 +100,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
 
     //when
     elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, loanProcessV1Id);
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    //elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then
     MockHttpServletRequestBuilder request = get(QUERY_WORKFLOWS_GROUPED_URL);

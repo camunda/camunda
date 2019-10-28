@@ -44,7 +44,7 @@ public class IncidentByWorkflowGroupStatisticsTest {
   
   protected IncidentsByWorkflowGroupStatisticsDto newWithInstancesAndIncidents(int instances,int incidents) {
     IncidentsByWorkflowGroupStatisticsDto newObject = new IncidentsByWorkflowGroupStatisticsDto();
-    newObject.setActiveInstancesCount(new Long(instances));
+    newObject.setActiveInstancesCount(Long.valueOf(instances));
     newObject.setInstancesWithActiveIncidentsCount(incidents);
     return newObject;
   }

@@ -265,7 +265,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     String processId = "demoProcess";
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(getClient(), processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllRecordsAndWait(activityIsActiveCheck, workflowInstanceKey, "taskA");
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    //elasticsearchTestRule.refreshIndexesInElasticsearch();
     return workflowInstanceKey;
   }
 

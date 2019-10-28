@@ -24,12 +24,14 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 
 @Component
+@DependsOn("schemaManager")
 public class UserStorage extends AbstractReader {
 
   private static final Logger logger = LoggerFactory.getLogger(UserStorage.class);

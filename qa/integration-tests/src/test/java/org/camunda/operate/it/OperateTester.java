@@ -17,16 +17,13 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
-import org.camunda.operate.TestImportListener;
 import org.camunda.operate.archiver.ArchiverHelper;
 import org.camunda.operate.archiver.ArchiverJob;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.archiver.ArchiverJob.ArchiveBatch;
-import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
@@ -38,17 +35,9 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
-import org.camunda.operate.zeebeimport.RecordsReaderHolder;
-import org.camunda.operate.zeebeimport.ZeebeImporter;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.IndexNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -56,21 +45,11 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
-@Component
-public class OperateTester {
-  
-  private ElasticsearchTestRule elasticsearchTestRule;
-  
-  Logger logger = LoggerFactory.getLogger(getClass());
-  
-  @Autowired
-  @Qualifier("zeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
+public class OperateTester extends ElasticsearchTestRule{
 
   @Autowired
   private ZeebeClient zeebeClient;
-  @Autowired
-  private ZeebeImporter zeebeImporter;
+  
   private Long workflowKey;
   private Long workflowInstanceKey;
   
@@ -97,21 +76,14 @@ public class OperateTester {
   @Autowired
   @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
   private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
-  
-  @Autowired
-  private ArchiverHelper archiverHelper;
 
   @Autowired
-  private RecordsReaderHolder recordsReaderHolder;
-  int waitingRound = 1;
+  private ArchiverHelper archiverHelper;
 
   private MockMvcTestRule mockMvcTestRule;
   
   @Autowired
   protected OperationExecutor operationExecutor;
-
-  @Autowired
-  private TestImportListener testImportListener;
 
   private Map<Object,Long> countImported = new HashMap<>();
 
@@ -123,11 +95,6 @@ public class OperateTester {
 
   public OperateTester setMockMvcTestRule(MockMvcTestRule mockMvcTestRule) {
     this.mockMvcTestRule = mockMvcTestRule;
-    return this;
-  }
-  
-  public OperateTester setElasticsearchTestrule(ElasticsearchTestRule elasticsearchTestRule) {
-    this.elasticsearchTestRule = elasticsearchTestRule;
     return this;
   }
 
@@ -204,52 +171,6 @@ public class OperateTester {
     return this;
   }
 
-  private void processAllRecordsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
-    long shouldImportCount = 0;
-    int maxRounds = 500;
-    boolean found = waitTill.test(arguments);
-    long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      testImportListener.resetCounters();
-      shouldImportCount = 0;
-      try {
-        shouldImportCount += zeebeImporter.performOneRoundOfImport();
-      } catch (Exception e) {
-        logger.error(e.getMessage(), e);
-      }
-      long imported = testImportListener.getImported();
-      //long failed = zeebeImporter.getFailedCount();
-      int waitForImports = 0;
-      // Wait for imports max 30 sec (60 * 500 ms)
-      while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
-        waitForImports++;
-        try {
-          Thread.sleep(500L);
-          shouldImportCount += zeebeImporter.performOneRoundOfImport();
-        } catch (Exception e) {
-          waitingRound = 1;
-          testImportListener.resetCounters();
-          shouldImportCount = 0;
-          logger.error(e.getMessage(), e);
-        }
-        imported = testImportListener.getImported();
-      }
-      if(shouldImportCount!=0) {
-        logger.debug("Imported {} of {} records", imported, shouldImportCount);
-      }
-      found = waitTill.test(arguments);
-      waitingRound++;
-    }
-    if(found) {
-      logger.debug("Conditions met in round {} ({} ms).", waitingRound--, System.currentTimeMillis()-start);
-    }
-    waitingRound = 1;
-    testImportListener.resetCounters();
-    if (waitingRound >=  maxRounds) {
-      throw new OperateRuntimeException("Timeout exception");
-    }
-  }
-
   public OperateTester updateVariableOperation(String varName, String varValue) throws Exception {
     final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setName(varName);
@@ -290,15 +211,6 @@ public class OperateTester {
         .andExpect(status().is(HttpStatus.SC_OK))
         .andReturn();
     return mvcResult;
-  }
-  
-  private void refreshIndexesInElasticsearch() {
-    try {
-     // esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
-      zeebeEsClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
-    } catch (IndexNotFoundException | IOException e) {
-      logger.error(e.getMessage(), e);
-    }
   }
 
   private int executeOneBatch() throws Exception {
@@ -358,18 +270,8 @@ public class OperateTester {
     }
     return count;
   }
-  
-  public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
-    return recordsReaderHolder.getAllRecordsReaders().stream()
-        .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
-  }
 
   public OperateTester then() {
-    return this;
-  }
-
-  public OperateTester refreshElasticsearch() {
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
     return this;
   }
  
@@ -403,7 +305,7 @@ public class OperateTester {
   }
 
   public OperateTester archiveIsDone() {
-    refreshIndexesInElasticsearch();
+    refreshOperateESIndices();
     return this;
   }
 }

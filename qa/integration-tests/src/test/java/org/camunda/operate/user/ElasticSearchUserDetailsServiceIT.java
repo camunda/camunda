@@ -9,8 +9,11 @@ package org.camunda.operate.user;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.webapp.user.ElasticSearchUserDetailsService;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,6 +25,15 @@ public class ElasticSearchUserDetailsServiceIT extends OperateIntegrationTest {
   
   @Autowired
   private ElasticSearchUserDetailsService userDetailsService;
+  
+  @Rule
+  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+
+  @Before
+  public void setUp() {
+    userDetailsService.initializeUsers();
+    elasticsearchTestRule.refreshOperateESIndices();
+  }
   
   @Test
   public void testAddConfigurationAndActUserWhenNotExistsToElasticSearch() {
