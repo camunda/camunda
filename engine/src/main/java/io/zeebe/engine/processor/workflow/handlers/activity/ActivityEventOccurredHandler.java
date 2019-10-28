@@ -42,7 +42,7 @@ public class ActivityEventOccurredHandler<T extends ExecutableActivity>
 
     final WorkflowInstanceRecord eventRecord =
         getEventRecord(context, event, boundaryEvent.getElementType());
-    if (boundaryEvent.cancelActivity()) {
+    if (boundaryEvent.interrupting()) {
       transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATING);
       deferEvent(context, context.getKey(), context.getKey(), eventRecord, event);
     } else {

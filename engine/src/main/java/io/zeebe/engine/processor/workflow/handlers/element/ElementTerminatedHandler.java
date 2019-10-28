@@ -13,7 +13,9 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlo
 import io.zeebe.engine.processor.workflow.handlers.AbstractTerminalStateHandler;
 import io.zeebe.engine.processor.workflow.handlers.IncidentResolver;
 import io.zeebe.engine.state.instance.ElementInstance;
+import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import java.util.Optional;
 
 /**
  * Once terminated, consumes its token, and if it is the last active element in its flow scope, will
@@ -44,6 +46,7 @@ public class ElementTerminatedHandler<T extends ExecutableFlowNode>
                 flowScopeInstance.getState(), WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     incidentResolver.resolveIncidents(context);
+
     if (isScopeTerminating && isLastActiveExecutionPathInScope(context)) {
       context
           .getOutput()
@@ -51,8 +54,35 @@ public class ElementTerminatedHandler<T extends ExecutableFlowNode>
               flowScopeInstance.getKey(),
               WorkflowInstanceIntent.ELEMENT_TERMINATED,
               flowScopeInstance.getValue());
+    } else if (wasInterrupted(context, flowScopeInstance)) {
+      publishInterruptingEventSubproc(context, flowScopeInstance);
     }
 
     return super.handleState(context);
+  }
+
+  private void publishInterruptingEventSubproc(
+      BpmnStepContext<T> context, ElementInstance flowScopeInstance) {
+    final Optional<IndexedRecord> eventSubprocOptional =
+        context.getElementInstanceState().getDeferredRecords(flowScopeInstance.getKey()).stream()
+            .filter(r -> r.getKey() == context.getFlowScopeInstance().getInterruptingEventKey())
+            .findFirst();
+
+    if (eventSubprocOptional.isPresent()) {
+      final IndexedRecord eventSubproc = eventSubprocOptional.get();
+
+      eventSubproc.getValue().setFlowScopeKey(flowScopeInstance.getKey());
+      context
+          .getOutput()
+          .appendFollowUpEvent(
+              eventSubproc.getKey(), eventSubproc.getState(), eventSubproc.getValue());
+    }
+  }
+
+  private boolean wasInterrupted(BpmnStepContext<T> context, ElementInstance flowScopeInstance) {
+    return flowScopeInstance != null
+        && flowScopeInstance.getNumberOfActiveTokens() == 2
+        && context.getFlowScopeInstance().getInterruptingEventKey() != -1
+        && flowScopeInstance.isActive();
   }
 }

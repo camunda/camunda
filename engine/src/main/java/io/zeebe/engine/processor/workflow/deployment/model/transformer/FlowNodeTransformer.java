@@ -36,7 +36,7 @@ public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
     final ExecutableFlowNode element =
         workflow.getElementById(flowNode.getId(), ExecutableFlowNode.class);
 
-    transformIoMappings(flowNode, element, context);
+    transformIoMappings(flowNode, element);
     bindLifecycle(element);
   }
 
@@ -56,8 +56,7 @@ public class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
         WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.ELEMENT_TERMINATED);
   }
 
-  private void transformIoMappings(
-      FlowNode element, final ExecutableFlowNode flowNode, TransformContext context) {
+  private void transformIoMappings(FlowNode element, final ExecutableFlowNode flowNode) {
     final ZeebeIoMapping ioMapping = element.getSingleExtensionElement(ZeebeIoMapping.class);
 
     if (ioMapping != null) {

@@ -114,4 +114,17 @@ public abstract class AbstractHandler<T extends ExecutableFlowElement>
       context.getStateDb().getEventScopeInstanceState().shutdownInstance(context.getKey());
     }
   }
+
+  /**
+   * @return true if an interrupting event (e.g., interrupting event subprocess) occurred and it
+   *     wasn't produced by the current element.
+   */
+  protected boolean isElementInterrupted(BpmnStepContext<T> context) {
+    if (context.getFlowScopeInstance() != null) {
+      final long interruptingKey = context.getFlowScopeInstance().getInterruptingEventKey();
+      return interruptingKey != -1 && interruptingKey != context.getKey();
+    }
+
+    return false;
+  }
 }

@@ -27,7 +27,7 @@ public class BoundaryEventTransformer implements ModelElementTransformer<Boundar
     final ExecutableBoundaryEvent element =
         workflow.getElementById(event.getId(), ExecutableBoundaryEvent.class);
 
-    element.setCancelActivity(event.cancelActivity());
+    element.setInterrupting(event.cancelActivity());
     attachToActivity(event, workflow, element);
   }
 
