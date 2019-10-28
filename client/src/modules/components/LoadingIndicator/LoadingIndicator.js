@@ -9,11 +9,9 @@ import 'spinkit/css/spinners/8-circle.css';
 import './LoadingIndicator.scss';
 import classnames from 'classnames';
 
-export default function LoadingIndicator(props) {
-  const allowedProps = {...props};
-  delete allowedProps.small;
+export default function LoadingIndicator({small, ...props}) {
   return (
-    <div className={classnames('sk-circle', {small: props.small})} {...allowedProps}>
+    <div className={classnames('sk-circle', {small})} {...props}>
       <div className="sk-circle1 sk-child" />
       <div className="sk-circle2 sk-child" />
       <div className="sk-circle3 sk-child" />

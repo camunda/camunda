@@ -178,7 +178,7 @@ export default class DefinitionSelection extends React.Component {
     if (!loaded) {
       return (
         <div className="DefinitionSelection">
-          <LoadingIndicator />
+          <LoadingIndicator small />
         </div>
       );
     }
