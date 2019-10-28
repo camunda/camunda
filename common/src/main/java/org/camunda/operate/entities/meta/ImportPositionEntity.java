@@ -13,6 +13,8 @@ public class ImportPositionEntity {
 
   private long position;
 
+  private String indexName;
+
   public ImportPositionEntity() {
   }
 
@@ -46,8 +48,25 @@ public class ImportPositionEntity {
     this.position = position;
   }
 
+  public String getIndexName() {
+    return indexName;
+  }
+
+  public void setIndexName(String indexName) {
+    this.indexName = indexName;
+  }
+
   public String getId() {
     return String.format("%s-%s", partitionId, aliasName);
+  }
+
+  public static ImportPositionEntity createFrom(ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
+    ImportPositionEntity newImportPositionEntity = new ImportPositionEntity();
+    newImportPositionEntity.setAliasName(importPositionEntity.getAliasName());
+    newImportPositionEntity.setPartitionId(importPositionEntity.getPartitionId());
+    newImportPositionEntity.setIndexName(indexName);
+    newImportPositionEntity.setPosition(newPosition);
+    return newImportPositionEntity;
   }
 
   @Override
@@ -63,7 +82,10 @@ public class ImportPositionEntity {
       return false;
     if (position != that.position)
       return false;
-    return aliasName != null ? aliasName.equals(that.aliasName) : that.aliasName == null;
+    if (aliasName != null ? !aliasName.equals(that.aliasName) : that.aliasName != null)
+      return false;
+    return indexName != null ? indexName.equals(that.indexName) : that.indexName == null;
+
   }
 
   @Override
@@ -71,6 +93,13 @@ public class ImportPositionEntity {
     int result = aliasName != null ? aliasName.hashCode() : 0;
     result = 31 * result + partitionId;
     result = 31 * result + (int) (position ^ (position >>> 32));
+    result = 31 * result + (indexName != null ? indexName.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "ImportPositionEntity{" + "aliasName='" + aliasName + '\'' + ", partitionId=" + partitionId + ", position=" + position + ", indexName='" + indexName
+        + '\'' + '}';
   }
 }

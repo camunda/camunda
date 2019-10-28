@@ -37,7 +37,7 @@ public class ImportPositionHolder {
   private static final Logger logger = LoggerFactory.getLogger(ImportPositionHolder.class);
 
   //this is the in-memory only storage
-  private Map<String,Long> lastScheduledPositions = new HashMap<>();
+  private Map<String, ImportPositionEntity> lastScheduledPositions = new HashMap<>();
 
   @Autowired
   private ImportPositionIndex importPositionType;
@@ -48,59 +48,58 @@ public class ImportPositionHolder {
   @Autowired
   private ObjectMapper objectMapper;
 
-  public long getLatestScheduledPosition(String aliasTemplate, int partitionId) throws IOException {
+  public ImportPositionEntity getLatestScheduledPosition(String aliasTemplate, int partitionId) throws IOException {
     String key = getKey(aliasTemplate, partitionId);
     if (lastScheduledPositions.containsKey(key)) {
       return lastScheduledPositions.get(key);
     } else {
-      long latestLoadedPosition = getLatestLoadedPosition(aliasTemplate, partitionId);
+      ImportPositionEntity latestLoadedPosition = getLatestLoadedPosition(aliasTemplate, partitionId);
       lastScheduledPositions.put(key, latestLoadedPosition);
       return latestLoadedPosition;
     }
   }
 
-  public void recordLatestScheduledPosition(ImportBatch importBatch) {
-    lastScheduledPositions.put(getKey(importBatch.getAliasName(), importBatch.getPartitionId()), importBatch.getLastProcessedPosition());
+  public void recordLatestScheduledPosition(String aliasName, int partitionId, ImportPositionEntity importPositionEntity) {
+    lastScheduledPositions.put(getKey(aliasName, partitionId), importPositionEntity);
   }
 
-  public long getLatestLoadedPosition(String aliasTemplate, int partitionId) throws IOException {
+  public ImportPositionEntity getLatestLoadedPosition(String aliasTemplate, int partitionId) throws IOException {
     final QueryBuilder queryBuilder = joinWithAnd(termQuery(ImportPositionIndex.ALIAS_NAME, aliasTemplate),
         termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
     final SearchRequest searchRequest = new SearchRequest(importPositionType.getAlias())
         .source(new SearchSourceBuilder()
             .query(queryBuilder)
-            .size(10)
-            .fetchSource(ImportPositionIndex.POSITION, null));
+            .size(10));
 
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 
     final Iterator<SearchHit> hitIterator = searchResponse.getHits().iterator();
 
-    long position = 0;
+    ImportPositionEntity position = new ImportPositionEntity(aliasTemplate, partitionId, 0);
 
     if (hitIterator.hasNext()) {
-      position = (Long)hitIterator.next().getSourceAsMap().get(ImportPositionIndex.POSITION);
+      position = ElasticsearchUtil.fromSearchHit(hitIterator.next().getSourceAsString(), objectMapper, ImportPositionEntity.class);
     }
     logger.debug("Latest loaded position for alias [{}] and partitionId [{}]: {}", aliasTemplate, partitionId, position);
 
     return position;
   }
 /**
- * @param importBatch
+ * @param lastProcessedPosition
  */
-  public void recordLatestLoadedPosition(ImportBatch importBatch) {
-    ImportPositionEntity entity = new ImportPositionEntity(importBatch.getAliasName(), importBatch.getPartitionId(), importBatch.getLastProcessedPosition());
+  public void recordLatestLoadedPosition(ImportPositionEntity lastProcessedPosition) {
     Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(ImportPositionIndex.POSITION, entity.getPosition());
+    updateFields.put(ImportPositionIndex.POSITION, lastProcessedPosition.getPosition());
+    updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, lastProcessedPosition.getIndexName());
     try {
-      final UpdateRequest request = new UpdateRequest(importPositionType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
-          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+      final UpdateRequest request = new UpdateRequest(importPositionType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, lastProcessedPosition.getId())
+          .upsert(objectMapper.writeValueAsString(lastProcessedPosition), XContentType.JSON)
           .doc(updateFields)
           .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
       esClient.update(request, RequestOptions.DEFAULT);
     } catch (Exception e) {
-      logger.error(String.format("Error occurred while persisting latest loaded position for %s", entity.getAliasName()), e);
+      logger.error(String.format("Error occurred while persisting latest loaded position for %s", lastProcessedPosition.getAliasName()), e);
       throw new OperateRuntimeException(e);
     }
   }

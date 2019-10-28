@@ -5,12 +5,24 @@
  */
 package org.camunda.operate.util;
 
+import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Properties;
 
 import org.assertj.core.api.Assertions;
 import org.camunda.operate.property.OperateProperties;
+import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexTemplatesRequest;
+import org.elasticsearch.client.indices.GetIndexTemplatesResponse;
+import org.elasticsearch.client.indices.IndexTemplateMetaData;
+import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.common.settings.Settings;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -27,9 +39,10 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 
 public class OperateZeebeRule extends TestWatcher {
 
-  private static final String REQUEST_TIMEOUT_IN_MILLISECONDS = "15000"; // 15 seconds 
+  private static final String REQUEST_TIMEOUT_IN_MILLISECONDS = "15000"; // 15 seconds
 
   private static final Logger logger = LoggerFactory.getLogger(OperateZeebeRule.class);
+  public static final String YYYY_MM_DD = "uuuu-MM-dd";
 
   @Autowired
   public OperateProperties operateProperties;
@@ -63,6 +76,34 @@ public class OperateZeebeRule extends TestWatcher {
       }
     });
     start();
+  }
+
+  public void updateRefreshInterval(String value) {
+    try {
+      GetIndexTemplatesRequest request = new GetIndexTemplatesRequest(prefix);
+      GetIndexTemplatesResponse indexTemplate = zeebeEsClient.indices().getIndexTemplate(request, RequestOptions.DEFAULT);
+      IndexTemplateMetaData indexTemplateMetaData = indexTemplate.getIndexTemplates().get(0);
+
+      PutIndexTemplateRequest updateTemplateRequest = new PutIndexTemplateRequest(prefix);
+      updateTemplateRequest.patterns(indexTemplateMetaData.patterns());
+      updateTemplateRequest.order(indexTemplateMetaData.order());
+      updateTemplateRequest.settings(Settings.builder().put(indexTemplateMetaData.settings()).put("index.refresh_interval", value));
+      updateTemplateRequest.alias(new Alias(prefix));
+      updateTemplateRequest.mapping(indexTemplateMetaData.mappings().getSourceAsMap());
+      zeebeEsClient.indices().putTemplate(updateTemplateRequest, RequestOptions.DEFAULT);
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+
+  public void refreshIndices(Instant instant) {
+    try {
+      String date = DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
+      RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
+      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+    } catch (IOException ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
   @Override

@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.camunda.operate.TestImportListener;
@@ -97,10 +98,10 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   @Autowired
   TestImportListener testImportListener;
-  
+
   @Autowired
   ElasticsearchConnector esConnector;
-  
+
   Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
 
   protected boolean failed = false;
@@ -135,7 +136,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
   }
-  
+
 //  public void assertZeebeESIsRunning() {
 //    assertThat(esConnector.checkHealth(zeebeEsClient, true)).describedAs("Zeebe Elasticsearch is running").isTrue();
 //  }
@@ -148,32 +149,38 @@ public class ElasticsearchTestRule extends TestWatcher {
     refreshZeebeESIndices();
     refreshOperateESIndices();
   }
-  
+
   public void refreshZeebeESIndices() {
     try {
-      zeebeEsClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);   
+      RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
+      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Throwable t) {
       logger.error("Could not refresh Zeebe Elasticsearch indices", t);
     }
   }
-  
+
   public void refreshOperateESIndices() {
     try {
-      esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);   
+      RefreshRequest refreshRequest = new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
+      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (Throwable t) {
       logger.error("Could not refresh Operate Elasticsearch indices", t);
     }
   }
-  
+
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, arguments);
+    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, null, arguments);
   }
- 
+
+  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, supplier, arguments);
+  }
+
   public void processRecordsWithTypeAndWait(ImportValueType importValueType,Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), predicate, arguments);
+    processRecordsAndWaitFor(getRecordsReaders(importValueType), predicate, null, arguments);
   }
-  
-  public void processRecordsAndWaitFor(Collection<RecordsReader> readers,Predicate<Object[]> predicate, Object... arguments) {
+
+  public void processRecordsAndWaitFor(Collection<RecordsReader> readers,Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
     long shouldImportCount = 0;
     int maxRounds = 500;
     boolean found = predicate.test(arguments);
@@ -182,6 +189,9 @@ public class ElasticsearchTestRule extends TestWatcher {
       testImportListener.resetCounters();
       shouldImportCount = 0;
       try {
+        if (supplier != null) {
+          supplier.get();
+        }
         refreshZeebeESIndices();
         shouldImportCount +=  zeebeImporter.performOneRoundOfImportFor(readers);
       } catch (Exception e) {
@@ -218,7 +228,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       throw new OperateRuntimeException("Timeout exception");
     }
   }
-  
+
   public boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices,int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
@@ -240,7 +250,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     List<String> indices = List.of(response.getIndices());
     return filter(indices,index -> index.contains(indexPrefix)).size() > minCountOfIndices;
   }
-  
+
   public boolean areIndicesNotExistsAfterChecks(String indexPrefix,int maxChecks) {
     boolean isEmpty = false;
     int checks = 0;
@@ -270,7 +280,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
   }
-  
+
   public void persistNew(OperateEntity... entitiesToPersist) {
     try {
       persistOperateEntitiesNew(Arrays.asList(entitiesToPersist));

@@ -63,5 +63,14 @@ public class RecordsReaderHolder {
         .collect(Collectors.toSet());
   }
 
+  public RecordsReader getRecordsReader(int partitionId, ImportValueType importValueType) {
+    for (RecordsReader recordsReader: recordsReaders) {
+      if (recordsReader.getPartitionId() == partitionId && recordsReader.getImportValueType().equals(importValueType)) {
+        return recordsReader;
+      }
+    }
+    return null;
+  }
+
 
 }

@@ -19,6 +19,7 @@ public class ImportPositionIndex extends AbstractIndexCreator {
   public static final String ALIAS_NAME = "aliasName";
   public static final String ID = "id";
   public static final String POSITION = "position";
+  public static final String FIELD_INDEX_NAME = "indexName";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -41,6 +42,9 @@ public class ImportPositionIndex extends AbstractIndexCreator {
         .field("type", "long")
       .endObject()
       .startObject(ALIAS_NAME)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(FIELD_INDEX_NAME)
         .field("type", "keyword")
       .endObject();
 

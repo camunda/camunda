@@ -7,12 +7,19 @@ package org.camunda.operate.zeebeimport;
 
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.camunda.operate.entities.meta.ImportPositionEntity;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.admin.indices.refresh.RefreshResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -27,24 +34,51 @@ public class ImportJob implements Callable<Boolean> {
 
   private ImportBatch importBatch;
 
+  private ImportPositionEntity previousPosition;
+
+  private ImportPositionEntity lastProcessedPosition;
+
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   @Autowired
+  @Qualifier("zeebeEsClient")
+  private RestHighLevelClient zeebeEsClient;
+
+  @Autowired
   private ImportPositionHolder importPositionHolder;
+
+  @Autowired
+  private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired(required = false)
   private List<ImportListener> importListeners;
 
-  public ImportJob(ImportBatch importBatch) {
+  public ImportJob(ImportBatch importBatch, ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
+    this.previousPosition = previousPosition;
   }
 
   @Override
   public Boolean call() {
     try {
+      //at midnight index is changed and some events may be lost, see OPE-733
+      if (indexChange()) {
+        refreshPreviousIndex();
+        Thread.sleep(1000);
+        RecordsReader recordsReader = recordsReaderHolder.getRecordsReader(importBatch.getPartitionId(), importBatch.getImportValueType());
+        if (recordsReader != null) {
+          //reread same batch (mark index as done - may be just empty index name in batch)
+          importBatch = recordsReader.readNextBatch(previousPosition.getPosition(), importBatch.getLastProcessedPosition());
+          previousPosition.setIndexName(null);
+        } else {
+          logger.warn("Unable to find records reader for partitionId {} and ImportValueType {}", importBatch.getPartitionId(), importBatch.getImportValueType());
+        }
+        //if we return false the same ImportJob will be retried
+        return false;
+      }
       elasticsearchBulkProcessor.persistZeebeRecords(importBatch);
-      importPositionHolder.recordLatestLoadedPosition(importBatch);
+      importPositionHolder.recordLatestLoadedPosition(getLastProcessedPosition());
       notifyImportListenersAsFinished(importBatch);
       return true;
     } catch (Throwable ex) {
@@ -53,7 +87,40 @@ public class ImportJob implements Callable<Boolean> {
       return false;
     }
   }
-  
+
+  public void refreshPreviousIndex() throws IOException {
+    RefreshRequest refreshRequest = new RefreshRequest(previousPosition.getIndexName());
+    RefreshResponse refresh = zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+    if (refresh.getFailedShards() > 0) {
+      logger.warn("Unable to refresh the index: {}", previousPosition.getIndexName());
+    }
+  }
+
+
+  public void recordLatestScheduledPosition() {
+    importPositionHolder.recordLatestScheduledPosition(importBatch.getAliasName(), importBatch.getPartitionId(), getLastProcessedPosition());
+  }
+
+  public ImportPositionEntity getLastProcessedPosition() {
+    if (lastProcessedPosition == null) {
+      Long lastRecordPosition = importBatch.getLastProcessedPosition();
+      if (lastRecordPosition != null) {
+        lastProcessedPosition = ImportPositionEntity.createFrom(previousPosition, lastRecordPosition, importBatch.getLastRecordIndexName());
+      } else {
+        lastProcessedPosition = previousPosition;
+      }
+    }
+    return lastProcessedPosition;
+  }
+
+  public boolean indexChange() {
+    if (importBatch.getLastRecordIndexName() != null && previousPosition != null && previousPosition.getIndexName() != null) {
+      return !importBatch.getLastRecordIndexName().equals(previousPosition.getIndexName());
+    } else {
+      return false;
+    }
+  }
+
   protected void notifyImportListenersAsFinished(ImportBatch importBatch) {
     if (importListeners != null) {
       for (ImportListener importListener : importListeners) {

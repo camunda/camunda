@@ -26,12 +26,15 @@ public class ImportBatch {
 
   private List<Record> records;
 
+  private String lastRecordIndexName;
+
   private int finishedWiCount = 0;
 
-  public ImportBatch(int partitionId, ImportValueType importValueType, List<Record> records) {
+  public ImportBatch(int partitionId, ImportValueType importValueType, List<Record> records, String lastRecordIndexName) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
     this.records = records;
+    this.lastRecordIndexName = lastRecordIndexName;
   }
 
   public int getPartitionId() {
@@ -68,6 +71,14 @@ public class ImportBatch {
 
   public int getFinishedWiCount() {
     return finishedWiCount;
+  }
+
+  public String getLastRecordIndexName() {
+    return lastRecordIndexName;
+  }
+
+  public void setLastRecordIndexName(String lastRecordIndexName) {
+    this.lastRecordIndexName = lastRecordIndexName;
   }
 
   public long getLastProcessedPosition() {
@@ -109,4 +120,5 @@ public class ImportBatch {
     result = 31 * result + finishedWiCount;
     return result;
   }
+
 }

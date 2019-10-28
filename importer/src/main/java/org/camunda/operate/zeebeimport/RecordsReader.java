@@ -13,7 +13,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
-
+import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.NoSuchIndexException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -27,6 +27,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
@@ -40,6 +42,7 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
+import static org.camunda.operate.util.ElasticsearchUtil.QUERY_MAX_SIZE;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -110,13 +113,14 @@ public class RecordsReader {
     this.importJobs = new LinkedBlockingQueue<>(queueSize);
   }
 
-  public int readAndScheduleNextBatch() {
+  public int readAndScheduleNextBatch() throws IOException {
     try {
-      ImportBatch importBatch = readNextBatch();
+      ImportPositionEntity latestPosition = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
+      ImportBatch importBatch = readNextBatch(latestPosition.getPosition(), null);
       if (importBatch.getRecords().size() == 0) {
         doBackoff();
       } else {
-        scheduleImport(importBatch);
+        scheduleImport(latestPosition, importBatch);
       }
       return importBatch.getRecords().size();
     } catch (NoSuchIndexException ex) {
@@ -126,35 +130,46 @@ public class RecordsReader {
     }
   }
 
-  private void scheduleImport(ImportBatch importBatch) {
+  private void scheduleImport(ImportPositionEntity latestPosition, ImportBatch importBatch) {
     //create new instance of import job
-    ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch);
+    ImportJob importJob = beanFactory.getBean(ImportJob.class, importBatch, latestPosition);
     scheduleImport(importJob);
-    importPositionHolder.recordLatestScheduledPosition(importBatch);
+    importJob.recordLatestScheduledPosition();
   }
 
-  private ImportBatch readNextBatch() throws NoSuchIndexException {
+  public ImportBatch readNextBatch(long position1, Long position2) throws NoSuchIndexException {
     String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     try {
 
-      long positionAfter = importPositionHolder.getLatestScheduledPosition(importValueType.getAliasTemplate(), partitionId);
-
-      final QueryBuilder queryBuilder = joinWithAnd(
-          rangeQuery(ImportPositionIndex.POSITION).gt(positionAfter),
+      RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(position1);
+      if (position2 != null) {
+        positionQ = positionQ.lte(position2);
+      }
+      final QueryBuilder queryBuilder = joinWithAnd(positionQ,
           termQuery(PARTITION_ID_FIELD_NAME, partitionId));
 
+      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).sort(ImportPositionIndex.POSITION, SortOrder.ASC);
+      if (position2 == null) {
+        searchSourceBuilder = searchSourceBuilder.size(operateProperties.getZeebeElasticsearch().getBatchSize());
+      } else {
+        logger.debug("Import batch reread was called. Data type {}, partitionId {}, position1 {}, position2 {}.", importValueType, partitionId, position1, position2);
+        int size = (int)(position2 - position1);
+        searchSourceBuilder = searchSourceBuilder.size(size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size); //this size will be bigger than needed
+      }
       final SearchRequest searchRequest = new SearchRequest(aliasName)
-          .source(new SearchSourceBuilder()
-              .query(queryBuilder)
-              .sort(ImportPositionIndex.POSITION, SortOrder.ASC)
-              .size(operateProperties.getZeebeElasticsearch().getBatchSize()));
+          .source(searchSourceBuilder);
 
       final SearchResponse searchResponse =
           zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
 
       JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
-      final List<Record> result = ElasticsearchUtil.mapSearchHits(searchResponse.getHits().getHits(), objectMapper, valueType);
-      return new ImportBatch(partitionId, importValueType, result);
+      SearchHit[] hits = searchResponse.getHits().getHits();
+      final List<Record> result = ElasticsearchUtil.mapSearchHits(hits, objectMapper, valueType);
+      String indexName = null;
+      if (hits.length > 0) {
+        indexName = hits[hits.length - 1].getIndex();
+      }
+      return new ImportBatch(partitionId, importValueType, result, indexName);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
       logger.error(message, e);

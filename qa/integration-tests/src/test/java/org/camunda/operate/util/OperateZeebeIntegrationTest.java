@@ -208,13 +208,25 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected void cancelWorkflowInstance(long workflowInstanceKey) {
+    cancelWorkflowInstance(workflowInstanceKey, true);
+  }
+
+  protected void cancelWorkflowInstance(long workflowInstanceKey, boolean waitForData) {
     ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceKey);
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    if (waitForData) {
+      elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
+    }
   }
 
   protected void completeTask(long workflowInstanceKey, String activityId, String payload) {
+    completeTask(workflowInstanceKey, activityId, payload, true);
+  }
+
+  protected void completeTask(long workflowInstanceKey, String activityId, String payload, boolean waitForData) {
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
-    elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
+    if (waitForData) {
+      elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey, activityId);
+    }
   }
   
   protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {
