@@ -149,7 +149,14 @@ export default withErrorHandling(
               <div className="type">{formatType(identity.type)}</div>
               <div className="entityName">{identity.name || identity.id}</div>
             </ListItem.Section>
-            <ListItem.Section className="containedEntities" />
+            <ListItem.Section className="containedEntities">
+              {identity.type === 'group' && (
+                <>
+                  {identity.memberCount}{' '}
+                  {t('common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label'))}
+                </>
+              )}
+            </ListItem.Section>
             <ListItem.Section className="role">{formatRole(role)}</ListItem.Section>
             {!readOnly && !isLastManager && (
               <div className="contextMenu">

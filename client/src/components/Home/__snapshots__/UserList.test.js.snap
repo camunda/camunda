@@ -89,7 +89,11 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         </ListItemSection>
         <ListItemSection
           className="containedEntities"
-        />
+        >
+          2
+           
+          Users
+        </ListItemSection>
         <ListItemSection
           className="role"
         >
@@ -120,6 +124,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           "id": "GROUP:sales",
           "identity": Object {
             "id": "sales",
+            "memberCount": 2,
             "type": "group",
           },
           "role": "viewer",
@@ -227,7 +232,11 @@ exports[`should match snapshot 1`] = `
         </ListItemSection>
         <ListItemSection
           className="containedEntities"
-        />
+        >
+          2
+           
+          Users
+        </ListItemSection>
         <ListItemSection
           className="role"
         >
@@ -287,6 +296,7 @@ exports[`should match snapshot 1`] = `
           "id": "GROUP:sales",
           "identity": Object {
             "id": "sales",
+            "memberCount": 2,
             "type": "group",
           },
           "role": "viewer",

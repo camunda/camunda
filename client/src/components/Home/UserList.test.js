@@ -36,7 +36,8 @@ const props = {
       id: 'GROUP:sales',
       identity: {
         id: 'sales',
-        type: 'group'
+        type: 'group',
+        memberCount: 2
       },
       role: 'viewer'
     }
