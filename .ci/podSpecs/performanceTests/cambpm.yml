@@ -25,6 +25,9 @@ spec:
           effect: "NoSchedule"
       imagePullSecrets:
         - name: registry-camunda-cloud-secret
+      volumes:
+        - name: camunda-invoice-removal
+          emptyDir: {}
       containers:
         - name: cambpm
           image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION}
@@ -51,6 +54,9 @@ spec:
             - containerPort: 8080
               name: cambpm-http
           tty: true
+          volumeMounts:
+            - name: camunda-invoice-removal
+              mountPath: /camunda/webapps/camunda-invoice
           livenessProbe:
             initialDelaySeconds: 30
             periodSeconds: 30
