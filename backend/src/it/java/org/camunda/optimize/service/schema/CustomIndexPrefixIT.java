@@ -81,7 +81,7 @@ public class CustomIndexPrefixIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size(), is(18));
+    assertThat(mappings.size(), is(19));
     for (IndexMappingCreator mapping : mappings) {
       final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);
       final String expectedIndexName = getOptimizeIndexNameForAliasAndVersion(

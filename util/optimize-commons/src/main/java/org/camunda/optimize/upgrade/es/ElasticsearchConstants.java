@@ -39,6 +39,7 @@ public class ElasticsearchConstants {
   public static final String METADATA_INDEX_NAME = "metadata";
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
   public static final String TENANT_INDEX_NAME = "tenant";
+  public static final String EVENT_INDEX_NAME = "event";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
 }

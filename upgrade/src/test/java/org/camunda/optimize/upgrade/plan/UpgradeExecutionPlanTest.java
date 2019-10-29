@@ -14,8 +14,8 @@ import org.mockito.Mockito;
 
 import java.util.List;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -27,7 +27,7 @@ public class UpgradeExecutionPlanTest {
     final UpgradeExecutionPlan underTest = new UpgradeExecutionPlan();
     final List<IndexMappingCreator> mappings = underTest.getMappings();
 
-    assertThat(mappings.size(), is(18));
+    assertThat(mappings.size(), is(19));
   }
 
   @Test

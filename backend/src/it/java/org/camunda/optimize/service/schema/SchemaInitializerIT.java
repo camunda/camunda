@@ -127,7 +127,7 @@ public class SchemaInitializerIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size(), is(18));
+    assertThat(mappings.size(), is(19));
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }

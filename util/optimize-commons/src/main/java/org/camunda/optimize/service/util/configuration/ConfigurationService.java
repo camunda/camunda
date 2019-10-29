@@ -16,6 +16,7 @@ import org.camunda.optimize.service.util.configuration.elasticsearch.Elasticsear
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
+import org.camunda.optimize.service.util.configuration.engine.IngestionConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
 import org.springframework.util.StringUtils;
 
@@ -33,6 +34,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.INGESTION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -162,6 +164,8 @@ public class ConfigurationService {
   private UIConfiguration uiConfiguration;
 
   private IdentitySyncConfiguration identitySyncConfiguration;
+
+  private IngestionConfiguration ingestionConfiguration;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -863,6 +867,13 @@ public class ConfigurationService {
       identitySyncConfiguration = configJsonContext.read(IDENTITY_SYNC_CONFIGURATION, IdentitySyncConfiguration.class);
     }
     return identitySyncConfiguration;
+  }
+
+  public IngestionConfiguration getIngestionConfiguration() {
+    if (ingestionConfiguration == null) {
+      ingestionConfiguration = configJsonContext.read(INGESTION_CONFIGURATION, IngestionConfiguration.class);
+    }
+    return ingestionConfiguration;
   }
 
 }

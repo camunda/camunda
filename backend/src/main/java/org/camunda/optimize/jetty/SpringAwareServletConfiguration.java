@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.jetty;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
@@ -22,6 +24,10 @@ import javax.servlet.DispatcherType;
 import java.net.URL;
 import java.util.EnumSet;
 
+import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
+import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
+
 /**
  * Wrapper around all Camunda Optimize components, specifically JAX-RS configuration
  * which can be used to be loaded by different implementations of embedded web containers
@@ -29,9 +35,9 @@ import java.util.EnumSet;
 public class SpringAwareServletConfiguration implements ApplicationContextAware {
 
   private static final String COMPRESSED_MIME_TYPES = "application/json," +
-      "text/html," +
-      "application/x-font-ttf," +
-      "image/svg+xml";
+    "text/html," +
+    "application/x-font-ttf," +
+    "image/svg+xml";
 
   private static final String CONTEXT_CONFIG_LOCATION = "contextConfigLocation";
   private String springContextLocation = "classpath:applicationContext.xml";
@@ -52,8 +58,8 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
   private ServletHolder initJerseyServlet() {
     // Create JAX-RS application.
     final ResourceConfig application = new ResourceConfig()
-        .packages(optimizeRestPackage)
-        .register(JacksonFeature.class);
+      .packages(optimizeRestPackage)
+      .register(JacksonFeature.class);
 
     ServletHolder jerseyServlet = new ServletHolder(new ServletContainer(application));
     jerseyServlet.setInitOrder(0);
@@ -87,11 +93,28 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     addLicenseFilter(context);
     addSingleSignOnFilter(context);
     addNoCachingFilter(context);
+    addIngestionRequestLimitFilter(context);
 
     NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
     context.setErrorHandler(errorMapper);
 
     initGzipHandler(context);
+  }
+
+  private void addIngestionRequestLimitFilter(final ServletContextHandler context) {
+    FilterHolder ingestionRequestLimitFilter = new FilterHolder();
+    ingestionRequestLimitFilter.setFilter(new MaxRequestSizeFilter(
+      () -> getApplicationContext().getBean(ObjectMapper.class),
+      () -> getApplicationContext()
+        .getBean(ConfigurationService.class)
+        .getIngestionConfiguration()
+        .getMaxBatchRequestBytes()
+    ));
+    context.addFilter(
+      ingestionRequestLimitFilter,
+      REST_API_PATH + INGESTION_PATH + EVENT_BATCH_SUB_PATH,
+      EnumSet.of(DispatcherType.REQUEST)
+    );
   }
 
   private void addSingleSignOnFilter(ServletContextHandler context) {

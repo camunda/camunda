@@ -100,4 +100,6 @@ public interface ConfigurationServiceConstants {
   String UI_CONFIGURATION = "$.ui";
 
   String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
+
+  String INGESTION_CONFIGURATION = "$.ingestion";
 }

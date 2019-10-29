@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.EventIndex;
 import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
@@ -33,6 +34,7 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.index.query.QueryBuilders;
 
@@ -63,6 +65,7 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
+      .addUpgradeStep(new CreateIndexStep(new EventIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new DecisionInstanceIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new CollectionIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new TimestampBasedImportIndex()))

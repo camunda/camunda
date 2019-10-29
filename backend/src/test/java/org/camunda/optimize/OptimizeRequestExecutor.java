@@ -10,6 +10,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -50,6 +51,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.camunda.optimize.rest.IngestionRestService.OPTIMIZE_API_SECRET_HEADER;
 import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -925,6 +927,21 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildIngestSingleEvent(final EventDto eventDto, final String secret) {
+    this.path = "ingestion/event";
+    this.requestType = PUT;
+    addSingleHeader(OPTIMIZE_API_SECRET_HEADER, secret);
+    this.body = getBody(eventDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildIngestEventBatch(final List<EventDto> eventDtos, final String secret) {
+    this.path = "ingestion/event/batch";
+    this.requestType = PUT;
+    addSingleHeader(OPTIMIZE_API_SECRET_HEADER, secret);
+    this.body = getBody(eventDtos);
+    return this;
+  }
 
   private Entity getBody(Object entity) {
     try {
