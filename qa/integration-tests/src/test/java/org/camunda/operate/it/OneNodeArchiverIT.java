@@ -14,6 +14,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.camunda.operate.archiver.Archiver;
 import org.camunda.operate.archiver.ArchiverJob;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
@@ -33,7 +34,6 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.zeebe.PartitionHolder;
-import org.camunda.operate.archiver.ArchiverHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -68,7 +68,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   private BeanFactory beanFactory;
 
   @Autowired
-  private ArchiverHelper reindexHelper;
+  private Archiver archiver;
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -160,7 +160,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   private List<Long> assertWorkflowInstanceIndex(int instancesCount, Instant endDate) throws IOException {
-    final String destinationIndexName = reindexHelper.getDestinationIndexName(listViewTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
+    final String destinationIndexName = archiver.getDestinationIndexName(listViewTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
 
     final SearchRequest searchRequest = new SearchRequest(destinationIndexName)
@@ -187,9 +187,9 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   private void assertDependentIndex(String mainIndexName, String idFieldName, List<Long> ids, Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
-      destinationIndexName = reindexHelper.getDestinationIndexName(mainIndexName, dateTimeFormatter.format(endDate));
+      destinationIndexName = archiver.getDestinationIndexName(mainIndexName, dateTimeFormatter.format(endDate));
     } else {
-      destinationIndexName = reindexHelper.getDestinationIndexName(mainIndexName, "");
+      destinationIndexName = archiver.getDestinationIndexName(mainIndexName, "");
     }
     final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
     final SearchRequest request = new SearchRequest(destinationIndexName)

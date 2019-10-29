@@ -20,7 +20,7 @@ import java.util.function.Predicate;
 
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
-import org.camunda.operate.archiver.ArchiverHelper;
+import org.camunda.operate.archiver.Archiver;
 import org.camunda.operate.archiver.ArchiverJob;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.archiver.ArchiverJob.ArchiveBatch;
@@ -81,7 +81,7 @@ public class OperateTester extends ElasticsearchTestRule{
   private Predicate<Object[]> operationsByWorkflowInstanceAreCompletedCheck;
 
   @Autowired
-  private ArchiverHelper archiverHelper;
+  private Archiver archiver;
 
   private MockMvcTestRule mockMvcTestRule;
   
@@ -290,7 +290,7 @@ public class OperateTester extends ElasticsearchTestRule{
   public OperateTester archive() {
     try {
       ArchiverJob.ArchiveBatch finishedAtDateIds = new ArchiveBatch("_test_archived", Arrays.asList(workflowInstanceKey));
-      archiverHelper.archiveNextBatch(finishedAtDateIds);
+      archiver.archiveNextBatch(finishedAtDateIds);
     } catch (ReindexException e) {
       return this;
     }

@@ -61,7 +61,7 @@ public class ArchiverJob implements Runnable {
   private List<Integer> partitionIds;
 
   @Autowired
-  private ArchiverHelper archiverHelper;
+  private Archiver archiver;
 
   @Autowired
   private OperateProperties operateProperties;
@@ -103,7 +103,7 @@ public class ArchiverJob implements Runnable {
 
 
   public int archiveNextBatch() throws ReindexException {
-    return archiverHelper.archiveNextBatch(queryFinishedWorkflowInstances());
+    return archiver.archiveNextBatch(queryFinishedWorkflowInstances());
   }
 
   public ArchiveBatch queryFinishedWorkflowInstances() {

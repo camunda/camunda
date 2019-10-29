@@ -29,7 +29,7 @@ import java.util.Random;
 import org.camunda.operate.archiver.ArchiverJob;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.archiver.ArchiverHelper;
+import org.camunda.operate.archiver.Archiver;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
@@ -74,7 +74,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private BeanFactory beanFactory;
 
   @Autowired
-  private ArchiverHelper reindexHelper;
+  private Archiver archiver;
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -243,9 +243,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private void assertWorkflowInstanceIndex(int instancesCount, List<Long> ids, Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
-      destinationIndexName = reindexHelper.getDestinationIndexName(workflowInstanceTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
+      destinationIndexName = archiver.getDestinationIndexName(workflowInstanceTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
     } else {
-      destinationIndexName = reindexHelper.getDestinationIndexName(workflowInstanceTemplate.getMainIndexName(), "");
+      destinationIndexName = archiver.getDestinationIndexName(workflowInstanceTemplate.getMainIndexName(), "");
     }
     final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
     final TermQueryBuilder isWorkflowInstanceQuery = termQuery(JOIN_RELATION, WORKFLOW_INSTANCE_JOIN_RELATION);
@@ -270,9 +270,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private void assertDependentIndex(String mainIndexName, String idFieldName, List<Long> ids, Instant endDate) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
-      destinationIndexName = reindexHelper.getDestinationIndexName(mainIndexName, dateTimeFormatter.format(endDate));
+      destinationIndexName = archiver.getDestinationIndexName(mainIndexName, dateTimeFormatter.format(endDate));
     } else {
-      destinationIndexName = reindexHelper.getDestinationIndexName(mainIndexName, "");
+      destinationIndexName = archiver.getDestinationIndexName(mainIndexName, "");
     }
     final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
     final SearchRequest request = new SearchRequest(destinationIndexName)
