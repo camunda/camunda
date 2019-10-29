@@ -7,16 +7,15 @@
  */
 package io.zeebe.broker.exporter;
 
+import static io.zeebe.broker.exporter.ExporterServiceNames.exporterClearStateServiceName;
 import static io.zeebe.broker.exporter.ExporterServiceNames.exporterDirectorServiceName;
 
-import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.zeebe.broker.exporter.repo.ExporterRepository;
 import io.zeebe.broker.exporter.stream.ExporterDirector;
 import io.zeebe.broker.exporter.stream.ExporterDirectorContext;
-import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
@@ -32,14 +31,12 @@ import io.zeebe.util.DurationUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.List;
-import org.slf4j.Logger;
 
 public class ExporterManagerService implements Service<ExporterManagerService> {
 
   public static final int EXPORTER_PROCESSOR_ID = 1003;
   public static final String EXPORTER_NAME = "exporter-%d";
 
-  private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final List<ExporterCfg> exporterCfgs;
   private final ExporterRepository exporterRepository;
   private final DataCfg dataCfg;
@@ -76,7 +73,13 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
     final ZeebeDb zeebeDb = partition.getZeebeDb();
 
     if (exporterRepository.getExporters().isEmpty()) {
-      clearExporterState(partition.getZeebeDb());
+      final ExporterClearStateService clearStateService =
+          new ExporterClearStateService(partition.getZeebeDb());
+      startContext
+          .createService(
+              exporterClearStateServiceName(partition.getPartitionId()), clearStateService)
+          .dependency(partitionName)
+          .install();
     } else {
       final ExporterDirectorContext context =
           new ExporterDirectorContext()
@@ -108,28 +111,6 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
       return CompletableActorFuture.completed(Long.MAX_VALUE);
     } else {
       return director.getLowestExporterPosition();
-    }
-  }
-
-  private void clearExporterState(ZeebeDb zeebeDb) {
-    // We need to remove the exporter positions from the state in case that one of the exporters is
-    // configured later again. The processor would try to continue from the previous position which
-    // may not
-    // exist anymore in the logstream.
-
-    try {
-      final ExportersState state = new ExportersState(zeebeDb, zeebeDb.createContext());
-
-      state.visitPositions(
-          (exporterId, position) -> {
-            state.removePosition(exporterId);
-
-            LOG.info(
-                "The exporter '{}' is not configured anymore. Its position is removed from the state.",
-                exporterId);
-          });
-    } catch (Exception e) {
-      LOG.error("Failed to remove exporters from state", e);
     }
   }
 
