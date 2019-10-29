@@ -50,8 +50,11 @@ export default withErrorHandling(
     onConfirm = () => {
       const {name, moving, collection, gotoNew} = this.state;
       if (name && (!moving || collection)) {
-        const {jumpToEntity} = this.props;
-        this.props.onConfirm(name, jumpToEntity && gotoNew, moving && collection.id);
+        if (this.isCollection() && this.props.jumpToEntity) {
+          this.props.onConfirm(name, gotoNew);
+        } else {
+          this.props.onConfirm(name, moving && gotoNew, moving && collection.id);
+        }
       }
     };
 
@@ -99,11 +102,11 @@ export default withErrorHandling(
       );
     };
 
+    isCollection = () => this.props.entity.entityType === 'collection';
+
     render() {
       const {onClose, entity, jumpToEntity} = this.props;
       const {name, moving, collection, gotoNew} = this.state;
-
-      const isCollection = entity.entityType === 'collection';
 
       return (
         <Modal className="CopyModal" open onClose={onClose} onConfirm={this.onConfirm}>
@@ -119,9 +122,11 @@ export default withErrorHandling(
                   onChange={({target: {value}}) => this.setState({name: value})}
                 />
               </Form.Group>
-              {isCollection && <InfoMessage>{t('home.copy.copyCollectionInfo')}</InfoMessage>}
-              {!isCollection && this.renderMoveOption()}
-              {jumpToEntity && (isCollection || moving) && (
+              {this.isCollection() && (
+                <InfoMessage>{t('home.copy.copyCollectionInfo')}</InfoMessage>
+              )}
+              {!this.isCollection() && this.renderMoveOption()}
+              {jumpToEntity && (this.isCollection() || moving) && (
                 <Form.Group>
                   <LabeledInput
                     label={t('home.copy.gotoNew')}

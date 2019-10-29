@@ -106,11 +106,13 @@ it('should hide option to move the copy for collection entities', () => {
 });
 
 it('should call the onConfirm action', () => {
-  const node = shallow(<CopyModal {...props} jumpToEntity />);
+  const node = shallow(
+    <CopyModal {...props} jumpToEntity entity={{name: 'collection', entityType: 'collection'}} />
+  );
 
   node.find('.confirm').simulate('click');
 
-  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', true, false);
+  expect(props.onConfirm).toHaveBeenCalledWith('collection (copy)', true);
 });
 
 it('should hide the jump checkbox if jumpToEntity property is not added', () => {
@@ -120,5 +122,13 @@ it('should hide the jump checkbox if jumpToEntity property is not added', () => 
 
   node.find('.confirm').simulate('click');
 
-  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', undefined, false);
+  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', false, false);
+});
+
+it('should call the onConfirm with false redirect parameter if entity is not a collection', () => {
+  const node = shallow(<CopyModal {...props} jumpToEntity />);
+
+  node.find('.confirm').simulate('click');
+
+  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', false, false);
 });
