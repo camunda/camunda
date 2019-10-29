@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
+import static org.camunda.operate.util.ThreadUtil.*;
 
 @Component
 @Configuration
@@ -73,12 +74,7 @@ public class OperationExecutor extends Thread {
         if (operations.size() == 0) {
 
           notifyExecutionFinishedListeners();
-
-          try {
-            Thread.sleep(2000);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-          }
+          sleepForAndShouldInterrupt(2000,true);
         }
 
       } catch (Exception ex) {
@@ -86,12 +82,8 @@ public class OperationExecutor extends Thread {
         logger.error("Something went wrong, while executing operations batch. Will be retried. Underlying exception: ", ex.getCause());
 
         logger.error(ex.getMessage(), ex);
-
-        try {
-          Thread.sleep(2000);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
+        
+        sleepForAndShouldInterrupt(2000,true);
       }
     }
   }

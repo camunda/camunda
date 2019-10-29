@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.Topology;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+import org.camunda.operate.util.ThreadUtil;
 
 @Component
 public class PartitionHolder {
@@ -104,14 +105,6 @@ public class PartitionHolder {
     }
     return partitionIds;
   }
-
-  protected void sleepFor(long milliseconds) {
-    try {
-      Thread.sleep(milliseconds);
-    } catch (InterruptedException e) {
-      // Ignore interruption
-    }
-  }
   
   protected Optional<List<Integer>> getPartitionIdsFromZeebe(){
     logger.debug("Requesting partition ids from Zeebe client");
@@ -149,4 +142,8 @@ public class PartitionHolder {
     return Optional.empty();
   }
 
+  
+  protected void sleepFor(long milliseconds) {
+    ThreadUtil.sleepFor(milliseconds);
+  }
 }

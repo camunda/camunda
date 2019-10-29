@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component
 public class WorkflowCache {
@@ -68,11 +69,7 @@ public class WorkflowCache {
       foundWorkflow = readWorkflowByKey(workflowKey);
       if (!foundWorkflow.isPresent()) {
         logger.debug("{} attempts left. Waiting {} ms.", attempts - attemptsCount, sleepInMilliseconds);
-        try {
-          Thread.sleep(sleepInMilliseconds);
-        } catch (InterruptedException e) {
-          logger.debug(e.getMessage());
-        }
+        sleepFor(sleepInMilliseconds);
       } else {
         logger.debug("Found workflow after {} attempts. Waited {} ms.", attemptsCount, (attemptsCount - 1) * sleepInMilliseconds);
       }

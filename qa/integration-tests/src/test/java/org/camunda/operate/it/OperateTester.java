@@ -45,6 +45,9 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
+
+
 public class OperateTester extends ElasticsearchTestRule{
 
   @Autowired
@@ -237,29 +240,24 @@ public class OperateTester extends ElasticsearchTestRule{
   public OperateTester process(ImportValueType importValueType) {
     countImported.put(importValueType, 0L);
     long entitiesCount = 0;
-    try {
-      while (entitiesCount == 0) {
-        try {
-          entitiesCount = importOneType(importValueType);
-          updateMap(countImported,importValueType,entitiesCount);
-        } catch (Throwable e) {
-          
-        }
-        Thread.sleep(500L);
-      }
-      while (entitiesCount > 0) {
-        try {
-          entitiesCount = importOneType(importValueType);
-          updateMap(countImported,importValueType,entitiesCount);
-        } catch (Throwable e) {
-         
-        }
-        Thread.sleep(500L);
-      }
-    } catch (InterruptedException ie) {
-      logger.error(ie.getMessage(), ie);
+    while (entitiesCount == 0) {
+      entitiesCount = importType(importValueType, entitiesCount);
+    }
+    while (entitiesCount > 0) {
+      entitiesCount = importType(importValueType, entitiesCount);
     }
     return this;
+  }
+
+  private long importType(ImportValueType importValueType, long entitiesCount) {
+    try {
+      entitiesCount = importOneType(importValueType);
+      updateMap(countImported, importValueType, entitiesCount);
+    } catch (Throwable t) {
+      logger.error(t.getMessage(),t);
+    }
+    sleepFor(500);
+    return entitiesCount;
   }
   
   public int importOneType(ImportValueType importValueType) throws IOException {

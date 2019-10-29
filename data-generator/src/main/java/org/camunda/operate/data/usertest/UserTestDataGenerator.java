@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import static org.camunda.operate.util.ThreadUtil.sleepForAndShouldInterrupt;
 
 
 @Component("dataGenerator")
@@ -222,12 +223,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .open();
     int attempts = 0;
     while (!completeJobHandler.isTaskCompleted() && attempts < 10) {
-      try {
-        Thread.sleep(200);
-        attempts++;
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+      sleepForAndShouldInterrupt(200);
     }
     if (attempts == 10) {
       logger.debug("Could not complete the task {} for workflow instance id {}", jobType, workflowInstanceKey);

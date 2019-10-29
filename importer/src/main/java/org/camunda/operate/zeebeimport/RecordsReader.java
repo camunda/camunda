@@ -44,6 +44,7 @@ import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+import static org.camunda.operate.util.ThreadUtil.sleepOrSignalInterrupted;
 
 /**
  * Represents Zeebe data reader for one partition and one value type. After reading the data is also schedules the jobs
@@ -218,11 +219,7 @@ public class RecordsReader {
   private void doBackoffForScheduler() {
     int schedulerBackoff = operateProperties.getImporter().getSchedulerBackoff();
     if (schedulerBackoff > 0) {
-      try {
-        Thread.sleep(schedulerBackoff);
-      } catch (InterruptedException e) {
-        Thread.interrupted();
-      }
+      sleepOrSignalInterrupted(schedulerBackoff);
     }
   }
 

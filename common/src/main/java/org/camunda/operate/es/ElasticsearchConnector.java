@@ -14,6 +14,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import org.apache.http.HttpHost;
 import org.camunda.operate.property.OperateProperties;
+
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 
 @Component
@@ -89,11 +91,7 @@ public class ElasticsearchConnector {
         successfullyConnected = clusterHealthResponse.getClusterName().equals(operateProperties.getElasticsearch().getClusterName());
       } catch (IOException ex) {
         logger.warn("Unable to connect to Elasticsearch cluster [{}]. Will try again...", operateProperties.getElasticsearch().getClusterName());
-        try {
-          Thread.sleep(3000);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
+        sleepFor(3000);
       }
       attempts++;
     }

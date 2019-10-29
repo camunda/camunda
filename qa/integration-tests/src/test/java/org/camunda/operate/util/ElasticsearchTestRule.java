@@ -55,6 +55,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
 import static org.camunda.operate.util.CollectionUtil.*;
+import static org.camunda.operate.util.ThreadUtil.*;
 
 public class ElasticsearchTestRule extends TestWatcher {
 
@@ -118,7 +119,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     elasticsearchSchemaManager.createIndices();
     elasticsearchSchemaManager.createTemplates();
-    assertThat(areElasticsearchIndicesCreated(indexPrefix,5))
+    assertThat(areIndicesCreatedAfterChecks(indexPrefix,5, 5 * 60 /*sec*/))
       .describedAs("Elasticsearch %s (min %d) indices are created",indexPrefix,5)
       .isTrue();
   }
@@ -128,7 +129,9 @@ public class ElasticsearchTestRule extends TestWatcher {
     if (!failed) {
       String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
       TestUtil.removeAllIndices(esClient,indexPrefix);
-      assertThat(areElasticsearchIndicesEmpty(indexPrefix)).describedAs("Elasticsearch '%s' indexes are deleted.",indexPrefix).isTrue();
+      assertThat(areIndicesNotExistsAfterChecks(indexPrefix,10 * 60 /*sec*/))
+        .describedAs("Elasticsearch '%s' indexes are deleted.",indexPrefix)
+        .isTrue();
     }
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
   }
@@ -190,7 +193,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       while (shouldImportCount != 0 && imported < shouldImportCount && waitForImports < 60) {
         waitForImports++;
         try {
-          Thread.sleep(500L);
+          sleepFor(500);
           refreshZeebeESIndices();
           shouldImportCount += zeebeImporter.performOneRoundOfImportFor(readers);
         } catch (Exception e) {
@@ -216,48 +219,50 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
   
-  public boolean areElasticsearchIndicesCreated(String indexPrefix, int minCountOfIndices) {
+  public boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices,int maxChecks) {
     boolean areCreated = false;
-    int maxAttempts = 5 * 60; // about 60 seconds 
-    int attempts = 0;
-    while (!areCreated && attempts <= maxAttempts) {
-      attempts++;
+    int checks = 0;
+    while (!areCreated && checks <= maxChecks) {
+      checks++;
       try {
-        GetIndexResponse response = esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
-        List<String> indices = List.of(response.getIndices());
-        areCreated = filter(indices,index -> index.contains(indexPrefix)).size() > minCountOfIndices;
+        areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
       } catch (Throwable t) {
-        logger.error("Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, attempts, maxAttempts);
-        try {
-          Thread.sleep(200);
-        } catch (InterruptedException e) {
-          logger.error(e.getMessage(),e);
-        }
+        logger.error("Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",minCountOfIndices, checks, maxChecks);
+        sleepFor(200);
       }
     }
-    logger.debug("Elasticsearch indices are created after {} checks", attempts);
+    logger.debug("Elasticsearch indices are created after {} checks", checks);
     return areCreated;
   }
+
+  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices) throws IOException {
+    GetIndexResponse response = esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
+    List<String> indices = List.of(response.getIndices());
+    return filter(indices,index -> index.contains(indexPrefix)).size() > minCountOfIndices;
+  }
   
-  public boolean areElasticsearchIndicesEmpty(String indexPrefix) {
+  public boolean areIndicesNotExistsAfterChecks(String indexPrefix,int maxChecks) {
     boolean isEmpty = false;
-    int maxAttempts = 10 * 60; // about 60 seconds 
-    int attempts = 0;
-    while (!isEmpty && attempts <= maxAttempts) {
-      attempts++;
-      try {
-        esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
-      } catch (ElasticsearchStatusException e) {
-        isEmpty = true;
-      } catch (IOException e) {
-      }
-      logger.error("Elasticsearch indices are not empty yet. Waiting {}/{}", attempts, maxAttempts);
-      try {
-          Thread.sleep(100);
-      } catch (InterruptedException e) {
-      }
+    int checks = 0;
+    while (!isEmpty && checks <= maxChecks) {
+      checks++;
+      isEmpty = areIndicesNotExists(indexPrefix);
+      logger.error("Elasticsearch indices are not empty yet. Waiting {}/{}", checks, maxChecks);
+      sleepFor(100);
     }
-    logger.debug("Elasticsearch indices are empty after {} checks", attempts);
+    logger.debug("Elasticsearch indices are empty after {} checks", checks);
+    return isEmpty;
+  }
+
+  private boolean areIndicesNotExists(String indexPrefix) {
+    boolean isEmpty = false;
+    try {
+      esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
+    } catch (ElasticsearchStatusException e) {
+      isEmpty = true;
+    } catch (Throwable t) {
+      logger.error(t.getMessage(),t);
+    }
     return isEmpty;
   }
 
@@ -265,7 +270,7 @@ public class ElasticsearchTestRule extends TestWatcher {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType)).collect(Collectors.toList());
   }
-
+  
   public void persistNew(OperateEntity... entitiesToPersist) {
     try {
       persistOperateEntitiesNew(Arrays.asList(entitiesToPersist));
