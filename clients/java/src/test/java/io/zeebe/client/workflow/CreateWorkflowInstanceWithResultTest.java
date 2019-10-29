@@ -56,6 +56,31 @@ public class CreateWorkflowInstanceWithResultTest extends ClientTest {
     final CreateWorkflowInstanceWithResultRequest request = gatewayService.getLastRequest();
     assertThat(request.getRequest().getWorkflowKey()).isEqualTo(123);
     assertThat(request.getRequestTimeout()).isEqualTo(Duration.ofSeconds(123).toMillis());
+    assertThat(request.getFetchVariablesList()).isEmpty();
+  }
+
+  @Test
+  public void shouldBeAbleToSpecifyFetchVariables() {
+    // given
+    final String variables = "{\"key\": \"val\"}";
+    gatewayService.onCreateWorkflowInstanceWithResultRequest(123, "testProcess", 12, 32, variables);
+
+    // when
+    final WorkflowInstanceResult response =
+        client
+            .newCreateInstanceCommand()
+            .workflowKey(123)
+            .withResult()
+            .fetchVariables("x")
+            .requestTimeout(Duration.ofSeconds(123))
+            .send()
+            .join();
+
+    // then
+    final CreateWorkflowInstanceWithResultRequest request = gatewayService.getLastRequest();
+    assertThat(request.getRequest().getWorkflowKey()).isEqualTo(123);
+    assertThat(request.getRequestTimeout()).isEqualTo(Duration.ofSeconds(123).toMillis());
+    assertThat(request.getFetchVariablesList()).containsExactly("x");
   }
 
   @Test
