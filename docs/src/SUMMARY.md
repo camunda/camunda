@@ -38,6 +38,7 @@
       * [Timer Events](bpmn-workflows/timer-events/timer-events.md)
     * [Subprocesses](bpmn-workflows/subprocesses.md)
       * [Embedded Subprocesses](bpmn-workflows/embedded-subprocesses/embedded-subprocesses.md) 
+      * [Call Activities](bpmn-workflows/call-activities/call-activities.md)
     * [Markers](bpmn-workflows/markers.md)
       * [Multi-Instance](bpmn-workflows/multi-instance/multi-instance.md)
 * [YAML Workflows](yaml-workflows/README.md)
