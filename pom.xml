@@ -52,8 +52,8 @@
     <version.node>v10.15.3</version.node>
     <version.yarn>v1.7.0</version.yarn>
 
-    <skip.fe.build>false</skip.fe.build>
-
+    <skipTests>false</skipTests>
+    <skip.unit.tests>${skipTests}</skip.unit.tests>
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
   </properties>
@@ -166,6 +166,13 @@
         </plugins>
       </build>
     </profile>
+
+    <profile>
+      <id>it</id>
+      <properties>
+        <skip.unit.tests>true</skip.unit.tests>
+      </properties>
+    </profile>
   </profiles>
 
   <dependencies>
@@ -205,6 +212,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${surefire-plugin.version}</version>
           <configuration>
+            <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
           </configuration>
         </plugin>

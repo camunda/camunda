@@ -13,11 +13,9 @@
   <properties>
     <jetty.version>9.4.20.v20190813</jetty.version>
     <jersey.version>2.29.1</jersey.version>
-    <skipTests>false</skipTests>
     <it.test.excludedGroups />
     <test.forkCount />
 
-    <skip.unit.tests>${skipTests}</skip.unit.tests>
     <test.argLine>-Xms256m -Xmx512m</test.argLine>
   </properties>
 
@@ -352,7 +350,6 @@
         <configuration>
           <workingDirectory>${project.build.directory}</workingDirectory>
           <argLine>${test.argLine}</argLine>
-          <skipTests>${skip.unit.tests}</skipTests>
           <trimStackTrace>false</trimStackTrace>
           <forkCount>${test.forkCount}</forkCount>
           <reuseForks>true</reuseForks>
@@ -483,7 +480,6 @@
 
         <cargo.timeout>240000</cargo.timeout>
         <cargo.deploy.timeout>60000</cargo.deploy.timeout>
-        <skip.unit.tests>true</skip.unit.tests>
         <test.forkCount>${env.LIMITS_CPU}</test.forkCount>
       </properties>
 

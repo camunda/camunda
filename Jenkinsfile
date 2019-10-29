@@ -278,7 +278,7 @@ pipeline {
           container('maven') {
             runMaven('install -Pdocs,engine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
           }
-          stash name: "optimize-stash-client", includes: "client/build/**"
+          stash name: "optimize-stash-client", includes: "client/build/**,client/src/**/*.css"
           stash name: "optimize-stash-backend", includes: "backend/target/*.jar"
           stash name: "optimize-stash-distro", includes: "m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*-production.tar.gz,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.xml,m2-repository/org/camunda/optimize/camunda-optimize/*${VERSION}/*.pom"
         }
@@ -402,7 +402,6 @@ pipeline {
           steps {
             unstash name: 'optimize-stash-client'
             unstash name: 'optimize-stash-backend'
-            unstash name: 'optimize-stash-distro'
             e2eTestSteps()
           }
           post {
@@ -538,7 +537,7 @@ void migrationTestSteps() {
     runMaven("install -Dskip.docker -DskipTests -f qa")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
     runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl util/optimize-reimport-preparation -Pit")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -pl util/optimize-reimport-preparation -Pengine-latest,it")
   }
 }
 
@@ -561,7 +560,7 @@ void e2eTestSteps() {
   container('maven') {
     sh 'sudo apt-get update'
     sh 'sudo apt-get install -y --no-install-recommends maven openjdk-8-jdk-headless'
-    runMaven('test -pl client -Pclient.e2etests-chromeheadless')
+    runMaven('test -pl client -Pclient.e2etests-chromeheadless -Dskip.yarn.build')
   }
 }
 

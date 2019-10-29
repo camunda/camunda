@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -13,6 +14,7 @@
 
   <properties>
     <skip.fe.build>false</skip.fe.build>
+    <skip.yarn.build>${skip.fe.build}</skip.yarn.build>
   </properties>
 
   <build>
@@ -49,6 +51,7 @@
               <goal>yarn</goal>
             </goals>
             <configuration>
+              <skip>${skip.yarn.build}</skip>
               <arguments>build</arguments>
             </configuration>
           </execution>
@@ -58,12 +61,6 @@
   </build>
 
   <profiles>
-    <profile>
-      <id>skip.fe.build</id>
-      <properties>
-        <skip.fe.build>true</skip.fe.build>
-      </properties>
-    </profile>
 
     <profile>
       <id>client.e2etests-browserstack</id>
