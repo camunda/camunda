@@ -34,6 +34,7 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_OUTPUT_ELEMENT = "outputElement";
 
   public static final String ATTRIBUTE_PROCESS_ID = "processId";
+  public static final String ATTRIBUTE_PROCESS_ID_EXPRESSION = "processIdExpression";
 
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";

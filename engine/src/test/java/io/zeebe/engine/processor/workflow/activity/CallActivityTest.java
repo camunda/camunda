@@ -274,6 +274,31 @@ public class CallActivityTest {
   }
 
   @Test
+  public void shouldCreateInstanceOfCalledElementWithExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentWorkflow(
+                callActivity ->
+                    callActivity.zeebeProcessId(null).zeebeProcessIdExpression("processId")))
+        .deploy();
+
+    // when
+    final var workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariable("processId", PROCESS_ID_CHILD)
+            .create();
+
+    // then
+    Assertions.assertThat(getChildInstanceOf(workflowInstanceKey))
+        .hasBpmnProcessId(PROCESS_ID_CHILD);
+  }
+
+  @Test
   public void shouldTriggerBoundaryEvent() {
     // given
     ENGINE

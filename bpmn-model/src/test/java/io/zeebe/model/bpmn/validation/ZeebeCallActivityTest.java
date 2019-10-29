@@ -16,6 +16,7 @@
 package io.zeebe.model.bpmn.validation;
 
 import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
@@ -35,11 +36,40 @@ public class ZeebeCallActivityTest extends AbstractZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .callActivity("call", c -> c.zeebeProcessId(null))
+            .callActivity("call", c -> c.zeebeProcessId(null).zeebeProcessIdExpression(null))
             .endEvent()
             .done(),
         singletonList(
-            expect(ZeebeCalledElement.class, "Attribute 'processId' must be present and not empty"))
+            expect(
+                ZeebeCalledElement.class,
+                "Either 'processId' or 'processIdExpression' attribute must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId("x").zeebeProcessIdExpression("y"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeCalledElement.class,
+                "Either 'processId' or 'processIdExpression' attribute must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessId("x"))
+            .endEvent()
+            .done(),
+        emptyList()
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity("call", c -> c.zeebeProcessIdExpression("y"))
+            .endEvent()
+            .done(),
+        emptyList()
       },
     };
   }

@@ -34,10 +34,18 @@ public class CallActivityIncidentTest {
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
 
+  private static final String PROCESS_ID_VARIABLE = "wf-child";
+
   private static final BpmnModelInstance WORKFLOW_PARENT =
       Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
           .startEvent()
           .callActivity("call", c -> c.zeebeProcessId(PROCESS_ID_CHILD))
+          .done();
+
+  private static final BpmnModelInstance WORKFLOW_PARENT_PROCESS_ID_EXPRESSION =
+      Bpmn.createExecutableProcess(PROCESS_ID_PARENT)
+          .startEvent()
+          .callActivity("call", c -> c.zeebeProcessIdExpression(PROCESS_ID_VARIABLE))
           .done();
 
   private static final BpmnModelInstance WORKFLOW_CHILD =
@@ -59,16 +67,9 @@ public class CallActivityIncidentTest {
         ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // then
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
-
+    final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
     final Record<WorkflowInstanceRecordValue> elementInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withElementType(BpmnElementType.CALL_ACTIVITY)
-            .getFirst();
+        getCallActivityInstance(workflowInstanceKey);
 
     Assertions.assertThat(incident.getValue())
         .hasElementInstanceKey(elementInstance.getKey())
@@ -98,16 +99,9 @@ public class CallActivityIncidentTest {
         ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
     // then
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
-
+    final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
     final Record<WorkflowInstanceRecordValue> elementInstance =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .withElementType(BpmnElementType.CALL_ACTIVITY)
-            .getFirst();
+        getCallActivityInstance(workflowInstanceKey);
 
     Assertions.assertThat(incident.getValue())
         .hasElementInstanceKey(elementInstance.getKey())
@@ -120,15 +114,64 @@ public class CallActivityIncidentTest {
   }
 
   @Test
+  public void shouldCreateIncidentIfProcessIdVariableNotExists() {
+    // given
+    ENGINE.deployment().withXmlResource(WORKFLOW_PARENT_PROCESS_ID_EXPRESSION).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
+    final Record<WorkflowInstanceRecordValue> elementInstance =
+        getCallActivityInstance(workflowInstanceKey);
+
+    Assertions.assertThat(incident.getValue())
+        .hasElementInstanceKey(elementInstance.getKey())
+        .hasElementId(elementInstance.getValue().getElementId())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected call activity process id variable '"
+                + PROCESS_ID_VARIABLE
+                + "' to be a STRING, but not found.");
+  }
+
+  @Test
+  public void shouldCreateIncidentIfProcessIdVariableIsNaString() {
+    // given
+    ENGINE.deployment().withXmlResource(WORKFLOW_PARENT_PROCESS_ID_EXPRESSION).deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID_PARENT)
+            .withVariable(PROCESS_ID_VARIABLE, 123)
+            .create();
+
+    // then
+    final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
+    final Record<WorkflowInstanceRecordValue> elementInstance =
+        getCallActivityInstance(workflowInstanceKey);
+
+    Assertions.assertThat(incident.getValue())
+        .hasElementInstanceKey(elementInstance.getKey())
+        .hasElementId(elementInstance.getValue().getElementId())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected call activity process id variable '"
+                + PROCESS_ID_VARIABLE
+                + "' to be a STRING, but found 'INTEGER'.");
+  }
+
+  @Test
   public void shouldResolveIncident() {
     // given
     final long workflowInstanceKey =
         ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
 
-    final Record<IncidentRecordValue> incident =
-        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
-            .withWorkflowInstanceKey(workflowInstanceKey)
-            .getFirst();
+    final Record<IncidentRecordValue> incident = getIncident(workflowInstanceKey);
 
     // when
     ENGINE.deployment().withXmlResource(WORKFLOW_CHILD).deploy();
@@ -142,5 +185,18 @@ public class CallActivityIncidentTest {
                 .limit(2))
         .extracting(Record::getIntent)
         .contains(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+  }
+
+  private Record<WorkflowInstanceRecordValue> getCallActivityInstance(long workflowInstanceKey) {
+    return RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .withElementType(BpmnElementType.CALL_ACTIVITY)
+        .getFirst();
+  }
+
+  private Record<IncidentRecordValue> getIncident(long workflowInstanceKey) {
+    return RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withWorkflowInstanceKey(workflowInstanceKey)
+        .getFirst();
   }
 }

@@ -8,16 +8,12 @@
 package io.zeebe.engine.processor.workflow.deployment.model.validation;
 
 import io.zeebe.model.bpmn.instance.ConditionExpression;
+import io.zeebe.msgpack.el.CompiledJsonCondition;
+import io.zeebe.msgpack.el.JsonConditionFactory;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class SequenceFlowValidator implements ModelElementValidator<ConditionExpression> {
-
-  private final ZeebeExpressionValidator expressionValidator;
-
-  public SequenceFlowValidator(ZeebeExpressionValidator expressionValidator) {
-    this.expressionValidator = expressionValidator;
-  }
 
   @Override
   public Class<ConditionExpression> getElementType() {
@@ -27,6 +23,13 @@ public class SequenceFlowValidator implements ModelElementValidator<ConditionExp
   @Override
   public void validate(
       ConditionExpression element, ValidationResultCollector validationResultCollector) {
-    expressionValidator.validateExpression(element.getTextContent(), validationResultCollector);
+
+    final String expression = element.getTextContent();
+    final CompiledJsonCondition condition = JsonConditionFactory.createCondition(expression);
+
+    if (!condition.isValid()) {
+      validationResultCollector.addError(
+          0, String.format("Condition expression is invalid: %s", condition.getErrorMessage()));
+    }
   }
 }
