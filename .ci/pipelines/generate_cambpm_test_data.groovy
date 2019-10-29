@@ -187,7 +187,7 @@ pipeline {
                     // Generate Data
                     sh ("""
                       if [ "${USE_E2E_PRESETS}" = true ]; then
-                        mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--numberOfProcessInstances \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances) --definitions \$(cat client/e2e_presets.json | jq -r .definitions)"
+                        mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--removeDeployments false --numberOfProcessInstances \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances) --definitions \$(cat client/e2e_presets.json | jq -r .definitions)"
                       else
                         mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--numberOfProcessInstances ${NUM_INSTANCES}"
                       fi
