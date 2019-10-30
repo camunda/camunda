@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.decision.util.DecisionInstanceQueryUtil;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -68,16 +69,16 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final DecisionReportDataDto reportData) {
-    final GroupByDateUnit unit = getGroupBy(reportData).getUnit();
-    return createAggregation(searchSourceBuilder, reportData, unit);
+                                                    final ExecutionContext<DecisionReportDataDto> context) {
+    final GroupByDateUnit unit = getGroupBy(context.getReportData()).getUnit();
+    return createAggregation(searchSourceBuilder, context, unit);
   }
 
   private List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                     final DecisionReportDataDto reportData,
+                                                     final ExecutionContext<DecisionReportDataDto> context,
                                                      final GroupByDateUnit unit) {
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
-      return createAutomaticIntervalAggregation(searchSourceBuilder, reportData);
+      return createAutomaticIntervalAggregation(searchSourceBuilder, context);
     }
 
     final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
@@ -89,7 +90,7 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
       .timeZone(DateTimeZone.getDefault());
 
     final List<DateFilterDataDto> dateFilterDataDtos = queryFilterEnhancer.extractFilters(
-      reportData.getFilter(), EvaluationDateFilterDto.class
+      context.getReportData().getFilter(), EvaluationDateFilterDto.class
     );
     final BoolQueryBuilder limitFilterQuery;
     if (!dateFilterDataDtos.isEmpty()) {
@@ -116,13 +117,13 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
 
     return Collections.singletonList(
       wrapWithFilterLimitedParentAggregation(
-        limitFilterQuery, dateHistogramAggregation.subAggregation(distributedByPart.createAggregation(reportData))
+        limitFilterQuery, dateHistogramAggregation.subAggregation(distributedByPart.createAggregation(context))
       )
     );
   }
 
   private List<AggregationBuilder> createAutomaticIntervalAggregation(final SearchSourceBuilder builder,
-                                                                      final DecisionReportDataDto reportData) {
+                                                                      final ExecutionContext<DecisionReportDataDto> context) {
 
     Optional<AggregationBuilder> automaticIntervalAggregation =
       intervalAggregationService.createIntervalAggregation(
@@ -134,9 +135,9 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
         EVALUATION_DATE_TIME
       );
 
-    return automaticIntervalAggregation.map(agg -> agg.subAggregation(distributedByPart.createAggregation(reportData)))
+    return automaticIntervalAggregation.map(agg -> agg.subAggregation(distributedByPart.createAggregation(context)))
       .map(Collections::singletonList)
-      .orElseGet(() -> createAggregation(builder, reportData, GroupByDateUnit.MONTH));
+      .orElseGet(() -> createAggregation(builder, context, GroupByDateUnit.MONTH));
   }
 
   private DecisionGroupByEvaluationDateTimeValueDto getGroupBy(final DecisionReportDataDto reportData) {

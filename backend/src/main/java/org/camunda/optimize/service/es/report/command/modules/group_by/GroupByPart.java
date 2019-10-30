@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -30,7 +31,7 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
   }
 
   public abstract List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                             final Data definitionData);
+                                                             final ExecutionContext<Data> context);
 
   public String generateCommandKey(final Supplier<Data> createNewDataDto) {
     final Data dataForCommandKey = createNewDataDto.get();
@@ -41,12 +42,12 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
   public abstract CompositeCommandResult retrieveQueryResult(SearchResponse response, Data reportData);
 
-  public boolean getSortByKeyIsOfNumericType(final Data definitionData) {
+  public boolean getSortByKeyIsOfNumericType(final ExecutionContext<Data> context) {
     return false;
   }
 
-  public Optional<SortingDto> getSorting(final Data definitionData) {
-    return definitionData.getConfiguration().getSorting();
+  public Optional<SortingDto> getSorting(final ExecutionContext<Data> context) {
+    return context.getReportConfiguration().getSorting();
   }
 
   protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);

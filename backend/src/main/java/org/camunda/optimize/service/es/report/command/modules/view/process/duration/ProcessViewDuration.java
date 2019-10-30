@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.command.aggregations.AvgAggregatio
 import org.camunda.optimize.service.es.report.command.aggregations.MaxAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MedianAggregation;
 import org.camunda.optimize.service.es.report.command.aggregations.MinAggregation;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
@@ -35,9 +36,9 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
   }
 
   @Override
-  public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {
-    final AggregationStrategy strategy = getAggregationStrategy(definitionData);
-    return strategy.getAggregationBuilder().script(getScriptedAggregationField(definitionData));
+  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
+    final AggregationStrategy strategy = getAggregationStrategy(context.getReportData());
+    return strategy.getAggregationBuilder().script(getScriptedAggregationField(context.getReportData()));
   }
 
   AggregationStrategy getAggregationStrategy(final ProcessReportDataDto definitionData) {

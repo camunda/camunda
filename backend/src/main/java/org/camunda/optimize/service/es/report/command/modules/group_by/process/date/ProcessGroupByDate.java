@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
@@ -25,6 +26,7 @@ import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.metrics.stats.Stats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -60,6 +62,21 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
     this.intervalAggregationService = intervalAggregationService;
   }
 
+  public Optional<Stats> calculateGroupByDateRange(final ProcessReportDataDto reportData,
+                                                   final BoolQueryBuilder baseQuery) {
+    if (reportData.getGroupBy().getValue() instanceof DateGroupByValueDto) {
+      DateGroupByValueDto groupByDate = (DateGroupByValueDto) reportData.getGroupBy().getValue();
+      if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
+        Stats minMaxStats = intervalAggregationService.getMinMaxStats(
+          baseQuery,
+          PROCESS_INSTANCE_INDEX_NAME,
+          getDateField()
+        );
+        return Optional.of(minMaxStats);
+      }
+    }
+    return Optional.empty();
+  }
 
   @Override
   public void adjustBaseQuery(final BoolQueryBuilder baseQuery, final ProcessReportDataDto definitionData) {
@@ -69,7 +86,7 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
 
   protected abstract ProcessGroupByDto<DateGroupByValueDto> getGroupByType();
 
-  protected abstract String getDateField();
+  public abstract String getDateField();
 
   protected abstract List<DateFilterDataDto> getReportDateFilters(final ProcessReportDataDto reportData);
 
@@ -83,16 +100,16 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ProcessReportDataDto reportData) {
-    final GroupByDateUnit unit = getGroupByDateUnit(reportData);
-    return createAggregation(searchSourceBuilder, reportData, unit);
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
+    final GroupByDateUnit unit = getGroupByDateUnit(context.getReportData());
+    return createAggregation(searchSourceBuilder, context, unit);
   }
 
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ProcessReportDataDto reportData,
+                                                    final ExecutionContext<ProcessReportDataDto> context,
                                                     final GroupByDateUnit unit) {
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
-      return createAutomaticIntervalAggregation(searchSourceBuilder, reportData);
+      return createAutomaticIntervalAggregation(searchSourceBuilder, context);
     }
 
     final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
@@ -103,7 +120,7 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
       .dateHistogramInterval(interval)
       .timeZone(DateTimeZone.getDefault());
 
-    final List<DateFilterDataDto> reportDateFilters = getReportDateFilters(reportData);
+    final List<DateFilterDataDto> reportDateFilters = getReportDateFilters(context.getReportData());
 
     final BoolQueryBuilder limitFilterQuery;
     if (!reportDateFilters.isEmpty()) {
@@ -119,31 +136,30 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
       limitFilterQuery = boolQuery();
       addFiltersToQuery(limitFilterQuery, limitedFilters);
     } else {
-      limitFilterQuery = createDefaultLimitingFilter(unit, searchSourceBuilder.query(), reportData);
+      limitFilterQuery = createDefaultLimitingFilter(unit, searchSourceBuilder.query(), context.getReportData());
     }
 
     return Collections.singletonList(
       wrapWithFilterLimitedParentAggregation(
-        limitFilterQuery, dateHistogramAggregation.subAggregation(distributedByPart.createAggregation(reportData))
+        limitFilterQuery, dateHistogramAggregation.subAggregation(distributedByPart.createAggregation(context))
       )
     );
   }
 
   private List<AggregationBuilder> createAutomaticIntervalAggregation(final SearchSourceBuilder builder,
-                                                                      final ProcessReportDataDto reportData) {
+                                                                      final ExecutionContext<ProcessReportDataDto> context) {
 
     Optional<AggregationBuilder> automaticIntervalAggregation =
       intervalAggregationService.createIntervalAggregation(
-        null,  // FIXME: here we need to pass the range calculated from the combined report if available,
-                          // will be fixed with OPT-2846
+        context.getDateIntervalRange(),
         builder.query(),
         PROCESS_INSTANCE_INDEX_NAME,
         getDateField()
       );
 
-    return automaticIntervalAggregation.map(agg -> agg.subAggregation(distributedByPart.createAggregation(reportData)))
+    return automaticIntervalAggregation.map(agg -> agg.subAggregation(distributedByPart.createAggregation(context)))
       .map(Collections::singletonList)
-      .orElseGet(() -> createAggregation(builder, reportData, GroupByDateUnit.MONTH));
+      .orElseGet(() -> createAggregation(builder, context, GroupByDateUnit.MONTH));
   }
 
   @Override

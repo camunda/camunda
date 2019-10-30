@@ -38,7 +38,7 @@ public class CountProcessInstanceFrequencyGroupByNoneCmd
 
   @Override
   public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
-    final NumberResultDto evaluate = executionPlan.evaluate(commandContext.getReportDefinition().getData());
+    final NumberResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessNumberReportResult(evaluate, commandContext.getReportDefinition());
   }
 

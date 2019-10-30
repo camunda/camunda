@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
@@ -52,8 +53,8 @@ public class ProcessGroupByAssignee extends ProcessGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ProcessReportDataDto definitionData) {
-    final FlowNodeExecutionState flowNodeExecutionState = definitionData.getConfiguration().getFlowNodeExecutionState();
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
+    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
     final NestedAggregationBuilder groupByAssigneeAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
         filter(
@@ -70,7 +71,7 @@ public class ProcessGroupByAssignee extends ProcessGroupByPart {
               .size(configurationService.getEsAggregationBucketLimit())
               .order(BucketOrder.key(true))
               .field(USER_TASKS + "." + USER_TASK_ASSIGNEE)
-              .subAggregation(distributedByPart.createAggregation(definitionData))
+              .subAggregation(distributedByPart.createAggregation(context))
           )
       );
     return Collections.singletonList(groupByAssigneeAggregation);

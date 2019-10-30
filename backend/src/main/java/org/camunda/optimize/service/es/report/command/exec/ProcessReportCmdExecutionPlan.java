@@ -28,8 +28,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   extends ReportCmdExecutionPlan<R, ProcessReportDataDto> {
 
-  private final ProcessDefinitionReader processDefinitionReader;
-  private final ProcessQueryFilterEnhancer queryFilterEnhancer;
+  protected final ProcessDefinitionReader processDefinitionReader;
+  protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
 
   public ProcessReportCmdExecutionPlan(final ViewPart<ProcessReportDataDto> viewPart,
                                        final GroupByPart<ProcessReportDataDto> groupByPart,

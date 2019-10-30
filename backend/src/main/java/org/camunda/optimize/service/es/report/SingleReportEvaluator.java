@@ -32,7 +32,6 @@ import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.camunda.optimize.service.es.report.command.decision.util.DecisionReportDataCreator.createRawDecisionDataReport;
@@ -67,26 +66,15 @@ public class SingleReportEvaluator {
     commands.forEach(c -> commandSuppliers.put(c.createCommandKey(), () -> applicationContext.getBean(c.getClass())));
   }
 
-  <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(final T reportDefinition)
+  <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(CommandContext<T> commandContext)
     throws OptimizeException {
-    return evaluate(reportDefinition, DEFAULT_RECORD_LIMIT);
-  }
-
-  <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(final T reportDefinition,
-                                                                        final Integer customRecordLimit)
-    throws OptimizeException {
-    CommandContext<T> commandContext = createCommandContext(reportDefinition, customRecordLimit);
-    Command<T> evaluationCommand = extractCommandWithValidation(reportDefinition);
+    enrichCommandContext(commandContext);
+    Command<T> evaluationCommand = extractCommandWithValidation(commandContext.getReportDefinition());
     return evaluationCommand.evaluate(commandContext);
   }
 
-  protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(final T reportDefinition) {
-    return createCommandContext(reportDefinition, DEFAULT_RECORD_LIMIT);
-  }
-
-  protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(final T reportDefinition,
-                                                                                   final Integer customRecordLimit) {
-    CommandContext<T> commandContext = new CommandContext<>();
+  protected <T extends ReportDefinitionDto> void enrichCommandContext(CommandContext<T> commandContext) {
+    ReportDefinitionDto reportDefinition = commandContext.getReportDefinition();
     commandContext.setConfigurationService(configurationService);
     commandContext.setEsClient(esClient);
     commandContext.setObjectMapper(objectMapper);
@@ -98,9 +86,6 @@ public class SingleReportEvaluator {
     }
     commandContext.setProcessDefinitionReader(processDefinitionReader);
     commandContext.setDecisionDefinitionReader(decisionDefinitionReader);
-    commandContext.setReportDefinition(reportDefinition);
-    commandContext.setRecordLimit(Optional.ofNullable(customRecordLimit).orElse(DEFAULT_RECORD_LIMIT));
-    return commandContext;
   }
 
   private <T extends ReportDefinitionDto> Command<T> extractCommandWithValidation(T reportDefinition) {

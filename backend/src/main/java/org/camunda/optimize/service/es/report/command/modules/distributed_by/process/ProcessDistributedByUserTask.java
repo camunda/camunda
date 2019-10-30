@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -43,13 +44,13 @@ public class ProcessDistributedByUserTask extends ProcessDistributedByPart {
   private final ProcessDefinitionReader processDefinitionReader;
 
   @Override
-  public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {
+  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
     return AggregationBuilders
       .terms(USER_TASK_ID_TERMS_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .order(BucketOrder.key(true))
       .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
-      .subAggregation(viewPart.createAggregation(definitionData));
+      .subAggregation(viewPart.createAggregation(context));
   }
 
   @Override

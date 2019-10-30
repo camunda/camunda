@@ -38,7 +38,7 @@ public class UserTaskDurationGroupByAssigneeCmd
 
   @Override
   public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
-    final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext.getReportDefinition().getData());
+    final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
   }
 

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by;
 
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -24,7 +25,7 @@ public abstract class DistributedByPart<Data extends SingleReportDataDto> {
     viewPart.adjustBaseQuery(baseQuery, definitionData);
   }
 
-  public abstract AggregationBuilder createAggregation(final Data definitionData);
+  public abstract AggregationBuilder createAggregation(final ExecutionContext<Data> context);
 
   public abstract List<DistributedByResult> retrieveResult(final Aggregations aggregations,
                                                            final Data reportData);

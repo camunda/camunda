@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.result.process.CombinedProcessReportResult;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -110,7 +111,8 @@ public abstract class ReportEvaluationHandler {
         },
         LinkedHashMap::new
       ));
-    final CombinedProcessReportResultDto combinedSingleReportResultDto = new CombinedProcessReportResultDto(
+    final CombinedProcessReportResultDto combinedSingleReportResultDto =
+      new CombinedProcessReportResultDto(
       reportIdToMapResult
     );
     return new CombinedProcessReportResult(combinedSingleReportResultDto, combinedReportDefinition);
@@ -140,7 +142,10 @@ public abstract class ReportEvaluationHandler {
   private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final AuthorizedReportDefinitionDto reportDefinition,
                                                                     final Integer customRecordLimit) {
     try {
-      return singleReportEvaluator.evaluate(reportDefinition.getDefinitionDto(), customRecordLimit);
+      CommandContext<ReportDefinitionDto> context = new CommandContext<>();
+      context.setReportDefinition(reportDefinition.getDefinitionDto());
+      context.setRecordLimit(customRecordLimit);
+      return singleReportEvaluator.evaluate(context);
     } catch (OptimizeException | OptimizeValidationException e) {
       throw new ReportEvaluationException(reportDefinition, e);
     }

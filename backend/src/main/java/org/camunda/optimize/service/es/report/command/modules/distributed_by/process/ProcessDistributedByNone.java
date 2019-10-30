@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.pr
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -23,8 +24,8 @@ import java.util.List;
 public class ProcessDistributedByNone extends ProcessDistributedByPart {
 
   @Override
-  public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {
-    return viewPart.createAggregation(definitionData);
+  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
+    return viewPart.createAggregation(context);
   }
 
   @Override

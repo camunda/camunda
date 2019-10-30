@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.view.process.dura
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -25,8 +26,8 @@ import static org.camunda.optimize.service.es.report.command.process.processinst
 public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanceDuration {
 
   @Override
-  public AggregationBuilder createAggregation(final ProcessReportDataDto definitionData) {
-    ProcessPartDto processPart = definitionData.getConfiguration()
+  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
+    ProcessPartDto processPart = context.getReportConfiguration()
       .getProcessPart()
       .orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
     return createProcessPartAggregation(processPart.getStart(), processPart.getEnd());

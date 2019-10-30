@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.es.report.command.exec;
 
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -31,11 +33,11 @@ import java.util.function.Supplier;
 @Slf4j
 public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Data extends SingleReportDataDto> {
 
-  private ViewPart<Data> viewPart;
-  private GroupByPart<Data> groupByPart;
-  private DistributedByPart<Data> distributedByPart;
-  private OptimizeElasticsearchClient esClient;
-  private Function<CompositeCommandResult, R> mapToReportResult;
+  protected ViewPart<Data> viewPart;
+  protected GroupByPart<Data> groupByPart;
+  protected DistributedByPart<Data> distributedByPart;
+  protected OptimizeElasticsearchClient esClient;
+  protected Function<CompositeCommandResult, R> mapToReportResult;
 
   public ReportCmdExecutionPlan(final ViewPart<Data> viewPart,
                                 final GroupByPart<Data> groupByPart,
@@ -55,15 +57,20 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
 
   protected abstract String getIndexName();
 
-  public R evaluate(final Data definitionData) {
+  public <T extends ReportDefinitionDto<Data>> R evaluate(final CommandContext<T> commandContext) {
+    return evaluate(new ExecutionContext<>(commandContext));
+  }
 
-    final BoolQueryBuilder baseQuery = setupBaseQuery(definitionData);
-    groupByPart.adjustBaseQuery(baseQuery, definitionData);
+  protected R evaluate(final ExecutionContext<Data> executionContext) {
+    final Data reportData = executionContext.getReportData();
+
+    final BoolQueryBuilder baseQuery = setupBaseQuery(reportData);
+    groupByPart.adjustBaseQuery(baseQuery, reportData);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
       .fetchSource(false)
       .size(0);
-    addAggregation(searchSourceBuilder, definitionData);
+    addAggregation(searchSourceBuilder, executionContext);
 
     SearchRequest searchRequest = new SearchRequest(getIndexName())
       .types(getIndexName())
@@ -80,14 +87,14 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
           viewPart.getClass().getSimpleName(),
           groupByPart.getClass().getSimpleName(),
           distributedByPart.getClass().getSimpleName(),
-          definitionData.getDefinitionKey(),
-          definitionData.getDefinitionVersions()
+          reportData.getDefinitionKey(),
+          reportData.getDefinitionVersions()
         );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return retrieveQueryResult(response, definitionData);
+    return retrieveQueryResult(response, executionContext);
   }
 
   public String generateCommandKey() {
@@ -96,20 +103,20 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
 
   protected abstract Supplier<Data> getDataDtoSupplier();
 
-  private R retrieveQueryResult(final SearchResponse response, final Data reportData) {
-    final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, reportData);
+  private R retrieveQueryResult(final SearchResponse response, final ExecutionContext<Data> executionContext) {
+    final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext.getReportData());
     final R reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits());
-    final Optional<SortingDto> sorting = groupByPart.getSorting(reportData);
+    final Optional<SortingDto> sorting = groupByPart.getSorting(executionContext);
     sorting.ifPresent(
-      sortingDto -> reportResult.sortResultData(sortingDto, groupByPart.getSortByKeyIsOfNumericType(reportData))
+      sortingDto -> reportResult.sortResultData(sortingDto, groupByPart.getSortByKeyIsOfNumericType(executionContext))
     );
     return reportResult;
   }
 
   private void addAggregation(final SearchSourceBuilder searchSourceBuilder,
-                              final Data definitionData) {
-    final List<AggregationBuilder> aggregations = groupByPart.createAggregation(searchSourceBuilder, definitionData);
+                              final ExecutionContext<Data> executionContext) {
+    final List<AggregationBuilder> aggregations = groupByPart.createAggregation(searchSourceBuilder, executionContext);
     aggregations.forEach(searchSourceBuilder::aggregation);
   }
 

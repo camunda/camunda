@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.decision
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -39,12 +40,12 @@ public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final DecisionReportDataDto definitionData) {
+                                                    final ExecutionContext<DecisionReportDataDto> context) {
     final TermsAggregationBuilder byMatchedRuleAggregation = AggregationBuilders
       .terms(MATCHED_RULES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
       .field(MATCHED_RULES)
-      .subAggregation(distributedByPart.createAggregation(definitionData));
+      .subAggregation(distributedByPart.createAggregation(context));
     return Collections.singletonList(byMatchedRuleAggregation);
   }
 

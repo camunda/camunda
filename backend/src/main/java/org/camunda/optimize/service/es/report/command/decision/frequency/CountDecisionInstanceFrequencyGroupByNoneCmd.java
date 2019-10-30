@@ -38,7 +38,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneCmd
 
   @Override
   public ReportEvaluationResult evaluate(final CommandContext<SingleDecisionReportDefinitionDto> commandContext) {
-    final NumberResultDto evaluate = executionPlan.evaluate(commandContext.getReportDefinition().getData());
+    final NumberResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleDecisionNumberReportResult(evaluate, commandContext.getReportDefinition());
   }
 

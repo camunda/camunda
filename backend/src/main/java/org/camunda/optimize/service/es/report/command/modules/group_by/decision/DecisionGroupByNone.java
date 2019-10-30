@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.decision
 
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByNoneDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -27,9 +28,9 @@ public class DecisionGroupByNone extends DecisionGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final DecisionReportDataDto definitionData) {
+                                                    final ExecutionContext<DecisionReportDataDto> context) {
     // nothing to do here, since we don't group so just pass the view part on
-    return Collections.singletonList(distributedByPart.createAggregation(definitionData));
+    return Collections.singletonList(distributedByPart.createAggregation(context));
   }
 
   @Override

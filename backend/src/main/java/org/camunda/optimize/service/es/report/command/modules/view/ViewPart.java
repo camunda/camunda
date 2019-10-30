@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.view;
 
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -17,7 +18,7 @@ public abstract class ViewPart<Data extends SingleReportDataDto> {
     // by default don't do anything
   }
 
-  public abstract AggregationBuilder createAggregation(Data definitionData);
+  public abstract AggregationBuilder createAggregation(final ExecutionContext<Data> context);
 
   public abstract ViewResult retrieveResult(Aggregations aggs, Data reportData);
 

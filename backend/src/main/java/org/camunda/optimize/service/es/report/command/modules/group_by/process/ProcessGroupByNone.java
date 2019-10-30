@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -27,9 +28,9 @@ public class ProcessGroupByNone extends ProcessGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ProcessReportDataDto definitionData) {
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
     // nothing to do here, since we don't group so just pass the view part on
-    return Collections.singletonList(distributedByPart.createAggregation(definitionData));
+    return Collections.singletonList(distributedByPart.createAggregation(context));
   }
 
   @Override

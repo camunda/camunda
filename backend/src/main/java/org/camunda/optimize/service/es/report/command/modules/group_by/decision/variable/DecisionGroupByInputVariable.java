@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByInputVariableDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -28,8 +29,8 @@ public class DecisionGroupByInputVariable extends AbstractDecisionGroupByVariabl
   }
 
   @Override
-  protected DecisionGroupByVariableValueDto getVariableGroupByDto(final DecisionReportDataDto definitionData) {
-    return ((DecisionGroupByInputVariableDto) definitionData.getGroupBy()).getValue();
+  protected DecisionGroupByVariableValueDto getVariableGroupByDto(final ExecutionContext<DecisionReportDataDto> context) {
+    return ((DecisionGroupByInputVariableDto) context.getReportData().getGroupBy()).getValue();
   }
 
   @Override

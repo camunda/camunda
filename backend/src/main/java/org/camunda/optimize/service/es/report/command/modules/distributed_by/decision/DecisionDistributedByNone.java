@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.de
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -23,8 +24,8 @@ import java.util.List;
 public class DecisionDistributedByNone extends DecisionDistributedByPart {
 
   @Override
-  public AggregationBuilder createAggregation(final DecisionReportDataDto definitionData) {
-    return viewPart.createAggregation(definitionData);
+  public AggregationBuilder createAggregation(final ExecutionContext<DecisionReportDataDto> context) {
+    return viewPart.createAggregation(context);
   }
 
   @Override

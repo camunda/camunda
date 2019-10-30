@@ -13,11 +13,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.Report
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.report.command.exec.ProcessGroupByDateReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.date.ProcessGroupByDate;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
+import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +34,7 @@ public class ProcessExecutionPlanBuilder {
   private final OptimizeElasticsearchClient esClient;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
+  private final IntervalAggregationService intervalAggregationService;
 
   AddViewPartBuilder createExecutionPlan() {
     return new AddViewPartBuilder();
@@ -113,8 +117,9 @@ public class ProcessExecutionPlanBuilder {
     private Function<CompositeCommandResult, R> mapToReportResult;
 
     public ExecuteBuildBuilder(final Class<? extends ProcessViewPart> viewPartClass,
-                               final Class<? extends ProcessGroupByPart> groupByPartClass, final Class<?
-      extends ProcessDistributedByPart> distributedByPartClass, final Function<CompositeCommandResult, R> mapToReportResult) {
+                               final Class<? extends ProcessGroupByPart> groupByPartClass,
+                               final Class<? extends ProcessDistributedByPart> distributedByPartClass,
+                               final Function<CompositeCommandResult, R> mapToReportResult) {
       this.viewPartClass = viewPartClass;
       this.groupByPartClass = groupByPartClass;
       this.distributedByPartClass = distributedByPartClass;

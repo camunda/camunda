@@ -39,7 +39,7 @@ public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd implements C
 
   @Override
   public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
-    final ReportMapResultDto evaluate = this.executionPlan.evaluate(commandContext.getReportDefinition().getData());
+    final ReportMapResultDto evaluate = this.executionPlan.evaluate(commandContext);
     return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
   }
 

@@ -39,7 +39,7 @@ public class ProcessInstanceDurationOnProcessPartGroupByNoneCmd implements Comma
 
   @Override
   public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
-    final NumberResultDto evaluate = this.executionPlan.evaluate(commandContext.getReportDefinition().getData());
+    final NumberResultDto evaluate = this.executionPlan.evaluate(commandContext);
     return new SingleProcessNumberReportResult(evaluate, commandContext.getReportDefinition());
   }
 

@@ -27,7 +27,6 @@ import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Ignore;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -181,7 +180,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     assertThat(resultData.get(0).getValue(), is(1L));
   }
 
-  @Ignore // FIXME: OPT-2846
+  @Test
   public void combinedReportsWithDistinctRanges() throws Exception {
     // given
     ZonedDateTime now = ZonedDateTime.now();
@@ -201,7 +200,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
-  @Ignore // FIXME: OPT-2846
+  @Test
   public void combinedReportsWithOneIncludingRange() throws Exception {
     // given
     ZonedDateTime now = ZonedDateTime.now();
@@ -221,7 +220,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
-  @Ignore // FIXME: OPT-2846
+  @Test
   public void combinedReportsWithIntersectingRange() throws Exception {
     // given
     ZonedDateTime now = ZonedDateTime.now();
@@ -243,7 +242,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
-  @Ignore // FIXME: OPT-2846
+  @Test
   public void combinedReportsGroupedByStartAndEndDate() throws Exception {
     // given
     ZonedDateTime now = ZonedDateTime.now();

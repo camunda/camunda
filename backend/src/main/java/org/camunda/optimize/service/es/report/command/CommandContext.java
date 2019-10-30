@@ -17,19 +17,30 @@ import org.camunda.optimize.service.es.report.command.util.IntervalAggregationSe
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
+
+import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_RECORD_LIMIT;
 
 @Data
 public class CommandContext<T extends ReportDefinitionDto> {
 
+  // this first block will be remove later on
   private OptimizeElasticsearchClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
   private QueryFilterEnhancer queryFilterEnhancer;
-  private T reportDefinition;
-  private Range<OffsetDateTime> dateIntervalRange;
   private IntervalAggregationService intervalAggregationService;
   private ProcessDefinitionReader processDefinitionReader;
   private DecisionDefinitionReader decisionDefinitionReader;
-  private Integer recordLimit;
 
+  private T reportDefinition;
+  private Integer recordLimit = DEFAULT_RECORD_LIMIT;
+
+  // only used/needed for group by date commands when evaluated for
+  // a combined report.
+  private Range<OffsetDateTime> dateIntervalRange;
+
+  public void setRecordLimit(final Integer recordLimit) {
+    this.recordLimit = Optional.ofNullable(recordLimit).orElse(DEFAULT_RECORD_LIMIT);
+  }
 }

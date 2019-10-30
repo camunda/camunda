@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Varia
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -71,17 +72,17 @@ public class ProcessGroupByVariable extends ProcessGroupByPart {
   private final IntervalAggregationService intervalAggregationService;
   private final OptimizeElasticsearchClient esClient;
 
-  private VariableGroupByValueDto getVariableGroupByDto(final ProcessReportDataDto definitionData) {
-    return ((VariableGroupByDto) definitionData.getGroupBy()).getValue();
+  private VariableGroupByValueDto getVariableGroupByDto(final ExecutionContext<ProcessReportDataDto> context) {
+    return ((VariableGroupByDto) context.getReportData().getGroupBy()).getValue();
   }
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ProcessReportDataDto definitionData) {
-    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
+    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(context);
 
     AggregationBuilder variableSubAggregation =
-      createVariableSubAggregation(definitionData, searchSourceBuilder.query());
+      createVariableSubAggregation(context, searchSourceBuilder.query());
 
     final NestedAggregationBuilder variableAggregation = nested(NESTED_AGGREGATION, VARIABLES)
       .subAggregation(
@@ -96,22 +97,22 @@ public class ProcessGroupByVariable extends ProcessGroupByPart {
           .subAggregation(reverseNested(FILTERED_PROCESS_INSTANCE_COUNT_AGGREGATION))
       );
     final AggregationBuilder undefinedOrNullVariableAggregation =
-      createUndefinedOrNullVariableAggregation(definitionData);
+      createUndefinedOrNullVariableAggregation(context);
     return Arrays.asList(variableAggregation, undefinedOrNullVariableAggregation);
   }
 
-  private AggregationBuilder createUndefinedOrNullVariableAggregation(final ProcessReportDataDto reportData) {
-    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(reportData);
+  private AggregationBuilder createUndefinedOrNullVariableAggregation(final ExecutionContext<ProcessReportDataDto> context) {
+    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(context);
     return filter(
       MISSING_VARIABLES_AGGREGATION,
       getVariableUndefinedOrNullQuery(variableGroupByDto.getName(), variableGroupByDto.getType())
     )
-      .subAggregation(distributedByPart.createAggregation(reportData));
+      .subAggregation(distributedByPart.createAggregation(context));
   }
 
-  private AggregationBuilder createVariableSubAggregation(final ProcessReportDataDto definitionData,
+  private AggregationBuilder createVariableSubAggregation(final ExecutionContext<ProcessReportDataDto> context,
                                                           final QueryBuilder baseQuery) {
-    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
+    final VariableGroupByValueDto variableGroupByDto = getVariableGroupByDto(context);
     AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
@@ -133,7 +134,7 @@ public class ProcessGroupByVariable extends ProcessGroupByPart {
 
     // the same process instance could have several same variable names -> do not count each but only the proc inst once
     AggregationBuilder operationsAggregation = reverseNested(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION)
-      .subAggregation(distributedByPart.createAggregation(definitionData));
+      .subAggregation(distributedByPart.createAggregation(context));
 
 
     aggregationBuilder.subAggregation(operationsAggregation);
@@ -177,16 +178,16 @@ public class ProcessGroupByVariable extends ProcessGroupByPart {
   }
 
   @Override
-  public boolean getSortByKeyIsOfNumericType(final ProcessReportDataDto definitionData) {
-    return VariableType.getNumericTypes().contains(getVariableGroupByDto(definitionData).getType());
+  public boolean getSortByKeyIsOfNumericType(final ExecutionContext<ProcessReportDataDto> context) {
+    return VariableType.getNumericTypes().contains(getVariableGroupByDto(context).getType());
   }
 
   @Override
-  public Optional<SortingDto> getSorting(final ProcessReportDataDto definitionData) {
-    if(VariableType.DATE.equals(getVariableGroupByDto(definitionData).getType())) {
+  public Optional<SortingDto> getSorting(final ExecutionContext<ProcessReportDataDto> context) {
+    if(VariableType.DATE.equals(getVariableGroupByDto(context).getType())) {
       return Optional.of(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
     } else {
-      return super.getSorting(definitionData);
+      return super.getSorting(context);
     }
   }
 

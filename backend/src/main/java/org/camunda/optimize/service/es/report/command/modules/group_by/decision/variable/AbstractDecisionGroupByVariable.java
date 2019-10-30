@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.decision.DecisionGroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
@@ -66,7 +67,7 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
   private final IntervalAggregationService intervalAggregationService;
   private final OptimizeElasticsearchClient esClient;
 
-  protected abstract DecisionGroupByVariableValueDto getVariableGroupByDto(final DecisionReportDataDto definitionData);
+  protected abstract DecisionGroupByVariableValueDto getVariableGroupByDto(final ExecutionContext<DecisionReportDataDto> context);
 
   protected abstract DecisionGroupByDto<DecisionGroupByVariableValueDto> getDecisionGroupByVariableType();
 
@@ -74,11 +75,11 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final DecisionReportDataDto definitionData) {
-    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
+                                                    final ExecutionContext<DecisionReportDataDto> context) {
+    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(context);
 
     AggregationBuilder variableSubAggregation =
-      createVariableSubAggregation(definitionData, searchSourceBuilder.query());
+      createVariableSubAggregation(context, searchSourceBuilder.query());
 
     final NestedAggregationBuilder variableAggregation = nested(NESTED_AGGREGATION, getVariablePath())
       .subAggregation(
@@ -93,22 +94,22 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
           .subAggregation(reverseNested(FILTERED_INSTANCE_COUNT_AGGREGATION))
       );
     final AggregationBuilder undefinedOrNullVariableAggregation =
-      createUndefinedOrNullVariableAggregation(definitionData);
+      createUndefinedOrNullVariableAggregation(context);
     return Arrays.asList(variableAggregation, undefinedOrNullVariableAggregation);
   }
 
-  private AggregationBuilder createUndefinedOrNullVariableAggregation(final DecisionReportDataDto reportData) {
-    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(reportData);
+  private AggregationBuilder createUndefinedOrNullVariableAggregation(final ExecutionContext<DecisionReportDataDto> context) {
+    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(context);
     return filter(
       MISSING_VARIABLES_AGGREGATION,
       getVariableUndefinedOrNullQuery(variableGroupByDto.getId(), getVariablePath(), variableGroupByDto.getType())
     )
-      .subAggregation(distributedByPart.createAggregation(reportData));
+      .subAggregation(distributedByPart.createAggregation(context));
   }
 
-  private AggregationBuilder createVariableSubAggregation(final DecisionReportDataDto definitionData,
+  private AggregationBuilder createVariableSubAggregation(final ExecutionContext<DecisionReportDataDto> context,
                                                           final QueryBuilder baseQuery) {
-    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(definitionData);
+    final DecisionGroupByVariableValueDto variableGroupByDto = getVariableGroupByDto(context);
     AggregationBuilder aggregationBuilder = AggregationBuilders
       .terms(VARIABLES_AGGREGATION)
       .size(configurationService.getEsAggregationBucketLimit())
@@ -129,7 +130,7 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
     }
 
     AggregationBuilder operationsAggregation = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
-      .subAggregation(distributedByPart.createAggregation(definitionData));
+      .subAggregation(distributedByPart.createAggregation(context));
 
 
     aggregationBuilder.subAggregation(operationsAggregation);
@@ -173,16 +174,16 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
   }
 
   @Override
-  public boolean getSortByKeyIsOfNumericType(final DecisionReportDataDto definitionData) {
-    return VariableType.getNumericTypes().contains(getVariableGroupByDto(definitionData).getType());
+  public boolean getSortByKeyIsOfNumericType(final ExecutionContext<DecisionReportDataDto> context) {
+    return VariableType.getNumericTypes().contains(getVariableGroupByDto(context).getType());
   }
 
   @Override
-  public Optional<SortingDto> getSorting(final DecisionReportDataDto definitionData) {
-    if (VariableType.DATE.equals(getVariableGroupByDto(definitionData).getType())) {
+  public Optional<SortingDto> getSorting(final ExecutionContext<DecisionReportDataDto> context) {
+    if (VariableType.DATE.equals(getVariableGroupByDto(context).getType())) {
       return Optional.of(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
     } else {
-      return super.getSorting(definitionData);
+      return super.getSorting(context);
     }
   }
 

@@ -50,7 +50,7 @@ public class ProcessGroupByStartDate extends ProcessGroupByDate {
   }
 
   @Override
-  protected String getDateField() {
+  public String getDateField() {
     return START_DATE;
   }
 

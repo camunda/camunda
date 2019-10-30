@@ -11,7 +11,7 @@ import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.service.es.report.command.AutomaticGroupByDateCommand;
+import org.camunda.optimize.service.es.report.command.ProcessGroupByDateCmd;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -61,11 +61,10 @@ public class CombinedReportEvaluator {
     singleReportDefinitions
       .forEach(
         reportDefinition -> {
-          CommandContext commandContext = singleReportEvaluator.createCommandContext(reportDefinition);
           Command command = singleReportEvaluator.extractCommand(reportDefinition);
-          if (command instanceof AutomaticGroupByDateCommand) {
+          if (command instanceof ProcessGroupByDateCmd) {
             Optional<Stats> stat =
-              ((AutomaticGroupByDateCommand) command).evaluateGroupByDateValueStats(commandContext);
+              ((ProcessGroupByDateCmd) command).calculateGroupByDateRange(reportDefinition.getData());
             stat.ifPresent(calculator::addStat);
           }
         }
@@ -80,7 +79,9 @@ public class CombinedReportEvaluator {
                                                                         SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
     Optional<ReportEvaluationResult> result = Optional.empty();
     try {
-      ReportEvaluationResult singleResult = singleReportEvaluator.evaluate(reportDefinition);
+      CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
+      commandContext.setReportDefinition(reportDefinition);
+      ReportEvaluationResult singleResult = singleReportEvaluator.evaluate(commandContext);
       result = Optional.of(singleResult);
     } catch (OptimizeException | OptimizeValidationException onlyForLogging) {
       // we just ignore reports that cannot be evaluated in a combined report
@@ -93,7 +94,7 @@ public class CombinedReportEvaluator {
     return result;
   }
 
-  private class SingleReportEvaluatorForCombinedReports extends SingleReportEvaluator {
+  private static class SingleReportEvaluatorForCombinedReports extends SingleReportEvaluator {
 
     @Setter
     private Range<OffsetDateTime> dateIntervalRange;
@@ -114,11 +115,9 @@ public class CombinedReportEvaluator {
     }
 
     @Override
-    protected <T extends ReportDefinitionDto> CommandContext<T> createCommandContext(final T reportDefinition,
-                                                                                     final Integer customRecordLimit) {
-      CommandContext<T> commandContext = super.createCommandContext(reportDefinition, customRecordLimit);
+    protected <T extends ReportDefinitionDto> void enrichCommandContext(final CommandContext<T> commandContext) {
+      super.enrichCommandContext(commandContext);
       commandContext.setDateIntervalRange(dateIntervalRange);
-      return commandContext;
     }
   }
 }

@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -59,8 +60,8 @@ public class ProcessGroupByFlowNode extends ProcessGroupByPart {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
-                                                    final ProcessReportDataDto definitionData) {
-    final FlowNodeExecutionState flowNodeExecutionState = definitionData.getConfiguration().getFlowNodeExecutionState();
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
+    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
     final NestedAggregationBuilder groupByAssigneeAggregation =
       nested(FLOW_NODES_AGGREGATION, EVENTS)
         .subAggregation(
@@ -79,7 +80,7 @@ public class ProcessGroupByFlowNode extends ProcessGroupByPart {
               terms(NESTED_EVENTS_AGGREGATION)
                 .size(configurationService.getEsAggregationBucketLimit())
                 .field(EVENTS + "." + ACTIVITY_ID)
-                .subAggregation(distributedByPart.createAggregation(definitionData))
+                .subAggregation(distributedByPart.createAggregation(context))
             )
         );
     return Collections.singletonList(groupByAssigneeAggregation);

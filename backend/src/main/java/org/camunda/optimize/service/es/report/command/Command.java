@@ -11,7 +11,7 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 
 public interface Command<RD extends ReportDefinitionDto> {
   
-  ReportEvaluationResult evaluate(CommandContext<RD> commandContext) throws OptimizeException;
+  ReportEvaluationResult<?, RD> evaluate(CommandContext<RD> commandContext) throws OptimizeException;
 
   String createCommandKey();
 }
