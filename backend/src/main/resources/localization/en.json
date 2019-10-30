@@ -53,7 +53,7 @@
       "noCollections": "No collections have been created",
       "pleaseSelect": "Please select",
       "gotoNew": "Go to new location",
-      "copyCollectionInfo": "All contained items will be copied, and all assigned users will be added to the new collection, too."
+      "copyCollectionInfo": "All items and users will be copied."
     },
     "types": {
       "process": "Process Report",
@@ -431,7 +431,7 @@
     "collection": {
       "label": "Collection",
       "label-plural": "Collections",
-      "created": "\"{name}\" has been successfully created",
+      "created": "Created \"{name}\"",
       "modal": {
         "title": {
           "new": "Create new Collection",

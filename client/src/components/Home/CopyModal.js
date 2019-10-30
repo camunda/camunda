@@ -6,7 +6,7 @@
 
 import React, {Component} from 'react';
 
-import {Button, LabeledInput, Modal, Form, Switch, Typeahead} from 'components';
+import {Button, LabeledInput, Modal, Form, Switch, Typeahead, InfoMessage} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
@@ -119,7 +119,7 @@ export default withErrorHandling(
                   onChange={({target: {value}}) => this.setState({name: value})}
                 />
               </Form.Group>
-              {isCollection && <span>{t('home.copy.copyCollectionInfo')}</span>}
+              {isCollection && <InfoMessage>{t('home.copy.copyCollectionInfo')}</InfoMessage>}
               {!isCollection && this.renderMoveOption()}
               {jumpToEntity && (isCollection || moving) && (
                 <Form.Group>

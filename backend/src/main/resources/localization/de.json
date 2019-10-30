@@ -53,7 +53,7 @@
       "noCollections": "Es wurden keine Sammlungen erstellt",
       "pleaseSelect": "Bitte auswählen",
       "gotoNew": "Gehe zu Zielort",
-      "copyCollectionInfo": "Alle enthaltenen Elemente werden kopiert und alle zugehörigen benutzer werden ebenfalls der neuen Sammlung hinzugefügt."
+      "copyCollectionInfo": "Alle Elemente und Benutzer werden kopiert."
     },
     "types": {
       "process": "Prozessbericht",
@@ -431,7 +431,7 @@
     "collection": {
       "label": "Sammlung",
       "label-plural": "Sammlungen",
-      "created": "\"{name}\" wurde erfolgreich erstellt",
+      "created": "\"{name}\" erstellt",
       "modal": {
         "title": {
           "new": "Neue Sammlung erstellen",

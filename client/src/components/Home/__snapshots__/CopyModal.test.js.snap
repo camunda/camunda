@@ -21,9 +21,9 @@ exports[`should hide option to move the copy for collection entities 1`] = `
           value="collection (copy)"
         />
       </FormGroup>
-      <span>
-        All contained items will be copied, and all assigned users will be added to the new collection, too.
-      </span>
+      <InfoMessage>
+        All items and users will be copied.
+      </InfoMessage>
     </Form>
   </Component>
   <Component>
