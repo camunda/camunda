@@ -27,16 +27,12 @@ import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.TransportChannel;
-import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.transport.util.ControllableServerTransport;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
 import io.zeebe.transport.util.RecordingChannelListener;
-import io.zeebe.transport.util.RecordingMessageHandler;
-import io.zeebe.transport.util.TransportTestUtil;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -53,7 +49,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -292,48 +287,6 @@ public class ClientTransportTest {
     // was consumed
     doRepeatedly(subscription::poll).until(i -> i != 0);
     assertThat(numInvocations.get()).isEqualTo(2);
-  }
-
-  @Test
-  public void shouldPostponeMessagesOnReceiveBufferBackpressure() throws InterruptedException {
-    // given
-    final int maximumMessageLength =
-        clientReceiveBuffer.getMaxFragmentLength()
-            - TransportHeaderDescriptor.HEADER_LENGTH
-            - 1; // https://github.com/zeebe-io/zb-dispatcher/issues/21
-
-    final DirectBuffer largeBuf = new UnsafeBuffer(new byte[maximumMessageLength]);
-
-    final int messagesToExhaustReceiveBuffer =
-        ((int) BUFFER_SIZE.toBytes() / largeBuf.capacity()) + 1;
-    final SendMessagesHandler handler =
-        new SendMessagesHandler(messagesToExhaustReceiveBuffer, largeBuf);
-
-    buildServerTransport(
-        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(handler, null));
-
-    final RecordingMessageHandler clientHandler = new RecordingMessageHandler();
-    final ClientInputMessageSubscription clientSubscription =
-        clientTransport.openSubscription("foo", clientHandler).join();
-
-    // triggering the server pushing a the messages
-    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
-    clientTransport.getOutput().sendMessage(NODE_ID1, writerFor(BUF1));
-
-    TransportTestUtil.waitUntilExhausted(clientReceiveBuffer);
-    Thread.sleep(200L); // give transport a bit of time to try to push more messages on top
-
-    // when
-    final AtomicInteger receivedMessages = new AtomicInteger(0);
-    doRepeatedly(
-            () -> {
-              final int polledMessages = clientSubscription.poll();
-              return receivedMessages.addAndGet(polledMessages);
-            })
-        .until(m -> m == messagesToExhaustReceiveBuffer);
-
-    // then
-    assertThat(receivedMessages.get()).isEqualTo(messagesToExhaustReceiveBuffer);
   }
 
   @Test
@@ -591,26 +544,6 @@ public class ClientTransportTest {
   }
 
   @Test
-  public void shouldSendMultipleMessages() {
-    // given
-    final BufferWriter writer = mock(BufferWriter.class);
-    when(writer.getLength()).thenReturn(16);
-
-    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
-
-    buildServerTransport(
-        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null));
-
-    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
-
-    for (int i = 0; i < 10; i++) {
-      clientTransport.getOutput().sendMessage(NODE_ID1, writer);
-    }
-
-    waitUntil(() -> messageHandler.numReceivedMessages() == 10);
-  }
-
-  @Test
   public void shouldTimeoutRequest() {
     // given
     buildServerTransport(
@@ -654,26 +587,6 @@ public class ClientTransportTest {
     // then
     final ClientResponse response = responseFuture.join();
     assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
-  }
-
-  @Test
-  public void shouldRetrySendMessageIfChannelIsNotOpen() {
-    // given
-    final DirectBufferWriter writer = new DirectBufferWriter();
-    writer.wrap(BUF1);
-
-    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
-
-    buildServerTransport(
-        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null));
-
-    // when
-    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
-    clientTransport.getOutput().sendMessage(NODE_ID1, writer);
-
-    // then
-    waitUntil(() -> messageHandler.numReceivedMessages() == 1);
-    assertThatBuffer(messageHandler.getMessage(0).getBuffer()).hasBytes(BUF1);
   }
 
   @Test
@@ -786,42 +699,6 @@ public class ClientTransportTest {
     } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       fail("Could not close transport in time", e);
     }
-  }
-
-  @Test
-  public void shouldSendMessageToNodeId() {
-    // given
-    final int nodeId = 123;
-    final DirectBufferWriter writer = new DirectBufferWriter();
-    writer.wrap(BUF1);
-
-    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
-
-    buildServerTransport(
-        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null));
-
-    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
-
-    // when
-    clientTransport.getOutput().sendMessage(nodeId, writer);
-
-    // then
-    waitUntil(() -> messageHandler.numReceivedMessages() == 1);
-    assertThatBuffer(messageHandler.getMessage(0).getBuffer()).hasBytes(BUF1);
-  }
-
-  @Test
-  public void shouldIgnoreMessageToUnknownNodeId() {
-    // given
-    final int nodeId = 123;
-    final DirectBufferWriter writer = new DirectBufferWriter();
-    writer.wrap(BUF1);
-
-    // when
-    final boolean messageSent = clientTransport.getOutput().sendMessage(nodeId, writer);
-
-    // then
-    assertThat(messageSent).isFalse();
   }
 
   @Test
