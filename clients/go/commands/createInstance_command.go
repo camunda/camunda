@@ -125,12 +125,12 @@ func (cmd *CreateInstanceCommand) Send() (*pb.CreateWorkflowInstanceResponse, er
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-    response, err := cmd.gateway.CreateWorkflowInstance(ctx, cmd.request)
-    if cmd.retryPredicate(err) {
-        return cmd.Send()
-    }
+	response, err := cmd.gateway.CreateWorkflowInstance(ctx, cmd.request)
+	if cmd.retryPredicate(err) {
+		return cmd.Send()
+	}
 
-    return response, err
+	return response, err
 }
 
 func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CreateInstanceCommandStep1 {

@@ -189,8 +189,8 @@ func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, re
 		pollInterval:  DefaultJobWorkerPollInterval,
 		pollThreshold: DefaultJobWorkerPollThreshold,
 		request: pb.ActivateJobsRequest{
-			Timeout: commands.DefaultJobTimeoutInMs,
-			Worker:  commands.DefaultJobWorkerName,
+			Timeout:        commands.DefaultJobTimeoutInMs,
+			Worker:         commands.DefaultJobWorkerName,
 			RequestTimeout: int64(requestTimeout / time.Millisecond),
 		},
 		requestTimeout: requestTimeout + RequestTimeoutOffset,

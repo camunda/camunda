@@ -101,10 +101,10 @@ func TestMapValueMarshal_Scalars(t *testing.T) {
 	if MapValueMarshal(reflect.ValueOf(uint64(1<<64-1)), "json", true, true, false).(uint64) != 1<<64-1 {
 		t.Fatal("uint64 mismatch")
 	}
-	if MapValueMarshal(reflect.ValueOf(float32(3.4E+38)), "json", true, true, false).(float32) != 3.4E+38 {
+	if MapValueMarshal(reflect.ValueOf(float32(3.4e+38)), "json", true, true, false).(float32) != 3.4e+38 {
 		t.Fatal("float32 mismatch")
 	}
-	if MapValueMarshal(reflect.ValueOf(float64(1.7E+308)), "json", true, true, false).(float64) != 1.7E+308 {
+	if MapValueMarshal(reflect.ValueOf(float64(1.7e+308)), "json", true, true, false).(float64) != 1.7e+308 {
 		t.Fatal("float64 mismatch")
 	}
 	if MapValueMarshal(reflect.ValueOf("test"), "json", true, true, false).(string) != "test" {

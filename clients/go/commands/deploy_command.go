@@ -46,12 +46,12 @@ func (cmd *DeployCommand) Send() (*pb.DeployWorkflowResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-    response, err := cmd.gateway.DeployWorkflow(ctx, cmd.request)
-    if cmd.retryPredicate(err) {
-        return cmd.Send()
-    }
+	response, err := cmd.gateway.DeployWorkflow(ctx, cmd.request)
+	if cmd.retryPredicate(err) {
+		return cmd.Send()
+	}
 
-    return response, err
+	return response, err
 }
 
 func NewDeployCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) *DeployCommand {

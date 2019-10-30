@@ -101,12 +101,12 @@ func (cmd *SetVariablesCommand) Send() (*pb.SetVariablesResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-    response, err := cmd.gateway.SetVariables(ctx, cmd.request)
-    if cmd.retryPredicate(err) {
-        return cmd.Send()
-    }
+	response, err := cmd.gateway.SetVariables(ctx, cmd.request)
+	if cmd.retryPredicate(err) {
+		return cmd.Send()
+	}
 
-    return response, err
+	return response, err
 }
 
 func NewSetVariablesCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) SetVariablesCommandStep1 {
