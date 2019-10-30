@@ -8,17 +8,26 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import Table from 'modules/components/Table';
-import {IncidentAction} from 'modules/components/Actions';
 import Button from 'modules/components/Button';
+import IncidentsTable from './IncidentsTable';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
 
+import {IncidentAction} from 'modules/components/Actions';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createIncident} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
 
-import IncidentsTable from '../IncidentsTable';
 import {SORT_ORDER} from 'modules/constants';
+
+import {DataManagerProvider} from 'modules/DataManager';
+import * as dataManagerHelper from 'modules/testHelpers/dataManager';
+import {DataManager} from 'modules/DataManager/core';
+
+jest.mock('modules/DataManager/core');
+DataManager.mockImplementation(dataManagerHelper.mockDataManager);
+
+jest.mock('modules/utils/bpmn');
 
 const {TBody, TR, TD} = Table;
 
@@ -53,17 +62,22 @@ const mockProps = {
 };
 
 describe('IncidentsTable', () => {
+  let node;
   beforeEach(() => {
     mockProps.onSort.mockClear();
     mockProps.onIncidentOperation.mockClear();
     mockProps.onIncidentSelection.mockClear();
-  });
-  it('should render the right column headers', () => {
-    const node = mount(
+
+    node = mount(
       <ThemeProvider>
-        <IncidentsTable {...mockProps} />
+        <DataManagerProvider dataManager={new DataManager()}>
+          <IncidentsTable {...mockProps} />
+        </DataManagerProvider>
       </ThemeProvider>
     );
+  });
+
+  it('should render the right column headers', () => {
     expect(node.find(ColumnHeader).length).toEqual(6);
     expect(
       node
@@ -138,22 +152,12 @@ describe('IncidentsTable', () => {
   });
 
   it('should render the right number of rows', () => {
-    const node = mount(
-      <ThemeProvider>
-        <IncidentsTable {...mockProps} />
-      </ThemeProvider>
-    );
     expect(node.find(TBody).find(TR).length).toEqual(
       mockProps.incidents.length
     );
   });
 
   it('should render the right data in a row', () => {
-    const node = mount(
-      <ThemeProvider>
-        <IncidentsTable {...mockProps} />
-      </ThemeProvider>
-    );
     expect(
       node
         .find(TBody)
@@ -186,11 +190,6 @@ describe('IncidentsTable', () => {
   });
 
   it('should show a more button for long error messages', () => {
-    const node = mount(
-      <ThemeProvider>
-        <IncidentsTable {...mockProps} />
-      </ThemeProvider>
-    );
     const firstRowCells = node
       .find(TBody)
       .find(TR)
@@ -221,12 +220,6 @@ describe('IncidentsTable', () => {
   });
 
   it('should open an modal when clicking on the more button', () => {
-    const node = mount(
-      <ThemeProvider>
-        <IncidentsTable {...mockProps} />
-      </ThemeProvider>
-    );
-
     const secondRowCells = node
       .find(TBody)
       .find(TR)
@@ -250,33 +243,8 @@ describe('IncidentsTable', () => {
     );
   });
 
-  it('should call onIncidentOperation', async () => {
-    const node = mount(
-      <ThemeProvider>
-        <IncidentsTable {...mockProps} />
-      </ThemeProvider>
-    );
-    const IncidentActionNode = node
-      .find(TBody)
-      .find(TR)
-      .at(0)
-      .find(IncidentAction);
-
-    const onButtonClick = IncidentActionNode.props().onButtonClick;
-    onButtonClick();
-
-    node.update();
-
-    expect(mockProps.onIncidentOperation).toHaveBeenCalled();
-  });
-
   describe('Selection', () => {
     it('should call onIncidentSelection when clicking on a row', () => {
-      const node = mount(
-        <ThemeProvider>
-          <IncidentsTable {...mockProps} />
-        </ThemeProvider>
-      );
       const RowNode = node
         .find(TBody)
         .find(TR)
@@ -295,12 +263,6 @@ describe('IncidentsTable', () => {
     });
 
     it('should call onIncidentSelection when deselecting a row', () => {
-      const node = mount(
-        <ThemeProvider>
-          <IncidentsTable {...mockProps} />
-        </ThemeProvider>
-      );
-
       const RowNode = node
         .find(TBody)
         .find(TR)
@@ -325,12 +287,6 @@ describe('IncidentsTable', () => {
       );
     });
     it('shoud mark the selected incidents row', () => {
-      const node = mount(
-        <ThemeProvider>
-          <IncidentsTable {...mockProps} />
-        </ThemeProvider>
-      );
-
       expect(
         node
           .find(TBody)
@@ -352,10 +308,11 @@ describe('IncidentsTable', () => {
       mockProps.selectedFlowNodeInstanceIds = [id, 'flowNodeInstanceIdA'];
       const node = mount(
         <ThemeProvider>
-          <IncidentsTable {...mockProps} />
+          <DataManagerProvider dataManager={new DataManager()}>
+            <IncidentsTable {...mockProps} />
+          </DataManagerProvider>
         </ThemeProvider>
       );
-
       expect(
         node
           .find(TBody)
@@ -378,12 +335,6 @@ describe('IncidentsTable', () => {
 
   describe('Sorting', () => {
     it('should call onSort when clicking on a column header', () => {
-      const node = mount(
-        <ThemeProvider>
-          <IncidentsTable {...mockProps} />
-        </ThemeProvider>
-      );
-
       const randomColumn = Math.floor(Math.random() * 3);
       const ColumnHeaderNode = node.find(ColumnHeader).at(randomColumn);
 
@@ -412,7 +363,9 @@ describe('IncidentsTable', () => {
       ];
       const node = mount(
         <ThemeProvider>
-          <IncidentsTable {...mockProps} />
+          <DataManagerProvider dataManager={new DataManager()}>
+            <IncidentsTable {...mockProps} />
+          </DataManagerProvider>
         </ThemeProvider>
       );
 

@@ -9,11 +9,12 @@ import PropTypes from 'prop-types';
 
 import Table from 'modules/components/Table';
 import Button from 'modules/components/Button';
-import {IncidentAction} from 'modules/components/Actions';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import Modal from 'modules/components/Modal';
-import {formatDate} from 'modules/utils/date';
 import {TransitionGroup} from 'modules/components/Transition';
+import {IncidentAction} from 'modules/components/Actions';
+
+import {formatDate} from 'modules/utils/date';
 
 import * as Styled from './styled';
 const {THead, TBody, TH, TR, TD} = Table;
@@ -22,10 +23,8 @@ export default class IncidentsTable extends React.Component {
   static propTypes = {
     incidents: PropTypes.array.isRequired,
     instanceId: PropTypes.string.isRequired,
-    forceSpinner: PropTypes.bool,
     selectedFlowNodeInstanceIds: PropTypes.array,
     sorting: PropTypes.object.isRequired,
-    onIncidentOperation: PropTypes.func.isRequired,
     onIncidentSelection: PropTypes.func.isRequired,
     onSort: PropTypes.func.isRequired
   };
@@ -203,12 +202,8 @@ export default class IncidentsTable extends React.Component {
                       <TD>
                         <IncidentAction
                           instanceId={this.props.instanceId}
-                          onButtonClick={this.props.onIncidentOperation}
                           incident={incident}
-                          showSpinner={
-                            this.props.forceSpinner ||
-                            incident.hasActiveOperation
-                          }
+                          showSpinner={incident.hasActiveOperation}
                         />
                       </TD>
                     </Styled.IncidentTR>

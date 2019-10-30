@@ -22,11 +22,19 @@ import IncidentsFilter from './IncidentsFilter';
 
 import {testData} from './IncidentsWrapper.setup';
 
+jest.mock('modules/utils/bpmn');
+
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
   const FakeCSSTransition = jest.fn(props =>
     props.in ? <FakeTransition>{props.children}</FakeTransition> : null
   );
+
+  jest.mock('modules/components/Actions/IncidentAction', () => {
+    return function IncidentAction() {
+      return <div />;
+    };
+  });
 
   return {
     CSSTransition: FakeCSSTransition,

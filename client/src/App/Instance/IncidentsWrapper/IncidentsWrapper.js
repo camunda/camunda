@@ -25,7 +25,6 @@ function IncidentsWrapper(props) {
     errorTypes,
     flowNodes,
     selectedFlowNodeInstanceIds,
-    onIncidentOperation,
     onIncidentSelection
   } = props;
 
@@ -180,10 +179,8 @@ function IncidentsWrapper(props) {
           <IncidentsTable
             incidents={sortedIncidents}
             instanceId={instance.id}
-            forceSpinner={props.forceSpinner}
             selectedFlowNodeInstanceIds={selectedFlowNodeInstanceIds}
             sorting={sorting}
-            onIncidentOperation={onIncidentOperation}
             onIncidentSelection={onIncidentSelection}
             onSort={handleSort}
           />
@@ -197,8 +194,6 @@ IncidentsWrapper.propTypes = {
   incidents: PropTypes.array,
   incidentsCount: PropTypes.number.isRequired,
   instance: PropTypes.object.isRequired,
-  onIncidentOperation: PropTypes.func.isRequired,
-  forceSpinner: PropTypes.bool,
   selectedFlowNodeInstanceIds: PropTypes.array,
   onIncidentSelection: PropTypes.func.isRequired,
   flowNodes: PropTypes.object,
