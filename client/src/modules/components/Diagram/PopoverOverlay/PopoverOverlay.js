@@ -4,11 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 import CodeModal from 'modules/components/CodeModal';
 
 import {compactObject, pickFromObject} from 'modules/utils';
+
+import {beautifyMetadata, getBreadcrumbs} from './service';
 
 import Overlay from '../Overlay';
 import * as Styled from './styled';
@@ -26,12 +28,6 @@ export default class PopoverOverlay extends React.Component {
     this.setState({isModalVisible: true});
   };
 
-  beautifiedMetadata = () => {
-    return JSON.stringify(this.props.metadata.data, null, '\t')
-      .replace(/\\n/g, '\n\t\t')
-      .replace(/\\t/g, '\t');
-  };
-
   renderModal = () => {
     const {metadata, selectedFlowNodeName} = this.props;
     const {isModalVisible} = this.state;
@@ -45,19 +41,45 @@ export default class PopoverOverlay extends React.Component {
         handleModalClose={this.handleModalClose}
         isModalVisible={isModalVisible}
         headline={`Flow Node "${selectedFlowNodeName}" ${headerTitleSuffix} Metadata`}
-        initialValue={this.props.metadata.data ? this.beautifiedMetadata() : ''}
+        initialValue={beautifyMetadata(this.props.metadata.data)}
         mode="view"
       />
     );
   };
 
-  renderSummary = () => {
+  renderBreadcrumbs = () => {
     const {
       metadata,
       selectedFlowNodeId,
       selectedFlowNodeName,
       onFlowNodeSelection
     } = this.props;
+
+    const breadcrumbs = getBreadcrumbs({
+      metadata,
+      selectedFlowNodeName,
+      selectedFlowNodeId
+    });
+
+    return breadcrumbs.map(item => {
+      return item.linkId ? (
+        <Fragment key={`${item.name}-${item.linkId}`}>
+          <Styled.Button
+            data-test="select-flownode"
+            onClick={() => onFlowNodeSelection(item.linkId)}
+          >
+            {item.name}
+          </Styled.Button>
+          <span> › </span>
+        </Fragment>
+      ) : (
+        <span key={item.name}>{item.name}</span>
+      );
+    });
+  };
+
+  renderSummary = () => {
+    const {metadata} = this.props;
 
     if (metadata.isMultiRowPeterCase) {
       return (
@@ -79,13 +101,7 @@ export default class PopoverOverlay extends React.Component {
       <>
         {metadata.isSingleRowPeterCase && (
           <Styled.SummaryHeader>
-            <Styled.Button
-              data-test="select-flownode"
-              onClick={() => onFlowNodeSelection(selectedFlowNodeId)}
-            >
-              {selectedFlowNodeName}
-            </Styled.Button>
-            <span> › {metadata.data.activityInstanceId}</span>
+            {this.renderBreadcrumbs()}
           </Styled.SummaryHeader>
         )}
         <Styled.SummaryData>

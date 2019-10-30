@@ -325,16 +325,24 @@ class Instance extends Component {
     }, null);
 
     // get corresponding start and end dates
-    const activityInstance = activityIdToActivityInstanceMap
-      .get(flowNodeId)
-      .get(activityInstanceId);
+    const activityInstance = activityInstancesMap.get(activityInstanceId);
 
     const startDate = formatDate(activityInstance.startDate);
     const endDate = formatDate(activityInstance.endDate);
 
+    const isMultiInstanceBody =
+      activityInstance.type === TYPE.MULTI_INSTANCE_BODY;
+
+    const parentActivity = activityInstancesMap.get(activityInstance.parentId);
+    const isMultiInstanceChild =
+      parentActivity && parentActivity.type === TYPE.MULTI_INSTANCE_BODY;
+
     // return a cleaned-up  metadata object
     return {
       ...compactObject({
+        isMultiInstanceBody,
+        isMultiInstanceChild,
+        parentId: activityInstance.parentId,
         isSingleRowPeterCase: activityInstancesMap.size > 1 ? true : null
       }),
       data: Object.entries({
