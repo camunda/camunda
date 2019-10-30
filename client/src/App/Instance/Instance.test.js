@@ -15,8 +15,6 @@ import {
   mountWrappedComponent
 } from 'modules/testHelpers/wrapperFactory';
 
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-
 import {testData} from './Instance.setup';
 
 import {PAGE_TITLE} from 'modules/constants';
@@ -29,11 +27,11 @@ import * as diagramUtils from 'modules/utils/bpmn';
 import {ThemeProvider} from 'modules/theme';
 import {DataManagerProvider} from 'modules/DataManager';
 
-import DiagramPanel from './DiagramPanel';
+import TopPanel from './TopPanel';
 import FlowNodeInstancesTree from './FlowNodeInstancesTree';
-import InstanceHistory from './InstanceHistory';
+import BottomPanel from './BottomPanel';
 import Diagram from 'modules/components/Diagram';
-import Variables from './InstanceHistory/Variables';
+import Variables from './BottomPanel/Variables';
 import IncidentsWrapper from './IncidentsWrapper';
 
 import Header from '../Header';
@@ -47,6 +45,7 @@ import {
 } from './service';
 
 // DataManager mock
+import * as dataManagerHelper from 'modules/testHelpers/dataManager';
 import {DataManager} from 'modules/DataManager/core';
 
 jest.mock('modules/DataManager/core');
@@ -63,8 +62,8 @@ jest.mock('../Header', () => {
   };
 });
 
-jest.mock('./DiagramPanel', () => {
-  return function Diagram() {
+jest.mock('./TopPanel', () => {
+  return function TopPanel() {
     return <div />;
   };
 });
@@ -97,7 +96,6 @@ const {
   noIncidents,
   incidents,
   variables,
-  // workflowXML,
   instanceHistoryTree,
   diagramNodes,
   events
@@ -580,29 +578,8 @@ describe('Instance', () => {
       node.update();
 
       expect(node.find(Header)).toHaveLength(1);
-      expect(node.find(DiagramPanel)).toHaveLength(1);
-      expect(node.find(InstanceHistory)).toHaveLength(1);
-      expect(node.find(Variables)).toHaveLength(1);
-      expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
-    });
-
-    it.skip('should display IncidentsWrapper if there is an incident', () => {
-      // diagramPanel is mocked, that's why it cant be tested here.
-
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-        response: workflowInstanceWithIncident
-      });
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstanceWithIncident
-      });
-      node.update();
-
-      expect(node.find(Header)).toHaveLength(1);
-      expect(node.find(DiagramPanel)).toHaveLength(1);
-      expect(node.find(InstanceHistory)).toHaveLength(1);
+      expect(node.find(TopPanel)).toHaveLength(1);
+      expect(node.find(BottomPanel)).toHaveLength(1);
       expect(node.find(Variables)).toHaveLength(1);
       expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
     });
@@ -983,7 +960,7 @@ describe('Instance', () => {
         await flushPromises();
         node.update();
 
-        expect(node.find(DiagramPanel).props().forceInstanceSpinner).toBe(true);
+        expect(node.find(TopPanel).props().forceInstanceSpinner).toBe(true);
       });
       it('should force spinners for incidents on Instance operation', async () => {
         // given
@@ -996,9 +973,8 @@ describe('Instance', () => {
         await flushPromises();
         node.update();
 
-        const DiagramPanelNode = node.find(DiagramPanel);
-        const onInstanceOperation = DiagramPanelNode.props()
-          .onInstanceOperation;
+        const TopPanelNode = node.find(TopPanel);
+        const onInstanceOperation = TopPanelNode.props().onInstanceOperation;
 
         onInstanceOperation();
 

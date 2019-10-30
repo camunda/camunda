@@ -101,26 +101,6 @@ export function getActivityIdToNameMap(elements) {
   }, new Map());
 }
 
-/**
- * @returns {Array} of flow node state overlays to be added the diagram.
- * @param {*} activityIdToActivityInstanceMap
- */
-export function getFlowNodeStateOverlays(activityIdToActivityInstanceMap) {
-  return [...activityIdToActivityInstanceMap.entries()].reduce(
-    (overlays, [id, activityInstancesMap]) => {
-      const {state, type} = [...activityInstancesMap.values()].reverse()[0];
-
-      // If the activity is completed, only push an overlay
-      // if the activity is an end event.
-      const shouldPushOverlay =
-        state !== STATE.COMPLETED ? true : type === 'END_EVENT';
-
-      return !shouldPushOverlay ? overlays : [...overlays, {id, state}];
-    },
-    []
-  );
-}
-
 export function isRunningInstance(instance) {
   return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
 }

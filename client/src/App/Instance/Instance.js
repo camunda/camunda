@@ -9,8 +9,7 @@ import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
-import Diagram from 'modules/components/Diagram';
-import IncidentsWrapper from './IncidentsWrapper';
+
 import {
   PAGE_TITLE,
   UNNAMED_ACTIVITY,
@@ -30,11 +29,10 @@ import {withData} from 'modules/DataManager';
 import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
-import DiagramPanel from './DiagramPanel';
-import InstanceHistory from './InstanceHistory';
-import Variables from './InstanceHistory/Variables';
+import TopPanel from './TopPanel';
+import BottomPanel from './BottomPanel';
+import Variables from './BottomPanel/Variables';
 import {
-  getFlowNodeStateOverlays,
   isRunningInstance,
   createNodeMetaDataMap,
   getSelectableFlowNodes,
@@ -396,15 +394,6 @@ class Instance extends Component {
     };
   };
 
-  addFLowNodeNames = incidents =>
-    incidents.map(incident => this.addFlowNodeName(incident));
-
-  mapify = (arrayOfObjects, uniqueKey, modifier) =>
-    arrayOfObjects.reduce((acc, object) => {
-      const modifiedObj = modifier ? modifier(object) : object;
-      return acc.set(modifiedObj[uniqueKey], modifiedObj);
-    }, new Map());
-
   addFlowNodeName = object => {
     const modifiedObject = {...object};
 
@@ -415,14 +404,6 @@ class Instance extends Component {
     modifiedObject.flowNodeName =
       (nodeMetaData && nodeMetaData.name) || UNNAMED_ACTIVITY;
     return modifiedObject;
-  };
-
-  handleIncidentOperation = () => {
-    this.setState({forceInstanceSpinner: true});
-  };
-
-  handleInstanceOperation = () => {
-    this.setState({forceIncidentsSpinner: true});
   };
 
   handleVariableUpdate = async (key, value) => {
@@ -483,16 +464,6 @@ class Instance extends Component {
     this.setState({editMode});
   };
 
-  getSelectedFlowNodeName(selection, nodeMetaDataMap) {
-    const selectedFlowNodeId = selection && selection.flowNodeId;
-
-    const nodeMetaData = nodeMetaDataMap.get(selectedFlowNodeId);
-
-    return !selectedFlowNodeId
-      ? null
-      : (nodeMetaData && nodeMetaData.name) || selectedFlowNodeId;
-  }
-
   render() {
     const {
       loaded,
@@ -518,53 +489,19 @@ class Instance extends Component {
             {`Camunda Operate Instance ${this.state.instance.id}`}
           </VisuallyHiddenH1>
           <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
-            <DiagramPanel
+            <TopPanel
               instance={instance}
-              forceInstanceSpinner={this.state.forceInstanceSpinner}
+              selection={selection}
+              incidents={incidents}
+              nodeMetaDataMap={nodeMetaDataMap}
+              diagramDefinitions={diagramDefinitions}
+              activityIdToActivityInstanceMap={activityIdToActivityInstanceMap}
+              getCurrentMetadata={this.getCurrentMetadata}
+              onFlowNodeSelection={this.handleFlowNodeSelection}
               onInstanceOperation={this.handleInstanceOperation}
-            >
-              {this.state.instance.state === 'INCIDENT' &&
-                this.state.nodeMetaDataMap && (
-                  <IncidentsWrapper
-                    incidents={this.addFLowNodeNames(incidents.incidents)}
-                    incidentsCount={this.state.incidents.count}
-                    instance={this.state.instance}
-                    forceSpinner={this.state.forceIncidentsSpinner}
-                    selectedFlowNodeInstanceIds={
-                      this.state.selection.treeRowIds
-                    }
-                    onIncidentOperation={this.handleIncidentOperation}
-                    onIncidentSelection={this.handleTreeRowSelection}
-                    flowNodes={this.mapify(
-                      incidents.flowNodes,
-                      'flowNodeId',
-                      this.addFlowNodeName
-                    )}
-                    errorTypes={this.mapify(incidents.errorTypes, 'errorType')}
-                  />
-                )}
-              {diagramDefinitions && activityIdToActivityInstanceMap && (
-                <Diagram
-                  onFlowNodeSelection={this.handleFlowNodeSelection}
-                  selectableFlowNodes={[
-                    ...activityIdToActivityInstanceMap.keys()
-                  ]}
-                  selectedFlowNodeId={selection.flowNodeId}
-                  selectedFlowNodeName={this.getSelectedFlowNodeName(
-                    selection,
-                    nodeMetaDataMap
-                  )}
-                  flowNodeStateOverlays={getFlowNodeStateOverlays(
-                    activityIdToActivityInstanceMap
-                  )}
-                  definitions={diagramDefinitions}
-                  metadata={
-                    !selection.flowNodeId ? null : this.getCurrentMetadata()
-                  }
-                />
-              )}
-            </DiagramPanel>
-            <InstanceHistory>
+              onTreeRowSelection={this.handleTreeRowSelection}
+            />
+            <BottomPanel>
               <Styled.Panel>
                 <Styled.FlowNodeInstanceLog>
                   <Styled.NodeContainer>
@@ -588,7 +525,7 @@ class Instance extends Component {
                 onVariableUpdate={this.handleVariableUpdate}
                 setEditMode={this.setEditMode}
               />
-            </InstanceHistory>
+            </BottomPanel>
           </SplitPane>
         </Styled.Instance>
       </Fragment>

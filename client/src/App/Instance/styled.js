@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 import {Colors, themed, themeStyle} from 'modules/theme';
@@ -78,4 +78,37 @@ export const NodeContainer = themed(styled.div`
   margin: 0;
   padding: 0;
   padding-left: 8px;
+`);
+
+const pseudoBorder = css`
+  /* Border with individual z-index to be layered above child */
+  &:before {
+    position: absolute;
+    content: '';
+    height: 1px;
+    width: 100%;
+    z-index: 5;
+    top: 0px;
+    left: 0px;
+    border-top: solid 1px
+      ${themeStyle({
+        dark: Colors.uiDark04,
+        light: Colors.uiLight05
+      })};
+  }
+`;
+
+export const SplitPaneTop = themed(styled(SplitPane.Pane)`
+  border-top: none;
+  background-color: ${themeStyle({
+    dark: Colors.uiDark02,
+    light: Colors.uiLight04
+  })};
+  ${pseudoBorder}
+`);
+
+export const SplitPaneBody = themed(styled(SplitPane.Pane.Body)`
+  position: relative;
+  border: none;
+  ${pseudoBorder}
 `);
