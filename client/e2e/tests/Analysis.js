@@ -81,7 +81,16 @@ test('should deselect elements by clicking on the node or on the control panel',
 test('should show outliers heatmap when selecting a process definition', async t => {
   await t.click(Analysis.navItem);
 
-  await u.selectDefinition(t, 'Lead Qualification');
+  await t.resizeWindow(1050, 700);
+
+  await u.selectDefinition(t, 'Invoice Receipt', [6, 5, 4, 3]);
+  await t.hover(Analysis.flowNode('approveInvoice'));
+
+  await t
+    .takeScreenshot('process/analysis/outlier-analysis/outlierExample_1_heatMap.png', {
+      fullPage: true
+    })
+    .maximizeWindow();
 
   await t.expect(Analysis.heatmapEl.visible).ok();
 });
@@ -89,11 +98,19 @@ test('should show outliers heatmap when selecting a process definition', async t
 test('should show outlier details modal when clicking view details on a flow node', async t => {
   await t.click(Analysis.navItem);
 
-  await u.selectDefinition(t, 'Lead Qualification', 'All');
+  await u.selectDefinition(t, 'Invoice Receipt', [6, 5, 4, 3]);
 
-  await t.hover(Analysis.flowNode('ServiceTask_4'));
+  await t.hover(Analysis.flowNode('approveInvoice'));
 
   await t.click(Analysis.tooltipDetailsButton);
+
+  await t
+    .resizeWindow(1600, 800)
+    .takeElementScreenshot(
+      Analysis.modal,
+      'process/analysis/outlier-analysis/outlierExample_2_distribution.png'
+    )
+    .maximizeWindow();
 
   await t.expect(Analysis.chart.visible).ok();
 });
@@ -101,13 +118,21 @@ test('should show outlier details modal when clicking view details on a flow nod
 test('should show common outliers variables as a table', async t => {
   await t.click(Analysis.navItem);
 
-  await u.selectDefinition(t, 'Lead Qualification', 'All');
+  await u.selectDefinition(t, 'Invoice Receipt', [6, 5, 4, 3]);
 
-  await t.hover(Analysis.flowNode('ServiceTask_4'));
+  await t.hover(Analysis.flowNode('approveInvoice'));
 
   await t.click(Analysis.tooltipDetailsButton);
 
   await t.click(Analysis.commonVariablesButton);
+
+  await t
+    .resizeWindow(1600, 800)
+    .takeElementScreenshot(
+      Analysis.modal,
+      'process/analysis/outlier-analysis/outlierExample_3_Variables.png'
+    )
+    .maximizeWindow();
 
   await t.expect(Analysis.variablesTable.visible).ok();
 });

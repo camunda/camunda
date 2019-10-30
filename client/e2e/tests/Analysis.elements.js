@@ -21,3 +21,4 @@ export const commonVariablesButton = Selector('.ButtonGroup .Button').withText(
   'Common Significant Variables Table'
 );
 export const variablesTable = Selector('.VariablesTable .Table');
+export const modal = Selector('.Modal__content-container');

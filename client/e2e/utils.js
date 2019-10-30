@@ -25,9 +25,19 @@ export async function selectDefinition(t, name, version = 'Specific version') {
     .click('.Popover.DefinitionSelection')
     .typeText('.Typeahead.name input', name, {replace: true})
     .click(Selector('.Typeahead.name .DropdownOption').withText(name))
-    .click('.VersionPopover')
-    .click(Selector('.label').withText(version))
-    .click('.Popover.DefinitionSelection');
+    .click('.VersionPopover');
+
+  if (typeof version === 'string') {
+    await t.click(Selector('.label').withText(version));
+  } else {
+    await t.click(Selector('.label').withText('Specific versions'));
+    await t.click(Selector('.specificVersions input[type="checkbox"]').nth(0));
+    for (let i = 0; i < version.length; i++) {
+      await t.click(Selector('.specificVersions input[type="checkbox"]').nth(-version[i]));
+    }
+  }
+
+  await t.click('.Popover.DefinitionSelection');
 }
 
 const selectControlPanelOption = type => async (t, name, subname) => {
