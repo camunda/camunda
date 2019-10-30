@@ -28,8 +28,9 @@ const pseudoBorder = css`
   }
 `;
 
-export const SplitPane = themed(styled(SplitPaneComponent.Pane)`
+export const Pane = themed(styled(SplitPaneComponent.Pane)`
   border-top: none;
+${({expandState}) => expandState === 'DEFAULT' && 'height: 50%'}
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
     light: Colors.uiLight04
