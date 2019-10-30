@@ -28,7 +28,7 @@ public class ClientProperties {
   public static final String JOB_WORKER_MAX_JOBS_ACTIVE = "zeebe.client.worker.maxJobsActive";
 
   /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
-  public static final String DEFAULT_JOB_WORKER_NAME = "zeebe.client.job.worker";
+  public static final String DEFAULT_JOB_WORKER_NAME = "zeebe.client.worker.name";
 
   /** @see ZeebeClientBuilder#defaultJobTimeout(java.time.Duration) */
   public static final String DEFAULT_JOB_TIMEOUT = "zeebe.client.job.timeout";

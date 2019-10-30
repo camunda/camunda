@@ -18,4 +18,9 @@ public class ExporterServiceNames {
     final String name = String.format("io.zeebe.broker.exporter.%d", partitionId);
     return ServiceName.newServiceName(name, ExporterDirector.class);
   }
+
+  public static ServiceName<Void> exporterClearStateServiceName(int partitionId) {
+    final String name = String.format("io.zeebe.broker.exporter.clear-state.%d", partitionId);
+    return ServiceName.newServiceName(name, Void.class);
+  }
 }
