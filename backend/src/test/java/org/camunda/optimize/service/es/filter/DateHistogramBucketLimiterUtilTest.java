@@ -110,7 +110,7 @@ public class DateHistogramBucketLimiterUtilTest {
       final OffsetDateTime fromDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.from()));
       final OffsetDateTime toDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.to()));
 
-      assertThat(toDate, is(defaultEndTime));
+      assertThat(toDate, is(defaultEndTime.truncatedTo(ChronoUnit.MILLIS)));
       assertThat(fromDate, is(calculateExpectedStartDate(toDate, unit, limit)));
     });
   }

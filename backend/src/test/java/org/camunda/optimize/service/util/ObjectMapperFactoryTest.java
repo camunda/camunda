@@ -27,12 +27,14 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNull.notNullValue;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -40,9 +42,6 @@ public class ObjectMapperFactoryTest {
 
   private ObjectMapper optimizeMapper;
   private ObjectMapper engineMapper;
-
-  private ConfigurationService configurationService;
-  private OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory;
 
   @BeforeEach
   public void init() {
@@ -221,7 +220,7 @@ public class ObjectMapperFactoryTest {
     private OffsetDateTime date;
 
     public OffsetDateTime getDate() {
-      return date;
+      return date.truncatedTo(ChronoUnit.MILLIS);
     }
 
     public void setDate(OffsetDateTime date) {

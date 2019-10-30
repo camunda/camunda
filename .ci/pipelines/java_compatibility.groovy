@@ -122,6 +122,7 @@ void integrationTestSteps() {
           credentialsId: 'camunda-jenkins-github-ssh',
           poll: false
   container('maven') {
+    runMaven("test -Dskip.fe.build");
     runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade,util/optimize-reimport-preparation -am")
   }
 }
