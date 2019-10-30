@@ -7,35 +7,57 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {OPERATION_TYPE} from 'modules/constants';
-import {applyOperation} from 'modules/api/instances';
+import {withData} from 'modules/DataManager';
+
+import {OPERATION_TYPE, LOADING_STATE} from 'modules/constants';
 import ActionStatus from 'modules/components/ActionStatus';
 
 import ActionItems from './ActionItems';
 
 import * as Styled from './styled';
 
-export default class Actions extends React.Component {
+class IncidentAction extends React.Component {
   static propTypes = {
     incident: PropTypes.object.isRequired,
-    onButtonClick: PropTypes.func,
     instanceId: PropTypes.string.isRequired,
-    showSpinner: PropTypes.bool
+    showSpinner: PropTypes.bool,
+    dataManager: PropTypes.object
   };
 
-  state = {
-    isSpinnerVisible: false
-  };
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      isSpinnerVisible: false
+    };
+    this.subscriptions = {
+      [`OPERATION_APPLIED_INSTANCE_${this.props.instanceId}`]: ({state}) => {
+        if (state === LOADING_STATE.LOADING) {
+          this.setState({isSpinnerVisible: true});
+        }
+      }
+    };
+  }
+
+  componentDidMount() {
+    this.props.dataManager.subscribe(this.subscriptions);
+  }
+
+  componentWillUnmount() {
+    this.props.dataManager.unsubscribe(this.subscriptions);
+  }
 
   handleOnClick = async e => {
     e.stopPropagation();
     this.setState({isSpinnerVisible: true});
-    await applyOperation(this.props.instanceId, {
-      operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
-      incidentId: this.props.incident.id
-    });
 
-    this.props.onButtonClick && this.props.onButtonClick();
+    const {dataManager, instanceId, incident} = this.props;
+
+    // incidents actions should listen to main btn who publishes the incident ids which are affected
+    dataManager.applyOperation(instanceId, {
+      operationType: OPERATION_TYPE.RESOLVE_INCIDENT,
+      incidentId: incident.id
+    });
   };
 
   render() {
@@ -57,3 +79,8 @@ export default class Actions extends React.Component {
     );
   }
 }
+
+const WrappedAction = withData(IncidentAction);
+WrappedAction.WrappedComponent = IncidentAction;
+
+export default WrappedAction;

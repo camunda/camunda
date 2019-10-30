@@ -7,9 +7,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {isEqual} from 'lodash';
+import {withData} from 'modules/DataManager';
 
 import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
-import {applyOperation} from 'modules/api/instances';
+
 import {
   getLatestOperation,
   isWithIncident,
@@ -21,12 +22,13 @@ import ActionItems from './ActionItems';
 
 import * as Styled from './styled';
 
-export default class Actions extends React.Component {
+class Actions extends React.Component {
   static propTypes = {
     instance: PropTypes.object.isRequired,
     selected: PropTypes.bool,
     onButtonClick: PropTypes.func,
-    forceSpinner: PropTypes.bool
+    forceSpinner: PropTypes.bool,
+    dataManager: PropTypes.object
   };
 
   static defaultProps = {
@@ -67,7 +69,10 @@ export default class Actions extends React.Component {
 
   handleOnClick = async operationType => {
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
-    await applyOperation(this.props.instance.id, {operationType});
+
+    this.props.dataManager.applyOperation(this.props.instance.id, {
+      operationType
+    });
     this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
   };
 
@@ -110,3 +115,8 @@ export default class Actions extends React.Component {
     );
   }
 }
+
+const WrappedAction = withData(Actions);
+WrappedAction.WrappedComponent = Actions;
+
+export default WrappedAction;

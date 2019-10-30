@@ -20,10 +20,14 @@ import Actions from './Actions';
 import ActionStatus from 'modules/components/ActionStatus';
 import ActionItems from './ActionItems';
 
-import * as api from 'modules/api/instances/instances';
+import * as dataManagerHelper from 'modules/testHelpers/dataManager';
 
-// mocking api
-api.applyOperation = mockResolvedAsyncFn({count: 1, reason: null});
+import {DataManager} from 'modules/DataManager/core';
+
+DataManager.mockImplementation(dataManagerHelper.mockDataManager);
+
+jest.mock('modules/DataManager/core');
+jest.mock('modules/utils/bpmn');
 
 describe('Actions', () => {
   let mockOperation, mockInstance, onButtonClick;
@@ -32,14 +36,14 @@ describe('Actions', () => {
     // when
     mockOperation = createOperation({state: OPERATION_STATE.SCHEDULED});
     mockInstance = createInstance({operations: [mockOperation]});
-    let node = shallow(<Actions instance={mockInstance} />);
+    let node = shallow(<Actions.WrappedComponent instance={mockInstance} />);
     //then
     expect(node).toMatchSnapshot();
 
     // when
     mockOperation = createOperation({state: OPERATION_STATE.FAILED});
     mockInstance = createInstance({operations: [mockOperation]});
-    node = shallow(<Actions instance={mockInstance} />);
+    node = shallow(<Actions.WrappedComponent instance={mockInstance} />);
 
     // then
     expect(node).toMatchSnapshot();
@@ -57,7 +61,9 @@ describe('Actions', () => {
       onButtonClick: jest.fn()
     };
 
-    const node = shallow(<Actions instance={mockInstance} {...mockProps} />);
+    const node = shallow(
+      <Actions.WrappedComponent instance={mockInstance} {...mockProps} />
+    );
 
     //then
     expect(node.find(ActionStatus).props().operationState).toBe(
@@ -76,7 +82,9 @@ describe('Actions', () => {
     it('should render action buttons for active instance', () => {
       // when
       mockInstance = createInstance({state: STATE.ACTIVE, operations: []});
-      const node = shallow(<Actions instance={mockInstance} />);
+      const node = shallow(
+        <Actions.WrappedComponent instance={mockInstance} />
+      );
       const ActionItemsNode = node.find(ActionItems);
       const Button = ActionItemsNode.find(ActionItems.Item);
 
@@ -91,7 +99,9 @@ describe('Actions', () => {
     it('should render action buttons for instance with incidents', () => {
       // when
       mockInstance = createInstance({state: STATE.INCIDENT, operations: []});
-      const node = shallow(<Actions instance={mockInstance} />);
+      const node = shallow(
+        <Actions.WrappedComponent instance={mockInstance} />
+      );
       const ActionItemsNode = node.find(ActionItems);
 
       // then
@@ -121,18 +131,21 @@ describe('Actions', () => {
       it('should handle retry of instance incident ', async () => {
         //given
         const node = shallow(
-          <Actions instance={mockInstance} onButtonClick={onButtonClick} />
+          <Actions.WrappedComponent
+            instance={mockInstance}
+            dataManager={new DataManager()}
+            onButtonClick={onButtonClick}
+          />
         );
+
         const actionItem = node.find(ActionItems.Item).at(0);
 
         // when
         actionItem.simulate('click');
 
-        // await for operation response
-        await flushPromises();
-        node.update();
+        const {dataManager} = node.instance().props;
 
-        expect(api.applyOperation).toBeCalledWith(mockInstance.id, {
+        expect(dataManager.applyOperation).toBeCalledWith(mockInstance.id, {
           operationType: OPERATION_TYPE.RESOLVE_INCIDENT
         });
         // expect Spinner to appear
@@ -157,17 +170,21 @@ describe('Actions', () => {
       it('should handle the cancelation of an instance ', async () => {
         //given
         const node = shallow(
-          <Actions instance={mockInstance} onButtonClick={onButtonClick} />
+          <Actions.WrappedComponent
+            instance={mockInstance}
+            dataManager={new DataManager()}
+            onButtonClick={onButtonClick}
+          />
         );
         const actionItem = node.find(ActionItems.Item);
 
         // when
         actionItem.simulate('click');
-        await flushPromises();
-        node.update();
+
+        const {dataManager} = node.instance().props;
 
         // then
-        expect(api.applyOperation).toBeCalledWith(mockInstance.id, {
+        expect(dataManager.applyOperation).toBeCalledWith(mockInstance.id, {
           operationType: OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
         });
 
