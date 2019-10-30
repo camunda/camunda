@@ -21,6 +21,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -291,7 +292,7 @@ public class ClusteringRule extends ExternalResource {
 
     // copied from StandaloneGateway
     atomixCluster =
-        AtomixCluster.builder()
+        Atomix.builder()
             .withMemberId(clusterCfg.getMemberId())
             .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
             .withClusterId(clusterCfg.getClusterName())

@@ -40,6 +40,11 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>atomix</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>atomix-cluster</artifactId>
     </dependency>
 

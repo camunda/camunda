@@ -9,6 +9,7 @@ package io.zeebe.gateway;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.prometheus.client.exporter.HTTPServer;
 import io.zeebe.gateway.impl.broker.BrokerClient;
@@ -37,9 +38,9 @@ public class StandaloneGateway {
     this.gatewayCfg = gatewayCfg;
   }
 
-  private AtomixCluster createAtomixCluster(ClusterCfg clusterCfg) {
-    final AtomixCluster atomixCluster =
-        AtomixCluster.builder()
+  private AtomixCluster createAtomixCluster(final ClusterCfg clusterCfg) {
+    final var atomix =
+        Atomix.builder()
             .withMemberId(clusterCfg.getMemberId())
             .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
             .withClusterId(clusterCfg.getClusterName())
@@ -49,9 +50,8 @@ public class StandaloneGateway {
                     .build())
             .build();
 
-    atomixCluster.start();
-
-    return atomixCluster;
+    atomix.start();
+    return atomix;
   }
 
   private ActorScheduler createActorScheduler(GatewayCfg configuration) {
