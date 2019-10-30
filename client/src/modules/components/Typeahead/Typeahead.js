@@ -25,6 +25,8 @@ export default class Typeahead extends React.Component {
     total: 0
   };
 
+  optionClicked = true;
+
   componentDidMount() {
     document.body.addEventListener('click', this.close);
     this.loadInitialValues();
@@ -74,9 +76,11 @@ export default class Typeahead extends React.Component {
     document.body.removeEventListener('click', this.close);
   }
 
-  returnFocusToInput = evt => {
-    if (evt.target === this.optionsList) {
-      this.input.focus();
+  isOption = evt => evt.target !== this.optionsList && !evt.target.classList.contains('message');
+
+  handleListMouseDown = evt => {
+    if (!this.isOption(evt)) {
+      this.optionClicked = false;
     }
   };
 
@@ -261,7 +265,13 @@ export default class Typeahead extends React.Component {
   };
 
   resetToLastCommitted = () => {
-    this.setState({query: this.state.lastCommittedValue, optionsVisible: false});
+    if (!this.optionClicked) {
+      this.optionClicked = true;
+      // wait for input to blur before focusing again
+      setTimeout(() => this.input.focus(), 0);
+      return;
+    }
+    this.setState({query: this.state.lastCommittedValue});
   };
 
   render() {
@@ -299,7 +309,7 @@ export default class Typeahead extends React.Component {
           <div
             className="searchResultsList"
             ref={this.optionsListRef}
-            onMouseUp={this.returnFocusToInput}
+            onMouseDown={this.handleListMouseDown}
           >
             {loading ? <LoadingIndicator /> : values.map(this.renderOption)}
             {this.isAsync() &&
