@@ -22,19 +22,17 @@ async function createReport(
   name,
   definition = 'Lead Qualification',
   visualization = 'Line Chart',
-  aggregation
+  completed
 ) {
   await u.createNewReport(t);
   await u.selectDefinition(t, definition, 'All');
 
-  await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectView(t, 'Flow Node', 'Count');
   await u.selectVisualization(t, visualization);
 
-  if (aggregation) {
-    await t.click(Report.configurationButton);
-    await t.click(Report.aggregationTypeSelect);
-    await t.click(Report.aggregationOption(aggregation));
-    await t.click(Report.configurationButton);
+  if (completed) {
+    await t.click(Report.filterButton);
+    await t.click(Report.filterOption('Completed Instances Only'));
   }
 
   await t.typeText(Report.nameEditField, name, {replace: true});
@@ -87,7 +85,7 @@ test('combine two single number reports', async t => {
 
 test('combine two single table reports', async t => {
   await createReport(t, 'Another Table Report', 'Lead Qualification', 'Table');
-  await createReport(t, 'Table Report', 'Lead Qualification', 'Table', 'Minimum');
+  await createReport(t, 'Table Report', 'Lead Qualification', 'Table', true);
 
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
@@ -121,7 +119,7 @@ test('reorder table reports', async t => {
 
 test('combine two single chart reports', async t => {
   await createReport(t, 'Line Report - 1', 'Lead Qualification', 'Line Chart');
-  await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line Chart', 'Maximum');
+  await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line Chart', true);
 
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
@@ -160,7 +158,7 @@ test('change the color of one of the report in a combined chart report', async t
 
 test('open the configuration popover and add a goal line', async t => {
   await createReport(t, 'Bar Report - 1', 'Lead Qualification', 'Bar Chart');
-  await createReport(t, 'Bar Report - 2', 'Lead Qualification', 'Bar Chart', 'Maximum');
+  await createReport(t, 'Bar Report - 2', 'Lead Qualification', 'Bar Chart', true);
 
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
@@ -175,7 +173,7 @@ test('open the configuration popover and add a goal line', async t => {
 
   await t.click(Combined.configurationButton);
   await t.click(Combined.goalSwitch);
-  await t.typeText(Combined.goalInput, '1', {replace: true});
+  await t.typeText(Combined.goalInput, '300', {replace: true});
 
   await t
     .takeScreenshot('process/combined-report/combined-config.png', {fullPage: true})

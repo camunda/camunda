@@ -43,11 +43,6 @@ export const goalTargetInput = Selector('.Configuration .Popover fieldset')
   .find('.LabeledInput')
   .nth(1)
   .find('input');
-export const goalTargetUnit = Selector('.Configuration .Popover fieldset')
-  .withText('Goal')
-  .find('.InputGroup')
-  .nth(1)
-  .find('.Dropdown');
 export const dropdownOption = text => Selector('.Dropdown.is-open .DropdownOption').withText(text);
 export const flowNode = id => Selector(`.BPMNDiagram [data-element-id="${id}"]`);
 export const tooltip = reportRenderer.find('.Tooltip');

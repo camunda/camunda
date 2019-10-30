@@ -493,15 +493,12 @@ test('progress bar', async t => {
   await t.click(Homepage.contextMenu(e.report));
   await t.click(e.editButton);
 
+  await u.selectView(t, 'Process Instance', 'Count');
+
   await t.click(e.configurationButton);
 
-  await t.click(e.limitPrecisionSwitch);
-  await t.typeText(e.limitPrecisionInput, '2', {replace: true});
-
   await t.click(e.goalSwitch);
-  await t.typeText(e.goalTargetInput, '20', {replace: true});
-  await t.click(e.goalTargetUnit);
-  await t.click(e.dropdownOption('minutes'));
+  await t.typeText(e.goalTargetInput, '100', {replace: true});
 
   await t.click(e.configurationButton);
 
@@ -513,12 +510,12 @@ test('progress bar', async t => {
     .maximizeWindow();
 
   await t.click(e.configurationButton);
-  await t.typeText(e.goalTargetInput, '10', {replace: true});
+  await t.typeText(e.goalTargetInput, '50', {replace: true});
   await t.click(e.configurationButton);
 
   await t
     .resizeWindow(1000, 530)
-    .takeElementScreenshot(e.reportRenderer, 'process/single-report/proressbarExceeded.png')
+    .takeElementScreenshot(e.reportRenderer, 'process/single-report/progressbarExceeded.png')
     .maximizeWindow();
 });
 

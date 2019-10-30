@@ -27,6 +27,6 @@ export const goalSwitch = Selector('.Configuration .Popover fieldset')
   .find('.Switch');
 export const goalInput = Selector('.Configuration .Popover fieldset')
   .withText('Goal')
-  .find('.Input');
+  .find('.Input[type="number"]');
 
 export const dragEndIndicator = Selector('.endIndicator');
