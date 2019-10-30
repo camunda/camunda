@@ -8,7 +8,7 @@ import {Selector} from 'testcafe';
 
 export const singleReport = text =>
   Selector('.TypeaheadMultipleSelection__valueListItem')
-    .withText(text)
+    .withExactText(text)
     .find('input');
 export const report = title => Selector('.ListItem.report').withText(title);
 export const editButton = report => report.find('.DropdownOption').withText('Edit');
