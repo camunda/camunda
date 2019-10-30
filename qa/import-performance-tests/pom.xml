@@ -112,13 +112,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <forkCount>${env.LIMITS_CPU}</forkCount>
-          <reuseForks>true</reuseForks>
-          <systemPropertyVariables>
-            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-            <!--<org.slf4j.simpleLogger.defaultLogLevel>DEBUG</org.slf4j.simpleLogger.defaultLogLevel>-->
-            <!--<org.slf4j.simpleLogger.showDateTime>true</org.slf4j.simpleLogger.showDateTime>-->
-          </systemPropertyVariables>
+          <redirectTestOutputToFile>false</redirectTestOutputToFile>
         </configuration>
       </plugin>
 

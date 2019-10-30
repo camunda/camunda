@@ -27,7 +27,8 @@ public class Connector {
     String brokerContactPoint = dataGeneratorProperties.getZeebeBrokerContactPoint();
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
       .brokerContactPoint(brokerContactPoint)
-      .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
+      .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
+      .usePlaintext();
     //TODO test the connection?
     return builder.build();
   }

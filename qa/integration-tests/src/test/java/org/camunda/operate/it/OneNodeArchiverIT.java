@@ -56,7 +56,7 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-@TestPropertySource(properties = { OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false",
+@TestPropertySource(properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
     OperateProperties.PREFIX + ".webappEnabled = false",
     OperateProperties.PREFIX + ".clusterNode.nodeCount = 2",
     OperateProperties.PREFIX + ".clusterNode.currentNodeId = 0" })

@@ -7,6 +7,7 @@ package org.camunda.operate.archiver.security;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 @Configuration
 @Component("archiverWebSecurityConfig")
 @ConditionalOnMissingBean(name = "webSecurityConfig")
+@Order(20)
 public class DefaultWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Override

@@ -19,8 +19,10 @@ camunda.operate:
     host: localhost
     port: 9200
     prefix: zeebe-record
-  importProperties:
+  importer:
     startLoadingDataOnStartup: false
+  archiver:
+    rolloverEnabled: false
 logging:
   level:
     ROOT: INFO

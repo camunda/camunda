@@ -1,7 +1,5 @@
 camunda.operate:
   elasticsearch:
-  # disable rollover
-    rolloverEnabled: false
     clusterName: docker-cluster
     host: localhost
     port: 9200
@@ -16,8 +14,11 @@ camunda.operate:
     host: localhost
     port: 9200
     prefix: zeebe-record
-  importProperties:
+  importer:
     startLoadingDataOnStartup: false
+  archiver:
+    # disable rollover
+    rolloverEnabled: false
 logging:
   level:
     ROOT: INFO

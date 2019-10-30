@@ -37,7 +37,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   classes = {TestApplication.class},
-  properties = {OperateProperties.PREFIX + ".importProperties.startLoadingDataOnStartup = false",
+  properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
     OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"})
 @WebAppConfiguration
 @TestExecutionListeners(listeners = DependencyInjectionTestExecutionListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
