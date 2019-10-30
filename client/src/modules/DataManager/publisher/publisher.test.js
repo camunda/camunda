@@ -63,20 +63,6 @@ describe('Publisher', () => {
         [topicFoo]: [callbackMockOne, callbackMockTwo]
       });
     });
-
-    it('should print an warning if some one subscribes to unknown topic', () => {
-      // given
-      const topic = 'SOME_UNKNOWN_TOPIC';
-      global.console = {
-        warn: jest.fn()
-      };
-
-      // when
-      publisher.subscribe({[topic]: jest.fn()});
-
-      // then
-      expect(global.console.warn).toHaveBeenCalled();
-    });
   });
 
   describe('unsubscribe', () => {
@@ -198,22 +184,6 @@ describe('Publisher', () => {
       // then
       expect(callbackMockOne).toHaveBeenCalledWith(publishedValue);
       expect(callbackMockTwo).toHaveBeenCalledWith(publishedValue);
-    });
-
-    it('should print an warning if some one publishes to unknown topic', () => {
-      // given
-      const topic = 'SOME_UNKNOWN_TOPIC';
-      const publishedValue = 'StringValue';
-
-      global.console = {
-        warn: jest.fn()
-      };
-
-      // when 2
-      publisher.publish(topic, publishedValue);
-
-      // then
-      expect(global.console.warn).toHaveBeenCalled();
     });
   });
 });

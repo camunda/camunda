@@ -12,8 +12,10 @@ import {
   fetchWorkflowInstance,
   fetchWorkflowInstances,
   fetchWorkflowInstanceIncidents,
-  fetchVariables
+  fetchVariables,
+  applyOperation
 } from 'modules/api/instances';
+
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
 import {fetchWorkflowXML} from 'modules/api/diagram';
@@ -50,6 +52,15 @@ export class DataManager {
   }
 
   /** Wrapped API calls */
+
+  applyOperation(instanceId, payload) {
+    const operationLevel = payload.incidentId ? 'INCIDENT' : 'INSTANCE';
+
+    this.publisher.pubLoadingStates(
+      `OPERATION_APPLIED_${operationLevel}_${instanceId}`,
+      () => applyOperation(instanceId, payload)
+    );
+  }
 
   fetchAndPublish(topic, apiCall, params, staticContent) {
     const cachedParams = this.cache.update(topic, apiCall, params);

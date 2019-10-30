@@ -16,6 +16,7 @@ export const mockDataManager = () => {
     update: jest.fn(),
     subscribe: jest.fn(),
     unsubscribe: jest.fn(),
+    applyOperation: jest.fn(),
     getVariables: jest.fn(),
     getEvents: jest.fn(),
     getIncidents: jest.fn(),

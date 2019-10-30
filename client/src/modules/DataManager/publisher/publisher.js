@@ -25,8 +25,6 @@ export default class Publisher {
 
   subscribe(obj) {
     return Object.entries(obj).forEach(([topic, callback]) => {
-      !this.registeredTopics[topic] && this.printWarning(topic, 'subscribe');
-
       this.subscriptions = this.subscriptions[topic]
         ? {
             ...this.subscriptions,
@@ -48,8 +46,6 @@ export default class Publisher {
   }
 
   publish(topic, value, staticContent) {
-    !this.registeredTopics[topic] && this.printWarning(topic, 'publish');
-
     this.subscriptions[topic] &&
       this.subscriptions[topic].forEach(handle => {
         if (staticContent) {
