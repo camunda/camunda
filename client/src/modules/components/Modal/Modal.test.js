@@ -61,6 +61,21 @@ it('should call the onConfirm function when enter is pressed', () => {
   expect(spy).toHaveBeenCalled();
 });
 
+it('should not call the onConfirm function when enter is pressed on radio/checkbox element', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <Modal open={true} onConfirm={spy}>
+      <input />
+    </Modal>
+  );
+
+  node
+    .find('.Modal')
+    .simulate('keydown', {key: 'Enter', target: {tagName: 'input', type: 'radio'}});
+
+  expect(spy).not.toHaveBeenCalled();
+});
+
 it('should not call the onConfirm function when enter is pressed but the modal is not open', () => {
   const spy = jest.fn();
   mount(<Modal open={false} onConfirm={spy} />);

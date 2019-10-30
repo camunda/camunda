@@ -104,6 +104,8 @@ export default class Dropdown extends React.Component {
   };
 
   handleKeyPress = evt => {
+    evt.stopPropagation();
+
     const options = Array.from(
       this.container.querySelectorAll('.activateButton, li > :not([disabled])')
     );

@@ -100,7 +100,8 @@ export default class Modal extends React.Component {
     } else if (
       evt.key === 'Enter' &&
       this.props.open &&
-      evt.target.tagName.toLowerCase() !== 'button'
+      evt.target.tagName.toLowerCase() !== 'button' &&
+      !['checkbox', 'radio'].includes(evt.target.type)
     ) {
       const handler = this.props.onConfirm;
       handler && handler(evt);
