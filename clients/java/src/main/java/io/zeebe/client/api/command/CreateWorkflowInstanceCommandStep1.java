@@ -16,6 +16,7 @@
 package io.zeebe.client.api.command;
 
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.WorkflowInstanceResult;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -98,5 +99,17 @@ public interface CreateWorkflowInstanceCommandStep1 {
      *     it to the broker.
      */
     CreateWorkflowInstanceCommandStep3 variables(Object variables);
+
+    /**
+     * When this method is called, the response to the command will be received after the workflow
+     * is completed. The response consists of a set of variables.
+     *
+     * @return the builder for this command. Call {@link #send()} to complete the command and send
+     *     it to the broker
+     */
+    CreateWorkflowInstanceWithResultCommandStep1 withResult();
   }
+
+  interface CreateWorkflowInstanceWithResultCommandStep1
+      extends FinalCommandStep<WorkflowInstanceResult> {}
 }
