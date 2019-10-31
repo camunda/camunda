@@ -7,6 +7,7 @@
 import setup from '../setup';
 import config from '../config';
 import * as u from '../utils';
+import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as e from './ProcessReport.elements.js';
 import * as Homepage from './Homepage.elements.js';
@@ -554,7 +555,18 @@ test('heatmap target values', async t => {
 
   await t.expect(e.tooltip.textContent).contains('target\u00A0duration:\u00A01min');
 
+  await addAnnotation(e.targetValueButton, 'Toggle Target Value Mode');
+  await addAnnotation(e.tooltip, 'Target Value Tooltip', {x: -50, y: 0});
+  await addAnnotation(
+    e.flowNode('prepareBankTransfer'),
+    'Activity with Duration above\nTarget Value',
+    {x: -50, y: 0}
+  );
+  await addAnnotation(e.badge('prepareBankTransfer'), 'Target Value for Activity', {x: 50, y: 0});
+
   await t.takeScreenshot('process/single-report/targetvalue-1.png', {fullPage: true});
+
+  await clearAllAnnotations();
 
   await t.click(e.targetValueButton);
 

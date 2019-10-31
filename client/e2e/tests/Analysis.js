@@ -7,6 +7,7 @@
 import setup from '../setup';
 import config from '../config';
 import * as u from '../utils';
+import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as Analysis from './Analysis.elements.js';
 
@@ -52,9 +53,13 @@ test('show end event statistics on hover', async t => {
     .expect(Analysis.endEventOverlay.textContent)
     .contains('of Process Instances reached this state');
 
+  await addAnnotation(Analysis.endEventOverlay, 'End Event Information', {x: 50, y: 0});
+
   await t
     .takeScreenshot('process/analysis/branch-analysis/analysis-1.png', {fullPage: true})
     .maximizeWindow();
+
+  await clearAllAnnotations();
 });
 
 test('should deselect elements by clicking on the node or on the control panel', async t => {

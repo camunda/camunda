@@ -46,6 +46,8 @@ export const goalTargetInput = Selector('.Configuration .Popover fieldset')
 export const dropdownOption = text => Selector('.Dropdown.is-open .DropdownOption').withText(text);
 export const flowNode = id => Selector(`.BPMNDiagram [data-element-id="${id}"]`);
 export const tooltip = reportRenderer.find('.Tooltip');
+export const badge = id =>
+  Selector(`.BPMNDiagram .djs-overlay-container [data-container-id="${id}"] .djs-overlay`);
 export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = name =>
   Selector('.Modal .rt-tr')
