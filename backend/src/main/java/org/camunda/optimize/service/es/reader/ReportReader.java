@@ -198,20 +198,32 @@ public class ReportReader {
     );
   }
 
+  public List<ReportDefinitionDto> getAllReportsForIdsOmitXml(final List<String> reportIds) {
+    final String[] indices = new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME, SINGLE_DECISION_REPORT_INDEX_NAME};
+    return getReportDefinitionDtos(reportIds, ReportDefinitionDto.class, indices);
+  }
+
   public List<SingleProcessReportDefinitionDto> getAllSingleProcessReportsForIdsOmitXml(final List<String> reportIds) {
-    log.debug("Fetching all available single process reports for ids [{}]", reportIds);
+    final Class<SingleProcessReportDefinitionDto> reportType = SingleProcessReportDefinitionDto.class;
+    final String[] indices = new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME};
+    return getReportDefinitionDtos(reportIds, reportType, indices);
+  }
+
+  private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(final List<String> reportIds,
+                                                                         final Class<T> reportType, final String[] indices) {
+    log.debug("Fetching all available single reports for ids [{}]", reportIds);
 
     final String[] reportIdsAsArray = reportIds.toArray(new String[0]);
-    final SearchResponse searchResponse = performGetReportRequestForIdsOmitXml(reportIdsAsArray);
-    final List<SingleProcessReportDefinitionDto> singleReportDefinitionDtos =
-      mapResponseToReportList(searchResponse).stream()
+    final SearchResponse searchResponse = performGetReportRequestForIdsOmitXml(reportIdsAsArray, indices);
+    final List<T> reportDefinitionDtos =
+      mapResponseToReportList(searchResponse, reportType).stream()
         // make sure that the order of the reports corresponds to the one from the single report ids list
         .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
         .collect(Collectors.toList());
 
-    if (reportIds.size() != singleReportDefinitionDtos.size()) {
-      List<String> fetchedReportIds = singleReportDefinitionDtos.stream()
-        .map(SingleProcessReportDefinitionDto::getId)
+    if (reportIds.size() != reportDefinitionDtos.size()) {
+      List<String> fetchedReportIds = reportDefinitionDtos.stream()
+        .map(T::getId)
         .collect(Collectors.toList());
       String errorMessage =
         String.format("Error trying to fetch reports for given ids. Given ids [%s] and fetched [%s]. " +
@@ -221,19 +233,19 @@ public class ReportReader {
       log.error(errorMessage);
       throw new NotFoundException(errorMessage);
     }
-    return singleReportDefinitionDtos;
+    return reportDefinitionDtos;
   }
 
-  private List<SingleProcessReportDefinitionDto> mapResponseToReportList(SearchResponse searchResponse) {
-    List<SingleProcessReportDefinitionDto> singleReportDefinitionDtos = new ArrayList<>();
+  private <T extends ReportDefinitionDto> List<T> mapResponseToReportList(SearchResponse searchResponse, Class<T> c) {
+    List<T> reportDefinitionDtos = new ArrayList<>();
     for (SearchHit hit : searchResponse.getHits().getHits()) {
       String sourceAsString = hit.getSourceAsString();
       try {
-        SingleProcessReportDefinitionDto singleReportDefinitionDto = objectMapper.readValue(
+        T singleReportDefinitionDto = objectMapper.readValue(
           sourceAsString,
-          SingleProcessReportDefinitionDto.class
+          c
         );
-        singleReportDefinitionDtos.add(singleReportDefinitionDto);
+        reportDefinitionDtos.add(singleReportDefinitionDto);
       } catch (IOException e) {
         String reason = "While mapping search results of single report "
           + "it was not possible to deserialize a hit from Elasticsearch!"
@@ -243,22 +255,22 @@ public class ReportReader {
         throw new OptimizeRuntimeException(reason, e);
       }
     }
-    return singleReportDefinitionDtos;
+    return reportDefinitionDtos;
   }
 
-  private SearchResponse performGetReportRequestForIdsOmitXml(final String[] reportIdsAsArray) {
+  private SearchResponse performGetReportRequestForIdsOmitXml(final String[] reportIdsAsArray, final String[] indices) {
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(QueryBuilders.idsQuery().addIds(reportIdsAsArray));
     searchSourceBuilder.size(reportIdsAsArray.length);
     searchSourceBuilder.fetchSource(null, REPORT_LIST_EXCLUDES);
 
-    final SearchRequest searchRequest = new SearchRequest(SINGLE_PROCESS_REPORT_INDEX_NAME)
+    final SearchRequest searchRequest = new SearchRequest(indices)
       .source(searchSourceBuilder);
 
     try {
       return esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String reason = String.format("Was not able to fetch reports for ids [%s]", Arrays.asList(reportIdsAsArray));
+      String reason = String.format("Was not able to fetch reports for IDs [%s]", Arrays.asList(reportIdsAsArray));
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

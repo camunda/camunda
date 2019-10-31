@@ -7,6 +7,11 @@ package org.camunda.optimize.upgrade.main.impl;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.es.reader.AlertReader;
+import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.service.es.schema.index.CollectionIndex;
@@ -27,7 +32,9 @@ import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIn
 import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
+import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.util.EsHelper;
+import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -38,9 +45,17 @@ import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.index.query.QueryBuilders;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
+import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -49,6 +64,26 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
 
   private static final String FROM_VERSION = "2.6.0";
   private static final String TO_VERSION = "2.7.0";
+  private static final String ALERT_ARCHIVE_MAP_PARAMETER_NAME = "alertArchiveMap";
+
+  OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory();
+  final CollectionWriter collectionWriter = new CollectionWriter(
+    prefixAwareClient,
+    objectMapper,
+    optimizeDateTimeFormatterFactory.getObject()
+  );
+  final AlertReader alertReader = new AlertReader(
+    prefixAwareClient,
+    configurationService,
+    objectMapper
+  );
+  final ReportReader reportReader = new ReportReader(
+    prefixAwareClient,
+    configurationService,
+    objectMapper
+  );
+
+  private Map<String, String> alertArchiveMap = new HashMap<>();
 
   @Override
   public String getInitialVersion() {
@@ -88,6 +123,8 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeStep(moveParameterFieldsForProcessReport())
       .addUpgradeStep(removeDocumentsForImportIndexWithId("decisionDefinitionXmlImportIndex"))
       .addUpgradeStep(removeDocumentsForImportIndexWithId("processDefinitionXmlImportIndex"))
+      .addUpgradeStep(movePrivateProcessReportsWithAlertsToAlertArchiveCollection())
+      .addUpgradeStep(movePrivateDecisionReportsWithAlertsToAlertArchiveCollection())
       .build();
   }
 
@@ -166,4 +203,77 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
     return new UpdateIndexStep(index, null);
   }
 
+  private UpgradeStep movePrivateProcessReportsWithAlertsToAlertArchiveCollection() {
+    return movePrivateReportsWithAlertsToAlertArchiveCollection(SINGLE_PROCESS_REPORT_INDEX_NAME);
+  }
+
+  private UpgradeStep movePrivateDecisionReportsWithAlertsToAlertArchiveCollection() {
+    return movePrivateReportsWithAlertsToAlertArchiveCollection(SINGLE_DECISION_REPORT_INDEX_NAME);
+  }
+
+  private UpgradeStep movePrivateReportsWithAlertsToAlertArchiveCollection(final String reportType) {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("reportIdField", ID)
+        .put("collectionIdField", COLLECTION_ID)
+        .put("alertArchiveMapParam", ALERT_ARCHIVE_MAP_PARAMETER_NAME)
+        .build()
+    );
+
+    // @formatter:off
+    String script = substitutor.replace(
+      "if (params.${alertArchiveMapParam}.containsKey(ctx._source.${reportIdField})) {\n" +
+        "ctx._source.${collectionIdField} = " +
+          "params.${alertArchiveMapParam}.get(ctx._source.${reportIdField});" +
+      "}\n"
+    );
+    // @formatter:on
+
+    return new UpdateDataStep(
+      reportType,
+      QueryBuilders.matchAllQuery(),
+      script,
+      () -> getAlertArchiveMapParamMap()
+    );
+  }
+
+  private Map<String, Object> getAlertArchiveMapParamMap() {
+    if (alertArchiveMap.isEmpty()) {
+      populateReportToAlertArchiveCollectionMap();
+    }
+    return ImmutableMap.of(ALERT_ARCHIVE_MAP_PARAMETER_NAME, alertArchiveMap);
+  }
+
+  private void populateReportToAlertArchiveCollectionMap() {
+    alertArchiveMap = new HashMap<>();
+
+    final String alertArchiveCollectionName = "Alert Archive";
+
+    List<String> reportIds = alertReader.getStoredAlerts()
+      .stream()
+      .map(AlertDefinitionDto::getReportId)
+      .filter(id -> id != null)
+      .collect(toList());
+
+    // Map all reports without collectionIds to their owner userIds
+    Map<String, List<String>> userIdToReportIdMap = reportReader.getAllReportsForIdsOmitXml(reportIds)
+      .stream()
+      .filter(reportDto -> reportDto.getCollectionId() == null)
+      .collect(groupingBy(
+        ReportDefinitionDto::getOwner,
+        mapping(ReportDefinitionDto::getId, toList())
+      ));
+
+    // Create a new "alert archive" collection for every user
+    for (String userId : userIdToReportIdMap.keySet()) {
+      String collectionId = collectionWriter.createNewCollectionAndReturnId(
+        userId,
+        new PartialCollectionDefinitionDto(
+          alertArchiveCollectionName)
+      ).getId();
+      for (String reportId : userIdToReportIdMap.get(userId)) {
+        alertArchiveMap.put(reportId, collectionId);
+      }
+    }
+  }
 }

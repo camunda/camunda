@@ -11,6 +11,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom26To27;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -31,7 +33,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
 
-  private static final int EXPECTED_NUMBER_OF_REPORTS = 2;
+  private static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
+  private static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
+  private static final int EXPECTED_NUMBER_OF_DECISION_REPORTS = 2;
+  private static final int EXPECTED_NUMBER_OF_PROCESS_REPORTS = 3;
 
   @BeforeEach
   @Override
@@ -62,10 +67,17 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
-    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+
+    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_PROCESS_REPORTS));
     assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().isPresent(), is(true));
-    assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(), is("key"));
-    assertThat(allProcessReports.get(0).getData().getConfiguration().getSorting().get().getOrder().get(), is(SortOrder.ASC));
+    assertThat(
+      allProcessReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(),
+      is("key")
+    );
+    assertThat(
+      allProcessReports.get(0).getData().getConfiguration().getSorting().get().getOrder().get(),
+      is(SortOrder.ASC)
+    );
   }
 
   @Test
@@ -79,7 +91,8 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
-    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+
+    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_PROCESS_REPORTS));
     assertThat(allProcessReports.get(1).getData().getConfiguration().getSorting().isPresent(), is(false));
   }
 
@@ -94,7 +107,8 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
-    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+
+    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_PROCESS_REPORTS));
     assertThat(allProcessReports.get(0).getData().getConfiguration().getProcessPart().isPresent(), is(true));
     assertThat(
       allProcessReports.get(0).getData().getConfiguration().getProcessPart().get().getStart(),
@@ -117,7 +131,8 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleProcessReportDefinitionDto> allProcessReports =
       getAllReports(SINGLE_PROCESS_REPORT_INDEX.getIndexName(), SingleProcessReportDefinitionDto.class);
-    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+
+    assertThat(allProcessReports.size(), is(EXPECTED_NUMBER_OF_PROCESS_REPORTS));
     assertThat(allProcessReports.get(1).getData().getConfiguration().getProcessPart().isPresent(), is(false));
   }
 
@@ -132,13 +147,17 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleDecisionReportDefinitionDto> allDecisionReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
-    assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+
+    assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_DECISION_REPORTS));
     assertThat(allDecisionReports.get(0).getData().getConfiguration().getSorting().isPresent(), is(true));
     assertThat(
       allDecisionReports.get(0).getData().getConfiguration().getSorting().get().getBy().get(),
       is("evaluationDateTime")
     );
-    assertThat(allDecisionReports.get(0).getData().getConfiguration().getSorting().get().getOrder().get(), is(SortOrder.ASC));
+    assertThat(
+      allDecisionReports.get(0).getData().getConfiguration().getSorting().get().getOrder().get(),
+      is(SortOrder.ASC)
+    );
   }
 
   @Test
@@ -152,7 +171,8 @@ public class UpgradeReportParameterFieldIT extends AbstractUpgradeIT {
     // then
     List<SingleDecisionReportDefinitionDto> allDecisionReports =
       getAllReports(SINGLE_DECISION_REPORT_INDEX.getIndexName(), SingleDecisionReportDefinitionDto.class);
-    assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_REPORTS));
+
+    assertThat(allDecisionReports.size(), is(EXPECTED_NUMBER_OF_DECISION_REPORTS));
     assertThat(allDecisionReports.get(1).getData().getConfiguration().getSorting().isPresent(), is(false));
   }
 
