@@ -63,6 +63,8 @@ type CreateInstanceCommandStep3 interface {
 
 type CreateInstanceWithResultCommandStep1 interface {
 	DispatchCreateInstanceWithResultCommand
+
+	FetchVariables(variableNames ...string) CreateInstanceWithResultCommandStep1
 }
 
 type CreateInstanceCommand struct {
@@ -152,6 +154,11 @@ func (cmd *CreateInstanceCommand) WithResult() CreateInstanceWithResultCommandSt
 		requestTimeout: cmd.requestTimeout,
 		retryPredicate: cmd.retryPredicate,
 	}
+}
+
+func (cmd *CreateInstanceWithResultCommand) FetchVariables(variableNames ...string) CreateInstanceWithResultCommandStep1 {
+	cmd.request.FetchVariables = variableNames
+	return cmd
 }
 
 func (cmd *CreateInstanceCommand) Send() (*pb.CreateWorkflowInstanceResponse, error) {
