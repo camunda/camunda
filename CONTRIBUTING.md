@@ -27,14 +27,6 @@ This is a small overview of the contents of the different modules:
 - `broker` contains the Zeebe broker which is the server side of Zeebe
 - `client-java` contains the Java Zeebe client
 
-## Building the Documentation
-
-The documentation is located in the folder `docs`. In order to build the
-documentation you need the [mdbook](https://github.com/rust-lang-nursery/mdBook/releases) utilitity.
-
-After this run the command `mdbook serve` in the `docs` folder. It will build
-the documentation on every change and make it accessible under [http://localhost:3000](http://localhost:3000).
-
 ## Reporting issues or contact developers
 
 Zeebe uses GitHub issues to organize the development process. If you want to
