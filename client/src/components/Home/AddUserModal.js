@@ -49,6 +49,23 @@ export default class AddUserModal extends Component {
     );
   };
 
+  formatTypeaheadOption = ({name, email, id, type}) => {
+    const subTexts = [];
+    if (name) {
+      subTexts.push(email);
+    }
+
+    if (name || email) {
+      subTexts.push(id);
+    }
+
+    return {
+      text: name || email || id,
+      tag: type === 'group' && ' (User Group)',
+      subTexts
+    };
+  };
+
   isValid = () => this.state.selectedIdentity && !this.alreadyExists();
 
   render() {
@@ -70,11 +87,7 @@ export default class AddUserModal extends Component {
                 placeholder={t('common.collection.addUserModal.searchPlaceholder')}
                 values={searchIdentities}
                 onSelect={identity => this.setState({selectedIdentity: identity})}
-                formatter={({name, email, id, type}) => ({
-                  text: name || email || id,
-                  tag: type === 'group' && ' (User Group)',
-                  subTexts: [email, id]
-                })}
+                formatter={this.formatTypeaheadOption}
               />
               {alreadyExists && selectedIdentity.type === 'user' && (
                 <ErrorMessage>{t('home.roles.existing-user-error')}</ErrorMessage>
