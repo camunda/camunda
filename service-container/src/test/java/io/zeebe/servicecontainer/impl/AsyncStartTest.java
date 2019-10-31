@@ -354,7 +354,7 @@ public class AsyncStartTest {
     // then
     assertFailed(service1StartFuture);
     assertCompleted(removeFuture);
-    assertThat(service.wasStopped).isFalse();
+    assertThat(service.wasStopped).isTrue();
   }
 
   static class AsyncStartService implements Service<Object> {

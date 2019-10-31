@@ -10,6 +10,7 @@ package io.zeebe.servicecontainer.impl;
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertFailed;
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -360,5 +361,113 @@ public class DependenciesTest {
     final InOrder inOrder = inOrder(mockService1, mockService2);
     inOrder.verify(mockService1, times(1)).stop(any(ServiceStopContext.class));
     inOrder.verify(mockService2, times(1)).stop(any(ServiceStopContext.class));
+  }
+
+  @Test
+  public void shouldStopDependentServicesWhenAwaitStartState() {
+    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
+    final Service<Object> mockService1 = mock(Service.class);
+    final Service<Object> mockService2 =
+        spy(
+            new Service<Object>() {
+              @Override
+              public void start(ServiceStartContext startContext) {
+                startContext.async(openFuture, true);
+              }
+
+              @Override
+              public Object get() {
+                return null;
+              }
+            });
+    final Service<Object> mockService3 = mock(Service.class);
+
+    // given
+    serviceContainer.createService(service1, mockService3).install();
+    serviceContainer.createService(service2, mockService2).dependency(service1).install();
+    serviceContainer.createService(service3, mockService1).dependency(service2).install();
+
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    serviceContainer.removeService(service1);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+
+    final ActorFuture<Boolean> service2Exists = serviceContainer.hasService(service2);
+    final ActorFuture<Boolean> service3Exists = serviceContainer.hasService(service3);
+    actorSchedulerRule.workUntilDone();
+    assertThat(service3Exists.join()).isFalse();
+    assertThat(service2Exists.join()).isFalse();
+  }
+
+  @Test
+  public void shouldStopDependentServicesWhenAwaitDependenciesState() {
+    final Service<Object> mockService1 = mock(Service.class);
+    final Service<Object> mockService2 = mock(Service.class);
+    final Service<Object> mockService3 = mock(Service.class);
+    final ServiceName<Object> notAvailableServiceName =
+        ServiceName.newServiceName("not-available-service", Object.class);
+
+    // given
+    serviceContainer
+        .createService(service3, mockService3)
+        .dependency(notAvailableServiceName)
+        .install();
+    serviceContainer.createService(service2, mockService2).dependency(service3).install();
+    serviceContainer.createService(service1, mockService1).dependency(service2).install();
+
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    serviceContainer.removeService(service3);
+    actorSchedulerRule.workUntilDone();
+
+    // then
+    final ActorFuture<Boolean> service1Exists = serviceContainer.hasService(service1);
+    final ActorFuture<Boolean> service2Exists = serviceContainer.hasService(service1);
+    actorSchedulerRule.workUntilDone();
+    assertThat(service1Exists.join()).isFalse();
+    assertThat(service2Exists.join()).isFalse();
+  }
+
+  @Test
+  public void shouldStopDependentServicesWhenAwaitStartStateFailed() {
+    final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
+    final Service<Object> mockService1 = mock(Service.class);
+    final Service<Object> mockService2 =
+        spy(
+            new Service<Object>() {
+              @Override
+              public void start(ServiceStartContext startContext) {
+                startContext.async(openFuture, true);
+              }
+
+              @Override
+              public Object get() {
+                return null;
+              }
+            });
+    final Service<Object> mockService3 = mock(Service.class);
+
+    // given
+    serviceContainer.createService(service1, mockService3).install();
+    serviceContainer.createService(service2, mockService2).dependency(service1).install();
+    serviceContainer.createService(service3, mockService1).dependency(service2).install();
+
+    actorSchedulerRule.workUntilDone();
+
+    // when
+    openFuture.completeExceptionally(new RuntimeException());
+    actorSchedulerRule.workUntilDone();
+
+    // then
+
+    final ActorFuture<Boolean> service2Exists = serviceContainer.hasService(service2);
+    final ActorFuture<Boolean> service3Exists = serviceContainer.hasService(service3);
+    actorSchedulerRule.workUntilDone();
+    assertThat(service3Exists.join()).isFalse();
+    assertThat(service2Exists.join()).isFalse();
   }
 }
