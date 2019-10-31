@@ -77,6 +77,7 @@
     <version.wiremock>2.25.1</version.wiremock>
     <version.asm>7.2</version.asm>
     <version.testcontainers>1.12.3</version.testcontainers>
+    <version.netflix.concurrency>0.3.6</version.netflix.concurrency>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
@@ -517,6 +518,15 @@
         <groupId>org.testcontainers</groupId>
         <artifactId>testcontainers</artifactId>
         <version>${version.testcontainers}</version>
+      </dependency>
+
+
+
+
+      <dependency>
+        <groupId>com.netflix.concurrency-limits</groupId>
+        <artifactId>concurrency-limits-core</artifactId>
+        <version>${version.netflix.concurrency}</version>
       </dependency>
 
     </dependencies>
