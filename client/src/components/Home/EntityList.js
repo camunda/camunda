@@ -15,8 +15,8 @@ import {checkDeleteConflict, deleteEntity, createEntity, updateEntity} from 'ser
 import {withErrorHandling} from 'HOC';
 
 import CreateNewButton from './CreateNewButton';
-import CollectionModal from './CollectionModal';
-import CopyModal from './CopyModal';
+import CollectionModal from './modals/CollectionModal';
+import CopyModal from './modals/CopyModal';
 import ListItem from './ListItem';
 
 import {ReactComponent as ReportIcon} from './icons/report.svg';

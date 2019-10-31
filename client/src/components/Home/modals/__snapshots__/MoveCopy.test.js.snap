@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Fragment>
+  <FormGroup
+    className="moveSection"
+  >
+    <Switch
+      checked={true}
+      label="Move copy to …"
+      onChange={[Function]}
+    />
+  </FormGroup>
+  <FormGroup
+    noSpacing={true}
+  >
+    <Typeahead
+      formatter={[Function]}
+      initialValue={null}
+      noValuesMessage="No collections have been created"
+      onSelect={[MockFunction]}
+      placeholder="Please select"
+      values={
+        Array [
+          Object {
+            "entityType": "collection",
+            "id": null,
+            "name": "Home",
+          },
+        ]
+      }
+    />
+  </FormGroup>
+  <FormGroup>
+    This Dashboard contains 2 Reports. They will be copied, too.
+  </FormGroup>
+</Fragment>
+`;

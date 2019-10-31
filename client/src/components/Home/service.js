@@ -52,9 +52,3 @@ export async function copyEntity(type, id, name, collectionId) {
 
   return json.id;
 }
-
-export async function searchIdentities(terms) {
-  const response = await get(`api/identity/search`, {terms});
-
-  return await response.json();
-}

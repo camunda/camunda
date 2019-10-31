@@ -9,13 +9,13 @@ import {shallow} from 'enzyme';
 
 import {Switch} from 'components';
 
-import CopyModalWithErrorHandling from './CopyModal';
+import MoveCopyWithErrorHandling from './MoveCopy';
 
-import {loadEntities} from './service';
+import {loadEntities} from '../service';
 
-const CopyModal = CopyModalWithErrorHandling.WrappedComponent;
+const MoveCopy = MoveCopyWithErrorHandling.WrappedComponent;
 
-jest.mock('./service', () => ({
+jest.mock('../service', () => ({
   loadEntities: jest.fn().mockReturnValue([
     {
       id: 'aCollectionId',
@@ -43,8 +43,8 @@ jest.mock('./service', () => ({
       lastModified: '2017-11-11T11:11:11.1111',
       created: '2017-11-11T11:11:11.1111',
       owner: 'user_id',
-      lastModifier: 'user_id',
       entityType: 'dashboard',
+      lastModifier: 'user_id',
       currentUserRole: 'editor',
       data: {
         subEntityCounts: {
@@ -72,63 +72,61 @@ jest.mock('./service', () => ({
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   entity: {name: 'Test Dashboard', entityType: 'dashboard', data: {subEntityCounts: {report: 2}}},
-  collection: 'aCollectionId',
-  onConfirm: jest.fn(),
-  onClose: jest.fn()
+  collection: null,
+  moving: true,
+  setMoving: jest.fn(),
+  setCollection: jest.fn(),
+  parentCollection: 'aCollectionId'
 };
 
 it('should match snapshot', () => {
-  const node = shallow(<CopyModal {...props} />);
+  const node = shallow(<MoveCopy {...props} />);
 
   expect(node).toMatchSnapshot();
 });
 
 it('should load available collections', () => {
-  shallow(<CopyModal {...props} />);
+  shallow(<MoveCopy {...props} />);
 
   expect(loadEntities).toHaveBeenCalled();
 });
 
-it('should offer to move the copy', () => {
-  const node = shallow(<CopyModal {...props} jumpToEntity />);
+it('should invoke setCopy on copy switch change', async () => {
+  const node = shallow(<MoveCopy {...props} />);
 
-  node.find(Switch).simulate('change', {target: {checked: true}});
+  node.find(Switch).simulate('change', {target: {checked: false}});
 
-  expect(node).toMatchSnapshot();
+  expect(props.setMoving).toHaveBeenCalledWith(false);
 });
 
-it('should hide option to move the copy for collection entities', () => {
-  const node = shallow(
-    <CopyModal {...props} entity={{name: 'collection', entityType: 'collection'}} />
-  );
+it('should invoke setCollection on collection selection', async () => {
+  const node = shallow(<MoveCopy {...props} />);
 
-  expect(node).toMatchSnapshot();
-});
+  const collection = {
+    id: 'aCollectionId',
+    name: 'aCollectionName',
+    lastModified: '2017-11-11T11:11:11.1111',
+    created: '2017-11-11T11:11:11.1111',
+    owner: 'user_id',
+    lastModifier: 'user_id',
+    entityType: 'collection',
+    currentUserRole: 'manager',
+    data: {
+      subEntityCounts: {
+        dashboard: 2,
+        report: 8
+      },
+      roleCounts: {
+        user: 5,
+        group: 2
+      }
+    }
+  };
 
-it('should call the onConfirm action', () => {
-  const node = shallow(
-    <CopyModal {...props} jumpToEntity entity={{name: 'collection', entityType: 'collection'}} />
-  );
+  node
+    .find('Typeahead')
+    .props()
+    .onSelect(collection);
 
-  node.find('.confirm').simulate('click');
-
-  expect(props.onConfirm).toHaveBeenCalledWith('collection (copy)', true);
-});
-
-it('should hide the jump checkbox if jumpToEntity property is not added', () => {
-  const node = shallow(<CopyModal {...props} />);
-
-  expect(node.find('LabeledInput[type="checkbox"]')).not.toExist();
-
-  node.find('.confirm').simulate('click');
-
-  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', false, false);
-});
-
-it('should call the onConfirm with false redirect parameter if entity is not a collection', () => {
-  const node = shallow(<CopyModal {...props} jumpToEntity />);
-
-  node.find('.confirm').simulate('click');
-
-  expect(props.onConfirm).toHaveBeenCalledWith('Test Dashboard (copy)', false, false);
+  expect(props.setCollection).toHaveBeenCalledWith(collection);
 });

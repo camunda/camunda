@@ -15,14 +15,14 @@ import {loadEntity, updateEntity, deleteEntity} from 'services';
 import {showError, addNotification} from 'notifications';
 import {refreshBreadcrumbs} from 'components/navigation';
 import {copyEntity} from './service';
-import CopyModal from './CopyModal';
+import CopyModal from './modals/CopyModal';
 
 import {ReactComponent as CollectionIcon} from './icons/collection.svg';
 
 import EntityList from './EntityList';
 import UserList from './UserList';
 import AlertList from './AlertList';
-import CollectionModal from './CollectionModal';
+import CollectionModal from './modals/CollectionModal';
 
 import './Collection.scss';
 

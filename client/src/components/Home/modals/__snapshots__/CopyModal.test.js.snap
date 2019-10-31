@@ -1,0 +1,108 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should hide option to move the copy for collection entities 1`] = `
+<Modal
+  className="CopyModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Copy collection
+  </Component>
+  <Component>
+    <Form>
+      <FormGroup>
+        <LabeledInput
+          autoComplete="off"
+          label="Name of Copy"
+          onChange={[Function]}
+          type="text"
+          value="collection (copy)"
+        />
+      </FormGroup>
+      <InfoMessage>
+        All items and users will be copied.
+      </InfoMessage>
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={false}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Copy
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;
+
+exports[`should match snapshot 1`] = `
+<Modal
+  className="CopyModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Copy Test Dashboard
+  </Component>
+  <Component>
+    <Form>
+      <FormGroup>
+        <LabeledInput
+          autoComplete="off"
+          label="Name of Copy"
+          onChange={[Function]}
+          type="text"
+          value="Test Dashboard (copy)"
+        />
+      </FormGroup>
+      <MoveCopyErrorHandler
+        collection={null}
+        entity={
+          Object {
+            "data": Object {
+              "subEntityCounts": Object {
+                "report": 2,
+              },
+            },
+            "entityType": "dashboard",
+            "name": "Test Dashboard",
+          }
+        }
+        moving={false}
+        parentCollection="aCollectionId"
+        setCollection={[Function]}
+        setMoving={[Function]}
+      />
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={false}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Copy
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;

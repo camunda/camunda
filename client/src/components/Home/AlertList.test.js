@@ -11,7 +11,7 @@ import {Button, Dropdown} from 'components';
 import {loadReports} from 'services';
 
 import AlertListWithErrorHandling from './AlertList';
-import AlertModal from './AlertModal';
+import AlertModal from './modals/AlertModal';
 import {loadAlerts} from './service';
 
 const AlertList = AlertListWithErrorHandling.WrappedComponent;

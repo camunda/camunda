@@ -11,8 +11,8 @@ import {LoadingIndicator, Icon, Dropdown, Input, ConfirmationModal, Button} from
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
-import AddUserModal from './AddUserModal';
-import EditUserModal from './EditUserModal';
+import AddUserModal from './modals/AddUserModal';
+import EditUserModal from './modals/EditUserModal';
 import ListItem from './ListItem';
 
 import {addUser, editUser, removeUser} from './service';

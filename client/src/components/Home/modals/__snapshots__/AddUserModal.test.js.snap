@@ -18,6 +18,7 @@ exports[`should match snapshot 1`] = `
           formatter={[Function]}
           onSelect={[Function]}
           placeholder="Search for name, email or ID ..."
+          values={[Function]}
         />
       </FormGroup>
       User role

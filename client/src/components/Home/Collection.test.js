@@ -12,8 +12,8 @@ import {refreshBreadcrumbs} from 'components/navigation';
 import {loadEntity, deleteEntity, updateEntity} from 'services';
 
 import CollectionWithErrorHandling from './Collection';
-import CollectionModal from './CollectionModal';
-import CopyModal from './CopyModal';
+import CollectionModal from './modals/CollectionModal';
+import CopyModal from './modals/CopyModal';
 import {copyEntity} from './service';
 
 jest.mock('./service', () => ({copyEntity: jest.fn()}));

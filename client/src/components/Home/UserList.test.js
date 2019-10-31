@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import {ConfirmationModal, Dropdown} from 'components';
 
 import {editUser, removeUser} from './service';
-import EditUserModal from './EditUserModal';
+import EditUserModal from './modals/EditUserModal';
 
 import UserListWithErrorHandling from './UserList';
 

@@ -12,7 +12,7 @@ import {showError} from 'notifications';
 import {formatters, loadReports, isDurationReport} from 'services';
 import {withErrorHandling} from 'HOC';
 
-import AlertModal from './AlertModal';
+import AlertModal from './modals/AlertModal';
 import ListItem from './ListItem';
 
 import {loadAlerts, addAlert, editAlert, removeAlert} from './service';

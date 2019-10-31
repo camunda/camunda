@@ -11,8 +11,8 @@ import {Dropdown} from 'components';
 import {checkDeleteConflict, updateEntity, deleteEntity} from 'services';
 
 import CreateNewButton from './CreateNewButton';
-import CollectionModal from './CollectionModal';
-import CopyModal from './CopyModal';
+import CollectionModal from './modals/CollectionModal';
+import CopyModal from './modals/CopyModal';
 import EntityListWithErrorHandling from './EntityList';
 import {copyEntity} from './service';
 
