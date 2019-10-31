@@ -183,6 +183,7 @@ public class BrokerClientTest {
     final ClientTransport clientTransport = ((BrokerClientImpl) client).getTransport();
     final LoggingChannelListener channelListener = new LoggingChannelListener();
     clientTransport.registerChannelListener(channelListener).join();
+    awaitConnectedChannels(channelListener, 1);
 
     // ensuring an open connection
     broker.onExecuteCommandRequest(ValueType.DEPLOYMENT, DeploymentIntent.CREATE).doNotRespond();
@@ -193,13 +194,7 @@ public class BrokerClientTest {
     broker.bindTransport();
 
     // then
-    waitUntil(
-        () ->
-            channelListener.connectionState.stream()
-                    .filter(state -> state == ConnectionState.CONNECTED)
-                    .count()
-                == 2); // listener invocation is asynchronous
-
+    awaitConnectedChannels(channelListener, 2); // listener invocation is asynchronous
     assertThat(channelListener.connectionState).last().isSameAs(ConnectionState.CONNECTED);
   }
 
@@ -388,6 +383,15 @@ public class BrokerClientTest {
             .done();
 
     builder.register();
+  }
+
+  private void awaitConnectedChannels(final LoggingChannelListener listener, final int count) {
+    waitUntil(
+        () ->
+            listener.connectionState.stream()
+                    .filter(state -> state == ConnectionState.CONNECTED)
+                    .count()
+                == count);
   }
 
   protected static class LoggingChannelListener implements TransportListener {
