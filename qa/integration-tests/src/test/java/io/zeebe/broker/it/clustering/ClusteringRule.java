@@ -605,8 +605,11 @@ public class ClusteringRule extends ExternalResource {
       throw new RuntimeException(e);
     }
 
+    // need to extract value before removing the service, as once stopped we will
+    // uninject the value
+    final var injected = injector.getValue();
     serviceContainer.removeService(accessorServiceName);
 
-    return injector.getValue();
+    return injected;
   }
 }
