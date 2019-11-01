@@ -25,10 +25,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
@@ -80,10 +78,7 @@ public class ProcessDistributedByUserTask extends ProcessDistributedByPart {
       distributedByUserTask.add(emptyResult);
     });
 
-    // by default they should be sorted by label even if no sorting is provided by the user
-    return distributedByUserTask.stream()
-      .sorted(Comparator.comparing(DistributedByResult::getLabel))
-      .collect(Collectors.toList());
+    return distributedByUserTask;
   }
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {

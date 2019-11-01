@@ -100,23 +100,6 @@ public class ProcessVariableQueryFilter implements QueryFilter<VariableFilterDat
     return queryBuilder;
   }
 
-  private BoolQueryBuilder createBooleanQueryBuilder(BooleanVariableFilterDataDto dto) {
-
-    BoolQueryBuilder boolQueryBuilder = boolQuery();
-    String nestedVariableNameFieldLabel = getNestedVariableNameField();
-    String nestedVariableValueFieldLabel = getVariableValueFieldForType(dto.getType());
-    boolQueryBuilder.must(
-      nestedQuery(
-        VARIABLES,
-        boolQuery()
-          .must(termQuery(nestedVariableNameFieldLabel, dto.getName()))
-          .must(termQuery(nestedVariableValueFieldLabel, dto.getData().getValue())),
-        ScoreMode.None
-      )
-    );
-    return boolQueryBuilder;
-  }
-
   private QueryBuilder createStringQueryBuilder(StringVariableFilterDataDto dto) {
     String operator = dto.getData().getOperator();
     if (operator.equals(IN)) {

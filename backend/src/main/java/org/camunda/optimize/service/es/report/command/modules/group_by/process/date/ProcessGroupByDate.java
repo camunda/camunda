@@ -5,13 +5,15 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.date;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByPart;
+import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -50,7 +52,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
-public abstract class ProcessGroupByDate extends ProcessGroupByPart {
+public abstract class ProcessGroupByDate extends GroupByPart<ProcessReportDataDto> {
 
   protected final ConfigurationService configurationService;
   private final IntervalAggregationService intervalAggregationService;
@@ -166,12 +168,16 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ExecutionContext<ProcessReportDataDto> context) {
-    CompositeCommandResult result = new CompositeCommandResult();
+  public void addQueryResult(final CompositeCommandResult result,
+                             final SearchResponse response,
+                             final ExecutionContext<ProcessReportDataDto> context) {
     result.setGroups(processAggregations(response, response.getAggregations(), context));
     result.setIsComplete(isResultComplete(response));
-    return result;
+    result.setSorting(
+      context.getReportConfiguration()
+        .getSorting()
+        .orElseGet(() -> new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC))
+    );
   }
 
   private List<GroupByResult> processAggregations(final SearchResponse response,

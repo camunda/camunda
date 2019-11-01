@@ -8,9 +8,12 @@ package org.camunda.optimize.service.es.report.command.modules.result;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
@@ -21,14 +24,20 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.Report
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 
 @Data
+@Accessors(chain = true)
 public class CompositeCommandResult {
 
+
+  private SortingDto sorting = new SortingDto(null, null);
+  private boolean keyIsOfNumericType = false;
 
   private List<GroupByResult> groups = new ArrayList<>();
   private Boolean isComplete = true;
@@ -68,6 +77,7 @@ public class CompositeCommandResult {
 
   @AllArgsConstructor(access = AccessLevel.PROTECTED)
   @Data
+  @EqualsAndHashCode
   public static class DistributedByResult {
 
     private String key;
@@ -116,6 +126,7 @@ public class CompositeCommandResult {
     for (GroupByResult group : groups) {
       List<MapResultEntryDto> distribution = group.distributions.stream()
         .map(DistributedByResult::getValueAsMapResultEntry)
+        .sorted(getSortingComparator(sorting, keyIsOfNumericType))
         .collect(Collectors.toList());
       resultDto.getData().add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
     }
@@ -125,15 +136,18 @@ public class CompositeCommandResult {
   public ReportMapResultDto transformToMap() {
     ReportMapResultDto resultDto = new ReportMapResultDto();
     resultDto.setIsComplete(this.isComplete);
+    List<MapResultEntryDto> mapData = new ArrayList<>();
     for (GroupByResult group : groups) {
       final List<DistributedByResult> distributions = group.getDistributions();
       if (distributions.size() == 1) {
         final Long value = distributions.get(0).getValueAsLong();
-        resultDto.getData().add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
+        mapData.add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedBy.class));
       }
     }
+    mapData.sort(getSortingComparator(sorting, keyIsOfNumericType));
+    resultDto.setData(mapData);
     return resultDto;
   }
 
@@ -186,6 +200,42 @@ public class CompositeCommandResult {
     } else {
       throw new OptimizeRuntimeException(createErrorMessage(RawDataDecisionReportResultDto.class, GroupByResult.class));
     }
+  }
+
+  private Comparator<MapResultEntryDto> getSortingComparator(
+    final SortingDto sorting,
+    final boolean keyIsOfNumericType) {
+
+    final String sortBy = sorting.getBy().orElse(SortingDto.SORT_BY_KEY);
+    final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.ASC);
+
+    final Function<MapResultEntryDto, Comparable> valueToSortByExtractor;
+    switch (sortBy) {
+      default:
+      case SortingDto.SORT_BY_KEY:
+        valueToSortByExtractor = keyIsOfNumericType?
+          entry -> Double.valueOf(entry.getKey()) : entry -> entry.getKey().toLowerCase();
+        break;
+      case SortingDto.SORT_BY_VALUE:
+        valueToSortByExtractor = MapResultEntryDto::getValue;
+        break;
+      case SortingDto.SORT_BY_LABEL:
+        valueToSortByExtractor = entry -> entry.getLabel().toLowerCase();
+        break;
+    }
+
+    final Comparator<MapResultEntryDto> comparator;
+    switch (sortOrder) {
+      case DESC:
+        comparator = Comparator.comparing(valueToSortByExtractor, Comparator.nullsLast(Comparator.reverseOrder()));
+        break;
+      default:
+      case ASC:
+        comparator = Comparator.comparing(valueToSortByExtractor, Comparator.nullsLast(Comparator.naturalOrder()));
+        break;
+    }
+
+    return comparator;
   }
 
   private String createErrorMessage(Class resultClass, Class resultPartClass) {

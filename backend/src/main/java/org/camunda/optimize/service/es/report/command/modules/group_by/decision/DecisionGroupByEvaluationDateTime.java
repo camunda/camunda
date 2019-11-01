@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.decision;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
@@ -16,6 +18,7 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.decision.util.DecisionInstanceQueryUtil;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
@@ -58,7 +61,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
+public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionReportDataDto> {
 
   private final IntervalAggregationService intervalAggregationService;
   private final ConfigurationService configurationService;
@@ -146,12 +149,16 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ExecutionContext<DecisionReportDataDto> context) {
-    CompositeCommandResult result = new CompositeCommandResult();
+  public void addQueryResult(final CompositeCommandResult result,
+                             final SearchResponse response,
+                             final ExecutionContext<DecisionReportDataDto> context) {
     result.setGroups(processAggregations(response, response.getAggregations(), context));
     result.setIsComplete(isResultComplete(response));
-    return result;
+    result.setSorting(
+      context.getReportConfiguration()
+        .getSorting()
+        .orElseGet(() -> new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC))
+    );
   }
 
   private List<GroupByResult> processAggregations(final SearchResponse response, final Aggregations aggregations,

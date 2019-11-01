@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -45,7 +46,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByUserTask extends ProcessGroupByPart {
+public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
 
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
   private static final String USER_TASKS_AGGREGATION = "userTasks";
@@ -79,9 +80,9 @@ public class ProcessGroupByUserTask extends ProcessGroupByPart {
     return Collections.singletonList(groupByAssigneeAggregation);
   }
 
-  @Override
-  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ExecutionContext<ProcessReportDataDto> context) {
+  public void addQueryResult(final CompositeCommandResult compositeCommandResult,
+                             final SearchResponse response,
+                             final ExecutionContext<ProcessReportDataDto> context) {
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
@@ -108,11 +109,8 @@ public class ProcessGroupByUserTask extends ProcessGroupByPart {
       groupedData.add(emptyResult);
     });
 
-    CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
-
-    return compositeCommandResult;
   }
 
   private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {

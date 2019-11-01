@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByMatchedRuleDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -32,7 +33,7 @@ import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
+public class DecisionGroupByMatchedRule extends GroupByPart<DecisionReportDataDto> {
 
   private final ConfigurationService configurationService;
 
@@ -50,8 +51,9 @@ public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ExecutionContext<DecisionReportDataDto> context) {
+  public void addQueryResult(final CompositeCommandResult compositeCommandResult,
+                             final SearchResponse response,
+                             final ExecutionContext<DecisionReportDataDto> context) {
 
     final Terms matchedRuleTerms = response.getAggregations().get(MATCHED_RULES_AGGREGATION);
     final List<GroupByResult> matchedRules = new ArrayList<>();
@@ -61,11 +63,8 @@ public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
       matchedRules.add(GroupByResult.createGroupByResult(matchedRuleBucket.getKeyAsString(), distributions));
     }
 
-    final CompositeCommandResult resultDto = new CompositeCommandResult();
-    resultDto.setGroups(matchedRules);
-    resultDto.setIsComplete(matchedRuleTerms.getSumOfOtherDocCounts() == 0L);
-
-    return resultDto;
+    compositeCommandResult.setGroups(matchedRules);
+    compositeCommandResult.setIsComplete(matchedRuleTerms.getSumOfOtherDocCounts() == 0L);
   }
 
 

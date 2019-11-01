@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
@@ -26,7 +25,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -107,10 +105,6 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext);
     final R reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits());
-    final Optional<SortingDto> sorting = groupByPart.getSorting(executionContext);
-    sorting.ifPresent(
-      sortingDto -> reportResult.sortResultData(sortingDto, groupByPart.getSortByKeyIsOfNumericType(executionContext))
-    );
     return reportResult;
   }
 

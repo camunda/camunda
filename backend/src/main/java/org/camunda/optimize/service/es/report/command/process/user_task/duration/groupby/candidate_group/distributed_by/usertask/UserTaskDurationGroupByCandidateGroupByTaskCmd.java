@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByUserTask;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByCandidateGroup;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.identity.ProcessGroupByCandidateGroup;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewUserTaskDuration;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessHyperMapReportResult;
 import org.springframework.beans.factory.annotation.Autowired;

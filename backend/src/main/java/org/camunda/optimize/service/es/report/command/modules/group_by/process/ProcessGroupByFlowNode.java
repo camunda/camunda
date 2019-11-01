@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -47,7 +48,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByFlowNode extends ProcessGroupByPart {
+public class ProcessGroupByFlowNode extends GroupByPart<ProcessReportDataDto> {
 
   private static final String NESTED_EVENTS_AGGREGATION = "nestedEvents";
   private static final String FLOW_NODES_AGGREGATION = "flowNodes";
@@ -87,8 +88,9 @@ public class ProcessGroupByFlowNode extends ProcessGroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ExecutionContext<ProcessReportDataDto> context) {
+  public void addQueryResult(final CompositeCommandResult compositeCommandResult,
+                             final SearchResponse response,
+                             final ExecutionContext<ProcessReportDataDto> context) {
 
     final Aggregations aggregations = response.getAggregations();
     final Nested flowNodes = aggregations.get(FLOW_NODES_AGGREGATION);
@@ -115,11 +117,8 @@ public class ProcessGroupByFlowNode extends ProcessGroupByPart {
       groupedData.add(emptyResult);
     });
 
-    CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
-
-    return compositeCommandResult;
   }
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {

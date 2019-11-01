@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process;
 
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -20,7 +20,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,7 +27,7 @@ import static org.camunda.optimize.service.es.report.command.modules.result.Comp
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByNone extends ProcessGroupByPart {
+public class ProcessGroupByNone extends GroupByPart<ProcessReportDataDto> {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -40,15 +39,13 @@ public class ProcessGroupByNone extends ProcessGroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ExecutionContext<ProcessReportDataDto> context) {
-    CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
-
+  public void addQueryResult(final CompositeCommandResult compositeCommandResult,
+                             final SearchResponse response,
+                             final ExecutionContext<ProcessReportDataDto> context) {
     final List<DistributedByResult> distributions =
       distributedByPart.retrieveResult(response, response.getAggregations(), context);
     GroupByResult groupByResult = GroupByResult.createEmptyGroupBy(distributions);
     compositeCommandResult.setGroup(groupByResult);
-    return compositeCommandResult;
   }
 
   @Override
@@ -56,8 +53,4 @@ public class ProcessGroupByNone extends ProcessGroupByPart {
     reportData.setGroupBy(new NoneGroupByDto());
   }
 
-  @Override
-  public Optional<SortingDto> getSorting(final ExecutionContext<ProcessReportDataDto> context) {
-    return Optional.empty();
-  }
 }

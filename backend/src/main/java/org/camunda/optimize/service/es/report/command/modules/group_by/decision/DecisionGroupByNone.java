@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.decision
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByNoneDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.elasticsearch.action.search.SearchResponse;
@@ -26,7 +27,7 @@ import static org.camunda.optimize.service.es.report.command.modules.result.Comp
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class DecisionGroupByNone extends DecisionGroupByPart {
+public class DecisionGroupByNone extends GroupByPart<DecisionReportDataDto> {
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -38,15 +39,13 @@ public class DecisionGroupByNone extends DecisionGroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ExecutionContext<DecisionReportDataDto> context) {
-    CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
-
+  public void addQueryResult(final CompositeCommandResult compositeCommandResult,
+                             final SearchResponse response,
+                             final ExecutionContext<DecisionReportDataDto> context) {
     final List<DistributedByResult> distributions =
       distributedByPart.retrieveResult(response, response.getAggregations(), context);
     GroupByResult groupByResult = GroupByResult.createEmptyGroupBy(distributions);
     compositeCommandResult.setGroup(groupByResult);
-    return compositeCommandResult;
   }
 
   @Override
