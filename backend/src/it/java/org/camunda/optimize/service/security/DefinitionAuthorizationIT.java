@@ -9,19 +9,16 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_PERMISSION;
@@ -34,25 +31,15 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class DefinitionAuthorizationIT {
+public class DefinitionAuthorizationIT extends AbstractIT {
   public static final String PROCESS_KEY = "aprocess";
   public static final String DECISION_KEY = "aDecision";
 
-  private static final Object[] definitionType() {
-    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
+  private static final Stream<Integer> definitionType() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-
-  public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
+  public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @ParameterizedTest
   @MethodSource("definitionType")
@@ -510,10 +497,10 @@ public class DefinitionAuthorizationIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
-    engineIntegrationExtensionRule.addUser(genzoUser, genzoUser);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(genzoUser);
-    engineIntegrationExtensionRule.createGroup("genzoGroup");
-    engineIntegrationExtensionRule.addUserToGroup(genzoUser, "genzoGroup");
+    engineIntegrationExtension.addUser(genzoUser, genzoUser);
+    engineIntegrationExtension.grantUserOptimizeAccess(genzoUser);
+    engineIntegrationExtension.createGroup("genzoGroup");
+    engineIntegrationExtension.addUserToGroup(genzoUser, "genzoGroup");
 
     deployAndImportDefinition(definitionResourceType);
 
@@ -585,8 +572,8 @@ public class DefinitionAuthorizationIT {
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 
@@ -612,7 +599,7 @@ public class DefinitionAuthorizationIT {
   }
 
   private List<ProcessDefinitionOptimizeDto> retrieveProcessDefinitionsAsUser(String name, String password) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
       .withUserAuthentication(name, password)
@@ -620,7 +607,7 @@ public class DefinitionAuthorizationIT {
   }
 
   private List<DecisionDefinitionOptimizeDto> retrieveDecisionDefinitionsAsUser(String name, String password) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDecisionDefinitionsRequest()
       .withUserAuthentication(name, password)
@@ -632,12 +619,12 @@ public class DefinitionAuthorizationIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId).getId();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId).getId();
   }
 
   private String deploySimpleDecisionDefinition(final String decisionKey, final String tenantId) {
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
-    return engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance, tenantId).getId();
+    return engineIntegrationExtension.deployDecisionDefinition(modelInstance, tenantId).getId();
   }
 
 }

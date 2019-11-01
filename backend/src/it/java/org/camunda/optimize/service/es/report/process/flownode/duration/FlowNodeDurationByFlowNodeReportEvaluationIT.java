@@ -27,7 +27,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -69,10 +69,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -112,14 +112,14 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void reportEvaluationForSeveralProcesses() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 10L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 30L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 10L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -141,18 +141,18 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -180,20 +180,20 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(1);
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -214,19 +214,19 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     final ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
 
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -250,14 +250,14 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void testEvaluationResultForAllAggregationTypes() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 10L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 30L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 10L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -285,18 +285,18 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWithTwoTasks();
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 100L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 200L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 10L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID, 900L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), SERVICE_TASK_ID_2, 90L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
@@ -327,19 +327,19 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
     assertThat(latestDefinition.getVersion(), is(2));
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 30L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 50L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 120L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 100L);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 50L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createReport(
@@ -370,19 +370,19 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto latestDefinition = deployProcessWithTwoTasks();
     assertThat(latestDefinition.getVersion(), is(3));
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 30L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 50L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 120L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 100L);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 50L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createReport(
@@ -412,19 +412,19 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 30L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 50L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 120L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 100L);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 50L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData = createReport(latestDefinition.getKey(),
@@ -449,19 +449,19 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     ProcessDefinitionEngineDto latestDefinition = deploySimpleServiceTaskProcessDefinition();
     assertThat(latestDefinition.getVersion(), is(3));
 
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 30L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(firstDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 50L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 120L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(latestDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 100L);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 30L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(firstDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 50L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(latestDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     ProcessReportDataDto reportData =
@@ -491,8 +491,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ALL_VERSIONS);
@@ -508,20 +508,20 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 80L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 40L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 120L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition2.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 20L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition2.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 100L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition2.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 1000L);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 80L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 40L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 120L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 20L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 1000L);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData1 = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -550,14 +550,14 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void evaluateReportWithIrrationalAverageNumberAsResult() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 100L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 300L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 600L);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 100L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 300L);
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 600L);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -589,16 +589,16 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     LocalDateUtil.setCurrentTime(now);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
       USER_TASK,
       now.minus(200L, ChronoUnit.MILLIS)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -629,16 +629,16 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     LocalDateUtil.setCurrentTime(now);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
       USER_TASK,
       now.minus(200L, ChronoUnit.MILLIS)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -669,16 +669,16 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     LocalDateUtil.setCurrentTime(now);
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), START_EVENT, 100L);
+    engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
       USER_TASK,
       now.minus(200L, ChronoUnit.MILLIS)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -725,12 +725,12 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
           .endEvent("miEnd")
         .done();
     // @formatter:on
-    ProcessDefinitionEngineDto subProcessDefinition = engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(subProcess);
-    String processDefinitionId = engineIntegrationExtensionRule.deployProcessAndGetId(miProcess);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinitionId);
-    engineDatabaseExtensionRule.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessDefinitionEngineDto subProcessDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(subProcess);
+    String processDefinitionId = engineIntegrationExtension.deployProcessAndGetId(miProcess);
+    engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    engineDatabaseExtension.changeActivityDurationForProcessDefinition(subProcessDefinition.getId(), 10L);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -755,11 +755,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     ProcessInstanceEngineDto processInstanceDto;
     for (int i = 0; i < 11; i++) {
-      processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-      engineDatabaseExtensionRule.changeActivityDuration(processInstanceDto.getId(), 10L);
+      processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+      engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 10L);
     }
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -785,10 +785,10 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .userTask("userTask")
       .endEvent("endEvent")
       .done();
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtensionRule.deployAndStartProcess(subProcess);
+    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(subProcess);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(engineDto.getProcessDefinitionKey(),
@@ -808,11 +808,11 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   public void filterInReport() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcessDefinition();
-    ProcessInstanceEngineDto processInstance = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstance.getId(), 10L);
-    OffsetDateTime past = engineIntegrationExtensionRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 10L);
+    OffsetDateTime past = engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
@@ -894,7 +894,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .camundaExpression("${true}")
       .endEvent(END_EVENT)
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private ProcessDefinitionEngineDto deploySimpleUserTaskDefinition() {
@@ -903,7 +903,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .userTask(USER_TASK)
       .endEvent(END_EVENT)
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
@@ -930,7 +930,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .endEvent(END_EVENT)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {

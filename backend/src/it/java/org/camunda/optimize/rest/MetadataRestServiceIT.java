@@ -5,36 +5,21 @@
  */
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.OptimizeVersionDto;
 import org.camunda.optimize.service.metadata.Version;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
-public class MetadataRestServiceIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class MetadataRestServiceIT extends AbstractIT {
 
   @Test
   public void getOptimizeVersion() {
     // when
     OptimizeVersionDto optimizeVersionDto =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetOptimizeVersionRequest()
         .execute(OptimizeVersionDto.class, 200);

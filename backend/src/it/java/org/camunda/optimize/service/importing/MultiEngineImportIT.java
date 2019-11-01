@@ -32,7 +32,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.TIMESTAMP_OF_LAST_ENTITY;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -51,10 +51,10 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
-    embeddedOptimizeExtensionRule.updateImportIndex();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.updateImportIndex();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_INDEX_NAME);
 
     // then
@@ -76,10 +76,10 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
-    embeddedOptimizeExtensionRule.updateImportIndex();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.updateImportIndex();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(PROCESS_DEFINITION_INDEX_NAME);
 
     // then
@@ -101,10 +101,10 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
-    embeddedOptimizeExtensionRule.updateImportIndex();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.updateImportIndex();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME);
 
     // then
@@ -118,17 +118,17 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
   @Test
   public void allProcessInstancesEventAndVariablesAreImportedWithAuthentication() {
     // given
-    secondaryEngineIntegrationExtensionRule.addUser("admin", "admin");
-    secondaryEngineIntegrationExtensionRule.grantAllAuthorizations("admin");
+    secondaryEngineIntegrationExtension.addUser("admin", "admin");
+    secondaryEngineIntegrationExtension.grantAllAuthorizations("admin");
     addSecureSecondEngineToConfiguration();
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
 
     // when
-    embeddedOptimizeExtensionRule.updateImportIndex();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.updateImportIndex();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME);
 
     // then
@@ -146,18 +146,18 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     final String tenantName = "My New Tenant";
     final String secondTenantId = "tenantId2";
     addSecondEngineToConfiguration();
-    defaultEngineIntegrationExtensionRule.createTenant(firstTenantId, tenantName);
-    secondaryEngineIntegrationExtensionRule.createTenant(firstTenantId, tenantName);
-    secondaryEngineIntegrationExtensionRule.createTenant(secondTenantId, tenantName);
+    engineIntegrationExtension.createTenant(firstTenantId, tenantName);
+    secondaryEngineIntegrationExtension.createTenant(firstTenantId, tenantName);
+    secondaryEngineIntegrationExtension.createTenant(secondTenantId, tenantName);
 
     // when
-    embeddedOptimizeExtensionRule.updateImportIndex();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.updateImportIndex();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    final SearchResponse idsResp = elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), CoreMatchers.is(2L));
     final Map<Object, List<Map<String, Object>>> tenantsByEngine = Arrays.stream(idsResp.getHits().getHits())
       .map(SearchHit::getSourceAsMap)
@@ -180,13 +180,13 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     // as well as running activities
     deployAndStartUserTaskProcessForAllEngines();
     deployAndStartDecisionDefinitionForAllEngines();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
 
     // when
-    embeddedOptimizeExtensionRule.stopOptimize();
-    embeddedOptimizeExtensionRule.startOptimize();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.stopOptimize();
+    embeddedOptimizeExtension.startOptimize();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse searchResponse = performProcessDefinitionSearchRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
@@ -197,7 +197,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
       OffsetDateTime timestamp = OffsetDateTime.parse(
         timestampOfLastEntity,
-        embeddedOptimizeExtensionRule.getDateTimeFormatter()
+        embeddedOptimizeExtension.getDateTimeFormatter()
       );
       assertThat(
         "Timestamp for " + typeName + " should be recent",
@@ -231,7 +231,7 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
       .source(searchSourceBuilder);
 
     try {
-      return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+      return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not query the import count!", e);
     }

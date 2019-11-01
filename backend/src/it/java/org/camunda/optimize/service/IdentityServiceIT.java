@@ -5,33 +5,18 @@
  */
 package org.camunda.optimize.service;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Optional;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
-public class IdentityServiceIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtension = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtension = new EmbeddedOptimizeExtensionRule();
+public class IdentityServiceIT extends AbstractIT {
 
   private IdentityService identityService;
 

@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -18,10 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Order;
@@ -38,7 +36,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ProcessDefinitionVersionSelectionIT {
+public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
@@ -47,25 +45,16 @@ public class ProcessDefinitionVersionSelectionIT {
   private static final String DEFINITION_KEY = "aProcess";
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void processReportAcrossAllVersions() {
     // given
     ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
     deployProcessAndStartInstances(1);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -87,8 +76,8 @@ public class ProcessDefinitionVersionSelectionIT {
     deployProcessAndStartInstances(1);
     ProcessDefinitionEngineDto definition3 = deployProcessAndStartInstances(3);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -109,8 +98,8 @@ public class ProcessDefinitionVersionSelectionIT {
     ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
     deployProcessAndStartInstances(1);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -127,8 +116,8 @@ public class ProcessDefinitionVersionSelectionIT {
     // when
     deployProcessAndStartInstances(4);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
@@ -144,8 +133,8 @@ public class ProcessDefinitionVersionSelectionIT {
     // given
     ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(1);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -181,7 +170,7 @@ public class ProcessDefinitionVersionSelectionIT {
   }
 
   private AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute(new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto>>() {
@@ -189,7 +178,7 @@ public class ProcessDefinitionVersionSelectionIT {
   }
 
   private Response evaluateReportWithResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();
@@ -198,7 +187,7 @@ public class ProcessDefinitionVersionSelectionIT {
   private ProcessDefinitionEngineDto deployProcessAndStartInstances(int nInstancesToStart) {
     ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcess();
     IntStream.range(0, nInstancesToStart).forEach(
-      i -> engineIntegrationExtensionRule.startProcessInstance(definition.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE))
+      i -> engineIntegrationExtension.startProcessInstance(definition.getId(), ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE))
     );
     return definition;
   }
@@ -212,6 +201,6 @@ public class ProcessDefinitionVersionSelectionIT {
       .endEvent(END_EVENT)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 }

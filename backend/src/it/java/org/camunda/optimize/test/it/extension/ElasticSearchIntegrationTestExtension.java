@@ -50,8 +50,6 @@ import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.io.IOException;
@@ -80,11 +78,10 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 /**
- * This is a hybrid JUnit 4 style Rule and JUnit 5 style extension, used differently depending on the runner used
- * in each test
+ * ElasticSearch Extension
  */
 @Slf4j
-public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher implements BeforeEachCallback {
+public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback {
   private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS = new ToXContent.MapParams(
     Collections.singletonMap("flat_settings", "true")
   );
@@ -100,18 +97,13 @@ public class ElasticSearchIntegrationTestExtensionRule extends TestWatcher imple
   // maps types to a list of document entry ids added to that type
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
-  public ElasticSearchIntegrationTestExtensionRule() {
+  public ElasticSearchIntegrationTestExtension() {
     this(null);
   }
 
-  public ElasticSearchIntegrationTestExtensionRule(final String customIndexPrefix) {
+  public ElasticSearchIntegrationTestExtension(final String customIndexPrefix) {
     this.customIndexPrefix = customIndexPrefix;
     initEsClient();
-  }
-
-  @Override
-  protected void starting(Description description) {
-    before();
   }
 
   @Override

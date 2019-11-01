@@ -45,7 +45,7 @@ public abstract class AbstractRollingDateFilterIT extends AbstractFilterIT {
       .endEvent()
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected void assertResults(
@@ -122,9 +122,9 @@ public abstract class AbstractRollingDateFilterIT extends AbstractFilterIT {
   }
 
   private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithNewToken(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
-      .withGivenAuthToken(embeddedOptimizeExtensionRule.getNewAuthenticationToken())
+      .withGivenAuthToken(embeddedOptimizeExtension.getNewAuthenticationToken())
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});

@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -49,12 +49,12 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
   @Override
   protected void changeProcessInstanceDate(final String processInstanceId, final OffsetDateTime newDate) throws
                                                                                                          SQLException {
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstanceId, newDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, newDate);
   }
 
   @Override
   protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) throws SQLException {
-    engineDatabaseExtensionRule.updateProcessInstanceStartDates(newIdToDates);
+    engineDatabaseExtension.updateProcessInstanceStartDates(newIdToDates);
   }
 
   @Test
@@ -63,11 +63,11 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
     final OffsetDateTime startDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     final String definitionId = processInstanceDto.getDefinitionId();
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto2.getId(), startDate.minusDays(2));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -93,31 +93,31 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
 
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
     assertThat(resultData.get(0).getValue(), is(1L));
 
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(1).getValue(), is(0L));
 
     assertThat(
       resultData.get(2).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(2).getValue(), is(1L));
 
     assertThat(
       resultData.get(3).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(3).getValue(), is(0L));
 
     assertThat(
       resultData.get(4).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(4).getValue(), is(0L));
   }
@@ -129,8 +129,8 @@ public class CountProcessInstanceFrequencyByStartDateReportEvaluationIT
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoRunningAndOneCompletedUserTaskProcesses(now);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()

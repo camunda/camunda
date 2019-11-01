@@ -11,8 +11,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.util.ProcessReportDataBuilder;
-import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -27,19 +25,19 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
   public void mixedCanceledInstancesOnlyFilter() throws Exception {
     //given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
-    engineIntegrationExtensionRule.externallyTerminateProcessInstance(firstProcInst.getId());
-    engineDatabaseExtensionRule.changeProcessInstanceState(
+    engineIntegrationExtension.externallyTerminateProcessInstance(firstProcInst.getId());
+    engineDatabaseExtension.changeProcessInstanceState(
             secondProcInst.getId(),
             CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
     );
 
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
@@ -61,21 +59,21 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
   public void internallyTerminatedCanceledInstancesOnlyFilter() throws Exception {
     //given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
-    engineDatabaseExtensionRule.changeProcessInstanceState(
+    engineDatabaseExtension.changeProcessInstanceState(
             firstProcInst.getId(),
             CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
     );
-    engineDatabaseExtensionRule.changeProcessInstanceState(
+    engineDatabaseExtension.changeProcessInstanceState(
             secondProcInst.getId(),
             CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
@@ -97,15 +95,15 @@ public class CanceledInstancesOnlyFilterIT extends AbstractFilterIT {
   public void externallyTerminatedCanceledInstncesOnlyFilter() {
     //given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
-    engineIntegrationExtensionRule.externallyTerminateProcessInstance(firstProcInst.getId());
-    engineIntegrationExtensionRule.externallyTerminateProcessInstance(secondProcInst.getId());
+    engineIntegrationExtension.externallyTerminateProcessInstance(firstProcInst.getId());
+    engineIntegrationExtension.externallyTerminateProcessInstance(secondProcInst.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);

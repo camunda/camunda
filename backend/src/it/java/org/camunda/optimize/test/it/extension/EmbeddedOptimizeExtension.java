@@ -41,8 +41,6 @@ import org.camunda.optimize.test.util.SynchronizationElasticsearchImportJob;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.springframework.context.ApplicationContext;
 
 import javax.ws.rs.client.Entity;
@@ -63,12 +61,10 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 
 /**
  * Helper to start embedded jetty with Camunda Optimize on board.
- * This is a hybrid JUnit 4 style Rule and JUnit 5 style extension, used differently depending on the runner used
- * in each test
  */
 @Slf4j
 @NoArgsConstructor
-public class EmbeddedOptimizeExtensionRule extends TestWatcher implements BeforeEachCallback, AfterEachCallback {
+public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachCallback {
 
   public static final String DEFAULT_ENGINE_ALIAS = "1";
 
@@ -87,18 +83,8 @@ public class EmbeddedOptimizeExtensionRule extends TestWatcher implements Before
    * NOTE: this will not store indexes in the ES.
    */
 
-  public EmbeddedOptimizeExtensionRule(String context) {
+  public EmbeddedOptimizeExtension(String context) {
     this.context = context;
-  }
-
-  @Override
-  protected void starting(Description description) {
-    setupOptimize();
-  }
-
-  @Override
-  protected void finished(Description description) {
-    afterTest();
   }
 
   @Override

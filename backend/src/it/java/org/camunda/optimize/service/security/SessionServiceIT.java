@@ -5,12 +5,10 @@
  */
 package org.camunda.optimize.service.security;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,20 +28,11 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 
-public class SessionServiceIT {
+public class SessionServiceIT extends AbstractIT {
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void verifyTerminatedSessionCleanupIsScheduledAfterStartup() {
@@ -58,16 +47,16 @@ public class SessionServiceIT {
     final String token = authenticateAdminUser();
 
     // when
-    embeddedOptimizeExtensionRule.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
+    embeddedOptimizeExtension.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plus(
-      embeddedOptimizeExtensionRule.getConfigurationService().getTokenLifeTimeMinutes(),
+      embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes(),
       ChronoUnit.MINUTES
     ));
     getTerminatedSessionService().cleanup();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME), is(0));
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME), is(0));
   }
 
   @Test
@@ -80,7 +69,7 @@ public class SessionServiceIT {
 
     // when
     final Response logoutResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildLogOutRequest()
         .withGivenAuthToken(firstToken)
@@ -89,7 +78,7 @@ public class SessionServiceIT {
 
     // then
     final Response getPrivateReportsResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetAllPrivateReportsRequest()
         .withGivenAuthToken(secondToken)
@@ -106,10 +95,10 @@ public class SessionServiceIT {
     final String token = authenticateAdminUser();
 
     // when
-    embeddedOptimizeExtensionRule.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
+    embeddedOptimizeExtension.getRequestExecutor().buildLogOutRequest().withGivenAuthToken(token).execute();
 
     // then
-    assertThat(elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME), is(1));
+    assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(TERMINATED_USER_SESSION_INDEX_NAME), is(1));
   }
 
   @Test
@@ -121,7 +110,7 @@ public class SessionServiceIT {
 
     // when
     final Response logoutResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildLogOutRequest()
         .withGivenAuthToken(token)
@@ -130,7 +119,7 @@ public class SessionServiceIT {
 
     // then
     final Response getPrivateReportsResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetAllPrivateReportsRequest()
         .withGivenAuthToken(token)
@@ -142,16 +131,16 @@ public class SessionServiceIT {
   @Test
   public void logoutInvalidatesAllTokensOfASession() {
     // given
-    int expiryMinutes = embeddedOptimizeExtensionRule.getConfigurationService().getTokenLifeTimeMinutes();
-    engineIntegrationExtensionRule.addUser("genzo", "genzo");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("genzo");
+    int expiryMinutes = embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes();
+    engineIntegrationExtension.addUser("genzo", "genzo");
+    engineIntegrationExtension.grantUserOptimizeAccess("genzo");
 
-    String firstToken = embeddedOptimizeExtensionRule.authenticateUser("genzo", "genzo");
+    String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
 
     // when
     // modify time to get a new token for same session
     LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes * 2 / 3));
-    final Response getNewAuthTokenForSameSessionResponse = embeddedOptimizeExtensionRule
+    final Response getNewAuthTokenForSameSessionResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
@@ -164,7 +153,7 @@ public class SessionServiceIT {
     final String newToken = newAuthCookie.getValue().replace(AUTH_COOKIE_TOKEN_VALUE_PREFIX, "");
 
     final Response logoutResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildLogOutRequest()
         .withGivenAuthToken(firstToken)
@@ -173,7 +162,7 @@ public class SessionServiceIT {
 
     //then
     final Response getPrivateReportsResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetAllPrivateReportsRequest()
         .withGivenAuthToken(newToken)
@@ -185,12 +174,12 @@ public class SessionServiceIT {
   @Test
   public void tokenShouldExpireAfterConfiguredTime() {
     // given
-    int expiryTime = embeddedOptimizeExtensionRule.getConfigurationService().getTokenLifeTimeMinutes();
-    engineIntegrationExtensionRule.addUser("genzo", "genzo");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("genzo");
-    String firstToken = embeddedOptimizeExtensionRule.authenticateUser("genzo", "genzo");
+    int expiryTime = embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes();
+    engineIntegrationExtension.addUser("genzo", "genzo");
+    engineIntegrationExtension.grantUserOptimizeAccess("genzo");
+    String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
 
-    Response testAuthenticationResponse = embeddedOptimizeExtensionRule
+    Response testAuthenticationResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
@@ -199,7 +188,7 @@ public class SessionServiceIT {
 
     // when
     LocalDateUtil.setCurrentTime(get1MinuteAfterExpiryTime(expiryTime));
-    testAuthenticationResponse = embeddedOptimizeExtensionRule
+    testAuthenticationResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
@@ -212,12 +201,12 @@ public class SessionServiceIT {
   @Test
   public void authCookieIsExtendedByRequestInLastThirdOfLifeTime() {
     // given
-    int expiryMinutes = embeddedOptimizeExtensionRule.getConfigurationService().getTokenLifeTimeMinutes();
-    engineIntegrationExtensionRule.addUser("genzo", "genzo");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("genzo");
-    String firstToken = embeddedOptimizeExtensionRule.authenticateUser("genzo", "genzo");
+    int expiryMinutes = embeddedOptimizeExtension.getConfigurationService().getTokenLifeTimeMinutes();
+    engineIntegrationExtension.addUser("genzo", "genzo");
+    engineIntegrationExtension.grantUserOptimizeAccess("genzo");
+    String firstToken = embeddedOptimizeExtension.authenticateUser("genzo", "genzo");
 
-    Response testAuthenticationResponse = embeddedOptimizeExtensionRule
+    Response testAuthenticationResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
@@ -227,7 +216,7 @@ public class SessionServiceIT {
     // when
     final OffsetDateTime dateTimeBeforeRefresh = LocalDateUtil.getCurrentDateTime();
     LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusMinutes(expiryMinutes * 2 / 3));
-    testAuthenticationResponse = embeddedOptimizeExtensionRule
+    testAuthenticationResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAuthTestRequest()
       .withGivenAuthToken(firstToken)
@@ -256,10 +245,10 @@ public class SessionServiceIT {
 
       // when
       // provoke failure for terminated session check
-      elasticSearchIntegrationTestExtensionRule.deleteIndexOfMapping(new TerminatedUserSessionIndex());
+      elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new TerminatedUserSessionIndex());
 
       final Response getPrivateReportsResponse =
-        embeddedOptimizeExtensionRule
+        embeddedOptimizeExtension
           .getRequestExecutor()
           .buildGetAllPrivateReportsRequest()
           .withGivenAuthToken(token)
@@ -269,8 +258,8 @@ public class SessionServiceIT {
 
       assertThat(getPrivateReportsResponse.getStatus(), is(200));
     } finally {
-      embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().initializeSchema(
-        embeddedOptimizeExtensionRule.getOptimizeElasticClient()
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().initializeSchema(
+        embeddedOptimizeExtension.getOptimizeElasticClient()
       );
     }
   }
@@ -280,15 +269,15 @@ public class SessionServiceIT {
   }
 
   private String authenticateAdminUser() {
-    return embeddedOptimizeExtensionRule.authenticateUser("admin", "admin");
+    return embeddedOptimizeExtension.authenticateUser("admin", "admin");
   }
 
   private void addAdminUserAndGrantAccessPermission() {
-    engineIntegrationExtensionRule.addUser("admin", "admin");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("admin");
+    engineIntegrationExtension.addUser("admin", "admin");
+    engineIntegrationExtension.grantUserOptimizeAccess("admin");
   }
 
   private TerminatedSessionService getTerminatedSessionService() {
-    return embeddedOptimizeExtensionRule.getApplicationContext().getBean(TerminatedSessionService.class);
+    return embeddedOptimizeExtension.getApplicationContext().getBean(TerminatedSessionService.class);
   }
 }

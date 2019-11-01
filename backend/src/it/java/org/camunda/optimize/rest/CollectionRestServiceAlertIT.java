@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.rest;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.AbstractAlertIT;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -24,15 +22,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-@RunWith(JUnitParamsRunner.class)
 public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
-  private static final Object[] definitionType() {
-    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
+  private static Stream<Integer> definitionType() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest(name = "get stored alerts for collection with different reports for definition type {0}")
+  @MethodSource("definitionType")
   public void getStoredAlerts(final int definitionResourceType) {
     // given
     final String collectionId1 = createNewCollection();
@@ -48,15 +45,15 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
     // when
     List<String> allAlertIds = getAlertsForCollectionAsDefaultUser(collectionId1).stream()
-      .map(alert -> alert.getId())
+      .map(AlertDefinitionDto::getId)
       .collect(toList());
 
     // then
     assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2, alertId3));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest(name = "only alerts in given collection should be retrieved for definition type {0}")
+  @MethodSource("definitionType")
   public void getNoneStoredAlerts(final int definitionResourceType) {
     // given
     final String collectionId1 = createNewCollection();
@@ -73,7 +70,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
   }
 
   private List<AlertDefinitionDto> getAlertsForCollectionAsDefaultUser(final String collectionId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)

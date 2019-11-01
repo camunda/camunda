@@ -8,6 +8,7 @@ package org.camunda.optimize.service.schema;
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
@@ -15,9 +16,6 @@ import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.schema.type.MyUpdatedEventIndex;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
@@ -34,12 +32,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.DeprecationHandler;
 import org.elasticsearch.common.xcontent.NamedXContentRegistry;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
@@ -51,30 +45,18 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_IND
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class SchemaInitializerIT {
-
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
-
-  public static ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  public static EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  public static EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class SchemaInitializerIT extends AbstractIT {
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
   private OptimizeIndexNameService indexNameService;
 
-  @ClassRule
-  public static RuleChain chain = RuleChain
-    .outerRule(elasticSearchIntegrationTestExtensionRule)
-    .outerRule(engineIntegrationExtensionRule)
-    .around(embeddedOptimizeExtensionRule);
-
-  @Before
+  @BeforeEach
   public void setUp() {
     // given
-    elasticSearchIntegrationTestExtensionRule.cleanAndVerify();
-    prefixAwareRestHighLevelClient = embeddedOptimizeExtensionRule.getOptimizeElasticClient();
+    elasticSearchIntegrationTestExtension.cleanAndVerify();
+    prefixAwareRestHighLevelClient = embeddedOptimizeExtension.getOptimizeElasticClient();
     indexNameService = prefixAwareRestHighLevelClient.getIndexNameService();
   }
 
@@ -96,7 +78,7 @@ public class SchemaInitializerIT {
 
     // then
     assertThat(
-      embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
       is(true)
     );
   }
@@ -105,7 +87,7 @@ public class SchemaInitializerIT {
   public void dontFailIfSomeIndexesAlreadyExist() throws IOException {
     // given
     initializeSchema();
-    embeddedOptimizeExtensionRule.getOptimizeElasticClient().getHighLevelClient().indices().delete(
+    embeddedOptimizeExtension.getOptimizeElasticClient().getHighLevelClient().indices().delete(
       new DeleteIndexRequest(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(new DecisionInstanceIndex())),
       RequestOptions.DEFAULT
     );
@@ -115,7 +97,7 @@ public class SchemaInitializerIT {
 
     // then
     assertThat(
-      embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
       is(true)
     );
   }
@@ -126,7 +108,7 @@ public class SchemaInitializerIT {
     initializeSchema();
 
     // then
-    final List<IndexMappingCreator> mappings = embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
     assertThat(mappings.size(), is(19));
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
@@ -141,13 +123,13 @@ public class SchemaInitializerIT {
     // when there is a new mapping and I update the mapping
     MyUpdatedEventIndex myUpdatedEventIndex = new MyUpdatedEventIndex();
     try {
-      embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().addMapping(myUpdatedEventIndex);
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().addMapping(myUpdatedEventIndex);
       initializeSchema();
 
       // then the mapping contains the new fields
       assertThatNewFieldExists();
     } finally {
-      embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().getMappings().remove(myUpdatedEventIndex);
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings().remove(myUpdatedEventIndex);
     }
   }
 
@@ -157,7 +139,7 @@ public class SchemaInitializerIT {
     initializeSchema();
 
     // with a different dynamic setting than default
-    final List<IndexMappingCreator> mappings = embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
     modifyDynamicIndexSetting(mappings);
 
     // when
@@ -175,11 +157,11 @@ public class SchemaInitializerIT {
     initializeSchema();
 
     // with a different dynamic setting than default
-    final List<IndexMappingCreator> mappings = embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
     modifyDynamicIndexSetting(mappings);
 
     // one index is missing so recreating of indexes is triggered
-    embeddedOptimizeExtensionRule.getOptimizeElasticClient().getHighLevelClient().indices().delete(
+    embeddedOptimizeExtension.getOptimizeElasticClient().getHighLevelClient().indices().delete(
       new DeleteIndexRequest(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(new DecisionInstanceIndex())),
       RequestOptions.DEFAULT
     );
@@ -198,11 +180,11 @@ public class SchemaInitializerIT {
     // given schema is created
     initializeSchema();
 
-    // then an exception is thrown
-    thrown.expect(ElasticsearchStatusException.class);
-
-    // when I add a document to an unknown type
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch("myAwesomeNewIndex", "12312412", new ProcessInstanceDto());
+    // then an exception is thrown when I add a document to an unknown type
+    assertThrows(
+      ElasticsearchStatusException.class,
+      () -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch("myAwesomeNewIndex", "12312412", new ProcessInstanceDto())
+    );
   }
 
   @Test
@@ -210,22 +192,22 @@ public class SchemaInitializerIT {
     // given schema is created
     initializeSchema();
 
-    // then
-    thrown.expect(ElasticsearchStatusException.class);
-
-    // when we add an event with an undefined type in schema
+    // then an exception is thrown when we add an event with an undefined type in schema
     ExtendedFlowNodeEventDto extendedEventDto = new ExtendedFlowNodeEventDto();
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(
-      ElasticsearchConstants.METADATA_INDEX_NAME,
-      "12312412",
-      extendedEventDto
+    assertThrows(
+      ElasticsearchStatusException.class,
+      () -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+        ElasticsearchConstants.METADATA_INDEX_NAME,
+        "12312412",
+        extendedEventDto
+      )
     );
   }
 
   private void assertDynamicSettingsComplyWithDefault(final List<IndexMappingCreator> mappings,
                                                       final GetSettingsResponse getSettingsResponse) throws
                                                                                                      IOException {
-    final Settings settings = IndexSettingsBuilder.buildDynamicSettings(embeddedOptimizeExtensionRule.getConfigurationService());
+    final Settings settings = IndexSettingsBuilder.buildDynamicSettings(embeddedOptimizeExtension.getConfigurationService());
 
     for (IndexMappingCreator mapping : mappings) {
       settings.names().forEach(settingName -> {
@@ -266,7 +248,7 @@ public class SchemaInitializerIT {
   private void assertIndexExists(String indexName) throws IOException {
     final String optimizeIndexAliasForType = indexNameService.getOptimizeIndexAliasForIndex(indexName);
 
-    RestClient esClient = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().getLowLevelClient();
+    RestClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().getLowLevelClient();
     Request request = new Request(HttpGet.METHOD_NAME, "/" + optimizeIndexAliasForType + "/_mapping");
     Response response = esClient.performRequest(request);
 
@@ -306,6 +288,6 @@ public class SchemaInitializerIT {
   }
 
   private void initializeSchema() {
-    embeddedOptimizeExtensionRule.getElasticSearchSchemaManager().initializeSchema(prefixAwareRestHighLevelClient);
+    embeddedOptimizeExtension.getElasticSearchSchemaManager().initializeSchema(prefixAwareRestHighLevelClient);
   }
 }

@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -21,19 +22,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -50,7 +46,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-public class ReportRestServiceIT {
+public class ReportRestServiceIT extends AbstractIT {
 
   private static final String PROCESS_DEFINITION_XML_WITH_NAME = "bpmn/simple_withName.bpmn";
   private static final String PROCESS_DEFINITION_XML_WO_NAME = "bpmn/simple_woName.bpmn";
@@ -58,30 +54,14 @@ public class ReportRestServiceIT {
   private static final String DECISION_DEFINITION_XML_WO_NAME = "dmn/invoiceBusinessDecision_woName.xml";
   private static final String PROCESS_DEFINITION_KEY = "simple";
   private static final String DECISION_DEFINITION_KEY = "invoiceClassification";
-
-  private static Object[] processAndDecisionReportType() {
-    return new Object[]{PROCESS, DECISION};
-  }
-
   private static final String RANDOM_KEY = "someRandomKey";
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
-    new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-
   @Test
   public void createNewReportWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
       .withoutAuthentication()
@@ -92,7 +72,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void createNewSingleReport(final ReportType reportType) {
     // when
     String id = addEmptyReportToOptimize(reportType);
@@ -101,7 +81,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void createNewSingleReportFromDefinition(final ReportType reportType) {
     // when
     String id = addReportToOptimizeWithDefinition(reportType);
@@ -112,7 +92,7 @@ public class ReportRestServiceIT {
   @Test
   public void createNewCombinedReportWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildCreateCombinedReportRequest()
@@ -125,7 +105,7 @@ public class ReportRestServiceIT {
   @Test
   public void createNewCombinedReport() {
     // when
-    IdDto idDto = embeddedOptimizeExtensionRule
+    IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest()
       .execute(IdDto.class, 200);
@@ -138,7 +118,7 @@ public class ReportRestServiceIT {
     // when
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
     combinedReportDefinitionDto.setData(ProcessReportDataBuilderHelper.createCombinedReport());
-    IdDto idDto = embeddedOptimizeExtensionRule
+    IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200);
@@ -149,7 +129,7 @@ public class ReportRestServiceIT {
   @Test
   public void updateReportWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildUpdateSingleProcessReportRequest("1", null)
@@ -162,7 +142,7 @@ public class ReportRestServiceIT {
   @Test
   public void updateNonExistingReport() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateSingleProcessReportRequest("nonExistingId", constructProcessReportWithFakePD())
       .execute();
@@ -172,7 +152,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void updateReport(final ReportType reportType) {
     //given
     String id = addEmptyReportToOptimize(reportType);
@@ -185,7 +165,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void updateReportWithXml(final ReportType reportType) {
     //given
     String id = addEmptyReportToOptimize(reportType);
@@ -218,7 +198,7 @@ public class ReportRestServiceIT {
   @Test
   public void getStoredPrivateReportsWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetAllPrivateReportsRequest()
@@ -267,7 +247,7 @@ public class ReportRestServiceIT {
     final SingleProcessReportDefinitionDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
       PROCESS_DEFINITION_XML_WO_NAME
     );
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(idProcessReport, processReportDefinitionDto)
       .execute();
@@ -276,7 +256,7 @@ public class ReportRestServiceIT {
     final SingleDecisionReportDefinitionDto decisionReportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
       DECISION_DEFINITION_XML_WO_NAME
     );
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateSingleDecisionReportRequest(idDecisionReport, decisionReportDefinitionDto)
       .execute();
@@ -304,7 +284,7 @@ public class ReportRestServiceIT {
   @Test
   public void getReportWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetReportRequest("asdf")
@@ -315,7 +295,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void getReport(final ReportType reportType) {
     //given
     String id = addEmptyReportToOptimize(reportType);
@@ -332,7 +312,7 @@ public class ReportRestServiceIT {
   @Test
   public void getReportForNonExistingIdThrowsNotFoundError() {
     // when
-    String response = embeddedOptimizeExtensionRule
+    String response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest("fooId")
       .execute(String.class, 404);
@@ -344,7 +324,7 @@ public class ReportRestServiceIT {
   @Test
   public void deleteReportWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDeleteReportRequest("1124")
@@ -355,13 +335,13 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void deleteReport(final ReportType reportType) {
     //given
     String id = addEmptyReportToOptimize(reportType);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteReportRequest(id)
       .execute();
@@ -374,7 +354,7 @@ public class ReportRestServiceIT {
   @Test
   public void deleteNonExistingReport() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteReportRequest("nonExistingId")
       .execute();
@@ -386,7 +366,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateReportByIdWithoutAuthorization() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildEvaluateSavedReportRequest("123")
@@ -397,7 +377,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void evaluateReportById(ReportType reportType) {
     //given
     final String id;
@@ -425,7 +405,7 @@ public class ReportRestServiceIT {
     }
 
     // then
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       .execute();
@@ -448,7 +428,7 @@ public class ReportRestServiceIT {
     String id = addSingleProcessReportWithDefinition(reportData);
 
     // then
-    ReportEvaluationException response = embeddedOptimizeExtensionRule
+    ReportEvaluationException response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       .execute(ReportEvaluationException.class, 500);
@@ -460,7 +440,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateUnsavedReportWithoutAuthorization() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildEvaluateCombinedUnsavedReportRequest(null)
@@ -471,7 +451,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void evaluateUnsavedReport(ReportType reportType) {
     //given
     final SingleReportDataDto reportDataDto;
@@ -497,7 +477,7 @@ public class ReportRestServiceIT {
     }
 
     // then
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportDataDto)
       .execute();
@@ -509,7 +489,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateUnsavedCombinedReportWithoutAuthorization() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildEvaluateCombinedUnsavedReportRequest(null)
@@ -523,7 +503,7 @@ public class ReportRestServiceIT {
   public void evaluateCombinedUnsavedReport() {
     // then
     CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReport();
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
       .execute();
@@ -538,7 +518,7 @@ public class ReportRestServiceIT {
     CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReport();
     combinedReport.setReports(null);
 
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
       .execute();
@@ -548,11 +528,11 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void copySingleReport(ReportType reportType) {
     String id = createSingleReport(reportType);
 
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id)
       .execute(IdDto.class, 200);
 
@@ -567,7 +547,7 @@ public class ReportRestServiceIT {
     CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport();
     IdDto id = createAndUpdateCombinedReport(combined, null);
 
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId())
       .execute(IdDto.class, 200);
 
@@ -588,7 +568,7 @@ public class ReportRestServiceIT {
     final String testReportCopyName = "Hello World, I am a copied report???! :-o";
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, collectionId)
       .addSingleQueryParam("name", testReportCopyName)
       .execute(IdDto.class, 200);
@@ -601,14 +581,14 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void copyPrivateSingleReportAndMoveToCollection(ReportType reportType) {
     // given
     String id = createSingleReport(reportType);
     final String collectionId = addEmptyCollectionToOptimize();
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, collectionId)
       .execute(IdDto.class, 200);
 
@@ -632,7 +612,7 @@ public class ReportRestServiceIT {
     IdDto id = createAndUpdateCombinedReport(combined, null);
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), collectionId)
       .execute(IdDto.class, 200);
 
@@ -659,14 +639,14 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void copySingleReportFromCollectionToPrivateEntities(ReportType reportType) {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
     String id = createSingleReport(reportType, collectionId);
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, "null")
       .execute(IdDto.class, 200);
 
@@ -690,7 +670,7 @@ public class ReportRestServiceIT {
     IdDto id = createAndUpdateCombinedReport(combined, collectionId);
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), "null")
       .execute(IdDto.class, 200);
 
@@ -718,7 +698,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void copySingleReportFromCollectionToDifferentCollection(ReportType reportType) {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
@@ -726,7 +706,7 @@ public class ReportRestServiceIT {
     final String newCollectionId = addEmptyCollectionToOptimize();
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id, newCollectionId)
       .execute(IdDto.class, 200);
 
@@ -753,7 +733,7 @@ public class ReportRestServiceIT {
     final String newCollectionId = addEmptyCollectionToOptimize();
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyReportRequest(id.getId(), newCollectionId)
       .execute(IdDto.class, 200);
 
@@ -780,7 +760,7 @@ public class ReportRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("processAndDecisionReportType")
+  @EnumSource(ReportType.class)
   public void evaluateReportWithoutViewById(ReportType reportType) {
     //given
     String id;
@@ -810,7 +790,7 @@ public class ReportRestServiceIT {
     }
 
     // then
-    ReportEvaluationException response = embeddedOptimizeExtensionRule
+    ReportEvaluationException response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       .execute(ReportEvaluationException.class, 500);
@@ -821,12 +801,12 @@ public class ReportRestServiceIT {
 
   private Response updateReportRequest(final String id, final ReportType reportType) {
     if (PROCESS.equals(reportType)) {
-      return embeddedOptimizeExtensionRule
+      return embeddedOptimizeExtension
         .getRequestExecutor()
         .buildUpdateSingleProcessReportRequest(id, constructProcessReportWithFakePD())
         .execute();
     } else {
-      return embeddedOptimizeExtensionRule
+      return embeddedOptimizeExtension
         .getRequestExecutor()
         .buildUpdateSingleDecisionReportRequest(id, constructDecisionReportWithFakeDD())
         .execute();
@@ -834,7 +814,7 @@ public class ReportRestServiceIT {
   }
 
   private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -848,7 +828,7 @@ public class ReportRestServiceIT {
   }
 
   private ReportDefinitionDto getReport(String id) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest(id)
       .execute(ReportDefinitionDto.class, 200);
@@ -874,7 +854,7 @@ public class ReportRestServiceIT {
   private IdDto createAndUpdateCombinedReport(final CombinedReportDataDto combined, final String collectionId) {
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto(combined);
     combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200);
@@ -922,7 +902,7 @@ public class ReportRestServiceIT {
     singleDecisionReportDefinitionDto.setLastModified(someDate);
     singleDecisionReportDefinitionDto.setOwner(RANDOM_STRING);
     singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -936,7 +916,7 @@ public class ReportRestServiceIT {
   private String addEmptyProcessReport(final String collectionId) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -959,7 +939,7 @@ public class ReportRestServiceIT {
     singleProcessReportDefinitionDto.setLastModified(someDate);
     singleProcessReportDefinitionDto.setOwner(RANDOM_STRING);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -967,7 +947,7 @@ public class ReportRestServiceIT {
   }
 
   private String addEmptyDecisionReport() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest()
       .execute(IdDto.class, 200)
@@ -975,7 +955,7 @@ public class ReportRestServiceIT {
   }
 
   private List<ReportDefinitionDto> getAllPrivateReports() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, 200);
@@ -988,7 +968,7 @@ public class ReportRestServiceIT {
       SingleProcessReportDefinitionDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
         PROCESS_DEFINITION_XML_WITH_NAME
       );
-      response = embeddedOptimizeExtensionRule
+      response = embeddedOptimizeExtension
         .getRequestExecutor()
         .buildUpdateSingleProcessReportRequest(id, reportDefinitionDto)
         .execute();
@@ -996,7 +976,7 @@ public class ReportRestServiceIT {
       SingleDecisionReportDefinitionDto reportDefinitionDto = getDecisionReportDefinitionDtoWithXml(
         DECISION_DEFINITION_XML
       );
-      response = embeddedOptimizeExtensionRule
+      response = embeddedOptimizeExtension
         .getRequestExecutor()
         .buildUpdateSingleDecisionReportRequest(id, reportDefinitionDto)
         .execute();

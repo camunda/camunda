@@ -42,7 +42,7 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     final String expectedCategory = "Misc";
     final String expectedAuditOutput = "false";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition(
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
       "dmn/invoiceBusinessDecision_withDate.xml"
     );
     startDecisionInstanceWithInputVars(
@@ -54,8 +54,8 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
       createInputsWithDate(expectedAmountValue, "2019-06-06T00:00:00+00:00")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

@@ -27,7 +27,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -62,8 +62,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
   public void simpleReportEvaluation() {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -100,8 +100,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
   public void simpleReportEvaluationById() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     String reportId = createAndStoreDefaultReportDefinition(
       processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
@@ -135,12 +135,12 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
                                                                                                                   SQLException {
     final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstance1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstance1.getId());
-    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
-    final ProcessInstanceEngineDto processInstance3 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
+    final ProcessInstanceEngineDto processInstance1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+    final ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
+    final ProcessInstanceEngineDto processInstance3 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
     return processDefinition;
   }
 
@@ -151,13 +151,13 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     final String definitionId = processInstanceDto.getDefinitionId();
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto2.getId(), referenceDate.minusDays(2));
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto3.getId(), referenceDate.minusDays(1));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -190,13 +190,13 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     changeProcessInstanceDate(processInstanceDto.getId(), referenceDate);
     final String definitionId = processInstanceDto.getDefinitionId();
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto2.getId(), referenceDate.minusDays(2));
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto3.getId(), referenceDate.minusDays(1));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -226,19 +226,19 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     final String definitionId = processInstanceDto.getDefinitionId();
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     changeProcessInstanceDate(processInstanceDto.getId(), referenceDate);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto2.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto3.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto4.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto5.getId(), referenceDate.minusDays(2));
-    final ProcessInstanceEngineDto processInstanceDto6 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto6 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto6.getId(), referenceDate.minusDays(2));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -268,21 +268,21 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     final String definitionId = processInstanceDto.getDefinitionId();
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     changeProcessInstanceDate(processInstanceDto.getId(), referenceDate);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto2.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto3.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto4.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto5.getId(), referenceDate.minusDays(2));
-    final ProcessInstanceEngineDto processInstanceDto6 = engineIntegrationExtensionRule.startProcessInstance(definitionId);
+    final ProcessInstanceEngineDto processInstanceDto6 = engineIntegrationExtension.startProcessInstance(definitionId);
     changeProcessInstanceDate(processInstanceDto6.getId(), referenceDate.minusDays(2));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(2);
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
     // when
     final ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -305,15 +305,15 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     final OffsetDateTime referenceDate = OffsetDateTime.now();
 
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     changeProcessInstanceDate(processInstanceDto.getId(), referenceDate);
 
     ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
+      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     changeProcessInstanceDate(processInstanceDto3.getId(), referenceDate.minusDays(1));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -349,15 +349,15 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     changeProcessInstanceDate(processInstanceDto.getId(), referenceDate);
 
     ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
+      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     changeProcessInstanceDate(processInstanceDto3.getId(), referenceDate.minusDays(2));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -404,8 +404,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.HOURS);
 
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -466,8 +466,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
     updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.DAYS);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -491,8 +491,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
     updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.WEEKS);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -516,8 +516,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(3);
     OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
     updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.MONTHS);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -541,8 +541,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
     OffsetDateTime now = OffsetDateTime.now();
     updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.YEARS);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
@@ -565,8 +565,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -593,8 +593,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -617,11 +617,11 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("goToTask1", false);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -676,7 +676,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     return IntStream.range(0, number)
       .mapToObj(i -> {
-        ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+        ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
         processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
         processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
         return processInstanceEngineDto;
@@ -692,7 +692,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
@@ -718,6 +718,6 @@ public abstract class AbstractCountProcessInstanceFrequencyByDateReportEvaluatio
   }
 
   protected String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtensionRule.getDateTimeFormatter().format(time);
+    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 }

@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -25,16 +26,11 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEva
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -42,6 +38,7 @@ import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -54,26 +51,16 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ReportDefinitionAuthorizationIT {
+public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
   private static final String PROCESS_KEY = "aprocess";
   private static final String DECISION_KEY = "aDecision";
 
-  private static final Object[] definitionType() {
-    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
+  private static final Stream<Integer> definitionType() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @ParameterizedTest
   @MethodSource("definitionType")
@@ -85,7 +72,7 @@ public class ReportDefinitionAuthorizationIT {
     String reportId = createReportForDefinition(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildEvaluateSavedReportRequest(reportId)
@@ -100,7 +87,7 @@ public class ReportDefinitionAuthorizationIT {
   public void evaluateUnauthorizedTenantsStoredReport(int definitionResourceType) {
     // given
     final String tenantId = "tenant1";
-    engineIntegrationExtensionRule.createTenant(tenantId);
+    engineIntegrationExtension.createTenant(tenantId);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
@@ -109,7 +96,7 @@ public class ReportDefinitionAuthorizationIT {
     String reportId = createReportForDefinition(definitionResourceType, ImmutableList.of(tenantId));
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildEvaluateSavedReportRequest(reportId)
@@ -124,9 +111,9 @@ public class ReportDefinitionAuthorizationIT {
   public void evaluatePartiallyUnauthorizedTenantsStoredReport(int definitionResourceType) {
     // given
     final String tenantId1 = "tenant1";
-    engineIntegrationExtensionRule.createTenant(tenantId1);
+    engineIntegrationExtension.createTenant(tenantId1);
     final String tenantId2 = "tenant2";
-    engineIntegrationExtensionRule.createTenant(tenantId2);
+    engineIntegrationExtension.createTenant(tenantId2);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
@@ -136,7 +123,7 @@ public class ReportDefinitionAuthorizationIT {
     String reportId = createReportForDefinition(definitionResourceType, ImmutableList.of(tenantId1, tenantId2));
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildEvaluateSavedReportRequest(reportId)
@@ -151,9 +138,9 @@ public class ReportDefinitionAuthorizationIT {
   public void evaluateAllTenantsAuthorizedStoredReport(int definitionResourceType) {
     // given
     final String tenantId1 = "tenant1";
-    engineIntegrationExtensionRule.createTenant(tenantId1);
+    engineIntegrationExtension.createTenant(tenantId1);
     final String tenantId2 = "tenant2";
-    engineIntegrationExtensionRule.createTenant(tenantId2);
+    engineIntegrationExtension.createTenant(tenantId2);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
@@ -166,7 +153,7 @@ public class ReportDefinitionAuthorizationIT {
     );
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildEvaluateSavedReportRequest(reportId)
@@ -186,7 +173,7 @@ public class ReportDefinitionAuthorizationIT {
     String reportId = createReportForDefinition(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDeleteReportRequest(reportId)
@@ -205,7 +192,7 @@ public class ReportDefinitionAuthorizationIT {
 
     // when
     ReportDefinitionDto<SingleReportDataDto> definition = constructReportWithDefinition(definitionResourceType);
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildEvaluateSingleUnsavedReportRequest(definition.getData())
@@ -227,7 +214,7 @@ public class ReportDefinitionAuthorizationIT {
     ReportDefinitionDto updatedReport = createReportUpdate(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildUpdateSingleReportRequest(reportId, updatedReport)
@@ -247,7 +234,7 @@ public class ReportDefinitionAuthorizationIT {
     String reportId = createReportForDefinition(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetReportRequest(reportId)
@@ -269,7 +256,7 @@ public class ReportDefinitionAuthorizationIT {
     reportShareDto.setReportId(reportId);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildShareReportRequest(reportShareDto)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
@@ -289,7 +276,7 @@ public class ReportDefinitionAuthorizationIT {
     String reportId = createNewReport(definitionResourceType);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest(reportId)
       .execute();
@@ -298,7 +285,7 @@ public class ReportDefinitionAuthorizationIT {
     assertThat(response.getStatus(), is(200));
 
     // when
-    Response otherUserResponse = embeddedOptimizeExtensionRule
+    Response otherUserResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportRequest(reportId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
@@ -320,8 +307,8 @@ public class ReportDefinitionAuthorizationIT {
       RESOURCE_TYPE_PROCESS_DEFINITION
     );
     deployAndStartSimpleProcessDefinition(notAuthorizedProcessDefinitionKey);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     String authorizedReportId = createNewSingleMapReportAsUser(
       authorizedProcessDefinitionKey, KERMIT_USER, KERMIT_USER
@@ -333,7 +320,7 @@ public class ReportDefinitionAuthorizationIT {
     // when
     CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
 
-    CombinedProcessReportResultDataDto<ReportMapResultDto> result = embeddedOptimizeExtensionRule
+    CombinedProcessReportResultDataDto<ReportMapResultDto> result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
@@ -381,8 +368,8 @@ public class ReportDefinitionAuthorizationIT {
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void deployAndStartSimpleProcessDefinition(String processKey) {
@@ -390,12 +377,12 @@ public class ReportDefinitionAuthorizationIT {
       .startEvent()
       .endEvent()
       .done();
-    engineIntegrationExtensionRule.deployAndStartProcess(modelInstance);
+    engineIntegrationExtension.deployAndStartProcess(modelInstance);
   }
 
   private void deployAndStartSimpleDecisionDefinition(String decisionKey) {
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition(modelInstance);
+    engineIntegrationExtension.deployAndStartDecisionDefinition(modelInstance);
   }
 
   private ReportDefinitionDto createReportUpdate(int definitionResourceType) {
@@ -448,14 +435,14 @@ public class ReportDefinitionAuthorizationIT {
     switch (resourceType) {
       default:
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildCreateSingleProcessReportRequest()
           .execute(IdDto.class, 200)
           .getId();
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildCreateSingleDecisionReportRequest()
@@ -508,13 +495,13 @@ public class ReportDefinitionAuthorizationIT {
     switch (updatedReport.getReportType()) {
       default:
       case PROCESS:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildUpdateSingleProcessReportRequest(id, updatedReport)
           .execute();
       case DECISION:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildUpdateSingleDecisionReportRequest(id, updatedReport)

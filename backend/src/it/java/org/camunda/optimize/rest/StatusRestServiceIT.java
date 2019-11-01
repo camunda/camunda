@@ -5,37 +5,23 @@
  */
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Map;
 
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-public class StatusRestServiceIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class StatusRestServiceIT extends AbstractIT {
 
   @Test
   public void getConnectedStatus() {
-    final StatusWithProgressDto statusWithProgressDto = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final StatusWithProgressDto statusWithProgressDto = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
       .execute(StatusWithProgressDto.class, 200);
@@ -47,7 +33,7 @@ public class StatusRestServiceIT {
 
   @Test
   public void getImportStatus() {
-    final StatusWithProgressDto statusWithProgressDto = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final StatusWithProgressDto statusWithProgressDto = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
       .execute(StatusWithProgressDto.class, 200);
@@ -58,10 +44,10 @@ public class StatusRestServiceIT {
   @Test
   public void importStatusIsTrueWhenImporting() {
     // given
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     // when
-    final StatusWithProgressDto status = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final StatusWithProgressDto status = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
       .execute(StatusWithProgressDto.class, 200);
@@ -75,7 +61,7 @@ public class StatusRestServiceIT {
   @Test
   public void importStatusIsFalseWhenNotImporting() {
     // when
-    final StatusWithProgressDto status = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final StatusWithProgressDto status = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()
       .execute(StatusWithProgressDto.class, 200);

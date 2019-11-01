@@ -38,17 +38,17 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void importOfUserTaskWorkerDataCanBeDisabled() throws IOException {
     // given
-    embeddedOptimizeExtensionRule.getConfigurationService().setImportUserTaskWorkerDataEnabled(false);
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.getConfigurationService().setImportUserTaskWorkerDataEnabled(false);
+    embeddedOptimizeExtension.reloadConfiguration();
     deployAndStartOneUserTaskProcess();
     String defaultCandidateGroup = "defaultCandidateGroupId";
-    engineIntegrationExtensionRule.createGroup(defaultCandidateGroup);
-    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtension.createGroup(defaultCandidateGroup);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -71,13 +71,13 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // given
     deployAndStartOneUserTaskProcess();
     String defaultCandidateGroup = "defaultCandidateGroupId";
-    engineIntegrationExtensionRule.createGroup(defaultCandidateGroup);
-    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtension.createGroup(defaultCandidateGroup);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -115,20 +115,20 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // is identical.
 
     // given
-    engineIntegrationExtensionRule.addUser("kermit", "foo");
-    engineIntegrationExtensionRule.grantAllAuthorizations("kermit");
+    engineIntegrationExtension.addUser("kermit", "foo");
+    engineIntegrationExtension.grantAllAuthorizations("kermit");
     ProcessInstanceEngineDto instanceDto = deployAndStartOneUserTaskProcess();
-    engineIntegrationExtensionRule.claimAllRunningUserTasks();
-    engineIntegrationExtensionRule.unclaimAllRunningUserTasks();
-    engineIntegrationExtensionRule.claimAllRunningUserTasks("kermit", "foo", instanceDto.getId());
+    engineIntegrationExtension.claimAllRunningUserTasks();
+    engineIntegrationExtension.unclaimAllRunningUserTasks();
+    engineIntegrationExtension.claimAllRunningUserTasks("kermit", "foo", instanceDto.getId());
     // we need to make sure that the new timestamp is after the first claim, since
     // otherwise the ordering of the assignee operations won't be correct.
     OffsetDateTime timestamp = OffsetDateTime.now().plusHours(1);
-    engineDatabaseExtensionRule.changeLinkLogTimestampForLastTwoAssigneeOperations(timestamp);
+    engineDatabaseExtension.changeLinkLogTimestampForLastTwoAssigneeOperations(timestamp);
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -146,14 +146,14 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void assigneeIsCorrectlyDeterminedForMultipleUserTasks() throws Exception {
     // given
     deployAndStartTwoUserTasksProcess();
-    engineIntegrationExtensionRule.addUser("secondUser", "fooPassword");
-    engineIntegrationExtensionRule.grantAllAuthorizations("secondUser");
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    engineIntegrationExtensionRule.finishAllRunningUserTasks("secondUser", "fooPassword");
+    engineIntegrationExtension.addUser("secondUser", "fooPassword");
+    engineIntegrationExtension.grantAllAuthorizations("secondUser");
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "fooPassword");
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -176,16 +176,16 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void candidateGroupIsCorrectlyDeterminedForMultipleUserTasks() throws Exception {
     // given
     deployAndStartTwoUserTasksProcess();
-    engineIntegrationExtensionRule.createGroup("firstGroup");
-    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks("firstGroup");
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
-    engineIntegrationExtensionRule.createGroup("secondGroup");
-    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks("secondGroup");
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtension.createGroup("firstGroup");
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("firstGroup");
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    engineIntegrationExtension.createGroup("secondGroup");
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("secondGroup");
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -211,15 +211,15 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void severalAssigneeOperationsLeadToCorrectResult() throws Exception {
     // given
     deployAndStartOneUserTaskProcess();
-    engineIntegrationExtensionRule.claimAllRunningUserTasks();
-    engineIntegrationExtensionRule.unclaimAllRunningUserTasks();
-    engineIntegrationExtensionRule.addUser("secondUser", "secondPassword");
-    engineIntegrationExtensionRule.grantAllAuthorizations("secondUser");
-    engineIntegrationExtensionRule.finishAllRunningUserTasks("secondUser", "secondPassword");
+    engineIntegrationExtension.claimAllRunningUserTasks();
+    engineIntegrationExtension.unclaimAllRunningUserTasks();
+    engineIntegrationExtension.addUser("secondUser", "secondPassword");
+    engineIntegrationExtension.grantAllAuthorizations("secondUser");
+    engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "secondPassword");
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -242,11 +242,11 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void assigneeWithoutClaimIsNull() throws Exception {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
-    engineIntegrationExtensionRule.completeUserTaskWithoutClaim(engineDto.getId());
+    engineIntegrationExtension.completeUserTaskWithoutClaim(engineDto.getId());
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -265,11 +265,11 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void assigneeCanBeDeterminedForStillRunningUserTasks() throws Exception {
     // given
     deployAndStartOneUserTaskProcess();
-    engineIntegrationExtensionRule.claimAllRunningUserTasks();
+    engineIntegrationExtension.claimAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -288,16 +288,16 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void severalCandidateGroupOperationsLeadToCorrectResult() throws Exception {
     // given
     deployAndStartOneUserTaskProcess();
-    engineIntegrationExtensionRule.createGroup("firstGroup");
-    engineIntegrationExtensionRule.createGroup("secondGroup");
-    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks("firstGroup");
-    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks("secondGroup");
-    engineIntegrationExtensionRule.deleteCandidateGroupForAllRunningUserTasks("firstGroup");
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtension.createGroup("firstGroup");
+    engineIntegrationExtension.createGroup("secondGroup");
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("firstGroup");
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("secondGroup");
+    engineIntegrationExtension.deleteCandidateGroupForAllRunningUserTasks("firstGroup");
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -320,16 +320,16 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void deleteAssigneeAndDeleteCandidateGroupAsLastOperations() throws Exception {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
-    engineIntegrationExtensionRule.createGroup("firstGroup");
-    engineIntegrationExtensionRule.addCandidateGroupForAllRunningUserTasks("firstGroup");
-    engineIntegrationExtensionRule.deleteCandidateGroupForAllRunningUserTasks("firstGroup");
-    engineIntegrationExtensionRule.claimAllRunningUserTasks();
-    engineIntegrationExtensionRule.unclaimAllRunningUserTasks();
-    engineIntegrationExtensionRule.completeUserTaskWithoutClaim(engineDto.getId());
+    engineIntegrationExtension.createGroup("firstGroup");
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("firstGroup");
+    engineIntegrationExtension.deleteCandidateGroupForAllRunningUserTasks("firstGroup");
+    engineIntegrationExtension.claimAllRunningUserTasks();
+    engineIntegrationExtension.unclaimAllRunningUserTasks();
+    engineIntegrationExtension.completeUserTaskWithoutClaim(engineDto.getId());
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -349,17 +349,17 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void importIsNotAffectedByPagination() throws Exception {
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
-    engineIntegrationExtensionRule.claimAllRunningUserTasks();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.claimAllRunningUserTasks();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    engineIntegrationExtensionRule.unclaimAllRunningUserTasks();
-    engineIntegrationExtensionRule.addUser("secondUser", "aPassword");
-    engineIntegrationExtensionRule.grantAllAuthorizations("secondUser");
-    engineIntegrationExtensionRule.finishAllRunningUserTasks("secondUser", "aPassword");
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.unclaimAllRunningUserTasks();
+    engineIntegrationExtension.addUser("secondUser", "aPassword");
+    engineIntegrationExtension.grantAllAuthorizations("secondUser");
+    engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "aPassword");
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -378,12 +378,12 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   public void onlyUserAssigneeOperationLogsRelatedToProcessInstancesAreImported() throws IOException {
     // given
     deployAndStartOneUserTaskProcess();
-    engineIntegrationExtensionRule.createIndependentUserTask();
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtension.createIndependentUserTask();
+    engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);

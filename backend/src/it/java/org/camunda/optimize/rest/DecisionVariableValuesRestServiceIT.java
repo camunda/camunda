@@ -5,14 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -23,22 +19,12 @@ import java.util.stream.Stream;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class DecisionVariableValuesRestServiceIT {
+public class DecisionVariableValuesRestServiceIT extends AbstractIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";
   private static final String TEST_VARIANT_OUTPUTS = "outputs";
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-
-  @ParameterizedTest
+  @ParameterizedTest(name = "get variable values without authentication for type {0}")
   @MethodSource("getInputOutputArgs")
   public void getVariableValuesWithoutAuthentication(String inputOutput) {
     // when
@@ -50,7 +36,7 @@ public class DecisionVariableValuesRestServiceIT {
     assertThat(response.getStatus(), is(401));
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "get variable values for type {0}")
   @MethodSource("getInputOutputArgs")
   public void getVariableValues(String inputOutput) {
     // given
@@ -64,7 +50,7 @@ public class DecisionVariableValuesRestServiceIT {
     assertThat(responseList.isEmpty(), is(true));
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "missing variable id query param throws error for type {0}")
   @MethodSource("getInputOutputArgs")
   public void missingVariableIdQueryParamThrowsError(String inputOutput) {
     // given
@@ -79,7 +65,7 @@ public class DecisionVariableValuesRestServiceIT {
     assertThat(response.getStatus(), is(500));
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "missing variable type query param throws error for type {0}")
   @MethodSource("getInputOutputArgs")
   public void missingVariableTypeQueryParamThrowsError(String inputOutput) {
     // given
@@ -94,7 +80,7 @@ public class DecisionVariableValuesRestServiceIT {
     assertThat(response.getStatus(), is(500));
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "missing decision definition key query param throws error for type {0}")
   @MethodSource("getInputOutputArgs")
   public void missingDecisionDefinitionKeyQueryParamThrowsError(String inputOutput) {
     // given
@@ -109,7 +95,7 @@ public class DecisionVariableValuesRestServiceIT {
     assertThat(response.getStatus(), is(500));
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "missing decision definition version query param throws error for type {0}")
   @MethodSource("getInputOutputArgs")
   public void missingDecisionDefinitionVersionQueryParamThrowsError(String inputOutput) {
     // given
@@ -131,11 +117,11 @@ public class DecisionVariableValuesRestServiceIT {
   private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableValueRequestDto requestDto) {
     switch (inputsOrOutputs) {
       case TEST_VARIANT_INPUTS:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildDecisionInputVariableValuesRequest(requestDto);
       case TEST_VARIANT_OUTPUTS:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildDecisionOutputVariableValuesRequest(requestDto);
       default:

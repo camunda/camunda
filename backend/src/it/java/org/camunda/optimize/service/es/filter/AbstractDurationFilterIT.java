@@ -32,7 +32,7 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
   }
 
   protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)
             .execute();
@@ -43,8 +43,8 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
                                           long daysToShift,
                                           long durationInSec) throws SQLException {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(processInstanceId, shiftedStartDate.plusSeconds(durationInSec));
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedStartDate.plusSeconds(durationInSec));
   }
 
 
@@ -54,15 +54,15 @@ public class AbstractDurationFilterIT extends AbstractFilterIT {
         .startEvent()
         .endEvent()
         .done();
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException {
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     adjustProcessInstanceDates(processInstance.getId(), startDate, daysToShift, durationInSec);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     return processInstance;
   }
 

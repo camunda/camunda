@@ -31,15 +31,15 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -59,15 +59,15 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
   public void reportEvaluationMultiInstancesAllVersions() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -87,18 +87,18 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
   public void reportEvaluationMultiInstancesAllVersionsOtherDefinitionsHaveNoSideEffect() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
     // different version
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
     // other decision definition
     deployAndStartSimpleDecisionDefinition("key2");
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -124,8 +124,8 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -144,7 +144,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
   public void reportEvaluationMultiInstancesFilter() {
     // given
     final double inputVariableValueToFilterFor = 200.0;
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, "Misc")
@@ -158,8 +158,8 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       createInputs(inputVariableValueToFilterFor + 100.0, "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

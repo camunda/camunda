@@ -5,15 +5,13 @@
  */
 package org.camunda.optimize.service.export;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -31,42 +29,33 @@ import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class DecisionExportServiceIT {
+public class DecisionExportServiceIT extends AbstractIT {
 
   private static final String FAKE = "FAKE";
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @ParameterizedTest
   @MethodSource("getArguments")
   public void reportCsvHasExpectedValue(DecisionReportDataDto currentReport, String expectedCSV) throws Exception {
     //given
     OffsetDateTime lastEvaluationDateFilter = OffsetDateTime.parse("2019-01-29T18:20:23.277+01:00");
-    DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     currentReport.setDecisionDefinitionKey(decisionDefinitionEngineDto.getKey());
     currentReport.setDecisionDefinitionVersion(decisionDefinitionEngineDto.getVersionAsString());
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
-    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, lastEvaluationDateFilter);
+    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, lastEvaluationDateFilter);
     String decisionInstanceId =
-      engineDatabaseExtensionRule.getDecisionInstanceIdsWithEvaluationDateEqualTo(
+      engineDatabaseExtension.getDecisionInstanceIdsWithEvaluationDateEqualTo(
         lastEvaluationDateFilter).get(0);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -103,7 +92,7 @@ public class DecisionExportServiceIT {
   }
 
   private String createNewReport(SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
       .execute(IdDto.class, 200)

@@ -5,16 +5,12 @@
  */
 package org.camunda.optimize.jetty;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.license.LicenseManager;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.net.URI;
@@ -28,23 +24,16 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 
-public class RedirectToLicensePageIT {
+public class RedirectToLicensePageIT extends AbstractIT {
 
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
   private LicenseManager licenseManager;
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(engineIntegrationExtensionRule).around(elasticSearchIntegrationTestExtensionRule).around(embeddedOptimizeExtensionRule);
-
-  @Before
+  @BeforeEach
   public void setup() {
-    licenseManager = embeddedOptimizeExtensionRule.getApplicationContext().getBean(LicenseManager.class);
+    licenseManager = embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class);
   }
 
-  @After
+  @AfterEach
   public void resetBasePackage() {
     licenseManager.resetLicenseFromFile();
   }
@@ -53,7 +42,7 @@ public class RedirectToLicensePageIT {
   public void redirectFromLoginPageToLicensePage() {
     // when
     Response response =
-      embeddedOptimizeExtensionRule.rootTarget(LOGIN_PAGE).request().get();
+      embeddedOptimizeExtension.rootTarget(LOGIN_PAGE).request().get();
 
     // then
     assertThat(response.getLocation(), is(not(nullValue())));
@@ -65,7 +54,7 @@ public class RedirectToLicensePageIT {
     String license = FileReaderUtil.readValidTestLicense();
 
     Response response =
-      embeddedOptimizeExtensionRule.getRequestExecutor()
+      embeddedOptimizeExtension.getRequestExecutor()
         .buildValidateAndStoreLicenseRequest(license)
         .execute();
     assertThat(response.getStatus(), is(200));
@@ -78,7 +67,7 @@ public class RedirectToLicensePageIT {
 
     // when
     Response response =
-      embeddedOptimizeExtensionRule.rootTarget(LOGIN_PAGE).request().get();
+      embeddedOptimizeExtension.rootTarget(LOGIN_PAGE).request().get();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -89,7 +78,7 @@ public class RedirectToLicensePageIT {
   public void redirectFromRootPageToLicensePage() {
     // when
     Response response =
-      embeddedOptimizeExtensionRule.rootTarget(INDEX_PAGE).request().get();
+      embeddedOptimizeExtension.rootTarget(INDEX_PAGE).request().get();
 
     // then
     assertThat(response.getLocation(), is(not(nullValue())));
@@ -104,7 +93,7 @@ public class RedirectToLicensePageIT {
 
     // when
     Response response =
-      embeddedOptimizeExtensionRule.rootTarget(INDEX_PAGE).request().get();
+      embeddedOptimizeExtension.rootTarget(INDEX_PAGE).request().get();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -113,10 +102,10 @@ public class RedirectToLicensePageIT {
   @Test
   public void redirectFromErrorPageToLicensePage() {
     // to ensure license is refreshed from file and elasticsearch
-    embeddedOptimizeExtensionRule.getApplicationContext().getBean(LicenseManager.class).init();
+    embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).init();
     // when
     Response response =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .rootTarget("/process/leadQualification:2:7f0f82b8-5255-11e7-99a3-02421525a25c/none").request().get();
 
     // then first redirect request should be the license page
@@ -124,7 +113,7 @@ public class RedirectToLicensePageIT {
 
     // when I now redirect to root page
     response =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .rootTarget(INDEX_PAGE).request().get();
 
     // then I get a redirect to the license page
@@ -140,7 +129,7 @@ public class RedirectToLicensePageIT {
 
     // when I query a random path
     Response response =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .rootTarget("/process/leadQualification:2:7f0f82b8-5255-11e7-99a3-02421525a25c/none").request().get();
 
     // then first redirect request should be the root page
@@ -148,7 +137,7 @@ public class RedirectToLicensePageIT {
 
     // when I now redirect to root page
     response =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .rootTarget(INDEX_PAGE).request().get();
 
     // then I shouldn't get a redirect to the license page
@@ -159,7 +148,7 @@ public class RedirectToLicensePageIT {
   public void redirectFromIndexHtmlPageToLicensePage() {
     // when
     Response response =
-      embeddedOptimizeExtensionRule.rootTarget(INDEX_HTML_PAGE).request().get();
+      embeddedOptimizeExtension.rootTarget(INDEX_HTML_PAGE).request().get();
 
     // then
     assertThat(response.getLocation(), is(not(nullValue())));
@@ -174,7 +163,7 @@ public class RedirectToLicensePageIT {
 
     // when
     Response response =
-      embeddedOptimizeExtensionRule.rootTarget(INDEX_HTML_PAGE).request().get();
+      embeddedOptimizeExtension.rootTarget(INDEX_HTML_PAGE).request().get();
 
     // then
     assertThat(response.getStatus(), is(200));

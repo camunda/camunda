@@ -8,16 +8,14 @@ package org.camunda.optimize.service.es.filter;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -26,7 +24,7 @@ import javax.ws.rs.core.Response;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 
-public abstract class AbstractFilterIT {
+public abstract class AbstractFilterIT extends AbstractIT {
 
   protected static final String TEST_DEFINITION = "TestDefinition";
   protected final static String USER_TASK_ACTIVITY_ID = "User-Task";
@@ -34,17 +32,8 @@ public abstract class AbstractFilterIT {
   protected final static String END_EVENT_ACTIVITY_ID = "endEvent";
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected ProcessReportDataDto createReportWithInstance(ProcessInstanceEngineDto processInstanceEngineDto) {
     return createReport(processInstanceEngineDto.getProcessDefinitionKey(), processInstanceEngineDto.getProcessDefinitionVersion());
@@ -70,11 +59,11 @@ public abstract class AbstractFilterIT {
       .userTask()
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();
@@ -86,7 +75,7 @@ public abstract class AbstractFilterIT {
 
   protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithRawDataResult(
     final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -96,7 +85,7 @@ public abstract class AbstractFilterIT {
 
   protected AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateReportWithMapResult(
     final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -111,7 +100,7 @@ public abstract class AbstractFilterIT {
       .userTask(USER_TASK_ACTIVITY_ID_2)
       .endEvent(END_EVENT_ACTIVITY_ID)
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 }

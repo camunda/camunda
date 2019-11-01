@@ -28,7 +28,7 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
     final String outputAuditValueToFilterFor = "true";
     final String outputVariableIdToFilterOn = OUTPUT_AUDIT_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     // results in Audit=false
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
@@ -40,8 +40,8 @@ public class DecisionBooleanVariableFilterIT extends AbstractDecisionDefinitionI
       createInputs(2000.0, "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder

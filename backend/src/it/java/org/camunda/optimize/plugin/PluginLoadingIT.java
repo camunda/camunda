@@ -5,59 +5,41 @@
  */
 package org.camunda.optimize.plugin;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.testplugin.pluginloading.SharedTestPluginVariableDto;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildMissingPluginVersionMessage;
 import static org.camunda.optimize.plugin.PluginVersionChecker.buildUnsupportedPluginVersionMessage;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class PluginLoadingIT {
-
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class PluginLoadingIT extends AbstractIT {
 
   private ConfigurationService configurationService;
   private ImportAdapterProvider pluginProvider;
 
-  public ExpectedException expectedExceptionRule = ExpectedException.none();
+  @TempDir
+  File tempDirectory;
 
-  @Before
+  @BeforeEach
   public void setup() {
-    configurationService = embeddedOptimizeExtensionRule.getConfigurationService();
-    pluginProvider = embeddedOptimizeExtensionRule.getApplicationContext().getBean(ImportAdapterProvider.class);
+    configurationService = embeddedOptimizeExtension.getConfigurationService();
+    pluginProvider = embeddedOptimizeExtension.getApplicationContext().getBean(ImportAdapterProvider.class);
   }
-
-  public TemporaryFolder tempFolderRule = new TemporaryFolder();
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchIntegrationTestExtensionRule)
-    .around(engineIntegrationExtensionRule)
-    .around(embeddedOptimizeExtensionRule)
-    .around(expectedExceptionRule)
-    .around(tempFolderRule);
 
   @Test
   public void loadedPluginClassesAreIndependentToOptimizeClasses() {
@@ -70,7 +52,7 @@ public class PluginLoadingIT {
     assertThat(optimizeLoadedTest.getId(), is("optimize-class"));
 
     // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -107,7 +89,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -129,7 +111,7 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -143,26 +125,28 @@ public class PluginLoadingIT {
     plugins.get(0).adaptVariables(Collections.emptyList());
   }
 
-  @Test(expected = OptimizeRuntimeException.class)
+  @Test
   public void loadedPluginHasNoDefaultConstructor() {
     // given
     configurationService.setPluginDirectory("target/testPluginsValid");
     String basePackage = "org.camunda.optimize.testplugin.adapter.variable.error1";
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
-    // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    // then
+    assertThatThrownBy(() -> embeddedOptimizeExtension.reloadConfiguration())
+      .isInstanceOf(OptimizeRuntimeException.class);
   }
 
-  @Test(expected = RuntimeException.class)
+  @Test
   public void loadedPluginThrowsExceptionInDefaultConstructor() {
     // given
     configurationService.setPluginDirectory("target/testPluginsValid");
     String basePackage = "org.camunda.optimize.testplugin.adapter.variable.error2";
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
-    // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    // then
+    assertThatThrownBy(() -> embeddedOptimizeExtension.reloadConfiguration())
+      .isInstanceOf(RuntimeException.class);
   }
 
   @Test
@@ -171,7 +155,7 @@ public class PluginLoadingIT {
     configurationService.setPluginDirectory("nonexistingDirectory");
 
     // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -179,13 +163,12 @@ public class PluginLoadingIT {
   }
 
   @Test
-  public void loadingPluginsWithEmptyPluginDirectoryConfigured() throws IOException {
+  public void loadingPluginsWithEmptyPluginDirectoryConfigured() {
     // given
-    final File newEmptyPluginDirectory = tempFolderRule.newFolder("newEmptyPluginDirectory");
-    configurationService.setPluginDirectory(newEmptyPluginDirectory.getAbsolutePath());
+    configurationService.setPluginDirectory(tempDirectory.getAbsolutePath());
 
     // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     final List<VariableImportAdapter> plugins = pluginProvider.getPlugins();
@@ -200,14 +183,14 @@ public class PluginLoadingIT {
     configurationService.setVariableImportPluginBasePackages(Collections.singletonList(basePackage));
 
     // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     assertThat(pluginProvider.getPlugins().size(), is(0));
 
     // when
     configurationService.setPluginDirectory("target/testPluginsValid");
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
 
     // then
     assertThat(pluginProvider.getPlugins().size(), is(1));
@@ -220,11 +203,9 @@ public class PluginLoadingIT {
     configurationService.setPluginDirectory("target/testPluginsInvalid/invalidVersion");
 
     // then
-    expectedExceptionRule.expect(OptimizeRuntimeException.class);
-    expectedExceptionRule.expectMessage(buildUnsupportedPluginVersionMessage("invalid_version", Version.VERSION));
-
-    // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    assertThatThrownBy(() -> embeddedOptimizeExtension.reloadConfiguration())
+      .isInstanceOf(OptimizeRuntimeException.class)
+      .hasMessage(buildUnsupportedPluginVersionMessage("invalid_version", Version.VERSION));
   }
 
   @Test
@@ -233,11 +214,9 @@ public class PluginLoadingIT {
     configurationService.setPluginDirectory("target/testPluginsInvalid/missingVersion");
 
     // then
-    expectedExceptionRule.expect(OptimizeRuntimeException.class);
-    expectedExceptionRule.expectMessage(buildMissingPluginVersionMessage(Version.VERSION));
-
-    // when
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    assertThatThrownBy(() -> embeddedOptimizeExtension.reloadConfiguration())
+      .isInstanceOf(OptimizeRuntimeException.class)
+      .hasMessage(buildMissingPluginVersionMessage(Version.VERSION));
   }
 
 }

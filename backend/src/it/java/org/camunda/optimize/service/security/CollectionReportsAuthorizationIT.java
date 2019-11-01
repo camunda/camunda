@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -18,23 +18,18 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.runner.RunWith;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -45,30 +40,19 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(JUnitParamsRunner.class)
-public class CollectionReportsAuthorizationIT {
-  @RegisterExtension
-  @Order(1)
-  public static ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
-    new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public static EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public static EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class CollectionReportsAuthorizationIT extends AbstractIT {
 
-  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
+  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
-  private static final Object[] definitionTypes() {
-    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
+  private static final Stream<Integer> definitionTypes() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
-  private static final Object[][] definitionTypePairs() {
-    return new Object[][]{
-      {Arrays.asList(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION)},
-      {Arrays.asList(RESOURCE_TYPE_DECISION_DEFINITION, RESOURCE_TYPE_PROCESS_DEFINITION)}
-    };
+  private static final Stream<List<Integer>> definitionTypePairs() {
+    return Stream.of(
+      Arrays.asList(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION),
+      Arrays.asList(RESOURCE_TYPE_DECISION_DEFINITION, RESOURCE_TYPE_PROCESS_DEFINITION)
+    );
   }
 
   @ParameterizedTest
@@ -147,7 +131,7 @@ public class CollectionReportsAuthorizationIT {
   }
 
   private String createNewCollection() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -198,7 +182,7 @@ public class CollectionReportsAuthorizationIT {
   }
 
   private String createNewDecisionReportAsUser(final SingleDecisionReportDefinitionDto decReport) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildCreateSingleDecisionReportRequest(decReport)
@@ -207,7 +191,7 @@ public class CollectionReportsAuthorizationIT {
   }
 
   private String createNewProcessReportAsUser(final SingleProcessReportDefinitionDto procReport) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildCreateSingleProcessReportRequest(procReport)
@@ -217,7 +201,7 @@ public class CollectionReportsAuthorizationIT {
 
   private String addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
                                                   final String collectionId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200)
@@ -225,7 +209,7 @@ public class CollectionReportsAuthorizationIT {
   }
 
   private OptimizeRequestExecutor getReportsForCollectionRequestAsKermit(final String collectionId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER);

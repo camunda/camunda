@@ -10,6 +10,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.ModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -22,9 +23,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -61,7 +62,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
-public class QueryPerformanceTest {
+public class QueryPerformanceTest extends AbstractIT {
 
   private static final Logger logger = LoggerFactory.getLogger(QueryPerformanceTest.class);
   private static final String PROPERTY_LOCATION = "query-performance.properties";
@@ -72,20 +73,20 @@ public class QueryPerformanceTest {
 
   @RegisterExtension
   @Order(1)
-  public static ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension = new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
-  public static EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
   @RegisterExtension
   @Order(3)
-  public static EngineIntegrationExtensionRule engineRule = new EngineIntegrationExtensionRule("default", false);
+  public static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension("default", false);
 
   private static String authenticationToken;
 
   @BeforeAll
   public static void init() throws TimeoutException, InterruptedException {
-    embeddedOptimizeExtensionRule.setupOptimize();
-    elasticSearchIntegrationTestExtensionRule.disableCleanup();
+    embeddedOptimizeExtension.setupOptimize();
+    elasticSearchIntegrationTestExtension.disableCleanup();
     // given
     importEngineData();
 
@@ -93,15 +94,15 @@ public class QueryPerformanceTest {
     // will time out and the requests will fail with a 401.
     // Therefore, we need to make sure that renew the auth header
     // after the import and before we start the tests
-    authenticationToken = embeddedOptimizeExtensionRule.getNewAuthenticationToken();
+    authenticationToken = embeddedOptimizeExtension.getNewAuthenticationToken();
   }
 
   private static List<SingleReportDataDto> createAllPossibleReports() {
     List<ProcessDefinitionEngineDto> latestDefinitionVersions =
-      engineRule.getLatestProcessDefinitions();
+      engineIntegrationExtension.getLatestProcessDefinitions();
 
     List<DecisionDefinitionEngineDto> latestDecisionDefs =
-      engineRule.getLatestDecisionDefinitions();
+      engineIntegrationExtension.getLatestDecisionDefinitions();
 
 
     List<ProcessReportDataDto> processReportDataDtos = latestDefinitionVersions
@@ -165,7 +166,7 @@ public class QueryPerformanceTest {
   }
 
   private static ProcessPartDto createProcessPart(ProcessDefinitionEngineDto definition) {
-    String xml = engineRule
+    String xml = engineIntegrationExtension
       .getProcessDefinitionXml(definition.getId())
       .getBpmn20Xml();
     ModelInstance model = Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
@@ -217,7 +218,7 @@ public class QueryPerformanceTest {
     logger.info("Start importing engine data...");
     ExecutorService executor = Executors.newSingleThreadExecutor();
     executor.execute(
-      () -> embeddedOptimizeExtensionRule.importAllEngineData()
+      () -> embeddedOptimizeExtension.importAllEngineData()
     );
 
     executor.shutdown();
@@ -226,7 +227,7 @@ public class QueryPerformanceTest {
     if (!wasAbleToFinishImportInTime) {
       throw new TimeoutException("Import was not able to finish import in " + 2 + " hours!");
     }
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     logger.info("Finished importing engine data...");
   }
 
@@ -257,7 +258,7 @@ public class QueryPerformanceTest {
   private long evaluateReportAndReturnEvaluationTime(SingleReportDataDto report) {
     logger.info("Evaluating report {}", report);
     Instant start = Instant.now();
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(report)
       .withGivenAuthToken(authenticationToken)

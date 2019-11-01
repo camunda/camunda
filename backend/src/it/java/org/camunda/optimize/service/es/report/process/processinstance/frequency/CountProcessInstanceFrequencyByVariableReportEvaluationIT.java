@@ -26,7 +26,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -60,8 +60,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -98,8 +98,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     String reportId = createAndStoreDefaultReportDefinition(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
@@ -138,8 +138,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
     deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -168,8 +168,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -188,10 +188,10 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables.put("foo", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -219,13 +219,13 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables.put("foo", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(1);
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -252,15 +252,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables.put("foo", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
     variables.put("foo", "bar3");
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(
@@ -290,15 +290,15 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables.put("foo", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", "bar2");
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
     variables.put("foo", "bar3");
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(
@@ -327,9 +327,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables.put("foo", "1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
     variables.put("foo", 1);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -357,9 +357,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables.put("foo1", "bar1");
     variables.put("foo2", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -391,8 +391,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
@@ -411,7 +411,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       assertThat(resultData.size(), is(1));
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
-        String dateAsString = embeddedOptimizeExtensionRule.getDateTimeFormatter()
+        String dateAsString = embeddedOptimizeExtension.getDateTimeFormatter()
           .format(temporal.atZoneSimilarLocal(ZoneId.systemDefault()));
         assertThat(resultData.get(0).getKey(), is(dateAsString));
         assertThat(resultData.get(0).getValue(), is(1L));
@@ -443,19 +443,19 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
 
     variables.put("testVar", null);
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
     variables.put("testVar", new EngineVariableValue(null, "String"));
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
 
     variables = new HashMap<>();
     variables.put("differentStringValue", "test");
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -490,12 +490,12 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     // given
     Map<String, Object> variables = ImmutableMap.of("testVar", "withValue", "testVarTemp", "withValue");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineDatabaseExtensionRule.changeVariableName(processInstanceDto.getId(), "testVarTemp", "testVar");
+    engineDatabaseExtension.changeVariableName(processInstanceDto.getId(), "testVarTemp", "testVar");
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    assertThat(elasticSearchIntegrationTestExtensionRule.getVariableInstanceCount("testVar", VariableType.STRING), is(2));
+    assertThat(elasticSearchIntegrationTestExtension.getVariableInstanceCount("testVar", VariableType.STRING), is(2));
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -521,16 +521,16 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(of("testVar", "withValue"));
 
     // 4 process instances without 'testVar'
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), Collections.singletonMap("testVar", null));
-    engineIntegrationExtensionRule.startProcessInstance(
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), Collections.singletonMap("testVar", null));
+    engineIntegrationExtension.startProcessInstance(
       processInstanceDto.getDefinitionId(),
       Collections.singletonMap("testVar", new EngineVariableValue(null, "String"))
     );
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), of("differentStringValue", "test"));
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), of("differentStringValue", "test"));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -559,13 +559,13 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
 
     variables = Collections.singletonMap("dateVar", OffsetDateTime.now().minusDays(2));
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
     variables = Collections.singletonMap("dateVar", OffsetDateTime.now().minusDays(1));
-    engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createCountProcessInstanceFrequencyGroupByVariable(
@@ -594,9 +594,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess(variables);
-    OffsetDateTime past = engineIntegrationExtensionRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    OffsetDateTime past = engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(
@@ -703,7 +703,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     return IntStream.range(0, number)
       .mapToObj(i -> {
         ProcessInstanceEngineDto processInstanceEngineDto =
-          engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+          engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
         processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
         processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
         return processInstanceEngineDto;
@@ -719,7 +719,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,

@@ -7,12 +7,8 @@ package org.camunda.optimize.service.security;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
+import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
@@ -24,26 +20,16 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class AuthenticationIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class AuthenticationIT extends AbstractIT {
 
   @Test
   public void authenticateUser() {
     //given
-    engineIntegrationExtensionRule.addUser("kermit", "kermit");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser("kermit", "kermit");
+    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
 
     //when
-    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "kermit");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(), is(200));
@@ -52,12 +38,12 @@ public class AuthenticationIT {
   @Test
   public void rejectLockedUser() {
     //given
-    engineIntegrationExtensionRule.addUser("kermit", "kermit");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser("kermit", "kermit");
+    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
 
     //when
-    embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "wrongPassword");
-    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "kermit");
+    embeddedOptimizeExtension.authenticateUserRequest("kermit", "wrongPassword");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(),is(401));
@@ -68,11 +54,11 @@ public class AuthenticationIT {
   @Test
   public void rejectWrongPassword() {
     //given
-    engineIntegrationExtensionRule.addUser("kermit", "kermit");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser("kermit", "kermit");
+    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
 
     //when
-    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "wrong");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "wrong");
 
     //then
     assertThat(response.getStatus(), is(401));
@@ -81,7 +67,7 @@ public class AuthenticationIT {
   @Test
   public void rejectUnknownUser() {
     //when
-    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "kermit");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
 
     //then
     assertThat(response.getStatus(), is(401));
@@ -90,10 +76,10 @@ public class AuthenticationIT {
   @Test
   public void rejectOnMissingApplicationAuthorization() {
     // when
-    engineIntegrationExtensionRule.addUser("kermit", "kermit");
+    engineIntegrationExtension.addUser("kermit", "kermit");
 
     // then
-    Response response = embeddedOptimizeExtensionRule.authenticateUserRequest("kermit", "kermit");
+    Response response = embeddedOptimizeExtension.authenticateUserRequest("kermit", "kermit");
     assertThat(response.getStatus(), is(403));
   }
 
@@ -105,7 +91,7 @@ public class AuthenticationIT {
 
     //when
     Response testResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildAuthTestRequest()
         .withoutAuthentication()
@@ -131,7 +117,7 @@ public class AuthenticationIT {
 
     //when
     Response logoutResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildLogOutRequest()
         .withGivenAuthToken(selfGeneratedEvilToken)
@@ -152,7 +138,7 @@ public class AuthenticationIT {
 
     //when
     Response logoutResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildLogOutRequest()
         .withGivenAuthToken(selfGeneratedEvilToken)
@@ -164,7 +150,7 @@ public class AuthenticationIT {
   @Test
   public void dontDeleteCookiesIfNoToken() {
     Response logoutResponse =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildLogOutRequest()
         .withoutAuthentication()
@@ -174,11 +160,11 @@ public class AuthenticationIT {
   }
 
   private String authenticateAdminUser() {
-    return embeddedOptimizeExtensionRule.authenticateUser("admin", "admin");
+    return embeddedOptimizeExtension.authenticateUser("admin", "admin");
   }
 
   private void addAdminUserAndGrantAccessPermission() {
-    engineIntegrationExtensionRule.addUser("admin", "admin");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("admin");
+    engineIntegrationExtension.addUser("admin", "admin");
+    engineIntegrationExtension.grantUserOptimizeAccess("admin");
   }
 }

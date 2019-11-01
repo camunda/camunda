@@ -10,17 +10,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_DECISION_REPORT_COLUMNS;
 import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.core.Is.is;
 
 public class CSVUtilsTest {
 
@@ -33,10 +29,11 @@ public class CSVUtilsTest {
     List<String[]> result = CSVUtils.mapRawProcessReportInstances(toMap);
 
     //then
-    assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS));
+    assertThat(result)
+      .hasSize(4)
+      .first().extracting(first -> first.length)
+      .isEqualTo(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS);
   }
-
 
   @Test
   public void testRawProcessResultMapping_withExcludingField() {
@@ -49,9 +46,10 @@ public class CSVUtilsTest {
     List<String[]> result = CSVUtils.mapRawProcessReportInstances(toMap, 10, null, excludedColumns);
 
     //then
-    assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size()));
-    assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
+    assertThat(result).hasSize(4);
+    assertThat(result.get(0))
+      .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size())
+      .doesNotContainAnyElementsOf(excludedColumns);
   }
 
   @Test
@@ -67,9 +65,10 @@ public class CSVUtilsTest {
     List<String[]> result = CSVUtils.mapRawProcessReportInstances(toMap, 10, null, excludedColumns);
 
     //then
-    assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size()));
-    assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
+    assertThat(result).hasSize(4);
+    assertThat(result.get(0))
+      .hasSize(NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS - excludedColumns.size())
+      .doesNotContainAnyElementsOf(excludedColumns);
   }
 
   @Test
@@ -81,8 +80,8 @@ public class CSVUtilsTest {
     List<String[]> result = CSVUtils.mapRawDecisionReportInstances(toMap);
 
     //then
-    assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS));
+    assertThat(result).hasSize(4);
+    assertThat(result.get(0)).hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS);
   }
 
   @Test
@@ -97,9 +96,10 @@ public class CSVUtilsTest {
     List<String[]> result = CSVUtils.mapRawDecisionReportInstances(toMap, 10, null, excludedColumns);
 
     //then
-    assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size()));
-    assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
+    assertThat(result).hasSize(4);
+    assertThat(result.get(0))
+      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
+      .doesNotContainAnyElementsOf(excludedColumns);
   }
 
   @Test
@@ -114,9 +114,10 @@ public class CSVUtilsTest {
     List<String[]> result = CSVUtils.mapRawDecisionReportInstances(toMap, 10, null, excludedColumns);
 
     //then
-    assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size()));
-    assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
+    assertThat(result).hasSize(4);
+    assertThat(result.get(0))
+      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
+      .doesNotContainAnyElementsOf(excludedColumns);
   }
 
   @Test
@@ -131,9 +132,10 @@ public class CSVUtilsTest {
     List<String[]> result = CSVUtils.mapRawDecisionReportInstances(toMap, 10, null, excludedColumns);
 
     //then
-    assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size()));
-    assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
+    assertThat(result).hasSize(4);
+    assertThat(result.get(0))
+      .hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
+      .doesNotContainAnyElementsOf(excludedColumns);
   }
 
   @Test
@@ -152,9 +154,9 @@ public class CSVUtilsTest {
     List<String[]> result = CSVUtils.mapRawDecisionReportInstances(toMap, 10, null, excludedColumns);
 
     //then
-    assertThat(result.size(), is(4));
-    assertThat(result.get(0).length, is(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size()));
-    assertThat(Arrays.asList(result.get(0)), not(hasItems(excludedColumns)));
+    assertThat(result).hasSize(4);
+    assertThat(result.get(0)).hasSize(NUMBER_OF_RAW_DECISION_REPORT_COLUMNS - excludedColumns.size())
+      .doesNotContainAnyElementsOf(excludedColumns);
   }
 
 }

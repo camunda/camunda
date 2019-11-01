@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.decision;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
@@ -16,10 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResult
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Order;
@@ -33,7 +31,7 @@ import java.util.Objects;
 import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 
-public abstract class AbstractDecisionDefinitionIT {
+public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
   protected static final String OUTPUT_CLASSIFICATION_ID = "clause3";
   protected static final String OUTPUT_AUDIT_ID = "OutputClause_1ur6jbl";
   protected static final String INPUT_AMOUNT_ID = "clause1";
@@ -52,17 +50,8 @@ public abstract class AbstractDecisionDefinitionIT {
   protected static final String INPUT_VARIABLE_GUEST_WITH_CHILDREN = "guestsWithChildren";
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private static String getInputVariableNameForId(String inputId) {
     switch (inputId) {
@@ -87,7 +76,7 @@ public abstract class AbstractDecisionDefinitionIT {
     final String decisionDefinitionKey = "multiTenantProcess";
     deployedTenants.stream()
       .filter(Objects::nonNull)
-      .forEach(tenantId -> engineIntegrationExtensionRule.createTenant(tenantId));
+      .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
     deployedTenants
       .forEach(tenant -> {
         final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinitionWithDifferentKey(
@@ -106,7 +95,7 @@ public abstract class AbstractDecisionDefinitionIT {
 
   protected DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition(String decisionKey, String tenantId) {
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
-    return engineIntegrationExtensionRule.deployAndStartDecisionDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployAndStartDecisionDefinition(modelInstance, tenantId);
   }
 
   protected DecisionDefinitionEngineDto deployDecisionDefinitionWithDifferentKey(final String key) {
@@ -115,12 +104,12 @@ public abstract class AbstractDecisionDefinitionIT {
 
   protected DecisionDefinitionEngineDto deployDecisionDefinitionWithDifferentKey(final String key, String tenantId) {
     final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
-      getClass().getClassLoader().getResourceAsStream(EngineIntegrationExtensionRule.DEFAULT_DMN_DEFINITION_PATH)
+      getClass().getClassLoader().getResourceAsStream(engineIntegrationExtension.DEFAULT_DMN_DEFINITION_PATH)
     );
     dmnModelInstance.getDefinitions().getDrgElements().stream()
       .findFirst()
       .ifPresent(drgElement -> drgElement.setId(key));
-    return engineIntegrationExtensionRule.deployDecisionDefinition(dmnModelInstance, tenantId);
+    return engineIntegrationExtension.deployDecisionDefinition(dmnModelInstance, tenantId);
   }
 
   protected DecisionDefinitionEngineDto deploySimpleInputDecisionDefinition(final String inputClauseId,
@@ -131,7 +120,7 @@ public abstract class AbstractDecisionDefinitionIT {
       .addInput("input", inputClauseId, camInputVariable, inputType)
       .addOutput("output", DecisionTypeRef.STRING)
       .buildDecision();
-    return engineIntegrationExtensionRule.deployDecisionDefinition(dmnModelGenerator.build());
+    return engineIntegrationExtension.deployDecisionDefinition(dmnModelGenerator.build());
   }
 
   protected DecisionDefinitionEngineDto deploySimpleOutputDecisionDefinition(final String outputClauseId,
@@ -147,7 +136,7 @@ public abstract class AbstractDecisionDefinitionIT {
       .addStringOutputEntry(camInputVariable)
       .buildRule()
       .buildDecision();
-    return engineIntegrationExtensionRule.deployDecisionDefinition(dmnModelGenerator.build());
+    return engineIntegrationExtension.deployDecisionDefinition(dmnModelGenerator.build());
   }
 
   protected HashMap<String, InputVariableEntry> createInputs(final double amountValue,
@@ -173,7 +162,7 @@ public abstract class AbstractDecisionDefinitionIT {
 
   protected void startDecisionInstanceWithInputVars(final String id,
                                                     final HashMap<String, InputVariableEntry> inputVariables) {
-    engineIntegrationExtensionRule.startDecisionInstance(
+    engineIntegrationExtension.startDecisionInstance(
       id,
       inputVariables.entrySet().stream().collect(toMap(
         entry -> getInputVariableNameForId(entry.getKey()),
@@ -183,7 +172,7 @@ public abstract class AbstractDecisionDefinitionIT {
   }
 
   protected AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateMapReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -192,7 +181,7 @@ public abstract class AbstractDecisionDefinitionIT {
   }
 
   protected AuthorizedDecisionReportEvaluationResultDto<NumberResultDto> evaluateNumberReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -201,7 +190,7 @@ public abstract class AbstractDecisionDefinitionIT {
   }
 
   protected AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -210,7 +199,7 @@ public abstract class AbstractDecisionDefinitionIT {
   }
 
   protected Response evaluateReportAndReturnResponse(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();

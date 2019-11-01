@@ -9,16 +9,14 @@ import com.google.common.collect.Lists;
 import org.apache.commons.collections.ListUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupMode;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.ProcessDefinitionCleanupConfiguration;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -48,42 +46,33 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 
-public class OptimizeCleanupServiceIT {
+public class OptimizeCleanupServiceIT extends AbstractIT {
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void verifyCleanupDisabledByDefault() {
     assertThat(getCleanupConfiguration().getEnabled(), is(false));
-    assertThat(embeddedOptimizeExtensionRule.getCleanupScheduler().isScheduledToRun(), is(false));
+    assertThat(embeddedOptimizeExtension.getCleanupScheduler().isScheduledToRun(), is(false));
   }
 
   @Test
   public void testCleanupIsScheduledSuccessfully() {
-    embeddedOptimizeExtensionRule.getCleanupScheduler().startCleanupScheduling();
+    embeddedOptimizeExtension.getCleanupScheduler().startCleanupScheduling();
     try {
-      assertThat(embeddedOptimizeExtensionRule.getCleanupScheduler().isScheduledToRun(), is(true));
+      assertThat(embeddedOptimizeExtension.getCleanupScheduler().isScheduledToRun(), is(true));
     } finally {
-      embeddedOptimizeExtensionRule.getCleanupScheduler().stopCleanupScheduling();
+      embeddedOptimizeExtension.getCleanupScheduler().stopCleanupScheduling();
     }
   }
 
   @Test
   public void testCleanupScheduledStoppedSuccessfully() {
-    embeddedOptimizeExtensionRule.getCleanupScheduler().startCleanupScheduling();
-    embeddedOptimizeExtensionRule.getCleanupScheduler().stopCleanupScheduling();
-    assertThat(embeddedOptimizeExtensionRule.getCleanupScheduler().isScheduledToRun(), is(false));
+    embeddedOptimizeExtension.getCleanupScheduler().startCleanupScheduling();
+    embeddedOptimizeExtension.getCleanupScheduler().stopCleanupScheduling();
+    assertThat(embeddedOptimizeExtension.getCleanupScheduler().isScheduledToRun(), is(false));
   }
 
   @Test
@@ -92,12 +81,12 @@ public class OptimizeCleanupServiceIT {
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.ALL);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     assertProcessInstanceDataCompleteInEs(Collections.emptyList());
@@ -110,12 +99,12 @@ public class OptimizeCleanupServiceIT {
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     assertProcessInstanceDataCompleteInEs(unaffectedProcessDefinitionsIds);
@@ -127,12 +116,12 @@ public class OptimizeCleanupServiceIT {
     getCleanupConfiguration().setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     assertVariablesEmptyInProcessInstances(clearedProcessDefinitionsIds);
@@ -147,12 +136,12 @@ public class OptimizeCleanupServiceIT {
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     assertVariablesEmptyInProcessInstances(clearedProcessDefinitionsIds);
@@ -172,12 +161,12 @@ public class OptimizeCleanupServiceIT {
     final List<String> processDefinitionsWithEndTimeLessThanTtl = deployTwoProcessInstancesWithEndTimeLessThanTtl();
     final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // all data is still there
     assertProcessInstanceDataCompleteInEs(
@@ -190,12 +179,12 @@ public class OptimizeCleanupServiceIT {
     // given
     final List<String> clearedDecisionDefinitionsIds = deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     assertDecisionInstancesExistInEs(Collections.emptyList());
@@ -209,12 +198,12 @@ public class OptimizeCleanupServiceIT {
       OffsetDateTime.now()
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     assertDecisionInstancesExistInEs(unaffectedDecisionDefinitionsIds);
@@ -235,13 +224,13 @@ public class OptimizeCleanupServiceIT {
     final List<String> unaffectedDecisionDefinitionsIds =
       deployTwoDecisionInstancesWithEvaluationTime(OffsetDateTime.now());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup();
+    embeddedOptimizeExtension.getCleanupScheduler().runCleanup();
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // all data is still there
     assertDecisionInstancesExistInEs(
@@ -250,7 +239,7 @@ public class OptimizeCleanupServiceIT {
   }
 
   private ProcessInstanceEngineDto startNewProcessWithSameProcessDefinitionId(String processDefinitionId) {
-    return engineIntegrationExtensionRule.startProcessInstance(processDefinitionId, VariableTestUtil.createAllPrimitiveTypeVariables());
+    return engineIntegrationExtension.startProcessInstance(processDefinitionId, VariableTestUtil.createAllPrimitiveTypeVariables());
   }
 
   private List<String> deployTwoDecisionInstancesWithEvaluationTimeLessThanTtl() throws SQLException {
@@ -260,15 +249,15 @@ public class OptimizeCleanupServiceIT {
   }
 
   private List<String> deployTwoDecisionInstancesWithEvaluationTime(OffsetDateTime evaluationTime) throws SQLException {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition();
 
     OffsetDateTime lastEvaluationDateFilter = OffsetDateTime.now();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionEngineDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionEngineDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId());
 
-    engineDatabaseExtensionRule.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, evaluationTime);
+    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, evaluationTime);
 
-    return engineDatabaseExtensionRule.getDecisionInstanceIdsWithEvaluationDateEqualTo(evaluationTime);
+    return engineDatabaseExtension.getDecisionInstanceIdsWithEvaluationDateEqualTo(evaluationTime);
   }
 
   private List<String> deployTwoProcessInstancesWithEndTimeLessThanTtl() throws SQLException {
@@ -286,7 +275,7 @@ public class OptimizeCleanupServiceIT {
     Map<String, OffsetDateTime> procInstEndDateUpdates = new HashMap<>();
     procInstEndDateUpdates.put(firstProcInst.getId(), endTime);
     procInstEndDateUpdates.put(secondProcInst.getId(), endTime);
-    engineDatabaseExtensionRule.updateProcessInstanceEndDates(procInstEndDateUpdates);
+    engineDatabaseExtension.updateProcessInstanceEndDates(procInstEndDateUpdates);
 
     return Lists.newArrayList(firstProcInst.getId(), secondProcInst.getId());
   }
@@ -314,7 +303,7 @@ public class OptimizeCleanupServiceIT {
       .indices(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   private void assertProcessInstanceDataCompleteInEs(List<String> processIds) throws IOException {
@@ -339,7 +328,7 @@ public class OptimizeCleanupServiceIT {
       .indices(DECISION_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   private void assertDecisionInstancesExistInEs(List<String> decisionInstanceIds) throws IOException {
@@ -355,7 +344,7 @@ public class OptimizeCleanupServiceIT {
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
       processModel,
       VariableTestUtil.createAllPrimitiveTypeVariables()
     );
@@ -363,6 +352,6 @@ public class OptimizeCleanupServiceIT {
 
 
   private OptimizeCleanupConfiguration getCleanupConfiguration() {
-    return embeddedOptimizeExtensionRule.getConfigurationService().getCleanupServiceConfiguration();
+    return embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration();
   }
 }

@@ -5,17 +5,14 @@
  */
 package org.camunda.optimize.service;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Optional;
 
@@ -23,33 +20,23 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule.DEFAULT_EMAIL_DOMAIN;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule.DEFAULT_FIRSTNAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule.DEFAULT_LASTNAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule.KERMIT_GROUP_NAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class SyncedIdentityCacheServiceIT {
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchExtension =
-    new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineExtension = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtension = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
+public class SyncedIdentityCacheServiceIT extends AbstractIT {
+
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtension = new EngineDatabaseExtensionRule(
-    engineExtension.getEngineName()
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
+    engineIntegrationExtension.getEngineName()
   );
 
-  public AuthorizationClient authorizationClient = new AuthorizationClient(engineExtension);
+  public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @Test
   public void verifySyncEnabledByDefault() {
@@ -142,7 +129,7 @@ public class SyncedIdentityCacheServiceIT {
 
   @Test
   public void testNotGrantedUserIsNotImported() {
-    engineExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
 
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();

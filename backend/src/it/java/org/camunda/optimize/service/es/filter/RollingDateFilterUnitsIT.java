@@ -25,9 +25,9 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     OffsetDateTime processInstanceStartTime =
-      engineIntegrationExtensionRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // the clock of the engine and the clock of the computer running
     // the tests might not be aligned. Therefore we want to simulate

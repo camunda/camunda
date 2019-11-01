@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
@@ -13,10 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -46,22 +44,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-public class DashboardHandlingIT {
+public class DashboardHandlingIT extends AbstractIT {
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
-  public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
+  public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @AfterEach
   public void cleanUp() {
@@ -75,7 +64,7 @@ public class DashboardHandlingIT {
 
     // when
     GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then
     assertThat(getResponse.isExists(), is(true));
@@ -249,7 +238,7 @@ public class DashboardHandlingIT {
     addEmptyReportToDashboardInCollection(dashboardId, collectionId);
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("collectionId", "null")
       .execute(IdDto.class, 200);
@@ -283,7 +272,7 @@ public class DashboardHandlingIT {
     final String newCollectionId = addEmptyCollectionToOptimize();
 
     // when
-    IdDto copyId = embeddedOptimizeExtensionRule.getRequestExecutor()
+    IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId)
       .addSingleQueryParam("collectionId", newCollectionId)
       .execute(IdDto.class, 200);
@@ -407,7 +396,7 @@ public class DashboardHandlingIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     String dashboardId = addEmptyPrivateDashboard();
-    final String reportId = embeddedOptimizeExtensionRule
+    final String reportId = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildCreateSingleProcessReportRequest()
@@ -464,7 +453,7 @@ public class DashboardHandlingIT {
   }
 
   private void deleteReport(String reportId, Boolean force) {
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteReportRequest(reportId, force)
       .execute();
@@ -480,7 +469,7 @@ public class DashboardHandlingIT {
   private String addEmptyDashboardToCollectionAsDefaultUser(final String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)
@@ -488,13 +477,13 @@ public class DashboardHandlingIT {
   }
 
   private DashboardDefinitionDto getDashboardById(final String dashboardId) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
       .execute(DashboardDefinitionDto.class, 200);
   }
 
   private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateDashboardRequest(id, updatedDashboard)
       .execute();
@@ -502,7 +491,7 @@ public class DashboardHandlingIT {
   }
 
   private void updateDashboard(final String dashboardId, final List<ReportLocationDto> reports) {
-    final DashboardDefinitionDto dashboard = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final DashboardDefinitionDto dashboard = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(dashboardId).execute(DashboardDefinitionDto.class, 200);
 
     if (reports != null) {
@@ -513,7 +502,7 @@ public class DashboardHandlingIT {
   }
 
   private String createNewSingleReport() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
       .execute(IdDto.class, 200)
@@ -546,7 +535,7 @@ public class DashboardHandlingIT {
   private String addEmptySingleProcessReportToCollection(final String collectionId) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -554,7 +543,7 @@ public class DashboardHandlingIT {
   }
 
   private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -565,7 +554,7 @@ public class DashboardHandlingIT {
     final ReportLocationDto reportLocationDto = new ReportLocationDto();
     reportLocationDto.setId(privateReportId);
 
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateDashboardRequest(
         dashboardId,
@@ -581,7 +570,7 @@ public class DashboardHandlingIT {
   }
 
   private String createNewCombinedReport(CombinedReportDefinitionDto combinedReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -589,13 +578,13 @@ public class DashboardHandlingIT {
   }
 
   private IdDto copyDashboardToCollection(final String dashboardId, final String collectionId) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .buildCopyDashboardRequest(dashboardId, collectionId)
       .execute(IdDto.class, 200);
   }
 
   private ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(ResolvedCollectionDefinitionDto.class, 200);

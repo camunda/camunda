@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +27,7 @@ public class AuthorizationClient {
   public static final String KERMIT_USER = "kermit";
   public static final String GROUP_ID = "kermitGroup";
 
-  private final EngineIntegrationExtensionRule engineExtension;
+  private final EngineIntegrationExtension engineExtension;
 
   public void addKermitUserWithoutAuthorizations() {
     engineExtension.addUser(KERMIT_USER, KERMIT_USER);

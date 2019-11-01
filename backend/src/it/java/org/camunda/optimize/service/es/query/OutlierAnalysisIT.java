@@ -12,15 +12,13 @@ import org.apache.commons.math3.analysis.function.Gaussian;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.builder.StartEventBuilder;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.VariableTermDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -45,7 +43,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.lessThan;
 
-public class OutlierAnalysisIT {
+public class OutlierAnalysisIT extends AbstractIT {
   private static final int NUMBER_OF_DATAPOINTS = 40;
   private static final int NUMBER_OF_DATAPOINTS_FOR_CHART = NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
   private static final String VARIABLE_1_NAME = "var1";
@@ -60,17 +58,8 @@ public class OutlierAnalysisIT {
   private static final long SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND = 30738L;
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void outlierDetectionNormalDistribution() throws SQLException {
@@ -78,7 +67,7 @@ public class OutlierAnalysisIT {
     final String testActivity1 = "testActivity1";
     final String testActivity2 = "testActivity2";
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(testActivity1, testActivity2));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(testActivity1, testActivity2));
 
     startPIsDistributedByDuration(
       processDefinition,
@@ -88,11 +77,11 @@ public class OutlierAnalysisIT {
       testActivity2
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtensionRule.getRequestExecutor()
+    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
       .buildFlowNodeOutliersRequest(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
@@ -143,7 +132,7 @@ public class OutlierAnalysisIT {
   public void noOutliersFoundTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     // high sigma value, so that no process instances are out of 2*sigma bounds
     startPIsDistributedByDuration(
@@ -153,11 +142,11 @@ public class OutlierAnalysisIT {
       FLOW_NODE_ID_TEST
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtensionRule.getRequestExecutor()
+    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
       .buildFlowNodeOutliersRequest(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
@@ -174,21 +163,21 @@ public class OutlierAnalysisIT {
   public void singleOutlierFoundTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     // a couple of normally distributed instances
     startPIsDistributedByDuration(
       processDefinition, new Gaussian(10 / 2, 15), 5, FLOW_NODE_ID_TEST
     );
     // a single higher outlier instance
-    ProcessInstanceEngineDto processInstance = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
+    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtensionRule.getRequestExecutor()
+    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
       .buildFlowNodeOutliersRequest(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
@@ -210,7 +199,7 @@ public class OutlierAnalysisIT {
   public void allDurationsSameValueNoOutliers() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     startPIsDistributedByDuration(
       processDefinition,
@@ -220,11 +209,11 @@ public class OutlierAnalysisIT {
       FLOW_NODE_ID_TEST
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtensionRule.getRequestExecutor()
+    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
       .buildFlowNodeOutliersRequest(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
@@ -248,19 +237,19 @@ public class OutlierAnalysisIT {
     // 10 is the default terms limit of elasticearch, this ensures the default does not apply
 
     // given
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getBpmnModelInstance(IntStream.range(0, 10).mapToObj(i -> FLOW_NODE_ID_TEST + i).toArray(String[]::new))
     );
 
     // one instance is suffice, we just need data from each activity, having in total >10 activities
-    final ProcessInstanceEngineDto processInstance = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtensionRule.changeActivityDuration(processInstance.getId(), 1L);
+    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 1L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtensionRule.getRequestExecutor()
+    HashMap<String, FindingsDto> outlierTest = embeddedOptimizeExtension.getRequestExecutor()
       .buildFlowNodeOutliersRequest(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
@@ -277,7 +266,7 @@ public class OutlierAnalysisIT {
   public void durationChartNormalDistributionTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     startPIsDistributedByDuration(
       processDefinition,
@@ -286,11 +275,11 @@ public class OutlierAnalysisIT {
       FLOW_NODE_ID_TEST
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtensionRule.getRequestExecutor()
+    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtension.getRequestExecutor()
       .buildFlowNodeDurationChartRequest(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
@@ -312,7 +301,7 @@ public class OutlierAnalysisIT {
   public void durationChartNormalDistributionWithOutlierMarkingTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     startPIsDistributedByDuration(
       processDefinition,
@@ -323,11 +312,11 @@ public class OutlierAnalysisIT {
     final long lowerOutlierBound = 513L;
     final long higherOutlierBound = 39486L;
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtensionRule.getRequestExecutor()
+    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtension.getRequestExecutor()
       .buildFlowNodeDurationChartRequest(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
@@ -351,18 +340,18 @@ public class OutlierAnalysisIT {
   public void durationChartOnePerBucketTest() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     for (int i = 0; i < 80; i++) {
-      ProcessInstanceEngineDto processInstance = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-      engineDatabaseExtensionRule.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, i * 1000);
+      ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+      engineDatabaseExtension.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, i * 1000);
     }
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtensionRule.getRequestExecutor()
+    List<DurationChartEntryDto> durationChart = embeddedOptimizeExtension.getRequestExecutor()
       .buildFlowNodeDurationChartRequest(
         PROCESS_DEFINITION_KEY,
         Collections.singletonList("1"),
@@ -381,15 +370,15 @@ public class OutlierAnalysisIT {
   public void significantOutlierVariableValues() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
     // a couple of normally distributed instances
     createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_OUTLIER);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<VariableTermDto> variableTermDtosActivity = embeddedOptimizeExtensionRule.getRequestExecutor()
+    List<VariableTermDto> variableTermDtosActivity = embeddedOptimizeExtension.getRequestExecutor()
       .buildSignificantOutlierVariableTermsRequest(
         processDefinition.getKey(),
         Collections.singletonList("1"),
@@ -412,16 +401,16 @@ public class OutlierAnalysisIT {
   public void noSignificantOutlierVariableValues() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
     createNormalDistributionAnd3Outliers(processDefinition, VARIABLE_VALUE_NORMAL);
     // this particular value is obtained from precalculation, given the distribution and outlier setup
     final long activityHigherOutlierBound = SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND;
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<VariableTermDto> variableTermDtosActivity = embeddedOptimizeExtensionRule.getRequestExecutor()
+    List<VariableTermDto> variableTermDtosActivity = embeddedOptimizeExtension.getRequestExecutor()
       .buildSignificantOutlierVariableTermsRequest(
         processDefinition.getKey(),
         Collections.singletonList("1"),
@@ -440,7 +429,7 @@ public class OutlierAnalysisIT {
   public void noOutliersResultsInNotFoundOnVariables() throws SQLException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     startPIsDistributedByDuration(
       processDefinition,
@@ -452,11 +441,11 @@ public class OutlierAnalysisIT {
     // high duration for which there are no instances
     final long activityHigherOutlierBound = 100_000L;
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    embeddedOptimizeExtensionRule.getRequestExecutor()
+    embeddedOptimizeExtension.getRequestExecutor()
       .buildSignificantOutlierVariableTermsRequest(
         processDefinition.getKey(),
         Collections.singletonList("1"),
@@ -473,17 +462,17 @@ public class OutlierAnalysisIT {
   public void significantOutlierVariableValuesProcessInstanceIdExport() throws SQLException, IOException {
     // given
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     List<String> expectedOutlierInstanceIds = createNormalDistributionAnd3Outliers(
       processDefinition, VARIABLE_VALUE_OUTLIER
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildSignificantOutlierVariableTermsInstanceIdsRequest(
         processDefinition.getKey(),
@@ -521,12 +510,12 @@ public class OutlierAnalysisIT {
     // 3 higher outlier instance
     // 3 is the minDoc count for which terms are considered to eliminate high cardinality variables
     for (int i = 0; i < 3; i++) {
-      ProcessInstanceEngineDto processInstance = engineIntegrationExtensionRule.startProcessInstance(
+      ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(
         processDefinition.getId(),
         // VAR2 has the same value as all non outliers
         ImmutableMap.of(VARIABLE_1_NAME, RANDOM.nextInt(), VARIABLE_2_NAME, outlierVariable2Value)
       );
-      engineDatabaseExtensionRule.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
+      engineDatabaseExtension.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
       outlierInstanceIds.add(processInstance.getId());
     }
 
@@ -566,7 +555,7 @@ public class OutlierAnalysisIT {
         final long firstActivityDuration = i * 1000L;
         // a more "stretched" distribution on the second activity
         final long secondActivityDuration = Math.round(firstActivityDuration + Math.exp(i) * 1000);
-        ProcessInstanceEngineDto processInstance = engineIntegrationExtensionRule.startProcessInstance(
+        ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(
           processDefinition.getId(),
           ImmutableMap.of(
             VARIABLE_1_NAME,
@@ -576,8 +565,8 @@ public class OutlierAnalysisIT {
               VARIABLE_VALUE_OUTLIER : VARIABLE_VALUE_NORMAL
           )
         );
-        engineDatabaseExtensionRule.changeActivityDuration(processInstance.getId(), firstActivityId, firstActivityDuration);
-        engineDatabaseExtensionRule.changeActivityDuration(processInstance.getId(), secondActivityId, secondActivityDuration);
+        engineDatabaseExtension.changeActivityDuration(processInstance.getId(), firstActivityId, firstActivityDuration);
+        engineDatabaseExtension.changeActivityDuration(processInstance.getId(), secondActivityId, secondActivityDuration);
       }
     }
   }

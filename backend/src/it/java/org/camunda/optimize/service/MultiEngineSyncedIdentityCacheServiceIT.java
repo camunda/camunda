@@ -22,10 +22,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngineIT {
 
   public AuthorizationClient defaultEngineAuthorizationClient = new AuthorizationClient(
-    defaultEngineIntegrationExtensionRule
+    engineIntegrationExtension
   );
   public AuthorizationClient secondaryEngineAuthorizationClient = new AuthorizationClient(
-    secondaryEngineIntegrationExtensionRule
+    secondaryEngineIntegrationExtension
   );
 
   @Test
@@ -61,12 +61,12 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
     addSecondEngineToConfiguration();
 
     EngineUserDto winningUserProfile = createKermitUserDtoWithEmail("Iwin@camunda.com");
-    defaultEngineIntegrationExtensionRule.addUser(winningUserProfile);
-    defaultEngineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
+    engineIntegrationExtension.addUser(winningUserProfile);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
     EngineUserDto loosingUserProfile = createKermitUserDtoWithEmail("Iloose@camunda.com");
-    secondaryEngineIntegrationExtensionRule.addUser(loosingUserProfile);
-    secondaryEngineIntegrationExtensionRule.grantUserOptimizeAccess(KERMIT_USER);
+    secondaryEngineIntegrationExtension.addUser(loosingUserProfile);
+    secondaryEngineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
@@ -83,11 +83,11 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
 
     EngineUserDto winningUserProfile = createKermitUserDtoWithEmail("Iwin@camunda.com");
     defaultEngineAuthorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
-    defaultEngineIntegrationExtensionRule.addUser(winningUserProfile);
+    engineIntegrationExtension.addUser(winningUserProfile);
 
     EngineUserDto loosingUserProfile = createKermitUserDtoWithEmail("Iloose@camunda.com");
     secondaryEngineAuthorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
-    secondaryEngineIntegrationExtensionRule.addUser(loosingUserProfile);
+    secondaryEngineIntegrationExtension.addUser(loosingUserProfile);
 
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
@@ -111,7 +111,7 @@ public class MultiEngineSyncedIdentityCacheServiceIT extends AbstractMultiEngine
   }
 
   private SyncedIdentityCacheService getSyncedIdentityCacheService() {
-    return embeddedOptimizeExtensionRule.getSyncedIdentityCacheService();
+    return embeddedOptimizeExtension.getSyncedIdentityCacheService();
   }
 
 }

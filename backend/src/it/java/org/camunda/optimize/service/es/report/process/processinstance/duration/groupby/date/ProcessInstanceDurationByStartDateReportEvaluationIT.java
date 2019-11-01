@@ -22,7 +22,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -61,8 +61,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
                                             long durationInSec) {
     OffsetDateTime shiftedEndDate = refDate.plusDays(daysToShift);
     try {
-      engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstanceId, shiftedEndDate.minusSeconds(durationInSec));
-      engineDatabaseExtensionRule.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
+      engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedEndDate.minusSeconds(durationInSec));
+      engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
     }
@@ -77,16 +77,16 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
 
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 1L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 9L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     adjustProcessInstanceDates(processInstanceDto.getId(), startDate, 0L, 2L);
     ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId());
+      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId());
     adjustProcessInstanceDates(processInstanceDto3.getId(), startDate, -1L, 1L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -121,11 +121,11 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
     adjustProcessInstanceDates(processInstanceDto1.getId(), startDate, 0L, 1L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
     adjustProcessInstanceDates(processInstanceDto2.getId(), startDate, -2L, 2L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
@@ -151,31 +151,31 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
 
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
     assertThat(resultData.get(0).getValue(), is(1000L));
 
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(1).getValue(), is(nullValue()));
 
     assertThat(
       resultData.get(2).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(2).getValue(), is(2000L));
 
     assertThat(
       resultData.get(3).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(3).getValue(), is(nullValue()));
 
     assertThat(
       resultData.get(4).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(4).getValue(), is(nullValue()));
   }
@@ -188,8 +188,8 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoRunningAndOneCompletedUserTaskProcesses(now);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder.createReportData()
@@ -235,22 +235,22 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
 
     // 1 completed proc inst
     ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
-    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtensionRule.startProcessInstance(
+    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtension.startProcessInstance(
       completeProcessInstanceDto.getDefinitionId()
     );
     OffsetDateTime runningProcInstStartDate = now.minusDays(1);
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()
@@ -283,22 +283,22 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT
 
     // 1 completed proc inst
     ProcessInstanceEngineDto completeProcessInstanceDto = deployAndStartSimpleUserTaskProcess();
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(completeProcessInstanceDto.getId());
 
     OffsetDateTime completedProcInstStartDate = now.minusDays(2);
     OffsetDateTime completedProcInstEndDate = completedProcInstStartDate.plus(1000, MILLIS);
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(completeProcessInstanceDto.getId(), completedProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(completeProcessInstanceDto.getId(), completedProcInstEndDate);
 
     // 1 running proc inst
-    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtensionRule.startProcessInstance(
+    final ProcessInstanceEngineDto newRunningProcessInstance = engineIntegrationExtension.startProcessInstance(
       completeProcessInstanceDto.getDefinitionId()
     );
     OffsetDateTime runningProcInstStartDate = now.minusDays(1);
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(newRunningProcessInstance.getId(), runningProcInstStartDate);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<ProcessFilterDto> testExecutionStateFilter = ProcessFilterBuilder.filter()

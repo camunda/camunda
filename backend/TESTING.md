@@ -89,9 +89,11 @@ All the integration tests are contained in the [src/it](./src/it/java/.) folder.
 
 To write your own integration test, there are three extensions/rules to help you setting up the environment and interacting with it:
 
-* **EngineIntegrationExtensionRule**: Cleans up the engine after each test and allows for interaction with/population of data to the engine using the rest api.
-* **EmbeddedOptimizeExtensionRule**: Starts Optimize, ensures that the configuration is always reset, allows direct interaction with Optimize components.
-* **ElasticSearchIntegrationTestExtensionRule**: Cleans up Elasticsearch after each test, allows interaction with, populating data to Elasticsearch.
+* **engineIntegrationExtension**: Cleans up the engine after each test and allows for interaction with/population of data to the engine using the rest api.
+* **embeddedOptimizeExtension**: Starts Optimize, ensures that the configuration is always reset, allows direct interaction with Optimize components.
+* **elasticSearchIntegrationTestExtension**: Cleans up Elasticsearch after each test, allows interaction with, populating data to Elasticsearch.
+
+These can be used by extending the `AbstractIT` class.
 
 In addition to the rules, you need to add the the springrunner class and the respective application context to your test class. The following shows an example template for a test class:
 
@@ -107,7 +109,7 @@ public class YourCustomIT  {
   public EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();
   @RegisterExtension
   @Order(3)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtension();
+  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   @Test
   public void myFirstCustomTest() {

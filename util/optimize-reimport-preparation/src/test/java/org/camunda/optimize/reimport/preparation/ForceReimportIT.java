@@ -7,6 +7,7 @@ package org.camunda.optimize.reimport.preparation;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -17,9 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -30,9 +28,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -50,18 +46,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ForceReimportIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
-    new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class ForceReimportIT extends AbstractIT {
 
   @Test
   public void forceReimport() throws IOException {
@@ -70,17 +55,17 @@ public class ForceReimportIT {
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
     String reportId = createAndStoreNumberReport(collectionId, processDefinitionEngineDto);
     AlertCreationDto alert = setupBasicAlert(reportId);
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor().buildCreateAlertRequest(alert).execute();
-    final String dashboardId = embeddedOptimizeExtensionRule
+    final String dashboardId = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest()
       .execute(IdDto.class, 200)
       .getId();
     addLicense();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<AuthorizedReportDefinitionDto> reports = getAllReportsInCollection(collectionId);
@@ -123,7 +108,7 @@ public class ForceReimportIT {
       .indices(indices.toArray(new String[0]))
       .source(searchSourceBuilder);
 
-    SearchResponse response = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient()
+    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .search(searchRequest, RequestOptions.DEFAULT);
 
     return response.getHits().getTotalHits() > 0L;
@@ -133,7 +118,7 @@ public class ForceReimportIT {
     GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME).id(LICENSE_INDEX_NAME);
     GetResponse getResponse;
     try {
-      getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient()
+      getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
         .get(getRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeIntegrationTestException("Could not retrieve license!", e);
@@ -142,7 +127,7 @@ public class ForceReimportIT {
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
       .executeAndReturnList(AlertDefinitionDto.class, 200);
@@ -151,14 +136,14 @@ public class ForceReimportIT {
   private void addLicense() {
     String license = FileReaderUtil.readValidTestLicense();
 
-    embeddedOptimizeExtensionRule.getRequestExecutor()
+    embeddedOptimizeExtension.getRequestExecutor()
       .buildValidateAndStoreLicenseRequest(license)
       .execute();
   }
 
   private AlertCreationDto setupBasicAlert(String reportId) {
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     return createSimpleAlert(reportId);
   }
@@ -173,7 +158,7 @@ public class ForceReimportIT {
   }
 
   private String createNewReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -222,13 +207,13 @@ public class ForceReimportIT {
   }
 
   private DashboardDefinitionDto getDashboardById(final String dashboardId) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
       .execute(DashboardDefinitionDto.class, 200);
   }
 
   private List<AuthorizedReportDefinitionDto> getAllReportsInCollection(String collectionId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)
       .executeAndReturnList(AuthorizedReportDefinitionDto.class, 200);
@@ -250,13 +235,13 @@ public class ForceReimportIT {
       .done();
 
     ProcessDefinitionEngineDto processDefinitionEngineDto =
-      engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinitionEngineDto.getId(), variables);
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId(), variables);
     return processDefinitionEngineDto;
   }
 
   private String createNewCollection() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)

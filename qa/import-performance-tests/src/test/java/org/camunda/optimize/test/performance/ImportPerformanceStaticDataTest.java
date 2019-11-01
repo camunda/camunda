@@ -47,7 +47,7 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
   private void importEngineData() throws InterruptedException, TimeoutException {
     final ExecutorService importExecutorService = Executors.newSingleThreadExecutor();
     importExecutorService.execute(
-      () -> embeddedOptimizeExtensionRule.importAllEngineData()
+      () -> embeddedOptimizeExtension.importAllEngineData()
     );
 
     ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
@@ -61,7 +61,7 @@ public class ImportPerformanceStaticDataTest extends AbstractImportTest {
     }
     progressReporterExecutorService.shutdown();
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

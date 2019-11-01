@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.apache.http.HttpStatus;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -16,12 +17,7 @@ import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefini
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -32,17 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-public class CollectionRestServiceScopeIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class CollectionRestServiceScopeIT extends AbstractIT {
 
   @Test
   public void partialCollectionUpdateDoesNotAffectScopes() {
@@ -53,7 +39,7 @@ public class CollectionRestServiceScopeIT {
 
     // when
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
       .execute();
@@ -72,7 +58,7 @@ public class CollectionRestServiceScopeIT {
 
     // when
     final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
-    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtensionRule.getRequestExecutor()
+    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(SimpleCollectionDefinitionDto.class, 200);
 
@@ -93,7 +79,7 @@ public class CollectionRestServiceScopeIT {
     final String scopeEntryId1 = addScopeEntryToCollection(collectionId, entry1);
     final String scopeEntryId2 = addScopeEntryToCollection(collectionId, entry2);
 
-    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtensionRule.getRequestExecutor()
+    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(SimpleCollectionDefinitionDto.class, 200);
 
@@ -110,7 +96,7 @@ public class CollectionRestServiceScopeIT {
     addScopeEntryToCollection(collectionId, createSimpleScopeEntry("_KEY_"));
 
     // when
-    embeddedOptimizeExtensionRule.getRequestExecutor()
+    embeddedOptimizeExtension.getRequestExecutor()
       .buildAddScopeEntryToCollectionRequest(collectionId, createSimpleScopeEntry("_KEY_"))
       // then
       .execute(409);
@@ -125,14 +111,14 @@ public class CollectionRestServiceScopeIT {
 
     // when
     entry.setVersions(Collections.singletonList("1"));
-    embeddedOptimizeExtensionRule.getRequestExecutor()
+    embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(entry))
       .execute(204);
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
-    ResolvedCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtensionRule.getRequestExecutor()
+    ResolvedCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(ResolvedCollectionDefinitionDto.class, 200);
 
@@ -149,7 +135,7 @@ public class CollectionRestServiceScopeIT {
 
     // when
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(
         collectionId,
@@ -171,17 +157,17 @@ public class CollectionRestServiceScopeIT {
 
     String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
 
-    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtensionRule.getRequestExecutor()
+    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(SimpleCollectionDefinitionDto.class, 200);
 
     assertThat(collectionDefinitionDto.getData().getScope().size(), is(1));
 
-    embeddedOptimizeExtensionRule.getRequestExecutor()
+    embeddedOptimizeExtension.getRequestExecutor()
       .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
       .execute(204);
 
-    collectionDefinitionDto = embeddedOptimizeExtensionRule.getRequestExecutor()
+    collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(SimpleCollectionDefinitionDto.class, 200);
 
@@ -200,7 +186,7 @@ public class CollectionRestServiceScopeIT {
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
     String reportId = createNewSingleProcessReport(singleProcessReportDefinitionDto);
 
-    ConflictResponseDto conflictResponseDto = embeddedOptimizeExtensionRule.getRequestExecutor()
+    ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
       .execute(ConflictResponseDto.class, 409);
 
@@ -214,7 +200,7 @@ public class CollectionRestServiceScopeIT {
   public void removeNotExistingScopeDefinitionFails() {
     String collectionId = createNewCollection();
 
-    embeddedOptimizeExtensionRule.getRequestExecutor()
+    embeddedOptimizeExtension.getRequestExecutor()
       .buildRemoveScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
       .execute(404);
   }
@@ -226,14 +212,14 @@ public class CollectionRestServiceScopeIT {
   }
 
   private String addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .buildAddScopeEntryToCollectionRequest(collectionId, entry)
       .execute(IdDto.class, 200)
       .getId();
   }
 
   private String createNewSingleProcessReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -241,14 +227,14 @@ public class CollectionRestServiceScopeIT {
   }
 
   private SimpleCollectionDefinitionDto getCollection(final String id) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(id)
       .execute(SimpleCollectionDefinitionDto.class, 200);
   }
 
   private String createNewCollection() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)

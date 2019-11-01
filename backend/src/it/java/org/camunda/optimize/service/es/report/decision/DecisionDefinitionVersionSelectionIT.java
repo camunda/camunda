@@ -14,15 +14,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.Dec
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -34,24 +28,10 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
 public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefinitionIT {
 
   protected static final String INPUT_AMOUNT_ID = "clause1";
   private static final String VARIABLE_NAME = "amount";
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
 
   @Test
   public void decisionReportAcrossAllVersions() {
@@ -60,8 +40,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     // different version
     deployDecisionAndStartInstances(2);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),
@@ -84,8 +64,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     deployDecisionAndStartInstances(1);
     DecisionDefinitionEngineDto decisionDefinitionDto3 = deployDecisionAndStartInstances(3);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),
@@ -107,8 +87,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(2);
     deployDecisionAndStartInstances(1);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<DecisionReportDataDto> allPossibleReports =
       createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
@@ -123,8 +103,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     deployDecisionAndStartInstances(4);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
@@ -141,8 +121,8 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(1);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),
@@ -158,15 +138,15 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   }
 
   private DecisionDefinitionEngineDto deployDecisionAndStartInstances(int nInstancesToStart) {
-    DecisionDefinitionEngineDto definition = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto definition = engineIntegrationExtension.deployDecisionDefinition();
     IntStream.range(0, nInstancesToStart).forEach(
-      i -> engineIntegrationExtensionRule.startDecisionInstance(definition.getId())
+      i -> engineIntegrationExtension.startDecisionInstance(definition.getId())
     );
     return definition;
   }
 
   private AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto,
@@ -175,7 +155,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   }
 
   private Response evaluateReportWithResponse(DecisionReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();

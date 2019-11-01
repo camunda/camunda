@@ -22,7 +22,7 @@ import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -135,12 +135,8 @@ public class CombinedProcessReportResultTest {
     );
   }
 
-  private static Object[] aggregationTypes() {
-    return AggregationType.values();
-  }
-
   @ParameterizedTest(name = "Test get result as CSV for duration number result with aggregate type {0}")
-  @MethodSource("aggregationTypes")
+  @EnumSource(AggregationType.class)
   public void testGetResultAsCsvForDurationNumberResult(final AggregationType aggregationType) {
     // given
 
@@ -183,7 +179,7 @@ public class CombinedProcessReportResultTest {
   }
 
   @ParameterizedTest(name = "Test get result as CSV for duration map result with aggregate type {0}")
-  @MethodSource("aggregationTypes")
+  @EnumSource(AggregationType.class)
   public void testGetResultAsCsvForDurationMapResult(final AggregationType aggregationType) {
     // given
 

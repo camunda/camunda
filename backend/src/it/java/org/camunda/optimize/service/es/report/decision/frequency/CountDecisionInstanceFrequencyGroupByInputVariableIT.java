@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -53,7 +52,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // given
     final String amountValue = "100.0";
     final Double amountValueAsDouble = Double.valueOf(amountValue);
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(amountValueAsDouble, "Misc")
@@ -63,11 +62,11 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -86,7 +85,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   public void reportEvaluationMultiBucketSpecificVersionGroupByInvoiceDateInputVariable() {
     // given
     final String dateGroupKey = "2018-01-01T00:00:00.000+0100";
-    final DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule
+    final DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension
       .deployDecisionDefinition("dmn/invoiceBusinessDecision_withDate.xml");
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     startDecisionInstanceWithInputVars(
@@ -99,11 +98,11 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -121,7 +120,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   @Test
   public void reportEvaluationMultiBucketsSpecificVersionGroupByNumberInputVariable() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
@@ -143,11 +142,11 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -172,7 +171,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   @Test
   public void reportEvaluationMultiBuckets_resultLimitedByConfig() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
@@ -194,13 +193,13 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(1);
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -217,7 +216,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   @Test
   public void testCustomOrderOnNumberResultKeyIsApplied() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
@@ -238,8 +237,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       decisionDefinitionDto1.getId(), createInputs(300.0, "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -266,7 +265,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   @Test
   public void testCustomOrderOnNumberResultValueIsApplied() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
@@ -287,8 +286,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       decisionDefinitionDto1.getId(), createInputs(300.0, "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -314,7 +313,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   @Test
   public void reportEvaluationMultiBucketsSpecificVersionGroupByNumberInputVariableFilterByValue() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, "Misc")
@@ -336,11 +335,11 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -370,7 +369,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // given
     final String amountValue = "100.0";
     final Double amountValueAsDouble = Double.valueOf(amountValue);
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(amountValueAsDouble, "Misc")
     );
@@ -379,7 +378,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // different version
-    engineIntegrationExtensionRule.deployDecisionDefinition();
+    engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(amountValueAsDouble, "Misc")
     );
@@ -387,8 +386,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       decisionDefinitionDto1.getId(), createInputs(amountValueAsDouble, "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -407,7 +406,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   public void reportEvaluationSingleBucketAllVersionsGroupByStringInputVariable() {
     // given
     final String categoryValue = "Misc";
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, categoryValue)
     );
@@ -416,7 +415,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // different version
-    engineIntegrationExtensionRule.deployDecisionDefinition();
+    engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(100.0, categoryValue)
     );
@@ -424,8 +423,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       decisionDefinitionDto1.getId(), createInputs(100.0, categoryValue)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -445,7 +444,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // given
     final String amountValue = "100.0";
     final Double amountValueAsDouble = Double.valueOf(amountValue);
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto1.getId(), createInputs(amountValueAsDouble, "Misc")
     );
@@ -463,8 +462,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       otherDecisionDefinition.getId(), createInputs(amountValueAsDouble, "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -489,8 +488,8 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -510,16 +509,16 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
   @Test
   public void testVariableNameIsAvailable() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion1 = String.valueOf(decisionDefinitionDto1.getVersion());
 
 
     // different version
-    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto2.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> result =
@@ -546,10 +545,10 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    engineIntegrationExtensionRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
+    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -575,12 +574,12 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
 
-    engineIntegrationExtensionRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
-    engineIntegrationExtensionRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
-    engineIntegrationExtensionRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
+    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
+    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
+    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusDays(1L)));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -607,12 +606,12 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
-    engineIntegrationExtensionRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
-    engineIntegrationExtensionRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(1L)));
-    engineIntegrationExtensionRule.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(6L)));
+    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now));
+    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(1L)));
+    engineIntegrationExtension.startDecisionInstance(definition.getId(), ImmutableMap.of(camInputVariable, now.minusSeconds(6L)));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -641,25 +640,25 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       camInputVariable,
       DecisionTypeRef.STRING
     );
-    engineIntegrationExtensionRule.startDecisionInstance(
+    engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "testValidMatch")
     );
-    engineIntegrationExtensionRule.startDecisionInstance(
+    engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
       ImmutableMap.of(camInputVariable, "whateverElse")
     );
-    engineIntegrationExtensionRule.startDecisionInstance(
+    engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
       Collections.singletonMap(camInputVariable, null)
     );
-    engineIntegrationExtensionRule.startDecisionInstance(
+    engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
       Collections.singletonMap(camInputVariable, new EngineVariableValue(null, "String"))
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -711,12 +710,12 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
   private DecisionDefinitionEngineDto deployDefaultDecisionDefinitionWithDifferentKey(final String key) {
     final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
-      getClass().getClassLoader().getResourceAsStream(EngineIntegrationExtensionRule.DEFAULT_DMN_DEFINITION_PATH)
+      getClass().getClassLoader().getResourceAsStream(engineIntegrationExtension.DEFAULT_DMN_DEFINITION_PATH)
     );
     dmnModelInstance.getDefinitions().getDrgElements().stream()
       .findFirst()
       .ifPresent(drgElement -> drgElement.setId(key));
-    return engineIntegrationExtensionRule.deployDecisionDefinition(dmnModelInstance);
+    return engineIntegrationExtension.deployDecisionDefinition(dmnModelInstance);
   }
 
   private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByInputVariable(

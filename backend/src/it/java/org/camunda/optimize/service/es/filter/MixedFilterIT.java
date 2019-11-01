@@ -25,7 +25,7 @@ import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConst
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class MixedFilterIT extends AbstractFilterIT{
+public class MixedFilterIT extends AbstractFilterIT {
 
   @Test
   public void applyCombinationOfFiltersForFinishedInstance() throws Exception {
@@ -35,27 +35,27 @@ public class MixedFilterIT extends AbstractFilterIT{
     variables.put("var", "value");
 
       // this is the process instance that should be filtered
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     final String expectedInstanceId = instanceEngineDto.getId();
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(expectedInstanceId);
+    engineIntegrationExtension.finishAllRunningUserTasks(expectedInstanceId);
 
       // wrong not executed flow node
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
     // wrong variable
     variables.put("var", "anotherValue");
-    instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
 
     // wrong date
     Thread.sleep(1000L);
     variables.put("var", "value");
-    instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
-    OffsetDateTime start = engineIntegrationExtensionRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
-    OffsetDateTime end = engineIntegrationExtensionRule.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
+    OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
+    OffsetDateTime end = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filterList = ProcessFilterBuilder
@@ -94,22 +94,22 @@ public class MixedFilterIT extends AbstractFilterIT{
     variables.put("var", "value");
 
     // this is the process instance that should be filtered
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     final String expectedInstanceId = instanceEngineDto.getId();
 
     // wrong variable
     variables.put("var", "anotherValue");
-    instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
+    instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
 
     // wrong date
     Thread.sleep(1000L);
     variables.put("var", "value");
-    instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
-    OffsetDateTime start = engineIntegrationExtensionRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
+    OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filterList = ProcessFilterBuilder
@@ -155,7 +155,7 @@ public class MixedFilterIT extends AbstractFilterIT{
       .userTask(USER_TASK_ACTIVITY_ID)
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 }

@@ -14,9 +14,9 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.quartz.JobDetail;
 import org.quartz.Trigger;
 import org.quartz.TriggerKey;
@@ -29,7 +29,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -39,13 +38,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
   private GreenMail greenMail;
 
-  @Before
+  @BeforeEach
   public void cleanUp() throws Exception {
-    embeddedOptimizeExtensionRule.getAlertService().getScheduler().clear();
+    embeddedOptimizeExtension.getAlertService().getScheduler().clear();
     greenMail = initGreenMail();
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     greenMail.stop();
   }
@@ -54,15 +53,15 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   public void reportUpdateToNotNumberRemovesAlert() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     String collectionId = createNewCollection();
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 
     Response response =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildCreateAlertRequest(simpleAlert)
         .execute();
@@ -78,13 +77,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // then
     // scheduler does not contain any triggers
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
     );
 
     //alert is deleted from ES
     List<AlertDefinitionDto> alertDefinitionDtos =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetAllAlertsRequest()
         .executeAndReturnList(AlertDefinitionDto.class, 200);
@@ -97,7 +96,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
     AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
       .execute();
@@ -106,7 +105,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     // when
     response =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildDeleteReportRequest(simpleAlert.getReportId(), true)
         .execute();
@@ -114,11 +113,11 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // then
     assertThat(response.getStatus(), is(204));
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
     );
 
-    response = embeddedOptimizeExtensionRule
+    response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
       .execute();
@@ -138,7 +137,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     // when
     String id =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildCreateAlertRequest(simpleAlert)
         .execute(String.class, 200);
@@ -146,7 +145,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // then
     assertThat(id, is(notNullValue()));
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(1)
     );
   }
@@ -159,7 +158,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     // when
     String id =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildCreateAlertRequest(simpleAlert)
         .execute(String.class, 200);
@@ -173,14 +172,14 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
     AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
-    String alertId = embeddedOptimizeExtensionRule
+    String alertId = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
       .execute(IdDto.class, 200)
       .getId();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteAlertRequest(alertId)
       .execute();
@@ -188,7 +187,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // then
     assertThat(response.getStatus(), is(204));
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
     );
   }
@@ -199,13 +198,13 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     AlertCreationDto simpleAlert = setupBasicProcessAlert();
 
     String alertId =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildCreateAlertRequest(simpleAlert)
         .execute(IdDto.class, 200)
         .getId();
 
-    Trigger trigger = embeddedOptimizeExtensionRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
+    Trigger trigger = embeddedOptimizeExtension.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
     assertThat(
       getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS),
       is(
@@ -216,7 +215,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // when
     simpleAlert.getCheckInterval().setValue(30);
 
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateAlertRequest(alertId, simpleAlert)
       .execute();
@@ -227,7 +226,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAlerts = getAllAlerts();
     assertThat(allAlerts.get(0).isTriggered(), is(false));
 
-    trigger = embeddedOptimizeExtensionRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
+    trigger = embeddedOptimizeExtension.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
     int secondsUntilItShouldFireNext = 30;
     assertThatTriggerIsInRange(trigger, secondsUntilItShouldFireNext);
   }
@@ -244,8 +243,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     Instant upperBound = Instant.now()
       .plus(secondsUntilItShouldFireNext + 1, ChronoUnit.SECONDS)
       .truncatedTo(ChronoUnit.SECONDS);
-    assertTrue(lowerBound.isBefore(nextTimeToFire));
-    assertTrue(upperBound.isAfter(nextTimeToFire));
+    assertThat(lowerBound.isBefore(nextTimeToFire), is(true));
+    assertThat(upperBound.isAfter(nextTimeToFire), is(true));
   }
 
   private TriggerKey getTriggerKey(String alertId) {
@@ -261,7 +260,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     // when
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
       .execute();
@@ -285,12 +284,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
     String reportId = startProcessAndCreateReport();
     setEmailConfiguration();
-    embeddedOptimizeExtensionRule.getConfigurationService().setContainerAccessUrlValue("http://test.de:8090");
+    embeddedOptimizeExtension.getConfigurationService().setContainerAccessUrlValue("http://test.de:8090");
 
 
     // when
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
       .execute();
@@ -307,8 +306,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   private String startProcessAndCreateReport() {
     ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     String collectionId = createNewCollection();
     return createNewProcessReportAsUser(collectionId, processDefinition);
@@ -317,7 +316,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void testCronMinutesInterval() throws Exception {
     //given
-    AlertService alertService = embeddedOptimizeExtensionRule.getAlertService();
+    AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 11;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Minutes");
 
@@ -338,7 +337,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void testCronHoursInterval() throws Exception {
     //given
-    AlertService alertService = embeddedOptimizeExtensionRule.getAlertService();
+    AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 11;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Hours");
 
@@ -356,7 +355,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void testCronDaysInterval() throws Exception {
     //given
-    AlertService alertService = embeddedOptimizeExtensionRule.getAlertService();
+    AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 5;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Days");
 
@@ -374,7 +373,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   @Test
   public void testCronWeeksInterval() throws Exception {
     //given
-    AlertService alertService = embeddedOptimizeExtensionRule.getAlertService();
+    AlertService alertService = embeddedOptimizeExtension.getAlertService();
     int intervalValue = 5;
     AlertDefinitionDto fakeReportAlert = getAlertDefinitionDto(intervalValue, "Weeks");
 
@@ -409,7 +408,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
       .executeAndReturnList(AlertDefinitionDto.class, 200);

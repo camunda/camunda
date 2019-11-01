@@ -5,14 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -20,27 +16,17 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class DecisionVariableNamesRestServiceIT {
+public class DecisionVariableNamesRestServiceIT extends AbstractIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";
   private static final String TEST_VARIANT_OUTPUTS = "outputs";
   private static final String DECISION_KEY = "decisionKey";
   private static final String DECISION_VERSION = "1";
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @ParameterizedTest
   @MethodSource("getInputOutputArgs")
@@ -115,7 +101,7 @@ public class DecisionVariableNamesRestServiceIT {
     definition.setTenantId(null);
     definition.setDmn10Xml("someXml");
     definition.setEngine(DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, definition.getId(), definition);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, definition.getId(), definition);
   }
 
   private static Stream<String> getInputOutputArgs() {
@@ -125,11 +111,11 @@ public class DecisionVariableNamesRestServiceIT {
   private OptimizeRequestExecutor getExecutor(String inputsOrOutputs, DecisionVariableNameRequestDto requestDto) {
     switch (inputsOrOutputs) {
       case TEST_VARIANT_INPUTS:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildDecisionInputVariableNamesRequest(requestDto);
       case TEST_VARIANT_OUTPUTS:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildDecisionOutputVariableNamesRequest(requestDto);
       default:

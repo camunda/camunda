@@ -42,7 +42,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     );
     ProcessDefinitionEngineDto unauthorizedProcessDefinition = deploySimpleServiceTaskProcess("unauthorized");
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     final String collectionId = createNewCollectionAsDefaultUser();
     addRoleToCollectionAsDefaultUser(RoleType.VIEWER, new UserDto(KERMIT_USER), collectionId);
@@ -54,7 +54,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     createSingleProcessReportForDefinitionAsDefaultUser(unauthorizedProcessDefinition, collectionId);
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtensionRule
+    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
@@ -79,7 +79,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(reportDataDto);
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -94,6 +94,6 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 }

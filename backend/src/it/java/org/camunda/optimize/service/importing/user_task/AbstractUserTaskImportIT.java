@@ -8,15 +8,13 @@ package org.camunda.optimize.service.importing.user_task;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -31,7 +29,7 @@ import java.time.temporal.ChronoUnit;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
-public abstract class AbstractUserTaskImportIT {
+public abstract class AbstractUserTaskImportIT extends AbstractIT {
 
   protected static final String START_EVENT = "startEvent";
   protected static final String END_EVENT = "endEvent";
@@ -39,17 +37,8 @@ public abstract class AbstractUserTaskImportIT {
   protected static final String USER_TASK_2 = "userTask2";
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected ObjectMapper objectMapper;
 
@@ -65,10 +54,10 @@ public abstract class AbstractUserTaskImportIT {
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
                                             final long idleDuration) {
-    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         try {
-          engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
+          engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
             historicUserTaskInstanceDto.getId(),
             historicUserTaskInstanceDto.getStartTime().plus(idleDuration, ChronoUnit.MILLIS)
           );
@@ -80,11 +69,11 @@ public abstract class AbstractUserTaskImportIT {
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
                                             final long workDuration) {
-    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         if (historicUserTaskInstanceDto.getEndTime() != null) {
           try {
-            engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               historicUserTaskInstanceDto.getEndTime().minus(workDuration, ChronoUnit.MILLIS)
             );
@@ -101,7 +90,7 @@ public abstract class AbstractUserTaskImportIT {
       .userTask(USER_TASK_1)
       .endEvent(END_EVENT)
       .done();
-    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {
@@ -111,7 +100,7 @@ public abstract class AbstractUserTaskImportIT {
       .userTask(USER_TASK_2)
       .endEvent(END_EVENT)
       .done();
-    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 
   protected SearchResponse getSearchResponseForAllDocumentsOfIndex(String indexName) throws IOException {
@@ -123,7 +112,7 @@ public abstract class AbstractUserTaskImportIT {
       .indices(indexName)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 }

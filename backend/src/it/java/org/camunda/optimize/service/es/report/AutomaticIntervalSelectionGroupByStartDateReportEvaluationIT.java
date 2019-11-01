@@ -16,7 +16,6 @@ import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
 
-
 public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT
   extends AbstractAutomaticIntervalSelectionGroupByDateReportEvaluationIT {
 
@@ -33,12 +32,12 @@ public class AutomaticIntervalSelectionGroupByStartDateReportEvaluationIT
 
   @Override
   protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> updates) throws SQLException {
-    engineDatabaseExtensionRule.updateProcessInstanceStartDates(updates);
+    engineDatabaseExtension.updateProcessInstanceStartDates(updates);
   }
 
   @Override
   protected void updateProcessInstanceDate(final ZonedDateTime min, final ProcessInstanceEngineDto procInstMin) throws
                                                                                                                 SQLException {
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(procInstMin.getId(), min.toOffsetDateTime());
+    engineDatabaseExtension.changeProcessInstanceStartDate(procInstMin.getId(), min.toOffsetDateTime());
   }
 }

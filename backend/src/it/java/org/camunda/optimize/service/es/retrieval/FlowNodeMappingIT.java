@@ -8,15 +8,11 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,20 +23,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 
 
-public class FlowNodeMappingIT {
+public class FlowNodeMappingIT extends AbstractIT {
   private static final String A_START = "aStart";
   private static final String A_TASK = "aTask";
   private static final String AN_END = "anEnd";
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   private final static String PROCESS_DEFINITION_KEY = "aProcess";
 
@@ -48,17 +34,17 @@ public class FlowNodeMappingIT {
   public void mapFlowNodeIdsToNames() {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processDefinition.getKey());
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     FlowNodeNamesResponseDto result =
-            embeddedOptimizeExtensionRule
+            embeddedOptimizeExtension
             .getRequestExecutor()
             .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
             .execute(FlowNodeNamesResponseDto.class, 200);
@@ -92,9 +78,9 @@ public class FlowNodeMappingIT {
   public void mapFilteredFlowNodeIdsToNames() {
     // given
     BpmnModelInstance modelInstance = getNamedBpmnModelInstance();
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     StartEvent start = modelInstance.getModelElementsByType(StartEvent.class).iterator().next();
 
 
@@ -107,7 +93,7 @@ public class FlowNodeMappingIT {
     flowNodeIdsToNamesRequestDto.setNodeIds(ids);
 
     FlowNodeNamesResponseDto result =
-            embeddedOptimizeExtensionRule
+            embeddedOptimizeExtension
                     .getRequestExecutor()
                     .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
                     .execute(FlowNodeNamesResponseDto.class, 200);

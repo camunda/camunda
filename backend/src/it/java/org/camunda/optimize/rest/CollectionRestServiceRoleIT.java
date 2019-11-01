@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.apache.http.HttpStatus;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -16,12 +17,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -37,22 +33,11 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class CollectionRestServiceRoleIT {
+public class CollectionRestServiceRoleIT extends AbstractIT {
 
   private static final String USER_KERMIT = "kermit";
   private static final String TEST_GROUP = "testGroup";
   private static final String USER_MISS_PIGGY = "MissPiggy";
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
-    new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void partialCollectionUpdateDoesNotAffectRoles() {
@@ -62,7 +47,7 @@ public class CollectionRestServiceRoleIT {
 
     // when
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(collectionId, collectionRenameDto)
       .execute();
@@ -80,7 +65,7 @@ public class CollectionRestServiceRoleIT {
     final SimpleCollectionDefinitionDto expectedCollection = getCollection(collectionId);
 
     // when
-    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+    List<CollectionRoleDto> roles = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(CollectionRoleDto.class, 200);
@@ -96,7 +81,7 @@ public class CollectionRestServiceRoleIT {
     final String collectionId = createNewCollection();
 
     // when
-    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+    List<CollectionRoleDto> roles = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(CollectionRoleDto.class, 200);
@@ -119,10 +104,10 @@ public class CollectionRestServiceRoleIT {
     UserDto expectedUserDtoWithData =
       new UserDto(DEFAULT_USERNAME, "firstName", "lastName", "me@camunda.com");
 
-    embeddedOptimizeExtensionRule.getIdentityService().addIdentity(expectedUserDtoWithData);
+    embeddedOptimizeExtension.getIdentityService().addIdentity(expectedUserDtoWithData);
 
     // when
-    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+    List<CollectionRoleDto> roles = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(CollectionRoleDto.class, 200);
@@ -145,17 +130,17 @@ public class CollectionRestServiceRoleIT {
   public void getRolesContainsGroupMetadata() {
     //given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.createGroup(TEST_GROUP, TEST_GROUP);
-    engineIntegrationExtensionRule.addUser(USER_KERMIT, USER_KERMIT);
-    engineIntegrationExtensionRule.addUserToGroup(USER_KERMIT, TEST_GROUP);
-    engineIntegrationExtensionRule.addUser(USER_MISS_PIGGY, USER_MISS_PIGGY);
-    engineIntegrationExtensionRule.addUserToGroup(USER_MISS_PIGGY, TEST_GROUP);
+    engineIntegrationExtension.createGroup(TEST_GROUP, TEST_GROUP);
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.addUserToGroup(USER_KERMIT, TEST_GROUP);
+    engineIntegrationExtension.addUser(USER_MISS_PIGGY, USER_MISS_PIGGY);
+    engineIntegrationExtension.addUserToGroup(USER_MISS_PIGGY, TEST_GROUP);
 
     final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
 
     // when
-    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+    List<CollectionRoleDto> roles = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(CollectionRoleDto.class, 200);
@@ -176,13 +161,13 @@ public class CollectionRestServiceRoleIT {
   public void getRolesNoGroupMetadataAvailable() {
     //given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.createGroup(TEST_GROUP, null);
+    engineIntegrationExtension.createGroup(TEST_GROUP, null);
 
     final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
     addRoleToCollection(collectionId, roleDto);
 
     // when
-    List<CollectionRoleDto> roles = embeddedOptimizeExtensionRule
+    List<CollectionRoleDto> roles = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetRolesToCollectionRequest(collectionId)
       .executeAndReturnList(CollectionRoleDto.class, 200);
@@ -202,8 +187,8 @@ public class CollectionRestServiceRoleIT {
   public void addUserRole() {
     // given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.addUser(USER_KERMIT, USER_KERMIT);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(USER_KERMIT);
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
@@ -219,10 +204,10 @@ public class CollectionRestServiceRoleIT {
   public void addMultipleUserRoles() {
     // given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.addUser(USER_KERMIT, USER_KERMIT);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(USER_KERMIT);
-    engineIntegrationExtensionRule.addUser(USER_MISS_PIGGY, USER_MISS_PIGGY);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(USER_MISS_PIGGY);
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_KERMIT);
+    engineIntegrationExtension.addUser(USER_MISS_PIGGY, USER_MISS_PIGGY);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_MISS_PIGGY);
 
     // when
     final CollectionRoleDto kermitRoleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
@@ -243,11 +228,11 @@ public class CollectionRestServiceRoleIT {
   public void addUserRoleFailsNotAuthorizedUser() {
     // given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
-    final Response addRoleResponse = embeddedOptimizeExtensionRule
+    final Response addRoleResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute();
@@ -263,7 +248,7 @@ public class CollectionRestServiceRoleIT {
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
-    final Response addRoleResponse = embeddedOptimizeExtensionRule
+    final Response addRoleResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute();
@@ -276,7 +261,7 @@ public class CollectionRestServiceRoleIT {
   public void addGroupRole() {
     // given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.createGroup(TEST_GROUP, TEST_GROUP);
+    engineIntegrationExtension.createGroup(TEST_GROUP, TEST_GROUP);
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
@@ -295,7 +280,7 @@ public class CollectionRestServiceRoleIT {
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(TEST_GROUP), RoleType.EDITOR);
-    final Response addRoleResponse = embeddedOptimizeExtensionRule
+    final Response addRoleResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute();
@@ -316,7 +301,7 @@ public class CollectionRestServiceRoleIT {
       new UserDto(DEFAULT_USERNAME),
       RoleType.EDITOR
     );
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute();
@@ -333,8 +318,8 @@ public class CollectionRestServiceRoleIT {
   public void roleCanGetUpdated() {
     // given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.addUser(USER_KERMIT, USER_KERMIT);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(USER_KERMIT);
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
     final IdentityDto identityDto = new UserDto(USER_KERMIT);
@@ -359,7 +344,7 @@ public class CollectionRestServiceRoleIT {
 
     // when
     final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.EDITOR);
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleEntryDto.getId(), updatedRoleDto)
       .execute();
@@ -381,7 +366,7 @@ public class CollectionRestServiceRoleIT {
 
     // when
     final CollectionRoleUpdateDto updatedRoleDto = new CollectionRoleUpdateDto(RoleType.EDITOR);
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, notExistingRoleEntryId, updatedRoleDto)
       .execute();
@@ -396,8 +381,8 @@ public class CollectionRestServiceRoleIT {
   public void roleCanGetDeleted() {
     // given
     final String collectionId = createNewCollection();
-    engineIntegrationExtensionRule.addUser(USER_KERMIT, USER_KERMIT);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(USER_KERMIT);
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_KERMIT);
 
     // when
     final IdentityDto identityDto = new UserDto(USER_KERMIT);
@@ -419,7 +404,7 @@ public class CollectionRestServiceRoleIT {
     final CollectionRoleDto roleEntryDto = expectedCollection.getData().getRoles().get(0);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteRoleToCollectionRequest(collectionId, roleEntryDto.getId())
       .execute();
@@ -432,7 +417,7 @@ public class CollectionRestServiceRoleIT {
   }
 
   private IdDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200);
@@ -441,7 +426,7 @@ public class CollectionRestServiceRoleIT {
   private void updateRoleOnCollection(final String collectionId,
                                       final String roleEntryId,
                                       final CollectionRoleUpdateDto updateDto) {
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateRoleToCollectionRequest(collectionId, roleEntryId, updateDto)
       .execute();
@@ -450,7 +435,7 @@ public class CollectionRestServiceRoleIT {
 
   private void deleteRoleFromCollection(final String collectionId,
                                         final String roleEntryId) {
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteRoleToCollectionRequest(collectionId, roleEntryId)
       .execute();
@@ -458,14 +443,14 @@ public class CollectionRestServiceRoleIT {
   }
 
   private SimpleCollectionDefinitionDto getCollection(final String id) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(id)
       .execute(SimpleCollectionDefinitionDto.class, 200);
   }
 
   private String createNewCollection() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)

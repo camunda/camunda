@@ -189,7 +189,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
 
@@ -263,7 +263,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
 
@@ -356,7 +356,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
@@ -413,7 +413,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -450,7 +450,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     authorizationClient.grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(
       KERMIT_USER, getEngineResourceTypeForReportType(reportScenario)
     );
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -578,7 +578,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String kermitReportId = createPrivateReportAsKermit(reportScenario);
     final String otherReportId = createPrivateReportAsDefaultUser(reportScenario);
@@ -619,7 +619,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
@@ -674,7 +674,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -725,7 +725,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String reportId = createPrivateReportAsDefaultUser(reportScenario);
 
@@ -780,7 +780,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
     final String reportId = createReportInCollectionAsDefaultUser(reportScenario, collectionId);
@@ -856,7 +856,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
         if (reportScenario.combined) {
           CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
           combinedReportDefinitionDto.setCollectionId(collectionId);
-          return embeddedOptimizeExtensionRule
+          return embeddedOptimizeExtension
             .getRequestExecutor()
             .withUserAuthentication(user, password)
             .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
@@ -864,7 +864,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
         } else {
           SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
           singleProcessReportDefinitionDto.setCollectionId(collectionId);
-          return embeddedOptimizeExtensionRule
+          return embeddedOptimizeExtension
             .getRequestExecutor()
             .withUserAuthentication(user, password)
             .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
@@ -873,7 +873,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
       case DECISION:
         SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
         singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
@@ -895,7 +895,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
                                                 final String collectionId,
                                                 final String user,
                                                 final String password) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCopyReportRequest(reportId, collectionId)
@@ -903,21 +903,21 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   }
 
   private AuthorizedReportDefinitionDto getReportByIdAsKermit(final String reportId) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetReportRequest(reportId)
       .execute(AuthorizedReportDefinitionDto.class, 200);
   }
 
   private Response readReportByIdAsKermit(final String reportId) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetReportRequest(reportId)
       .execute();
   }
 
   private Response evaluateReportByIdAsKermit(final String reportId) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildEvaluateSavedReportRequest(reportId)
       .execute();
@@ -928,7 +928,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   }
 
   private List<AuthorizedReportDefinitionDto> listReportsAsUser(final String user, final String password) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(AuthorizedReportDefinitionDto.class, 200);
@@ -959,20 +959,20 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     switch (reportUpdate.getReportType()) {
       case PROCESS:
         if (reportUpdate.getCombined()) {
-          return embeddedOptimizeExtensionRule
+          return embeddedOptimizeExtension
             .getRequestExecutor()
             .withUserAuthentication(user, password)
             .buildUpdateCombinedProcessReportRequest(reportId, reportUpdate)
             .execute();
         } else {
-          return embeddedOptimizeExtensionRule
+          return embeddedOptimizeExtension
             .getRequestExecutor()
             .withUserAuthentication(user, password)
             .buildUpdateSingleProcessReportRequest(reportId, reportUpdate)
             .execute();
         }
       case DECISION:
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildUpdateSingleDecisionReportRequest(reportId, reportUpdate)
@@ -983,7 +983,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
   }
 
   private Response deleteReportAsKermit(final String reportId) {
-    return embeddedOptimizeExtensionRule.getRequestExecutor()
+    return embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDeleteReportRequest(reportId)
       .execute();

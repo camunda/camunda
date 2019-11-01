@@ -75,8 +75,8 @@ public class DecisionInstanceByTenantIT extends AbstractDecisionDefinitionIT {
     // given
     final String decisionDefinitionKey = deployAndStartMultiTenantDefinition(deployedTenants);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder

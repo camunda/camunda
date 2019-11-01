@@ -7,9 +7,9 @@ package org.camunda.optimize.test.performance;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -38,13 +38,14 @@ public abstract class AbstractImportTest {
 
   @RegisterExtension
   @Order(1)
-  protected ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension
+    = new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
-  protected EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
   @RegisterExtension
   @Order(3)
-  protected EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(properties);
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(properties);
 
   protected long maxImportDurationInMin;
   protected ConfigurationService configurationService;
@@ -54,8 +55,8 @@ public abstract class AbstractImportTest {
   @BeforeEach
   public void setUp() {
     maxImportDurationInMin = Long.parseLong(properties.getProperty("import.test.max.duration.in.min", "240"));
-    elasticSearchIntegrationTestExtensionRule.disableCleanup();
-    configurationService = embeddedOptimizeExtensionRule.getConfigurationService();
+    elasticSearchIntegrationTestExtension.disableCleanup();
+    configurationService = embeddedOptimizeExtension.getConfigurationService();
     configurationService.getCleanupServiceConfiguration().setEnabled(false);
   }
 
@@ -63,34 +64,34 @@ public abstract class AbstractImportTest {
     try {
       logger.info(
         "The Camunda Platform contains {} process definitions. Optimize: {}",
-        (engineDatabaseExtensionRule.countProcessDefinitions()),
-        elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME)
+        (engineDatabaseExtension.countProcessDefinitions()),
+        elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME)
       );
       logger.info(
         "The Camunda Platform contains {} historic process instances. Optimize: {}",
-        engineDatabaseExtensionRule.countHistoricProcessInstances(),
-        elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)
+        engineDatabaseExtension.countHistoricProcessInstances(),
+        elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)
       );
       logger.info(
         "The Camunda Platform contains {} historic variable instances. Optimize: {}",
-        engineDatabaseExtensionRule.countHistoricVariableInstances(),
-        elasticSearchIntegrationTestExtensionRule.getVariableInstanceCount()
+        engineDatabaseExtension.countHistoricVariableInstances(),
+        elasticSearchIntegrationTestExtension.getVariableInstanceCount()
       );
       logger.info(
         "The Camunda Platform contains {} historic activity instances. Optimize: {}",
-        engineDatabaseExtensionRule.countHistoricActivityInstances(),
-        elasticSearchIntegrationTestExtensionRule.getActivityCount()
+        engineDatabaseExtension.countHistoricActivityInstances(),
+        elasticSearchIntegrationTestExtension.getActivityCount()
       );
 
       logger.info(
         "The Camunda Platform contains {} decision definitions. Optimize: {}",
-        engineDatabaseExtensionRule.countDecisionDefinitions(),
-        elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME)
+        engineDatabaseExtension.countDecisionDefinitions(),
+        elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME)
       );
       logger.info(
         "The Camunda Platform contains {} historic decision instances. Optimize: {}",
-        engineDatabaseExtensionRule.countHistoricDecisionInstances(),
-        elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME)
+        engineDatabaseExtension.countHistoricDecisionInstances(),
+        elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME)
       );
     } catch (SQLException e) {
       logger.error("Failed producing stats", e);
@@ -112,12 +113,12 @@ public abstract class AbstractImportTest {
 
   private long computeImportProgress() {
     // assumption: we know how many process instances have been generated
-    Integer processInstancesImported = elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(
+    Integer processInstancesImported = elasticSearchIntegrationTestExtension.getDocumentCountOf(
       PROCESS_INSTANCE_INDEX_NAME
     );
     Long totalInstances;
     try {
-      totalInstances = Math.max(engineDatabaseExtensionRule.countHistoricProcessInstances(), 1L);
+      totalInstances = Math.max(engineDatabaseExtension.countHistoricProcessInstances(), 1L);
       return Math.round(processInstancesImported.doubleValue() / totalInstances.doubleValue() * 100);
     } catch (SQLException e) {
       e.printStackTrace();
@@ -128,36 +129,36 @@ public abstract class AbstractImportTest {
   protected void assertThatEngineAndElasticDataMatch() throws SQLException {
     assertThat(
       "processDefinitionsCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(
         PROCESS_DEFINITION_INDEX_NAME
       ),
-      is(engineDatabaseExtensionRule.countProcessDefinitions())
+      is(engineDatabaseExtension.countProcessDefinitions())
     );
     assertThat(
       "processInstanceTypeCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME),
-      is(engineDatabaseExtensionRule.countHistoricProcessInstances())
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME),
+      is(engineDatabaseExtension.countHistoricProcessInstances())
     );
     assertThat(
       "variableInstanceCount",
-      elasticSearchIntegrationTestExtensionRule.getVariableInstanceCount(),
-      is(engineDatabaseExtensionRule.countHistoricVariableInstances())
+      elasticSearchIntegrationTestExtension.getVariableInstanceCount(),
+      is(engineDatabaseExtension.countHistoricVariableInstances())
     );
     assertThat(
       "historicActivityInstanceCount",
-      elasticSearchIntegrationTestExtensionRule.getActivityCount(),
-      is(engineDatabaseExtensionRule.countHistoricActivityInstances())
+      elasticSearchIntegrationTestExtension.getActivityCount(),
+      is(engineDatabaseExtension.countHistoricActivityInstances())
     );
 
     assertThat(
       "decisionDefinitionsCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
-      is(engineDatabaseExtensionRule.countDecisionDefinitions())
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
+      is(engineDatabaseExtension.countDecisionDefinitions())
     );
     assertThat(
       "decisionInstancesCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME),
-      is(engineDatabaseExtensionRule.countHistoricDecisionInstances())
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME),
+      is(engineDatabaseExtension.countHistoricDecisionInstances())
     );
   }
 }

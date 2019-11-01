@@ -7,15 +7,13 @@ package org.camunda.optimize.service.export;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -34,24 +32,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
 
-
-public class CombinedProcessExportServiceIT {
+public class CombinedProcessExportServiceIT extends AbstractIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void combinedMapReportHasExpectedValue() throws Exception {
@@ -61,11 +49,11 @@ public class CombinedProcessExportServiceIT {
     String singleReportId1 = createNewSingleMapReport(processInstance1);
     String singleReportId2 = createNewSingleMapReport(processInstance2);
     String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(combinedReportId, "my_file.csv")
       .execute();
@@ -85,17 +73,17 @@ public class CombinedProcessExportServiceIT {
   public void combinedDurationMapReportHasExpectedValue() throws Exception {
     //given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
-    engineDatabaseExtensionRule.changeActivityDuration(processInstance1.getId(), 0);
+    engineDatabaseExtension.changeActivityDuration(processInstance1.getId(), 0);
     ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
-    engineDatabaseExtensionRule.changeActivityDuration(processInstance2.getId(), 0);
+    engineDatabaseExtension.changeActivityDuration(processInstance2.getId(), 0);
     String singleReportId1 = createNewSingleDurationMapReport(processInstance1);
     String singleReportId2 = createNewSingleDurationMapReport(processInstance2);
     String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(combinedReportId, "my_file.csv")
       .execute();
@@ -120,11 +108,11 @@ public class CombinedProcessExportServiceIT {
     String singleReportId1 = createNewSingleMapReport(processInstance1);
     String singleReportId2 = createNewSingleMapReport(processInstance2);
     String combinedReportId = createNewCombinedReport(singleReportId2, singleReportId1);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(combinedReportId, "my_file.csv")
       .execute();
@@ -149,11 +137,11 @@ public class CombinedProcessExportServiceIT {
     String singleReportId1 = createNewSingleNumberReport(processInstance1);
     String singleReportId2 = createNewSingleNumberReport(processInstance2);
     String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(combinedReportId, "my_file.csv")
       .execute();
@@ -176,19 +164,19 @@ public class CombinedProcessExportServiceIT {
     final OffsetDateTime startDate = OffsetDateTime.now();
     final OffsetDateTime endDate = startDate.plus(1, ChronoUnit.MILLIS);
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstance1.getId(), startDate);
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(processInstance1.getId(), endDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance1.getId(), startDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance1.getId(), endDate);
     ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstance2.getId(), startDate);
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(processInstance2.getId(), endDate);
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), startDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance2.getId(), endDate);
     String singleReportId1 = createNewSingleDurationNumberReport(processInstance1);
     String singleReportId2 = createNewSingleDurationNumberReport(processInstance2);
     String combinedReportId = createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(combinedReportId, "my_file.csv")
       .execute();
@@ -210,11 +198,11 @@ public class CombinedProcessExportServiceIT {
     //given
     String singleReportId1 = createNewSingleReport(new SingleProcessReportDefinitionDto());
     String combinedReportId = createNewCombinedReport(singleReportId1);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(combinedReportId, "my_file.csv")
       .execute();
@@ -235,11 +223,11 @@ public class CombinedProcessExportServiceIT {
   public void combinedReportWithoutReportsProducesEmptyResult() throws IOException {
     //given
     String combinedReportId = createNewCombinedReport();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(combinedReportId, "my_file.csv")
       .execute();
@@ -251,7 +239,7 @@ public class CombinedProcessExportServiceIT {
   }
 
   private void updateCombinedProcessReport(String id, CombinedReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(id, updatedReport)
       .execute();
@@ -260,7 +248,7 @@ public class CombinedProcessExportServiceIT {
   }
 
   private String createNewCombinedReport() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest()
       .execute(IdDto.class, 200)
@@ -319,7 +307,7 @@ public class CombinedProcessExportServiceIT {
   }
 
   private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -352,7 +340,7 @@ public class CombinedProcessExportServiceIT {
       .endEvent(END)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWith2FlowNodes() {
@@ -363,6 +351,6 @@ public class CombinedProcessExportServiceIT {
       .endEvent(END)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 }

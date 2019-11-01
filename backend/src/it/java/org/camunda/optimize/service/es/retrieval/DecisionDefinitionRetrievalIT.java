@@ -31,13 +31,13 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       // given
       deployAndStartSimpleDecisionDefinition(DECISION_DEFINITION_KEY + i);
     }
-    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(11);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(11);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .executeAndReturnList(DecisionDefinitionOptimizeDto.class, 200);
@@ -52,12 +52,12 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
@@ -75,14 +75,14 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // given
     final String decisionDefinitionKey = DECISION_DEFINITION_KEY + System.currentTimeMillis();
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(modelInstance);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
@@ -102,14 +102,14 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
       deployAndStartSimpleDecisionDefinition(decisionDefinitionKey);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     addDecisionDefinitionWithoutXmlToElasticsearch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionsRequest()
         .addSingleQueryParam("includeXml", false)
@@ -125,13 +125,13 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // given
     final String decisionDefinitionKey = DECISION_DEFINITION_KEY + System.currentTimeMillis();
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(modelInstance);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    String actualXml = embeddedOptimizeExtensionRule
+    String actualXml = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDecisionDefinitionXmlRequest(
         decisionDefinitionEngineDto.getKey(),
@@ -150,19 +150,19 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // first version
     final DmnModelInstance modelInstance1 = createSimpleDmnModel(decisionDefinitionKey);
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto1 =
-      engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance1);
+      engineIntegrationExtension.deployDecisionDefinition(modelInstance1);
     // second version
     final DmnModelInstance modelInstance2 = createSimpleDmnModel(decisionDefinitionKey);
     modelInstance2.getDefinitions().getDrgElements().stream().findFirst()
       .ifPresent(drgElement -> drgElement.setName("Add name to ensure that this is the latest version!"));
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto2 =
-      engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance2);
+      engineIntegrationExtension.deployDecisionDefinition(modelInstance2);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final String actualXml = embeddedOptimizeExtensionRule
+    final String actualXml = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDecisionDefinitionXmlRequest(decisionDefinitionEngineDto1.getKey(), ALL_VERSIONS)
       .execute(String.class, 200);
@@ -184,15 +184,15 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     final DmnModelInstance latestModelInstance = createSimpleDmnModel(decisionDefinitionKey);
     latestModelInstance.getDefinitions().getDrgElements().stream().findFirst()
       .ifPresent(drgElement -> drgElement.setName("Add name to ensure that this is the latest version!"));
-    engineIntegrationExtensionRule.deployDecisionDefinition(latestModelInstance);
+    engineIntegrationExtension.deployDecisionDefinition(latestModelInstance);
 
-    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(12);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionDefinitionXmlMaxPageSize(12);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     String actualXml =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(decisionDefinitionKey, ALL_VERSIONS)
         .execute(String.class, 200);
@@ -207,7 +207,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       .setId("aDecDefId")
       .setKey("aDecDefKey")
       .setVersion("aDevDefVersion");
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, "fooId", decisionDefinitionWithoutXml);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, "fooId", decisionDefinitionWithoutXml);
   }
 
 }

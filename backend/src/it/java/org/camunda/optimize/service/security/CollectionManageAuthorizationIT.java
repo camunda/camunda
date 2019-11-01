@@ -75,7 +75,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = createNewCollectionAsDefaultUser();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
@@ -155,7 +155,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final CollectionRoleDto collectionRoleDto = createJohnEditorRoleDto();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
@@ -220,7 +220,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -282,7 +282,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -338,7 +338,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -396,7 +396,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -455,7 +455,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
@@ -475,13 +475,13 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addUserAndGrantOptimizeAccess("gonzo");
     addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new UserDto("gonzo"), RoleType.MANAGER));
 
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCopyCollectionRequest(collectionId)
       .withUserAuthentication("gonzo", "gonzo")
       .execute(200);
 
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCopyCollectionRequest(collectionId)
       .withUserAuthentication("kermit", "kermit")
@@ -498,7 +498,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   private String addScopeToCollectionAsDefaultUser(final String collectionId,
                                                    final CollectionScopeEntryDto scopeEntryDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddScopeEntryToCollectionRequest(collectionId, scopeEntryDto)
       .execute(IdDto.class, 200)

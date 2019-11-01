@@ -5,14 +5,10 @@
  */
 package org.camunda.optimize.rest.providers;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
@@ -25,17 +21,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class CacheRequestIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class CacheRequestIT extends AbstractIT {
 
   @Test
   public void getDecisionDefinitionXmlRequest_cacheControlHeadersAreSetCorrectly() {
@@ -45,7 +31,7 @@ public class CacheRequestIT {
 
     String key = "test", version = "1";
     DecisionDefinitionOptimizeDto expectedDefinitionDto = createDecisionDefinitionDto(key, version);
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       DECISION_DEFINITION_INDEX_NAME,
       expectedDefinitionDto.getId(),
       expectedDefinitionDto
@@ -53,7 +39,7 @@ public class CacheRequestIT {
 
     // when
     Response response =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetDecisionDefinitionXmlRequest(key, version)
         .execute();
@@ -73,7 +59,7 @@ public class CacheRequestIT {
     decisionDefinitionDto.setKey(key);
     decisionDefinitionDto.setVersion(version);
     decisionDefinitionDto.setId("id-" + key + "-version-" + version);
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
     );
     return decisionDefinitionDto;

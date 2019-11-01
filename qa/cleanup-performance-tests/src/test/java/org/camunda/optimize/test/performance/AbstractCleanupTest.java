@@ -5,8 +5,9 @@
  */
 package org.camunda.optimize.test.performance;
 
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -21,17 +22,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public abstract class AbstractCleanupTest {
+public abstract class AbstractCleanupTest extends AbstractIT {
   protected static final Logger logger = LoggerFactory.getLogger(AbstractCleanupTest.class);
 
   private static final Properties properties = PropertyUtil.loadProperties("static-cleanup-test.properties");
 
   @RegisterExtension
   @Order(1)
-  protected static ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
+  protected static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension = new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
-  protected static EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  protected static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   protected static long maxCleanupDurationInMin = Long.parseLong(properties.getProperty(
     "cleanup.test.max.duration.in.min",
@@ -39,16 +40,16 @@ public abstract class AbstractCleanupTest {
   ));
 
   static {
-    elasticSearchIntegrationTestExtensionRule.disableCleanup();
-    embeddedOptimizeExtensionRule.setResetImportOnStart(false);
-    embeddedOptimizeExtensionRule.setupOptimize();
+    elasticSearchIntegrationTestExtension.disableCleanup();
+    embeddedOptimizeExtension.setResetImportOnStart(false);
+    embeddedOptimizeExtension.setupOptimize();
   }
 
   protected static void importData() {
     final OffsetDateTime importStart = OffsetDateTime.now();
     logger.info("Starting import of engine data to Optimize...");
-    embeddedOptimizeExtensionRule.importAllEngineData();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineData();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     OffsetDateTime afterImport = OffsetDateTime.now();
     long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
     logger.info("Import took [ " + importDurationInMinutes + " ] min");
@@ -58,7 +59,7 @@ public abstract class AbstractCleanupTest {
     logger.info("Starting History Cleanup...");
     final ExecutorService cleanupExecutorService = Executors.newSingleThreadExecutor();
     cleanupExecutorService.execute(
-      () -> embeddedOptimizeExtensionRule.getCleanupScheduler().runCleanup()
+      () -> embeddedOptimizeExtension.getCleanupScheduler().runCleanup()
     );
     cleanupExecutorService.shutdown();
     boolean wasAbleToFinishImportInTime = cleanupExecutorService.awaitTermination(

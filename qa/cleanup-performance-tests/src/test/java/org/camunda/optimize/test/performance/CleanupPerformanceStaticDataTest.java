@@ -29,7 +29,7 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
 
   @BeforeAll
   public static void setUp() {
-    embeddedOptimizeExtensionRule.setupOptimize();
+    embeddedOptimizeExtension.setupOptimize();
     // given
     importData();
   }
@@ -40,18 +40,18 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
   @Test
   public void aCleanupModeVariablesAndDecisionDataPerformanceTest() throws Exception {
     //given TTL of 0
-    embeddedOptimizeExtensionRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
-    embeddedOptimizeExtensionRule.getConfigurationService()
+    embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
+    embeddedOptimizeExtension.getConfigurationService()
       .getCleanupServiceConfiguration()
       .setDefaultProcessDataCleanupMode(CleanupMode.VARIABLES);
-    final int countProcessDefinitions = elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME);
-    final int processInstanceCount = elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME);
-    final int activityCount = elasticSearchIntegrationTestExtensionRule.getActivityCount();
-    final int countDecisionDefinitions = elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME);
+    final int countProcessDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME);
+    final int processInstanceCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME);
+    final int activityCount = elasticSearchIntegrationTestExtension.getActivityCount();
+    final int countDecisionDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME);
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then no variables
     assertThat(
@@ -62,29 +62,29 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     // and no decision instances should be left in optimize
     assertThat(
       "decisionInstanceCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME),
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_INSTANCE_INDEX_NAME),
       is(0)
     );
 
     // and everything else is untouched
     assertThat(
       "processInstanceTypeCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME),
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME),
       is(processInstanceCount)
     );
     assertThat(
       "activityCount",
-      elasticSearchIntegrationTestExtensionRule.getActivityCount(),
+      elasticSearchIntegrationTestExtension.getActivityCount(),
       is(activityCount)
     );
     assertThat(
       "processDefinitionCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME),
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME),
       is(countProcessDefinitions)
     );
     assertThat(
       "decisionDefinitionCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
       is(countDecisionDefinitions)
     );
   }
@@ -92,15 +92,15 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
   @Test
   public void bCleanupModeAllPerformanceTest() throws Exception {
     //given ttl of 0
-    embeddedOptimizeExtensionRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
-    embeddedOptimizeExtensionRule.getConfigurationService().getCleanupServiceConfiguration()
+    embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
+    embeddedOptimizeExtension.getConfigurationService().getCleanupServiceConfiguration()
       .setDefaultProcessDataCleanupMode(CleanupMode.ALL);
-    final int countProcessDefinitions = elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME);
-    final int countDecisionDefinitions = elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME);
+    final int countProcessDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME);
+    final int countDecisionDefinitions = elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME);
     // and run the cleanup
     runCleanupAndAssertFinishedWithinTimeout();
     // and refresh es
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then no process instances, no activity and no variables should be left in optimize
     assertThat(
@@ -122,26 +122,26 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     // and definition data is untouched
     assertThat(
       "processDefinitionCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME),
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_DEFINITION_INDEX_NAME),
       is(countProcessDefinitions)
     );
     assertThat(
       "decisionDefinitionCount",
-      elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
+      elasticSearchIntegrationTestExtension.getDocumentCountOf(DECISION_DEFINITION_INDEX_NAME),
       is(countDecisionDefinitions)
     );
   }
 
   private Integer getFinishedProcessInstanceActivityCount() {
-    return elasticSearchIntegrationTestExtensionRule.getActivityCount(boolQuery().must(existsQuery(END_DATE)));
+    return elasticSearchIntegrationTestExtension.getActivityCount(boolQuery().must(existsQuery(END_DATE)));
   }
 
   private Integer getFinishedProcessInstanceCount() {
-    return elasticSearchIntegrationTestExtensionRule.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME, boolQuery().must(existsQuery(END_DATE)));
+    return elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME, boolQuery().must(existsQuery(END_DATE)));
   }
 
   private Integer getFinishedProcessInstanceVariableCount() {
-    return elasticSearchIntegrationTestExtensionRule.getVariableInstanceCount(boolQuery().must(existsQuery(END_DATE)));
+    return elasticSearchIntegrationTestExtension.getVariableInstanceCount(boolQuery().must(existsQuery(END_DATE)));
   }
 
 }

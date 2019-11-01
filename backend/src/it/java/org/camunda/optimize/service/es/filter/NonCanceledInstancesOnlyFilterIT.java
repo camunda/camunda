@@ -27,22 +27,22 @@ public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
   public void nonCanceledInstancesFilter() throws SQLException {
     //given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto thirdProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto thirdProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
-    engineDatabaseExtensionRule.changeProcessInstanceState(
+    engineDatabaseExtension.changeProcessInstanceState(
       firstProcInst.getId(),
       CanceledInstancesOnlyQueryFilter.INTERNALLY_TERMINATED
     );
 
-    engineDatabaseExtensionRule.changeProcessInstanceState(
+    engineDatabaseExtension.changeProcessInstanceState(
       thirdProcInst.getId(),
       CanceledInstancesOnlyQueryFilter.EXTERNALLY_TERMINATED
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);

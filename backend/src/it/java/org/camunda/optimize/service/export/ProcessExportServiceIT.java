@@ -8,15 +8,13 @@ package org.camunda.optimize.service.export;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -36,24 +34,15 @@ import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ProcessExportServiceIT {
+public class ProcessExportServiceIT extends AbstractIT {
 
   private static final String START = "aStart";
   private static final String END = "anEnd";
   private static final String FAKE = "FAKE";
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @ParameterizedTest
   @MethodSource("getParameters")
@@ -61,15 +50,15 @@ public class ProcessExportServiceIT {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     currentReport.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
     currentReport.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -104,7 +93,7 @@ public class ProcessExportServiceIT {
   }
 
   private String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -118,10 +107,10 @@ public class ProcessExportServiceIT {
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartSimpleProcessWithVariables(variables);
 
     OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceEngineDto.getId(), START, 0L);
-    engineDatabaseExtensionRule.changeActivityDuration(processInstanceEngineDto.getId(), END, 0L);
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
+    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), START, 0L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), END, 0L);
     return processInstanceEngineDto;
   }
 
@@ -131,7 +120,7 @@ public class ProcessExportServiceIT {
       .startEvent(START)
       .endEvent(END)
       .done();
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private static ProcessReportDataDto createRunningFlowNodeDurationGroupByFlowNodeTableReport() {

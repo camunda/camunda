@@ -30,7 +30,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = createNewCollectionAsDefaultUser();
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtensionRule
+    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute(AuthorizedResolvedCollectionDefinitionDto.class, 200);
@@ -55,7 +55,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtensionRule
+    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
@@ -81,12 +81,12 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    embeddedOptimizeExtensionRule.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
     final String collectionId = createNewCollectionAsDefaultUser();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
@@ -105,7 +105,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = createNewCollectionAsDefaultUser();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
@@ -118,7 +118,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   private String createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
     combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -128,7 +128,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   private String createDashboardInCollectionAsDefaultUser(final String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, 200)

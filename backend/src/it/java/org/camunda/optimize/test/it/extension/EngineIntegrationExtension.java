@@ -60,8 +60,6 @@ import org.camunda.optimize.service.util.mapper.CustomSerializer;
 import org.camunda.optimize.test.engine.EnginePluginClient;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.io.IOException;
@@ -90,14 +88,12 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
- * Extension/Rule that performs clean up of engine on integration test startup and one more clean up after integration test.
- * This is a hybrid JUnit 4 style Rule and JUnit 5 style extension, used differently depending on the runner used
- * in each test
+ * Extension that performs clean up of engine on integration test startup and one more clean up after integration test.
  * <p>
  * Relies on it-plugin being deployed on cambpm platform Tomcat.
  */
 @Slf4j
-public class EngineIntegrationExtensionRule extends TestWatcher implements BeforeEachCallback {
+public class EngineIntegrationExtension implements BeforeEachCallback {
   private static final Set<String> DEPLOYED_ENGINES = new HashSet<>(Collections.singleton("default"));
 
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
@@ -117,25 +113,20 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
   @Getter
   private final String engineName;
 
-  public EngineIntegrationExtensionRule() {
+  public EngineIntegrationExtension() {
     this(null);
   }
 
-  public EngineIntegrationExtensionRule(final String customEngineName) {
+  public EngineIntegrationExtension(final String customEngineName) {
     this(customEngineName, true);
   }
 
-  public EngineIntegrationExtensionRule(final String customEngineName, final boolean shouldCleanEngine) {
+  public EngineIntegrationExtension(final String customEngineName, final boolean shouldCleanEngine) {
     this.engineName = Optional.ofNullable(customEngineName)
       .map(IntegrationTestConfigurationUtil::resolveFullEngineName)
       .orElseGet(IntegrationTestConfigurationUtil::resolveFullDefaultEngineName);
     this.shouldCleanEngine = shouldCleanEngine;
     initEngine();
-  }
-
-  @Override
-  protected void starting(final Description description) {
-    before();
   }
   
   @Override
@@ -675,7 +666,7 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
     HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
     try {
-      CloseableHttpResponse response = EngineIntegrationExtensionRule.HTTP_CLIENT.execute(deploymentRequest);
+      CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
                                      "could not create a deployment!");
@@ -803,7 +794,7 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
 
   private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(final DeploymentDto deployment) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(
-      deployment, EngineIntegrationExtensionRule.HTTP_CLIENT
+      deployment, EngineIntegrationExtension.HTTP_CLIENT
     );
     assertThat("Deployment should contain only one process definition!", processDefinitions.size(), is(1));
     return processDefinitions.get(0);
@@ -888,7 +879,7 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
     try {
       requestBodyAsJson = OBJECT_MAPPER.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
-      try (CloseableHttpResponse response = EngineIntegrationExtensionRule.HTTP_CLIENT.execute(post)) {
+      try (CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(post)) {
         if (response.getStatusLine().getStatusCode() != 200) {
           String body = "";
           if (response.getEntity() != null) {
@@ -1246,7 +1237,7 @@ public class EngineIntegrationExtensionRule extends TestWatcher implements Befor
     String decisionDefinition = Dmn.convertToString(dmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn", tenantId);
     DeploymentDto deployment = new DeploymentDto();
-    try (CloseableHttpResponse response = EngineIntegrationExtensionRule.HTTP_CLIENT.execute(deploymentRequest)) {
+    try (CloseableHttpResponse response = EngineIntegrationExtension.HTTP_CLIENT.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != 200) {
         String responseErrorMessage = EntityUtils.toString(response.getEntity(), "UTF-8");
         String exceptionMessage = String.format(

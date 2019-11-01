@@ -5,9 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -17,25 +16,19 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class EngineVersionCheckerIT {
+public class EngineVersionCheckerIT extends AbstractIT {
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule2 =
-    new EmbeddedOptimizeExtensionRule("classpath:versionCheckContext.xml");
+  @Order(4)
+  public EmbeddedOptimizeExtension embeddedOptimizeExtension2 =
+    new EmbeddedOptimizeExtension("classpath:versionCheckContext.xml");
 
   @Test
   public void engineVersionCantBeDetermined() {
-    embeddedOptimizeExtensionRule2.stopOptimize();
+    embeddedOptimizeExtension2.stopOptimize();
 
     try {
-      embeddedOptimizeExtensionRule2.startOptimize();
+      embeddedOptimizeExtension2.startOptimize();
     } catch (Exception e) {
       //expected
       assertThat(e.getCause().getMessage().contains("Engine version is not supported"), is(true));
@@ -47,8 +40,8 @@ public class EngineVersionCheckerIT {
 
   @AfterEach
   public void setContextBack() throws Exception {
-    embeddedOptimizeExtensionRule2.stopOptimize();
-    EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule("classpath:embeddedOptimizeContext.xml");
-    embeddedOptimizeExtensionRule.startOptimize();
+    embeddedOptimizeExtension2.stopOptimize();
+    EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension("classpath:embeddedOptimizeContext.xml");
+    embeddedOptimizeExtension.startOptimize();
   }
 }

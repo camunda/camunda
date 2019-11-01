@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
@@ -13,12 +14,7 @@ import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionWithTenantsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.service.TenantService;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
@@ -29,7 +25,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -37,8 +33,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 
-
-public class ProcessDefinitionRestServiceIT {
+public class ProcessDefinitionRestServiceIT extends AbstractIT {
 
   private static final String VERSION_TAG = "aVersionTag";
   private static final String KEY = "testKey";
@@ -48,23 +43,13 @@ public class ProcessDefinitionRestServiceIT {
   private static final TenantRestDto TENANT_1_DTO = new TenantRestDto("tenant1", "Tenant 1");
   private static final TenantRestDto TENANT_2_DTO = new TenantRestDto("tenant2", "Tenant 2");
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-
   @Test
   public void getProcessDefinitions() {
     //given
     final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addProcessDefinitionToElasticsearch(KEY);
 
     // when
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtensionRule
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionsRequest()
       .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
@@ -80,15 +65,15 @@ public class ProcessDefinitionRestServiceIT {
     final String kermitUser = "kermit";
     final String notAuthorizedDefinitionKey = "noAccess";
     final String authorizedDefinitionKey = "access";
-    engineIntegrationExtensionRule.addUser(kermitUser, kermitUser);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(kermitUser);
+    engineIntegrationExtension.addUser(kermitUser, kermitUser);
+    engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
     grantSingleDefinitionAuthorizationsForUser(kermitUser, authorizedDefinitionKey);
     final ProcessDefinitionOptimizeDto notAuthorizedToSee = addProcessDefinitionToElasticsearch(
       notAuthorizedDefinitionKey);
     final ProcessDefinitionOptimizeDto authorizedToSee = addProcessDefinitionToElasticsearch(authorizedDefinitionKey);
 
     // when
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtensionRule
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetProcessDefinitionsRequest()
@@ -103,7 +88,7 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionsWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetProcessDefinitionsRequest()
@@ -120,7 +105,7 @@ public class ProcessDefinitionRestServiceIT {
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionsRequest()
         .addSingleQueryParam("includeXml", true)
@@ -139,7 +124,7 @@ public class ProcessDefinitionRestServiceIT {
 
     // when
     String actualXml =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(expectedDto.getKey(), expectedDto.getVersion())
         .execute(String.class, 200);
@@ -157,11 +142,11 @@ public class ProcessDefinitionRestServiceIT {
     ProcessDefinitionOptimizeDto secondTenantDefinition = addProcessDefinitionToElasticsearch(KEY, secondTenantId);
 
     // when
-    final String actualXmlFirstTenant = embeddedOptimizeExtensionRule
+    final String actualXmlFirstTenant = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionXmlRequest(KEY, "1", firstTenantId)
       .execute(String.class, 200);
-    final String actualXmlSecondTenant = embeddedOptimizeExtensionRule
+    final String actualXmlSecondTenant = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionXmlRequest(KEY, "1", secondTenantId)
       .execute(String.class, 200);
@@ -180,7 +165,7 @@ public class ProcessDefinitionRestServiceIT {
 
     // when
     String actualXml =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(
           secondTenantDefinition.getKey(), secondTenantDefinition.getVersion(), null
@@ -199,7 +184,7 @@ public class ProcessDefinitionRestServiceIT {
 
     // when
     String actualXml =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(
           sharedTenantDefinition.getKey(), sharedTenantDefinition.getVersion(), firstTenantId
@@ -217,7 +202,7 @@ public class ProcessDefinitionRestServiceIT {
 
     // when
     String actualXml =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(null, expectedDto.getVersion())
         .execute(String.class, 404);
@@ -227,7 +212,7 @@ public class ProcessDefinitionRestServiceIT {
   public void getProcessDefinitionXmlWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .withoutAuthentication()
         .buildGetProcessDefinitionXmlRequest("foo", "bar")
@@ -243,14 +228,14 @@ public class ProcessDefinitionRestServiceIT {
     // given
     final String kermitUser = "kermit";
     final String definitionKey = "aProcDefKey";
-    engineIntegrationExtensionRule.addUser(kermitUser, kermitUser);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(kermitUser);
+    engineIntegrationExtension.addUser(kermitUser, kermitUser);
+    engineIntegrationExtension.grantUserOptimizeAccess(kermitUser);
     final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = addProcessDefinitionToElasticsearch(
       definitionKey
     );
 
     // when
-    Response response = embeddedOptimizeExtensionRule.getRequestExecutor()
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
       .withUserAuthentication(kermitUser, kermitUser)
       .buildGetProcessDefinitionXmlRequest(
         processDefinitionOptimizeDto.getKey(), processDefinitionOptimizeDto.getVersion()
@@ -267,7 +252,7 @@ public class ProcessDefinitionRestServiceIT {
 
     // when
     String message =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest(processDefinitionOptimizeDto.getKey(), "nonsenseVersion")
         .execute(String.class, 404);
@@ -283,7 +268,7 @@ public class ProcessDefinitionRestServiceIT {
 
     // when
     String message =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildGetProcessDefinitionXmlRequest("nonesense", processDefinitionOptimizeDto.getVersion())
         .execute(String.class, 404);
@@ -303,7 +288,7 @@ public class ProcessDefinitionRestServiceIT {
     createProcessDefinitionsForKey(procDefKey2, 3, TENANT_2_DTO.getId());
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionVersionsWithTenants()
       .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
@@ -347,7 +332,7 @@ public class ProcessDefinitionRestServiceIT {
     createProcessDefinitionsForKey(procDefKey1, 3, TENANT_1_DTO.getId());
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetProcessDefinitionVersionsWithTenants()
       .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
@@ -381,7 +366,7 @@ public class ProcessDefinitionRestServiceIT {
     grantSingleDefinitionAuthorizationsForUser(tenant1UserId, procDefKey);
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(tenant1UserId, tenant1UserId)
       .buildGetProcessDefinitionVersionsWithTenants()
@@ -413,7 +398,7 @@ public class ProcessDefinitionRestServiceIT {
     grantSingleDefinitionAuthorizationsForUser(tenant1UserId, procDefKey);
 
     // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtensionRule
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(tenant1UserId, tenant1UserId)
       .buildGetProcessDefinitionVersionsWithTenants()
@@ -449,12 +434,12 @@ public class ProcessDefinitionRestServiceIT {
     authorizationDto.setResourceId(resourceId);
     authorizationDto.setType(type);
     authorizationDto.setUserId(tenantUser);
-    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
+    engineIntegrationExtension.createAuthorization(authorizationDto);
   }
 
   private void createOptimizeUser(final String tenantUser) {
-    engineIntegrationExtensionRule.addUser(tenantUser, tenantUser);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(tenantUser);
+    engineIntegrationExtension.addUser(tenantUser, tenantUser);
+    engineIntegrationExtension.grantUserOptimizeAccess(tenantUser);
   }
 
   private void createTenant(final TenantRestDto tenantRestDto) {
@@ -463,7 +448,7 @@ public class ProcessDefinitionRestServiceIT {
 
   private void createTenant(final String id, final String name) {
     final TenantDto tenantDto = new TenantDto(id, name, DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(TENANT_INDEX_NAME, id, tenantDto);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, id, tenantDto);
   }
 
   private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
@@ -473,7 +458,7 @@ public class ProcessDefinitionRestServiceIT {
     authorizationDto.setResourceId(definitionKey);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(userId);
-    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
+    engineIntegrationExtension.createAuthorization(authorizationDto);
   }
 
   private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key) {
@@ -495,7 +480,7 @@ public class ProcessDefinitionRestServiceIT {
       .setTenantId(tenantId)
       .setEngine(DEFAULT_ENGINE_ALIAS)
       .setBpmn20Xml(key + version + tenantId);
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto);
     return expectedDto;
   }
 

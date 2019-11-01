@@ -33,7 +33,7 @@ public class UserTaskTotalDurationByAssigneeByUserTaskReportEvaluationIT
                                 final String userTaskKey,
                                 final long duration) {
     try {
-      engineDatabaseExtensionRule.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration);
+      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, duration);
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }
@@ -42,7 +42,7 @@ public class UserTaskTotalDurationByAssigneeByUserTaskReportEvaluationIT
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final long setDuration) {
     try {
-      engineDatabaseExtensionRule.changeUserTaskDuration(processInstanceDto.getId(), setDuration);
+      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), setDuration);
     } catch (SQLException e) {
       throw new OptimizeIntegrationTestException(e);
     }

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.InternalSettingsPreparer;
@@ -69,7 +69,7 @@ public class ResilienceTest {
     esFolder.deleteOnExit();
   }
 
-  private void waitUntilIsConnectedToElasticsearch(EmbeddedOptimizeExtensionRule optimize) throws TestTimedOutException {
+  private void waitUntilIsConnectedToElasticsearch(EmbeddedOptimizeExtension optimize) throws TestTimedOutException {
     ConnectionStatusDto connectionStatusDto = new ConnectionStatusDto();
     connectionStatusDto.setConnectedToElasticsearch(false);
     long startTime, requestDuration;
@@ -97,7 +97,7 @@ public class ResilienceTest {
   public void testCrashOfEsDuringRuntime () throws Exception {
     //given
     Node testNode = elasticSearchTestNode();
-    EmbeddedOptimizeExtensionRule optimize = new EmbeddedOptimizeExtensionRule("classpath:unit/resilienceTestapplicationContext.xml");
+    EmbeddedOptimizeExtension optimize = new EmbeddedOptimizeExtension("classpath:unit/resilienceTestapplicationContext.xml");
     optimize.startOptimize();
 
     //then
@@ -143,7 +143,7 @@ public class ResilienceTest {
     }
   }
 
-  private void verifyIndexServed(EmbeddedOptimizeExtensionRule optimize) {
+  private void verifyIndexServed(EmbeddedOptimizeExtension optimize) {
     //when
     Response response = optimize.rootTarget()
         .path("/index.html")
@@ -202,7 +202,7 @@ public class ResilienceTest {
     }
   }
 
-  private void verifyRedirectToError(EmbeddedOptimizeExtensionRule optimize) {
+  private void verifyRedirectToError(EmbeddedOptimizeExtension optimize) {
     // when I want to go to start page
     Response response = optimize.rootTarget()
         .path("/index.html")

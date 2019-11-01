@@ -8,27 +8,18 @@ package org.camunda.optimize.rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class LocalizationRestServiceIT {
-  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+public class LocalizationRestServiceIT extends AbstractIT {
 
-  @RegisterExtension
-  @Order(1)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Test
   public void getEnglishLocale() {
@@ -37,7 +28,7 @@ public class LocalizationRestServiceIT {
     final JsonNode expectedLocaleJson = getExpectedJsonFileForLocale(localeCode);
 
     // when
-    final JsonNode localeJson = embeddedOptimizeExtensionRule
+    final JsonNode localeJson = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizationRequest(localeCode)
       .execute(JsonNode.class, 200);
@@ -54,7 +45,7 @@ public class LocalizationRestServiceIT {
     final JsonNode expectedLocaleJson = getExpectedJsonFileForLocale(localeCode);
 
     // when
-    final JsonNode localeJson = embeddedOptimizeExtensionRule
+    final JsonNode localeJson = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizationRequest(localeCode)
       .execute(JsonNode.class, 200);
@@ -68,11 +59,11 @@ public class LocalizationRestServiceIT {
     //given
     final String localeCode = "xyz";
     final JsonNode expectedLocaleJson = getExpectedJsonFileForLocale(
-      embeddedOptimizeExtensionRule.getConfigurationService().getFallbackLocale()
+      embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
     );
 
     // when
-    final JsonNode localeJson = embeddedOptimizeExtensionRule
+    final JsonNode localeJson = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizationRequest(localeCode)
       .execute(JsonNode.class, 200);
@@ -85,11 +76,11 @@ public class LocalizationRestServiceIT {
   public void getFallbackLocaleForMissingCode() {
     //given
     final JsonNode expectedLocaleJson = getExpectedJsonFileForLocale(
-      embeddedOptimizeExtensionRule.getConfigurationService().getFallbackLocale()
+      embeddedOptimizeExtension.getConfigurationService().getFallbackLocale()
     );
 
     // when
-    final JsonNode localeJson = embeddedOptimizeExtensionRule
+    final JsonNode localeJson = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizationRequest(null)
       .execute(JsonNode.class, 200);
@@ -102,10 +93,10 @@ public class LocalizationRestServiceIT {
   public void get500OnFileGone() {
     //given
     final String localeCode = "xyz";
-    embeddedOptimizeExtensionRule.getConfigurationService().getAvailableLocales().add(localeCode);
+    embeddedOptimizeExtension.getConfigurationService().getAvailableLocales().add(localeCode);
 
     // when
-    final Response response = embeddedOptimizeExtensionRule
+    final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetLocalizationRequest(localeCode)
       .execute();

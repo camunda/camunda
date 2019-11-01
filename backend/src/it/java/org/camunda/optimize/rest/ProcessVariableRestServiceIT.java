@@ -5,15 +5,11 @@
  */
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -22,18 +18,7 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.BOOL
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-
-public class ProcessVariableRestServiceIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class ProcessVariableRestServiceIT extends AbstractIT {
 
   @Test
   public void getVariableNamesWithoutAuthentication() {
@@ -43,7 +28,7 @@ public class ProcessVariableRestServiceIT {
     variableRequestDto.setProcessDefinitionVersion("boka");
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableNamesRequest(variableRequestDto)
             .withoutAuthentication()
@@ -62,7 +47,7 @@ public class ProcessVariableRestServiceIT {
 
     // when
     List<ProcessVariableNameResponseDto> responseList =
-        embeddedOptimizeExtensionRule
+        embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableNamesRequest(variableRequestDto)
             .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
@@ -74,7 +59,7 @@ public class ProcessVariableRestServiceIT {
   @Test
   public void getVariableValuesWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableValuesRequest(new ProcessVariableValueRequestDto())
             .withoutAuthentication()
@@ -94,7 +79,7 @@ public class ProcessVariableRestServiceIT {
     requestDto.setType(BOOLEAN);
 
     // when
-    List responseList = embeddedOptimizeExtensionRule
+    List responseList = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildProcessVariableValuesRequest(requestDto)
             .executeAndReturnList(String.class, 200);

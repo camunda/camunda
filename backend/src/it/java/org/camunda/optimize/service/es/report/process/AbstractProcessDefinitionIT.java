@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -20,12 +21,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.Report
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -34,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class AbstractProcessDefinitionIT {
+public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected static final String TEST_ACTIVITY = "testActivity";
   protected static final String BUSINESS_KEY = "aBusinessKey";
@@ -45,17 +43,9 @@ public class AbstractProcessDefinitionIT {
   protected static final String DEFAULT_VARIABLE_VALUE = "bar";
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
 
-  protected EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  protected ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  protected EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  protected EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchIntegrationTestExtensionRule)
-    .around(engineIntegrationExtensionRule)
-    .around(embeddedOptimizeExtensionRule)
-    .around(engineDatabaseExtensionRule);
+  @RegisterExtension
+  @Order(4)
+  protected EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcess(null);
@@ -76,7 +66,7 @@ public class AbstractProcessDefinitionIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables, BUSINESS_KEY, tenantId);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables, BUSINESS_KEY, tenantId);
   }
 
 
@@ -86,7 +76,7 @@ public class AbstractProcessDefinitionIT {
       .userTask(USER_TASK)
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
@@ -99,7 +89,7 @@ public class AbstractProcessDefinitionIT {
       .userTask(USER_TASK)
       .endEvent(END_EVENT)
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
@@ -122,7 +112,7 @@ public class AbstractProcessDefinitionIT {
       .endEvent(END_EVENT)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
       processModel, ImmutableMap.of(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE), tenantId
     );
   }
@@ -145,14 +135,14 @@ public class AbstractProcessDefinitionIT {
         .connectTo("mergeGateway")
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   protected String deployAndStartMultiTenantSimpleServiceTaskProcess(final List<String> deployedTenants) {
     final String processKey = "multiTenantProcess";
     deployedTenants.stream()
       .filter(Objects::nonNull)
-      .forEach(tenantId -> engineIntegrationExtensionRule.createTenant(tenantId));
+      .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
     deployedTenants
       .forEach(tenant -> deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant));
 
@@ -160,7 +150,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateMapReportById(String id) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
@@ -169,7 +159,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluateNumberReportById(String id) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
       // @formatter:off
@@ -178,7 +168,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReportById(final String reportId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
@@ -187,7 +177,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluateMapReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -196,7 +186,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluateHyperMapReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -205,7 +195,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<NumberResultDto> evaluateNumberReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -214,7 +204,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReport(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -223,7 +213,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();
@@ -241,7 +231,7 @@ public class AbstractProcessDefinitionIT {
   }
 
   protected String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)

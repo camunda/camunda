@@ -31,7 +31,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     final String categoryInputValueToFilterFor = "200.0";
     final String inputVariableIdToFilterOn = INPUT_AMOUNT_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, "Misc")
@@ -41,8 +41,8 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -69,7 +69,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     final String secondCategoryInputValueToFilterFor = "300.0";
     final String inputVariableIdToFilterOn = INPUT_AMOUNT_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, "Misc")
@@ -84,8 +84,8 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(secondCategoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -114,7 +114,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     final String categoryInputValueToExclude = "200.0";
     final String inputVariableIdToFilterOn = INPUT_AMOUNT_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(Double.valueOf(expectedCategoryInputValue), "Misc")
@@ -124,8 +124,8 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToExclude), "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -150,7 +150,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     // given
     final String categoryInputValueToFilterFor = "200.0";
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, "Misc")
@@ -160,8 +160,8 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(Double.valueOf(categoryInputValueToFilterFor), "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
@@ -182,7 +182,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     final String categoryInputValueToFilter = "100.0";
     final String inputVariableIdToFilterOn = INPUT_AMOUNT_ID;
 
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
       createInputs(100.0, "Misc")
@@ -192,8 +192,8 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       createInputs(200.0, "Misc")
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);

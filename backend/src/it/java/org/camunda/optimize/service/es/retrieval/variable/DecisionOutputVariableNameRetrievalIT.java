@@ -29,11 +29,11 @@ public class DecisionOutputVariableNameRetrievalIT extends DecisionVariableNameR
     for (int i = 0; i < varNames.size(); i++) {
       decisionGenerator = decisionGenerator.addOutput(varNames.get(i), types.get(i));
     }
-    return engineIntegrationExtensionRule.deployDecisionDefinition(decisionGenerator.buildDecision().build());
+    return engineIntegrationExtension.deployDecisionDefinition(decisionGenerator.buildDecision().build());
   }
 
   protected List<DecisionVariableNameDto> getVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDecisionOutputVariableNamesRequest(variableRequestDto)
       .executeAndReturnList(DecisionVariableNameDto.class, 200);

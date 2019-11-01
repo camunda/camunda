@@ -24,14 +24,14 @@ public class CompletedInstancesOnlyFilterIT extends AbstractFilterIT {
   public void filterByCompletedInstancesOnly() {
     // given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
-    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto thirdProcInst = engineIntegrationExtensionRule.startProcessInstance(userTaskProcess.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(firstProcInst.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(secondProcInst.getId());
+    ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    ProcessInstanceEngineDto thirdProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(firstProcInst.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(secondProcInst.getId());
     
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder

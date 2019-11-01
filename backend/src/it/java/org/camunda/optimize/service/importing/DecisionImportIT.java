@@ -47,15 +47,15 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void importOfDecisionDataCanBeDisabled() throws IOException {
     // given
-    embeddedOptimizeExtensionRule.getConfigurationService().setImportDmnDataEnabled(false);
-    embeddedOptimizeExtensionRule.reloadConfiguration();
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    embeddedOptimizeExtension.getConfigurationService().setImportDmnDataEnabled(false);
+    embeddedOptimizeExtension.reloadConfiguration();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
     BpmnModelInstance exampleProcess = Bpmn.createExecutableProcess().name("foo").startEvent().endEvent().done();
-    engineIntegrationExtensionRule.deployAndStartProcess(exampleProcess);
+    engineIntegrationExtension.deployAndStartProcess(exampleProcess);
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
@@ -67,12 +67,12 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void allDecisionDefinitionFieldDataIsAvailable() throws IOException {
     //given
-    engineIntegrationExtensionRule.deployDecisionDefinition();
-    engineIntegrationExtensionRule.deployDecisionDefinition();
+    engineIntegrationExtension.deployDecisionDefinition();
+    engineIntegrationExtension.deployDecisionDefinition();
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 2L, DECISION_DEFINITION_NULLABLE_FIELDS);
@@ -82,11 +82,11 @@ public class DecisionImportIT extends AbstractImportIT {
   public void decisionDefinitionTenantIdIsImportedIfPresent() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    engineIntegrationExtensionRule.deployDecisionDefinitionWithTenant(tenantId);
+    engineIntegrationExtension.deployDecisionDefinitionWithTenant(tenantId);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
@@ -99,12 +99,12 @@ public class DecisionImportIT extends AbstractImportIT {
   public void decisionDefinitionDefaultEngineTenantIdIsApplied() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    embeddedOptimizeExtensionRule.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
-    engineIntegrationExtensionRule.deployDecisionDefinition();
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
+    engineIntegrationExtension.deployDecisionDefinition();
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
@@ -118,12 +118,12 @@ public class DecisionImportIT extends AbstractImportIT {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    embeddedOptimizeExtensionRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
-    engineIntegrationExtensionRule.deployDecisionDefinitionWithTenant(expectedTenantId);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
+    engineIntegrationExtension.deployDecisionDefinitionWithTenant(expectedTenantId);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_DEFINITION_INDEX_NAME);
@@ -135,11 +135,11 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void decisionInstanceFieldDataIsAvailable() throws IOException {
     //given
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
@@ -153,12 +153,12 @@ public class DecisionImportIT extends AbstractImportIT {
   public void decisionInstanceTenantIdIsImportedIfPresent() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinitionWithTenant(tenantId);
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinitionWithTenant(tenantId);
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
@@ -171,12 +171,12 @@ public class DecisionImportIT extends AbstractImportIT {
   public void decisionInstanceDefaultEngineTenantIdIsApplied() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    embeddedOptimizeExtensionRule.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
@@ -190,14 +190,14 @@ public class DecisionImportIT extends AbstractImportIT {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    embeddedOptimizeExtensionRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinitionWithTenant(
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinitionWithTenant(
       expectedTenantId);
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
@@ -209,12 +209,12 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void multipleDecisionInstancesAreImported() throws IOException {
     //given
-    DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionEngineDto.getId());
+    DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId());
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
@@ -223,14 +223,14 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void decisionImportIndexesAreStored() throws IOException {
     // given
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.storeImportIndexesToElasticsearch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse searchDecisionInstanceTimestampBasedIndexResponse = getDecisionInstanceIndexResponse();
@@ -253,20 +253,20 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void importMoreThanOnePage() throws Exception {
     // given
-    int originalMaxPageSize = embeddedOptimizeExtensionRule.getConfigurationService()
+    int originalMaxPageSize = embeddedOptimizeExtension.getConfigurationService()
       .getEngineImportProcessInstanceMaxPageSize();
-    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(1);
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(1);
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
-    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
   }
 
   private SearchResponse getDecisionDefinitionIndexById(final String decisionDefinitionIndexId) throws IOException {
@@ -278,7 +278,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .indices(IMPORT_INDEX_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
   private SearchResponse getDecisionInstanceIndexResponse() throws IOException {
@@ -290,13 +290,13 @@ public class DecisionImportIT extends AbstractImportIT {
       .indices(TIMESTAMP_BASED_IMPORT_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 
   private <T> T parseToDto(final SearchHit searchHit, Class<T> dtoClass) {
     try {
-      return elasticSearchIntegrationTestExtensionRule.getObjectMapper().readValue(searchHit.getSourceAsString(), dtoClass);
+      return elasticSearchIntegrationTestExtension.getObjectMapper().readValue(searchHit.getSourceAsString(), dtoClass);
     } catch (IOException e) {
       throw new RuntimeException("Failed parsing dto: " + dtoClass.getSimpleName());
     }

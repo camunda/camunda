@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.retrieval;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -25,9 +26,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -36,9 +34,7 @@ import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -62,20 +58,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-public class SingleReportHandlingIT {
+public class SingleReportHandlingIT extends AbstractIT {
 
   private static final String FOO_PROCESS_DEFINITION_KEY = "fooProcessDefinitionKey";
   private static final String FOO_PROCESS_DEFINITION_VERSION = "1";
-
-  @RegisterExtension
-  @Order(1)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @AfterEach
   public void cleanUp() {
@@ -89,11 +75,11 @@ public class SingleReportHandlingIT {
 
     // when
     GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME).id(id);
-    GetResponse getResponse = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
+    GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().get(getRequest, RequestOptions.DEFAULT);
 
     // then
     assertThat(getResponse.isExists(), is(true));
-    SingleProcessReportDefinitionDto definitionDto = elasticSearchIntegrationTestExtensionRule.getObjectMapper()
+    SingleProcessReportDefinitionDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
       .readValue(getResponse.getSourceAsString(), SingleProcessReportDefinitionDto.class);
     assertThat(definitionDto.getData(), notNullValue());
     ProcessReportDataDto data = definitionDto.getData();
@@ -234,7 +220,7 @@ public class SingleReportHandlingIT {
   @Test
   public void testUpdateDecisionReportWithGroupByInputVariableName() {
     // given
-    String id = embeddedOptimizeExtensionRule
+    String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest()
       .execute(IdDto.class, 200)
@@ -424,7 +410,7 @@ public class SingleReportHandlingIT {
     reportData.setVisualization(null);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       .execute();
@@ -611,7 +597,7 @@ public class SingleReportHandlingIT {
   }
 
   private String createNewReport() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest()
       .execute(IdDto.class, 200)
@@ -629,21 +615,21 @@ public class SingleReportHandlingIT {
   }
 
   private Response getUpdateSingleProcessReportResponse(String id, SingleProcessReportDefinitionDto updatedReport) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateSingleProcessReportRequest(id, updatedReport)
       .execute();
   }
 
   private Response getUpdateSingleDecisionReportResponse(String id, SingleDecisionReportDefinitionDto updatedReport) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateSingleDecisionReportRequest(id, updatedReport)
       .execute();
   }
 
   private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportById(String reportId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(reportId)
       // @formatter:off
@@ -656,7 +642,7 @@ public class SingleReportHandlingIT {
   }
 
   private List<ReportDefinitionDto> getAllPrivateReportsWithQueryParam(Map<String, Object> queryParams) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .addQueryParams(queryParams)

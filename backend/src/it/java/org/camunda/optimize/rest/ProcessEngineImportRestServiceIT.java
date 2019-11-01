@@ -7,34 +7,15 @@ package org.camunda.optimize.rest;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-
-
-public class ProcessEngineImportRestServiceIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class ProcessEngineImportRestServiceIT extends AbstractIT {
 
   private static final String PROCESS_ID = "aProcessId";
 
@@ -45,24 +26,22 @@ public class ProcessEngineImportRestServiceIT {
         .startEvent()
         .endEvent()
       .done();
-    engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    engineIntegrationExtension.deployAndStartProcess(processModel);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtensionRule
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildGetProcessDefinitionsRequest()
             .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
     //then
-
-    assertThat(definitions,is(notNullValue()));
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(),is(notNullValue()));
-    assertThat(definitions.get(0).getKey(),is(PROCESS_ID));
-    assertThat(definitions.get(0).getVersion(),is(not(0L)));
+    assertThat(definitions).isNotNull().hasSize(1);
+    assertThat(definitions.get(0).getId()).isNotNull();
+    assertThat(definitions.get(0).getKey()).isEqualTo(PROCESS_ID);
+    assertThat(definitions.get(0).getVersion()).isNotEqualTo(0L);
   }
 
 }

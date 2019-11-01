@@ -7,20 +7,16 @@ package org.camunda.optimize.plugin.engine.rest;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -32,22 +28,15 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class EngineRestFilterPluginIT {
-
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class EngineRestFilterPluginIT extends AbstractIT {
 
   private ConfigurationService configurationService;
   private EngineRestFilterProvider pluginProvider;
 
-  @Rule
-  public RuleChain chain = RuleChain.outerRule(elasticSearchIntegrationTestExtensionRule).around(engineIntegrationExtensionRule).around(embeddedOptimizeExtensionRule);
-
-  @Before
+  @BeforeEach
   public void setup() {
-    configurationService = embeddedOptimizeExtensionRule.getConfigurationService();
-    pluginProvider = embeddedOptimizeExtensionRule.getApplicationContext().getBean(EngineRestFilterProvider.class);
+    configurationService = embeddedOptimizeExtension.getConfigurationService();
+    pluginProvider = embeddedOptimizeExtension.getApplicationContext().getBean(EngineRestFilterProvider.class);
     configurationService.setPluginDirectory("target/testPluginsValid");
   }
 
@@ -57,8 +46,8 @@ public class EngineRestFilterPluginIT {
     configurationService.setEngineRestFilterPluginBasePackages(
       Collections.singletonList("org.camunda.optimize.testplugin.engine.rest")
     );
-    embeddedOptimizeExtensionRule.reloadConfiguration();
-    EngineConfiguration engineConfiguration = embeddedOptimizeExtensionRule.getConfigurationService()
+    embeddedOptimizeExtension.reloadConfiguration();
+    EngineConfiguration engineConfiguration = embeddedOptimizeExtension.getConfigurationService()
       .getConfiguredEngines()
       .get("1");
     engineConfiguration.getAuthentication().setEnabled(true);
@@ -68,15 +57,15 @@ public class EngineRestFilterPluginIT {
       engineConfiguration.getRest()
         .replace("engine-rest", "engine-it-plugin/custom-auth")
     );
-    engineIntegrationExtensionRule.addUser("kermit", "kermit");
-    engineIntegrationExtensionRule.grantAllAuthorizations("kermit");
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    engineIntegrationExtension.addUser("kermit", "kermit");
+    engineIntegrationExtension.grantAllAuthorizations("kermit");
+    embeddedOptimizeExtension.reloadConfiguration();
 
     deployAndStartSimpleServiceTask();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     engineConfiguration.getAuthentication().setEnabled(false);
     engineConfiguration.setRest(
@@ -103,7 +92,7 @@ public class EngineRestFilterPluginIT {
       .endEvent()
       .done();
     // @formatter: on
-    engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) throws IOException {
@@ -124,7 +113,7 @@ public class EngineRestFilterPluginIT {
       .indices(indexName)
       .source(searchSourceBuilder);
 
-    return elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
   }
 
 }

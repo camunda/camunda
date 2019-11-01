@@ -14,18 +14,14 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HttpProcessorBuilder;
 import org.apache.http.protocol.RequestTargetHost;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.EventDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ValidationErrorResponseDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -58,20 +54,9 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class IngestionRestIT {
+public class IngestionRestIT extends AbstractIT {
 
   public static final Random RANDOM = new Random();
-
-  @RegisterExtension
-  @Order(1)
-  protected ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
-    new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  protected EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  protected EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void ingestSingleEvent() {
@@ -79,13 +64,12 @@ public class IngestionRestIT {
     final EventDto eventDto = createEventDto();
 
     // when
-    final Response ingestResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestSingleEvent(eventDto, getApiSecret())
       .execute();
 
     // then
     assertThat(ingestResponse.getStatus(), is(204));
-
 
     assertEventDtosArePersisted(Collections.singletonList(eventDto));
   }
@@ -100,7 +84,7 @@ public class IngestionRestIT {
     eventDto.setTraceId(null);
 
     // when
-    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestSingleEvent(eventDto, getApiSecret())
       .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
 
@@ -138,7 +122,7 @@ public class IngestionRestIT {
     eventDto.setDuration(-5L);
 
     // when
-    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestSingleEvent(eventDto, getApiSecret())
       .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
 
@@ -171,7 +155,7 @@ public class IngestionRestIT {
     final EventDto eventDto = createEventDto();
 
     // when
-    final Response ingestResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestSingleEvent(eventDto, null)
       .execute();
 
@@ -187,11 +171,11 @@ public class IngestionRestIT {
     final EventDto eventDto = createEventDto();
 
     final String customSecret = "mySecret";
-    embeddedOptimizeExtensionRule.getConfigurationService().getIngestionConfiguration()
+    embeddedOptimizeExtension.getConfigurationService().getIngestionConfiguration()
       .setApiSecret(customSecret);
 
     // when
-    final Response ingestResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestSingleEvent(eventDto, customSecret)
       .execute();
 
@@ -209,7 +193,7 @@ public class IngestionRestIT {
       .collect(toList());
 
     // when
-    final Response ingestResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getApiSecret())
       .execute();
 
@@ -227,7 +211,7 @@ public class IngestionRestIT {
       .collect(toList());
 
     // when
-    final Response ingestResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, "wroooong")
       .execute();
 
@@ -240,7 +224,7 @@ public class IngestionRestIT {
   @Test
   public void ingestEventBatch_limitExceeded() {
     // given
-    embeddedOptimizeExtensionRule.getConfigurationService().getIngestionConfiguration()
+    embeddedOptimizeExtension.getConfigurationService().getIngestionConfiguration()
       .setMaxBatchRequestBytes(1L);
 
     final List<EventDto> eventDtos = IntStream.range(0, 2)
@@ -248,7 +232,7 @@ public class IngestionRestIT {
       .collect(toList());
 
     // when
-    final ErrorResponseDto ingestResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final ErrorResponseDto ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getApiSecret())
       .execute(ErrorResponseDto.class, SC_REQUEST_ENTITY_TOO_LARGE);
 
@@ -275,7 +259,7 @@ public class IngestionRestIT {
 
       // then
       assertThat(response.getStatusLine().getStatusCode(), is(SC_LENGTH_REQUIRED));
-      final ErrorResponseDto errorResponseDto = embeddedOptimizeExtensionRule.getObjectMapper()
+      final ErrorResponseDto errorResponseDto = embeddedOptimizeExtension.getObjectMapper()
         .readValue(response.getEntity().getContent(), ErrorResponseDto.class);
 
       assertThat(errorResponseDto.getErrorMessage(), is(MESSAGE_NO_CONTENT_LENGTH));
@@ -300,7 +284,7 @@ public class IngestionRestIT {
     eventDtos.add(invalidEventDto2);
 
     // when
-    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtensionRule.getRequestExecutor()
+    final ValidationErrorResponseDto ingestErrorResponse = embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(eventDtos, getApiSecret())
       .execute(ValidationErrorResponseDto.class, SC_BAD_REQUEST);
 
@@ -326,8 +310,8 @@ public class IngestionRestIT {
   }
 
   private void assertEventDtosArePersisted(final List<EventDto> eventDtos) {
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
-    final SearchResponse eventSearchResponse = elasticSearchIntegrationTestExtensionRule
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    final SearchResponse eventSearchResponse = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(EVENT_INDEX_NAME);
     assertThat(eventSearchResponse.getHits().getTotalHits(), is((long) eventDtos.size()));
     final List<EventDto> indexedEventDtos = Arrays.stream(eventSearchResponse.getHits().getHits())
@@ -338,11 +322,11 @@ public class IngestionRestIT {
 
   @SneakyThrows
   private EventDto readAsEventDto(final SearchHit hit) {
-    return embeddedOptimizeExtensionRule.getObjectMapper().readValue(hit.getSourceAsString(), EventDto.class);
+    return embeddedOptimizeExtension.getObjectMapper().readValue(hit.getSourceAsString(), EventDto.class);
   }
 
   private String getApiSecret() {
-    return embeddedOptimizeExtensionRule.getConfigurationService().getIngestionConfiguration().getApiSecret();
+    return embeddedOptimizeExtension.getConfigurationService().getIngestionConfiguration().getApiSecret();
   }
 
   private EventDto createEventDto() {

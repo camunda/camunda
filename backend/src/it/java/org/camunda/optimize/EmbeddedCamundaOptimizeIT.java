@@ -6,13 +6,8 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -21,22 +16,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class EmbeddedCamundaOptimizeIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtension = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtension = new EmbeddedOptimizeExtensionRule();
+public class EmbeddedCamundaOptimizeIT extends AbstractIT {
 
   @Test
   public void onOptimizeDestroyNoRemainingZombieThreads() throws Exception {
@@ -63,8 +45,8 @@ public class EmbeddedCamundaOptimizeIT {
     optimizeApplicationThread.shutdown();
     optimizeApplicationThread.awaitTermination(30, TimeUnit.SECONDS);
 
-    assertThat(threadsAfterStart, is(not(baseThreadSet)));
-    assertThat(getCurrentThreads(), is(baseThreadSet));
+    assertThat(threadsAfterStart).isNotEqualTo(baseThreadSet);
+    assertThat(getCurrentThreads()).isEqualTo(baseThreadSet);
   }
 
   @AfterEach

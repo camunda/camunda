@@ -32,12 +32,12 @@ public class AutomaticIntervalSelectionGroupByEndDateReportEvaluationIT
 
   @Override
   protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> updates) throws SQLException {
-    engineDatabaseExtensionRule.updateProcessInstanceEndDates(updates);
+    engineDatabaseExtension.updateProcessInstanceEndDates(updates);
   }
 
   @Override
   protected void updateProcessInstanceDate(final ZonedDateTime min, final ProcessInstanceEngineDto procInstMin) throws
                                                                                                                 SQLException {
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(procInstMin.getId(), min.toOffsetDateTime());
+    engineDatabaseExtension.changeProcessInstanceEndDate(procInstMin.getId(), min.toOffsetDateTime());
   }
 }

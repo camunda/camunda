@@ -15,13 +15,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
-import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -29,9 +28,9 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
-  @Before
+  @BeforeEach
   public void cleanUp() throws Exception {
-    embeddedOptimizeExtensionRule.getAlertService().getScheduler().clear();
+    embeddedOptimizeExtension.getAlertService().getScheduler().clear();
   }
 
   @Test
@@ -42,14 +41,14 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     //when
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteAlertRequest(id)
       .execute();
 
     //then
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
     );
   }
@@ -62,13 +61,13 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     //when
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteReportRequest(simpleAlert.getReportId(), true)
       .execute();
     //then
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
     );
   }
@@ -80,15 +79,15 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     createAlert(alert);
 
     //when
-    embeddedOptimizeExtensionRule.stopOptimize();
-    embeddedOptimizeExtensionRule.startOptimize();
+    embeddedOptimizeExtension.stopOptimize();
+    embeddedOptimizeExtension.startOptimize();
 
     //then
     assertThat(getAllAlerts().get(0).getReminder(), is(nullValue()));
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
       .executeAndReturnList(AlertDefinitionDto.class, 200);
@@ -97,8 +96,8 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
   @Test
   public void reminderJobsAreRemovedOnReportUpdate() throws Exception {
     ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     String collectionId = createNewCollection();
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -114,7 +113,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(2)
     );
 
@@ -126,7 +125,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     //then
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(0)
     );
   }
@@ -154,20 +153,20 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(greaterThanOrEqualTo(2))
     );
 
     //when
-    engineIntegrationExtensionRule.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     triggerAndCompleteReminderJob(id);
 
     //then
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(1)
     );
   }
@@ -182,21 +181,21 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(greaterThanOrEqualTo(2))
     );
 
     //when
     simpleAlert.getCheckInterval().setValue(30);
 
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateAlertRequest(id, simpleAlert)
       .execute();
 
     //then
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(1)
     );
 
@@ -205,7 +204,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     //then
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(2)
     );
   }
@@ -216,7 +215,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
     // when
-    String id = embeddedOptimizeExtensionRule
+    String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
       .execute(IdDto.class, 200)
@@ -226,7 +225,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     // then
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(2)
     );
   }
@@ -241,7 +240,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     simpleAlert.setCheckInterval(checkInterval);
 
     // when
-    String id = embeddedOptimizeExtensionRule
+    String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
       .execute(IdDto.class, 200)
@@ -252,7 +251,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     // then
     OffsetDateTime nextTimeReminderIsExecuted = getNextReminderExecutionTime(id);
     OffsetDateTime upperBoundary = OffsetDateTime.now().plusSeconds(2L); // 1 second is too unstable
-    assertTrue(nextTimeReminderIsExecuted.isBefore(upperBoundary));
+    assertThat(nextTimeReminderIsExecuted.isBefore(upperBoundary), is(true));
   }
 
   @Test
@@ -265,11 +264,11 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     // when
-    embeddedOptimizeExtensionRule.stopOptimize();
-    embeddedOptimizeExtensionRule.startOptimize();
+    embeddedOptimizeExtension.stopOptimize();
+    embeddedOptimizeExtension.startOptimize();
 
     assertThat(
-      embeddedOptimizeExtensionRule.getAlertService().getScheduler().getJobGroupNames().size(),
+      embeddedOptimizeExtension.getAlertService().getScheduler().getJobGroupNames().size(),
       is(2)
     );
   }

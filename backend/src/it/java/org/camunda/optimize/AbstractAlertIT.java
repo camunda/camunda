@@ -24,17 +24,14 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.alert.SyncListener;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
@@ -46,6 +43,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
@@ -58,23 +56,14 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public abstract class AbstractAlertIT {
+public abstract class AbstractAlertIT extends AbstractIT {
 
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule =
-    new ElasticSearchIntegrationTestExtensionRule();
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(
-    engineIntegrationExtensionRule.getEngineName());
-
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchIntegrationTestExtensionRule)
-    .around(engineIntegrationExtensionRule)
-    .around(embeddedOptimizeExtensionRule);
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected String createAlert(AlertCreationDto simpleAlert) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(simpleAlert)
       .execute(IdDto.class, 200)
@@ -92,12 +81,12 @@ public abstract class AbstractAlertIT {
 
   private void triggerAndCompleteJob(JobKey jobKey) throws SchedulerException, InterruptedException {
     SyncListener jobListener = new SyncListener(1);
-    embeddedOptimizeExtensionRule.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
+    embeddedOptimizeExtension.getAlertService().getScheduler().getListenerManager().addJobListener(jobListener);
     //trigger job
-    embeddedOptimizeExtensionRule.getAlertService().getScheduler().triggerJob(jobKey);
+    embeddedOptimizeExtension.getAlertService().getScheduler().triggerJob(jobKey);
     //wait for job to finish
     jobListener.getDone().await();
-    embeddedOptimizeExtensionRule.getAlertService()
+    embeddedOptimizeExtension.getAlertService()
       .getScheduler()
       .getListenerManager()
       .removeJobListener(jobListener.getName());
@@ -112,11 +101,11 @@ public abstract class AbstractAlertIT {
   }
 
   protected Integer getOptimizeHttpPort() {
-    return embeddedOptimizeExtensionRule.getConfigurationService().getContainerHttpPort().orElse(8090);
+    return embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090);
   }
 
   protected OffsetDateTime getNextReminderExecutionTime(String id) throws SchedulerException {
-    Date nextTimeReminderIsExecuted = embeddedOptimizeExtensionRule
+    Date nextTimeReminderIsExecuted = embeddedOptimizeExtension
       .getAlertService()
       .getScheduler()
       .getTriggersOfJob(reminderJobKey(id))
@@ -129,8 +118,8 @@ public abstract class AbstractAlertIT {
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     adjustProcessInstanceDates(processInstance.getId(), startDate, daysToShift, durationInSec);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     return processInstance;
   }
 
@@ -144,7 +133,7 @@ public abstract class AbstractAlertIT {
       .startEvent()
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private void adjustProcessInstanceDates(String processInstanceId,
@@ -152,8 +141,8 @@ public abstract class AbstractAlertIT {
                                           long daysToShift,
                                           long durationInSec) throws SQLException {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(
       processInstanceId,
       shiftedStartDate.plusSeconds(durationInSec)
     );
@@ -236,7 +225,7 @@ public abstract class AbstractAlertIT {
 
   private String createNewProcessReportAsUser(final String user, final String password,
                                               final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
@@ -250,7 +239,7 @@ public abstract class AbstractAlertIT {
       collectionId,
       decisionDefinitionDto
     );
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateSingleDecisionReportRequest(decReport)
@@ -294,14 +283,14 @@ public abstract class AbstractAlertIT {
     switch (resourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
         ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(definitionKey);
-        embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-        elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+        embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+        elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
         return createNewProcessReportAsUser(user, password, collectionId, processDefinition);
 
       case RESOURCE_TYPE_DECISION_DEFINITION:
         DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition();
-        embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-        elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+        embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+        elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
         return createNewDecisionReportAsUser(user, password, collectionId, decisionDefinitionDto);
 
       default:
@@ -314,7 +303,7 @@ public abstract class AbstractAlertIT {
   }
 
   protected String createNewCollection(final String user, final String password) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateCollectionRequest()
@@ -373,7 +362,7 @@ public abstract class AbstractAlertIT {
 
   protected void updateSingleProcessReport(String id,
                                            SingleProcessReportDefinitionDto updatedReport) {
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .buildUpdateSingleProcessReportRequest(id, updatedReport, true)
@@ -387,7 +376,7 @@ public abstract class AbstractAlertIT {
 
   protected ProcessDefinitionEngineDto deployAndStartSimpleServiceTaskProcess(final String definitionKey) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess(definitionKey);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     return processDefinition;
   }
 
@@ -399,7 +388,7 @@ public abstract class AbstractAlertIT {
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String collectionId,
@@ -419,13 +408,13 @@ public abstract class AbstractAlertIT {
   }
 
   protected void setEmailConfiguration() {
-    embeddedOptimizeExtensionRule.getConfigurationService().setEmailEnabled(true);
-    embeddedOptimizeExtensionRule.getConfigurationService().setAlertEmailAddress("from@localhost.com");
-    embeddedOptimizeExtensionRule.getConfigurationService().setAlertEmailHostname("127.0.0.1");
-    embeddedOptimizeExtensionRule.getConfigurationService()
+    embeddedOptimizeExtension.getConfigurationService().setEmailEnabled(true);
+    embeddedOptimizeExtension.getConfigurationService().setAlertEmailAddress("from@localhost.com");
+    embeddedOptimizeExtension.getConfigurationService().setAlertEmailHostname("127.0.0.1");
+    embeddedOptimizeExtension.getConfigurationService()
       .setAlertEmailPort(IntegrationTestConfigurationUtil.getSmtpPort());
     EmailAuthenticationConfiguration emailAuthenticationConfiguration =
-      embeddedOptimizeExtensionRule.getConfigurationService()
+      embeddedOptimizeExtension.getConfigurationService()
       .getEmailAuthenticationConfiguration();
     emailAuthenticationConfiguration.setEnabled(true);
     emailAuthenticationConfiguration.setUsername("demo");
@@ -450,11 +439,11 @@ public abstract class AbstractAlertIT {
     authorizationDto.setResourceId(definitionKey);
     authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
     authorizationDto.setUserId(userId);
-    engineIntegrationExtensionRule.createAuthorization(authorizationDto);
+    engineIntegrationExtension.createAuthorization(authorizationDto);
   }
 
   private DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition() {
     final DmnModelInstance modelInstance = createSimpleDmnModel("key");
-    return engineIntegrationExtensionRule.deployAndStartDecisionDefinition(modelInstance);
+    return engineIntegrationExtension.deployAndStartDecisionDefinition(modelInstance);
   }
 }

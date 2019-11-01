@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.security;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -15,13 +13,14 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -31,24 +30,23 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-@RunWith(JUnitParamsRunner.class)
 public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
-  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
+  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
-  private static final Object[] definitionTypes() {
-    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
+  private static final Stream<Integer> definitionTypes() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
-  private static final Object[][] definitionTypePairs() {
-    return new Object[][]{
-      {Arrays.asList(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION)},
-      {Arrays.asList(RESOURCE_TYPE_DECISION_DEFINITION, RESOURCE_TYPE_PROCESS_DEFINITION)}
-    };
+  private static final Stream<List<Integer>> definitionTypePairs() {
+    return Stream.of(
+      Arrays.asList(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION),
+      Arrays.asList(RESOURCE_TYPE_DECISION_DEFINITION, RESOURCE_TYPE_PROCESS_DEFINITION)
+    );
   }
 
-  @Test
-  @Parameters(method = "definitionTypes")
+  @ParameterizedTest
+  @MethodSource("definitionTypes")
   public void getAlertsForAuthorizedCollection(final int definitionType) {
     // given
     final String collectionId1 = createNewCollection();
@@ -76,8 +74,8 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2, alertId3));
   }
 
-  @Test
-  @Parameters(method = "definitionTypePairs")
+  @ParameterizedTest
+  @MethodSource("definitionTypePairs")
   public void getAlertsForPartiallyAuthorizedCollection(final List<Integer> typePair) {
     // given
     final String collectionId1 = createNewCollection();
@@ -101,8 +99,8 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2));
   }
 
-  @Test
-  @Parameters(method = "definitionTypes")
+  @ParameterizedTest
+  @MethodSource("definitionTypes")
   public void getAlertsForUnauthorizedCollection(final int definitionResourceType) {
     // given
     final String collectionId1 = createNewCollection();
@@ -124,7 +122,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
   }
 
   private OptimizeRequestExecutor getAlertsRequestAsKermit(final String collectionId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER);
@@ -132,7 +130,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
   private String addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
                                                   final String collectionId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200)

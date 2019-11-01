@@ -5,17 +5,17 @@
  */
 package org.camunda.optimize.rest;
 
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -25,19 +25,18 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@RunWith(JUnitParamsRunner.class)
 public class AlertRestServiceIT extends AbstractAlertIT {
 
   private static final String TEST = "test";
 
-  private static final Object[] definitionType() {
-    return new Object[]{RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION};
+  private static final Stream<Integer> definitionType() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
   @Test
   public void createNewAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildCreateAlertRequest(null)
@@ -50,7 +49,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void cantCreateWithoutReport() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(new AlertCreationDto())
       .execute();
@@ -59,8 +58,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(500));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest(name = "cannot update alert without report with definition type {0}")
+  @MethodSource("definitionType")
   public void cantUpdateWithoutReport(final int definitionType) {
     //given
     String collectionId = createNewCollection();
@@ -70,7 +69,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     alert.setReportId(TEST);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateAlertRequest(id, alert)
       .execute();
@@ -79,15 +78,15 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(500));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest(name = "cannot create for private reports with definition type {0}")
+  @MethodSource("definitionType")
   public void cantCreateAlertForPrivateReports(final int definitionType) {
     //given
     String reportId = createNumberReportForCollection(null, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(alert)
       .execute();
@@ -96,8 +95,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(400));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest(name = "create new report with report definition type {0}")
+  @MethodSource("definitionType")
   public void createNewAlert(final int definitionType) {
     //given
     String collectionId = createNewCollection();
@@ -105,7 +104,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     AlertCreationDto alert = createSimpleAlert(reportId);
 
     // when
-    String id = embeddedOptimizeExtensionRule
+    String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(alert)
       .execute(String.class, 200);
@@ -114,8 +113,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(id, is(notNullValue()));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest(name = "create new alert with max threshold and report definition type {0}")
+  @MethodSource("definitionType")
   public void createNewAlertAllowsMaxInt(final int definitionType) {
     //given
     String collectionId = createNewCollection();
@@ -124,7 +123,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     alert.setThreshold(Integer.MAX_VALUE);
 
     // when
-    String id = embeddedOptimizeExtensionRule
+    String id = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateAlertRequest(alert)
       .execute(String.class, 200);
@@ -136,7 +135,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void updateAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildUpdateAlertRequest("1", new AlertCreationDto())
@@ -146,15 +145,15 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(401));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest(name = "update existing alert for report with definition type {0}")
+  @MethodSource("definitionType")
   public void updateNonExistingAlert(final int definitionType) {
     // given
     String collectionId = createNewCollection();
     String reportId = createNumberReportForCollection(collectionId, definitionType);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateAlertRequest("nonExistingId", createSimpleAlert(reportId))
       .execute();
@@ -163,8 +162,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest(name = "update alert for report with definition type {0}")
+  @MethodSource("definitionType")
   public void updateAlert(final int definitionType) {
     //given
     String collectionId = createNewCollection();
@@ -175,7 +174,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateAlertRequest(id, alert)
       .execute();
@@ -187,7 +186,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void getStoredAlertsWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetAllAlertsRequest()
@@ -197,8 +196,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(401));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void getStoredAlerts(final int definitionType) {
     //given
     String collectionId = createNewCollection();
@@ -217,7 +216,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void deleteAlertWithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDeleteAlertRequest("1124")
@@ -227,8 +226,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(401));
   }
 
-  @Test
-  @Parameters(method = "definitionType")
+  @ParameterizedTest
+  @MethodSource("definitionType")
   public void deleteNewAlert(final int definitionType) {
     //given
     String collectionId = createNewCollection();
@@ -237,7 +236,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
     String id = addAlertToOptimize(alert);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteAlertRequest(id)
       .execute();
@@ -250,7 +249,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   @Test
   public void deleteNonExistingAlert() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildDeleteAlertRequest("nonExistingId")
       .execute();
@@ -266,7 +265,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   private String addAlertToOptimizeAsUser(final AlertCreationDto creationDto,
                                           final String user,
                                           final String password) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(user, password)
       .buildCreateAlertRequest(creationDto)
@@ -275,7 +274,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllAlertsRequest()
       .executeAndReturnList(AlertDefinitionDto.class, 200);

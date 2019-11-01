@@ -38,7 +38,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-public class VariableQueryFilterIT extends AbstractFilterIT{
+public class VariableQueryFilterIT extends AbstractFilterIT {
 
   @Test
   public void simpleVariableFilter() {
@@ -46,11 +46,11 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "anotherValue");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -76,9 +76,9 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     variables.put("stringVar", "aStringValue");
     variables.put("anotherStringVar", "anotherValue");
     variables.put("boolVar", true);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -105,9 +105,9 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     variables.put("stringVar", "aStringValue");
     variables.put("anotherStringVar", "anotherValue");
     variables.put("boolVar", true);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -133,12 +133,12 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
     variables.put("boolVar", true);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("anotherStringVar", "aStringValue");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -161,14 +161,14 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
   public void severalStringValueFiltersAreConcatenated() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("stringVar", "anotherValue");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
 
@@ -198,9 +198,9 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "value");
     variables.put("anotherStringVar", "value");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -224,11 +224,11 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "1");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", 1);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -252,13 +252,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "anotherValue");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "aThirdValue");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -283,13 +283,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "1");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "2");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", "3");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<String> values = new ArrayList<>();
@@ -318,13 +318,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", false);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", false);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -347,13 +347,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", true);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", false);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -377,13 +377,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
       // given
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<ProcessFilterDto> filter =
@@ -407,7 +407,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
   }
 
   private void resetIndexesAndClean() {
-    embeddedOptimizeExtensionRule.resetImportStartIndexes();
+    embeddedOptimizeExtension.resetImportStartIndexes();
   }
 
   @Test
@@ -418,13 +418,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     for (VariableType variableType : VariableType.getNumericTypes()) {
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(3, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<String> values = new ArrayList<>();
@@ -459,13 +459,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
 
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(3, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<String> values = new ArrayList<>();
@@ -501,13 +501,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
       // given
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
 
@@ -539,13 +539,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
       // given
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -575,13 +575,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
       // given
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -611,13 +611,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
       // given
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -647,13 +647,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
 
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<ProcessFilterDto> filter = ProcessFilterBuilder
@@ -683,13 +683,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
       // given
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<ProcessFilterDto> filters = ProcessFilterBuilder
@@ -727,13 +727,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
       // given
       Map<String, Object> variables = new HashMap<>();
       variables.put("var", changeNumericValueToType(1, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(2, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
       variables.put("var", changeNumericValueToType(10, variableType));
-      engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-      embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-      elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+      embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+      elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
       // when
       List<ProcessFilterDto> filters = ProcessFilterBuilder
@@ -756,7 +756,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
         evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
       // then
       assertResults(result, 0);
-      elasticSearchIntegrationTestExtensionRule.cleanAndVerify();
+      elasticSearchIntegrationTestExtension.cleanAndVerify();
     }
   }
 
@@ -767,15 +767,15 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     Map<String, Object> variables = new HashMap<>();
     final OffsetDateTime now = nowDate();
     variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.minusSeconds(1));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.plusSeconds(10));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter =
@@ -802,13 +802,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     Map<String, Object> variables = new HashMap<>();
     final OffsetDateTime now = nowDate();
     variables.put("var", now);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.plusSeconds(10));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter =
@@ -835,13 +835,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.plusSeconds(10));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter =
@@ -868,12 +868,12 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     OffsetDateTime now = nowDate();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filter =
@@ -900,13 +900,13 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.minusSeconds(2));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     variables.put("var", now.plusSeconds(10));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filters =
@@ -940,22 +940,22 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("testVar", "withValue");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
     variables.put("testVar", null);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
     variables.put("testVar", new EngineVariableValue(null, "String"));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     variables = new HashMap<>();
     variables.put("differentStringValue", "test");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> filters =
@@ -1004,7 +1004,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
 
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
     variables = new HashMap<>();
     variables.put("dateVar", null);
@@ -1014,7 +1014,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     variables.put("longVar", null);
     variables.put("doubleVar", null);
     variables.put("stringVar", null);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
     variables = new HashMap<>();
     variables.put("dateVar", new EngineVariableValue(null, "Date"));
@@ -1024,12 +1024,12 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
     variables.put("longVar", new EngineVariableValue(null, "Long"));
     variables.put("doubleVar", new EngineVariableValue(null, "Double"));
     variables.put("stringVar", new EngineVariableValue(null, "String"));
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
@@ -1158,7 +1158,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT{
       .startEvent()
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private Response evaluateReportWithFilterAndGetResponse(List<ProcessFilterDto> filterList) {

@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -24,11 +24,11 @@ public class TenantImportIT extends AbstractImportIT {
     //given
     final String tenantId = "tenantId";
     final String tenantName = "My New Tenant";
-    engineIntegrationExtensionRule.createTenant(tenantId, tenantName);
+    engineIntegrationExtension.createTenant(tenantId, tenantName);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
@@ -44,17 +44,17 @@ public class TenantImportIT extends AbstractImportIT {
     //given
     final String tenantId = "tenantId";
     final String tenantName = "My New Tenan";
-    engineIntegrationExtensionRule.createTenant(tenantId, tenantName);
+    engineIntegrationExtension.createTenant(tenantId, tenantName);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final String newTenantName = "My New Tenant";
-    engineIntegrationExtensionRule.updateTenant(tenantId, newTenantName);
+    engineIntegrationExtension.updateTenant(tenantId, newTenantName);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
@@ -67,22 +67,22 @@ public class TenantImportIT extends AbstractImportIT {
   @Test
   public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
     // given
-    engineIntegrationExtensionRule.createTenant("tenantId", "My New Tenant");
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.createTenant("tenantId", "My New Tenant");
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    embeddedOptimizeExtensionRule.stopOptimize();
-    embeddedOptimizeExtensionRule.startOptimize();
+    embeddedOptimizeExtension.stopOptimize();
+    embeddedOptimizeExtension.startOptimize();
 
     // and
-    engineIntegrationExtensionRule.createTenant("tenantId2", "My New Tenant 2");
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.createTenant("tenantId2", "My New Tenant 2");
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(
-      embeddedOptimizeExtensionRule.getIndexProvider().getTenantImportIndexHandler(DEFAULT_ENGINE_ALIAS).getImportIndex(),
+      embeddedOptimizeExtension.getIndexProvider().getTenantImportIndexHandler(DEFAULT_ENGINE_ALIAS).getImportIndex(),
       is(2L)
     );
   }

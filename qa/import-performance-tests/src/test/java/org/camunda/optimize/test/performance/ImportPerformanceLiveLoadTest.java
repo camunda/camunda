@@ -40,7 +40,7 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
 
     // AND I start optimize & schedule imports
     logger.info("Starting import of engine data to Optimize...");
-    embeddedOptimizeExtensionRule.startContinuousImportScheduling();
+    embeddedOptimizeExtension.startContinuousImportScheduling();
     ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
 
     // WHEN I start another data generation and wait for it to finish
@@ -48,15 +48,15 @@ public class ImportPerformanceLiveLoadTest extends AbstractImportTest {
     waitForDataGenerationTaskToComplete(dataGenerationTask1);
 
     // wait for data import to finish
-    embeddedOptimizeExtensionRule.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
+    embeddedOptimizeExtension.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
 
     // AND wait for the double max backoff period to pass to ensure any backed off mediator runs at least once more
     Thread.sleep(2 * configurationService.getMaximumBackoff() * 1000L);
-    embeddedOptimizeExtensionRule.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
+    embeddedOptimizeExtension.ensureImportSchedulerIsIdle(maxImportDurationInMin * 60);
 
     progressReporterExecutorService.shutdown();
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     logStats();
 
     // THEN all data from the engine should be in elasticsearch

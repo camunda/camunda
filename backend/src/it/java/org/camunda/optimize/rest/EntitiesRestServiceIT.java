@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
@@ -21,12 +22,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -41,22 +37,12 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
-public class EntitiesRestServiceIT {
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
+public class EntitiesRestServiceIT extends AbstractIT {
 
   @Test
   public void getEntities_WithoutAuthentication() {
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildGetAllPrivateReportsRequest()
@@ -73,7 +59,7 @@ public class EntitiesRestServiceIT {
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addCombinedReport("D Combined");
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityDto> privateEntities = getEntities();
@@ -93,13 +79,13 @@ public class EntitiesRestServiceIT {
   @Test
   public void getEntities_DoesNotReturnOtherUsersReports() {
     //given
-    engineIntegrationExtensionRule.addUser("kermit", "kermit");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser("kermit", "kermit");
+    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     addSingleReportToOptimize("B Report", ReportType.PROCESS, null, "kermit");
     addSingleReportToOptimize("A Report", ReportType.DECISION);
     addCombinedReport("D Combined");
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when (default user)
     final List<EntityDto> defaultUserEntities = getEntities();
@@ -112,7 +98,7 @@ public class EntitiesRestServiceIT {
     );
 
     // when
-    final List<EntityDto> kermitUserEntities = embeddedOptimizeExtensionRule
+    final List<EntityDto> kermitUserEntities = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication("kermit", "kermit")
       .buildGetAllEntitiesRequest()
@@ -132,7 +118,7 @@ public class EntitiesRestServiceIT {
     addDashboardToOptimize("A Dashboard");
     addDashboardToOptimize("B Dashboard");
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityDto> privateEntities = getEntities();
@@ -144,12 +130,12 @@ public class EntitiesRestServiceIT {
   @Test
   public void getEntities_DoesNotReturnOtherUsersDashboards() {
     //given
-    engineIntegrationExtensionRule.addUser("kermit", "kermit");
-    engineIntegrationExtensionRule.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser("kermit", "kermit");
+    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     addDashboardToOptimize("A Dashboard");
     addDashboardToOptimize("B Dashboard", null, "kermit");
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when (default user)
     final List<EntityDto> defaultUserEntities = getEntities();
@@ -162,7 +148,7 @@ public class EntitiesRestServiceIT {
     );
 
     // when
-    final List<EntityDto> kermitUserEntities = embeddedOptimizeExtensionRule
+    final List<EntityDto> kermitUserEntities = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication("kermit", "kermit")
       .buildGetAllEntitiesRequest()
@@ -182,7 +168,7 @@ public class EntitiesRestServiceIT {
     addEmptyCollectionToOptimize();
     addEmptyCollectionToOptimize();
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityDto> privateEntities = getEntities();
@@ -201,7 +187,7 @@ public class EntitiesRestServiceIT {
     addDashboardToOptimize("C Dashboard", collectionId, DEFAULT_USERNAME);
     addCombinedReport("D Combined");
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityDto> defaultUserEntities = getEntities();
@@ -224,10 +210,10 @@ public class EntitiesRestServiceIT {
     addDashboardToOptimize("B Dashboard");
     addDashboardToOptimize("A Dashboard");
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    final List<EntityDto> entities = embeddedOptimizeExtensionRule
+    final List<EntityDto> entities = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllEntitiesRequest()
       .executeAndReturnList(EntityDto.class, 200);
@@ -253,7 +239,7 @@ public class EntitiesRestServiceIT {
     // given
     addEmptyCollectionToOptimize();
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityDto> defaultUserEntities = getEntities();
@@ -276,7 +262,7 @@ public class EntitiesRestServiceIT {
     addDashboardToOptimize("C Dashboard", collectionId, DEFAULT_USERNAME);
     addCombinedReport("D Combined", collectionId);
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityDto> defaultUserEntities = getEntities();
@@ -294,7 +280,7 @@ public class EntitiesRestServiceIT {
     // given
     addEmptyCollectionToOptimize();
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityDto> defaultUserEntities = getEntities();
@@ -312,20 +298,20 @@ public class EntitiesRestServiceIT {
     // given
     final String collectionId = addEmptyCollectionToOptimize();
     final String user1 = "user1";
-    engineIntegrationExtensionRule.addUser(user1, user1);
-    engineIntegrationExtensionRule.grantUserOptimizeAccess(user1);
+    engineIntegrationExtension.addUser(user1, user1);
+    engineIntegrationExtension.grantUserOptimizeAccess(user1);
     addRoleToCollection(collectionId, user1, IdentityType.USER);
     final String groupA = "groupA";
-    engineIntegrationExtensionRule.createGroup(groupA);
+    engineIntegrationExtension.createGroup(groupA);
     addRoleToCollection(collectionId, groupA, IdentityType.GROUP);
     final String groupB = "groupB";
-    engineIntegrationExtensionRule.createGroup(groupB);
+    engineIntegrationExtension.createGroup(groupB);
     addRoleToCollection(collectionId, groupB, IdentityType.GROUP);
     final String groupC = "groupC";
-    engineIntegrationExtensionRule.createGroup(groupC);
+    engineIntegrationExtension.createGroup(groupC);
     addRoleToCollection(collectionId, groupC, IdentityType.GROUP);
 
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final List<EntityDto> defaultUserEntities = getEntities();
@@ -347,7 +333,7 @@ public class EntitiesRestServiceIT {
 
     final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
     combinedReportUpdate.setData(createCombinedReport(reportId1, reportId2));
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate)
       .execute();
@@ -371,7 +357,7 @@ public class EntitiesRestServiceIT {
     String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameDto result = getEntityNames(collectionId, dashboardId, reportId);
@@ -388,7 +374,7 @@ public class EntitiesRestServiceIT {
     String reportId = addSingleReportToOptimize("aProcessReportName", ReportType.PROCESS);
     addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
     addCombinedReport("aCombinedReportName");
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameDto result = getEntityNames(null, null, reportId);
@@ -403,7 +389,7 @@ public class EntitiesRestServiceIT {
   public void getEntityNames_WorksForDecisionReports() {
     //given
     String reportId = addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameDto result = getEntityNames(null, null, reportId);
@@ -418,7 +404,7 @@ public class EntitiesRestServiceIT {
   public void getEntityNames_WorksForCombinedReports() {
     //given
     String reportId = addCombinedReport("aCombinedReportName");
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     EntityNameDto result = getEntityNames(null, null, reportId);
@@ -432,10 +418,10 @@ public class EntitiesRestServiceIT {
   @Test
   public void getEntityNames_NotAvailableIdReturns404() {
     //given
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, "notAvailableRequest"))
       .execute();
@@ -447,10 +433,10 @@ public class EntitiesRestServiceIT {
   @Test
   public void getEntityNames_NoIdProvidedReturns400() {
     //given
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, null))
       .execute();
@@ -473,7 +459,7 @@ public class EntitiesRestServiceIT {
       identityType.equals(IdentityType.USER) ? new UserDto(identityId) : new GroupDto(identityId),
       RoleType.EDITOR
     );
-    embeddedOptimizeExtensionRule
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200);
@@ -489,7 +475,7 @@ public class EntitiesRestServiceIT {
         SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
         singleProcessReportDefinitionDto.setName(name);
         singleProcessReportDefinitionDto.setCollectionId(collectionId);
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
           .withUserAuthentication(user, user)
@@ -499,7 +485,7 @@ public class EntitiesRestServiceIT {
         SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
         singleDecisionReportDefinitionDto.setName(name);
         singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-        return embeddedOptimizeExtensionRule
+        return embeddedOptimizeExtension
           .getRequestExecutor()
           .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
           .withUserAuthentication(user, user)
@@ -518,7 +504,7 @@ public class EntitiesRestServiceIT {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setName(name);
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .withUserAuthentication(user, user)
@@ -534,7 +520,7 @@ public class EntitiesRestServiceIT {
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
     combinedReportDefinitionDto.setName(name);
     combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
@@ -542,21 +528,21 @@ public class EntitiesRestServiceIT {
   }
 
   private List<EntityDto> getEntities() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllEntitiesRequest()
       .executeAndReturnList(EntityDto.class, 200);
   }
 
   private EntityNameDto getEntityNames(String collectionId, String dashboardId, String reportId) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId))
       .execute(EntityNameDto.class, 200);
   }
 
   private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
@@ -564,7 +550,7 @@ public class EntitiesRestServiceIT {
   }
 
   private void updateCollectionRequest(String id, PartialCollectionDefinitionDto renameCollection) {
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, renameCollection)
       .execute();

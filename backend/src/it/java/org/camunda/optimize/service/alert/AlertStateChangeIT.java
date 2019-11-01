@@ -10,11 +10,9 @@ import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.mail.internet.MimeMessage;
 
@@ -24,22 +22,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AlertStateChangeIT extends AbstractAlertIT {
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchIntegrationTestExtensionRule)
-    .around(engineIntegrationExtensionRule)
-    .around(embeddedOptimizeExtensionRule)
-    .around(engineDatabaseExtensionRule);
-
   private GreenMail greenMail;
 
-  @Before
+  @BeforeEach
   public void cleanUp() throws Exception {
-    embeddedOptimizeExtensionRule.getAlertService().getScheduler().clear();
+    embeddedOptimizeExtension.getAlertService().getScheduler().clear();
     greenMail = initGreenMail();
   }
 
-  @After
+  @AfterEach
   public void tearDown() {
     greenMail.stop();
   }
@@ -102,9 +93,9 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     //when
-    engineIntegrationExtensionRule.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     greenMail.purgeEmailFromAllMailboxes();
 
     //then
@@ -134,9 +125,9 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     //when
-    engineIntegrationExtensionRule.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     greenMail.purgeEmailFromAllMailboxes();
     triggerAndCompleteReminderJob(id);

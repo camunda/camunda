@@ -7,12 +7,8 @@ package org.camunda.optimize.websocket;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
+import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.websocket.ContainerProvider;
 import javax.websocket.DeploymentException;
@@ -25,21 +21,11 @@ import java.util.concurrent.TimeUnit;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class StatusWebSocketIT {
+public class StatusWebSocketIT extends AbstractIT {
 
   public static final String ENGINE_ALIAS = "1";
 
   private static final String PROCESS_ID = "aProcessId";
-
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
 
   @Test
   public void getImportStatus() throws Exception {
@@ -79,9 +65,9 @@ public class StatusWebSocketIT {
   public void importStatusStaysFalseIfImportIsDeactivated() throws Exception {
     try {
       // given
-      embeddedOptimizeExtensionRule.getConfigurationService().getConfiguredEngines().values()
+      embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
         .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
-      embeddedOptimizeExtensionRule.reloadConfiguration();
+      embeddedOptimizeExtension.reloadConfiguration();
 
       final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
       connectStatusClientSocket(socket);
@@ -100,16 +86,16 @@ public class StatusWebSocketIT {
       assertThat(socket.isImportStatusChanged(), is(false));
     } finally {
       // cleanup
-      embeddedOptimizeExtensionRule.getConfigurationService().getConfiguredEngines().values()
+      embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
         .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(true));
-      embeddedOptimizeExtensionRule.reloadConfiguration();
+      embeddedOptimizeExtension.reloadConfiguration();
     }
   }
 
   private void connectStatusClientSocket(Object statusClientSocket)
     throws DeploymentException, IOException, URISyntaxException {
     final String dest = String.format(
-      "ws://localhost:%d/ws/status", embeddedOptimizeExtensionRule.getConfigurationService().getContainerHttpPort().orElse(8090)
+      "ws://localhost:%d/ws/status", embeddedOptimizeExtension.getConfigurationService().getContainerHttpPort().orElse(8090)
     );
     WebSocketContainer container = ContainerProvider.getWebSocketContainer();
     container.connectToServer(statusClientSocket, new URI(dest));
@@ -120,9 +106,9 @@ public class StatusWebSocketIT {
       .startEvent()
       .endEvent()
       .done();
-    engineIntegrationExtensionRule.deployAndStartProcess(processModel);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.deployAndStartProcess(processModel);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

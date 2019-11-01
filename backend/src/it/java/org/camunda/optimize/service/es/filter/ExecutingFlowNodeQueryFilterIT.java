@@ -27,11 +27,11 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
   public void filterByOneFlowNode() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
-    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
+    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> executingFlowNodes = ProcessFilterBuilder
@@ -51,16 +51,16 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
   public void filterMultipleProcessInstancesByOneFlowNode() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
-    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(secondInstanceEngineDto.getId());
-    ProcessInstanceEngineDto thirdInstanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(thirdInstanceEngineDto.getId());
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
+    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(secondInstanceEngineDto.getId());
+    ProcessInstanceEngineDto thirdInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(thirdInstanceEngineDto.getId());
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> executedFlowNodes = ProcessFilterBuilder
@@ -81,16 +81,16 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
   public void filterByMultipleAndCombinedFlowNodes() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(instanceEngineDto.getId());
-    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(secondInstanceEngineDto.getId());
-    ProcessInstanceEngineDto thirdInstanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(thirdInstanceEngineDto.getId());
-    ProcessInstanceEngineDto fourthInstanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
+    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(secondInstanceEngineDto.getId());
+    ProcessInstanceEngineDto thirdInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(thirdInstanceEngineDto.getId());
+    ProcessInstanceEngineDto fourthInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<ProcessFilterDto> executingFlowNodes = ProcessFilterBuilder.filter()

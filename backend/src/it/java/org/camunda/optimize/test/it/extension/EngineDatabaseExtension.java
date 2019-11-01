@@ -29,11 +29,10 @@ import java.util.Properties;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.IDENTITY_LINK_TYPE_ASSIGNEE;
 
 /**
- * This is a hybrid JUnit 4 style Rule and JUnit 5 style extension, used differently depending on the runner used
- * in each test
+ * Engine Database Extension
  */
 @Slf4j
-public class EngineDatabaseExtensionRule extends org.junit.rules.TestWatcher implements TestWatcher {
+public class EngineDatabaseExtension implements TestWatcher {
   private static final String DATABASE_H2 = "h2";
   private static final String DATABASE_POSTGRESQL = "postgresql";
 
@@ -49,7 +48,7 @@ public class EngineDatabaseExtensionRule extends org.junit.rules.TestWatcher imp
   private Connection connection = null;
   private Boolean usePostgresOptimizations = true;
 
-  public EngineDatabaseExtensionRule(final Properties properties) {
+  public EngineDatabaseExtension(final Properties properties) {
     database = properties.getProperty("db.name");
     usePostgresOptimizations = Optional.ofNullable(properties.getProperty("db.usePostgresOptimizations"))
       .map(Boolean::valueOf)
@@ -64,7 +63,7 @@ public class EngineDatabaseExtensionRule extends org.junit.rules.TestWatcher imp
     initDatabaseConnection(jdbcDriver, dbUrl, dbUser, dbPassword);
   }
 
-  public EngineDatabaseExtensionRule(@NonNull final String dataBaseName) {
+  public EngineDatabaseExtension(@NonNull final String dataBaseName) {
     final String dbUrl = String.format(DB_URL_H2_TEMPLATE, dataBaseName);
     initDatabaseConnection(JDBC_DRIVER_H2, dbUrl, USER_H2, PASS_H2);
   }

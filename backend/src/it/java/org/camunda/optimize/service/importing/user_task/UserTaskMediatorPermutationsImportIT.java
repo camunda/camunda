@@ -10,6 +10,7 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -21,10 +22,7 @@ import org.camunda.optimize.service.engine.importing.service.mediator.IdentityLi
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,24 +47,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 
-public class UserTaskMediatorPermutationsImportIT {
+public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
   private static final String USER_TASK_1 = "userTask1";
 
   @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private ObjectMapper objectMapper;
 
@@ -80,22 +69,22 @@ public class UserTaskMediatorPermutationsImportIT {
     }
   }
 
-  @ParameterizedTest
+  @ParameterizedTest(name = "is fully imported with mediator order {0}")
   @MethodSource("getParameters")
   public void isFullyImported(List<String> mediatorOrder) throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployUserTaskProcess();
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
+    engineIntegrationExtension.finishAllRunningUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
 
     // when
     performOrderedImport(mediatorOrder);
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final SearchResponse idsResp =
-      elasticSearchIntegrationTestExtensionRule.getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+      elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
@@ -118,7 +107,7 @@ public class UserTaskMediatorPermutationsImportIT {
   }
 
   private void performOrderedImport(List<String> mediatorOrder) {
-    for (EngineImportScheduler scheduler : embeddedOptimizeExtensionRule.getImportSchedulerFactory()
+    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerFactory()
       .getImportSchedulers()) {
       final List<EngineImportMediator> sortedMediators = scheduler
         .getImportMediators()
@@ -128,14 +117,14 @@ public class UserTaskMediatorPermutationsImportIT {
 
       sortedMediators.forEach(EngineImportMediator::importNextPage);
     }
-    embeddedOptimizeExtensionRule.makeSureAllScheduledJobsAreFinished();
+    embeddedOptimizeExtension.makeSureAllScheduledJobsAreFinished();
   }
 
   private void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto, final long idleDuration) {
-    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(historicUserTaskInstanceDto -> {
         try {
-          engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
+          engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
             historicUserTaskInstanceDto.getId(),
             historicUserTaskInstanceDto.getStartTime().plus(idleDuration, ChronoUnit.MILLIS)
           );
@@ -151,7 +140,7 @@ public class UserTaskMediatorPermutationsImportIT {
       .userTask(USER_TASK_1)
       .endEvent(END_EVENT)
       .done();
-    return engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 
   private static Stream<? extends Object> getParameters() {

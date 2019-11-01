@@ -45,7 +45,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   @Test
   public void reportEvaluation() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     final String decisionDefinitionVersion = decisionDefinitionDto.getVersionAsString();
 
     final HashMap<String, InputVariableEntry> inputs = createInputs(200.0, "Misc");
@@ -54,8 +54,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     );
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), inputs);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), decisionDefinitionVersion);
@@ -91,13 +91,13 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   @Test
   public void reportEvaluationAllVersions() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
 
     final HashMap<String, InputVariableEntry> inputs = createInputs(200.0, "Misc");
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), inputs);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -125,7 +125,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   }
 
   private void startDishDecisionInstance(final DecisionDefinitionEngineDto decisionDefinitionEngineDto) {
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionEngineDto.getId(), new HashMap<String, Object>() {{
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId(), new HashMap<String, Object>() {{
       put("season", "Fall");
       put("guestCount", 1);
       put("guestsWithChildren", true);
@@ -133,7 +133,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   }
 
   private DecisionDefinitionEngineDto deployDishDecisionDefinition() {
-    return engineIntegrationExtensionRule.deployDecisionDefinition("dmn/decide-dish.xml");
+    return engineIntegrationExtension.deployDecisionDefinition("dmn/decide-dish.xml");
   }
 
   @Test
@@ -146,8 +146,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionKey, ALL_VERSIONS);
@@ -178,8 +178,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       );
     }};
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -202,15 +202,15 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   @Test
   public void resultShouldBeOrderedByDescendingEvaluationDateByDefault() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -237,15 +237,15 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   @Test
   public void resultShouldBeOrderedByIdProperty() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -272,15 +272,15 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   @Test
   public void resultShouldBeOrderedByEvaluationDatePropertyAsc() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinitionDto.getId());
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
+    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -307,7 +307,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   @Test
   public void resultShouldBeOrderedByInputVariable() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     // use of values like 20 and 100 to ensure ordering is done numeric and not alphanumeric
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(20.0, "Misc"));
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(200.0, "Misc"));
@@ -315,8 +315,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(400.0, "Misc"));
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(1000.0, "Misc"));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
@@ -352,7 +352,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
   @Test
   public void resultShouldBeOrderedByOutputVariable() {
     // given
-    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtensionRule.deployDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     // results in audit false
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(10.0, "Misc"));
     // results in audit true
@@ -364,8 +364,8 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // results in audit false
     startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(200.0, "Misc"));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);

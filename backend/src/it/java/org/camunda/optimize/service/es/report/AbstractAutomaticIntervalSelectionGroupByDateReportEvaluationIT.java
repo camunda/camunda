@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
@@ -21,10 +22,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEva
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Order;
@@ -47,21 +45,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 
-public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluationIT {
+public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluationIT extends AbstractIT {
 
   @RegisterExtension
-  @Order(1)
-  protected ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  protected EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  protected EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  @RegisterExtension
   @Order(4)
-  protected EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule
-                                                                                            .getEngineName());
+  protected EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected abstract void updateProcessInstanceDates(Map<String, OffsetDateTime> updates) throws SQLException;
 
@@ -70,9 +59,9 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     // given
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto processInstanceDto2 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto1.getDefinitionId());
+      engineIntegrationExtension.startProcessInstance(processInstanceDto1.getDefinitionId());
     ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto1.getDefinitionId());
+      engineIntegrationExtension.startProcessInstance(processInstanceDto1.getDefinitionId());
     Map<String, OffsetDateTime> updates = new HashMap<>();
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
     updates.put(processInstanceDto1.getId(), startOfToday);
@@ -81,8 +70,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     updateProcessInstanceDates(updates);
 
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getGroupByStartDateReportData(
@@ -113,9 +102,9 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     //given
     ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
     ProcessInstanceEngineDto processInstanceDto2 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto1.getDefinitionId());
+      engineIntegrationExtension.startProcessInstance(processInstanceDto1.getDefinitionId());
     ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto1.getDefinitionId());
+      engineIntegrationExtension.startProcessInstance(processInstanceDto1.getDefinitionId());
     Map<String, OffsetDateTime> updates = new HashMap<>();
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
     updates.put(processInstanceDto1.getId(), startOfToday);
@@ -123,8 +112,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     updates.put(processInstanceDto3.getId(), startOfToday.plusDays(5));
     updateProcessInstanceDates(updates);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getGroupByStartDateReportData(
@@ -145,8 +134,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
   public void automaticIntervalSelectionForNoData() {
     // given
     ProcessDefinitionEngineDto engineDto = deploySimpleServiceTaskProcess();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getGroupByStartDateReportData(engineDto.getKey(), engineDto.getVersionAsString());
@@ -161,8 +150,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
   public void automaticIntervalSelectionForOneDataPoint() {
     // given there is only one data point
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = getGroupByStartDateReportData(
@@ -186,8 +175,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(3));
     ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(4), now.plusDays(6));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     String singleReportId = createNewSingleReport(procDefFirstRange);
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
@@ -206,8 +195,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto procDefFirstRange = startProcessInstancesInDayRange(now.plusDays(1), now.plusDays(6));
     ProcessDefinitionEngineDto procDefSecondRange = startProcessInstancesInDayRange(now.plusDays(3), now.plusDays(5));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     String singleReportId = createNewSingleReport(procDefFirstRange);
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
@@ -229,8 +218,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     String singleReportId = createNewSingleReport(procDefFirstRange);
     String singleReportId2 = createNewSingleReport(procDefSecondRange);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
 
     // when
@@ -247,8 +236,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
     // given
     ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    ProcessInstanceEngineDto procInstMin = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto procInstMax = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto procInstMin = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto procInstMax = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     changeProcessInstanceDates(procInstMin, now.plusDays(1), now.plusDays(2));
     changeProcessInstanceDates(procInstMax, now.plusDays(3), now.plusDays(6));
@@ -271,8 +260,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
       .build();
     String singleReportId2 = createNewSingleReport(reportDataDto2);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
@@ -287,8 +276,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
                                           final ZonedDateTime startDate,
                                           final ZonedDateTime endDate) throws
                                                                          SQLException {
-    engineDatabaseExtensionRule.changeProcessInstanceStartDate(procInstMin.getId(), startDate.toOffsetDateTime());
-    engineDatabaseExtensionRule.changeProcessInstanceEndDate(procInstMin.getId(), endDate.toOffsetDateTime());
+    engineDatabaseExtension.changeProcessInstanceStartDate(procInstMin.getId(), startDate.toOffsetDateTime());
+    engineDatabaseExtension.changeProcessInstanceEndDate(procInstMin.getId(), endDate.toOffsetDateTime());
   }
 
   private void assertResultIsInCorrectRanges(ZonedDateTime startRange,
@@ -328,7 +317,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
   }
 
   private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)
@@ -338,8 +327,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
   private ProcessDefinitionEngineDto startProcessInstancesInDayRange(ZonedDateTime min,
                                                                      ZonedDateTime max) throws SQLException {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    ProcessInstanceEngineDto procInstMin = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    ProcessInstanceEngineDto procInstMax = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto procInstMin = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto procInstMax = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     updateProcessInstanceDate(min, procInstMin);
     updateProcessInstanceDate(max, procInstMax);
     return processDefinition;
@@ -350,7 +339,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
     processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
     return processInstanceEngineDto;
@@ -364,11 +353,11 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private <T extends SingleReportResultDto> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
       // @formatter:off
@@ -378,7 +367,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
   }
 
   private ReportMapResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
@@ -388,7 +377,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
   }
 
   private String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtensionRule.getDateTimeFormatter().format(time);
+    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
 }

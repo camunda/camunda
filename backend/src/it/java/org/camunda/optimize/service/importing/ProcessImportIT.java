@@ -61,26 +61,26 @@ public class ProcessImportIT extends AbstractImportIT {
   @Test
   public void importCanBeDisabled() throws IOException {
     // given
-    embeddedOptimizeExtensionRule.getConfigurationService().getConfiguredEngines().values()
+    embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
       .forEach(engineConfiguration -> engineConfiguration.setImportEnabled(false));
-    embeddedOptimizeExtensionRule.reloadConfiguration();
+    embeddedOptimizeExtension.reloadConfiguration();
 
     deployAndStartSimpleServiceTask();
-    engineIntegrationExtensionRule.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
     BpmnModelInstance exampleProcess = Bpmn.createExecutableProcess().name("foo").startEvent().endEvent().done();
-    engineIntegrationExtensionRule.deployAndStartProcess(exampleProcess);
+    engineIntegrationExtension.deployAndStartProcess(exampleProcess);
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
-    assertThat(embeddedOptimizeExtensionRule.getImportSchedulerFactory().getImportSchedulers().size(), is(greaterThan(0)));
-    embeddedOptimizeExtensionRule.getImportSchedulerFactory().getImportSchedulers()
+    assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers().size(), is(greaterThan(0)));
+    embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isEnabled(), is(false)));
   }
 
@@ -90,8 +90,8 @@ public class ProcessImportIT extends AbstractImportIT {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     allEntriesInElasticsearchHaveAllData(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_NULLABLE_FIELDS);
@@ -104,8 +104,8 @@ public class ProcessImportIT extends AbstractImportIT {
     deployProcessDefinitionWithTenant(tenantId);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
@@ -118,12 +118,12 @@ public class ProcessImportIT extends AbstractImportIT {
   public void processDefinitionDefaultEngineTenantIdIsApplied() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    embeddedOptimizeExtensionRule.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
@@ -137,12 +137,12 @@ public class ProcessImportIT extends AbstractImportIT {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    embeddedOptimizeExtensionRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     deployProcessDefinitionWithTenant(expectedTenantId);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
@@ -157,8 +157,8 @@ public class ProcessImportIT extends AbstractImportIT {
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     allEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
@@ -171,8 +171,8 @@ public class ProcessImportIT extends AbstractImportIT {
     deployAndStartSimpleServiceTaskWithTenant(tenantId);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -185,12 +185,12 @@ public class ProcessImportIT extends AbstractImportIT {
   public void processInstanceDefaultEngineTenantIdIsApplied() throws IOException {
     //given
     final String tenantId = "reallyAwesomeTenantId";
-    embeddedOptimizeExtensionRule.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     deployAndStartSimpleServiceTask();
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -204,12 +204,12 @@ public class ProcessImportIT extends AbstractImportIT {
     //given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
-    embeddedOptimizeExtensionRule.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     deployAndStartSimpleServiceTaskWithTenant(expectedTenantId);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     final SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -222,36 +222,36 @@ public class ProcessImportIT extends AbstractImportIT {
   public void failingJobDoesNotUpdateImportIndex() throws IOException {
     //given
     ProcessInstanceEngineDto dto1 = deployAndStartSimpleServiceTask();
-    OffsetDateTime endTime = engineIntegrationExtensionRule.getHistoricProcessInstance(dto1.getId()).getEndTime();
+    OffsetDateTime endTime = engineIntegrationExtension.getHistoricProcessInstance(dto1.getId()).getEndTime();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    elasticSearchIntegrationTestExtensionRule.blockProcInstIndex(true);
+    elasticSearchIntegrationTestExtension.blockProcInstIndex(true);
 
     ProcessInstanceEngineDto dto2 = deployAndStartSimpleServiceTask();
 
-    Thread thread = new Thread(() -> embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex());
+    Thread thread = new Thread(() -> embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex());
     thread.start();
 
-    OffsetDateTime lastImportTimestamp = elasticSearchIntegrationTestExtensionRule.getLastProcessInstanceImportTimestamp();
+    OffsetDateTime lastImportTimestamp = elasticSearchIntegrationTestExtension.getLastProcessInstanceImportTimestamp();
     assertThat(lastImportTimestamp, is(endTime));
 
-    elasticSearchIntegrationTestExtensionRule.blockProcInstIndex(false);
-    endTime = engineIntegrationExtensionRule.getHistoricProcessInstance(dto2.getId()).getEndTime();
+    elasticSearchIntegrationTestExtension.blockProcInstIndex(false);
+    endTime = engineIntegrationExtension.getHistoricProcessInstance(dto2.getId()).getEndTime();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
 
-    lastImportTimestamp = elasticSearchIntegrationTestExtensionRule.getLastProcessInstanceImportTimestamp();
+    lastImportTimestamp = elasticSearchIntegrationTestExtension.getLastProcessInstanceImportTimestamp();
 
     assertThat(lastImportTimestamp, is(endTime));
   }
 
   @AfterEach
   public void unblockIndex() throws IOException {
-    elasticSearchIntegrationTestExtensionRule.blockProcInstIndex(false);
+    elasticSearchIntegrationTestExtension.blockProcInstIndex(false);
   }
 
   @Test
@@ -262,14 +262,14 @@ public class ProcessImportIT extends AbstractImportIT {
       .setVersion("1")
       .setEngine("1");
 
-    elasticSearchIntegrationTestExtensionRule.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, procDef.getId(), procDef);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, procDef.getId(), procDef);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     ProcessInstanceEngineDto serviceTask = deployAndStartSimpleServiceTask();
     String definitionId = serviceTask.getDefinitionId();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(response.getHits().getTotalHits(), is(2L));
@@ -288,9 +288,9 @@ public class ProcessImportIT extends AbstractImportIT {
     deployAndStartSimpleServiceTask();
 
     // when
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -306,8 +306,8 @@ public class ProcessImportIT extends AbstractImportIT {
     createStartAndCancelUserTaskProcess();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -321,7 +321,7 @@ public class ProcessImportIT extends AbstractImportIT {
   public void runningProcessesIndexedAfterFinish() throws IOException {
     // given
     deployAndStartUserTaskProcess();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     //then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -333,9 +333,9 @@ public class ProcessImportIT extends AbstractImportIT {
     }
 
     // when
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -351,10 +351,10 @@ public class ProcessImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto firstProcInst = createImportAndDeleteTwoProcessInstances();
 
     // when
-    engineIntegrationExtensionRule.startProcessInstance(firstProcInst.getDefinitionId());
-    engineIntegrationExtensionRule.startProcessInstance(firstProcInst.getDefinitionId());
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId());
+    engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 4L, PROCESS_INSTANCE_NULLABLE_FIELDS);
@@ -369,18 +369,18 @@ public class ProcessImportIT extends AbstractImportIT {
 
     // when
     variables.put("secondVar", "foo");
-    engineIntegrationExtensionRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
+    engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId(), variables);
     variables.put("thirdVar", "bar");
-    engineIntegrationExtensionRule.startProcessInstance(firstProcInst.getDefinitionId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
     List<ProcessVariableNameResponseDto> variablesResponseDtos =
-      embeddedOptimizeExtensionRule
+      embeddedOptimizeExtension
         .getRequestExecutor()
         .buildProcessVariableNamesRequest(variableRequestDto)
         .executeAndReturnList(ProcessVariableNameResponseDto.class, 200);
@@ -397,11 +397,11 @@ public class ProcessImportIT extends AbstractImportIT {
       .userTask()
       .endEvent()
       .done();
-    engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    engineIntegrationExtension.deployAndStartProcess(processModel);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -419,13 +419,13 @@ public class ProcessImportIT extends AbstractImportIT {
       .userTask()
       .endEvent()
       .done();
-    engineIntegrationExtensionRule.deployAndStartProcess(processModel);
+    engineIntegrationExtension.deployAndStartProcess(processModel);
 
     //when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    engineIntegrationExtensionRule.finishAllRunningUserTasks();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -447,20 +447,20 @@ public class ProcessImportIT extends AbstractImportIT {
         .name("endEvent")
       .done();
     // @formatter:on
-    engineIntegrationExtensionRule.deployAndStartProcess(processModel);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
+    engineIntegrationExtension.deployAndStartProcess(processModel);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     //when
     HistoricActivityInstanceEngineDto startEvent =
-      engineIntegrationExtensionRule.getHistoricActivityInstances()
+      engineIntegrationExtension.getHistoricActivityInstances()
         .stream()
         .filter(a -> "startEvent".equals(a.getActivityName()))
         .findFirst()
         .get();
     startEvent.setEndTime(null);
     startEvent.setDurationInMillis(null);
-    embeddedOptimizeExtensionRule.importRunningActivityInstance(Collections.singletonList(startEvent));
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importRunningActivityInstance(Collections.singletonList(startEvent));
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //then
     SearchResponse idsResp = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
@@ -475,14 +475,14 @@ public class ProcessImportIT extends AbstractImportIT {
   public void afterRestartOfOptimizeOnlyNewActivitiesAreImported() throws Exception {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    embeddedOptimizeExtensionRule.stopOptimize();
-    embeddedOptimizeExtensionRule.startOptimize();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.stopOptimize();
+    embeddedOptimizeExtension.startOptimize();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     assertThat(getImportedActivityCount(), is(3L));
@@ -491,24 +491,24 @@ public class ProcessImportIT extends AbstractImportIT {
   @Test
   public void doNotSkipProcessInstancesWithSameEndTime() throws Exception {
     // given
-    int originalMaxPageSize = embeddedOptimizeExtensionRule.getConfigurationService()
+    int originalMaxPageSize = embeddedOptimizeExtension.getConfigurationService()
       .getEngineImportProcessInstanceMaxPageSize();
-    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(1);
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(1);
     startTwoProcessInstancesWithSameEndTime();
 
     // when
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 2L, PROCESS_INSTANCE_NULLABLE_FIELDS);
-    embeddedOptimizeExtensionRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
+    embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
   }
 
   private void createStartAndCancelUserTaskProcess() {
     ProcessInstanceEngineDto processInstance = deployAndStartUserTaskProcess();
-    engineIntegrationExtensionRule.externallyTerminateProcessInstance(processInstance.getId());
+    engineIntegrationExtension.externallyTerminateProcessInstance(processInstance.getId());
   }
 
   private Long getImportedActivityCount() throws IOException {
@@ -528,7 +528,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .indices(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder);
 
-    SearchResponse response = elasticSearchIntegrationTestExtensionRule.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
+    SearchResponse response = elasticSearchIntegrationTestExtension.getOptimizeElasticClient().search(searchRequest, RequestOptions.DEFAULT);
 
     Nested nested = response.getAggregations()
       .get(EVENTS);
@@ -542,21 +542,21 @@ public class ProcessImportIT extends AbstractImportIT {
     OffsetDateTime endTime = OffsetDateTime.now();
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTask();
     ProcessInstanceEngineDto secondProcInst =
-      engineIntegrationExtensionRule.startProcessInstance(firstProcInst.getDefinitionId());
+      engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId());
     Map<String, OffsetDateTime> procInstEndDateUpdates = new HashMap<>();
     procInstEndDateUpdates.put(firstProcInst.getId(), endTime);
     procInstEndDateUpdates.put(secondProcInst.getId(), endTime);
-    engineDatabaseExtensionRule.updateProcessInstanceEndDates(procInstEndDateUpdates);
+    engineDatabaseExtension.updateProcessInstanceEndDates(procInstEndDateUpdates);
   }
 
   private ProcessDefinitionEngineDto deployProcessDefinitionWithTenant(String tenantId) {
     BpmnModelInstance processModel = createSimpleProcessDefinition();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, tenantId);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithTenant(String tenantId) {
     final ProcessDefinitionEngineDto processDefinitionEngineDto = deployProcessDefinitionWithTenant(tenantId);
-    return engineIntegrationExtensionRule.startProcessInstance(processDefinitionEngineDto.getId());
+    return engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
   }
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstances() {
@@ -565,14 +565,14 @@ public class ProcessImportIT extends AbstractImportIT {
 
   private ProcessInstanceEngineDto createImportAndDeleteTwoProcessInstancesWithVariables(Map<String, Object> variables) {
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTaskWithVariables(variables);
-    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtensionRule.startProcessInstance(
+    ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(
       firstProcInst.getDefinitionId(),
       variables
     );
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
-    engineIntegrationExtensionRule.deleteHistoricProcessInstance(firstProcInst.getId());
-    engineIntegrationExtensionRule.deleteHistoricProcessInstance(secondProcInst.getId());
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    engineIntegrationExtension.deleteHistoricProcessInstance(firstProcInst.getId());
+    engineIntegrationExtension.deleteHistoricProcessInstance(secondProcInst.getId());
     return firstProcInst;
   }
 

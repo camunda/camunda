@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -50,9 +50,9 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
                                             Long durationInSec) {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
     try {
-      engineDatabaseExtensionRule.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
+      engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
       if (durationInSec != null) {
-        engineDatabaseExtensionRule.changeProcessInstanceEndDate(
+        engineDatabaseExtension.changeProcessInstanceEndDate(
           processInstanceId,
           shiftedStartDate.plusSeconds(durationInSec)
         );
@@ -70,8 +70,8 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     startThreeProcessInstances(startDate, 0, procDefDto, Arrays.asList(1, 1, 1));
     startThreeProcessInstances(startDate, -2, procDefDto, Arrays.asList(2, 2, 2));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto();
@@ -100,31 +100,31 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
 
     assertThat(
       resultData.get(0).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
     assertThat(resultData.get(0).getValue(), is(1000L));
 
     assertThat(
       resultData.get(1).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(1).getValue(), is(0L));
 
     assertThat(
       resultData.get(2).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(2).getValue(), is(2000L));
 
     assertThat(
       resultData.get(3).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(3).getValue(), is(0L));
 
     assertThat(
       resultData.get(4).getKey(),
-      is(embeddedOptimizeExtensionRule.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
+      is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
     assertThat(resultData.get(4).getValue(), is(0L));
   }

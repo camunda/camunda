@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
@@ -18,12 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -37,11 +33,12 @@ import java.util.Map;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNull.notNullValue;
 
 @Slf4j
-public class BranchAnalysisQueryIT {
+public class BranchAnalysisQueryIT extends AbstractIT {
+
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   private static final String PROCESS_DEFINITION_VERSION = "1";
   private static final String GATEWAY_ACTIVITY = "gw_1";
@@ -51,16 +48,7 @@ public class BranchAnalysisQueryIT {
   private static final String GATEWAY_D = "gw_d";
   private static final String GATEWAY_F = "gw_f";
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   private static final String START_EVENT_ID = "startEvent";
   private static final String SPLITTING_GATEWAY_ID = "splittingGateway";
@@ -75,8 +63,8 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result =
@@ -106,8 +94,8 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
@@ -140,8 +128,8 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     ArrayList<String> versions = Lists.newArrayList(
@@ -176,8 +164,8 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
@@ -199,8 +187,8 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
     startSimpleGatewayProcessAndTakeTask1(processDefinition3);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
 
@@ -221,8 +209,8 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(
@@ -253,15 +241,15 @@ public class BranchAnalysisQueryIT {
     //given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    engineIntegrationExtensionRule.createTenant(tenantId1);
-    engineIntegrationExtensionRule.createTenant(tenantId2);
+    engineIntegrationExtension.createTenant(tenantId1);
+    engineIntegrationExtension.createTenant(tenantId2);
     ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition(tenantId1);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition(tenantId2);
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(
@@ -292,15 +280,15 @@ public class BranchAnalysisQueryIT {
     //given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    engineIntegrationExtensionRule.createTenant(tenantId1);
-    engineIntegrationExtensionRule.createTenant(tenantId2);
+    engineIntegrationExtension.createTenant(tenantId1);
+    engineIntegrationExtension.createTenant(tenantId2);
     ProcessDefinitionEngineDto processDefinition1 = deploySimpleGatewayProcessDefinition(tenantId1);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition(tenantId2);
     startSimpleGatewayProcessAndTakeTask1(processDefinition1);
     startSimpleGatewayProcessAndTakeTask1(processDefinition2);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(
@@ -333,8 +321,8 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask2(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
@@ -362,8 +350,8 @@ public class BranchAnalysisQueryIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessWithUserTask();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     startSimpleGatewayProcessAndTakeTask2(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
@@ -393,8 +381,8 @@ public class BranchAnalysisQueryIT {
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask2(processDefinition2);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
@@ -422,9 +410,9 @@ public class BranchAnalysisQueryIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
-      engineIntegrationExtensionRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -466,9 +454,9 @@ public class BranchAnalysisQueryIT {
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstance = startSimpleGatewayProcessAndTakeTask1(processDefinition);
     OffsetDateTime now =
-      engineIntegrationExtensionRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionKey(processDefinition.getKey());
@@ -502,8 +490,8 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionKey(processDefinition.getKey());
@@ -555,12 +543,12 @@ public class BranchAnalysisQueryIT {
         .connectTo(GATEWAY_F)
       .done();
     // @formatter:on
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
     startBypassProcessAndTakeLongWayWithoutTask(processDefinition);
     startBypassProcessAndTakeShortcut(processDefinition);
     startBypassProcessAndTakeLongWayWithTask(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionKey(processDefinition.getKey());
@@ -593,8 +581,8 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionKey(processDefinition.getKey());
@@ -633,8 +621,8 @@ public class BranchAnalysisQueryIT {
     //given
     ProcessDefinitionEngineDto processDefinition = deploySimpleGatewayProcessDefinition();
     startSimpleGatewayProcessAndTakeTask1(processDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
     dto.setProcessDefinitionKey(processDefinition.getKey());
@@ -688,14 +676,14 @@ public class BranchAnalysisQueryIT {
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.deployAndStartProcessWithVariables(
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
       modelInstance,
       variables
     );
     variables.put("takeShortcut", false);
-    engineIntegrationExtensionRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -743,14 +731,14 @@ public class BranchAnalysisQueryIT {
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.deployAndStartProcessWithVariables(
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
       modelInstance,
       variables
     );
     variables.put("takeShortcut", false);
-    engineIntegrationExtensionRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -800,14 +788,14 @@ public class BranchAnalysisQueryIT {
     // @formatter:on
     Map<String, Object> variables = new HashMap<>();
     variables.put("anotherRound", true);
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtensionRule.deployAndStartProcessWithVariables(
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
       modelInstance,
       variables
     );
     variables.put("anotherRound", false);
-    engineIntegrationExtensionRule.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.startProcessInstance(instanceEngineDto.getDefinitionId(), variables);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     BranchAnalysisQueryDto dto = new BranchAnalysisQueryDto();
@@ -890,20 +878,20 @@ public class BranchAnalysisQueryIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask", false);
     variables.put("takeShortcut", false);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
   private void startBypassProcessAndTakeShortcut(ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", true);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
   private void startBypassProcessAndTakeLongWayWithTask(ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("takeShortcut", false);
     variables.put("goToTask", true);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
   private BranchAnalysisDto performBranchAnalysis(final String processDefinitionKey,
@@ -955,7 +943,7 @@ public class BranchAnalysisQueryIT {
         .connectTo(MERGE_GATEWAY_ID)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessWithUserTask() {
@@ -977,19 +965,19 @@ public class BranchAnalysisQueryIT {
         .connectTo(MERGE_GATEWAY_ID)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private ProcessInstanceEngineDto startSimpleGatewayProcessAndTakeTask1(ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", true);
-    return engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    return engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
   private void startSimpleGatewayProcessAndTakeTask2(ProcessDefinitionEngineDto processDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put("goToTask1", false);
-    engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
   }
 
   private void addStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate, BranchAnalysisQueryDto dto) {
@@ -1012,7 +1000,7 @@ public class BranchAnalysisQueryIT {
   }
 
   private Response getRawResponse(BranchAnalysisQueryDto dto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildProcessDefinitionCorrelation(dto)
       .execute();

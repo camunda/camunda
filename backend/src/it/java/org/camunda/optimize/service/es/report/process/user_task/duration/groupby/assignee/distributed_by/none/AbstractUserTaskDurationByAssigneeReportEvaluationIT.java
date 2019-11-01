@@ -6,8 +6,6 @@
 package org.camunda.optimize.service.es.report.process.user_task.duration.groupby.assignee.distributed_by.none;
 
 import com.google.common.collect.ImmutableMap;
-import junitparams.JUnitParamsRunner;
-import junitparams.Parameters;
 import lombok.Data;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -31,9 +29,10 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.hamcrest.CoreMatchers;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.nonNull;
@@ -62,11 +62,8 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
 
-@RunWith(JUnitParamsRunner.class)
 public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
-  private static final String START_EVENT = "startEvent";
-  private static final String END_EVENT = "endEvent";
   private static final String PROCESS_DEFINITION_KEY = "123";
   private static final String USER_TASK1 = "userTask1";
   private static final String USER_TASK2 = "userTask2";
@@ -74,24 +71,24 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   private static final String SECOND_USERS_PASSWORD = "fooPassword";
   private final List<AggregationType> aggregationTypes = Arrays.asList(AggregationType.values());
 
-  @Before
+  @BeforeEach
   public void init() {
     // create second user
-    engineIntegrationExtensionRule.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
-    engineIntegrationExtensionRule.grantAllAuthorizations(SECOND_USER);
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
   }
 
   @Test
   public void reportEvaluationForOneProcess() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
 
     final long setDuration = 20L;
     changeDuration(processInstanceDto, setDuration);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -127,17 +124,17 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public void reportEvaluationForSeveralProcesses() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     final Long[] setDurations = new Long[]{10L, 30L};
     changeDuration(processInstanceDto1, setDurations[0]);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, setDurations[1]);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -161,17 +158,17 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public void reportEvaluationForSeveralProcessesWithAllAggregationTypes() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     final Long[] setDurations = new Long[]{10L, 30L};
     changeDuration(processInstanceDto1, setDurations[0]);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, setDurations[1]);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -189,18 +186,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -224,18 +221,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -256,20 +253,20 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(1);
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -287,18 +284,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     final ProcessReportDataDto reportData = createReport(processDefinition);
 
@@ -325,18 +322,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 10L);
     changeDuration(processInstanceDto2, USER_TASK2, 20L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -361,18 +358,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
 
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, USER_TASK1, 10L);
     changeDuration(processInstanceDto1, USER_TASK2, 20L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, USER_TASK1, 100L);
     changeDuration(processInstanceDto2, USER_TASK2, 2L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
@@ -391,23 +388,23 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public void otherProcessDefinitionsDoNotInfluenceResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition1 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtensionRule.startProcessInstance(processDefinition1.getId());
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto1);
     changeDuration(processInstanceDto1, 40L);
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition1.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto2);
     changeDuration(processInstanceDto2, 40L);
 
     final ProcessDefinitionEngineDto processDefinition2 = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtensionRule.startProcessInstance(processDefinition2.getId());
+    final ProcessInstanceEngineDto processInstanceDto3 = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto3);
     changeDuration(processInstanceDto3, 20L);
-    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtensionRule.startProcessInstance(processDefinition2.getId());
+    final ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto4);
     changeDuration(processInstanceDto4, 20L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData1 = createReport(processDefinition1);
@@ -439,8 +436,8 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(processKey, ReportConstants.ALL_VERSIONS);
@@ -455,18 +452,18 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public void evaluateReportWithIrrationalNumberAsResult() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
     changeDuration(processInstanceDto, 100L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
     changeDuration(processInstanceDto, 300L);
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishTwoUserTasksOneWithDefaultAndSecondUser(processInstanceDto);
     changeDuration(processInstanceDto, 600L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -508,7 +505,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     return result;
   }
 
-  protected static Object[] getExecutionStateExpectedValues() {
+  protected static Stream<ExecutionStateTestValues> getExecutionStateExpectedValues() {
     ExecutionStateTestValues runningStateValues =
       new ExecutionStateTestValues();
     runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
@@ -537,36 +534,34 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       700L
     );
 
-    return new Object[]{
-      runningStateValues, completedStateValues, allStateValues
-    };
+    return Stream.of(runningStateValues, completedStateValues, allStateValues);
   }
 
-  @Test
-  @Parameters(method = "getExecutionStateExpectedValues")
+  @ParameterizedTest
+  @MethodSource("getExecutionStateExpectedValues")
   public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // finish first running task, second now runs but unclaimed
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, USER_TASK1, 100L);
-    engineIntegrationExtensionRule.claimAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId());
+    engineIntegrationExtension.claimAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId());
     changeUserTaskStartDate(processInstanceDto, now, USER_TASK2, 700L);
     changeUserTaskClaimDate(processInstanceDto, now, USER_TASK2, 500L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // claim first running task
-    engineIntegrationExtensionRule.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto2.getId());
+    engineIntegrationExtension.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto2.getId());
 
     changeUserTaskStartDate(processInstanceDto2, now, USER_TASK1, 700L);
     changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK1, 500L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -592,15 +587,15 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
         .done();
     // @formatter:on
 
-    final ProcessDefinitionEngineDto processDefinition = engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(
+    final ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       processWithMultiInstanceUserTask
     );
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, 10L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -620,13 +615,13 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
 
     for (int i = 0; i < 11; i++) {
-      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-      engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
+      final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+      engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
       changeDuration(processInstanceDto, 10L);
     }
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = createReport(processDefinition);
@@ -644,15 +639,15 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
   public void filterInReport() {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
     changeDuration(processInstanceDto, 10L);
 
-    final OffsetDateTime processStartTime = engineIntegrationExtensionRule.getHistoricProcessInstance(processInstanceDto.getId())
+    final OffsetDateTime processStartTime = engineIntegrationExtension.getHistoricProcessInstance(processInstanceDto.getId())
       .getStartTime();
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = createReport(processDefinition);
@@ -725,7 +720,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
                                        final String userTaskId,
                                        final long offsetDuration) {
     try {
-      engineDatabaseExtensionRule.changeUserTaskStartDate(
+      engineDatabaseExtension.changeUserTaskStartDate(
         processInstanceDto.getId(),
         userTaskId,
         now.minus(offsetDuration, ChronoUnit.MILLIS)
@@ -740,12 +735,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
                                        final String userTaskKey,
                                        final long offsetDuration) {
 
-    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto ->
         {
           try {
-            engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               now.minus(offsetDuration, ChronoUnit.MILLIS)
             );
@@ -777,20 +772,20 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   private void finishTwoUserTasksOneWithDefaultAndSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
     // finish first task
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
     // finish second task with
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
   }
 
   private String deployAndStartMultiTenantUserTaskProcess(final List<String> deployedTenants) {
     final String processKey = "multiTenantProcess";
     deployedTenants.stream()
       .filter(Objects::nonNull)
-      .forEach(tenantId -> engineIntegrationExtensionRule.createTenant(tenantId));
+      .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
     deployedTenants
       .forEach(tenant -> {
         final ProcessDefinitionEngineDto processDefinitionEngineDto = deployOneUserTasksDefinition(processKey, tenant);
-        engineIntegrationExtensionRule.startProcessInstance(processDefinitionEngineDto.getId());
+        engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
       });
 
     return processKey;
@@ -806,7 +801,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       .userTask(DEFAULT_USERNAME)
       .endEvent(END_EVENT)
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 
   private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
@@ -816,7 +811,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       .userTask(USER_TASK2)
       .endEvent(END_EVENT)
       .done();
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   private void assertCorrectValueOrdering(ReportMapResultDto result) {

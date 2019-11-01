@@ -7,23 +7,21 @@ package org.camunda.optimize.service.export;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -35,7 +33,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class ProcessHyperMapExportServiceIT {
+public class ProcessHyperMapExportServiceIT extends AbstractIT {
 
   private static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";
@@ -44,38 +42,30 @@ public class ProcessHyperMapExportServiceIT {
   private static final String USER_TASK_A = "userTaskA";
   private static final String USER_TASK_B = "userTaskB";
 
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-  public EngineDatabaseExtensionRule engineDatabaseExtensionRule = new EngineDatabaseExtensionRule(engineIntegrationExtensionRule.getEngineName());
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
-  @Rule
-  public RuleChain chain = RuleChain
-    .outerRule(elasticSearchIntegrationTestExtensionRule)
-    .around(engineIntegrationExtensionRule)
-    .around(embeddedOptimizeExtensionRule)
-    .around(engineDatabaseExtensionRule);
-
-  @Before
+  @BeforeEach
   public void init() {
     // create second user
-    engineIntegrationExtensionRule.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
-    engineIntegrationExtensionRule.grantAllAuthorizations(SECOND_USER);
+    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
+    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
   }
 
   @Test
   public void hyperMapFrequencyReportHasExpectedValue() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     final ProcessReportDataDto reportData = createFrequencyReport(processDefinition);
     String reportId = createNewSingleMapReport(reportData);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -96,17 +86,17 @@ public class ProcessHyperMapExportServiceIT {
   public void hyperMapDurationReportHasExpectedValue() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
     changeDuration(processInstanceDto, 10L);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     final ProcessReportDataDto reportData = createDurationReport(processDefinition);
     String reportId = createNewSingleMapReport(reportData);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -127,13 +117,13 @@ public class ProcessHyperMapExportServiceIT {
   public void reportWithEmptyResultProducesEmptyCsv() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     final ProcessReportDataDto reportData = createFrequencyReport(processDefinition);
     String reportId = createNewSingleMapReport(reportData);
 
     // when
-    Response response = embeddedOptimizeExtensionRule
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCsvExportRequest(reportId, "my_file.csv")
       .execute();
@@ -177,9 +167,9 @@ public class ProcessHyperMapExportServiceIT {
 
   private void finishUserTask1AWithDefaultAndTaskB2WithSecondUser(final ProcessInstanceEngineDto processInstanceDto1) {
     // finish user task 1 and A with default user
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto1.getId());
     // finish user task 2 and B with second user
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto1.getId());
   }
 
   private ProcessDefinitionEngineDto deployFourUserTasksDefinition() {
@@ -196,17 +186,17 @@ public class ProcessHyperMapExportServiceIT {
         .endEvent()
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
   @SuppressWarnings("SameParameterValue")
   private void changeDuration(ProcessInstanceEngineDto processInstanceDto, long millis) {
-    engineIntegrationExtensionRule.getHistoricTaskInstances(processInstanceDto.getId())
+    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
         historicUserTaskInstanceDto ->
         {
           try {
-            engineDatabaseExtensionRule.changeUserTaskAssigneeOperationTimestamp(
+            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
               historicUserTaskInstanceDto.getStartTime().plus(millis, ChronoUnit.MILLIS)
             );
@@ -224,7 +214,7 @@ public class ProcessHyperMapExportServiceIT {
   }
 
   private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtensionRule
+    return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, 200)

@@ -14,14 +14,9 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,23 +43,13 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
 
   protected static final String DECISION_KEY = "aDecision";
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-
   @Test
   public void getVariableNames() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = deployDecisionsWithStringVarNames(of("var1", "var2"));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinitionDto);
@@ -98,11 +83,11 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
       .build();
     // @formatter:on
     DecisionDefinitionEngineDto decisionDefinitionDto =
-      engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance);
+      engineIntegrationExtension.deployDecisionDefinition(modelInstance);
 
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames("decision2", "1");
@@ -123,8 +108,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     deployAndStartMultiTenantDecision(
       newArrayList(null, tenantId1, tenantId2)
     );
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     DecisionVariableNameRequestDto variableNameRequestDto = new DecisionVariableNameRequestDto();
@@ -145,8 +130,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     DecisionDefinitionEngineDto decisionDefinitionDto3 =
       deployDecisionsWithStringVarNames(of("var1", "var2", "var3"));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse =
@@ -168,8 +153,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<String> varListWithMoreThan10Entries =
       IntStream.range(0, 11).boxed().map(Objects::toString).collect(Collectors.toList());
     DecisionDefinitionEngineDto decisionDefinition = deployDecisionsWithStringVarNames(varListWithMoreThan10Entries);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
@@ -185,8 +170,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionsWithStringVarNames(of("foo1", "foo2"));
     DecisionDefinitionEngineDto decisionDefinitionDto3 =
       deployDecisionsWithStringVarNames(of("var1", "var2", "var3"));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition.getKey(), ALL_VERSIONS);
@@ -205,8 +190,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionsWithStringVarNames(of("foo1", "foo2"));
     DecisionDefinitionEngineDto decisionDefinitionDto3 =
       deployDecisionsWithStringVarNames(of("var1", "var2", "var3"));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition.getKey(), LATEST_VERSION);
@@ -223,8 +208,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     // given
     DecisionDefinitionEngineDto decisionDefinition = deployDecisionsWithStringVarNames(of("expectedVar"));
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployDecisionsWithStringVarNames(of("notExpectedVar"));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
@@ -240,8 +225,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     ImmutableList<String> expectedVars = of("var4", "var1", "var134124", "bar", "aaa");
     DecisionDefinitionEngineDto decisionDefinition =
       deployDecisionsWithStringVarNames(expectedVars);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
@@ -258,8 +243,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     // given
     DecisionDefinitionEngineDto definitionEngine =
       deployDecisionsWithVarNames(nCopies(values().length, "var"), asList(values()));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(definitionEngine);
@@ -280,8 +265,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
   public void variableWithSameNameAndDifferentType() {
     // given
     DecisionDefinitionEngineDto decisionDefinition = deployDecisionsWithVarNames(of("var", "var"), of(STRING, BOOLEAN));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
@@ -328,7 +313,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
   private void deployAndStartMultiTenantDecision(final List<String> deployedTenants) {
     deployedTenants.stream()
       .filter(Objects::nonNull)
-      .forEach(tenantId -> engineIntegrationExtensionRule.createTenant(tenantId));
+      .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
     deployedTenants.forEach(tenant -> {
       String randomVarName = RandomStringUtils.randomAlphabetic(10);
       deployDecisionsWithStringVarName(randomVarName);

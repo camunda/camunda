@@ -8,19 +8,15 @@ package org.camunda.optimize.service.security;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtensionRule;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtensionRule;
-import org.camunda.optimize.test.it.extension.EngineIntegrationExtensionRule;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
@@ -35,22 +31,13 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class DecisionVariableAuthorizationIT {
+public class DecisionVariableAuthorizationIT extends AbstractIT {
+
   private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   private static final String VARIABLE_NAME = "input";
   private static final String VARIABLE_VALUE = "input";
 
-  @RegisterExtension
-  @Order(1)
-  public ElasticSearchIntegrationTestExtensionRule elasticSearchIntegrationTestExtensionRule = new ElasticSearchIntegrationTestExtensionRule();
-  @RegisterExtension
-  @Order(2)
-  public EngineIntegrationExtensionRule engineIntegrationExtensionRule = new EngineIntegrationExtensionRule();
-  @RegisterExtension
-  @Order(3)
-  public EmbeddedOptimizeExtensionRule embeddedOptimizeExtensionRule = new EmbeddedOptimizeExtensionRule();
-
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtensionRule);
+  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @Test
   public void variableRequest_authorized() {
@@ -60,8 +47,8 @@ public class DecisionVariableAuthorizationIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
@@ -79,8 +66,8 @@ public class DecisionVariableAuthorizationIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition, Collections.singletonList(null));
@@ -95,32 +82,32 @@ public class DecisionVariableAuthorizationIT {
     // given
     final DecisionDefinitionEngineDto decisionDefinition = deploySimpleDecisionDefinition();
     evaluateSimpleDecision(decisionDefinition);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    Response inputVariableNameResponse = embeddedOptimizeExtensionRule
+    Response inputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDecisionInputVariableNamesRequest(
         createInputVariableNameRequest("", "", Collections.emptyList())
       )
       .execute();
-    Response outputVariableNameResponse = embeddedOptimizeExtensionRule
+    Response outputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDecisionOutputVariableNamesRequest(
         createInputVariableNameRequest("", "", Collections.emptyList())
       )
       .execute();
-    Response inputVariableValueResponse = embeddedOptimizeExtensionRule
+    Response inputVariableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDecisionInputVariableValuesRequest(
         createVariableValueRequest("", "", Collections.emptyList())
       )
       .execute();
-    Response outputVariableValueResponse = embeddedOptimizeExtensionRule
+    Response outputVariableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDecisionOutputVariableValuesRequest(
@@ -152,8 +139,8 @@ public class DecisionVariableAuthorizationIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     evaluateSimpleDecision(decisionDefinition);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
@@ -172,8 +159,8 @@ public class DecisionVariableAuthorizationIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
     evaluateSimpleDecision(decisionDefinition);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
@@ -196,8 +183,8 @@ public class DecisionVariableAuthorizationIT {
     evaluateSimpleDecision(decisionDefinition1);
     evaluateSimpleDecision(decisionDefinition2);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(
@@ -219,14 +206,14 @@ public class DecisionVariableAuthorizationIT {
 
   private List<Response> executeVariableRequestsAsKermit(final DecisionDefinitionEngineDto decisionDefinition,
                                                          List<String> tenantIds) {
-    Response inputVariableNameResponse = embeddedOptimizeExtensionRule
+    Response inputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDecisionInputVariableNamesRequest(createInputVariableNameRequest(
         decisionDefinition.getKey(), String.valueOf(decisionDefinition.getVersion()), tenantIds
       ))
       .execute();
-    Response outputVariableNameResponse = embeddedOptimizeExtensionRule
+    Response outputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDecisionOutputVariableNamesRequest(createInputVariableNameRequest(
@@ -234,7 +221,7 @@ public class DecisionVariableAuthorizationIT {
       ))
       .execute();
 
-    Response inputVariableValueResponse = embeddedOptimizeExtensionRule
+    Response inputVariableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDecisionInputVariableValuesRequest(createVariableValueRequest(
@@ -242,7 +229,7 @@ public class DecisionVariableAuthorizationIT {
       ))
       .execute();
 
-    Response outputVariableValueResponse = embeddedOptimizeExtensionRule
+    Response outputVariableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildDecisionOutputVariableValuesRequest(createVariableValueRequest(
@@ -288,12 +275,12 @@ public class DecisionVariableAuthorizationIT {
         .buildDecision()
       .build();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployDecisionDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployDecisionDefinition(modelInstance, tenantId);
   }
 
   private void evaluateSimpleDecision(DecisionDefinitionEngineDto decisionDefinition) {
     Map<String, Object> variables = new HashMap<>();
     variables.put(VARIABLE_NAME, VARIABLE_VALUE);
-    engineIntegrationExtensionRule.startDecisionInstance(decisionDefinition.getId(), variables);
+    engineIntegrationExtension.startDecisionInstance(decisionDefinition.getId(), variables);
   }
 }

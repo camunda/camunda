@@ -25,7 +25,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -66,13 +66,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtensionRule.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtensionRule.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -114,13 +114,13 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtensionRule.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtensionRule.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART)
@@ -164,11 +164,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     startThreeProcessInstances(startDate, processEngineDto, Arrays.asList(1, 2, 9));
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processEngineDto.getId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -205,17 +205,17 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtensionRule.startProcessInstance(processEngineDto.getId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
+    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
 
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
-    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtensionRule.startProcessInstance(processEngineDto.getId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
+    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -252,17 +252,17 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtensionRule.startProcessInstance(processEngineDto.getId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
+    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
 
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
-    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtensionRule.startProcessInstance(processEngineDto.getId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
+    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
@@ -303,17 +303,17 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
 
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 2);
-    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtensionRule.startProcessInstance(processEngineDto.getId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
+    ProcessInstanceEngineDto processInstanceDto4 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto4.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto4.getId(), startDate.plusSeconds(1));
 
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE + 3);
-    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtensionRule.startProcessInstance(processEngineDto.getId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
+    ProcessInstanceEngineDto processInstanceDto5 = engineIntegrationExtension.startProcessInstance(processEngineDto.getId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto5.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto5.getId(), startDate.plusSeconds(1));
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     final ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -349,14 +349,14 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
     ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
-    engineIntegrationExtensionRule.startProcessInstance(processDefinitionDto.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinitionDto.getId(), variables);
     variables.put("foo", "bar2");
-    engineIntegrationExtensionRule.startProcessInstance(processDefinitionDto.getId(), variables);
+    engineIntegrationExtension.startProcessInstance(processDefinitionDto.getId(), variables);
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    embeddedOptimizeExtensionRule.getConfigurationService().setEsAggregationBucketLimit(1);
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -386,10 +386,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // given
     OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartLoopingProcess();
-    engineDatabaseExtensionRule.changeFirstActivityInstanceStartDate(START_LOOP, startDate);
-    engineDatabaseExtensionRule.changeFirstActivityInstanceEndDate(END_LOOP, startDate.plusSeconds(2));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineDatabaseExtension.changeFirstActivityInstanceStartDate(START_LOOP, startDate);
+    engineDatabaseExtension.changeFirstActivityInstanceEndDate(END_LOOP, startDate.plusSeconds(2));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -417,12 +417,12 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   public void unknownStartReturnsZero() throws SQLException {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtensionRule.changeActivityInstanceEndDateForProcessDefinition(
+    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       OffsetDateTime.now().plusHours(1)
     );
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -447,12 +447,12 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   public void unknownEndReturnsZero() throws SQLException {
     // given
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtensionRule.changeActivityInstanceStartDateForProcessDefinition(
+    engineDatabaseExtension.changeActivityInstanceStartDateForProcessDefinition(
       processInstanceDto.getDefinitionId(),
       OffsetDateTime.now().minusHours(1)
     );
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -501,10 +501,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     startThreeProcessInstances(startDate, procDefDto, Arrays.asList(1, 2, 9));
 
     ProcessInstanceEngineDto procInstDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(procInstDto.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(procInstDto.getId(), startDate.plusSeconds(2));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineDatabaseExtension.changeActivityInstanceStartDate(procInstDto.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(procInstDto.getId(), startDate.plusSeconds(2));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -538,8 +538,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData =
@@ -561,11 +561,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto =
       deployAndStartSimpleUserTaskProcessWithVariables(variables);
-    engineIntegrationExtensionRule.finishAllRunningUserTasks(processInstanceDto.getId());
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -590,11 +590,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     );
 
     // when
-    processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(4));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    processInstanceDto = engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(4));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     reportData.setFilter(Collections.singletonList(new RunningInstancesOnlyFilterDto()));
     resultDto = evaluateMapReport(reportData).getResult();
 
@@ -614,15 +614,15 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, "1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     variables.put(DEFAULT_VARIABLE_NAME, 1);
     ProcessInstanceEngineDto processInstanceDto2 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto2.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto2.getId(), startDate.plusSeconds(2));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto2.getId(), startDate.plusSeconds(2));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -659,16 +659,16 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     variables.put("foo1", "bar1");
     variables.put("foo3", "bar1");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     variables.clear();
     variables.put("foo2", "bar1");
     ProcessInstanceEngineDto processInstanceDto2 =
-      engineIntegrationExtensionRule.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto2.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto2.getId(), startDate.plusSeconds(5));
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+      engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto2.getId(), startDate.plusSeconds(5));
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     ProcessReportDataDto reportData = ProcessReportDataBuilder
@@ -711,10 +711,10 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     variables.put("doubleVar", 5.5);
     variables.put("stringVar", "aString");
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
-    engineDatabaseExtensionRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseExtensionRule.changeActivityInstanceEndDate(processInstanceDto.getId(), endDate);
-    embeddedOptimizeExtensionRule.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtensionRule.refreshAllOptimizeIndices();
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto.getId(), endDate);
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
@@ -738,7 +738,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       if (VariableType.DATE.equals(variableType)) {
         OffsetDateTime temporal = (OffsetDateTime) variables.get(entry.getKey());
 
-        String dateAsString = embeddedOptimizeExtensionRule.getDateTimeFormatter()
+        String dateAsString = embeddedOptimizeExtension.getDateTimeFormatter()
           .format(temporal.atZoneSameInstant(ZoneId.systemDefault()));
         assertThat(resultData.get(0).getKey(), is(dateAsString));
         assertThat(resultData.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000L)));
@@ -771,7 +771,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .endEvent(END_EVENT)
       .done();
     // @formatter:off
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
@@ -784,7 +784,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .endEvent(END_EVENT)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private ProcessInstanceEngineDto deployAndStartLoopingProcess() {
@@ -812,7 +812,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     Map<String, Object> variables = new HashMap<>();
     variables.put("anotherRound", true);
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE);
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(modelInstance, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessWithVariables(Map<String, Object> variables) {
@@ -826,7 +826,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .endEvent(END_EVENT)
       .done();
     // @formatter:on
-    return engineIntegrationExtensionRule.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private void startThreeProcessInstances(OffsetDateTime activityStartDate,
@@ -835,11 +835,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
                                                                                 SQLException {
     Map<String, Object> variables = new HashMap<>();
     variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE);
-    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtensionRule.startProcessInstance(procDefDto.getId(), variables);
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(procDefDto.getId(), variables);
     ProcessInstanceEngineDto processInstanceDto2 =
-      engineIntegrationExtensionRule.startProcessInstance(procDefDto.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(procDefDto.getId(), variables);
     ProcessInstanceEngineDto processInstanceDto3 =
-      engineIntegrationExtensionRule.startProcessInstance(procDefDto.getId(), variables);
+      engineIntegrationExtension.startProcessInstance(procDefDto.getId(), variables);
 
     Map<String, OffsetDateTime> activityStartDatesToUpdate = new HashMap<>();
     Map<String, OffsetDateTime> endDatesToUpdate = new HashMap<>();
@@ -850,8 +850,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     endDatesToUpdate.put(processInstanceDto2.getId(), activityStartDate.plusSeconds(activityDurationsInSec.get(1)));
     endDatesToUpdate.put(processInstanceDto3.getId(), activityStartDate.plusSeconds(activityDurationsInSec.get(2)));
 
-    engineDatabaseExtensionRule.updateActivityInstanceStartDates(activityStartDatesToUpdate);
-    engineDatabaseExtensionRule.updateActivityInstanceEndDates(endDatesToUpdate);
+    engineDatabaseExtension.updateActivityInstanceStartDates(activityStartDatesToUpdate);
+    engineDatabaseExtension.updateActivityInstanceEndDates(endDatesToUpdate);
   }
 
 
