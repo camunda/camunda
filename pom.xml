@@ -47,7 +47,7 @@
     <quartz.version>2.3.2</quartz.version>
 
     <logback.version>1.2.3</logback.version>
-    <slf4j.version>1.7.28</slf4j.version>
+    <slf4j.version>1.7.29</slf4j.version>
 
     <version.node>v10.15.3</version.node>
     <version.yarn>v1.7.0</version.yarn>
