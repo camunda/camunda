@@ -727,3 +727,73 @@ func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromMap(t *testing.
 		t.Errorf("Failed to receive response")
 	}
 }
+
+func TestCreateWorkflowInstanceWithResultAndFetchVariablesCommand(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+		FetchVariables: []string{"a", "b", "c"},
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           "{}",
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	response, err := command.WorkflowKey(123).WithResult().FetchVariables("a", "b", "c").Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultAndFetchEmptyVariablesListCommand(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+		FetchVariables: []string{},
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           "{}",
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	response, err := command.WorkflowKey(123).WithResult().FetchVariables().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
