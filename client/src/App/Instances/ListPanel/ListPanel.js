@@ -39,7 +39,8 @@ class ListPanel extends React.Component {
 
     this.state = {
       entriesPerPage: 0,
-      instancesLoaded: false
+      instancesLoaded: false,
+      initialLoad: false
     };
 
     this.subscriptions = {
@@ -49,7 +50,7 @@ class ListPanel extends React.Component {
         }
 
         if (response.state === LOADING_STATE.LOADED) {
-          this.setState({instancesLoaded: true});
+          this.setState({initialLoad: true, instancesLoaded: true});
         }
       }
     };
@@ -142,6 +143,16 @@ class ListPanel extends React.Component {
     return msg;
   };
 
+  renderContent(isListEmpty) {
+    if (!isListEmpty) {
+      return <List.Item.Body />;
+    } else if (!this.state.initialLoad) {
+      return <List.Item.Skeleton />;
+    } else {
+      return <List.Item.Message message={this.getEmptyListMessage()} />;
+    }
+  }
+
   render() {
     const {
       filter,
@@ -155,6 +166,7 @@ class ListPanel extends React.Component {
     return (
       <SplitPane.Pane {...paneProps} hasShiftableControls>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
+
         <Styled.PaneBody>
           <List
             data={this.props.instances}
@@ -167,18 +179,15 @@ class ListPanel extends React.Component {
               this.setState({entriesPerPage})
             }
             isDataLoaded={this.state.instancesLoaded}
+            initialLoad={this.state.initialLoad}
             onActionButtonClick={this.handleActionButtonClick}
+            overlay={
+              !this.state.instancesLoaded &&
+              this.state.initialLoad && <Styled.Spinner />
+            }
           >
             <List.Item.Header />
-            {this.state.instancesLoaded ? (
-              !isListEmpty ? (
-                <List.Item.Body />
-              ) : (
-                <List.Item.Message message={this.getEmptyListMessage()} />
-              )
-            ) : (
-              <List.Item.Skeleton />
-            )}
+            {this.renderContent(isListEmpty)}
           </List>
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>

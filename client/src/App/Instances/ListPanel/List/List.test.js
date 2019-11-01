@@ -315,8 +315,8 @@ describe('List', () => {
     });
   });
 
-  describe('Skeleton', () => {
-    it('should be wrapped correctly', () => {
+  describe('Skeleton & Spinners', () => {
+    it('Skeleton should be wrapped correctly', () => {
       const node = shallow(<List.WrappedComponent.Skeleton {...mockProps} />);
       expect(node).toMatchSnapshot();
     });

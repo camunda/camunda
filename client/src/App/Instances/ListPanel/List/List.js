@@ -30,6 +30,7 @@ const {THead, TBody, TH, TR, TD} = Table;
 class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
+    overlay: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
     onSelectedInstancesUpdate: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selectedInstances: PropTypes.shape({
@@ -37,6 +38,7 @@ class List extends React.Component {
       excludeIds: PropTypes.array,
       ids: PropTypes.array
     }).isRequired,
+    isDataLoaded: PropTypes.bool.isRequired,
     filterCount: PropTypes.number,
     filter: PropTypes.object,
     sorting: PropTypes.object,
@@ -173,6 +175,7 @@ class List extends React.Component {
     return (
       <Styled.List>
         <Styled.TableContainer ref={this.myRef}>
+          {this.props.overlay && this.props.overlay()}
           <ListContext.Provider
             value={{
               data: this.props.data,
@@ -183,6 +186,7 @@ class List extends React.Component {
               handleSelectAll: this.handleSelectAll,
               rowsToDisplay: this.state.rowsToDisplay,
               isSelected: this.isSelected,
+              isDataLoaded: this.props.isDataLoaded,
               handleSelectInstance: this.handleSelectInstance,
               handleActionButtonClick: this.handleActionButtonClick
             }}
@@ -205,7 +209,7 @@ WrappedList.Item.Skeleton = function Skeleton() {
     <TBody>
       <Styled.EmptyTR>
         <Styled.EmptyTD colSpan={6}>
-          <SpinnerSkeleton data-test="spinner" />
+          <SpinnerSkeleton />
         </Styled.EmptyTD>
       </Styled.EmptyTR>
     </TBody>
@@ -292,10 +296,11 @@ WrappedList.Item.Header = function Header(props) {
     sorting,
     onSort,
     areAllInstancesSelected,
-    handleSelectAll
+    handleSelectAll,
+    isDataLoaded
   } = useListContext();
 
-  const isListEmpty = data.length === 0;
+  const isListEmpty = !isDataLoaded || data.length === 0;
   const listHasFinishedInstances = filter.canceled || filter.completed;
   return (
     <THead {...props}>

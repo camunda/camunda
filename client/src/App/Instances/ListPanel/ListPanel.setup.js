@@ -52,6 +52,14 @@ export const mockProps = {
   firstElement: 0,
   onFirstElementChange: onFirstElementChange
 };
+
+export const mockPropsBeforeDataLoaded = {
+  ...mockProps,
+  instances: [],
+  initialLoad: false,
+  instancesLoaded: false
+};
+
 export const mockPropsWithInstances = {
   ...mockProps,
   instances: [INSTANCE, ACTIVE_INSTANCE],

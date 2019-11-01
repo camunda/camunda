@@ -29,6 +29,7 @@ import {
   mockProps,
   mockPropsWithInstances,
   mockPropsWithNoOperation,
+  mockPropsBeforeDataLoaded,
   mockPropsWithPoll,
   ACTIVE_INSTANCE
 } from './ListPanel.setup';
@@ -48,7 +49,7 @@ DataManager.mockImplementation(mockDataManager);
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 
 describe('ListPanel', () => {
-  let Component, ComponentWithInstances;
+  let Component, ComponentWithInstances, ComponentBeforeDataLoaded;
   let dataManager;
   beforeEach(() => {
     jest.clearAllMocks();
@@ -60,6 +61,12 @@ describe('ListPanel', () => {
     ComponentWithInstances = (
       <ListPanel.WrappedComponent
         {...mockPropsWithInstances}
+        {...{dataManager}}
+      />
+    );
+    ComponentBeforeDataLoaded = (
+      <ListPanel.WrappedComponent
+        {...mockPropsBeforeDataLoaded}
         {...{dataManager}}
       />
     );
@@ -101,9 +108,10 @@ describe('ListPanel', () => {
   });
 
   describe('display instances List', () => {
-    it('should render a spinner', () => {
+    it('should render a skeleton', () => {
       // given
-      const node = shallow(ComponentWithInstances);
+      const node = shallow(ComponentBeforeDataLoaded);
+
       const TBodyNode = node.find(List.Item.Skeleton);
       expect(TBodyNode).toHaveLength(1);
     });

@@ -14,17 +14,3 @@ exports[`List Message should be wrapped correctly 1`] = `
   </Styled(TR)>
 </TBody>
 `;
-
-exports[`List Skeleton should be wrapped correctly 1`] = `
-<TBody>
-  <Styled(TR)>
-    <Styled(TD)
-      colSpan={6}
-    >
-      <SpinnerSkeleton
-        data-test="spinner"
-      />
-    </Styled(TD)>
-  </Styled(TR)>
-</TBody>
-`;
