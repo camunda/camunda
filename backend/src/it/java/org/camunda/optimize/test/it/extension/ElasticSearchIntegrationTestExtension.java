@@ -160,9 +160,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
    * field name in ES and every content of that variable is going to be the
    * content of the field.
    *
-   * @param indexName  where the entry is added.
-   * @param id    under which the entry is added.
-   * @param entry a POJO specifying field names and their contents.
+   * @param indexName where the entry is added.
+   * @param id        under which the entry is added.
+   * @param entry     a POJO specifying field names and their contents.
    */
   public void addEntryToElasticsearch(String indexName, String id, Object entry) {
     try {

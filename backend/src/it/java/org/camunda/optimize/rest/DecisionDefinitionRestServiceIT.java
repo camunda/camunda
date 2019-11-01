@@ -5,41 +5,23 @@
  */
 package org.camunda.optimize.rest;
 
-import com.google.common.collect.ImmutableList;
-import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
-import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
-import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionWithTenantsRestDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
-import org.camunda.optimize.service.TenantService;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 
-public class DecisionDefinitionRestServiceIT extends AbstractIT {
-  private static final String VERSION_TAG = "aVersionTag";
-  private static final String TENANT_NONE_NAME = TenantService.TENANT_NOT_DEFINED.getName();
-  private static final TenantRestDto TENANT_NONE_DTO = new TenantRestDto(null, TENANT_NONE_NAME);
-  private static final TenantRestDto TENANT_1_DTO = new TenantRestDto("tenant1", "Tenant 1");
-  private static final TenantRestDto TENANT_2_DTO = new TenantRestDto("tenant2", "Tenant 2");
+public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServiceIT {
 
   @Test
   public void getDecisionDefinitions() {
@@ -177,7 +159,6 @@ public class DecisionDefinitionRestServiceIT extends AbstractIT {
     assertThat(actualXml, is(secondTenantDefinition.getDmn10Xml()));
   }
 
-
   @Test
   public void getSharedDecisionDefinitionXmlByTenantWithNoSpecificDefinition() {
     //given
@@ -265,224 +246,34 @@ public class DecisionDefinitionRestServiceIT extends AbstractIT {
     assertThat(message, containsString("Could not find xml for decision definition with key"));
   }
 
-  @Test
-  public void testGetDecisionDefinitionVersionsWithTenants() {
-    //given
-    createTenant(TENANT_1_DTO);
-    createTenant(TENANT_2_DTO);
-    final String decDefKey1 = "decDefKey1";
-    final String decDefKey2 = "decDefKey2";
-    createDecisionDefinitionsForKey(decDefKey1, 3);
-    createDecisionDefinitionsForKey(decDefKey2, 2, TENANT_1_DTO.getId());
-    createDecisionDefinitionsForKey(decDefKey2, 3, TENANT_2_DTO.getId());
-
-    // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
+  @Override
+  protected List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenantsAsUser(final String userId) {
+    return embeddedOptimizeExtension
       .getRequestExecutor()
+      .withUserAuthentication(userId, userId)
       .buildGetDecisionDefinitionVersionsWithTenants()
       .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
-
-    // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(2));
-    // first definition
-    final DefinitionVersionsWithTenantsRestDto firstDefinition = definitions.get(0);
-    assertThat(firstDefinition.getKey(), is(decDefKey1));
-    final List<TenantRestDto> expectedDefinition1AllTenantsOrdered = ImmutableList.of(
-      TENANT_NONE_DTO, TENANT_1_DTO, TENANT_2_DTO
-    );
-    assertThat(firstDefinition.getAllTenants(), is(expectedDefinition1AllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> expectedVersionForDefinition1 = ImmutableList.of(
-      new DefinitionVersionWithTenantsRestDto("2", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
-      new DefinitionVersionWithTenantsRestDto("1", VERSION_TAG, expectedDefinition1AllTenantsOrdered),
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, expectedDefinition1AllTenantsOrdered)
-    );
-    assertThat(firstDefinition.getVersions(), is(expectedVersionForDefinition1));
-    // second definition
-    final DefinitionVersionsWithTenantsRestDto secondDefinition = definitions.get(1);
-    assertThat(secondDefinition.getKey(), is(decDefKey2));
-    final List<TenantRestDto> expectedDefinition2AllTenantsOrdered = ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO);
-    assertThat(secondDefinition.getAllTenants(), is(expectedDefinition2AllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> expectedVersionForDefinition2 = ImmutableList.of(
-      new DefinitionVersionWithTenantsRestDto("2", VERSION_TAG, ImmutableList.of(TENANT_2_DTO)),
-      new DefinitionVersionWithTenantsRestDto("1", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO)),
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, ImmutableList.of(TENANT_1_DTO, TENANT_2_DTO))
-    );
-    assertThat(secondDefinition.getVersions(), is(expectedVersionForDefinition2));
   }
 
-  @Test
-  public void testDefinitionSorting() {
-    createDecisionDefinitionDto("z", "1", null, "a");
-    createDecisionDefinitionDto("x", "1", null, "b");
-    createDecisionDefinitionsForKey("c", 1);
-    createDecisionDefinitionsForKey("D", 1);
-    createDecisionDefinitionsForKey("e", 1);
-    createDecisionDefinitionsForKey("F", 1);
-
-
-    // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDecisionDefinitionVersionsWithTenants()
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
-
-    assertThat(definitions.get(0).getKey(), is("z"));
-    assertThat(definitions.get(1).getKey(), is("x"));
-    assertThat(definitions.get(2).getKey(), is("c"));
-    assertThat(definitions.get(3).getKey(), is("D"));
-    assertThat(definitions.get(4).getKey(), is("e"));
-    assertThat(definitions.get(5).getKey(), is("F"));
+  @Override
+  protected int getDefinitionResourceType() {
+    return RESOURCE_TYPE_DECISION_DEFINITION;
   }
 
-  @Test
-  public void testGetDecisionDefinitionVersionsWithTenants_sharedAndTenantDefinitionWithSameKeyAndVersion() {
-    //given
-    createTenant(TENANT_1_DTO);
-    final String decDefKey1 = "decDefKey1";
-
-    createDecisionDefinitionsForKey(decDefKey1, 2);
-    createDecisionDefinitionsForKey(decDefKey1, 3, TENANT_1_DTO.getId());
-
-    // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetDecisionDefinitionVersionsWithTenants()
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
-
-    // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(1));
-    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
-    assertThat(availableDefinition.getKey(), is(decDefKey1));
-    final List<TenantRestDto> expectedAllTenantsOrdered = ImmutableList.of(TENANT_NONE_DTO, TENANT_1_DTO);
-    assertThat(availableDefinition.getAllTenants(), is(expectedAllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> expectedVersionForDefinition1 = ImmutableList.of(
-      new DefinitionVersionWithTenantsRestDto("2", VERSION_TAG, ImmutableList.of(TENANT_1_DTO)),
-      new DefinitionVersionWithTenantsRestDto("1", VERSION_TAG, expectedAllTenantsOrdered),
-      new DefinitionVersionWithTenantsRestDto("0", VERSION_TAG, expectedAllTenantsOrdered)
-    );
-    assertThat(availableDefinition.getVersions(), is(expectedVersionForDefinition1));
-  }
-
-  @Test
-  public void testGetDecisionDefinitionVersionsWithTenants_onlyAuthorizedTenantsAvailable() {
-    // given
-    createTenant(TENANT_1_DTO);
-    createTenant(TENANT_2_DTO);
-    final String decDefKey = "decDefKey";
-
-    createDecisionDefinitionsForKey(decDefKey, 2, TENANT_1_DTO.getId());
-    createDecisionDefinitionsForKey(decDefKey, 3, TENANT_2_DTO.getId());
-
-    final String tenant1UserId = "tenantUser";
-    createUserWithTenantAuthorization(tenant1UserId, ImmutableList.of(ALL_PERMISSION), TENANT_1_DTO.getId());
-    grantSingleDefinitionAuthorizationsForUser(tenant1UserId, decDefKey);
-
-    // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(tenant1UserId, tenant1UserId)
-      .buildGetDecisionDefinitionVersionsWithTenants()
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
-
-    // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(1));
-    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
-    assertThat(availableDefinition.getKey(), is(decDefKey));
-    assertThat(availableDefinition.getAllTenants(), contains(TENANT_1_DTO));
-    final List<DefinitionVersionWithTenantsRestDto> definitionVersions = availableDefinition.getVersions();
-    definitionVersions.forEach(
-      versionWithTenants -> assertThat(versionWithTenants.getTenants(), contains(TENANT_1_DTO))
-    );
-  }
-
-  @Test
-  public void testGetDecisionDefinitionVersionsWithTenants_sharedDefinitionNoneTenantAndAuthorizedTenantsAvailable() {
-    // given
-    createTenant(TENANT_1_DTO);
-    createTenant(TENANT_2_DTO);
-    final String decisionDefKey = "decisionDefKey";
-    createDecisionDefinitionsForKey(decisionDefKey, 4);
-    createDecisionDefinitionsForKey(decisionDefKey, 3, TENANT_2_DTO.getId());
-
-    final String tenant1UserId = "tenantUser";
-    createUserWithTenantAuthorization(tenant1UserId, ImmutableList.of(ALL_PERMISSION), TENANT_1_DTO.getId());
-    grantSingleDefinitionAuthorizationsForUser(tenant1UserId, decisionDefKey);
-
-    // when
-    final List<DefinitionVersionsWithTenantsRestDto> definitions = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(tenant1UserId, tenant1UserId)
-      .buildGetDecisionDefinitionVersionsWithTenants()
-      .executeAndReturnList(DefinitionVersionsWithTenantsRestDto.class, 200);
-
-    // then
-    assertThat(definitions, is(notNullValue()));
-    assertThat(definitions.size(), is(1));
-    final DefinitionVersionsWithTenantsRestDto availableDefinition = definitions.get(0);
-    assertThat(availableDefinition.getKey(), is(decisionDefKey));
-    final List<TenantRestDto> expectedAllTenantsOrdered = ImmutableList.of(TENANT_NONE_DTO, TENANT_1_DTO);
-    assertThat(availableDefinition.getAllTenants(), is(expectedAllTenantsOrdered));
-    final List<DefinitionVersionWithTenantsRestDto> definitionVersions = availableDefinition.getVersions();
-    definitionVersions.forEach(
-      versionWithTenants -> assertThat(versionWithTenants.getTenants(), is(expectedAllTenantsOrdered))
-    );
-  }
-
-  private void createUserWithTenantAuthorization(final String tenantUser,
-                                                 final ImmutableList<String> permissions,
-                                                 final String tenantId) {
-    createOptimizeUser(tenantUser);
-    createTenantAuthorization(tenantUser, permissions, tenantId, AUTHORIZATION_TYPE_GRANT);
-  }
-
-  private void createTenantAuthorization(final String tenantUser,
-                                         final ImmutableList<String> permissions,
-                                         final String resourceId,
-                                         int type) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
-    authorizationDto.setPermissions(permissions);
-    authorizationDto.setResourceId(resourceId);
-    authorizationDto.setType(type);
-    authorizationDto.setUserId(tenantUser);
-    engineIntegrationExtension.createAuthorization(authorizationDto);
-  }
-
-  private void createOptimizeUser(final String tenantUser) {
-    engineIntegrationExtension.addUser(tenantUser, tenantUser);
-    engineIntegrationExtension.grantUserOptimizeAccess(tenantUser);
-  }
-
-  private void createTenant(final TenantRestDto tenantRestDto) {
-    createTenant(tenantRestDto.getId(), tenantRestDto.getName());
-  }
-
-  private void createTenant(final String id, final String name) {
-    final TenantDto tenantDto = new TenantDto(id, name, DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, id, tenantDto);
-  }
-
-  private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_DECISION_DEFINITION);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(userId);
-    engineIntegrationExtension.createAuthorization(authorizationDto);
-  }
-
-  private void createDecisionDefinitionsForKey(String key, int count) {
-    createDecisionDefinitionsForKey(key, count, null);
+  @Override
+  protected void createDefinitionsForKey(final String definitionKey, final int versionCount, final String tenantId) {
+    createDecisionDefinitionsForKey(definitionKey, versionCount, tenantId);
   }
 
   private void createDecisionDefinitionsForKey(String key, int count, String tenantId) {
     IntStream.range(0, count).forEach(
       i -> createDecisionDefinitionDto(key, String.valueOf(i), tenantId)
     );
+  }
+
+  @Override
+  protected void createDefinition(final String key, final String version, final String tenantId, final String name) {
+    createDecisionDefinitionDto(key, version, tenantId, name);
   }
 
   private DecisionDefinitionOptimizeDto createDecisionDefinitionDto() {
@@ -494,18 +285,22 @@ public class DecisionDefinitionRestServiceIT extends AbstractIT {
   }
 
 
-  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, final String tenantId) {
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(final String key, final String tenantId) {
     return createDecisionDefinitionDto(key, "1", tenantId);
   }
 
-  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, String version, final String tenantId) {
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(final String key,
+                                                                    final String version,
+                                                                    final String tenantId) {
     return createDecisionDefinitionDto(key, version, tenantId, null);
   }
 
-  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key, String version, final String tenantId
-    , String name) {
+  private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(final String key,
+                                                                    final String version,
+                                                                    final String tenantId,
+                                                                    final String name) {
     DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto()
-      .setId("id-" + key + "-version-" + version + "-" + tenantId)
+      .setId(key + "-" + version + "-" + tenantId)
       .setKey(key)
       .setVersion(version)
       .setVersionTag(VERSION_TAG)
