@@ -9,7 +9,6 @@ package io.zeebe.broker;
 
 import io.zeebe.broker.clustering.ClusterComponent;
 import io.zeebe.broker.engine.EngineComponent;
-import io.zeebe.broker.exporter.ExporterComponent;
 import io.zeebe.broker.system.SystemComponent;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -59,7 +58,6 @@ public class Broker implements AutoCloseable {
     brokerContext.addComponent(new TransportComponent());
     brokerContext.addComponent(new EngineComponent());
     brokerContext.addComponent(new ClusterComponent());
-    brokerContext.addComponent(new ExporterComponent());
 
     brokerContext.init();
   }

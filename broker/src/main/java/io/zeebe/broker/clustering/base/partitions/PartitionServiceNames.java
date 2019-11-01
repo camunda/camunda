@@ -39,9 +39,11 @@ public class PartitionServiceNames {
         String.format("cluster.base.partition.%s.follower", partitionName), Partition.class);
   }
 
-  public static ServiceName<Void> partitionInstallServiceName(final String partitionName) {
+  public static ServiceName<PartitionInstallService> partitionInstallServiceName(
+      final String partitionName) {
     return ServiceName.newServiceName(
-        String.format("cluster.base.partition.install.%s", partitionName), Void.class);
+        String.format("cluster.base.partition.install.%s", partitionName),
+        PartitionInstallService.class);
   }
 
   public static ServiceName<Void> leaderInstallServiceRootName(final String partitionName) {

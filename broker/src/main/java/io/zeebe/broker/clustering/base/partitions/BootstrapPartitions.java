@@ -81,9 +81,8 @@ public class BootstrapPartitions implements Service<Void> {
       final StorageConfiguration configuration,
       RaftPartition partition) {
     final String partitionName = getPartitionName(configuration.getPartitionId());
-    final ServiceName<Void> partitionInstallServiceName =
+    final ServiceName<PartitionInstallService> partitionInstallServiceName =
         partitionInstallServiceName(partitionName);
-    final String localMemberId = atomix.getMembershipService().getLocalMember().id().id();
 
     final PartitionInstallService partitionInstallService =
         new PartitionInstallService(

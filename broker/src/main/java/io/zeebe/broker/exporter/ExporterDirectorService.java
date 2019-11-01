@@ -7,79 +7,65 @@
  */
 package io.zeebe.broker.exporter;
 
-import static io.zeebe.broker.exporter.ExporterServiceNames.exporterClearStateServiceName;
-import static io.zeebe.broker.exporter.ExporterServiceNames.exporterDirectorServiceName;
-
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
-import io.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.zeebe.broker.exporter.repo.ExporterRepository;
 import io.zeebe.broker.exporter.stream.ExporterDirector;
 import io.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.List;
 
-public class ExporterManagerService implements Service<ExporterManagerService> {
+public class ExporterDirectorService implements Service<ExporterDirectorService> {
 
   public static final int EXPORTER_PROCESSOR_ID = 1003;
   public static final String EXPORTER_NAME = "exporter-%d";
 
-  private final List<ExporterCfg> exporterCfgs;
   private final ExporterRepository exporterRepository;
   private final DataCfg dataCfg;
   private ServiceStartContext startContext;
   private ExporterDirector director;
-  private final ServiceGroupReference<Partition> partitionsGroupReference =
-      ServiceGroupReference.<Partition>create().onAdd(this::startExporter).build();
+  private final Injector<Partition> partitionInjector = new Injector<>();
 
-  public ExporterManagerService(BrokerCfg brokerCfg) {
+  public ExporterDirectorService(BrokerCfg brokerCfg, ExporterRepository exporterRepository) {
     this.dataCfg = brokerCfg.getData();
-    this.exporterCfgs = brokerCfg.getExporters();
-    this.exporterRepository = new ExporterRepository();
+    this.exporterRepository = exporterRepository;
+  }
+
+  public Injector<Partition> getPartitionInjector() {
+    return partitionInjector;
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
     this.startContext = startContext;
-    // load and validate exporters
-    for (ExporterCfg exporterCfg : exporterCfgs) {
-      try {
-        exporterRepository.load(exporterCfg);
-      } catch (ExporterLoadException | ExporterJarLoadException e) {
-        throw new RuntimeException("Failed to load exporter with configuration: " + exporterCfg, e);
-      }
-    }
+    startExporter(partitionInjector.getValue(), startContext);
   }
 
   @Override
-  public ExporterManagerService get() {
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(director.stopAsync());
+  }
+
+  @Override
+  public ExporterDirectorService get() {
     return this;
   }
 
-  private void startExporter(ServiceName<Partition> partitionName, Partition partition) {
+  private void startExporter(Partition partition, ServiceStartContext startContext) {
     final ZeebeDb zeebeDb = partition.getZeebeDb();
 
     if (exporterRepository.getExporters().isEmpty()) {
       final ExporterClearStateService clearStateService =
           new ExporterClearStateService(partition.getZeebeDb());
-      startContext
-          .createService(
-              exporterClearStateServiceName(partition.getPartitionId()), clearStateService)
-          .dependency(partitionName)
-          .install();
+      clearStateService.start();
     } else {
       final ExporterDirectorContext context =
           new ExporterDirectorContext()
@@ -92,17 +78,8 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
               .logStreamReader(new BufferedLogStreamReader())
               .snapshotPeriod(DurationUtil.parse(dataCfg.getSnapshotPeriod()));
 
-      final LogStream logStream = partition.getLogStream();
-      final String logName = logStream.getLogName();
-
       director = new ExporterDirector(context);
-      startContext
-          .createService(exporterDirectorServiceName(partition.getPartitionId()), director)
-          .dependency(LogStreamServiceNames.logStreamServiceName(logName))
-          .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
-          .dependency(LogStreamServiceNames.logStorageServiceName(logName))
-          .dependency(partitionName)
-          .install();
+      startContext.async(director.startAsync(this.startContext.getScheduler()), true);
     }
   }
 
@@ -112,9 +89,5 @@ public class ExporterManagerService implements Service<ExporterManagerService> {
     } else {
       return director.getLowestExporterPosition();
     }
-  }
-
-  public ServiceGroupReference<Partition> getPartitionsGroupReference() {
-    return partitionsGroupReference;
   }
 }

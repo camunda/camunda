@@ -5,8 +5,9 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processor;
+package io.zeebe.broker.engine;
 
+import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class StreamProcessorServiceNames {

@@ -24,9 +24,6 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.retry.BackOffRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
@@ -45,7 +42,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ExporterDirector extends Actor implements Service<ExporterDirector> {
+public class ExporterDirector extends Actor {
 
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";
@@ -86,20 +83,12 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     this.metrics = new ExporterMetrics(partitionId);
   }
 
-  @Override
-  public void start(ServiceStartContext startContext) {
-    final ActorScheduler actorScheduler = startContext.getScheduler();
-    startContext.async(actorScheduler.submitActor(this, SchedulingHints.ioBound()));
+  public ActorFuture<Void> startAsync(ActorScheduler actorScheduler) {
+    return actorScheduler.submitActor(this, SchedulingHints.ioBound());
   }
 
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    stopContext.async(actor.close());
-  }
-
-  @Override
-  public ExporterDirector get() {
-    return this;
+  public ActorFuture<Void> stopAsync() {
+    return actor.close();
   }
 
   @Override
