@@ -153,6 +153,14 @@ class ListPanel extends React.Component {
     }
   }
 
+  renderSpinner() {
+    return (
+      !this.state.instancesLoaded &&
+      this.state.initialLoad &&
+      (() => <Styled.Spinner />)
+    );
+  }
+
   render() {
     const {
       filter,
@@ -181,10 +189,7 @@ class ListPanel extends React.Component {
             isDataLoaded={this.state.instancesLoaded}
             initialLoad={this.state.initialLoad}
             onActionButtonClick={this.handleActionButtonClick}
-            overlay={
-              !this.state.instancesLoaded &&
-              this.state.initialLoad && <Styled.Spinner />
-            }
+            Overlay={this.renderSpinner()}
           >
             <List.Item.Header />
             {this.renderContent(isListEmpty)}

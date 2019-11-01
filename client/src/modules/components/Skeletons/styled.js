@@ -25,7 +25,7 @@ export const Skeleton = themed(styled.div`
 
 export const SkeletonSpinner = themed(styled(Spinner)`
   position: absolute;
-  top: 43%;
+  top: 30%;
   height: 25px;
   width: 25px;
   margin: 0 5px;

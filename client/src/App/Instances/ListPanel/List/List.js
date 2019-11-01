@@ -30,7 +30,7 @@ const {THead, TBody, TH, TR, TD} = Table;
 class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
-    overlay: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
+    Overlay: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
     onSelectedInstancesUpdate: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selectedInstances: PropTypes.shape({
@@ -175,7 +175,8 @@ class List extends React.Component {
     return (
       <Styled.List>
         <Styled.TableContainer ref={this.myRef}>
-          {this.props.overlay && this.props.overlay()}
+          {this.props.Overlay && this.props.Overlay()}
+
           <ListContext.Provider
             value={{
               data: this.props.data,

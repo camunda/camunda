@@ -7,9 +7,9 @@
 import React from 'react';
 import * as Styled from './styled';
 
-export default function SpinnerSkeleton() {
+export default function SpinnerSkeleton(props) {
   return (
-    <Styled.Skeleton>
+    <Styled.Skeleton {...props}>
       <Styled.SkeletonSpinner />
     </Styled.Skeleton>
   );

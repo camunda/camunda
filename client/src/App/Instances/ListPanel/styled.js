@@ -8,6 +8,11 @@ import styled from 'styled-components';
 import Table from 'modules/components/Table';
 
 import SplitPane from 'modules/components/SplitPane';
+import SpinnerSkeleton from 'modules/components/Skeletons';
+
+export const Spinner = styled(SpinnerSkeleton)`
+  margin-top: 39px;
+`;
 
 export const PaneBody = styled(SplitPane.Pane.Body)`
   border-top: none;
