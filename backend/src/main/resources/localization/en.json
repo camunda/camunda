@@ -309,7 +309,8 @@
     },
     "apply": "Apply Changes",
     "create": "Create Alert",
-    "cannotSave": "Alert \"{name}\" could not be saved."
+    "cannotSave": "Alert \"{name}\" could not be saved.",
+    "notCreated": "There are no Alerts created yet"
   },
   "analysis": {
     "branchAnalysis": "Branch Analysis",

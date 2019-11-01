@@ -309,7 +309,8 @@
     },
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",
-    "cannotSave": "Alarm \"{name}\" konnte nicht gespeichert werden."
+    "cannotSave": "Alarm \"{name}\" konnte nicht gespeichert werden.",
+    "notCreated": "Es wurden noch keine Alarme erstellt"
   },
   "analysis": {
     "branchAnalysis": "Verlaufsanalyse",
