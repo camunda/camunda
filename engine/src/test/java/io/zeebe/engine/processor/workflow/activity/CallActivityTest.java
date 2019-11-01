@@ -17,6 +17,7 @@ import io.zeebe.model.bpmn.builder.CallActivityBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -360,6 +361,43 @@ public class CallActivityTest {
             tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldTerminateOnCompleting() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeOutput("x", "y")))
+        .deploy();
+
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    completeJobWith(Map.of());
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .exists())
+        .describedAs("Expected incident to be created")
+        .isTrue();
+
+    // when
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
