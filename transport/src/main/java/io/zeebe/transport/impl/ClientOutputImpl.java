@@ -10,13 +10,10 @@ package io.zeebe.transport.impl;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.EndpointRegistry;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.impl.sender.OutgoingMessage;
 import io.zeebe.transport.impl.sender.OutgoingRequest;
 import io.zeebe.transport.impl.sender.Sender;
 import io.zeebe.transport.impl.sender.TransportHeaderWriter;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -40,16 +37,6 @@ public class ClientOutputImpl implements ClientOutput {
     this.requestManager = requestManager;
     this.defaultRequestRetryTimeout = defaultRequestRetryTimeout;
     this.defaultMessageRetryTimeoutInMillis = defaultMessageRetryTimeout.toMillis();
-  }
-
-  @Override
-  public boolean sendMessage(Integer nodeId, BufferWriter writer) {
-    final RemoteAddress remoteAddress = endpointRegistry.getEndpoint(nodeId);
-    if (remoteAddress != null) {
-      return sendTransportMessage(remoteAddress.getStreamId(), writer);
-    } else {
-      return false;
-    }
   }
 
   @Override
@@ -93,33 +80,6 @@ public class ClientOutputImpl implements ClientOutput {
       }
     } else {
       return null;
-    }
-  }
-
-  private boolean sendTransportMessage(int remoteStreamId, BufferWriter writer) {
-    final int framedMessageLength =
-        TransportHeaderWriter.getFramedMessageLength(writer.getLength());
-    final ByteBuffer allocatedBuffer = requestManager.allocateMessageBuffer(framedMessageLength);
-
-    if (allocatedBuffer != null) {
-      try {
-        final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
-        final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
-        headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
-        final long deadline = ActorClock.currentTimeMillis() + defaultMessageRetryTimeoutInMillis;
-
-        final OutgoingMessage outgoingMessage =
-            new OutgoingMessage(remoteStreamId, bufferView, deadline);
-
-        requestManager.submitMessage(outgoingMessage);
-
-        return true;
-      } catch (RuntimeException e) {
-        requestManager.reclaimMessageBuffer(allocatedBuffer);
-        throw e;
-      }
-    } else {
-      return false;
     }
   }
 }

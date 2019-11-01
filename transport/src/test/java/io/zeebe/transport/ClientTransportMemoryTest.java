@@ -7,11 +7,9 @@
  */
 package io.zeebe.transport;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.DirectBufferWriter.writerFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doReturn;
@@ -29,7 +27,6 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
-import io.zeebe.transport.util.RecordingMessageHandler;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
@@ -56,25 +53,22 @@ public class ClientTransportMemoryTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected ClientTransport clientTransport;
   private NonBlockingMemoryPool requestMemoryPoolSpy;
-  private NonBlockingMemoryPool messageMemoryPoolSpy;
 
   @Before
   public void setUp() {
     requestMemoryPoolSpy = spy(new NonBlockingMemoryPool(ByteValue.ofMegabytes(4)));
-    messageMemoryPoolSpy = spy(new NonBlockingMemoryPool(ByteValue.ofMegabytes(4)));
 
     clientTransport =
         Transports.newClientTransport("test")
             .scheduler(actorSchedulerRule.get())
             .requestMemoryPool(requestMemoryPoolSpy)
-            .messageMemoryPool(messageMemoryPoolSpy)
             .defaultMessageRetryTimeout(Duration.ofMillis(100))
             .build();
     closeables.manage(clientTransport);
   }
 
   protected ServerTransport buildServerTransport(
-      Function<ServerTransportBuilder, ServerTransport> builderConsumer) {
+      final Function<ServerTransportBuilder, ServerTransport> builderConsumer) {
     final Dispatcher serverSendBuffer =
         Dispatchers.create("serverSendBuffer")
             .bufferSize(ByteValue.ofMegabytes(4))
@@ -159,84 +153,12 @@ public class ClientTransportMemoryTest {
 
     try {
       clientTransport.getOutput().sendRequest(NODE_ID1, writer);
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       // expected
     }
 
     verify(requestMemoryPoolSpy, times(1)).allocate(anyInt());
     verify(requestMemoryPoolSpy, times(1)).reclaim(any());
-  }
-
-  @Test
-  public void shouldReclaimOnMessageSend() {
-    // given
-    final BufferWriter writer = mock(BufferWriter.class);
-    when(writer.getLength()).thenReturn(16);
-
-    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
-
-    buildServerTransport(
-        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null));
-
-    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
-
-    clientTransport.getOutput().sendMessage(NODE_ID1, writer);
-
-    waitUntil(() -> messageHandler.numReceivedMessages() == 1);
-
-    verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
-    verify(messageMemoryPoolSpy, times(1)).reclaim(any());
-  }
-
-  @Test
-  public void shouldReclaimOnMessageSendFailed() {
-    // given
-    final BufferWriter writer = mock(BufferWriter.class);
-    when(writer.getLength()).thenReturn(16);
-
-    // no channel open
-    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
-
-    // when
-    clientTransport.getOutput().sendMessage(NODE_ID1, writer);
-
-    // then
-    verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
-    verify(messageMemoryPoolSpy, timeout(1000).times(1)).reclaim(any());
-  }
-
-  @Test
-  public void shouldReclaimOnMessageWriterException() {
-    // given
-    final BufferWriter writer = mock(BufferWriter.class);
-    when(writer.getLength()).thenReturn(16);
-    doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
-
-    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
-
-    try {
-      clientTransport.getOutput().sendMessage(NODE_ID1, writer);
-      fail("expected exception");
-    } catch (Exception e) {
-      // expected
-    }
-
-    verify(messageMemoryPoolSpy, times(1)).allocate(anyInt());
-    verify(messageMemoryPoolSpy, times(1)).reclaim(any());
-  }
-
-  @Test
-  public void shouldRejectMessageWhenBufferPoolExhaused() {
-    // given
-    final ClientOutput output = clientTransport.getOutput();
-
-    doReturn(null).when(messageMemoryPoolSpy).allocate(anyInt());
-
-    // when
-    final boolean success = output.sendMessage(NODE_ID1, WRITER1);
-
-    // then
-    assertThat(success).isFalse();
   }
 
   @Test
