@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -58,7 +59,10 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
   protected abstract String getDurationFieldName(final ProcessReportDataDto reportData);
 
   @Override
-  public ViewResult retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
-    return new ViewResult(getAggregationStrategy(reportData).getValue(aggs));
+  public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
+                                   final ExecutionContext<ProcessReportDataDto> context) {
+    return new ViewResult().setNumber(
+      getAggregationStrategy(context.getReportData()).getValue(aggs)
+    );
   }
 }

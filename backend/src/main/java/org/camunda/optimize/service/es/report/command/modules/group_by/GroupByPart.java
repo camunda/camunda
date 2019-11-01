@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -26,8 +27,10 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
   @Setter
   protected DistributedByPart<Data> distributedByPart;
 
-  public void adjustBaseQuery(final BoolQueryBuilder baseQuery, final Data definitionData) {
-    distributedByPart.adjustBaseQuery(baseQuery, definitionData);
+  public void adjustSearchRequest(final SearchRequest searchRequest,
+                                  final BoolQueryBuilder baseQuery,
+                                  final ExecutionContext<Data> context) {
+    distributedByPart.adjustSearchRequest(searchRequest, baseQuery, context);
   }
 
   public abstract List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -40,7 +43,8 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
     return dataForCommandKey.createCommandKey();
   }
 
-  public abstract CompositeCommandResult retrieveQueryResult(SearchResponse response, Data reportData);
+  public abstract CompositeCommandResult retrieveQueryResult(SearchResponse response,
+                                                             final ExecutionContext<Data> executionContext);
 
   public boolean getSortByKeyIsOfNumericType(final ExecutionContext<Data> context) {
     return false;

@@ -7,9 +7,12 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by;
 
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -21,14 +24,17 @@ public abstract class DistributedByPart<Data extends SingleReportDataDto> {
   @Setter
   protected ViewPart<Data> viewPart;
 
-  public void adjustBaseQuery(final BoolQueryBuilder baseQuery, final Data definitionData) {
-    viewPart.adjustBaseQuery(baseQuery, definitionData);
+  public void adjustSearchRequest(final SearchRequest searchRequest,
+                                  final BoolQueryBuilder baseQuery,
+                                  final ExecutionContext<Data> context) {
+    viewPart.adjustSearchRequest(searchRequest, baseQuery, context);
   }
 
   public abstract AggregationBuilder createAggregation(final ExecutionContext<Data> context);
 
-  public abstract List<DistributedByResult> retrieveResult(final Aggregations aggregations,
-                                                           final Data reportData);
+  public abstract List<DistributedByResult> retrieveResult(final SearchResponse response,
+                                                           final Aggregations aggregations,
+                                                           final ExecutionContext<Data> context);
 
   public void addDistributedByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey) {
     addAdjustmentsForCommandKeyGeneration(dataForCommandKey);

@@ -88,20 +88,20 @@ public class ProcessGroupByFlowNode extends ProcessGroupByPart {
 
   @Override
   public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ProcessReportDataDto reportData) {
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
 
     final Aggregations aggregations = response.getAggregations();
     final Nested flowNodes = aggregations.get(FLOW_NODES_AGGREGATION);
     final Filter filteredUserTasks = flowNodes.getAggregations().get(FILTERED_FLOW_NODES_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(NESTED_EVENTS_AGGREGATION);
 
-    final Map<String, String> flowNodeNames = getFlowNodeNames(reportData);
+    final Map<String, String> flowNodeNames = getFlowNodeNames(context.getReportData());
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (Terms.Bucket flowNodeBucket : byTaskIdAggregation.getBuckets()) {
       final String flowNodeKey = flowNodeBucket.getKeyAsString();
       if (flowNodeNames.containsKey(flowNodeKey)) {
         final List<DistributedByResult> singleResult =
-          distributedByPart.retrieveResult(flowNodeBucket.getAggregations(), reportData);
+          distributedByPart.retrieveResult(response, flowNodeBucket.getAggregations(), context);
         String label = flowNodeNames.get(flowNodeKey);
         groupedData.add(GroupByResult.createGroupByResult(flowNodeKey, label, singleResult));
         flowNodeNames.remove(flowNodeKey);

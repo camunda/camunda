@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -25,8 +26,10 @@ public abstract class ProcessViewFrequencyCount extends ProcessViewPart {
   }
 
   @Override
-  public ViewResult retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
+  public ViewResult retrieveResult(final SearchResponse response,
+                                   final Aggregations aggs,
+                                   final ExecutionContext<ProcessReportDataDto> context) {
     final Filter count = aggs.get(COUNT_AGGREGATION);
-    return new ViewResult(count.getDocCount());
+    return new ViewResult().setNumber(count.getDocCount());
   }
 }

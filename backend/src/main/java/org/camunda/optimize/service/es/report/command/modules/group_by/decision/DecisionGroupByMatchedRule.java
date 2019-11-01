@@ -51,13 +51,13 @@ public class DecisionGroupByMatchedRule extends DecisionGroupByPart {
 
   @Override
   public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final DecisionReportDataDto reportData) {
+                                                    final ExecutionContext<DecisionReportDataDto> context) {
 
     final Terms matchedRuleTerms = response.getAggregations().get(MATCHED_RULES_AGGREGATION);
     final List<GroupByResult> matchedRules = new ArrayList<>();
     for (Terms.Bucket matchedRuleBucket : matchedRuleTerms.getBuckets()) {
       final List<DistributedByResult> distributions =
-        distributedByPart.retrieveResult(matchedRuleBucket.getAggregations(), reportData);
+        distributedByPart.retrieveResult(response, matchedRuleBucket.getAggregations(), context);
       matchedRules.add(GroupByResult.createGroupByResult(matchedRuleBucket.getKeyAsString(), distributions));
     }
 

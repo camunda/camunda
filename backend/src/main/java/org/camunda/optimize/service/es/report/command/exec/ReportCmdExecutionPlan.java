@@ -65,7 +65,6 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     final Data reportData = executionContext.getReportData();
 
     final BoolQueryBuilder baseQuery = setupBaseQuery(reportData);
-    groupByPart.adjustBaseQuery(baseQuery, reportData);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
       .fetchSource(false)
@@ -75,6 +74,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     SearchRequest searchRequest = new SearchRequest(getIndexName())
       .types(getIndexName())
       .source(searchSourceBuilder);
+    groupByPart.adjustSearchRequest(searchRequest, baseQuery, executionContext);
 
     SearchResponse response;
     try {
@@ -104,7 +104,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
   protected abstract Supplier<Data> getDataDtoSupplier();
 
   private R retrieveQueryResult(final SearchResponse response, final ExecutionContext<Data> executionContext) {
-    final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext.getReportData());
+    final CompositeCommandResult result = groupByPart.retrieveQueryResult(response, executionContext);
     final R reportResult = mapToReportResult.apply(result);
     reportResult.setInstanceCount(response.getHits().getTotalHits());
     final Optional<SortingDto> sorting = groupByPart.getSorting(executionContext);

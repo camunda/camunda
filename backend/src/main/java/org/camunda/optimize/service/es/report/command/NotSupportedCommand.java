@@ -6,40 +6,39 @@
 package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
-public class NotSupportedCommand extends ReportCommand {
-  private static final Logger logger = LoggerFactory.getLogger(NotSupportedCommand.class);
+@RequiredArgsConstructor
+@Slf4j
+@Component
+public class NotSupportedCommand implements Command {
+
+  private final ObjectMapper objectMapper;
 
   @Override
-  protected ReportEvaluationResult evaluate() {
+  public ReportEvaluationResult evaluate(final CommandContext commandContext) {
     // Error should contain the report Name
     try {
-      logger.warn("The following settings combination of the report data is not supported in Optimize: \n" +
-                    "{} \n " +
-                    "Therefore returning error result.", objectMapper.writeValueAsString(reportDefinition));
+      log.warn(
+        "The following settings combination of the report data is not supported in Optimize: \n" +
+          "{} \n " +
+          "Therefore returning error result.",
+        objectMapper.writeValueAsString(commandContext.getReportDefinition())
+      );
     } catch (JsonProcessingException e) {
-      logger.error("can't serialize report data", e);
+      log.error("can't serialize report data", e);
     }
     throw new OptimizeValidationException("This combination of the settings of the report builder is not supported!");
   }
 
   @Override
-  protected void sortResultData(final ReportEvaluationResult evaluationResult) {
-    // noop
-  }
-
-  @Override
-  protected void beforeEvaluate(final CommandContext commandContext) {
-    // noop
-  }
-
-  @Override
-  protected String getLatestDefinitionVersionToKey(String definitionKey) {
-    // not needed
-    return null;
+  public String createCommandKey() {
+    // could be anything, we don't care
+    return "not_supported";
   }
 }

@@ -17,8 +17,10 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 
@@ -30,16 +32,18 @@ public class DecisionGroupByNone extends DecisionGroupByPart {
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<DecisionReportDataDto> context) {
     // nothing to do here, since we don't group so just pass the view part on
-    return Collections.singletonList(distributedByPart.createAggregation(context));
+    return Stream.of(distributedByPart.createAggregation(context))
+      .filter(Objects::nonNull)
+      .collect(Collectors.toList());
   }
 
   @Override
   public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final DecisionReportDataDto reportData) {
+                                                    final ExecutionContext<DecisionReportDataDto> context) {
     CompositeCommandResult compositeCommandResult = new CompositeCommandResult();
 
     final List<DistributedByResult> distributions =
-      distributedByPart.retrieveResult(response.getAggregations(), reportData);
+      distributedByPart.retrieveResult(response, response.getAggregations(), context);
     GroupByResult groupByResult = GroupByResult.createEmptyGroupBy(distributions);
     compositeCommandResult.setGroup(groupByResult);
     return compositeCommandResult;

@@ -147,15 +147,15 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
 
   @Override
   public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                               final DecisionReportDataDto reportData) {
+                                                    final ExecutionContext<DecisionReportDataDto> context) {
     CompositeCommandResult result = new CompositeCommandResult();
-    result.setGroups(processAggregations(response.getAggregations(), reportData));
+    result.setGroups(processAggregations(response, response.getAggregations(), context));
     result.setIsComplete(isResultComplete(response));
     return result;
   }
 
-  private List<GroupByResult> processAggregations(final Aggregations aggregations,
-                                                  final DecisionReportDataDto reportData) {
+  private List<GroupByResult> processAggregations(final SearchResponse response, final Aggregations aggregations,
+                                                  final ExecutionContext<DecisionReportDataDto> context) {
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
     List<GroupByResult> result = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
@@ -165,24 +165,25 @@ public class DecisionGroupByEvaluationDateTime extends DecisionGroupByPart {
         DateTime key = (DateTime) entry.getKey();
         String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
         final List<DistributedByResult> distributions =
-          distributedByPart.retrieveResult(entry.getAggregations(), reportData);
+          distributedByPart.retrieveResult(response, entry.getAggregations(), context);
         result.add(GroupByResult.createGroupByResult(formattedDate, distributions));
       }
     } else {
-      result = processAutomaticIntervalAggregations(aggregations, reportData);
+      result = processAutomaticIntervalAggregations(response, aggregations, context);
     }
     return result;
   }
 
-  private List<GroupByResult> processAutomaticIntervalAggregations(final Aggregations aggregations,
-                                                                   final DecisionReportDataDto reportData) {
+  private List<GroupByResult> processAutomaticIntervalAggregations(final SearchResponse response,
+                                                                   final Aggregations aggregations,
+                                                                   final ExecutionContext<DecisionReportDataDto> context) {
     return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
       aggregations)
       .entrySet()
       .stream()
       .map(stringBucketEntry -> GroupByResult.createGroupByResult(
         stringBucketEntry.getKey(),
-        distributedByPart.retrieveResult(stringBucketEntry.getValue().getAggregations(), reportData)
+        distributedByPart.retrieveResult(response, stringBucketEntry.getValue().getAggregations(), context)
       ))
       .collect(Collectors.toList());
   }

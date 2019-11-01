@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -54,15 +55,16 @@ public class ProcessDistributedByUserTask extends ProcessDistributedByPart {
   }
 
   @Override
-  public List<DistributedByResult> retrieveResult(final Aggregations aggregations,
-                                                  final ProcessReportDataDto reportData) {
+  public List<DistributedByResult> retrieveResult(final SearchResponse response,
+                                                  final Aggregations aggregations,
+                                                  final ExecutionContext<ProcessReportDataDto> context) {
 
     final Terms byTaskIdAggregation = aggregations.get(USER_TASK_ID_TERMS_AGGREGATION);
 
-    final Map<String, String> userTaskNames = getUserTaskNames(reportData);
+    final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
     final List<DistributedByResult> distributedByUserTask = new ArrayList<>();
     for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
-      final ViewResult viewResult = viewPart.retrieveResult(taskBucket.getAggregations(), reportData);
+      final ViewResult viewResult = viewPart.retrieveResult(response, taskBucket.getAggregations(), context);
       final String userTaskKey = taskBucket.getKeyAsString();
       if (userTaskNames.containsKey(userTaskKey)) {
         String label = userTaskNames.get(userTaskKey);

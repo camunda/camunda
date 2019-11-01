@@ -80,20 +80,21 @@ public class ProcessGroupByUserTask extends ProcessGroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(final SearchResponse response, final ProcessReportDataDto reportData) {
+  public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
 
-    final Map<String, String> userTaskNames = getUserTaskNames(reportData);
+    final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
       final String userTaskKey = b.getKeyAsString();
       if (userTaskNames.containsKey(userTaskKey)) {
         final List<DistributedByResult> singleResult =
-          distributedByPart.retrieveResult(b.getAggregations(), reportData);
+          distributedByPart.retrieveResult(response, b.getAggregations(), context);
         String label = userTaskNames.get(userTaskKey);
         groupedData.add(GroupByResult.createGroupByResult(userTaskKey, label, singleResult));
         userTaskNames.remove(userTaskKey);

@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -52,7 +53,7 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 public abstract class ProcessGroupByDate extends ProcessGroupByPart {
 
   protected final ConfigurationService configurationService;
-  protected final IntervalAggregationService intervalAggregationService;
+  private final IntervalAggregationService intervalAggregationService;
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
@@ -79,8 +80,10 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
   }
 
   @Override
-  public void adjustBaseQuery(final BoolQueryBuilder baseQuery, final ProcessReportDataDto definitionData) {
-    super.adjustBaseQuery(baseQuery, definitionData);
+  public void adjustSearchRequest(final SearchRequest searchRequest,
+                                  final BoolQueryBuilder baseQuery,
+                                  final ExecutionContext<ProcessReportDataDto> context) {
+    super.adjustSearchRequest(searchRequest, baseQuery, context);
     baseQuery.must(existsQuery(getDateField()));
   }
 
@@ -164,15 +167,16 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
 
   @Override
   public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ProcessReportDataDto reportData) {
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
     CompositeCommandResult result = new CompositeCommandResult();
-    result.setGroups(processAggregations(response.getAggregations(), reportData));
+    result.setGroups(processAggregations(response, response.getAggregations(), context));
     result.setIsComplete(isResultComplete(response));
     return result;
   }
 
-  private List<GroupByResult> processAggregations(final Aggregations aggregations,
-                                                  final ProcessReportDataDto reportData) {
+  private List<GroupByResult> processAggregations(final SearchResponse response,
+                                                  final Aggregations aggregations,
+                                                  final ExecutionContext<ProcessReportDataDto> context) {
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
     List<GroupByResult> result = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
@@ -182,24 +186,25 @@ public abstract class ProcessGroupByDate extends ProcessGroupByPart {
         DateTime key = (DateTime) entry.getKey();
         String formattedDate = key.withZone(DateTimeZone.getDefault()).toString(OPTIMIZE_DATE_FORMAT);
         final List<DistributedByResult> distributions =
-          distributedByPart.retrieveResult(entry.getAggregations(), reportData);
+          distributedByPart.retrieveResult(response, entry.getAggregations(), context);
         result.add(GroupByResult.createGroupByResult(formattedDate, distributions));
       }
     } else {
-      result = processAutomaticIntervalAggregations(aggregations, reportData);
+      result = processAutomaticIntervalAggregations(response, aggregations, context);
     }
     return result;
   }
 
-  private List<GroupByResult> processAutomaticIntervalAggregations(final Aggregations aggregations,
-                                                                   final ProcessReportDataDto reportData) {
+  private List<GroupByResult> processAutomaticIntervalAggregations(final SearchResponse response,
+                                                                   final Aggregations aggregations,
+                                                                   final ExecutionContext<ProcessReportDataDto> context) {
     return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
       aggregations)
       .entrySet()
       .stream()
       .map(stringBucketEntry -> GroupByResult.createGroupByResult(
         stringBucketEntry.getKey(),
-        distributedByPart.retrieveResult(stringBucketEntry.getValue().getAggregations(), reportData)
+        distributedByPart.retrieveResult(response, stringBucketEntry.getValue().getAggregations(), context)
       ))
       .collect(Collectors.toList());
   }

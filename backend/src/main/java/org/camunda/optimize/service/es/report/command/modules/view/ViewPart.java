@@ -8,19 +8,25 @@ package org.camunda.optimize.service.es.report.command.modules.view;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
 public abstract class ViewPart<Data extends SingleReportDataDto> {
 
-  public void adjustBaseQuery(BoolQueryBuilder baseQuery, Data definitionData) {
+  public void adjustSearchRequest(SearchRequest searchRequest,
+                                  final BoolQueryBuilder baseQuery,
+                                  final ExecutionContext<Data> context) {
     // by default don't do anything
   }
 
   public abstract AggregationBuilder createAggregation(final ExecutionContext<Data> context);
 
-  public abstract ViewResult retrieveResult(Aggregations aggs, Data reportData);
+  public abstract ViewResult retrieveResult(final SearchResponse response,
+                                            final Aggregations aggs,
+                                            final ExecutionContext<Data> context);
 
   public abstract void addViewAdjustmentsForCommandKeyGeneration(Data dataForCommandKey);
 }

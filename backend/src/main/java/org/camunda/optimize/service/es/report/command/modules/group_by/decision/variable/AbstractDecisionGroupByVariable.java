@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorti
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -138,7 +139,8 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(SearchResponse response, final DecisionReportDataDto reportData) {
+  public CompositeCommandResult retrieveQueryResult(SearchResponse response,
+                                                    final ExecutionContext<DecisionReportDataDto> context) {
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
@@ -150,7 +152,7 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
       final List<DistributedByResult> distribution =
-        distributedByPart.retrieveResult(reverseNested.getAggregations(), reportData);
+        distributedByPart.retrieveResult(response, reverseNested.getAggregations(), context);
       groupedData.add(GroupByResult.createGroupByResult(b.getKeyAsString(), distribution));
     }
 
@@ -162,7 +164,7 @@ public abstract class AbstractDecisionGroupByVariable extends DecisionGroupByPar
 
       final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
       final List<DistributedByResult> missingVarsOperationResult =
-        distributedByPart.retrieveResult(aggregation.getAggregations(), reportData);
+        distributedByPart.retrieveResult(response, aggregation.getAggregations(), context);
       groupedData.add(GroupByResult.createGroupByResult(MISSING_VARIABLE_KEY, missingVarsOperationResult));
     }
 

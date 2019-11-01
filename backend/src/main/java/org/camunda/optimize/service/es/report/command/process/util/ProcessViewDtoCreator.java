@@ -12,17 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 
 public class ProcessViewDtoCreator {
 
-  public static ProcessViewDto createRawDataView() {
-    return new ProcessViewDto(ProcessViewProperty.RAW_DATA);
-  }
-
-  public static ProcessViewDto createCountFlowNodeFrequencyView() {
-    ProcessViewDto view = new ProcessViewDto();
-    view.setEntity(ProcessViewEntity.FLOW_NODE);
-    view.setProperty(ProcessViewProperty.FREQUENCY);
-    return view;
-  }
-
    public static ProcessViewDto createCountProcessInstanceFrequencyView() {
     ProcessViewDto view = new ProcessViewDto();
     view.setEntity(ProcessViewEntity.PROCESS_INSTANCE);

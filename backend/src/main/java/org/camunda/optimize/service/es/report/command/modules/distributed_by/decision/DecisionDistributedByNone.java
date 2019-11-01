@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -29,9 +30,10 @@ public class DecisionDistributedByNone extends DecisionDistributedByPart {
   }
 
   @Override
-  public List<DistributedByResult> retrieveResult(final Aggregations aggregations,
-                                                  final DecisionReportDataDto reportData) {
-    final ViewResult viewResult = viewPart.retrieveResult(aggregations, reportData);
+  public List<DistributedByResult> retrieveResult(final SearchResponse response,
+                                                  final Aggregations aggregations,
+                                                  final ExecutionContext<DecisionReportDataDto> context) {
+    final ViewResult viewResult = viewPart.retrieveResult(response, aggregations, context);
     return Collections.singletonList(DistributedByResult.createEmptyDistributedBy(viewResult));
   }
 

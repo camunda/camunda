@@ -79,7 +79,7 @@ public class ProcessGroupByAssignee extends ProcessGroupByPart {
 
   @Override
   public CompositeCommandResult retrieveQueryResult(final SearchResponse response,
-                                                    final ProcessReportDataDto reportData) {
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
 
     final Aggregations aggregations = response.getAggregations();
     final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
@@ -88,7 +88,8 @@ public class ProcessGroupByAssignee extends ProcessGroupByPart {
 
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
-      final List<DistributedByResult> singleResult = distributedByPart.retrieveResult(b.getAggregations(), reportData);
+      final List<DistributedByResult> singleResult =
+        distributedByPart.retrieveResult(response, b.getAggregations(), context);
       groupedData.add(GroupByResult.createGroupByResult(b.getKeyAsString(), singleResult));
     }
 

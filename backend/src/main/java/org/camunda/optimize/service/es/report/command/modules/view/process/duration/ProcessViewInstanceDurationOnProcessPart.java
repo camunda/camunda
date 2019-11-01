@@ -10,6 +10,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -34,18 +36,22 @@ public class ProcessViewInstanceDurationOnProcessPart extends ProcessViewInstanc
   }
 
   @Override
-  public ViewResult retrieveResult(Aggregations aggs, final ProcessReportDataDto reportData) {
+  public ViewResult retrieveResult(final SearchResponse response,
+                                   final Aggregations aggs,
+                                   final ExecutionContext<ProcessReportDataDto> context) {
     final Long durationInMs = processProcessPartAggregationOperations(
       aggs,
-      getAggregationStrategy(reportData).getAggregationType()
+      getAggregationStrategy(context.getReportData()).getAggregationType()
     );
-    return new ViewResult(durationInMs);
+    return new ViewResult().setNumber(durationInMs);
   }
 
   @Override
-  public void adjustBaseQuery(final BoolQueryBuilder baseQuery, final ProcessReportDataDto definitionData) {
-    super.adjustBaseQuery(baseQuery, definitionData);
-    ProcessPartDto processPart = definitionData.getConfiguration().getProcessPart()
+  public void adjustSearchRequest(final SearchRequest searchRequest,
+                                  final BoolQueryBuilder baseQuery,
+                                  final ExecutionContext<ProcessReportDataDto> context) {
+    super.adjustSearchRequest(searchRequest, baseQuery, context);
+    ProcessPartDto processPart = context.getReportConfiguration().getProcessPart()
       .orElseThrow(() -> new OptimizeRuntimeException("Missing ProcessPart"));
     addProcessPartQuery(baseQuery, processPart.getStart(), processPart.getEnd());
   }

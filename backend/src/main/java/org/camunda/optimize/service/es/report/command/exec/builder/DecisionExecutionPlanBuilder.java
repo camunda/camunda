@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.exec.builder;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -83,6 +84,12 @@ public class DecisionExecutionPlanBuilder {
       this.viewPartClass = viewPartClass;
       this.groupByPartClass = groupByPartClass;
       this.distributedByPartClass = distributedByPartClass;
+    }
+
+    public ExecuteBuildBuilder<RawDataDecisionReportResultDto> resultAsRawData() {
+      return new ExecuteBuildBuilder<>(
+        viewPartClass, groupByPartClass, distributedByPartClass, CompositeCommandResult::transformToDecisionRawData
+      );
     }
 
     public ExecuteBuildBuilder<NumberResultDto> resultAsNumber() {

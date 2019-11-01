@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -31,9 +32,10 @@ public class DecisionViewCountInstanceFrequency extends DecisionViewPart {
   }
 
   @Override
-  public ViewResult retrieveResult(Aggregations aggs, final DecisionReportDataDto reportData) {
+  public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
+                                   final ExecutionContext<DecisionReportDataDto> context) {
     final Filter count = aggs.get(COUNT_AGGREGATION);
-    return new ViewResult(count.getDocCount());
+    return new ViewResult().setNumber(count.getDocCount());
   }
 
   @Override

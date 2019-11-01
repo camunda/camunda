@@ -101,23 +101,17 @@ public class CombinedReportEvaluator {
 
     private SingleReportEvaluatorForCombinedReports(SingleReportEvaluator evaluator) {
       super(
-        evaluator.configurationService,
-        evaluator.objectMapper,
-        evaluator.processQueryFilterEnhancer,
-        evaluator.decisionQueryFilterEnhancer,
-        evaluator.esClient,
-        evaluator.intervalAggregationService,
-        evaluator.processDefinitionReader,
-        evaluator.decisionDefinitionReader,
+        evaluator.notSupportedCommand,
         evaluator.applicationContext,
         evaluator.commands
       );
     }
 
     @Override
-    protected <T extends ReportDefinitionDto> void enrichCommandContext(final CommandContext<T> commandContext) {
-      super.enrichCommandContext(commandContext);
+    <T extends ReportDefinitionDto> ReportEvaluationResult<?, T> evaluate(final CommandContext<T> commandContext) throws
+                                                                                                                  OptimizeException {
       commandContext.setDateIntervalRange(dateIntervalRange);
+      return super.evaluate(commandContext);
     }
   }
 }

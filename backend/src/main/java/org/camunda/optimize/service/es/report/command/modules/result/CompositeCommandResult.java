@@ -8,7 +8,11 @@ package org.camunda.optimize.service.es.report.command.modules.result;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
@@ -71,7 +75,7 @@ public class CompositeCommandResult {
     private ViewResult viewResult;
 
     public static DistributedByResult createResultWithEmptyValue(String key) {
-      return new DistributedByResult(key, null, new ViewResult(null));
+      return new DistributedByResult(key, null, new ViewResult());
     }
 
     public static DistributedByResult createEmptyDistributedBy(ViewResult viewResult) {
@@ -87,7 +91,7 @@ public class CompositeCommandResult {
     }
 
     public Long getValueAsLong() {
-      return this.getViewResult().getValue();
+      return this.getViewResult().getNumber();
     }
 
     public MapResultEntryDto getValueAsMapResultEntry() {
@@ -95,11 +99,14 @@ public class CompositeCommandResult {
     }
   }
 
-  @AllArgsConstructor
+  @NoArgsConstructor
+  @Accessors(chain = true)
   @Data
   public static class ViewResult {
 
-    private Long value;
+    private Long number;
+    private RawDataProcessReportResultDto processRawData;
+    private RawDataDecisionReportResultDto decisionRawData;
   }
 
   public ReportHyperMapResultDto transformToHyperMap() {
@@ -136,7 +143,7 @@ public class CompositeCommandResult {
     if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
-        final Long value = distributions.get(0).getViewResult().getValue();
+        final Long value = distributions.get(0).getViewResult().getNumber();
         numberResultDto.setData(value);
         return numberResultDto;
       } else {
@@ -144,6 +151,40 @@ public class CompositeCommandResult {
       }
     } else {
       throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, GroupByResult.class));
+    }
+  }
+
+  public RawDataProcessReportResultDto transformToProcessRawData() {
+    final List<GroupByResult> groups = this.groups;
+    if (groups.size() == 1) {
+      final List<DistributedByResult> distributions = groups.get(0).distributions;
+      if (distributions.size() == 1) {
+        return distributions.get(0).getViewResult().getProcessRawData();
+      } else {
+        throw new OptimizeRuntimeException(createErrorMessage(
+          RawDataProcessReportResultDto.class,
+          DistributedBy.class
+        ));
+      }
+    } else {
+      throw new OptimizeRuntimeException(createErrorMessage(RawDataProcessReportResultDto.class, GroupByResult.class));
+    }
+  }
+
+  public RawDataDecisionReportResultDto transformToDecisionRawData() {
+    final List<GroupByResult> groups = this.groups;
+    if (groups.size() == 1) {
+      final List<DistributedByResult> distributions = groups.get(0).distributions;
+      if (distributions.size() == 1) {
+        return distributions.get(0).getViewResult().getDecisionRawData();
+      } else {
+        throw new OptimizeRuntimeException(createErrorMessage(
+          RawDataDecisionReportResultDto.class,
+          DistributedBy.class
+        ));
+      }
+    } else {
+      throw new OptimizeRuntimeException(createErrorMessage(RawDataDecisionReportResultDto.class, GroupByResult.class));
     }
   }
 

@@ -142,7 +142,8 @@ public class ProcessGroupByVariable extends ProcessGroupByPart {
   }
 
   @Override
-  public CompositeCommandResult retrieveQueryResult(SearchResponse response, final ProcessReportDataDto reportData) {
+  public CompositeCommandResult retrieveQueryResult(SearchResponse response,
+                                                    final ExecutionContext<ProcessReportDataDto> context) {
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
@@ -154,7 +155,7 @@ public class ProcessGroupByVariable extends ProcessGroupByPart {
     for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(VARIABLES_PROCESS_INSTANCE_COUNT_AGGREGATION);
       final List<DistributedByResult> distribution =
-        distributedByPart.retrieveResult(reverseNested.getAggregations(), reportData);
+        distributedByPart.retrieveResult(response, reverseNested.getAggregations(), context);
       groupedData.add(GroupByResult.createGroupByResult(b.getKeyAsString(), distribution));
     }
 
@@ -166,7 +167,7 @@ public class ProcessGroupByVariable extends ProcessGroupByPart {
 
       final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
       final List<DistributedByResult> missingVarsOperationResult =
-        distributedByPart.retrieveResult(aggregation.getAggregations(), reportData);
+        distributedByPart.retrieveResult(response, aggregation.getAggregations(), context);
       groupedData.add(GroupByResult.createGroupByResult(MISSING_VARIABLE_KEY, missingVarsOperationResult));
     }
 
