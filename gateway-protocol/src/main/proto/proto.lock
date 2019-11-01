@@ -244,6 +244,12 @@
                 "id": 2,
                 "name": "requestTimeout",
                 "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "fetchVariables",
+                "type": "string",
+                "is_repeated": true
               }
             ]
           },

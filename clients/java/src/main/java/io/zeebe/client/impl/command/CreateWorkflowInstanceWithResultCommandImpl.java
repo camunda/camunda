@@ -29,6 +29,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithRes
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
@@ -91,5 +93,17 @@ public class CreateWorkflowInstanceWithResultCommandImpl
     asyncStub
         .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
         .createWorkflowInstanceWithResult(request, future);
+  }
+
+  @Override
+  public CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(List<String> fetchVariables) {
+    builder.addAllFetchVariables(fetchVariables);
+    return this;
+  }
+
+  @Override
+  public CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(String... fetchVariables) {
+    builder.addAllFetchVariables(Arrays.asList(fetchVariables));
+    return this;
   }
 }

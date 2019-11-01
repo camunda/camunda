@@ -141,6 +141,27 @@ public class CreateWorkflowInstanceWithResultTest {
             "Expected to find workflow definition with key '123', but none found");
   }
 
+  @Test
+  public void shouldCreateWorkflowInstanceAwaitResultsWithFetchVariables() {
+    // when
+    final Map<String, Object> variables = Map.of("x", "foo", "y", "bar");
+    final WorkflowInstanceResult result =
+        CLIENT_RULE
+            .getClient()
+            .newCreateInstanceCommand()
+            .workflowKey(workflowKey)
+            .variables(variables)
+            .withResult()
+            .fetchVariables("y")
+            .send()
+            .join();
+
+    // then
+    assertThat(result.getBpmnProcessId()).isEqualTo(processId);
+    assertThat(result.getWorkflowKey()).isEqualTo(workflowKey);
+    assertThat(result.getVariablesAsMap()).containsExactly(entry("y", "bar"));
+  }
+
   private ZeebeFuture<WorkflowInstanceResult> createWorkflowInstanceWithVariables(
       Map<String, Object> variables) {
     return CLIENT_RULE

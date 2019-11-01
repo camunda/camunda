@@ -119,6 +119,9 @@ message CreateWorkflowInstanceWithResultRequest {
   // before the requestTimeout.
   // if requestTimeout = 0, uses the generic requestTimeout configured in the gateway.
   int64 requestTimeout = 2;
+  // list of names of variables to be included in `CreateWorkflowInstanceWithResultResponse.variables`
+  // if empty, all visible variables in the root scope will be returned.
+  repeated string fetchVariables = 3;
 }
 
 message CreateWorkflowInstanceWithResultResponse {
@@ -132,7 +135,8 @@ message CreateWorkflowInstanceWithResultResponse {
   // the unique identifier of the created workflow instance; to be used wherever a request
   // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
   int64 workflowInstanceKey = 4;
-  // consisting of all visible variables to the root scope
+  // JSON document
+  // consists of visible variables in the root scope
   string variables = 5;
 
 }

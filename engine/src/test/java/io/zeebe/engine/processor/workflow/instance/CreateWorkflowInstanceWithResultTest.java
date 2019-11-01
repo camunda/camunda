@@ -22,6 +22,8 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceResultIntent;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
+import java.util.Set;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -40,19 +42,23 @@ public class CreateWorkflowInstanceWithResultTest {
       new RecordingExporterTestWatcher();
 
   private WorkflowInstanceResultRecord response;
+  private CommandResponseWriter mockCommandResponseWriter;
 
   @BeforeClass
   public static void init() {
     ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
   }
 
+  @Before
+  public void setUp() {
+    mockCommandResponseWriter = ENGINE.getCommandResponseWriter();
+    Mockito.clearInvocations(mockCommandResponseWriter);
+    interceptResponseWriter(mockCommandResponseWriter);
+  }
+
   @Test
   public void shouldSendResultAfterCompletion() {
     // given
-    final CommandResponseWriter mockCommandResponseWriter = ENGINE.getCommandResponseWriter();
-    Mockito.clearInvocations(mockCommandResponseWriter);
-    interceptResponseWriter(mockCommandResponseWriter);
-
     final long workflowInstanceKey =
         ENGINE
             .workflowInstance()
@@ -73,8 +79,71 @@ public class CreateWorkflowInstanceWithResultTest {
   }
 
   @Test
+  public void shouldSendResultWithNoVariablesAfterCompletion() {
+    // given
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("WORKFLOW")
+            .withResult()
+            .withRequestId(1L)
+            .withRequestStreamId(1)
+            .create();
+
+    // then
+    verify(mockCommandResponseWriter, timeout(1000).times(1))
+        .intent(WorkflowInstanceResultIntent.COMPLETED);
+    verify(mockCommandResponseWriter, timeout(1000).times(1)).tryWriteResponse(1, 1L);
+    assertThat(response.getVariables()).isEmpty();
+    assertThat(response.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+    assertThat(response.getBpmnProcessId()).isEqualTo("WORKFLOW");
+  }
+
+  @Test
+  public void shouldSendRequestedVariablesAfterCompletion() {
+    // given
+    final Set<String> fetchVariables = Set.of("x", "y");
+
+    ENGINE
+        .workflowInstance()
+        .ofBpmnProcessId("WORKFLOW")
+        .withVariables(Map.of("x", "foo", "y", "bar", "z", "foo-bar"))
+        .withResult()
+        .withFetchVariables(fetchVariables)
+        .withRequestId(1L)
+        .withRequestStreamId(1)
+        .create();
+
+    // then
+    verify(mockCommandResponseWriter, timeout(1000).times(1))
+        .intent(WorkflowInstanceResultIntent.COMPLETED);
+    verify(mockCommandResponseWriter, timeout(1000).times(1)).tryWriteResponse(1, 1L);
+    assertThat(response.getVariables())
+        .containsExactlyInAnyOrderEntriesOf(Map.of("x", "foo", "y", "bar"));
+  }
+
+  @Test
+  public void shouldSendRequestedVariablesWhenSomeAreNotAvailableAfterCompletion() {
+    // given
+    final Set<String> fetchVariables = Set.of("x", "none-existing");
+
+    ENGINE
+        .workflowInstance()
+        .ofBpmnProcessId("WORKFLOW")
+        .withVariables(Map.of("x", "foo", "y", "bar", "z", "foo-bar"))
+        .withResult()
+        .withFetchVariables(fetchVariables)
+        .withRequestId(1L)
+        .withRequestStreamId(1)
+        .create();
+
+    // then
+    verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1)).tryWriteResponse(1, 1L);
+    assertThat(response.getVariables()).containsExactlyInAnyOrderEntriesOf(Map.of("x", "foo"));
+  }
+
+  @Test
   public void shouldSendRejectionImmediately() {
-    Mockito.clearInvocations(ENGINE.getCommandResponseWriter());
     // when
     ENGINE
         .workflowInstance()
@@ -85,7 +154,6 @@ public class CreateWorkflowInstanceWithResultTest {
         .asyncCreate();
 
     // then
-
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1))
         .rejectionType(RejectionType.NOT_FOUND);
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1)).tryWriteResponse(3, 3);

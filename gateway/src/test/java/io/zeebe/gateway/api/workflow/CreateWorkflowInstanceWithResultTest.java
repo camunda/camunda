@@ -7,6 +7,7 @@
  */
 package io.zeebe.gateway.api.workflow;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.api.util.GatewayTest;
@@ -17,9 +18,39 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithRes
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import java.util.List;
 import org.junit.Test;
 
 public class CreateWorkflowInstanceWithResultTest extends GatewayTest {
+
+  @Test
+  public void shouldMapToBrokerRequest() {
+    // given
+    final CreateWorkflowInstanceWithResultStub stub = new CreateWorkflowInstanceWithResultStub();
+    stub.registerWith(brokerClient);
+
+    final CreateWorkflowInstanceWithResultRequest request =
+        CreateWorkflowInstanceWithResultRequest.newBuilder()
+            .setRequest(
+                CreateWorkflowInstanceRequest.newBuilder().setWorkflowKey(stub.getWorkflowKey()))
+            .addAllFetchVariables(List.of("x"))
+            .build();
+
+    // when
+    client.createWorkflowInstanceWithResult(request);
+
+    // then
+    final BrokerCreateWorkflowInstanceWithResultRequest brokerRequest =
+        brokerClient.getSingleBrokerRequest();
+    assertThat(brokerRequest.getIntent())
+        .isEqualTo(WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT);
+    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
+
+    final WorkflowInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    assertThat(brokerRequestValue.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
+    assertThat(brokerRequestValue.fetchVariables().iterator().next().getValue())
+        .isEqualTo(wrapString("x"));
+  }
 
   @Test
   public void shouldMapRequestAndResponse() {
@@ -42,14 +73,5 @@ public class CreateWorkflowInstanceWithResultTest extends GatewayTest {
     assertThat(response.getVersion()).isEqualTo(stub.getProcessVersion());
     assertThat(response.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
     assertThat(response.getWorkflowInstanceKey()).isEqualTo(stub.getWorkflowInstanceKey());
-
-    final BrokerCreateWorkflowInstanceWithResultRequest brokerRequest =
-        brokerClient.getSingleBrokerRequest();
-    assertThat(brokerRequest.getIntent())
-        .isEqualTo(WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT);
-    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
-
-    final WorkflowInstanceCreationRecord brokerRequestValue = brokerRequest.getRequestWriter();
-    assertThat(brokerRequestValue.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
   }
 }

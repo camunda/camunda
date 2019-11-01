@@ -18,6 +18,7 @@ package io.zeebe.client.api.command;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.WorkflowInstanceResult;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 
 public interface CreateWorkflowInstanceCommandStep1 {
@@ -111,5 +112,24 @@ public interface CreateWorkflowInstanceCommandStep1 {
   }
 
   interface CreateWorkflowInstanceWithResultCommandStep1
-      extends FinalCommandStep<WorkflowInstanceResult> {}
+      extends FinalCommandStep<WorkflowInstanceResult> {
+
+    /**
+     * Set a list of variables names which should be fetched in the response.
+     *
+     * @param fetchVariables set of names of variables to be included in the response
+     * @return the builder for this command. Call {@link #send()} to complete the command and send *
+     *     it to the broker
+     */
+    CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(List<String> fetchVariables);
+
+    /**
+     * Set a list of variables names which should be fetched in the response.
+     *
+     * @param fetchVariables set of names of variables to be included in the response
+     * @return the builder for this command. Call {@link #send()} to complete the command and send *
+     *     it to the broker
+     */
+    CreateWorkflowInstanceWithResultCommandStep1 fetchVariables(String... fetchVariables);
+  }
 }

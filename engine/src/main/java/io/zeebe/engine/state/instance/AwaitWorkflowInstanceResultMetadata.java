@@ -7,69 +7,77 @@
  */
 package io.zeebe.engine.state.instance;
 
-import static io.zeebe.db.impl.ZeebeDbConstants.ZB_DB_BYTE_ORDER;
-
 import io.zeebe.db.DbValue;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
+import io.zeebe.msgpack.property.ArrayProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.value.StringValue;
+import io.zeebe.protocol.impl.record.UnifiedRecordValue;
+import java.util.Objects;
 
-public class AwaitWorkflowInstanceResultMetadata implements DbValue {
+public class AwaitWorkflowInstanceResultMetadata extends UnifiedRecordValue implements DbValue {
 
-  private long requestId;
-  private int requestStreamId;
+  private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
+  private final IntegerProperty requestStreamIdProperty =
+      new IntegerProperty("requestStreamId", -1);
+  private final ArrayProperty<StringValue> fetchVariablesProperty =
+      new ArrayProperty<>("fetchVariables", new StringValue());
 
-  public AwaitWorkflowInstanceResultMetadata() {}
-
-  public AwaitWorkflowInstanceResultMetadata(long requestId, int requestStreamId) {
-    this.requestId = requestId;
-    this.requestStreamId = requestStreamId;
+  public AwaitWorkflowInstanceResultMetadata() {
+    this.declareProperty(requestIdProperty)
+        .declareProperty(requestStreamIdProperty)
+        .declareProperty(fetchVariablesProperty);
   }
 
   public long getRequestId() {
-    return requestId;
+    return requestIdProperty.getValue();
   }
 
   public AwaitWorkflowInstanceResultMetadata setRequestId(long requestId) {
-    this.requestId = requestId;
+    requestIdProperty.setValue(requestId);
     return this;
   }
 
   public int getRequestStreamId() {
-    return requestStreamId;
+    return requestStreamIdProperty.getValue();
   }
 
   public AwaitWorkflowInstanceResultMetadata setRequestStreamId(int requestStreamId) {
-    this.requestStreamId = requestStreamId;
+    requestStreamIdProperty.setValue(requestStreamId);
+    return this;
+  }
+
+  public ArrayProperty<StringValue> fetchVariables() {
+    return fetchVariablesProperty;
+  }
+
+  public AwaitWorkflowInstanceResultMetadata setFetchVariables(
+      ArrayProperty<StringValue> variables) {
+    fetchVariablesProperty.reset();
+    variables.forEach(variable -> fetchVariablesProperty.add().wrap(variable));
     return this;
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
-    final int startOffset = offset;
-    requestId = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    requestStreamId = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    assert (offset - startOffset) == length : "End offset differs from length";
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(), requestIdProperty, requestStreamIdProperty, fetchVariablesProperty);
   }
 
   @Override
-  public int getLength() {
-    return Long.BYTES + Integer.BYTES;
-  }
-
-  @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
-    final int startOffset = offset;
-
-    buffer.putLong(offset, requestId, ZB_DB_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    buffer.putInt(offset, requestStreamId, ZB_DB_BYTE_ORDER);
-    offset += Integer.BYTES;
-
-    assert (offset - startOffset) == getLength() : "End offset differs from getLength()";
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AwaitWorkflowInstanceResultMetadata that = (AwaitWorkflowInstanceResultMetadata) o;
+    return requestIdProperty.equals(that.requestIdProperty)
+        && requestStreamIdProperty.equals(that.requestStreamIdProperty)
+        && fetchVariablesProperty.equals(that.fetchVariablesProperty);
   }
 }

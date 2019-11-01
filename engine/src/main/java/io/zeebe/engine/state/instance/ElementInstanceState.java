@@ -44,7 +44,7 @@ public class ElementInstanceState {
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbLong, DbByte>, DbLong>, DbNil>
       recordParentChildColumnFamily;
 
-  private final AwaitWorkflowInstanceResultMetadata awaitResultMetada;
+  private final AwaitWorkflowInstanceResultMetadata awaitResultMetadata;
   private final ColumnFamily<DbLong, AwaitWorkflowInstanceResultMetadata>
       awaitWorkflowInstanceResultMetadataColumnFamily;
 
@@ -88,13 +88,13 @@ public class ElementInstanceState {
             DbNil.INSTANCE);
 
     variablesState = new VariablesState(zeebeDb, dbContext, keyGenerator);
-    awaitResultMetada = new AwaitWorkflowInstanceResultMetadata();
+    awaitResultMetadata = new AwaitWorkflowInstanceResultMetadata();
     awaitWorkflowInstanceResultMetadataColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.AWAIT_WORKLOW_RESULT,
             dbContext,
             elementInstanceKey,
-            awaitResultMetada);
+            awaitResultMetadata);
   }
 
   public ElementInstance newInstance(

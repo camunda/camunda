@@ -11,6 +11,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class BrokerCreateWorkflowInstanceWithResultRequest
@@ -40,6 +41,12 @@ public class BrokerCreateWorkflowInstanceWithResultRequest
 
   public BrokerCreateWorkflowInstanceWithResultRequest setVariables(DirectBuffer variables) {
     requestDto.setVariables(variables);
+    return this;
+  }
+
+  public BrokerCreateWorkflowInstanceWithResultRequest setFetchVariables(
+      List<String> fetchVariables) {
+    requestDto.setFetchVariables(fetchVariables);
     return this;
   }
 
