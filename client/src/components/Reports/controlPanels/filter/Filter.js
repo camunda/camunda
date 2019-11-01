@@ -45,6 +45,7 @@ export default class Filter extends React.Component {
       case 'processInstanceDuration':
         return DurationFilter;
       case 'executedFlowNodes':
+      case 'executingFlowNodes':
         return NodeFilter;
       default:
         return () => null;
