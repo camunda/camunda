@@ -17,6 +17,7 @@ import io.zeebe.model.bpmn.builder.CallActivityBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -427,6 +428,40 @@ public class CallActivityTest {
                     + "but it is created by a parent workflow instance. "
                     + "Cancel the root workflow instance '%d' instead.",
                 childInstance.getWorkflowInstanceKey(), rootInstanceKey));
+  }
+
+  @Test
+  public void shouldNotActivateCallActivityIfIncidentIsCreated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeInput("x", "y")))
+        .deploy();
+
+    // when
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // then
+    final var incidentKey =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst()
+            .getKey();
+
+    ENGINE.variables().ofScope(workflowInstanceKey).withDocument(Map.of("x", 1)).update();
+
+    final var incidentResolved =
+        ENGINE.incident().ofInstance(workflowInstanceKey).withKey(incidentKey).resolve();
+
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .withElementType(BpmnElementType.CALL_ACTIVITY)
+                .getFirst()
+                .getPosition())
+        .describedAs("Expected call activity to be ACTIVATED after incident is resolved")
+        .isGreaterThan(incidentResolved.getPosition());
   }
 
   private void completeJobWith(Map<String, Object> variables) {
