@@ -155,12 +155,6 @@ export default class DecisionFilter extends React.Component {
             {t('common.filter.types.outputVariable')}
           </Dropdown.Option>
         </Dropdown>
-        {this.props.instanceCount !== undefined && (
-          <span className="instanceCount">
-            {this.props.instanceCount} evaluation{this.props.instanceCount !== 1 && 's'} in current
-            filter
-          </span>
-        )}
         <FilterModal
           addFilter={this.addFilter}
           close={this.closeModal}

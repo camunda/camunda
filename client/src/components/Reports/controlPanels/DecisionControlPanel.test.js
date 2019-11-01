@@ -57,7 +57,8 @@ const report = {
     configuration: {
       xml: 'someXml'
     }
-  }
+  },
+  result: {instanceCount: 3}
 };
 
 it('should call the provided updateReport property function when a setting changes', () => {
@@ -174,4 +175,10 @@ it('should not crash when no decisionDefinition is selected', () => {
       }}
     />
   );
+});
+
+it('should show the number of decision instances in the current Filter', () => {
+  const node = shallow(<DecisionControlPanel report={report} />);
+
+  expect(node).toIncludeText('3 evaluations in current filter');
 });

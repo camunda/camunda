@@ -196,13 +196,3 @@ it('should remove any running instances only filters when adding a new running i
 
   expect(spy.mock.calls[0][0].filter).toEqual({$set: [{type: 'runningInstancesOnly'}]});
 });
-
-it('should show the number of process instances in the current Filter', () => {
-  const node = mount(<Filter data={[]} />);
-
-  expect(node).not.toIncludeText('in current filter');
-
-  node.setProps({instanceCount: 12});
-
-  expect(node).toIncludeText('12 instances in current filter');
-});

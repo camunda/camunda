@@ -83,6 +83,16 @@
     "cannotSave": "Report \"{name}\" could not be saved",
     "downloadCSV": "Download CSV",
     "incomplete": "Showing {count} data points in the result. To refine the set of results, edit your set-up above.",
+    "instanceCount": {
+      "process": {
+        "label": "{count} instance in current filter",
+        "label-plural": "{count} instances in current filter"
+      },
+      "decision": {
+        "label": "{count} evaluation in current filter",
+        "label-plural": "{count} evaluations in current filter"
+      }
+    },
     "view": {
       "label": "View",
       "rawData": "Raw Data",
@@ -504,10 +514,6 @@
         "nonCanceled": "Non Canceled Process Instances Only",
         "executedFlowNode": "Executed Flow Node",
         "executingFlowNode": "Executing Flow Node"
-      },
-      "instanceCount": {
-        "label": "{count} instance in current filter",
-        "label-plural": "{count} instances in current filter"
       },
       "modalHeader": "Add {type} Filter",
       "addFilter": "Add Filter",

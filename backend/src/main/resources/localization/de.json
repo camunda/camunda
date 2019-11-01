@@ -83,6 +83,16 @@
     "cannotSave": "Bericht \"{name}\" konnte nicht gespeichert werden",
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
+    "instanceCount": {
+      "process": {
+        "label": "{count} Instanz im aktuellen Filter",
+        "label-plural": "{count} Instanzen im aktuellen Filter"
+      },
+      "decision": {
+        "label": "{count} Evaluierung im aktuellen Filter",
+        "label-plural": "{count} Evaluierungen im aktuellen Filter"
+      }
+    },
     "view": {
       "label": "Ansicht",
       "rawData": "Rohdaten",
@@ -504,10 +514,6 @@
         "nonCanceled": "Nur nicht abgebrochene Prozessinstanzen",
         "executedFlowNode": "Ausgeführter Prozessknoten",
         "executingFlowNode": "Prozessknoten in Ausführung"
-      },
-      "instanceCount": {
-        "label": "{count} Instanz im aktuellen Filter",
-        "label-plural": "{count} Instanzen im aktuellen Filter"
       },
       "modalHeader": "Füge {type} Filter hinzu",
       "addFilter": "Filter hinzufügen",

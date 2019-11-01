@@ -60,7 +60,8 @@ const report = {
     visualization: 'number',
     filter: [],
     configuration: {xml: 'fooXml'}
-  }
+  },
+  result: {instanceCount: 3}
 };
 
 const props = {
@@ -258,4 +259,10 @@ it('should reset definition specific configurations on definition change', async
   expect(spy.mock.calls[0][0].configuration.excludedColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).toBeDefined();
+});
+
+it('should show the number of process instances in the current Filter', () => {
+  const node = shallow(<ReportControlPanel {...props} />);
+
+  expect(node).toIncludeText('3 instances in current filter');
 });

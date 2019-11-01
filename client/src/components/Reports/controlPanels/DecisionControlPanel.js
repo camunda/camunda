@@ -148,13 +148,22 @@ export default class DecisionControlPanel extends React.Component {
             <DecisionFilter
               data={filter}
               onChange={this.props.updateReport}
-              instanceCount={result && result.instanceCount}
               decisionDefinitionKey={decisionDefinitionKey}
               decisionDefinitionVersions={decisionDefinitionVersions}
               tenants={tenantIds}
               variables={this.state.variables}
             />
           </li>
+          {result && typeof result.instanceCount !== 'undefined' && (
+            <li>
+              {t(
+                `report.instanceCount.decision.label${result.instanceCount !== 1 ? '-plural' : ''}`,
+                {
+                  count: result.instanceCount
+                }
+              )}
+            </li>
+          )}
           <Configuration
             type={visualization}
             onChange={this.props.updateReport}

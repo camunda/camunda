@@ -133,7 +133,7 @@ export default withErrorHandling(
     };
 
     render() {
-      const {data} = this.props.report;
+      const {data, result} = this.props.report;
 
       return (
         <div className="ReportControlPanel">
@@ -180,9 +180,18 @@ export default withErrorHandling(
                 processDefinitionVersions={data.processDefinitionVersions}
                 tenantIds={data.tenantIds}
                 xml={data.configuration.xml}
-                instanceCount={this.props.report.result && this.props.report.result.instanceCount}
               />
             </li>
+            {result && typeof result.instanceCount !== 'undefined' && (
+              <li>
+                {t(
+                  `report.instanceCount.process.label${
+                    result.instanceCount !== 1 ? '-plural' : ''
+                  }`,
+                  {count: result.instanceCount}
+                )}
+              </li>
+            )}
             {isDurationHeatmap(data) && (
               <li>
                 <TargetValueComparison

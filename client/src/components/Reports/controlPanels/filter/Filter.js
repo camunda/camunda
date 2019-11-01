@@ -182,14 +182,6 @@ export default class Filter extends React.Component {
             {t('common.filter.types.flowNode')}
           </Dropdown.Option>
         </Dropdown>
-        {this.props.instanceCount !== undefined && (
-          <span className="instanceCount">
-            {t(
-              `common.filter.instanceCount.label${this.props.instanceCount !== 1 ? '-plural' : ''}`,
-              {count: this.props.instanceCount}
-            )}
-          </span>
-        )}
         <FilterModal
           addFilter={this.addFilter}
           close={this.closeModal}
