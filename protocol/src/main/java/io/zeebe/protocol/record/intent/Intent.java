@@ -16,12 +16,12 @@
 package io.zeebe.protocol.record.intent;
 
 import io.zeebe.protocol.record.ValueType;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 public interface Intent {
   Collection<Class<? extends Intent>> INTENT_CLASSES =
-      List.of(
+      Arrays.asList(
           DeploymentIntent.class,
           IncidentIntent.class,
           JobIntent.class,
