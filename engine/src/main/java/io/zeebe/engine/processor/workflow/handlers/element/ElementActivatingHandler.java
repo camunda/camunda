@@ -53,6 +53,7 @@ public class ElementActivatingHandler<T extends ExecutableFlowNode> extends Abst
   protected boolean shouldHandleState(BpmnStepContext<T> context) {
     return super.shouldHandleState(context)
         && isStateSameAsElementState(context)
-        && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()));
+        && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()))
+        && !isElementInterrupted(context);
   }
 }

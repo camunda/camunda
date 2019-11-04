@@ -11,10 +11,12 @@ import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
+import io.zeebe.engine.state.instance.ElementInstance;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
@@ -36,15 +38,23 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
       return false;
     }
 
-    activateContainer(context, event);
-    final WorkflowInstanceRecord startRecord =
-        getEventRecord(context, triggeredEvent, BpmnElementType.START_EVENT)
-            .setWorkflowInstanceKey(event.getWorkflowInstanceKey())
-            .setVersion(event.getVersion())
-            .setBpmnProcessId(event.getBpmnProcessId())
-            .setFlowScopeKey(context.getKey());
+    final ExecutableStartEvent startEvent = context.getElement();
+    prepareActivateContainer(context, event);
 
-    deferEvent(context, event.getWorkflowKey(), context.getKey(), startRecord, triggeredEvent);
+    long interruptingKey = -1;
+    if (startEvent.interrupting()) {
+      interruptingKey = handleInterrupting(context, triggeredEvent, scopeKey);
+    } else {
+      context
+          .getOutput()
+          .appendFollowUpEvent(
+              context.getKey(), WorkflowInstanceIntent.ELEMENT_ACTIVATING, containerRecord);
+    }
+
+    final ElementInstance scope = context.getElementInstanceState().getInstance(scopeKey);
+    scope.spawnToken();
+    scope.setInterruptingEventKey(interruptingKey);
+    context.getElementInstanceState().updateInstance(scope);
 
     return true;
   }
@@ -54,9 +64,45 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
     return isElementActive(context.getFlowScopeInstance());
   }
 
-  private void activateContainer(final BpmnStepContext<T> context, WorkflowInstanceRecord event) {
-    final DirectBuffer subprocessId = context.getElement().getEventSubProcess();
+  private long handleInterrupting(
+      BpmnStepContext<T> context, EventTrigger triggeredEvent, long scopeKey) {
+    final boolean waitForTermination = terminatableChildrenExist(context);
 
+    interruptParentProcess(context);
+    if (waitForTermination) {
+      return deferEvent(context, context.getKey(), scopeKey, containerRecord, triggeredEvent);
+    } else {
+      return context
+          .getOutput()
+          .appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, containerRecord);
+    }
+  }
+
+  private void interruptParentProcess(BpmnStepContext<T> context) {
+    final long scopeKey = context.getValue().getFlowScopeKey();
+    final List<ElementInstance> children = context.getElementInstanceState().getChildren(scopeKey);
+
+    for (final ElementInstance child : children) {
+      if (child.canTerminate()) {
+        context
+            .getOutput()
+            .appendFollowUpEvent(
+                child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
+      } else {
+        context.getElementInstanceState().consumeToken(scopeKey);
+      }
+    }
+  }
+
+  private boolean terminatableChildrenExist(BpmnStepContext<T> context) {
+    return context.getElementInstanceState().getChildren(context.getValue().getFlowScopeKey())
+        .stream()
+        .anyMatch(ElementInstance::canTerminate);
+  }
+
+  private void prepareActivateContainer(
+      final BpmnStepContext<T> context, WorkflowInstanceRecord event) {
+    final DirectBuffer subprocessId = context.getElement().getEventSubProcess();
     containerRecord.reset();
     containerRecord
         .setElementId(subprocessId)
@@ -66,10 +112,5 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
         .setVersion(event.getVersion())
         .setWorkflowInstanceKey(event.getWorkflowInstanceKey())
         .setFlowScopeKey(event.getFlowScopeKey());
-
-    context
-        .getOutput()
-        .appendFollowUpEvent(
-            context.getKey(), WorkflowInstanceIntent.ELEMENT_ACTIVATING, containerRecord);
   }
 }

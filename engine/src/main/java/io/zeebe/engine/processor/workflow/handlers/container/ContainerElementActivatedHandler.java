@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow.handlers.container;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandler;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.IndexedRecord;
@@ -39,12 +40,12 @@ public class ContainerElementActivatedHandler<T extends ExecutableFlowElementCon
     }
 
     final ExecutableFlowElementContainer element = context.getElement();
-    final ExecutableCatchEventElement firstStartEvent = element.getStartEvents().get(0);
+    final ExecutableStartEvent firstStartEvent = element.getStartEvents().get(0);
 
     // workflows with none start event only have a single none start event and no other types of
-    // start events; note that embedded sub-processes only have a single none start event, so
+    // start events; note that sub-processes only have a single none start event, so
     // publishing a deferred record only applies to processes
-    if (firstStartEvent.isNone()) {
+    if (firstStartEvent.isNone() || firstStartEvent.getEventSubProcess() != null) {
       activateNoneStartEvent(context, firstStartEvent);
     } else {
       publishDeferredRecord(context);

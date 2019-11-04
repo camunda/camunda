@@ -17,12 +17,14 @@ import io.zeebe.model.bpmn.builder.EmbeddedSubProcessBuilder;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.time.Duration;
 import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -106,12 +108,73 @@ public class EventSubprocessTest {
     assertEventSubprocessLifecycle(wfInstanceKey);
   }
 
+  @Test
+  public void shouldNotInterruptParentProcess() {
+    // given
+    final BpmnModelInstance model = createEventSubProc();
+    ENGINE.deployment().withXmlResource(model).deploy();
+
+    // when
+    final long wfInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("innerKey", "123").create();
+    assertEventSubprocessLifecycle(wfInstanceKey);
+
+    ENGINE.job().ofInstance(wfInstanceKey).withType("type").complete().getKey();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(wfInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.END_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldCompleteParentAfterEventSubprocCompletes() {
+    // given
+    final BpmnModelInstance model = createInterruptingEventSubproc();
+    ENGINE.deployment().withXmlResource(model).deploy();
+
+    // when
+    final long wfInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("innerKey", "123").create();
+
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withWorkflowInstanceKey(wfInstanceKey)
+                .exists())
+        .describedAs("Expected job to be created")
+        .isTrue();
+    ENGINE.getClock().addTime(Duration.ofSeconds(60));
+
+    // then
+    assertEventSubprocessLifecycle(wfInstanceKey);
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(wfInstanceKey)
+                .limitToWorkflowInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_COMPLETED));
+  }
+
   private void assertEventSubprocessLifecycle(long worklowInstanceKey) {
     final List<Record<WorkflowInstanceRecordValue>> events =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(worklowInstanceKey)
             .filter(r -> r.getValue().getElementId().startsWith("event_sub_"))
-            .limit(14)
+            .limit(13)
             .asList();
 
     assertThat(events)
@@ -124,7 +187,6 @@ public class EventSubprocessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event_sub_start"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event_sub_start"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event_sub_start"),
-            tuple(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, "event_sub_flow"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATING, "event_sub_end"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "event_sub_end"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "event_sub_end"),
@@ -136,21 +198,16 @@ public class EventSubprocessTest {
   private static BpmnModelInstance createEventSubProc() {
     final ProcessBuilder builder = Bpmn.createExecutableProcess("proc");
     builder
-        .eventSubProcess("firstSubProcess")
-        .startEvent("start_sub_1")
-        .message(b -> b.name("msg").zeebeCorrelationKey("innerKey"))
-        .endEvent();
-    builder
         .eventSubProcess("event_sub_proc")
         .startEvent("event_sub_start")
+        .interrupting(false)
         .timerWithDuration("PT0S")
-        .sequenceFlowId("event_sub_flow")
         .endEvent("event_sub_end");
 
     return builder
         .startEvent("start_proc")
         .serviceTask("task", t -> t.zeebeTaskType("type"))
-        .endEvent("sub_proc")
+        .endEvent("end_proc")
         .done();
   }
 
@@ -163,13 +220,29 @@ public class EventSubprocessTest {
     embeddedBuilder
         .eventSubProcess("event_sub_proc")
         .startEvent("event_sub_start")
+        .interrupting(false)
         .timerWithDuration("PT0S")
-        .sequenceFlowId("event_sub_flow")
         .endEvent("event_sub_end");
     return embeddedBuilder
         .startEvent("sub_start")
         .serviceTask("task", t -> t.zeebeTaskType("type"))
         .endEvent("sub_end")
+        .done();
+  }
+
+  private static BpmnModelInstance createInterruptingEventSubproc() {
+    final ProcessBuilder builder = Bpmn.createExecutableProcess("proc");
+    builder
+        .eventSubProcess("event_sub_proc")
+        .startEvent("event_sub_start")
+        .interrupting(true)
+        .timerWithDuration("PT60S")
+        .endEvent("event_sub_end");
+
+    return builder
+        .startEvent("start_proc")
+        .serviceTask("task", t -> t.zeebeTaskType("type"))
+        .endEvent("sub_proc")
         .done();
   }
 }

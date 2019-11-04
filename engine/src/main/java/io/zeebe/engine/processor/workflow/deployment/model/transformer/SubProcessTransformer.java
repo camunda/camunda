@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
@@ -60,14 +61,11 @@ public class SubProcessTransformer implements ModelElementTransformer<SubProcess
       parentEvents = currentWorkflow.getEvents();
     }
 
-    subprocess
-        .getStartEvents()
-        .forEach(
-            startEvent -> {
-              parentEvents.add(startEvent);
-              startEvent.setEventSubProcess(subprocess.getId());
-              startEvent.bindLifecycleState(
-                  WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED);
-            });
+    final ExecutableStartEvent startEvent = subprocess.getStartEvents().iterator().next();
+
+    parentEvents.add(startEvent);
+    startEvent.setEventSubProcess(subprocess.getId());
+    startEvent.bindLifecycleState(
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.EVENT_SUBPROC_EVENT_OCCURRED);
   }
 }

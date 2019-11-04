@@ -79,6 +79,7 @@ public class ElementCompletedHandlerTest extends ElementHandlerTestCase<Executab
     // given
     final ElementInstance flowScope = newElementInstance(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     createAndSetContextElementInstance(WorkflowInstanceIntent.ELEMENT_COMPLETED, flowScope);
+    context.setElement(new ExecutableFlowNode("id"));
 
     // when
     handler.handleState(context);
