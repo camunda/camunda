@@ -21,7 +21,6 @@ export const multiInstanceChildProps = {
   ...defaultProps,
   metadata: {
     ...defaultMetadata,
-    isMultiInstanceChild: true,
-    parentId: '555666777888999'
+    isMultiInstanceChild: true
   }
 };

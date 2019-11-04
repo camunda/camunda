@@ -62,11 +62,13 @@ export default class PopoverOverlay extends React.Component {
     });
 
     return breadcrumbs.map(item => {
-      return item.linkId ? (
-        <Fragment key={`${item.name}-${item.linkId}`}>
+      return item.hasLink ? (
+        <Fragment key={`${selectedFlowNodeId}-a${item.name}`}>
           <Styled.Button
             data-test="select-flownode"
-            onClick={() => onFlowNodeSelection(item.linkId)}
+            onClick={() =>
+              onFlowNodeSelection(selectedFlowNodeId, item.options)
+            }
           >
             {item.name}
           </Styled.Button>

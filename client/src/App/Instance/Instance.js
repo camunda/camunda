@@ -37,6 +37,8 @@ import {
   createNodeMetaDataMap,
   getSelectableFlowNodes,
   getActivityIdToActivityInstancesMap,
+  getMultiInstanceBodies,
+  getMultiInstanceChildren,
   storeResponse
 } from './service';
 import * as Styled from './styled';
@@ -274,19 +276,33 @@ class Instance extends Component {
   /**
    * Handles selecting a flow node from the diagram
    * @param {string} flowNodeId: id of the selected flow node
+   * @param {Object} options: refine, which instances to select
    */
-  handleFlowNodeSelection = async flowNodeId => {
+  handleFlowNodeSelection = async (
+    flowNodeId,
+    options = {
+      selectMultiInstanceChildrenOnly: false
+    }
+  ) => {
     const {instance, activityIdToActivityInstanceMap} = this.state;
-    // get the first activity instance corresponding to the flowNodeId
-    const treeRowIds = !flowNodeId
-      ? [instance.id]
-      : [...activityIdToActivityInstanceMap.get(flowNodeId).keys()];
 
-    this.setState({
-      selection: {
-        treeRowIds,
+    let treeRowIds = [instance.id];
+
+    if (flowNodeId) {
+      const activityInstancesMap = activityIdToActivityInstanceMap.get(
         flowNodeId
-      },
+      );
+
+      treeRowIds = options.selectMultiInstanceChildrenOnly
+        ? getMultiInstanceChildren(activityInstancesMap)
+        : getMultiInstanceBodies(activityInstancesMap);
+    }
+
+    const selection = {...this.state.selection, treeRowIds, flowNodeId};
+
+    // get the first activity instance corresponding to the flowNodeId
+    this.setState({
+      selection,
       // clear variables object if we don't have exactly 1 selected row
       ...(treeRowIds.length !== 1 && {variables: null, editMode: ''})
     });
@@ -313,7 +329,7 @@ class Instance extends Component {
     if (treeRowIds.length > 1) {
       return {
         isMultiRowPeterCase: true,
-        instancesCount: activityInstancesMap.size
+        instancesCount: treeRowIds.length
       };
     }
 

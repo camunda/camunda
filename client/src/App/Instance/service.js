@@ -106,7 +106,7 @@ export function isRunningInstance(instance) {
 }
 
 /**
- * transforms the activities instrances tree to
+ * transforms the activities instances tree to
  * @return activityIdToActivityInstanceMap: (activityId -> activityInstance) map
  * @param {*} activitiesInstancesTree
  * @param {*} [activityIdToActivityInstanceMap] optional
@@ -137,6 +137,45 @@ export function getActivityIdToActivityInstancesMap(
           );
     },
     activityIdToActivityInstanceMap
+  );
+}
+
+function hasMultiInstanceActivities(instances) {
+  return instances.some(instance => instance.type === TYPE.MULTI_INSTANCE_BODY);
+}
+
+function filterMultiInstanceActivities(activityInstancesMap, filterFn) {
+  const activityInstances = [...activityInstancesMap.values()];
+
+  if (hasMultiInstanceActivities(activityInstances)) {
+    return activityInstances.reduce(
+      (ids, instance) => (filterFn(instance) ? [...ids, instance.id] : ids),
+      []
+    );
+  } else {
+    return [...activityInstancesMap.keys()];
+  }
+}
+
+/**
+ * @returns {Array} an array containing activity instance ids (excluding multi instance children)
+ * @param {Map} activityInstancesMap
+ */
+export function getMultiInstanceBodies(activityInstancesMap) {
+  return filterMultiInstanceActivities(
+    activityInstancesMap,
+    instance => instance.type === TYPE.MULTI_INSTANCE_BODY
+  );
+}
+
+/**
+ * @returns {Array} an array containing activity instance ids (excluding multi instance bodies)
+ * @param {Map} activityInstancesMap
+ */
+export function getMultiInstanceChildren(activityInstancesMap) {
+  return filterMultiInstanceActivities(
+    activityInstancesMap,
+    instance => instance.type !== TYPE.MULTI_INSTANCE_BODY
   );
 }
 

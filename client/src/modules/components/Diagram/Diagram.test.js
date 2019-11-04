@@ -437,7 +437,7 @@ describe('Diagram', () => {
       node.find('button[data-test="select-flownode"]').simulate('click');
 
       // then
-      expect(mockProps.onFlowNodeSelection).toBeCalledWith(activityId);
+      expect(mockProps.onFlowNodeSelection.mock.calls[0][0]).toBe(activityId);
     });
 
     it('should not render metadata in case of peter case with multiple selected rows', () => {

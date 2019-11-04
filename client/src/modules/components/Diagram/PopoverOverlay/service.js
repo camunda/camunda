@@ -4,10 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const shortenId = id => {
-  return `...${id.substring(id.length - 3)}`;
-};
-
 export const beautifyMetadata = metadata => {
   if (!metadata) {
     return '';
@@ -23,49 +19,42 @@ export const beautifyMetadata = metadata => {
  *
  * @example
  * [
- *   {'name': 'MySubProcess (MultiInstance)', linkId: '123'},
- *   {'name': 'MySubprocess (MultiInstance 456)', linkId: '456'},
- *   {'name': 'MySubProcess'},
+ *   {'name': 'MySubProcess (MultiInstance)', hasLink: true},
+ *   {'name': 'MySubprocess', hasLink: true},
+ *   {'name': '123123'},
  * ]
  */
-export const getBreadcrumbs = ({
-  metadata,
-  selectedFlowNodeName,
-  selectedFlowNodeId
-}) => {
+export const getBreadcrumbs = ({metadata, selectedFlowNodeName}) => {
   if (metadata.isMultiInstanceBody) {
     return [
       {
         name: `${selectedFlowNodeName} (Multi Instance)`,
-        linkId: selectedFlowNodeId
+        hasLink: true
       },
       {
-        name: `${selectedFlowNodeName} (Multi Instance ${shortenId(
-          metadata.data.activityInstanceId
-        )})`
+        name: metadata.data.activityInstanceId
       }
     ];
   } else if (metadata.isMultiInstanceChild) {
     return [
       {
         name: `${selectedFlowNodeName} (Multi Instance)`,
-        linkId: selectedFlowNodeId
+        hasLink: true
       },
       {
-        name: `${selectedFlowNodeName} (Multi Instance ${shortenId(
-          metadata.parentId
-        )})`,
-        linkId: selectedFlowNodeId
+        name: selectedFlowNodeName,
+        hasLink: true,
+        options: {selectMultiInstanceChildrenOnly: true}
       },
       {
-        name: selectedFlowNodeName
+        name: metadata.data.activityInstanceId
       }
     ];
   } else {
     return [
       {
         name: selectedFlowNodeName,
-        linkId: selectedFlowNodeId
+        hasLink: true
       },
       {
         name: metadata.data.activityInstanceId

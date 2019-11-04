@@ -3,7 +3,7 @@
 exports[`PopupOverlay.service getBreadcrumbs should return default breadcrumbs 1`] = `
 Array [
   Object {
-    "linkId": "000111222333444",
+    "hasLink": true,
     "name": "MyFlowNode",
   },
   Object {
@@ -15,11 +15,11 @@ Array [
 exports[`PopupOverlay.service getBreadcrumbs should return multi instance body breadcrumbs 1`] = `
 Array [
   Object {
-    "linkId": "000111222333444",
+    "hasLink": true,
     "name": "MyFlowNode (Multi Instance)",
   },
   Object {
-    "name": "MyFlowNode (Multi Instance ...123)",
+    "name": "123",
   },
 ]
 `;
@@ -27,15 +27,18 @@ Array [
 exports[`PopupOverlay.service getBreadcrumbs should return multi instance child breadcrumbs 1`] = `
 Array [
   Object {
-    "linkId": "000111222333444",
+    "hasLink": true,
     "name": "MyFlowNode (Multi Instance)",
   },
   Object {
-    "linkId": "000111222333444",
-    "name": "MyFlowNode (Multi Instance ...999)",
+    "hasLink": true,
+    "name": "MyFlowNode",
+    "options": Object {
+      "selectMultiInstanceChildrenOnly": true,
+    },
   },
   Object {
-    "name": "MyFlowNode",
+    "name": "123",
   },
 ]
 `;
