@@ -148,9 +148,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       messageState.put(message);
 
       correlatedWorkflowInstances.forEachOrderedLong(
-          workflowInstanceKey -> {
-            messageState.putMessageCorrelation(message.getKey(), workflowInstanceKey);
-          });
+          workflowInstanceKey ->
+              messageState.putMessageCorrelation(message.getKey(), workflowInstanceKey));
 
     } else {
       // don't add the message to the store to avoid that it can be correlated afterwards

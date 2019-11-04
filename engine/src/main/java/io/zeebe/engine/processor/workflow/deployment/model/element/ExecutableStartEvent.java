@@ -23,4 +23,9 @@ public class ExecutableStartEvent extends ExecutableCatchEventElement {
   public void setEventSubProcess(DirectBuffer eventSubProcess) {
     this.eventSubProcess = eventSubProcess;
   }
+
+  @Override
+  public boolean shouldCloseMessageSubscriptionOnCorrelate() {
+    return interrupting();
+  }
 }
