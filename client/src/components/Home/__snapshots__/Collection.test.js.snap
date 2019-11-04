@@ -102,6 +102,15 @@ exports[`should match snapshot 1`] = `
           Users
         </Link>
       </li>
+      <li
+        className=""
+      >
+        <Link
+          to="sources"
+        >
+          Data Sources
+        </Link>
+      </li>
     </ul>
   </div>
   <div
@@ -248,6 +257,15 @@ exports[`should render content depending on the selected tab 1`] = `
           to="users"
         >
           Users
+        </Link>
+      </li>
+      <li
+        className=""
+      >
+        <Link
+          to="sources"
+        >
+          Data Sources
         </Link>
       </li>
     </ul>

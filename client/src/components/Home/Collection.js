@@ -22,6 +22,7 @@ import {ReactComponent as CollectionIcon} from './icons/collection.svg';
 import EntityList from './EntityList';
 import UserList from './UserList';
 import AlertList from './AlertList';
+import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
 
 import './Collection.scss';
@@ -121,6 +122,7 @@ export default withErrorHandling(
       const homeTab = this.props.match.params.viewMode === undefined;
       const userTab = this.props.match.params.viewMode === 'users';
       const alertTab = this.props.match.params.viewMode === 'alerts';
+      const sourcesTab = this.props.match.params.viewMode === 'sources';
 
       if (redirect) {
         return <Redirect to={redirect} />;
@@ -169,6 +171,9 @@ export default withErrorHandling(
               <li className={classnames({active: userTab})}>
                 <Link to="users">{t('common.user.label-plural')}</Link>
               </li>
+              <li className={classnames({active: sourcesTab})}>
+                <Link to="sources">{t('home.sources.title')}</Link>
+              </li>
             </ul>
           </div>
           <div className="content">
@@ -191,6 +196,12 @@ export default withErrorHandling(
                 readOnly={collection.currentUserRole !== 'manager'}
                 data={collection.data.roles}
                 onChange={this.loadCollection}
+                collection={collection.id}
+              />
+            )}
+            {sourcesTab && collection && (
+              <SourcesList
+                readOnly={collection.currentUserRole !== 'manager'}
                 collection={collection.id}
               />
             )}

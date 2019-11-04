@@ -73,6 +73,12 @@
       "existing-user-error": "Ein Benutzer mit dieser ID existiert schon in dieser Sammlung",
       "existing-group-error": "Eine Gruppe mit dieser ID existiert schon in dieser Sammlung"
     },
+    "sources": {
+      "title": "Datenquellen",
+      "decision": "Entscheidungstabelle",
+      "process": "Prozess",
+      "notCreated": "Es wurden noch keine Quellen hinzugefügt"
+    },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
     "empty": "Es wurde noch nichts erstellt"
   },

@@ -23,6 +23,15 @@ export async function removeUser(collection, id) {
   return await del(`api/collection/${collection}/role/${id}`);
 }
 
+export async function getSources(collection) {
+  const response = await get(`api/collection/${collection}/scope`);
+  return await response.json();
+}
+
+export async function removeSource(collection, scopeId) {
+  return await del(`api/collection/${collection}/scope/${scopeId}`);
+}
+
 export async function loadAlerts(collection) {
   const response = await get(`api/collection/${collection}/alerts`);
   return await response.json();
