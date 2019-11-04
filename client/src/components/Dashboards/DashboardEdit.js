@@ -7,10 +7,12 @@
 import React from 'react';
 import moment from 'moment';
 import update from 'immutability-helper';
-import {evaluateReport} from 'services';
+import deepEqual from 'deep-equal';
 
+import {evaluateReport} from 'services';
 import {DashboardRenderer, EntityNameForm} from 'components';
 import {t} from 'translation';
+import {nowDirty, nowPristine} from 'saveGuard';
 
 import {AddButton} from './AddButton';
 import {Grid} from './Grid';
@@ -25,6 +27,7 @@ export default class DashboardEdit extends React.Component {
 
     this.state = {
       reports: props.initialReports,
+      name: props.name,
       addButtonVisible: true
     };
   }
@@ -41,6 +44,10 @@ export default class DashboardEdit extends React.Component {
         [reportIdx]: changes
       })
     });
+  };
+
+  updateName = ({target: {value}}) => {
+    this.setState({name: value});
   };
 
   showAddButton = () => {
@@ -65,21 +72,41 @@ export default class DashboardEdit extends React.Component {
     });
   };
 
-  render() {
-    const {name, lastModifier, lastModified, isNew} = this.props;
+  componentDidUpdate() {
+    if (
+      deepEqual(this.state.reports, this.props.initialReports) &&
+      this.state.name === this.props.name
+    ) {
+      nowPristine();
+    } else {
+      nowDirty(t('dashboard.label'), this.save);
+    }
+  }
 
-    const {reports} = this.state;
+  save = async () => {
+    const {name, reports} = this.state;
+
+    nowPristine();
+    await this.props.saveChanges(name, reports);
+  };
+
+  render() {
+    const {lastModifier, lastModified, isNew} = this.props;
+
+    const {reports, name} = this.state;
 
     return (
       <div className="DashboardEdit">
         <div className="header">
           <EntityNameForm
-            initialName={name}
+            name={name}
             lastModified={lastModified}
             lastModifier={lastModifier}
             isNew={isNew}
             entity="Dashboard"
-            onSave={(evt, newName) => this.props.saveChanges(newName, reports)}
+            onChange={this.updateName}
+            onSave={this.save}
+            onCancel={nowPristine}
           />
           <div className="subHead">
             <div className="metadata">

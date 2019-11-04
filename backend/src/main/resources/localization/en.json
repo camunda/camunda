@@ -26,6 +26,12 @@
     "enterLicense": "Please enter license key",
     "submit": "Submit"
   },
+  "saveGuard": {
+    "header": "Unsaved changes",
+    "text": "The {label} has unsaved changes. Save before continuing?",
+    "yes": "Save Changes",
+    "no": "Don't Save"
+  },
   "home": {
     "createBtn": {
       "default": "Create New",

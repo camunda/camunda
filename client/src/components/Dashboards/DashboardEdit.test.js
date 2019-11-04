@@ -7,7 +7,11 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {nowDirty} from 'saveGuard';
+
 import DashboardEdit from './DashboardEdit';
+
+jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 
 it('should contain a Grid', () => {
   const node = shallow(<DashboardEdit />);
@@ -38,4 +42,12 @@ it('should pass the isNew prop to the EntityNameForm', () => {
   const node = shallow(<DashboardEdit isNew />);
 
   expect(node.find('EntityNameForm').prop('isNew')).toBe(true);
+});
+
+it('should notify the saveGuard of changes', () => {
+  const node = shallow(<DashboardEdit initialReports={[]} />);
+
+  node.find('AddButton').prop('addReport')({});
+
+  expect(nowDirty).toHaveBeenCalled();
 });

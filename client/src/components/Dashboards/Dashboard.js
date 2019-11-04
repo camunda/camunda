@@ -101,16 +101,16 @@ export default withErrorHandling(
     };
 
     updateDashboard = (id, name, reports) => {
-      this.props.mightFail(
-        updateEntity('dashboard', id, {
-          name,
-          reports
-        }),
-        () => this.updateDashboardState(id, name, reports),
-        () => {
-          addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'});
-        }
-      );
+      return new Promise((resolve, reject) => {
+        this.props.mightFail(
+          updateEntity('dashboard', id, {
+            name,
+            reports
+          }),
+          () => resolve(this.updateDashboardState(id, name, reports)),
+          () => reject(addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'}))
+        );
+      });
     };
 
     updateDashboardState = async (id, name, reports) => {
@@ -123,19 +123,19 @@ export default withErrorHandling(
     };
 
     saveChanges = (name, reports) => {
-      if (this.isNew()) {
-        const collectionId = getCollection(this.props.location.pathname);
+      return new Promise(async (resolve, reject) => {
+        if (this.isNew()) {
+          const collectionId = getCollection(this.props.location.pathname);
 
-        this.props.mightFail(
-          createEntity('dashboard', {collectionId, name, reports}),
-          id => this.updateDashboardState(id, name, reports),
-          () => {
-            addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'});
-          }
-        );
-      } else {
-        this.updateDashboard(this.getId(), name, reports);
-      }
+          this.props.mightFail(
+            createEntity('dashboard', {collectionId, name, reports}),
+            id => resolve(this.updateDashboardState(id, name, reports)),
+            () => reject(addNotification({text: t('dashboard.cannotSave', {name}), type: 'error'}))
+          );
+        } else {
+          resolve(this.updateDashboard(this.getId(), name, reports));
+        }
+      });
     };
 
     componentDidUpdate() {

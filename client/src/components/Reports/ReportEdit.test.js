@@ -8,7 +8,9 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportEdit from './ReportEdit';
+import ReportControlPanel from './controlPanels/ReportControlPanel';
 import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
+import {nowDirty, nowPristine} from 'saveGuard';
 
 jest.mock('react-router-dom', () => {
   const rest = jest.requireActual('react-router-dom');
@@ -30,6 +32,7 @@ jest.mock('services', () => {
 });
 
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
+jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 
 const report = {
   id: '1',
@@ -48,6 +51,8 @@ const report = {
 
 const props = {
   report,
+  mightFail: (promise, cb) => cb(promise),
+  updateOverview: jest.fn(),
   location: {pathname: '/report/1'}
 };
 
@@ -115,7 +120,7 @@ it('should reset the report data to its original state after canceling', async (
 it('should save a changed report', async () => {
   const node = shallow(<ReportEdit {...props} report={report} />).dive();
 
-  node.instance().save({}, 'new Name');
+  await node.instance().save();
 
   expect(updateEntity).toHaveBeenCalled();
 });
@@ -195,23 +200,16 @@ it('should set conflict state when conflict happens on save button click', async
     <ReportEdit.WrappedComponent {...props} report={report} mightFail={mightFail} />
   );
 
-  node.instance().save({});
-  await node.update();
-
-  expect(node.state().conflict.type).toEqual('save');
-  expect(node.state().conflict.items).toEqual(conflictedItems);
+  try {
+    node.instance().save();
+  } catch (e) {
+    expect(node.state().conflict.type).toEqual('save');
+    expect(node.state().conflict.items).toEqual(conflictedItems);
+  }
 });
 
 it('should create a new report if the report is new', () => {
-  const node = shallow(
-    <ReportEdit.WrappedComponent
-      {...props}
-      report={report}
-      mightFail={(promise, cb) => cb(promise)}
-      updateOverview={jest.fn()}
-      isNew
-    />
-  );
+  const node = shallow(<ReportEdit.WrappedComponent {...props} isNew />);
 
   node.instance().save();
 
@@ -228,9 +226,6 @@ it('should create a new report in a collection', async () => {
       {...props}
       location={{pathname: '/collection/123/report/new/edit'}}
       match={{params: {id: 'new'}}}
-      report={report}
-      mightFail={(promise, cb) => cb(promise)}
-      updateOverview={jest.fn()}
       isNew
     />
   );
@@ -253,6 +248,18 @@ it('should invoke updateOverview when saving the report', async () => {
   await node.instance().save();
 
   expect(spy).toHaveBeenCalled();
+});
+
+it('should notify the saveGuard of changes', () => {
+  const node = shallow(<ReportEdit.WrappedComponent {...props} />);
+
+  node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: 'b'}});
+
+  expect(nowDirty).toHaveBeenCalled();
+
+  node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: null}});
+
+  expect(nowPristine).toHaveBeenCalled();
 });
 
 describe('showIncompleteResultWarning', () => {

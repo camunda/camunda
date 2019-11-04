@@ -25,8 +25,7 @@ it('should provide a link to view mode', async () => {
 
 it('should invoke save on save button click', async () => {
   const spy = jest.fn();
-  const node = await shallow(<EntityNameForm entity="Report" onSave={spy} />);
-  node.setState({name: ''});
+  const node = await shallow(<EntityNameForm entity="Report" name="" onSave={spy} />);
 
   node.find('.save-button').simulate('click');
 
@@ -34,19 +33,20 @@ it('should invoke save on save button click', async () => {
 });
 
 it('should disable save button if report name is empty', async () => {
-  const node = await shallow(<EntityNameForm entity="Report" />);
-  node.setState({name: ''});
+  const node = await shallow(<EntityNameForm entity="Report" name="" />);
 
   expect(node.find('.save-button')).toBeDisabled();
 });
 
-it('should update name on input change', async () => {
-  const node = await shallow(<EntityNameForm entity="Report" />);
-  node.setState({name: 'test name'});
+it('should call change function on input change', async () => {
+  const spy = jest.fn();
+  const node = await shallow(<EntityNameForm entity="Report" name="test name" onChange={spy} />);
 
-  const input = 'asdf';
-  node.find(Input).simulate('change', {target: {value: input}});
-  expect(node.state().name).toBe(input);
+  const evt = {target: {value: 'asdf'}};
+
+  node.find(Input).simulate('change', evt);
+
+  expect(spy).toHaveBeenCalledWith(evt);
 });
 
 it('should invoke cancel', async () => {
@@ -61,7 +61,7 @@ it('should select the name input field if Report is just created', async () => {
   const node = await shallow(<EntityNameForm entity="Report" isNew />);
 
   const input = {focus: jest.fn(), select: jest.fn()};
-  node.instance().inputRef(input);
+  node.instance().nameInput.current = input;
 
   await node.instance().componentDidMount();
 

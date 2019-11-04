@@ -23,6 +23,7 @@ import {
 import {ErrorBoundary, LoadingIndicator, ErrorPage, Button} from 'components';
 
 import {Notifications} from 'notifications';
+import {SaveGuard} from 'saveGuard';
 
 import {Provider as Theme} from 'theme';
 import {withErrorHandling} from 'HOC';
@@ -79,7 +80,7 @@ class App extends React.Component {
 
     return (
       <Theme>
-        <Router>
+        <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
           <Route
             path="/"
             render={({location: {pathname}}) => {
@@ -107,6 +108,7 @@ class App extends React.Component {
               );
             }}
           />
+          <SaveGuard />
         </Router>
         <Notifications />
       </Theme>

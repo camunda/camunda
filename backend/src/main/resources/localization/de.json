@@ -26,6 +26,12 @@
     "enterLicense": "Bitte geben Sie den Lizenzschlüssel ein",
     "submit": "Absenden"
   },
+  "saveGuard": {
+    "header": "Ungespeicherte Änderungen",
+    "text": "{label} hat ungespeicherte Änderungen. Wollen Sie speichern?",
+    "yes": "Änderungen Speichern",
+    "no": "Nicht Speichern"
+  },
   "home": {
     "createBtn": {
       "default": "Erstelle neu",
