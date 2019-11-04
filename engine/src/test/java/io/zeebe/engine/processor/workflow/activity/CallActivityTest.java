@@ -366,6 +366,43 @@ public class CallActivityTest {
   }
 
   @Test
+  public void shouldTerminateOnCompleting() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeOutput("x", "y")))
+        .deploy();
+
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    completeJobWith(Map.of());
+
+    assertThat(
+            RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .exists())
+        .describedAs("Expected incident to be created")
+        .isTrue();
+
+    // when
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.CALL_ACTIVITY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
   public void shouldNotPropagateVariablesOnTermination() {
     // given
     ENGINE

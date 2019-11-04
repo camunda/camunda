@@ -29,7 +29,7 @@ public class CallActivityTerminatingHandler
     final var calledChildInstanceKey = context.getElementInstance().getCalledChildInstanceKey();
     final var childInstance = context.getElementInstanceState().getInstance(calledChildInstanceKey);
 
-    if (childInstance != null && childInstance.isActive()) {
+    if (childInstance != null && childInstance.canTerminate()) {
       context
           .getOutput()
           .appendFollowUpEvent(
@@ -37,9 +37,11 @@ public class CallActivityTerminatingHandler
               WorkflowInstanceIntent.ELEMENT_TERMINATING,
               childInstance.getValue());
 
-      return true;
+    } else {
+      // child instance is already completed or terminated
+      transitionTo(context, WorkflowInstanceIntent.ELEMENT_TERMINATED);
     }
 
-    return false;
+    return true;
   }
 }
