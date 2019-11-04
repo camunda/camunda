@@ -182,12 +182,16 @@ export default withErrorHandling(
         return <LoadingIndicator />;
       }
 
+      if (alerts.length === 0) {
+        return <div className="empty">{t('alert.notCreated')}</div>;
+      }
+
       const searchFilteredData = alerts.filter(({name}) =>
         name.toLowerCase().includes(this.state.searchQuery.toLowerCase())
       );
 
       if (searchFilteredData.length === 0) {
-        return <div className="empty">{t('alert.notCreated')}</div>;
+        return <div className="empty">{t('common.notFound')}</div>;
       }
 
       return searchFilteredData.map(alert => {
