@@ -40,7 +40,9 @@ public class CallActivityActivatingHandler
 
   @Override
   protected boolean handleState(BpmnStepContext<ExecutableCallActivity> context) {
-    super.handleState(context);
+    if (!super.handleState(context)) {
+      return false;
+    }
 
     getProcessId(context)
         .map(processId -> getCalledWorkflow(processId, context))
