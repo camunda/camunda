@@ -95,8 +95,8 @@ public class Partition implements Service<Partition> {
           .createService(
               EngineServiceNames.leaderLogStreamDeletionService(partitionId), leaderDeletionService)
           .dependency(
-              ExporterServiceNames.EXPORTER_MANAGER,
-              leaderDeletionService.getExporterManagerInjector())
+              ExporterServiceNames.exporterDirectorServiceName(partitionId),
+              leaderDeletionService.getExporterDirectorInjector())
           .install();
       deletionService = leaderDeletionService;
       snapshotController.setDeletionService(deletionService);

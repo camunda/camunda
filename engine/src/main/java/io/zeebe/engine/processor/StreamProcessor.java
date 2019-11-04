@@ -13,9 +13,6 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
@@ -26,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
-public class StreamProcessor extends Actor implements Service<StreamProcessor> {
+public class StreamProcessor extends Actor {
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -140,21 +137,6 @@ public class StreamProcessor extends Actor implements Service<StreamProcessor> {
     if (!isFailed()) {
       lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onClose);
     }
-  }
-
-  @Override
-  public void start(ServiceStartContext startContext) {
-    startContext.async(openAsync(), true);
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    stopContext.async(closeAsync());
-  }
-
-  @Override
-  public StreamProcessor get() {
-    return this;
   }
 
   public ActorFuture<Void> openAsync() {

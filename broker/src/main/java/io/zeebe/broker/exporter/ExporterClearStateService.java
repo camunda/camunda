@@ -10,11 +10,9 @@ package io.zeebe.broker.exporter;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.exporter.stream.ExportersState;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
 import org.slf4j.Logger;
 
-public class ExporterClearStateService implements Service<Void> {
+public class ExporterClearStateService {
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
 
@@ -24,8 +22,7 @@ public class ExporterClearStateService implements Service<Void> {
     this.zeebeDb = zeebeDb;
   }
 
-  @Override
-  public void start(ServiceStartContext startContext) {
+  public void start() {
     // We need to remove the exporter positions from the state in case that one of the exporters is
     // configured later again. The processor would try to continue from the previous position which
     // may not
@@ -45,10 +42,5 @@ public class ExporterClearStateService implements Service<Void> {
     } catch (Exception e) {
       LOG.error("Failed to remove exporters from state", e);
     }
-  }
-
-  @Override
-  public Void get() {
-    return null;
   }
 }

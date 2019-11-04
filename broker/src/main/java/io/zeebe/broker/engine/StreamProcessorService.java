@@ -20,10 +20,8 @@ import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
-import io.zeebe.engine.processor.AsyncSnapshotingDirectorService;
 import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.StreamProcessorServiceNames;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
@@ -31,15 +29,14 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 
-public class EngineService implements Service<EngineService> {
+public class StreamProcessorService implements Service<StreamProcessor> {
 
   public static final String PROCESSOR_NAME = "zb-stream-processor";
 
@@ -48,22 +45,19 @@ public class EngineService implements Service<EngineService> {
   private final Injector<Atomix> atomixInjector = new Injector<>();
   private final Injector<LeaderManagementRequestHandler> leaderManagementRequestHandlerInjector =
       new Injector<>();
+  private final Injector<Partition> partitionInjector = new Injector<>();
 
   private final ClusterCfg clusterCfg;
-  private final ServiceContainer serviceContainer;
   private final Duration snapshotPeriod;
   private ServiceStartContext serviceContext;
-
   private CommandApiService commandApiService;
   private TopologyManager topologyManager;
   private Atomix atomix;
-  private final ServiceGroupReference<Partition> partitionsGroupReference =
-      ServiceGroupReference.<Partition>create().onAdd(this::startEngineForPartition).build();
+  private Partition partition;
+  private StreamProcessor streamProcessor;
 
-  public EngineService(ServiceContainer serviceContainer, BrokerCfg brokerCfg) {
+  public StreamProcessorService(BrokerCfg brokerCfg) {
     clusterCfg = brokerCfg.getCluster();
-
-    this.serviceContainer = serviceContainer;
     final DataCfg dataCfg = brokerCfg.getData();
     this.snapshotPeriod = DurationUtil.parse(dataCfg.getSnapshotPeriod());
   }
@@ -74,55 +68,41 @@ public class EngineService implements Service<EngineService> {
     this.commandApiService = commandApiServiceInjector.getValue();
     this.topologyManager = topologyManagerInjector.getValue();
     this.atomix = atomixInjector.getValue();
+    this.partition = partitionInjector.getValue();
+
+    serviceContext.async(startEngineForPartition(partition), true);
   }
 
   @Override
-  public EngineService get() {
-    return this;
+  public void stop(ServiceStopContext stopContext) {
+    stopContext.async(streamProcessor.closeAsync());
   }
 
-  public void startEngineForPartition(
-      final ServiceName<Partition> partitionServiceName, final Partition partition) {
+  @Override
+  public StreamProcessor get() {
+    return streamProcessor;
+  }
+
+  public ActorFuture<Void> startEngineForPartition(final Partition partition) {
 
     final LogStream logStream = partition.getLogStream();
-    StreamProcessor.builder()
-        .logStream(logStream)
-        .actorScheduler(serviceContext.getScheduler())
-        .additionalDependencies(partitionServiceName)
-        .additionalDependencies(serviceContext.getServiceName())
-        .zeebeDb(partition.getZeebeDb())
-        .serviceContainer(serviceContainer)
-        .commandResponseWriter(commandApiService.newCommandResponseWriter())
-        .onProcessedListener(commandApiService.getOnProcessedListener(partition.getPartitionId()))
-        .streamProcessorFactory(
-            (processingContext) -> {
-              final ActorControl actor = processingContext.getActor();
-              final ZeebeState zeebeState = processingContext.getZeebeState();
-              return createTypedStreamProcessor(actor, zeebeState, processingContext);
-            })
-        .build();
+    streamProcessor =
+        StreamProcessor.builder()
+            .logStream(logStream)
+            .actorScheduler(serviceContext.getScheduler())
+            .zeebeDb(partition.getZeebeDb())
+            .commandResponseWriter(commandApiService.newCommandResponseWriter())
+            .onProcessedListener(
+                commandApiService.getOnProcessedListener(partition.getPartitionId()))
+            .streamProcessorFactory(
+                (processingContext) -> {
+                  final ActorControl actor = processingContext.getActor();
+                  final ZeebeState zeebeState = processingContext.getZeebeState();
+                  return createTypedStreamProcessor(actor, zeebeState, processingContext);
+                })
+            .build();
 
-    createAsyncSnapshotDirectorService(partition);
-  }
-
-  private void createAsyncSnapshotDirectorService(final Partition partition) {
-    final String logName = partition.getLogStream().getLogName();
-
-    final AsyncSnapshotingDirectorService snapshotDirectorService =
-        new AsyncSnapshotingDirectorService(
-            partition.getLogStream(), partition.getSnapshotController(), snapshotPeriod);
-
-    final ServiceName<AsyncSnapshotingDirectorService> snapshotDirectorServiceName =
-        StreamProcessorServiceNames.asyncSnapshotingDirectorService(logName);
-    final ServiceName<StreamProcessor> streamProcessorControllerServiceName =
-        StreamProcessorServiceNames.streamProcessorService(logName);
-
-    serviceContext
-        .createService(snapshotDirectorServiceName, snapshotDirectorService)
-        .dependency(
-            streamProcessorControllerServiceName,
-            snapshotDirectorService.getStreamProcessorInjector())
-        .install();
+    return streamProcessor.openAsync();
   }
 
   public TypedRecordProcessors createTypedStreamProcessor(
@@ -161,8 +141,8 @@ public class EngineService implements Service<EngineService> {
     return commandApiServiceInjector;
   }
 
-  public ServiceGroupReference<Partition> getPartitionsGroupReference() {
-    return partitionsGroupReference;
+  public Injector<Partition> getPartitionInjector() {
+    return partitionInjector;
   }
 
   public Injector<TopologyManager> getTopologyManagerInjector() {

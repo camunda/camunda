@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import static io.zeebe.broker.exporter.ExporterServiceNames.exporterDirectorServiceName;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
@@ -17,7 +16,6 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.StateSnapshotController;
@@ -58,6 +56,7 @@ public class ExporterRule implements TestRule {
   private ZeebeDb<ZbColumnFamilies> capturedZeebeDb;
 
   private TestStreams streams;
+  private ExporterDirector director;
 
   public ExporterRule(int partitionId) {
     this(partitionId, DefaultZeebeDbFactory.defaultFactory(ZbColumnFamilies.class));
@@ -102,15 +101,8 @@ public class ExporterRule implements TestRule {
             .logStreamReader(new BufferedLogStreamReader())
             .snapshotPeriod(Duration.ofMinutes(5));
 
-    final ExporterDirector director = new ExporterDirector(context);
-    serviceContainerRule
-        .get()
-        .createService(exporterDirectorServiceName(PARTITION_ID), director)
-        .dependency(LogStreamServiceNames.logStreamServiceName(STREAM_NAME))
-        .dependency(LogStreamServiceNames.logWriteBufferServiceName(STREAM_NAME))
-        .dependency(LogStreamServiceNames.logStorageServiceName(STREAM_NAME))
-        .install()
-        .join();
+    director = new ExporterDirector(context);
+    director.startAsync(actorSchedulerRule.get()).join();
   }
 
   public ControlledActorClock getClock() {
@@ -143,7 +135,7 @@ public class ExporterRule implements TestRule {
   }
 
   public void closeExporterDirector() throws Exception {
-    serviceContainerRule.get().removeService(exporterDirectorServiceName(PARTITION_ID)).join();
+    director.stopAsync().join();
     capturedZeebeDb.close();
     capturedZeebeDb = null;
   }

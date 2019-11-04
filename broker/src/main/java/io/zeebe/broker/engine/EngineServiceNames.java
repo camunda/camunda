@@ -13,8 +13,6 @@ import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class EngineServiceNames {
-  public static final ServiceName<EngineService> ENGINE_SERVICE_NAME =
-      ServiceName.newServiceName("logstreams.processor", EngineService.class);
   public static final ServiceName<SubscriptionCommandMessageHandler>
       SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME =
           ServiceName.newServiceName(
