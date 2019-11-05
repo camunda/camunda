@@ -8,7 +8,7 @@
     "array-includes": "^3.0.3",
     "array.prototype.find": "^2.1.0",
     "bpmn-js": "5.1.2",
-    "chart.js": "2.9.1",
+    "chart.js": "2.9.2",
     "classnames": "^2.2.6",
     "debounce": "^1.2.0",
     "deep-equal": "^1.0.1",
