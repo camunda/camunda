@@ -65,12 +65,11 @@ public class ImportJob implements Callable<Boolean> {
       //at midnight index is changed and some events may be lost, see OPE-733
       if (indexChange()) {
         refreshPreviousIndex();
-        Thread.sleep(1000);
         RecordsReader recordsReader = recordsReaderHolder.getRecordsReader(importBatch.getPartitionId(), importBatch.getImportValueType());
         if (recordsReader != null) {
           //reread same batch (mark index as done - may be just empty index name in batch)
           importBatch = recordsReader.readNextBatch(previousPosition.getPosition(), importBatch.getLastProcessedPosition());
-          previousPosition.setIndexName(null);
+          markIndexAsDone();
         } else {
           logger.warn("Unable to find records reader for partitionId {} and ImportValueType {}", importBatch.getPartitionId(), importBatch.getImportValueType());
         }
@@ -88,11 +87,20 @@ public class ImportJob implements Callable<Boolean> {
     }
   }
 
+  private void markIndexAsDone() {
+    previousPosition.setIndexName(null);
+  }
+
   public void refreshPreviousIndex() throws IOException {
     RefreshRequest refreshRequest = new RefreshRequest(previousPosition.getIndexName());
     RefreshResponse refresh = zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     if (refresh.getFailedShards() > 0) {
       logger.warn("Unable to refresh the index: {}", previousPosition.getIndexName());
+    }
+    try {
+      Thread.sleep(1000);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
   }
 

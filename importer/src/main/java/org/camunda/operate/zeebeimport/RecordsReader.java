@@ -137,23 +137,23 @@ public class RecordsReader {
     importJob.recordLatestScheduledPosition();
   }
 
-  public ImportBatch readNextBatch(long position1, Long position2) throws NoSuchIndexException {
+  public ImportBatch readNextBatch(long positionFrom, Long positionTo) throws NoSuchIndexException {
     String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     try {
 
-      RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(position1);
-      if (position2 != null) {
-        positionQ = positionQ.lte(position2);
+      RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);
+      if (positionTo != null) {
+        positionQ = positionQ.lte(positionTo);
       }
       final QueryBuilder queryBuilder = joinWithAnd(positionQ,
           termQuery(PARTITION_ID_FIELD_NAME, partitionId));
 
       SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).sort(ImportPositionIndex.POSITION, SortOrder.ASC);
-      if (position2 == null) {
+      if (positionTo == null) {
         searchSourceBuilder = searchSourceBuilder.size(operateProperties.getZeebeElasticsearch().getBatchSize());
       } else {
-        logger.debug("Import batch reread was called. Data type {}, partitionId {}, position1 {}, position2 {}.", importValueType, partitionId, position1, position2);
-        int size = (int)(position2 - position1);
+        logger.debug("Import batch reread was called. Data type {}, partitionId {}, positionFrom {}, positionTo {}.", importValueType, partitionId, positionFrom, positionTo);
+        int size = (int)(positionTo - positionFrom);
         searchSourceBuilder = searchSourceBuilder.size(size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size); //this size will be bigger than needed
       }
       final SearchRequest searchRequest = new SearchRequest(aliasName)

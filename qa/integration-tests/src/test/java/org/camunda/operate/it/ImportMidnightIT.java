@@ -60,13 +60,6 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     return activityInstanceReader.getActivityInstanceTree(new ActivityInstanceTreeRequestDto(workflowInstanceKey.toString()));
   }
 
-  private ListViewWorkflowInstanceDto getSingleWorkflowInstanceForListView(ListViewRequestDto request) {
-    final ListViewResponseDto listViewResponse = listViewReader.queryWorkflowInstances(request, 0, 100);
-    assertThat(listViewResponse.getTotalCount()).isEqualTo(1);
-    assertThat(listViewResponse.getWorkflowInstances()).hasSize(1);
-    return listViewResponse.getWorkflowInstances().get(0);
-  }
-
   @Test
   public void testWorkflowInstancesCompletedNextDay() {
     // having
