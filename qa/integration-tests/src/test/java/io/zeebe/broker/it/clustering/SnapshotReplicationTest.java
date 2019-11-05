@@ -11,8 +11,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.DataDeleteTest;
-import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.engine.Loggers;
 import io.zeebe.model.bpmn.Bpmn;
@@ -37,6 +36,7 @@ import org.junit.rules.RuleChain;
 public class SnapshotReplicationTest {
 
   private static final int PARTITION_COUNT = 1;
+  private static final int SNAPSHOT_PERIOD_SECONDS = 30;
 
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
@@ -44,7 +44,7 @@ public class SnapshotReplicationTest {
   // NOTE: the configuration removes the RecordingExporter from the broker's configuration to enable
   // data deletion so it can't be used in tests
   public ClusteringRule clusteringRule =
-      new ClusteringRule(PARTITION_COUNT, 3, 3, DataDeleteTest::configureCustomExporter);
+      new ClusteringRule(PARTITION_COUNT, 3, 3, ClusteredDataDeletionTest::configureCustomExporter);
   public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
@@ -64,7 +64,7 @@ public class SnapshotReplicationTest {
     client.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
     final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final Broker leader = clusteringRule.getBroker(leaderNodeId);
-    clusteringRule.getClock().addTime(Duration.ofSeconds(DataDeleteTest.SNAPSHOT_PERIOD_SECONDS));
+    clusteringRule.getClock().addTime(Duration.ofSeconds(SNAPSHOT_PERIOD_SECONDS));
 
     // when - snapshot
     waitForValidSnapshotAtBroker(leader);

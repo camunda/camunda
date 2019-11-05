@@ -220,7 +220,7 @@ public class DistributedLogRule extends ExternalResource {
       throws ExecutionException, InterruptedException, TimeoutException {
     LOG.info("Waiting for node {} start", nodeId);
     nodeStarted.get(50, TimeUnit.SECONDS);
-    LOG.info("Node {} started", nodeId);
+    LOG.info("Broker {} started", this.nodeId);
   }
 
   public boolean eventAppended(

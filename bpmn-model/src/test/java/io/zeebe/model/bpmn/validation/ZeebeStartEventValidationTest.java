@@ -39,10 +39,7 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
       },
       {
         Bpmn.createExecutableProcess().startEvent().signal("signal").endEvent().done(),
-        Arrays.asList(
-            expect(
-                StartEvent.class,
-                "Start event must be one of the following types: none, timer, message"),
+        singletonList(
             expect(SignalEventDefinition.class, "Event definition of this type is not supported")),
       },
       {
@@ -59,7 +56,6 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
       {
         "multiple-timer-start-event-sub-process.bpmn",
         Arrays.asList(
-            expect(SubProcess.class, "Start events in subprocesses must be of type none"),
             expect(SubProcess.class, "Start events in subprocesses must be of type none"),
             expect(SubProcess.class, "Must have exactly one start event"))
       },

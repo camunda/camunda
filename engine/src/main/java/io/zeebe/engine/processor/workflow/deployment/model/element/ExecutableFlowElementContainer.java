@@ -19,15 +19,14 @@ import java.util.List;
  */
 public class ExecutableFlowElementContainer extends ExecutableActivity {
 
-  private final List<ExecutableCatchEventElement> startEvents;
+  private final List<ExecutableStartEvent> startEvents = new ArrayList<>();
 
   public ExecutableFlowElementContainer(String id) {
     super(id);
-    startEvents = new ArrayList<>();
   }
 
-  public ExecutableCatchEventElement getNoneStartEvent() {
-    for (ExecutableCatchEventElement startEvent : startEvents) {
+  public ExecutableStartEvent getNoneStartEvent() {
+    for (ExecutableStartEvent startEvent : startEvents) {
       if (startEvent.isNone()) {
         return startEvent;
       }
@@ -35,11 +34,11 @@ public class ExecutableFlowElementContainer extends ExecutableActivity {
     return null;
   }
 
-  public List<ExecutableCatchEventElement> getStartEvents() {
+  public List<ExecutableStartEvent> getStartEvents() {
     return startEvents;
   }
 
-  public void addStartEvent(ExecutableCatchEventElement startEvent) {
+  public void addStartEvent(ExecutableStartEvent startEvent) {
     this.startEvents.add(startEvent);
   }
 }

@@ -83,6 +83,12 @@ public class CreateWorkflowInstanceCommandImpl
   }
 
   @Override
+  public CreateWorkflowInstanceWithResultCommandStep1 withResult() {
+    return new CreateWorkflowInstanceWithResultCommandImpl(
+        objectMapper, asyncStub, builder, retryPredicate, requestTimeout);
+  }
+
+  @Override
   public CreateWorkflowInstanceCommandStep2 bpmnProcessId(final String id) {
     builder.setBpmnProcessId(id);
     return this;

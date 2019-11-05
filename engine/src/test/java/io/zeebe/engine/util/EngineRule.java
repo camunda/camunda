@@ -11,6 +11,7 @@ import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.RecordValues;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
@@ -169,11 +170,12 @@ public final class EngineRule extends ExternalResource {
         partitionId -> {
           try {
             environmentRule.closeStreamProcessor(partitionId);
-            FileUtil.deleteFolder(
-                environmentRule
-                    .getStateSnapshotController(partitionId)
-                    .getLastValidSnapshotDirectory()
-                    .toPath());
+
+            final var snapshotController = environmentRule.getStateSnapshotController(partitionId);
+
+            if (snapshotController.getValidSnapshotsCount() > 0) {
+              FileUtil.deleteFolder(snapshotController.getLastValidSnapshotDirectory().toPath());
+            }
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }
@@ -246,6 +248,10 @@ public final class EngineRule extends ExternalResource {
 
   public void writeRecords(final RecordToWrite... records) {
     environmentRule.writeBatch(records);
+  }
+
+  public CommandResponseWriter getCommandResponseWriter() {
+    return environmentRule.getCommandResponseWriter();
   }
 
   /////////////////////////////////////////////////////////////////////////////////////////////////

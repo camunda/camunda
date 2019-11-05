@@ -32,6 +32,12 @@
             },
             "bpmnElementType": {
               "type": "keyword"
+            },
+            "parentWorkflowInstanceKey": {
+              "type": "long"
+            },
+            "parentElementInstanceKey": {
+              "type": "long"
             }
           }
         }

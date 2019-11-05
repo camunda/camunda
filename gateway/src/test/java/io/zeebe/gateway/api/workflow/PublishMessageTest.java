@@ -28,7 +28,7 @@ public class PublishMessageTest extends GatewayTest {
   public void shouldMapRequestAndResponse() {
     // given
     final PublishMessageStub stub = new PublishMessageStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final String variables = JsonUtil.toJson(Collections.singletonMap("key", "value"));
 
@@ -47,7 +47,7 @@ public class PublishMessageTest extends GatewayTest {
     // then
     assertThat(response).isNotNull();
 
-    final BrokerPublishMessageRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerPublishMessageRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(MessageIntent.PUBLISH);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.MESSAGE);
 

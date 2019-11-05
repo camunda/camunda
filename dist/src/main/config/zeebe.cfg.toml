@@ -98,6 +98,10 @@
 # This setting can also be overridden using the environment variable ZEEBE_HOST.
 # host = "0.0.0.0"
 
+# Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
+# broker stands behind a proxy.
+# advertisedHost = "0.0.0.0"
+
 # If a port offset is set it will be added to all ports specified in the config
 # or the default values. This is a shortcut to not always specifying every port.
 #

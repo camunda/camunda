@@ -15,13 +15,15 @@ package cmd
 
 import (
 	"github.com/zeebe-io/zeebe/clients/go/commands"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var (
-	createInstanceVersionFlag   int32
-	createInstanceVariablesFlag string
+	createInstanceVersionFlag    int32
+	createInstanceVariablesFlag  string
+	createInstanceWithResultFlag []string
 )
 
 var createInstanceCmd = &cobra.Command{
@@ -39,12 +41,29 @@ var createInstanceCmd = &cobra.Command{
 			return err
 		}
 
-		response, err := zbCmd.Send()
-		if err != nil {
-			return err
-		}
+		if createInstanceWithResultFlag == nil {
+			response, err := zbCmd.Send()
+			if err != nil {
+				return err
+			}
 
-		return printJson(response)
+			return printJson(response)
+		} else {
+			variableNames := []string{}
+			for _, variableName := range createInstanceWithResultFlag {
+				trimedVariableName := strings.TrimSpace(variableName)
+				if trimedVariableName != "" {
+					variableNames = append(variableNames, trimedVariableName)
+				}
+			}
+			response, err := zbCmd.WithResult().FetchVariables(variableNames...).Send()
+			if err != nil {
+				return err
+			}
+
+			return printJson(response)
+
+		}
 	},
 }
 
@@ -58,4 +77,11 @@ func init() {
 	createInstanceCmd.
 		Flags().
 		Int32Var(&createInstanceVersionFlag, "version", commands.LatestVersion, "Specify version of workflow which should be executed.")
+
+	createInstanceCmd.
+		Flags().
+		StringSliceVar(&createInstanceWithResultFlag, "withResult", nil, "Specify to await result of workflow, optional a list of variable names can be provided to limit the returned variables")
+
+	// hack to use --withResult without values
+	createInstanceCmd.Flag("withResult").NoOptDefVal = " "
 }

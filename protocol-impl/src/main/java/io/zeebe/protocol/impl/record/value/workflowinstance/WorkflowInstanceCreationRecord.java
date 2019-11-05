@@ -7,15 +7,20 @@
  */
 package io.zeebe.protocol.impl.record.value.workflowinstance;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceCreationRecordValue;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -28,13 +33,16 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
   private final DocumentProperty variablesProperty = new DocumentProperty("variables");
   private final LongProperty workflowInstanceKeyProperty =
       new LongProperty("workflowInstanceKey", -1);
+  private final ArrayProperty<StringValue> fetchVariablesProperty =
+      new ArrayProperty<>("fetchVariables", new StringValue());
 
   public WorkflowInstanceCreationRecord() {
     this.declareProperty(bpmnProcessIdProperty)
         .declareProperty(workflowKeyProperty)
         .declareProperty(workflowInstanceKeyProperty)
         .declareProperty(versionProperty)
-        .declareProperty(variablesProperty);
+        .declareProperty(variablesProperty)
+        .declareProperty(fetchVariablesProperty);
   }
 
   @Override
@@ -88,6 +96,15 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
 
   public WorkflowInstanceCreationRecord setVariables(DirectBuffer variables) {
     variablesProperty.setValue(variables);
+    return this;
+  }
+
+  public ArrayProperty<StringValue> fetchVariables() {
+    return fetchVariablesProperty;
+  }
+
+  public WorkflowInstanceCreationRecord setFetchVariables(List<String> fetchVariables) {
+    fetchVariables.forEach(variable -> fetchVariablesProperty.add().wrap(wrapString(variable)));
     return this;
   }
 

@@ -15,72 +15,80 @@
 package entities
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/zeebe-io/zeebe/clients/go/pb"
 )
 
-type MyType struct {
+type testType struct {
 	Foo   string
 	Hello string
 }
 
 var (
-	expectedJson      = "{\"foo\": \"bar\", \"hello\": \"world\"}"
-	expectedJsonAsMap = map[string]string{
-		"foo":   "bar",
-		"hello": "world",
-	}
-	expectedJsonAsMapVariables = map[string]interface{}{
-		"foo":   "bar",
-		"hello": "world",
-	}
-	expectedJsonAsStruct = MyType{
+	job = Job{pb.ActivatedJob{
+		CustomHeaders: `{"foo": "bar", "hello": "world"}`,
+		Variables:     `{"foo": "bar", "hello": "world"}`,
+	}}
+	wantStruct = testType{
 		Foo:   "bar",
 		Hello: "world",
 	}
-	job = Job{pb.ActivatedJob{
-		CustomHeaders: expectedJson,
-		Variables:     expectedJson,
-	}}
 )
 
 func TestJob_GetVariablesAsMap(t *testing.T) {
-	variables, err := job.GetVariablesAsMap()
+	got, err := job.GetVariablesAsMap()
 	if err != nil {
-		t.Error("Failed to get variables as map", err)
+		t.Fatalf("job.GetVariablesAsMap() = %v", err)
 	}
-	if !reflect.DeepEqual(variables, expectedJsonAsMapVariables) {
-		t.Error("Failed to get variables as map, got", variables, "instead of", expectedJsonAsMap)
+
+	want := map[string]interface{}{
+		"foo":   "bar",
+		"hello": "world",
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("job.GetVariablesAsMap() differs (-want +got):\n%s", diff)
 	}
 }
 
 func TestJob_GetVariablesAs(t *testing.T) {
-	var variables MyType
-	if err := job.GetVariablesAs(&variables); err != nil {
-		t.Error("Failed to get variables as struct", err)
+	var got testType
+
+	if err := job.GetVariablesAs(&got); err != nil {
+		t.Fatalf("job.GetVariablesAs(&%T) = %v", got, err)
 	}
-	if variables != expectedJsonAsStruct {
-		t.Error("Failed to get variables as struct, got", variables, "instead of", expectedJsonAsStruct)
+
+	if diff := cmp.Diff(wantStruct, got); diff != "" {
+		t.Errorf("job.GetVariablesAs(%T) differs (-want +got):\n%s", got, diff)
 	}
 }
 
 func TestJob_GetCustomHeadersAsMap(t *testing.T) {
-	customHeaders, err := job.GetCustomHeadersAsMap()
+	got, err := job.GetCustomHeadersAsMap()
 	if err != nil {
-		t.Error("Failed to get custom headers as map", err)
+		t.Fatalf("job.GetCustomHeadersAsMap() = %v", err)
 	}
-	if !reflect.DeepEqual(customHeaders, expectedJsonAsMap) {
-		t.Error("Failed to get custom headers as map, got", customHeaders, "instead of", expectedJsonAsMap)
+
+	want := map[string]string{
+		"foo":   "bar",
+		"hello": "world",
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("job.GetCustomHeadersAsMap() differs (-want +got):\n%s", diff)
 	}
 }
 
 func TestJob_GetCustomHeadersAs(t *testing.T) {
-	var customHeaders MyType
-	if err := job.GetCustomHeadersAs(&customHeaders); err != nil {
-		t.Error("Failed to get custom headers as struct", err)
+	var got testType
+
+	if err := job.GetCustomHeadersAs(&got); err != nil {
+		t.Fatalf("job.GetCustomHeadersAs(&%T) = %v", got, err)
 	}
-	if customHeaders != expectedJsonAsStruct {
-		t.Error("Failed to get custom headers as struct, got", customHeaders, "instead of", expectedJsonAsStruct)
+
+	if diff := cmp.Diff(wantStruct, got); diff != "" {
+		t.Errorf("job.GetCustomHeadersAs(%T) differs (-want +got):\n%s", got, diff)
 	}
 }

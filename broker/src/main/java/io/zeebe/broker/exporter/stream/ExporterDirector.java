@@ -24,9 +24,6 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.retry.BackOffRetryStrategy;
 import io.zeebe.util.retry.EndlessRetryStrategy;
@@ -45,7 +42,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ExporterDirector extends Actor implements Service<ExporterDirector> {
+public class ExporterDirector extends Actor {
 
   private static final String ERROR_MESSAGE_EXPORTING_ABORTED =
       "Expected to export record '{}' successfully, but exception was thrown.";
@@ -55,7 +52,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<ExporterContainer> containers;
-  private final int partitionId;
   private final LogStream logStream;
   private final LogStreamReader logStreamReader;
   private final RecordExporter recordExporter;
@@ -64,7 +60,6 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
-  private ActorScheduler actorScheduler;
   private EventFilter eventFilter;
   private ExportersState state;
 
@@ -77,7 +72,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
     this.logStream = context.getLogStream();
-    this.partitionId = logStream.getPartitionId();
+    final int partitionId = logStream.getPartitionId();
     this.recordExporter = new RecordExporter(containers, partitionId);
     this.logStreamReader = context.getLogStreamReader();
     this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
@@ -88,20 +83,12 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
     this.metrics = new ExporterMetrics(partitionId);
   }
 
-  @Override
-  public void start(ServiceStartContext startContext) {
-    actorScheduler = startContext.getScheduler();
-    startContext.async(actorScheduler.submitActor(this, SchedulingHints.ioBound()));
+  public ActorFuture<Void> startAsync(ActorScheduler actorScheduler) {
+    return actorScheduler.submitActor(this, SchedulingHints.ioBound());
   }
 
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    stopContext.async(actor.close());
-  }
-
-  @Override
-  public ExporterDirector get() {
-    return this;
+  public ActorFuture<Void> stopAsync() {
+    return actor.close();
   }
 
   @Override
@@ -166,7 +153,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
   private void recoverFromSnapshot() {
     this.state = new ExportersState(zeebeDb, zeebeDb.createContext());
 
-    final long snapshotPosition = getLowestExporterPosition();
+    final long snapshotPosition = state.getLowestPosition();
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
     if (failedToRecoverReader) {
       throw new IllegalStateException(
@@ -179,8 +166,8 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         snapshotPosition);
   }
 
-  public long getLowestExporterPosition() {
-    return state.getLowestPosition();
+  public ActorFuture<Long> getLowestExporterPosition() {
+    return actor.call(() -> state.getLowestPosition());
   }
 
   private ExporterEventFilter createEventFilter(List<ExporterContainer> containers) {
@@ -301,7 +288,7 @@ public class ExporterDirector extends Actor implements Service<ExporterDirector>
         });
   }
 
-  public boolean isClosed() {
+  private boolean isClosed() {
     return !isOpened.get();
   }
 

@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
@@ -27,8 +28,10 @@ public class StartEventTransformer implements ModelElementTransformer<StartEvent
   @Override
   public void transform(StartEvent element, TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableCatchEventElement startEvent =
-        workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
+    final ExecutableStartEvent startEvent =
+        workflow.getElementById(element.getId(), ExecutableStartEvent.class);
+
+    startEvent.setInterrupting(element.isInterrupting());
 
     if (element.getScope() instanceof FlowNode) {
       final FlowNode scope = (FlowNode) element.getScope();

@@ -7,6 +7,8 @@
  */
 package io.zeebe.protocol.impl.record.value.workflowinstance;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -16,7 +18,6 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class WorkflowInstanceRecord extends UnifiedRecordValue
@@ -45,14 +46,21 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
       new EnumProperty<>(
           PROP_WORKFLOW_BPMN_TYPE, BpmnElementType.class, BpmnElementType.UNSPECIFIED);
 
+  private final LongProperty parentWorkflowInstanceKeyProp =
+      new LongProperty("parentWorkflowInstanceKey", -1L);
+  private final LongProperty parentElementInstanceKeyProp =
+      new LongProperty("parentElementInstanceKey", -1L);
+
   public WorkflowInstanceRecord() {
-    this.declareProperty(bpmnProcessIdProp)
+    declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(workflowKeyProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(flowScopeKeyProp)
-        .declareProperty(bpmnElementTypeProp);
+        .declareProperty(bpmnElementTypeProp)
+        .declareProperty(parentWorkflowInstanceKeyProp)
+        .declareProperty(parentElementInstanceKeyProp);
   }
 
   public void wrap(WorkflowInstanceRecord record) {
@@ -63,6 +71,8 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
     workflowKeyProp.setValue(record.getWorkflowKey());
     workflowInstanceKeyProp.setValue(record.getWorkflowInstanceKey());
     bpmnElementTypeProp.setValue(record.getBpmnElementType());
+    parentWorkflowInstanceKeyProp.setValue(record.getParentWorkflowInstanceKey());
+    parentElementInstanceKeyProp.setValue(record.getParentElementInstanceKey());
   }
 
   @JsonIgnore
@@ -81,7 +91,7 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceRecord setWorkflowInstanceKey(long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }
 
@@ -93,28 +103,52 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
 
   @Override
   public String getBpmnProcessId() {
-    return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
+    return bufferAsString(bpmnProcessIdProp.getValue());
   }
 
+  @Override
   public int getVersion() {
     return versionProp.getValue();
   }
 
+  @Override
   public long getWorkflowKey() {
     return workflowKeyProp.getValue();
   }
 
   @Override
   public String getElementId() {
-    return BufferUtil.bufferAsString(elementIdProp.getValue());
+    return bufferAsString(elementIdProp.getValue());
   }
 
+  @Override
   public long getFlowScopeKey() {
     return flowScopeKeyProp.getValue();
   }
 
+  @Override
   public BpmnElementType getBpmnElementType() {
     return bpmnElementTypeProp.getValue();
+  }
+
+  @Override
+  public long getParentWorkflowInstanceKey() {
+    return parentWorkflowInstanceKeyProp.getValue();
+  }
+
+  @Override
+  public long getParentElementInstanceKey() {
+    return parentElementInstanceKeyProp.getValue();
+  }
+
+  public WorkflowInstanceRecord setParentElementInstanceKey(long parentElementInstanceKey) {
+    parentElementInstanceKeyProp.setValue(parentElementInstanceKey);
+    return this;
+  }
+
+  public WorkflowInstanceRecord setParentWorkflowInstanceKey(long parentWorkflowInstanceKey) {
+    parentWorkflowInstanceKeyProp.setValue(parentWorkflowInstanceKey);
+    return this;
   }
 
   public WorkflowInstanceRecord setBpmnElementType(BpmnElementType bpmnType) {
@@ -123,12 +157,12 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceRecord setFlowScopeKey(long flowScopeKey) {
-    this.flowScopeKeyProp.setValue(flowScopeKey);
+    flowScopeKeyProp.setValue(flowScopeKey);
     return this;
   }
 
   public WorkflowInstanceRecord setElementId(String elementId) {
-    this.elementIdProp.setValue(elementId);
+    elementIdProp.setValue(elementId);
     return this;
   }
 
@@ -137,12 +171,12 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceRecord setWorkflowKey(long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
+    workflowKeyProp.setValue(workflowKey);
     return this;
   }
 
   public WorkflowInstanceRecord setVersion(int version) {
-    this.versionProp.setValue(version);
+    versionProp.setValue(version);
     return this;
   }
 
@@ -157,7 +191,7 @@ public class WorkflowInstanceRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceRecord setElementId(DirectBuffer elementId, int offset, int length) {
-    this.elementIdProp.setValue(elementId, offset, length);
+    elementIdProp.setValue(elementId, offset, length);
     return this;
   }
 }

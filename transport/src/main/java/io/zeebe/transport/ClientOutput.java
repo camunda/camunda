@@ -17,15 +17,6 @@ import org.agrona.DirectBuffer;
 public interface ClientOutput {
 
   /**
-   * Sends a message according to the single message protocol.
-   *
-   * <p>Returns false if the message cannot be currently written due to an unknown endpoint or
-   * exhausted capacity. Throws an exception if the request is not sendable at all (e.g. buffer
-   * writer throws exception).
-   */
-  boolean sendMessage(Integer nodeId, BufferWriter writer);
-
-  /**
    * Like {@link #sendRequest(Integer, BufferWriter, Duration)} where the timeout is set to the
    * configured default timeout.
    *

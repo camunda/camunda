@@ -26,9 +26,9 @@ public class WorkflowInstanceCommandProcessor
   public WorkflowInstanceCommandProcessor(
       WorkflowEngineState state, final KeyGenerator keyGenerator) {
     this.state = state;
-    this.commandHandlers = new WorkflowInstanceCommandHandlers();
+    commandHandlers = new WorkflowInstanceCommandHandlers();
     final EventOutput output = new EventOutput(state, keyGenerator);
-    this.context = new WorkflowInstanceCommandContext(output);
+    context = new WorkflowInstanceCommandContext(output, state.getElementInstanceState());
   }
 
   @Override

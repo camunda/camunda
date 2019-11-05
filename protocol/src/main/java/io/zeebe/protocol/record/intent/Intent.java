@@ -16,12 +16,12 @@
 package io.zeebe.protocol.record.intent;
 
 import io.zeebe.protocol.record.ValueType;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 public interface Intent {
   Collection<Class<? extends Intent>> INTENT_CLASSES =
-      List.of(
+      Arrays.asList(
           DeploymentIntent.class,
           IncidentIntent.class,
           JobIntent.class,
@@ -29,7 +29,6 @@ public interface Intent {
           MessageIntent.class,
           MessageSubscriptionIntent.class,
           WorkflowInstanceSubscriptionIntent.class,
-          ExporterIntent.class,
           JobBatchIntent.class,
           TimerIntent.class,
           VariableIntent.class,
@@ -72,8 +71,6 @@ public interface Intent {
         return MessageStartEventSubscriptionIntent.from(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.from(intent);
-      case EXPORTER:
-        return ExporterIntent.from(intent);
       case JOB_BATCH:
         return JobBatchIntent.from(intent);
       case TIMER:
@@ -86,6 +83,8 @@ public interface Intent {
         return WorkflowInstanceCreationIntent.from(intent);
       case ERROR:
         return ErrorIntent.from(intent);
+      case WORKFLOW_INSTANCE_RESULT:
+        return WorkflowInstanceResultIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -115,8 +114,6 @@ public interface Intent {
         return MessageStartEventSubscriptionIntent.valueOf(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.valueOf(intent);
-      case EXPORTER:
-        return ExporterIntent.valueOf(intent);
       case JOB_BATCH:
         return JobBatchIntent.valueOf(intent);
       case TIMER:
@@ -129,6 +126,8 @@ public interface Intent {
         return WorkflowInstanceCreationIntent.valueOf(intent);
       case ERROR:
         return ErrorIntent.valueOf(intent);
+      case WORKFLOW_INSTANCE_RESULT:
+        return WorkflowInstanceResultIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

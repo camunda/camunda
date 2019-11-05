@@ -17,11 +17,13 @@ import io.zeebe.protocol.record.intent.Intent;
  */
 public interface CommandProcessor<T extends UnifiedRecordValue> {
 
-  default void onCommand(TypedRecord<T> command, CommandControl<T> commandControl) {}
+  default boolean onCommand(TypedRecord<T> command, CommandControl<T> commandControl) {
+    return true;
+  }
 
-  default void onCommand(
+  default boolean onCommand(
       TypedRecord<T> command, CommandControl<T> commandControl, TypedStreamWriter streamWriter) {
-    onCommand(command, commandControl);
+    return onCommand(command, commandControl);
   }
 
   interface CommandControl<T> {

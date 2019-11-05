@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -28,7 +29,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 )
@@ -37,7 +37,15 @@ type mutableToken struct {
 	value string
 }
 
-func TestOAuthCredentialsProvider(t *testing.T) {
+type oauthCredsProviderTestSuite struct {
+	*envSuite
+}
+
+func TestOAuthCredsProviderSuite(t *testing.T) {
+	suite.Run(t, &oauthCredsProviderTestSuite{envSuite: new(envSuite)})
+}
+
+func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
 	interceptor := newRecordingInterceptor(nil)
@@ -49,7 +57,7 @@ func TestOAuthCredentialsProvider(t *testing.T) {
 		_ = gatewayLis.Close()
 	}()
 
-	authzServer := mockAuthorizationServer(t, &mutableToken{value: accessToken})
+	authzServer := mockAuthorizationServer(s.T(), &mutableToken{value: accessToken})
 	defer authzServer.Close()
 
 	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
@@ -59,27 +67,27 @@ func TestOAuthCredentialsProvider(t *testing.T) {
 		AuthorizationServerURL: authzServer.URL,
 	})
 
-	require.NoError(t, err)
+	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
 	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
 	})
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// when
 	_, err = client.NewTopologyCommand().Send()
 
 	// then
-	require.Error(t, err)
+	s.Error(err)
 	if errorStatus, ok := status.FromError(err); ok {
-		require.Equal(t, codes.Unimplemented, errorStatus.Code())
+		s.Equal(codes.Unimplemented, errorStatus.Code())
 	}
-	require.Equal(t, tokenType+" "+accessToken, interceptor.authHeader)
+	s.Equal(tokenType+" "+accessToken, interceptor.authHeader)
 }
 
-func TestOAuthProviderRetry(t *testing.T) {
+func (s *oauthCredsProviderTestSuite) TestOAuthProviderRetry() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
 	token := &mutableToken{value: "firstToken"}
@@ -102,7 +110,7 @@ func TestOAuthProviderRetry(t *testing.T) {
 		_ = gatewayLis.Close()
 	}()
 
-	authzServer := mockAuthorizationServer(t, token)
+	authzServer := mockAuthorizationServer(s.T(), token)
 	defer authzServer.Close()
 
 	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
@@ -112,27 +120,27 @@ func TestOAuthProviderRetry(t *testing.T) {
 		AuthorizationServerURL: authzServer.URL,
 	})
 
-	require.NoError(t, err)
+	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
 	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
 	})
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// when
 	_, err = client.NewTopologyCommand().Send()
 
 	// then
-	require.Error(t, err)
+	s.Error(err)
 	if errorStatus, ok := status.FromError(err); ok {
-		require.Equal(t, codes.Unimplemented, errorStatus.Code())
+		s.Equal(codes.Unimplemented, errorStatus.Code())
 	}
-	require.EqualValues(t, 2, interceptor.interceptCounter)
+	s.EqualValues(2, interceptor.interceptCounter)
 }
 
-func TestNotRetryWithSameCredentials(t *testing.T) {
+func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
 	token := &mutableToken{value: accessToken}
@@ -149,7 +157,7 @@ func TestNotRetryWithSameCredentials(t *testing.T) {
 		_ = gatewayLis.Close()
 	}()
 
-	authzServer := mockAuthorizationServer(t, token)
+	authzServer := mockAuthorizationServer(s.T(), token)
 	defer authzServer.Close()
 
 	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
@@ -159,24 +167,24 @@ func TestNotRetryWithSameCredentials(t *testing.T) {
 		AuthorizationServerURL: authzServer.URL,
 	})
 
-	require.NoError(t, err)
+	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
 	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
 	})
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// when
 	_, err = client.NewTopologyCommand().Send()
 
 	// then
-	require.Error(t, err)
+	s.Error(err)
 	if errorStatus, ok := status.FromError(err); ok {
-		require.Equal(t, codes.Unauthenticated, errorStatus.Code())
+		s.Equal(codes.Unauthenticated, errorStatus.Code())
 	}
-	require.EqualValues(t, 1, interceptor.interceptCounter)
+	s.EqualValues(1, interceptor.interceptCounter)
 }
 
 var configErrorTests = []struct {
@@ -245,70 +253,83 @@ func TestInvalidOAuthProviderConfigurations(t *testing.T) {
 	}
 }
 
-type fieldExtractor func(config *OAuthProviderConfig) string
+func (s *oauthCredsProviderTestSuite) TestClientIdEnvOverride() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	env.set(OAuthClientIdEnvVar, "envClient")
 
-var envVarTests = []struct {
-	name           string
-	envVar         string
-	value          string
-	fieldExtractor fieldExtractor
-}{
-	{
-		"environment variable client id",
-		OAuthClientIdEnvVar,
-		"envClient",
-		func(c *OAuthProviderConfig) string { return c.ClientID },
-	},
-	{
-		"environment variable client secret",
-		OAuthClientSecretEnvVar,
-		"envSecret",
-		func(c *OAuthProviderConfig) string { return c.ClientSecret },
-	},
-	{
-		"environment variable audience",
-		OAuthTokenAudienceEnvVar,
-		"envAudience",
-		func(c *OAuthProviderConfig) string { return c.Audience },
-	},
-	{
-		"environment variable authorization server URL",
-		OAuthAuthorizationUrlEnvVar,
-		"https://envAuthzUrl",
-		func(c *OAuthProviderConfig) string { return c.AuthorizationServerURL },
-	},
-}
-
-func TestOAuthProviderWithEnvVars(t *testing.T) {
-	for _, test := range envVarTests {
-		t.Run(test.name, func(t *testing.T) {
-			// given
-			truncateDefaultOAuthYamlCacheFile()
-
-			if err := os.Setenv(test.envVar, test.value); err != nil {
-				panic(err)
-			}
-
-			config := &OAuthProviderConfig{
-				ClientID:               clientID,
-				ClientSecret:           clientSecret,
-				Audience:               audience,
-				AuthorizationServerURL: "http://foo",
-			}
-
-			// when
-			_, _ = NewOAuthCredentialsProvider(config)
-
-			// then
-			require.EqualValues(t, test.value, test.fieldExtractor(config))
-		})
-		if err := os.Unsetenv(test.envVar); err != nil {
-			panic(err)
-		}
+	config := &OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: "http://foo",
 	}
+
+	// when
+	_, _ = NewOAuthCredentialsProvider(config)
+
+	// then
+	s.EqualValues("envClient", config.ClientID)
 }
 
-func TestOAuthCredentialsProviderCachesCredentials(t *testing.T) {
+func (s *oauthCredsProviderTestSuite) TestClientSecretEnvOverride() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	env.set(OAuthClientSecretEnvVar, "envSecret")
+
+	config := &OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: "http://foo",
+	}
+
+	// when
+	_, _ = NewOAuthCredentialsProvider(config)
+
+	// then
+	s.EqualValues("envSecret", config.ClientSecret)
+}
+
+func (s *oauthCredsProviderTestSuite) TestAudienceEnvOverride() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	env.set(OAuthTokenAudienceEnvVar, "envAudience")
+
+	config := &OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: "http://foo",
+	}
+
+	// when
+	_, _ = NewOAuthCredentialsProvider(config)
+
+	// then
+	s.EqualValues("envAudience", config.Audience)
+}
+
+func (s *oauthCredsProviderTestSuite) TestAuthzUrlEnvOverride() {
+	// given
+	truncateDefaultOAuthYamlCacheFile()
+	env.set(OAuthAuthorizationUrlEnvVar, "https://envAuthzUrl")
+
+	config := &OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: "http://foo",
+	}
+
+	// when
+	_, _ = NewOAuthCredentialsProvider(config)
+
+	// then
+	s.EqualValues("https://envAuthzUrl", config.AuthorizationServerURL)
+}
+
+func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderCachesCredentials() {
 	// create fake gRPC server which returns UNAUTHENTICATED always except if we use the token `accessToken`
 	truncateDefaultOAuthYamlCacheFile()
 	gatewayLis, grpcServer := createAuthenticatedGrpcServer(accessToken)
@@ -320,7 +341,7 @@ func TestOAuthCredentialsProviderCachesCredentials(t *testing.T) {
 
 	// setup authorization server to return valid token
 	token := mutableToken{accessToken}
-	authzServer := mockAuthorizationServer(t, &token)
+	authzServer := mockAuthorizationServer(s.T(), &token)
 	defer authzServer.Close()
 
 	// use a fake authorization server which would fail if we actually used it
@@ -331,30 +352,30 @@ func TestOAuthCredentialsProviderCachesCredentials(t *testing.T) {
 		AuthorizationServerURL: authzServer.URL,
 	})
 
-	require.NoError(t, err)
+	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
 	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
 	})
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// when
 	_, err = client.NewTopologyCommand().Send()
 
 	// then
-	require.NoError(t, err)
+	s.NoError(err)
 	if errorStatus, ok := status.FromError(err); ok {
-		require.Equal(t, codes.OK, errorStatus.Code())
+		s.Equal(codes.OK, errorStatus.Code())
 	}
 	cache, err := NewOAuthYamlCredentialsCache("")
-	require.NoError(t, err)
-	require.NoError(t, cache.Refresh())
-	require.Equal(t, accessToken, cache.Get(audience).AccessToken)
+	s.NoError(err)
+	s.NoError(cache.Refresh())
+	s.Equal(accessToken, cache.Get(audience).AccessToken)
 }
 
-func TestOAuthCredentialsProviderUsesCachedCredentials(t *testing.T) {
+func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCredentials() {
 	// create fake gRPC server which returns UNAUTHENTICATED always except if we use the token `accessToken`
 	gatewayLis, grpcServer := createAuthenticatedGrpcServer(accessToken)
 	go grpcServer.Serve(gatewayLis)
@@ -366,14 +387,14 @@ func TestOAuthCredentialsProviderUsesCachedCredentials(t *testing.T) {
 	// setup cache with correct token
 	truncateDefaultOAuthYamlCacheFile()
 	cache, err := NewOAuthYamlCredentialsCache(DefaultOauthYamlCachePath)
-	require.NoError(t, err)
+	s.NoError(err)
 	err = cache.Update(audience, &OAuthCredentials{
 		AccessToken: accessToken,
 		ExpiresIn:   3600,
 		TokenType:   "Bearer",
 		Scope:       "grpc",
 	})
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// use a fake authorization server which would fail if we actually used it
 	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
@@ -383,22 +404,22 @@ func TestOAuthCredentialsProviderUsesCachedCredentials(t *testing.T) {
 		AuthorizationServerURL: "http://foo.bar",
 	})
 
-	require.NoError(t, err)
+	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
 	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
 	})
-	require.NoError(t, err)
+	s.NoError(err)
 
 	// when
 	_, err = client.NewTopologyCommand().Send()
 
 	// then
-	require.NoError(t, err)
+	s.NoError(err)
 	if errorStatus, ok := status.FromError(err); ok {
-		require.Equal(t, codes.OK, errorStatus.Code())
+		s.Equal(codes.OK, errorStatus.Code())
 	}
 }
 

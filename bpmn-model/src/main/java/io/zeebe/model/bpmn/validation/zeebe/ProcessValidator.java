@@ -32,7 +32,7 @@ public class ProcessValidator implements ModelElementValidator<Process> {
   public void validate(Process element, ValidationResultCollector validationResultCollector) {
     final Collection<StartEvent> topLevelStartEvents =
         element.getChildElementsByType(StartEvent.class);
-    if (topLevelStartEvents.size() == 0) {
+    if (topLevelStartEvents.isEmpty()) {
       validationResultCollector.addError(0, "Must have at least one start event");
     } else if (topLevelStartEvents.size() > 1
         && topLevelStartEvents.stream().anyMatch(this::isNoneEvent)) {

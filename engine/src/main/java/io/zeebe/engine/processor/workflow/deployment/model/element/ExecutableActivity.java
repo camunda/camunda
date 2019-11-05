@@ -25,7 +25,7 @@ public class ExecutableActivity extends ExecutableFlowNode implements Executable
     boundaryEvents.add(boundaryEvent);
     catchEvents.add(boundaryEvent);
 
-    if (boundaryEvent.cancelActivity()) {
+    if (boundaryEvent.interrupting()) {
       interruptingIds.add(boundaryEvent.getId());
     }
   }

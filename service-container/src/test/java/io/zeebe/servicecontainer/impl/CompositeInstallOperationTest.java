@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
 
-@SuppressWarnings("unchecked")
 public class CompositeInstallOperationTest {
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
@@ -72,7 +71,7 @@ public class CompositeInstallOperationTest {
     final ActorFuture<Object> service1Future =
         composite.createService(service1Name, mockService1).install();
     final ActorFuture<Object> service2Future =
-        composite.createService(service1Name, mockService2).install();
+        composite.createService(service2Name, mockService2).install();
 
     final ActorFuture<Void> compositeFuture = composite.install();
 
@@ -95,7 +94,7 @@ public class CompositeInstallOperationTest {
     final ActorFuture<Object> service1Future =
         composite.createService(service1Name, mockService1).install();
     final ActorFuture<Object> service2Future =
-        composite.createService(service1Name, asyncService2).install();
+        composite.createService(service2Name, asyncService2).install();
 
     final ActorFuture<Void> compositeFuture = composite.install();
 
@@ -121,7 +120,7 @@ public class CompositeInstallOperationTest {
     final ActorFuture<Object> service1Future =
         composite.createService(service1Name, mockService1).install();
     final ActorFuture<Object> service2Future =
-        composite.createService(service1Name, asyncService2).install();
+        composite.createService(service2Name, asyncService2).install();
 
     final ActorFuture<Void> compositeFuture = composite.install();
 

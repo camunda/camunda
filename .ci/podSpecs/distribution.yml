@@ -62,6 +62,9 @@ spec:
         requests:
           cpu: 3
           memory: 1Gi
+      env:
+        - name: DOCKER_HOST
+          value: tcp://localhost:2375
     - name: docker
       image: docker:18.09.4-dind
       args: ["--storage-driver=overlay2"]

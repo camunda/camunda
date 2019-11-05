@@ -84,7 +84,7 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
               response.getRejectionType(),
               response.getRejectionReason());
       return new BrokerRejectionResponse<>(brokerRejection);
-    } else if (isValidValueType()) {
+    } else if (isValidResponse()) {
       final T responseDto = toResponseDto(response.getValue());
       return new BrokerResponse<>(responseDto, response.getPartitionId(), response.getKey());
     } else {
@@ -103,7 +103,7 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
     request.write(buffer, offset);
   }
 
-  private boolean isValidValueType() {
+  protected boolean isValidResponse() {
     return response.getValueType() == request.getValueType();
   }
 

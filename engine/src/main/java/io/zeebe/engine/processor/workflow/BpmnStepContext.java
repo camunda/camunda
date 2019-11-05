@@ -8,6 +8,7 @@
 package io.zeebe.engine.processor.workflow;
 
 import io.zeebe.engine.processor.TypedCommandWriter;
+import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
 import io.zeebe.engine.state.deployment.WorkflowState;
@@ -73,6 +74,10 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   public void setStreamWriter(final TypedStreamWriter streamWriter) {
     this.eventOutput.setStreamWriter(streamWriter);
     this.commandWriter = streamWriter;
+  }
+
+  public void setResponseWriter(final TypedResponseWriter responseWriter) {
+    this.eventOutput.setResponseWriter(responseWriter);
   }
 
   public TypedCommandWriter getCommandWriter() {

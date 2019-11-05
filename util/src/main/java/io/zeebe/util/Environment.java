@@ -41,6 +41,24 @@ public class Environment {
     }
   }
 
+  public Optional<Double> getDouble(String name) {
+    try {
+      return get(name).map(Double::valueOf);
+    } catch (Exception e) {
+      LOG.warn("Failed to parse environment variable {}", name, e);
+      return Optional.empty();
+    }
+  }
+
+  public Optional<Long> getLong(String name) {
+    try {
+      return get(name).map(Long::valueOf);
+    } catch (Exception e) {
+      LOG.warn("Failed to parse environment variable {}", name, e);
+      return Optional.empty();
+    }
+  }
+
   public Optional<Boolean> getBool(String name) {
     try {
       return get(name).map(Boolean::valueOf);

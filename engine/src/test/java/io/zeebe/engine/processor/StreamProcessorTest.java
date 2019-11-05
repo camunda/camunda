@@ -20,6 +20,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.StreamProcessorRule;
@@ -762,5 +763,35 @@ public class StreamProcessorTest {
         streamProcessorRule.events().onlyErrorRecords().getFirst();
 
     assertThat(lastCommitPosition.get()).isEqualTo(errorRecord.getPosition());
+  }
+
+  @Test
+  public void shouldInvokeOnProcessedListener() throws InterruptedException {
+    // given
+    final CountDownLatch processLatch = new CountDownLatch(1);
+    final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, state) ->
+            processors.onEvent(
+                ValueType.WORKFLOW_INSTANCE,
+                WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                new TypedRecordProcessor<UnifiedRecordValue>() {
+                  @Override
+                  public void processRecord(
+                      long position,
+                      TypedRecord<UnifiedRecordValue> record,
+                      TypedResponseWriter responseWriter,
+                      TypedStreamWriter streamWriter,
+                      Consumer<SideEffectProducer> sideEffect) {
+                    processLatch.countDown();
+                  }
+                }));
+
+    // when
+    streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+    processLatch.await();
+
+    // then
+    verify(streamProcessorRule.getProcessedListener(), timeout(1000).times(1)).accept(any());
   }
 }

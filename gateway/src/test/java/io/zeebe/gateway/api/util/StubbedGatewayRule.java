@@ -7,6 +7,7 @@
  */
 package io.zeebe.gateway.api.util;
 
+import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
@@ -16,14 +17,19 @@ public class StubbedGatewayRule extends ExternalResource {
   protected StubbedGateway gateway;
   protected GatewayBlockingStub client;
   private final ActorSchedulerRule actorSchedulerRule;
+  private final StubbedBrokerClient brokerClient;
+  private final LongPollingActivateJobsHandler longPollingHandler;
 
   public StubbedGatewayRule(ActorSchedulerRule actorSchedulerRule) {
     this.actorSchedulerRule = actorSchedulerRule;
+    this.brokerClient = new StubbedBrokerClient();
+    this.longPollingHandler =
+        LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
   }
 
   @Override
   protected void before() throws Throwable {
-    gateway = new StubbedGateway(actorSchedulerRule.get());
+    gateway = new StubbedGateway(actorSchedulerRule.get(), brokerClient, longPollingHandler);
     gateway.start();
     client = gateway.buildClient();
   }
@@ -39,5 +45,9 @@ public class StubbedGatewayRule extends ExternalResource {
 
   public GatewayBlockingStub getClient() {
     return client;
+  }
+
+  public StubbedBrokerClient getBrokerClient() {
+    return brokerClient;
   }
 }

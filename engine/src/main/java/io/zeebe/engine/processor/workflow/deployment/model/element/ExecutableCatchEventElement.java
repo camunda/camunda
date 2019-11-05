@@ -18,8 +18,8 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private final List<ExecutableCatchEvent> events = Collections.singletonList(this);
 
   private ExecutableMessage message;
-
   private Timer timer;
+  private boolean interrupting;
 
   public ExecutableCatchEventElement(String id) {
     super(id);
@@ -61,5 +61,13 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   @Override
   public Collection<DirectBuffer> getInterruptingElementIds() {
     return Collections.singleton(getId());
+  }
+
+  public boolean interrupting() {
+    return interrupting;
+  }
+
+  public void setInterrupting(boolean interrupting) {
+    this.interrupting = interrupting;
   }
 }

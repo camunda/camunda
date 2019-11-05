@@ -48,6 +48,11 @@ public class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
+  public String getName() {
+    return "GatewayTopologyManager";
+  }
+
+  @Override
   public void event(ClusterMembershipEvent event) {
     final Member subject = event.subject();
     final Type eventType = event.type();
@@ -57,7 +62,7 @@ public class BrokerTopologyManagerImpl extends Actor
       actor.call(
           () -> {
             Loggers.GATEWAY_LOGGER.debug(
-                "Received membership event: {} with {} ", event, brokerInfo);
+                "Gateway received new event of type: {} and subject {} ", event.type(), brokerInfo);
             final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
 
             switch (eventType) {

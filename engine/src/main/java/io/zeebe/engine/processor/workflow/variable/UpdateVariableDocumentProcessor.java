@@ -31,20 +31,19 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
   }
 
   @Override
-  public void onCommand(
+  public boolean onCommand(
       TypedRecord<VariableDocumentRecord> command,
       CommandControl<VariableDocumentRecord> controller) {
     final VariableDocumentRecord record = command.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(record.getScopeKey());
-    if (scope == null) {
+    if (scope == null || scope.isTerminating() || scope.isInFinalState()) {
       controller.reject(
           RejectionType.NOT_FOUND,
           String.format(
               "Expected to update variables for element with key '%d', but no such element was found",
               record.getScopeKey()));
-
-      return;
+      return true;
     }
 
     final long workflowKey = scope.getValue().getWorkflowKey();
@@ -52,6 +51,7 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
     if (mergeDocument(record, workflowKey, controller)) {
       controller.accept(VariableDocumentIntent.UPDATED, record);
     }
+    return true;
   }
 
   private boolean mergeDocument(

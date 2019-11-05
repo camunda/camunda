@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformation;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ActivityTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.BoundaryEventTransformer;
+import io.zeebe.engine.processor.workflow.deployment.model.transformer.CallActivityTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.CatchEventTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ContextProcessTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.EndEventTransformer;
@@ -49,17 +50,23 @@ public class BpmnTransformer {
    */
   private final TransformationVisitor step3Visitor;
 
+  /*
+   * Step 4: Modify elements based on containing elements
+   */
+  private final TransformationVisitor step4Visitor;
+
   private final JsonPathQueryCompiler jsonPathQueryCompiler = new JsonPathQueryCompiler();
 
   public BpmnTransformer() {
-    this.step1Visitor = new TransformationVisitor();
+    step1Visitor = new TransformationVisitor();
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
     step1Visitor.registerHandler(new MessageTransformer());
     step1Visitor.registerHandler(new ProcessTransformer());
 
-    this.step2Visitor = new TransformationVisitor();
+    step2Visitor = new TransformationVisitor();
     step2Visitor.registerHandler(new ActivityTransformer());
     step2Visitor.registerHandler(new BoundaryEventTransformer());
+    step2Visitor.registerHandler(new CallActivityTransformer());
     step2Visitor.registerHandler(new CatchEventTransformer());
     step2Visitor.registerHandler(new ContextProcessTransformer());
     step2Visitor.registerHandler(new EndEventTransformer());
@@ -69,14 +76,16 @@ public class BpmnTransformer {
     step2Visitor.registerHandler(new ServiceTaskTransformer());
     step2Visitor.registerHandler(new ReceiveTaskTransformer());
     step2Visitor.registerHandler(new StartEventTransformer());
-    step2Visitor.registerHandler(new SubProcessTransformer());
 
-    this.step3Visitor = new TransformationVisitor();
+    step3Visitor = new TransformationVisitor();
     step3Visitor.registerHandler(new ContextProcessTransformer());
     step3Visitor.registerHandler(new EventBasedGatewayTransformer());
     step3Visitor.registerHandler(new ExclusiveGatewayTransformer());
     step3Visitor.registerHandler(new IntermediateCatchEventTransformer());
-    step3Visitor.registerHandler(new MultiInstanceActivityTransformer());
+    step3Visitor.registerHandler(new SubProcessTransformer());
+
+    step4Visitor = new TransformationVisitor();
+    step4Visitor.registerHandler(new MultiInstanceActivityTransformer());
   }
 
   public List<ExecutableWorkflow> transformDefinitions(BpmnModelInstance modelInstance) {
@@ -92,6 +101,9 @@ public class BpmnTransformer {
 
     step3Visitor.setContext(context);
     walker.walk(step3Visitor);
+
+    step4Visitor.setContext(context);
+    walker.walk(step4Visitor);
 
     return context.getWorkflows();
   }

@@ -23,7 +23,7 @@ public class CancelWorkflowInstanceTest extends GatewayTest {
   public void shouldMapRequestAndResponse() {
     // given
     final CancelWorkflowInstanceStub stub = new CancelWorkflowInstanceStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final CancelWorkflowInstanceRequest request =
         CancelWorkflowInstanceRequest.newBuilder().setWorkflowInstanceKey(123).build();
@@ -34,7 +34,7 @@ public class CancelWorkflowInstanceTest extends GatewayTest {
     // then
     assertThat(response).isNotNull();
 
-    final BrokerCancelWorkflowInstanceRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerCancelWorkflowInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getKey()).isEqualTo(123);
     assertThat(brokerRequest.getIntent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);

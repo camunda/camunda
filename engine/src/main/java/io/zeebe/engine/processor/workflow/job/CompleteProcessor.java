@@ -28,7 +28,8 @@ public class CompleteProcessor implements CommandProcessor<JobRecord> {
   }
 
   @Override
-  public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+  public boolean onCommand(
+      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
     final JobState.State jobState = state.getState(jobKey);
 
@@ -43,5 +44,6 @@ public class CompleteProcessor implements CommandProcessor<JobRecord> {
       state.complete(jobKey, job);
       commandControl.accept(JobIntent.COMPLETED, job);
     }
+    return true;
   }
 }

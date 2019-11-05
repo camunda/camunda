@@ -35,6 +35,7 @@ import io.zeebe.model.bpmn.impl.instance.CallConversationImpl;
 import io.zeebe.model.bpmn.impl.instance.CallableElementImpl;
 import io.zeebe.model.bpmn.impl.instance.CancelEventDefinitionImpl;
 import io.zeebe.model.bpmn.impl.instance.CatchEventImpl;
+import io.zeebe.model.bpmn.impl.instance.CategoryImpl;
 import io.zeebe.model.bpmn.impl.instance.CategoryValueImpl;
 import io.zeebe.model.bpmn.impl.instance.CategoryValueRef;
 import io.zeebe.model.bpmn.impl.instance.ChildLaneSet;
@@ -94,6 +95,7 @@ import io.zeebe.model.bpmn.impl.instance.FormalExpressionImpl;
 import io.zeebe.model.bpmn.impl.instance.From;
 import io.zeebe.model.bpmn.impl.instance.GatewayImpl;
 import io.zeebe.model.bpmn.impl.instance.GlobalConversationImpl;
+import io.zeebe.model.bpmn.impl.instance.GroupImpl;
 import io.zeebe.model.bpmn.impl.instance.HumanPerformerImpl;
 import io.zeebe.model.bpmn.impl.instance.ImportImpl;
 import io.zeebe.model.bpmn.impl.instance.InMessageRef;
@@ -209,6 +211,7 @@ import io.zeebe.model.bpmn.impl.instance.di.PlaneImpl;
 import io.zeebe.model.bpmn.impl.instance.di.ShapeImpl;
 import io.zeebe.model.bpmn.impl.instance.di.StyleImpl;
 import io.zeebe.model.bpmn.impl.instance.di.WaypointImpl;
+import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeCalledElementImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeHeaderImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeInputImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeIoMappingImpl;
@@ -437,6 +440,7 @@ public class Bpmn {
     CallConversationImpl.registerType(bpmnModelBuilder);
     CancelEventDefinitionImpl.registerType(bpmnModelBuilder);
     CatchEventImpl.registerType(bpmnModelBuilder);
+    CategoryImpl.registerType(bpmnModelBuilder);
     CategoryValueImpl.registerType(bpmnModelBuilder);
     CategoryValueRef.registerType(bpmnModelBuilder);
     ChildLaneSet.registerType(bpmnModelBuilder);
@@ -496,6 +500,7 @@ public class Bpmn {
     From.registerType(bpmnModelBuilder);
     GatewayImpl.registerType(bpmnModelBuilder);
     GlobalConversationImpl.registerType(bpmnModelBuilder);
+    GroupImpl.registerType(bpmnModelBuilder);
     HumanPerformerImpl.registerType(bpmnModelBuilder);
     ImportImpl.registerType(bpmnModelBuilder);
     InclusiveGatewayImpl.registerType(bpmnModelBuilder);
@@ -629,6 +634,7 @@ public class Bpmn {
     ZeebeTaskDefinitionImpl.registerType(bpmnModelBuilder);
     ZeebeTaskHeadersImpl.registerType(bpmnModelBuilder);
     ZeebeLoopCharacteristicsImpl.registerType(bpmnModelBuilder);
+    ZeebeCalledElementImpl.registerType(bpmnModelBuilder);
   }
 
   /** @return the {@link Model} instance to use */

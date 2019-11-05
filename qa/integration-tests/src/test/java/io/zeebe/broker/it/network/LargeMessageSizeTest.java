@@ -7,16 +7,18 @@
  */
 package io.zeebe.broker.it.network;
 
-import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.util.ByteValue;
 import java.util.Map;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class LargeMessageSizeTest {
@@ -29,48 +31,51 @@ public class LargeMessageSizeTest {
   private static final String LARGE_TEXT =
       "x".repeat((int) LARGE_SIZE.toBytes() - (int) METADATA_SIZE.toBytes());
 
-  private static final String PROCESS_ID = "process";
-  private static final String JOB_TYPE = "test";
-
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess(PROCESS_ID)
-          .startEvent()
-          .serviceTask("task", t -> t.zeebeTaskType(JOB_TYPE))
-          .endEvent()
-          .done();
-
-  public EmbeddedBrokerRule brokerRule =
+  private static final EmbeddedBrokerRule BROKER_RULE =
       new EmbeddedBrokerRule(b -> b.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE.toString()));
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @ClassRule
+  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+
+  private String jobType;
+
+  private static BpmnModelInstance workflow(String jobType) {
+    return Bpmn.createExecutableProcess("process")
+        .startEvent()
+        .serviceTask("task", t -> t.zeebeTaskType(jobType))
+        .endEvent()
+        .done();
+  }
+
+  @Before
+  public void init() {
+    jobType = helper.getJobType();
+  }
 
   @Test
   public void shouldDeployLargeWorkflow() {
     // given
-    final var workflowAsString = Bpmn.convertToString(WORKFLOW);
+    final var workflowAsString = Bpmn.convertToString(workflow(jobType));
     final var additionalChars = "<!--" + LARGE_TEXT + "-->";
     final var largeWorkflow = workflowAsString + additionalChars;
 
     // when
-    clientRule
-        .getClient()
-        .newDeployCommand()
-        .addResourceStringUtf8(largeWorkflow, "process.bpmn")
-        .send()
-        .join();
+    final var deployment =
+        CLIENT_RULE
+            .getClient()
+            .newDeployCommand()
+            .addResourceStringUtf8(largeWorkflow, "process.bpmn")
+            .send()
+            .join();
+
+    final var workflowKey = deployment.getWorkflows().get(0).getWorkflowKey();
 
     // then
     final var workflowInstanceEvent =
-        clientRule
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
+        CLIENT_RULE.getClient().newCreateInstanceCommand().workflowKey(workflowKey).send().join();
 
     ZeebeAssertHelper.assertWorkflowInstanceCreated(workflowInstanceEvent.getWorkflowInstanceKey());
   }
@@ -78,17 +83,16 @@ public class LargeMessageSizeTest {
   @Test
   public void shouldCreateInstanceWithLargeVariables() {
     // given
-    clientRule.deployWorkflow(WORKFLOW);
+    final var workflowKey = CLIENT_RULE.deployWorkflow(workflow(jobType));
 
     // when
     final Map<String, Object> largeVariables = Map.of("largeVariable", LARGE_TEXT);
 
     final var workflowInstanceEvent =
-        clientRule
+        CLIENT_RULE
             .getClient()
             .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
+            .workflowKey(workflowKey)
             .variables(largeVariables)
             .send()
             .join();
@@ -100,24 +104,18 @@ public class LargeMessageSizeTest {
   @Test
   public void shouldCompleteJobWithLargeVariables() {
     // given
-    clientRule.deployWorkflow(WORKFLOW);
+    final var workflowKey = CLIENT_RULE.deployWorkflow(workflow(jobType));
 
     final var workflowInstanceEvent =
-        clientRule
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(PROCESS_ID)
-            .latestVersion()
-            .send()
-            .join();
+        CLIENT_RULE.getClient().newCreateInstanceCommand().workflowKey(workflowKey).send().join();
 
     // when
     final Map<String, Object> largeVariables = Map.of("largeVariable", LARGE_TEXT);
 
-    clientRule
+    CLIENT_RULE
         .getClient()
         .newWorker()
-        .jobType(JOB_TYPE)
+        .jobType(jobType)
         .handler(
             ((client, job) ->
                 client.newCompleteCommand(job.getKey()).variables(largeVariables).send().join()))

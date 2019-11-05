@@ -33,21 +33,6 @@ pipeline {
                 container('maven-jdk8') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
-
-            }
-        }
-
-        stage('Build (Go)') {
-            steps {
-                container('golang') {
-                    sh '.ci/scripts/distribution/build-go.sh'
-                }
-            }
-
-            post {
-                always {
-                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
-                }
             }
         }
 
@@ -55,6 +40,36 @@ pipeline {
             steps {
                 container('maven') {
                     sh '.ci/scripts/distribution/build-java.sh'
+                }
+            }
+        }
+
+        stage('Build (Go)') {
+            environment {
+                IMAGE = "camunda/zeebe"
+                VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
+                TAG = 'current-test'
+            }         
+
+            steps {
+                container('golang') {
+                    sh '.ci/scripts/distribution/build-go.sh'
+                }
+
+                container('maven') {         
+                    sh '.ci/scripts/docker/prepare.sh'
+                }
+
+                container('docker') {         
+                    sh '.ci/scripts/docker/build.sh'
+                }
+            }
+        }
+
+        stage('Test (Go)') {
+            steps {
+                container('golang') {
+                    sh '.ci/scripts/distribution/test-go.sh'
                 }
             }
         }
@@ -90,7 +105,7 @@ pipeline {
                             sh '.ci/scripts/distribution/it-java.sh'
                         }
                     }
-                }
+                }     
             }
 
             post {

@@ -6,6 +6,7 @@
   * [CancelWorkflowInstance RPC](#cancelworkflowinstance-rpc)
   * [CompleteJob RPC](#completejob-rpc)
   * [CreateWorkflowInstance RPC](#createworkflowinstance-rpc)
+  * [CreateWorkflowInstanceWithResult RPC](#createworkflowinstance-rpc)
   * [DeployWorkflow RPC](#deployworkflow-rpc)
   * [FailJob RPC](#failjob-rpc)
   * [PublishMessage RPC](#publishmessage-rpc)
@@ -246,6 +247,44 @@ message CreateWorkflowInstanceResponse {
   // the unique identifier of the created workflow instance; to be used wherever a request
   // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
   int64 workflowInstanceKey = 4;
+}
+```
+
+### CreateWorkflowInstanceWithResult RPC
+
+Similar to `CreateWorkflowInstance RPC` , creates and starts an instance of the specified workflow. 
+Unlike `CreateWorkflowInstance RPC`, the response is returned when the workflow is completed.
+
+Note that only workflows with none start events can be started through this command.
+
+#### Input: CreateWorkflowInstanceWithResultRequest
+
+```protobuf
+message CreateWorkflowInstanceRequest {
+   CreateWorkflowInstanceRequest request = 1;
+   // timeout in milliseconds. the request will be closed if the workflow is not completed before 
+   // the requestTimeout.
+   // if requestTimeout = 0, uses the generic requestTimeout configured in the gateway.
+   int64 requestTimeout = 2;
+}
+```
+
+#### Output: CreateWorkflowInstanceWithResultResponse
+
+```protobuf
+message CreateWorkflowInstanceResponse {
+  // the key of the workflow definition which was used to create the workflow instance
+  int64 workflowKey = 1;
+  // the BPMN process ID of the workflow definition which was used to create the workflow
+  // instance
+  string bpmnProcessId = 2;
+  // the version of the workflow definition which was used to create the workflow instance
+  int32 version = 3;
+  // the unique identifier of the created workflow instance; to be used wherever a request
+  // needs a workflow instance key (e.g. CancelWorkflowInstanceRequest)
+  int64 workflowInstanceKey = 4;
+  // consisting of all visible variables to the root scope
+  string variables = 5;
 }
 ```
 

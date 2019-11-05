@@ -27,7 +27,6 @@
       <validValue name="MESSAGE">10</validValue>
       <validValue name="MESSAGE_SUBSCRIPTION">11</validValue>
       <validValue name="WORKFLOW_INSTANCE_SUBSCRIPTION">12</validValue>
-      <validValue name="EXPORTER">13</validValue>
       <validValue name="JOB_BATCH">14</validValue>
       <validValue name="TIMER">15</validValue>
       <validValue name="MESSAGE_START_EVENT_SUBSCRIPTION">16</validValue>
@@ -35,6 +34,7 @@
       <validValue name="VARIABLE_DOCUMENT">18</validValue>
       <validValue name="WORKFLOW_INSTANCE_CREATION">19</validValue>
       <validValue name="ERROR">20</validValue>
+      <validValue name="WORKFLOW_INSTANCE_RESULT">21</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">
@@ -59,7 +59,7 @@
 
   <!-- L1 General Messages 0 - 99 -->
 
-  <sbe:message name="ErrorResponse" id="0" description="Standard error response">
+  <sbe:message name="ErrorResponse" id="10" description="Standard error response">
     <field name="errorCode" id="1" type="errorCode"/>
     <data name="errorData" id="2" type="varDataEncoding"/>
   </sbe:message>

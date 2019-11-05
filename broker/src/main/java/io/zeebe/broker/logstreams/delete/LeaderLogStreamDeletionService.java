@@ -7,18 +7,20 @@
  */
 package io.zeebe.broker.logstreams.delete;
 
-import io.zeebe.broker.exporter.ExporterManagerService;
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.exporter.ExporterDirectorService;
 import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.sched.future.ActorFuture;
 
 public class LeaderLogStreamDeletionService implements DeletionService, Service {
-  private final Injector<ExporterManagerService> exporterManagerInjector = new Injector<>();
+  private final Injector<ExporterDirectorService> exporterDirectorInjector = new Injector<>();
   private final LogStream logStream;
-  private ExporterManagerService exporterManagerService;
+  private ExporterDirectorService exporterDirector;
 
   public LeaderLogStreamDeletionService(LogStream logStream) {
     this.logStream = logStream;
@@ -26,7 +28,7 @@ public class LeaderLogStreamDeletionService implements DeletionService, Service 
 
   @Override
   public void start(final ServiceStartContext startContext) {
-    exporterManagerService = exporterManagerInjector.getValue();
+    exporterDirector = exporterDirectorInjector.getValue();
   }
 
   @Override
@@ -39,15 +41,21 @@ public class LeaderLogStreamDeletionService implements DeletionService, Service 
 
   @Override
   public void delete(final long position) {
-    final long minPosition = Math.min(position, getMinimumExportedPosition());
-    logStream.delete(minPosition);
+    final ActorFuture<Long> lowestExporterPosition = exporterDirector.getLowestExporterPosition();
+    lowestExporterPosition.onComplete(
+        (value, exception) -> {
+          if (exception == null) {
+            final long minPosition = Math.min(position, value);
+            logStream.delete(minPosition);
+          } else {
+            Loggers.DELETION_SERVICE.warn(
+                "Expected to retrieve lowest exporter position, but exception occurred.",
+                exception);
+          }
+        });
   }
 
-  private long getMinimumExportedPosition() {
-    return exporterManagerService.getLowestExporterPosition();
-  }
-
-  public Injector<ExporterManagerService> getExporterManagerInjector() {
-    return exporterManagerInjector;
+  public Injector<ExporterDirectorService> getExporterDirectorInjector() {
+    return exporterDirectorInjector;
   }
 }

@@ -13,6 +13,7 @@ import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.zeebe.gateway.metrics.LongPollingMetrics;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.util.sched.Actor;
@@ -39,6 +40,8 @@ public final class LongPollingActivateJobsHandler extends Actor {
   private final long probeTimeoutMillis;
   private final int emptyResponseThreshold;
 
+  private final LongPollingMetrics metrics;
+
   private LongPollingActivateJobsHandler(
       BrokerClient brokerClient,
       long longPollingTimeout,
@@ -49,6 +52,7 @@ public final class LongPollingActivateJobsHandler extends Actor {
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.emptyResponseThreshold = emptyResponseThreshold;
+    metrics = new LongPollingMetrics();
   }
 
   public void activateJobs(
@@ -116,7 +120,8 @@ public final class LongPollingActivateJobsHandler extends Actor {
 
   private void jobsNotAvailable(LongPollingActivateJobsRequest request) {
     final JobTypeAvailabilityState state =
-        jobTypeState.computeIfAbsent(request.getType(), t -> new JobTypeAvailabilityState());
+        jobTypeState.computeIfAbsent(
+            request.getType(), type -> new JobTypeAvailabilityState(type, metrics));
     state.incrementEmptyResponses(currentTimeMillis());
     block(state, request);
   }

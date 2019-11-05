@@ -22,8 +22,10 @@ public class CreateProcessor implements CommandProcessor<JobRecord> {
   }
 
   @Override
-  public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+  public boolean onCommand(
+      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
     final long key = commandControl.accept(JobIntent.CREATED, command.getValue());
     state.create(key, command.getValue());
+    return true;
   }
 }

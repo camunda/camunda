@@ -24,7 +24,7 @@ public class CreateWorkflowInstanceTest extends GatewayTest {
   public void shouldMapRequestAndResponse() {
     // given
     final CreateWorkflowInstanceStub stub = new CreateWorkflowInstanceStub();
-    stub.registerWith(gateway);
+    stub.registerWith(brokerClient);
 
     final CreateWorkflowInstanceRequest request =
         CreateWorkflowInstanceRequest.newBuilder().setWorkflowKey(stub.getWorkflowKey()).build();
@@ -38,7 +38,7 @@ public class CreateWorkflowInstanceTest extends GatewayTest {
     assertThat(response.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
     assertThat(response.getWorkflowInstanceKey()).isEqualTo(stub.getWorkflowInstanceKey());
 
-    final BrokerCreateWorkflowInstanceRequest brokerRequest = gateway.getSingleBrokerRequest();
+    final BrokerCreateWorkflowInstanceRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getIntent()).isEqualTo(WorkflowInstanceCreationIntent.CREATE);
     assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
 

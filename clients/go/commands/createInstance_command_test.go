@@ -361,3 +361,439 @@ func TestCreateWorkflowInstanceCommandWithVariablesFromMap(t *testing.T) {
 		t.Errorf("Failed to receive response")
 	}
 }
+
+func TestCreateWorkflowInstanceWithResultCommand(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           "{}",
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	response, err := command.WorkflowKey(123).WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultCommandByBpmnProcessId(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			BpmnProcessId: "foo",
+			Version:       LatestVersion,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           "{}",
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	response, err := command.BPMNProcessId("foo").LatestVersion().WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultCommandByBpmnProcessIdAndVersion(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			BpmnProcessId: "foo",
+			Version:       56,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           "{}",
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	response, err := command.BPMNProcessId("foo").Version(56).WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromString(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	variables := "{\"foo\":\"bar\"}"
+
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+			Variables:   variables,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           variables,
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromString(variables)
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	response, err := variablesCommand.WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromStringer(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	variables := "{\"foo\":\"bar\"}"
+
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+			Variables:   variables,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           variables,
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromStringer(DataType{Foo: "bar"})
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	response, err := variablesCommand.WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObject(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	variables := "{\"foo\":\"bar\"}"
+
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+			Variables:   variables,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           variables,
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: "bar"})
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	response, err := variablesCommand.WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObjectOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	variables := "{}"
+
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+			Variables:   variables,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           variables,
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromObject(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	response, err := variablesCommand.WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	variables := "{\"foo\":\"\"}"
+
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+			Variables:   variables,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           variables,
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromObjectIgnoreOmitempty(DataType{Foo: ""})
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	response, err := variablesCommand.WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultCommandWithVariablesFromMap(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	variables := "{\"foo\":\"bar\"}"
+	variablesMap := make(map[string]interface{})
+	variablesMap["foo"] = "bar"
+
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+			Variables:   variables,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           variables,
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	variablesCommand, err := command.WorkflowKey(123).VariablesFromMap(variablesMap)
+	if err != nil {
+		t.Error("Failed to set variables: ", err)
+	}
+
+	response, err := variablesCommand.WithResult().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultAndFetchVariablesCommand(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+		FetchVariables: []string{"a", "b", "c"},
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           "{}",
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	response, err := command.WorkflowKey(123).WithResult().FetchVariables("a", "b", "c").Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
+func TestCreateWorkflowInstanceWithResultAndFetchEmptyVariablesListCommand(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+	request := &pb.CreateWorkflowInstanceWithResultRequest{
+		Request: &pb.CreateWorkflowInstanceRequest{
+			WorkflowKey: 123,
+		},
+		RequestTimeout: utils.DefaultTestTimeoutInMs,
+		FetchVariables: []string{},
+	}
+	stub := &pb.CreateWorkflowInstanceWithResultResponse{
+		WorkflowKey:         123,
+		BpmnProcessId:       "foo",
+		Version:             4545,
+		WorkflowInstanceKey: 5632,
+		Variables:           "{}",
+	}
+
+	client.EXPECT().CreateWorkflowInstanceWithResult(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
+
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout, func(error) bool { return false })
+
+	response, err := command.WorkflowKey(123).WithResult().FetchVariables().Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}

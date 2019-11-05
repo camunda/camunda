@@ -33,6 +33,9 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_OUTPUT_COLLECTION = "outputCollection";
   public static final String ATTRIBUTE_OUTPUT_ELEMENT = "outputElement";
 
+  public static final String ATTRIBUTE_PROCESS_ID = "processId";
+  public static final String ATTRIBUTE_PROCESS_ID_EXPRESSION = "processIdExpression";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -44,4 +47,6 @@ public class ZeebeConstants {
   public static final String ELEMENT_TASK_HEADERS = "taskHeaders";
 
   public static final String ELEMENT_LOOP_CHARACTERISTICS = "loopCharacteristics";
+
+  public static final String ELEMENT_CALLED_ELEMENT = "calledElement";
 }

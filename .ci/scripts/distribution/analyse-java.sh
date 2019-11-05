@@ -33,4 +33,4 @@ else
 fi
 
 echo "Properties: ${PROPERTIES[@]}"
-mvn -s .ci/settings.xml -P sonar sonar:sonar ${PROPERTIES[@]}
+mvn -B -s .ci/settings.xml -P sonar sonar:sonar ${PROPERTIES[@]}

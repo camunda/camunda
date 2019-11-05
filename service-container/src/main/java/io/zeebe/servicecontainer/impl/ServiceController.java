@@ -228,8 +228,7 @@ public class ServiceController extends Actor {
     }
 
     private void onDependenciesUnAvailable(ServiceEvent evt) {
-      state = removedState;
-      fireEvent(ServiceEventType.SERVICE_REMOVED);
+      fireEvent(ServiceEventType.SERVICE_STOPPING);
     }
 
     private void onStopping() {
@@ -285,6 +284,8 @@ public class ServiceController extends Actor {
           onStartFailed((Throwable) t.getPayload());
           break;
         case DEPENDENCIES_UNAVAILABLE:
+          fireEvent(ServiceEventType.SERVICE_STOPPING);
+          break;
         case DEPENDENTS_STOPPED:
         case SERVICE_STOPPING:
           if (startContext.isInterruptible()) {
@@ -319,8 +320,8 @@ public class ServiceController extends Actor {
     public void onStartFailed(Throwable t) {
       LOG.error("Service {} failed to start while in AwaitStartState", name, t);
       startFuture.completeExceptionally(t);
-      state = awaitStopState;
-      fireEvent(ServiceEventType.SERVICE_STOPPED);
+      state = awaitDependentsStopped;
+      fireEvent(ServiceEventType.SERVICE_STOPPING);
     }
   }
 

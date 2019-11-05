@@ -47,4 +47,16 @@ public interface WorkflowInstanceRecordValue extends RecordValue {
 
   /** @return the BPMN type of the current workflow element. */
   BpmnElementType getBpmnElementType();
+
+  /**
+   * @return the key of the workflow instance that created this instance, or -1 if it was not
+   *     created by another workflow instance.
+   */
+  long getParentWorkflowInstanceKey();
+
+  /**
+   * @return the key of the element instance that created this instance, or -1 if it was not created
+   *     by another workflow instance.
+   */
+  long getParentElementInstanceKey();
 }

@@ -22,10 +22,12 @@ public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandl
   private final SnapshotController snapshotController;
   private final LogStreamReader reader;
   private final LogStream logStream;
+  private final int partitionId;
 
   public DefaultRestoreInfoRequestHandler(
       LogStream logStream, SnapshotController snapshotController) {
     this.logStream = logStream;
+    partitionId = logStream.getPartitionId();
     this.reader = new BufferedLogStreamReader(logStream);
     this.snapshotController = snapshotController;
   }
@@ -35,7 +37,7 @@ public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandl
     RestoreInfoResponse response = DefaultRestoreInfoResponse.NONE;
     final long lastValidSnapshotPosition = snapshotController.getLastValidSnapshotPosition();
 
-    logger.debug("Received restore info request {}", request);
+    logger.trace("Received restore info request {} for partition {}", request, partitionId);
     if (lastValidSnapshotPosition > -1
         && lastValidSnapshotPosition >= request.getLatestLocalPosition()) {
       final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
@@ -48,11 +50,12 @@ public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandl
       response = new DefaultRestoreInfoResponse(ReplicationTarget.EVENTS);
     }
 
-    logger.debug(
-        "Responding restore info request with {} (snapshot position: {}, log position: {})",
+    logger.trace(
+        "Responding restore info request with {} (snapshot position: {}, log position: {}) for partition {}",
         response,
         lastValidSnapshotPosition,
-        logStream.getCommitPosition());
+        logStream.getCommitPosition(),
+        partitionId);
     return response;
   }
 

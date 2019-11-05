@@ -8,7 +8,7 @@ When a receive task is entered then a corresponding message subscription is crea
  
 A message can published using one of the Zeebe clients. When the message is correlated, the receive task gets completed and the workflow instance continues. 
 
-> An alternative to receive tasks are [message intermediate catch events](/bpmn-workflows/message-events.html) which behaves the same but can be used together with event-based gateways.
+> An alternative to receive tasks are [message intermediate catch events](/bpmn-workflows/message-events/message-events.html) which behaves the same but can be used together with event-based gateways.
 
 ## Messages
 

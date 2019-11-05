@@ -297,7 +297,7 @@ public class ElasticsearchExporterTest {
   }
 
   @Test
-  public void shouldHandleExceptionOnFlush() {
+  public void shouldNotHandleFlushException() {
     // given
     when(esClient.shouldFlush()).thenReturn(true);
     when(esClient.flush()).thenThrow(new ElasticsearchExporterException("expected"));
@@ -305,11 +305,12 @@ public class ElasticsearchExporterTest {
     createAndOpenExporter();
 
     // when
-    testHarness.export();
-    testHarness.export();
+    assertThatThrownBy(() -> testHarness.export())
+        .isInstanceOf(ElasticsearchExporterException.class)
+        .withFailMessage("expected");
 
     // then
-    verify(esClient, times(2)).flush();
+    verify(esClient, times(1)).flush();
   }
 
   private ElasticsearchExporter createExporter() {

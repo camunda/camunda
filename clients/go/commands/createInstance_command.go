@@ -24,9 +24,14 @@ import (
 )
 
 const LatestVersion = -1
+const DeadLineOffset = 10 * time.Second
 
 type DispatchCreateInstanceCommand interface {
 	Send() (*pb.CreateWorkflowInstanceResponse, error)
+}
+
+type DispatchCreateInstanceWithResultCommand interface {
+	Send() (*pb.CreateWorkflowInstanceWithResultResponse, error)
 }
 
 type CreateInstanceCommandStep1 interface {
@@ -43,15 +48,23 @@ type CreateInstanceCommandStep3 interface {
 	DispatchCreateInstanceCommand
 
 	// Expected to be valid JSON string
-	VariablesFromString(string) (DispatchCreateInstanceCommand, error)
+	VariablesFromString(string) (CreateInstanceCommandStep3, error)
 
 	// Expected to construct a valid JSON string
-	VariablesFromStringer(fmt.Stringer) (DispatchCreateInstanceCommand, error)
+	VariablesFromStringer(fmt.Stringer) (CreateInstanceCommandStep3, error)
 
 	// Expected that object is JSON serializable
-	VariablesFromObject(interface{}) (DispatchCreateInstanceCommand, error)
-	VariablesFromObjectIgnoreOmitempty(interface{}) (DispatchCreateInstanceCommand, error)
-	VariablesFromMap(map[string]interface{}) (DispatchCreateInstanceCommand, error)
+	VariablesFromObject(interface{}) (CreateInstanceCommandStep3, error)
+	VariablesFromObjectIgnoreOmitempty(interface{}) (CreateInstanceCommandStep3, error)
+	VariablesFromMap(map[string]interface{}) (CreateInstanceCommandStep3, error)
+
+	WithResult() CreateInstanceWithResultCommandStep1
+}
+
+type CreateInstanceWithResultCommandStep1 interface {
+	DispatchCreateInstanceWithResultCommand
+
+	FetchVariables(variableNames ...string) CreateInstanceWithResultCommandStep1
 }
 
 type CreateInstanceCommand struct {
@@ -63,7 +76,16 @@ type CreateInstanceCommand struct {
 	retryPredicate func(error) bool
 }
 
-func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (DispatchCreateInstanceCommand, error) {
+type CreateInstanceWithResultCommand struct {
+	utils.SerializerMixin
+
+	request        *pb.CreateWorkflowInstanceWithResultRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
+	retryPredicate func(error) bool
+}
+
+func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (CreateInstanceCommandStep3, error) {
 	err := cmd.Validate("variables", variables)
 	if err != nil {
 		return nil, err
@@ -73,11 +95,11 @@ func (cmd *CreateInstanceCommand) VariablesFromString(variables string) (Dispatc
 	return cmd, nil
 }
 
-func (cmd *CreateInstanceCommand) VariablesFromStringer(variables fmt.Stringer) (DispatchCreateInstanceCommand, error) {
+func (cmd *CreateInstanceCommand) VariablesFromStringer(variables fmt.Stringer) (CreateInstanceCommandStep3, error) {
 	return cmd.VariablesFromString(variables.String())
 }
 
-func (cmd *CreateInstanceCommand) VariablesFromObject(variables interface{}) (DispatchCreateInstanceCommand, error) {
+func (cmd *CreateInstanceCommand) VariablesFromObject(variables interface{}) (CreateInstanceCommandStep3, error) {
 	value, err := cmd.AsJson("variables", variables, false)
 	if err != nil {
 		return nil, err
@@ -87,7 +109,7 @@ func (cmd *CreateInstanceCommand) VariablesFromObject(variables interface{}) (Di
 	return cmd, err
 }
 
-func (cmd *CreateInstanceCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (DispatchCreateInstanceCommand, error) {
+func (cmd *CreateInstanceCommand) VariablesFromObjectIgnoreOmitempty(variables interface{}) (CreateInstanceCommandStep3, error) {
 	value, err := cmd.AsJson("variables", variables, true)
 	if err != nil {
 		return nil, err
@@ -97,7 +119,7 @@ func (cmd *CreateInstanceCommand) VariablesFromObjectIgnoreOmitempty(variables i
 	return cmd, err
 }
 
-func (cmd *CreateInstanceCommand) VariablesFromMap(variables map[string]interface{}) (DispatchCreateInstanceCommand, error) {
+func (cmd *CreateInstanceCommand) VariablesFromMap(variables map[string]interface{}) (CreateInstanceCommandStep3, error) {
 	return cmd.VariablesFromObject(variables)
 }
 
@@ -121,16 +143,47 @@ func (cmd *CreateInstanceCommand) BPMNProcessId(id string) CreateInstanceCommand
 	return cmd
 }
 
+func (cmd *CreateInstanceCommand) WithResult() CreateInstanceWithResultCommandStep1 {
+	return &CreateInstanceWithResultCommand{
+		SerializerMixin: cmd.SerializerMixin,
+		request: &pb.CreateWorkflowInstanceWithResultRequest{
+			Request:        cmd.request,
+			RequestTimeout: int64(cmd.requestTimeout / time.Millisecond),
+		},
+		gateway:        cmd.gateway,
+		requestTimeout: cmd.requestTimeout,
+		retryPredicate: cmd.retryPredicate,
+	}
+}
+
+func (cmd *CreateInstanceWithResultCommand) FetchVariables(variableNames ...string) CreateInstanceWithResultCommandStep1 {
+	cmd.request.FetchVariables = variableNames
+	return cmd
+}
+
 func (cmd *CreateInstanceCommand) Send() (*pb.CreateWorkflowInstanceResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-    response, err := cmd.gateway.CreateWorkflowInstance(ctx, cmd.request)
-    if cmd.retryPredicate(err) {
-        return cmd.Send()
-    }
+	response, err := cmd.gateway.CreateWorkflowInstance(ctx, cmd.request)
+	if cmd.retryPredicate(err) {
+		return cmd.Send()
+	}
 
-    return response, err
+	return response, err
+}
+
+func (cmd *CreateInstanceWithResultCommand) Send() (*pb.CreateWorkflowInstanceWithResultResponse, error) {
+	// increase request by dead line offset to not close the connection before the request timeout to the broker is triggered
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout+DeadLineOffset)
+	defer cancel()
+
+	response, err := cmd.gateway.CreateWorkflowInstanceWithResult(ctx, cmd.request)
+	if cmd.retryPredicate(err) {
+		return cmd.Send()
+	}
+
+	return response, err
 }
 
 func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CreateInstanceCommandStep1 {

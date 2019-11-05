@@ -55,7 +55,6 @@ public class ZeebeSubscriptionImpl extends BpmnModelElementInstanceImpl
             .stringAttribute(ZeebeConstants.ATTRIBUTE_CORRELATION_KEY)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .required()
-            .required()
             .build();
 
     typeBuilder.build();

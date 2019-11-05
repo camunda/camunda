@@ -1,3 +1,46 @@
+<a name="0.22.0-alpha1"></a>
+## 0.22.0-alpha1 (2019-11-05)
+
+#### Bug Fixes
+
+* **broker:**
+  *  terminate call activity on completing ([74f0664a](https://github.com/zeebe-io/zeebe/commit/74f0664a67a19bd28e8e4aebeb4b01b374243d8f))
+  *  don't activate call activity if incident is created ([ac0e2e75](https://github.com/zeebe-io/zeebe/commit/ac0e2e753f8fc000371eaa9c385112e95feb2f46))
+  *  fix snapshot-exporter concurrency ([a182118e](https://github.com/zeebe-io/zeebe/commit/a182118eb1513d97ee00d8d8df5830016aa18264))
+* **ci:**  fix docker image upload ([7382b6c8](https://github.com/zeebe-io/zeebe/commit/7382b6c8ce3d7c4ec962bf5d266ff891c37bead8))
+* **clients/go:**
+  *  fix zbctl building failure for Windows ([1eea513d](https://github.com/zeebe-io/zeebe/commit/1eea513d1b9409cec728c3d5f432cd9320a0e785))
+  *  env wrapper fall back to actual env ([300e7e59](https://github.com/zeebe-io/zeebe/commit/300e7e59bbaa5c09a1356ddd023ca8fbbc070b0d))
+  *  fix concurrency bug in cache access ([c8707393](https://github.com/zeebe-io/zeebe/commit/c8707393b70a34c96818d6d717b957f43493f6a6))
+* **gateway:**  fix long polling activation ([74a11a1d](https://github.com/zeebe-io/zeebe/commit/74a11a1dea2d1ec87947043e78083bc051fc00aa))
+* **logstreams:**  use concurrent data structure in log storage ([1eb45e31](https://github.com/zeebe-io/zeebe/commit/1eb45e312b37675184b4210f7be43aadac02d6d9))
+
+#### Features
+
+* **broker:**
+  *  support interrupting timer event subprocess ([fe39d018](https://github.com/zeebe-io/zeebe/commit/fe39d0184659dcbe5f8eb8847e21dbd1766816d8))
+  *  specify variables to include in workflow result ([da9168de](https://github.com/zeebe-io/zeebe/commit/da9168dedc125d8b35c4210947fc1f46bf91226d))
+  *  resolve called element by process id expression ([d00f25f8](https://github.com/zeebe-io/zeebe/commit/d00f25f8d5010a352dce5d4468a37d3c1555807a))
+  *  support event subprocess with non-interrupt timer ([e0c6b5b9](https://github.com/zeebe-io/zeebe/commit/e0c6b5b90843fc679bc8cd8e3aacf6655a8595d7))
+  *  terminate the child instance of the call activity ([1f5f06bd](https://github.com/zeebe-io/zeebe/commit/1f5f06bd282f67977c359d129798cf7900418b0d))
+  *  create workflow instance and await completion with results ([1a0a5451](https://github.com/zeebe-io/zeebe/commit/1a0a54518014c6eeb52c879e31bb5cf3ada3c8d3))
+  *  copy variables to child workflow instance ([2e0507e2](https://github.com/zeebe-io/zeebe/commit/2e0507e26611295650a07cf0b652a8f74cfeb3c1))
+  *  deploy workflow with non-executable elements ([4bfb7df0](https://github.com/zeebe-io/zeebe/commit/4bfb7df03c392a976cdcf43ca9d8794645b7bf1b))
+* **clients/go:**
+  *  specify list of variables to fetch on workflow instance result ([353a7486](https://github.com/zeebe-io/zeebe/commit/353a7486e03f33f889d4f9d952f6ba2e02dcd79d))
+  *  allow to create instance and wait for result ([bb1bf47b](https://github.com/zeebe-io/zeebe/commit/bb1bf47b7a718b1fb292dcea7fe3ed34c8b1e60b))
+* **clients/java:**
+  *  specify variables to fetch in worklow outcome ([fe415370](https://github.com/zeebe-io/zeebe/commit/fe415370f5782fae507e8476d830b8c5e3f06aac))
+  *  create workflow instance and await completion with results ([04797cc9](https://github.com/zeebe-io/zeebe/commit/04797cc936a46c08e44988eff559b79edcdd3205))
+  *  change DEFAULT_JOB_WORKER_NAME property value ([a9f0e5bc](https://github.com/zeebe-io/zeebe/commit/a9f0e5bc56592819ee13a815639a4e5e43d70c40))
+* **clients/zbctl:**
+  *  add flag to wait for workflow instance result ([f3107f1a](https://github.com/zeebe-io/zeebe/commit/f3107f1a8eb124b55e775d23416540f49204a19e))
+* **engine:**
+  *  support call activities ([1b5a6c6e](https://github.com/zeebe-io/zeebe/commit/1b5a6c6e958dc0c8e7d27a22a47131a514d52ff4))
+* **exporter:**  extends exporter metrics to contain valueType info ([8bb9039c](https://github.com/zeebe-io/zeebe/commit/8bb9039ca8208a878b7c2c924b222cbdd56b98ad))
+* **logstreams:**  add back pressure on log appender ([cf561bbc](https://github.com/zeebe-io/zeebe/commit/cf561bbcd36f4593f35a717ae7a366c804de2ea8))
+
+
 <a name="0.21.0"></a>
 ## 0.21.0 (2019-10-01)
 

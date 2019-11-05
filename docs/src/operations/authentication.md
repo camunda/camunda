@@ -58,7 +58,7 @@ public class InsecureClient {
 }
 ```
 
-Alternatively, you can use the `ZEEBE_INSECURE_CONNECTION` environment variable to override the code configuration. To enable an insecure connection, just set it to "true", setting it to any other value is equivalent to setting it to false.
+Alternatively, you can use the `ZEEBE_INSECURE_CONNECTION` environment variable to override the code configuration. To enable an insecure connection, you can it to "true". To use a secure connection, you can set it any non-empty value other than "true". Setting the environment variable to an empty string is equivalent to unsetting it.
 
 ### Go
 

@@ -233,6 +233,57 @@
             ]
           },
           {
+            "name": "CreateWorkflowInstanceWithResultRequest",
+            "fields": [
+              {
+                "id": 1,
+                "name": "request",
+                "type": "CreateWorkflowInstanceRequest"
+              },
+              {
+                "id": 2,
+                "name": "requestTimeout",
+                "type": "int64"
+              },
+              {
+                "id": 3,
+                "name": "fetchVariables",
+                "type": "string",
+                "is_repeated": true
+              }
+            ]
+          },
+          {
+            "name": "CreateWorkflowInstanceWithResultResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "workflowKey",
+                "type": "int64"
+              },
+              {
+                "id": 2,
+                "name": "bpmnProcessId",
+                "type": "string"
+              },
+              {
+                "id": 3,
+                "name": "version",
+                "type": "int32"
+              },
+              {
+                "id": 4,
+                "name": "workflowInstanceKey",
+                "type": "int64"
+              },
+              {
+                "id": 5,
+                "name": "variables",
+                "type": "string"
+              }
+            ]
+          },
+          {
             "name": "DeployWorkflowRequest",
             "fields": [
               {
@@ -509,6 +560,11 @@
                 "name": "CreateWorkflowInstance",
                 "in_type": "CreateWorkflowInstanceRequest",
                 "out_type": "CreateWorkflowInstanceResponse"
+              },
+              {
+                "name": "CreateWorkflowInstanceWithResult",
+                "in_type": "CreateWorkflowInstanceWithResultRequest",
+                "out_type": "CreateWorkflowInstanceWithResultResponse"
               },
               {
                 "name": "DeployWorkflow",

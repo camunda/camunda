@@ -12,22 +12,34 @@ import java.util.Optional;
 
 public class SocketBindingCfg {
 
-  protected String host;
-  protected int port;
+  private final int defaultPort;
+  private String host;
+  private Integer port;
+  private String advertisedHost;
+  private Integer advertisedPort;
 
   private SocketBindingCfg(final int defaultPort) {
-    port = defaultPort;
+    this.defaultPort = defaultPort;
   }
 
-  public SocketAddress toSocketAddress() {
+  public SocketAddress getAddress() {
     return new SocketAddress(host, port);
   }
 
+  public SocketAddress getAdvertisedAddress() {
+    return new SocketAddress(advertisedHost, advertisedPort);
+  }
+
   public void applyDefaults(final NetworkCfg networkCfg) {
-
+    advertisedHost =
+        Optional.ofNullable(advertisedHost)
+            .orElseGet(() -> Optional.ofNullable(host).orElseGet(networkCfg::getAdvertisedHost));
     host = Optional.ofNullable(host).orElse(networkCfg.getHost());
-
-    port += networkCfg.getPortOffset() * 10;
+    port = Optional.ofNullable(port).orElse(defaultPort) + networkCfg.getPortOffset() * 10;
+    advertisedPort =
+        Optional.ofNullable(advertisedPort)
+            .map(p -> p + networkCfg.getPortOffset() * 10)
+            .orElse(port);
   }
 
   public String getHost() {
@@ -38,6 +50,14 @@ public class SocketBindingCfg {
     this.host = host;
   }
 
+  public String getAdvertisedHost() {
+    return advertisedHost;
+  }
+
+  public void setAdvertisedHost(final String advertisedHost) {
+    this.advertisedHost = advertisedHost;
+  }
+
   public int getPort() {
     return port;
   }
@@ -46,9 +66,27 @@ public class SocketBindingCfg {
     this.port = port;
   }
 
+  public int getAdvertisedPort() {
+    return advertisedPort;
+  }
+
+  public void setAdvertisedPort(final int advertisedPort) {
+    this.advertisedPort = advertisedPort;
+  }
+
   @Override
   public String toString() {
-    return "SocketBindingCfg{" + "host='" + host + '\'' + ", port=" + port + '}';
+    return "SocketBindingCfg{"
+        + "host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", advertisedHost="
+        + advertisedHost
+        + ", advertisedPort="
+        + advertisedPort
+        + "}";
   }
 
   public static class CommandApiCfg extends SocketBindingCfg {

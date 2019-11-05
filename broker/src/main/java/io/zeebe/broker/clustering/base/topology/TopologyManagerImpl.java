@@ -93,9 +93,9 @@ public class TopologyManagerImpl extends Actor
 
     final BrokerInfo brokerInfo = readBrokerInfo(eventSource);
     LOG.debug(
-        "Member {} received event {} with {}",
+        "Broker {} received new event of type {} and subject {}",
         topology.getLocal().getNodeId(),
-        clusterMembershipEvent,
+        clusterMembershipEvent.type(),
         brokerInfo);
 
     if (brokerInfo != null && brokerInfo.getNodeId() != topology.getLocal().getNodeId()) {

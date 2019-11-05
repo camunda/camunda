@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.util;
 
-import static io.zeebe.engine.processor.StreamProcessorServiceNames.streamProcessorService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,6 +28,7 @@ import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventRegistry;
+import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.StateStorageFactory;
@@ -50,7 +50,6 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.Loggers;
@@ -63,6 +62,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
@@ -86,8 +86,10 @@ public class TestStreams {
   private final ActorScheduler actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
+  private final Consumer<TypedRecord> mockOnProcessedListener;
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
+  private StreamProcessor streamProcessor;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -110,10 +112,15 @@ public class TestStreams {
     when(mockCommandResponseWriter.valueWriter(any())).thenReturn(mockCommandResponseWriter);
 
     when(mockCommandResponseWriter.tryWriteResponse(anyInt(), anyLong())).thenReturn(true);
+    mockOnProcessedListener = mock(Consumer.class);
   }
 
   public CommandResponseWriter getMockedResponseWriter() {
     return mockCommandResponseWriter;
+  }
+
+  public Consumer<TypedRecord> getMockedOnProcessedListener() {
+    return mockOnProcessedListener;
   }
 
   public LogStream createLogStream(final String name) {
@@ -268,13 +275,13 @@ public class TestStreams {
       throw new RuntimeException(e);
     }
     final var zeebeDb = currentSnapshotController.openDb();
-    final StreamProcessor processorService =
+    streamProcessor =
         StreamProcessor.builder()
             .logStream(stream)
             .zeebeDb(zeebeDb)
             .actorScheduler(actorScheduler)
-            .serviceContainer(serviceContainer)
             .commandResponseWriter(mockCommandResponseWriter)
+            .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(
                 (context) -> {
                   final TypedRecordProcessors processors = factory.createProcessors(context);
@@ -287,23 +294,23 @@ public class TestStreams {
                       });
                   return processors;
                 })
-            .build()
-            .join();
+            .build();
+    streamProcessor.openAsync().join();
     openFuture.join();
 
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            processorService, currentSnapshotController, stream, snapshotInterval);
+            streamProcessor, currentSnapshotController, stream, snapshotInterval);
     actorScheduler.submitActor(asyncSnapshotDirector);
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
         ProcessorContext.createStreamContext(
-            context, serviceContainer, currentSnapshotController, asyncSnapshotDirector, zeebeDb);
+            context, streamProcessor, currentSnapshotController, asyncSnapshotDirector, zeebeDb);
     streamContextMap.put(logName, processorContext);
     closeables.manage(processorContext);
 
-    return processorService;
+    return streamProcessor;
   }
 
   public StateSnapshotController getStateSnapshotController(String stream) {
@@ -439,18 +446,18 @@ public class TestStreams {
     private final StateSnapshotController stateSnapshotController;
     private final AsyncSnapshotDirector asyncSnapshotDirector;
     private final ZeebeDb zeebeDb;
-    private final ServiceContainer serviceContainer;
 
     private boolean closed = false;
+    private final StreamProcessor streamProcessor;
 
     private ProcessorContext(
         LogContext logContext,
-        ServiceContainer serviceContainer,
+        StreamProcessor streamProcessor,
         StateSnapshotController stateSnapshotController,
         AsyncSnapshotDirector asyncSnapshotDirector,
         ZeebeDb zeebeDb) {
       this.logContext = logContext;
-      this.serviceContainer = serviceContainer;
+      this.streamProcessor = streamProcessor;
       this.stateSnapshotController = stateSnapshotController;
       this.asyncSnapshotDirector = asyncSnapshotDirector;
       this.zeebeDb = zeebeDb;
@@ -458,12 +465,12 @@ public class TestStreams {
 
     public static ProcessorContext createStreamContext(
         LogContext logContext,
-        ServiceContainer serviceContainer,
+        StreamProcessor streamProcessor,
         StateSnapshotController stateSnapshotController,
         AsyncSnapshotDirector asyncSnapshotDirector,
         ZeebeDb zeebeDb) {
       return new ProcessorContext(
-          logContext, serviceContainer, stateSnapshotController, asyncSnapshotDirector, zeebeDb);
+          logContext, streamProcessor, stateSnapshotController, asyncSnapshotDirector, zeebeDb);
     }
 
     public LogStream getLogStream() {
@@ -482,10 +489,9 @@ public class TestStreams {
 
       asyncSnapshotDirector.closeAsync().join();
       final String streamName = logContext.getLogStream().getLogName();
-      final ServiceName<StreamProcessor> serviceName = streamProcessorService(streamName);
 
-      Loggers.IO_LOGGER.debug("Close stream processor {}", serviceName);
-      serviceContainer.removeService(serviceName).join();
+      Loggers.IO_LOGGER.debug("Close stream processor");
+      streamProcessor.closeAsync().join();
       zeebeDb.close();
       closed = true;
     }

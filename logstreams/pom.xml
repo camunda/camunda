@@ -115,6 +115,16 @@
       <artifactId>zeebe-transport</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>com.netflix.concurrency-limits</groupId>
+      <artifactId>concurrency-limits-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

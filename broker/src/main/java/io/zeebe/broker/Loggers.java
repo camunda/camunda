@@ -18,6 +18,7 @@ public class Loggers {
       new ZbLogger("io.zeebe.broker.workflow.repository");
 
   public static final Logger EXPORTER_LOGGER = new ZbLogger("io.zeebe.broker.exporter");
+  public static final Logger DELETION_SERVICE = new ZbLogger("io.zeebe.broker.logstreams.delete");
 
   public static final Logger getExporterLogger(String exporterId) {
     final String loggerName = String.format("io.zeebe.broker.exporter.%s", exporterId);

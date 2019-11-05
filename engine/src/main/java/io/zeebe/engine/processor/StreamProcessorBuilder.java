@@ -7,32 +7,24 @@
  */
 package io.zeebe.engine.processor;
 
-import static io.zeebe.engine.processor.StreamProcessorServiceNames.streamProcessorService;
-
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
-import io.zeebe.servicecontainer.ServiceBuilder;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class StreamProcessorBuilder {
 
   private final ProcessingContext processingContext;
-  private final List<ServiceName<?>> additionalDependencies = new ArrayList<>();
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
-  private ServiceContainer serviceContainer;
   private ZeebeDb zeebeDb;
 
   public StreamProcessorBuilder() {
@@ -45,18 +37,8 @@ public class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder additionalDependencies(ServiceName<?> additionalDependencies) {
-    this.additionalDependencies.add(additionalDependencies);
-    return this;
-  }
-
   public StreamProcessorBuilder actorScheduler(ActorScheduler actorScheduler) {
     this.actorScheduler = actorScheduler;
-    return this;
-  }
-
-  public StreamProcessorBuilder serviceContainer(ServiceContainer serviceContainer) {
-    this.serviceContainer = serviceContainer;
     return this;
   }
 
@@ -67,6 +49,11 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder commandResponseWriter(CommandResponseWriter commandResponseWriter) {
     processingContext.commandResponseWriter(commandResponseWriter);
+    return this;
+  }
+
+  public StreamProcessorBuilder onProcessedListener(Consumer<TypedRecord> onProcessed) {
+    processingContext.onProcessedListener(onProcessed);
     return this;
   }
 
@@ -87,10 +74,6 @@ public class StreamProcessorBuilder {
     return actorScheduler;
   }
 
-  public ServiceContainer getServiceContainer() {
-    return serviceContainer;
-  }
-
   public List<StreamProcessorLifecycleAware> getLifecycleListeners() {
     return lifecycleListeners;
   }
@@ -99,7 +82,7 @@ public class StreamProcessorBuilder {
     return zeebeDb;
   }
 
-  public ActorFuture<StreamProcessor> build() {
+  public StreamProcessor build() {
     validate();
 
     final LogStream logStream = processingContext.getLogStream();
@@ -114,26 +97,12 @@ public class StreamProcessorBuilder {
     final StreamProcessor streamProcessor = new StreamProcessor(this);
 
     final String logName = logStream.getLogName();
-
-    final ServiceName<StreamProcessor> serviceName = streamProcessorService(logName);
-    final ServiceBuilder<StreamProcessor> serviceBuilder =
-        serviceContainer
-            .createService(serviceName, streamProcessor)
-            .dependency(LogStreamServiceNames.logStreamServiceName(logName))
-            .dependency(LogStreamServiceNames.logWriteBufferServiceName(logName))
-            .dependency(LogStreamServiceNames.logStorageServiceName(logName));
-
-    if (additionalDependencies != null) {
-      additionalDependencies.forEach((d) -> serviceBuilder.dependency(d));
-    }
-
-    return serviceBuilder.install();
+    return streamProcessor;
   }
 
   private void validate() {
     Objects.requireNonNull(typedRecordProcessorFactory, "No stream processor factory provided.");
     Objects.requireNonNull(actorScheduler, "No task scheduler provided.");
-    Objects.requireNonNull(serviceContainer, "No service container provided.");
     Objects.requireNonNull(processingContext.getLogStream(), "No log stream provided.");
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");

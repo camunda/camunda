@@ -10,18 +10,12 @@ package io.zeebe.broker.transport.commandapi;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
-import io.zeebe.broker.transport.backpressure.NoopRequestLimiter;
-import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobIntent;
-import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -46,7 +40,7 @@ public class CommandResponseWriterImplTest {
   @Test
   public void shouldWriteResponse() {
     // given
-    responseWriter = new CommandResponseWriterImpl(null, new NoopRequestLimiter());
+    responseWriter = new CommandResponseWriterImpl(null);
 
     eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
 
@@ -86,23 +80,5 @@ public class CommandResponseWriterImplTest {
 
     final byte[] event = readBytes(responseDecoder::getValue, responseDecoder::valueLength);
     assertThat(event).isEqualTo(EVENT);
-  }
-
-  @Test
-  public void shouldInvokeLimiterOnResponse() {
-    // given
-    final int remoteStreamId = 2;
-    final long requestId = 100;
-    final int partitionId = 5;
-    final RequestLimiter mockLimiter = mock(RequestLimiter.class);
-    responseWriter = new CommandResponseWriterImpl(mock(ServerOutput.class), mockLimiter);
-    eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
-
-    // when
-    responseWriter.partitionId(partitionId).valueWriter(eventWriter);
-    responseWriter.tryWriteResponse(remoteStreamId, requestId);
-
-    // then
-    verify(mockLimiter, times(1)).onResponse(remoteStreamId, requestId);
   }
 }

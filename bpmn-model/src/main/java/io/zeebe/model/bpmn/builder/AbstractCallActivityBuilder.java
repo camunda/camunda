@@ -18,6 +18,7 @@ package io.zeebe.model.bpmn.builder;
 
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.CallActivity;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 
 /** @author Sebastian Menski */
 public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B>>
@@ -36,6 +37,20 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
    */
   public B calledElement(String calledElement) {
     element.setCalledElement(calledElement);
+    return myself;
+  }
+
+  public B zeebeProcessId(String processId) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setProcessId(processId);
+    return myself;
+  }
+
+  public B zeebeProcessIdExpression(String processIdExpression) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setProcessIdExpression(processIdExpression);
     return myself;
   }
 }

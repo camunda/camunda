@@ -53,7 +53,8 @@ public class ClusterComponent implements Component {
 
     final NodeInfo localMember =
         new NodeInfo(
-            brokerConfig.getCluster().getNodeId(), networkCfg.getCommandApi().toSocketAddress());
+            brokerConfig.getCluster().getNodeId(),
+            networkCfg.getCommandApi().getAdvertisedAddress());
 
     /* A hack so that DistributedLogstream primitive can create logstream services using this serviceContainer */
     LogstreamConfig.putServiceContainer(

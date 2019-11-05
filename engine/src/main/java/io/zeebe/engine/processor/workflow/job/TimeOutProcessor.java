@@ -25,7 +25,8 @@ public class TimeOutProcessor implements CommandProcessor<JobRecord> {
   }
 
   @Override
-  public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+  public boolean onCommand(
+      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
     final JobState.State jobState = state.getState(jobKey);
 
@@ -50,5 +51,6 @@ public class TimeOutProcessor implements CommandProcessor<JobRecord> {
       commandControl.reject(
           RejectionType.NOT_FOUND, String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, textState));
     }
+    return true;
   }
 }

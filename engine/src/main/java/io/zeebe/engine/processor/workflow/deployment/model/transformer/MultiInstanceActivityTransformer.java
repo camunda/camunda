@@ -39,12 +39,11 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
         workflow.getElementById(element.getId(), ExecutableActivity.class);
 
     final LoopCharacteristics loopCharacteristics = element.getLoopCharacteristics();
-    if (loopCharacteristics != null
-        && loopCharacteristics instanceof MultiInstanceLoopCharacteristics) {
+    if (loopCharacteristics instanceof MultiInstanceLoopCharacteristics) {
 
       final ExecutableLoopCharacteristics miLoopCharacteristics =
           transformLoopCharacteristics(
-              context, innerActivity, (MultiInstanceLoopCharacteristics) loopCharacteristics);
+              context, (MultiInstanceLoopCharacteristics) loopCharacteristics);
 
       final ExecutableMultiInstanceBody multiInstanceBody =
           new ExecutableMultiInstanceBody(element.getId(), miLoopCharacteristics, innerActivity);
@@ -90,7 +89,6 @@ public class MultiInstanceActivityTransformer implements ModelElementTransformer
 
   private ExecutableLoopCharacteristics transformLoopCharacteristics(
       final TransformContext context,
-      final ExecutableActivity activity,
       final MultiInstanceLoopCharacteristics elementLoopCharacteristics) {
 
     final boolean isSequential = elementLoopCharacteristics.isSequential();

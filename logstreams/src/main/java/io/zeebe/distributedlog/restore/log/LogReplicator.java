@@ -20,13 +20,20 @@ public class LogReplicator {
   private final RestoreClient client;
   private final Executor executor;
   private final Logger logger;
+  private final int partitionId;
 
-  public LogReplicator(LogReplicationAppender appender, RestoreClient client, Executor executor) {
-    this(appender, client, executor, new ZbLogger(LogReplicator.class));
+  public LogReplicator(
+      int partitionId, LogReplicationAppender appender, RestoreClient client, Executor executor) {
+    this(partitionId, appender, client, executor, new ZbLogger(LogReplicator.class));
   }
 
   public LogReplicator(
-      LogReplicationAppender appender, RestoreClient client, Executor executor, Logger logger) {
+      int partitionId,
+      LogReplicationAppender appender,
+      RestoreClient client,
+      Executor executor,
+      Logger logger) {
+    this.partitionId = partitionId;
     this.appender = appender;
     this.client = client;
     this.executor = executor;
@@ -57,15 +64,21 @@ public class LogReplicator {
         .whenCompleteAsync(
             (r, e) -> {
               if (e != null) {
-                logger.debug("Error replicating {} from {}", request, server, e);
+                logger.error(
+                    "Error replicating {} from {} for partition {}",
+                    request,
+                    server,
+                    partitionId,
+                    e);
                 result.completeExceptionally(e);
               } else {
                 if (!r.isValid()) {
                   logger.debug(
-                      "Received invalid response {} when requesting {} from {}",
+                      "Received invalid response {} when requesting {} from {} for partition {}",
                       r,
                       request,
-                      server);
+                      server,
+                      partitionId);
                   result.completeExceptionally(
                       new InvalidLogReplicationResponse(server, request, r));
                   return;
@@ -93,11 +106,17 @@ public class LogReplicator {
       final long appendResult =
           appender.append(response.getToPosition(), response.getSerializedEvents());
       if (appendResult <= 0) {
-        logger.debug("Failed to append events from {} - {} with result {}", from, to, appendResult);
+        logger.error(
+            "Failed to append events to partition {} ({} - {}) with result {}",
+            partitionId,
+            from,
+            to,
+            appendResult);
         result.completeExceptionally(new FailedAppendException(server, from, to, appendResult));
       }
     } catch (RuntimeException error) {
-      logger.debug("Error when appending events from {} - {}", from, to, error);
+      logger.error(
+          "Error while appending events to partition {} ({} - {})", partitionId, from, to, error);
       result.completeExceptionally(error);
       return false;
     }

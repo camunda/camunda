@@ -26,4 +26,5 @@
       <url>http://repository-ci-camunda-cloud.nexus:8081/content/groups/internal/</url>
     </mirror>
   </mirrors>
+  <localRepository>/home/jenkins/agent/.m2/repository/</localRepository>
 </settings>

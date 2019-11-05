@@ -10,6 +10,7 @@ package io.zeebe.engine.processor.workflow;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.processor.workflow.instance.CreateWorkflowInstanceProcessor;
+import io.zeebe.engine.processor.workflow.instance.CreateWorkflowInstanceWithResultProcessor;
 import io.zeebe.engine.processor.workflow.message.CloseWorkflowInstanceSubscription;
 import io.zeebe.engine.processor.workflow.message.CorrelateWorkflowInstanceSubscription;
 import io.zeebe.engine.processor.workflow.message.OpenWorkflowInstanceSubscriptionProcessor;
@@ -153,10 +154,17 @@ public class WorkflowEventProcessors {
     final VariablesState variablesState = elementInstanceState.getVariablesState();
     final KeyGenerator keyGenerator = zeebeState.getKeyGenerator();
 
+    final CreateWorkflowInstanceProcessor createProcessor =
+        new CreateWorkflowInstanceProcessor(
+            workflowState, elementInstanceState, variablesState, keyGenerator);
     typedRecordProcessors.onCommand(
         ValueType.WORKFLOW_INSTANCE_CREATION,
         WorkflowInstanceCreationIntent.CREATE,
-        new CreateWorkflowInstanceProcessor(
-            workflowState, elementInstanceState, variablesState, keyGenerator));
+        createProcessor);
+
+    typedRecordProcessors.onCommand(
+        ValueType.WORKFLOW_INSTANCE_CREATION,
+        WorkflowInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT,
+        new CreateWorkflowInstanceWithResultProcessor(createProcessor, elementInstanceState));
   }
 }

@@ -8,22 +8,13 @@
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
 public class ExecutableBoundaryEvent extends ExecutableCatchEventElement {
-  private boolean cancelActivity;
 
   public ExecutableBoundaryEvent(String id) {
     super(id);
   }
 
-  public boolean cancelActivity() {
-    return cancelActivity;
-  }
-
   @Override
   public boolean shouldCloseMessageSubscriptionOnCorrelate() {
-    return cancelActivity;
-  }
-
-  public void setCancelActivity(boolean cancelActivity) {
-    this.cancelActivity = cancelActivity;
+    return interrupting();
   }
 }

@@ -34,6 +34,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceWithResultResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
@@ -51,6 +53,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.msgpack.MsgpackPropertyException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -139,6 +142,26 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         RequestMapper::toCreateWorkflowInstanceRequest,
         ResponseMapper::toCreateWorkflowInstanceResponse,
         responseObserver);
+  }
+
+  @Override
+  public void createWorkflowInstanceWithResult(
+      CreateWorkflowInstanceWithResultRequest request,
+      StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
+    if (request.getRequestTimeout() > 0) {
+      sendRequest(
+          request,
+          RequestMapper::toCreateWorkflowInstanceWithResultRequest,
+          ResponseMapper::toCreateWorkflowInstanceWithResultResponse,
+          responseObserver,
+          Duration.ofMillis(request.getRequestTimeout()));
+    } else {
+      sendRequest(
+          request,
+          RequestMapper::toCreateWorkflowInstanceWithResultRequest,
+          ResponseMapper::toCreateWorkflowInstanceWithResultResponse,
+          responseObserver);
+    }
   }
 
   @Override
@@ -246,6 +269,52 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
       final StreamObserver<GrpcResponseT> streamObserver) {
 
+    final BrokerRequest<BrokerResponseT> brokerRequest =
+        mapRequest(grpcRequest, requestMapper, streamObserver);
+    if (brokerRequest == null) {
+      return;
+    }
+
+    brokerClient.sendRequest(
+        brokerRequest,
+        (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
+        error -> streamObserver.onError(convertThrowable(error)));
+  }
+
+  private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(
+      final GrpcRequestT grpcRequest,
+      final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
+      final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
+      final StreamObserver<GrpcResponseT> streamObserver,
+      Duration timeout) {
+
+    final BrokerRequest<BrokerResponseT> brokerRequest =
+        mapRequest(grpcRequest, requestMapper, streamObserver);
+    if (brokerRequest == null) {
+      return;
+    }
+
+    brokerClient.sendRequest(
+        brokerRequest,
+        (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
+        error -> streamObserver.onError(convertThrowable(error)),
+        timeout);
+  }
+
+  private <BrokerResponseT, GrpcResponseT> void consumeResponse(
+      BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
+      StreamObserver<GrpcResponseT> streamObserver,
+      long key,
+      BrokerResponseT response) {
+    final GrpcResponseT grpcResponse = responseMapper.apply(key, response);
+    streamObserver.onNext(grpcResponse);
+    streamObserver.onCompleted();
+  }
+
+  private <GrpcRequestT, BrokerResponseT, GrpcResponseT> BrokerRequest<BrokerResponseT> mapRequest(
+      final GrpcRequestT grpcRequest,
+      final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
+      final StreamObserver<GrpcResponseT> streamObserver) {
     final BrokerRequest<BrokerResponseT> brokerRequest;
     try {
       brokerRequest = requestMapper.apply(grpcRequest);
@@ -253,20 +322,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       streamObserver.onError(
           convertThrowable(
               new GrpcStatusExceptionImpl(e.getMessage(), Status.INVALID_ARGUMENT, e)));
-      return;
+      return null;
     } catch (Exception e) {
       streamObserver.onError(convertThrowable(e));
-      return;
+      return null;
     }
-
-    brokerClient.sendRequest(
-        brokerRequest,
-        (key, response) -> {
-          final GrpcResponseT grpcResponse = responseMapper.apply(key, response);
-          streamObserver.onNext(grpcResponse);
-          streamObserver.onCompleted();
-        },
-        error -> streamObserver.onError(convertThrowable(error)));
+    return brokerRequest;
   }
 
   public static StatusRuntimeException convertThrowable(Throwable cause) {
