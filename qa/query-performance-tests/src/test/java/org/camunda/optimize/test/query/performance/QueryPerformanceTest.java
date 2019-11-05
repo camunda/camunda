@@ -10,7 +10,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.ModelInstance;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -62,7 +61,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
 
-public class QueryPerformanceTest extends AbstractIT {
+public class QueryPerformanceTest {
 
   private static final Logger logger = LoggerFactory.getLogger(QueryPerformanceTest.class);
   private static final String PROPERTY_LOCATION = "query-performance.properties";
@@ -73,13 +72,17 @@ public class QueryPerformanceTest extends AbstractIT {
 
   @RegisterExtension
   @Order(1)
-  public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension = new ElasticSearchIntegrationTestExtension();
+  public static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
+    new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   public static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
   @RegisterExtension
   @Order(3)
-  public static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension("default", false);
+  public static EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension(
+    "default",
+    false
+  );
 
   private static String authenticationToken;
 
@@ -208,9 +211,18 @@ public class QueryPerformanceTest extends AbstractIT {
 
   private static List<DecisionFilterDto> createDecisionFilter() {
     List<DecisionFilterDto> list = new ArrayList<>();
-    list.add(DecisionFilterUtilHelper.createBooleanInputVariableFilter("boolVar", String.valueOf(randomGen.nextBoolean())));
-    list.add(DecisionFilterUtilHelper.createBooleanOutputVariableFilter("boolVar", String.valueOf(randomGen.nextBoolean())));
-    list.add(DecisionFilterUtilHelper.createFixedEvaluationDateFilter(OffsetDateTime.now().minusDays(1L), OffsetDateTime.now()));
+    list.add(DecisionFilterUtilHelper.createBooleanInputVariableFilter(
+      "boolVar",
+      String.valueOf(randomGen.nextBoolean())
+    ));
+    list.add(DecisionFilterUtilHelper.createBooleanOutputVariableFilter(
+      "boolVar",
+      String.valueOf(randomGen.nextBoolean())
+    ));
+    list.add(DecisionFilterUtilHelper.createFixedEvaluationDateFilter(
+      OffsetDateTime.now().minusDays(1L),
+      OffsetDateTime.now()
+    ));
     return list;
   }
 

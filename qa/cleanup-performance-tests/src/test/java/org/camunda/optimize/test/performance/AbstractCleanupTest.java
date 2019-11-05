@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.test.performance;
 
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
@@ -22,7 +21,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public abstract class AbstractCleanupTest extends AbstractIT {
+public abstract class AbstractCleanupTest {
   protected static final Logger logger = LoggerFactory.getLogger(AbstractCleanupTest.class);
 
   private static final Properties properties = PropertyUtil.loadProperties("static-cleanup-test.properties");

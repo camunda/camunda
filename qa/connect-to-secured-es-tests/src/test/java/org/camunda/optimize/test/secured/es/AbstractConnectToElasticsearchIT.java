@@ -5,18 +5,21 @@
  */
 package org.camunda.optimize.test.secured.es;
 
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public abstract class AbstractConnectToElasticsearchIT extends AbstractIT {
+public abstract class AbstractConnectToElasticsearchIT {
+
+  @RegisterExtension
+  public EmbeddedOptimizeExtension embeddedOptimizeExtension = getEmbeddedOptimizeExtension();
 
   protected abstract EmbeddedOptimizeExtension getEmbeddedOptimizeExtension();
 
