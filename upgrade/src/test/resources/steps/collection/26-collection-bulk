@@ -1,0 +1,2 @@
+{"index":{"_index":"optimize-collection_v3","_type":"_doc","_id":"89f9000b-1ab6-42b0-aa49-8f02bbd95309"}}
+{"id":"89f9000b-1ab6-42b0-aa49-8f02bbd95309","name":"New Collection","lastModified":"2019-11-05T11:16:29.534+0100","created":"2019-11-05T11:16:29.534+0100","owner":"demo","lastModifier":"demo","data":{"configuration": {},"roles":[{"id":"USER:demo","identity":{"id":"demo","firstName":null,"lastName":null,"email":null,"type":"user","name":null},"role":"manager"}],"scope":[]}}

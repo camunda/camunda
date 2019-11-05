@@ -60,6 +60,7 @@ public class UpgradePrivateAlertArchiveIT extends AbstractUpgradeIT {
     }
     setMetadataIndexVersionWithType(FROM_VERSION, METADATA_INDEX.getIndexName());
 
+    executeBulk("steps/collection/26-collection-bulk");
     executeBulk("steps/report_data/26-single-decision-report-bulk");
     executeBulk("steps/report_data/26-single-process-report-bulk");
     executeBulk("steps/alert_data/26-alert-bulk");

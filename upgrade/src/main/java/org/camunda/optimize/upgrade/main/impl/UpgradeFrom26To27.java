@@ -256,9 +256,8 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .collect(toList());
 
     // Map all reports without collectionIds to their owner userIds
-    Map<String, List<String>> userIdToReportIdMap = reportReader.getAllReportsForIdsOmitXml(reportIds)
+    Map<String, List<String>> userIdToReportIdMap = reportReader.getAllPrivateReportsForIdsOmitXml(reportIds)
       .stream()
-      .filter(reportDto -> reportDto.getCollectionId() == null)
       .collect(groupingBy(
         ReportDefinitionDto::getOwner,
         mapping(ReportDefinitionDto::getId, toList())

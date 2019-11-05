@@ -154,7 +154,14 @@ public class ReportService implements CollectionReferencingService {
     final String oldCollectionId = originalReportDefinition.getCollectionId();
     final String newCollectionId = Objects.equals(oldCollectionId, collectionId) ? oldCollectionId : collectionId;
 
-    return copyAndMoveReport(originalReportDefinition, userId, newReportName, newCollectionId, existingReportCopies, keepReportNames);
+    return copyAndMoveReport(
+      originalReportDefinition,
+      userId,
+      newReportName,
+      newCollectionId,
+      existingReportCopies,
+      keepReportNames
+    );
   }
 
   public AuthorizedReportDefinitionDto getReportDefinition(final String reportId, final String userId) {
@@ -168,10 +175,7 @@ public class ReportService implements CollectionReferencingService {
 
   public List<AuthorizedReportDefinitionDto> findAndFilterPrivateReports(String userId,
                                                                          MultivaluedMap<String, String> queryParameters) {
-    List<ReportDefinitionDto> reports = reportReader.getAllReportsOmitXml()
-      .stream()
-      .filter(report -> report.getCollectionId() == null)
-      .collect(Collectors.toList());
+    List<ReportDefinitionDto> reports = reportReader.getAllPrivateReportsOmitXml();
     List<AuthorizedReportDefinitionDto> authorizedReports = filterAuthorizedReports(userId, reports);
     return QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(authorizedReports, queryParameters);
   }
@@ -391,7 +395,15 @@ public class ReportService implements CollectionReferencingService {
       }
     } else {
       CombinedReportDefinitionDto combinedReportDefinition = (CombinedReportDefinitionDto) originalReportDefinition;
-      return copyAndMoveCombinedReport(userId, newName, newCollectionId, oldCollectionId, combinedReportDefinition.getData(), existingReportCopies, keepReportNames);
+      return copyAndMoveCombinedReport(
+        userId,
+        newName,
+        newCollectionId,
+        oldCollectionId,
+        combinedReportDefinition.getData(),
+        existingReportCopies,
+        keepReportNames
+      );
     }
   }
 
