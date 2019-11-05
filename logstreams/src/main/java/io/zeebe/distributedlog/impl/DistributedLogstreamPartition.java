@@ -118,4 +118,8 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
         .withProtocol(PROTOCOL)
         .buildAsync();
   }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
 }
