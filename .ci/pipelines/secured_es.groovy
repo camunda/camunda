@@ -235,7 +235,7 @@ pipeline {
 
 void securityTestSteps() {
     git url: 'git@github.com:camunda/camunda-optimize',
-            branch: "master",
+            branch: "${params.BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
     container('maven') {
