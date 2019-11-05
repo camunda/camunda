@@ -31,7 +31,7 @@
     "react-table": "^6.10.3",
     "spinkit": "^1.2.5",
     "string.prototype.includes": "^1.0.0",
-    "table-js": "^6.0.0"
+    "table-js": "^6.0.1"
   },
   "scripts": {
     "start": "react-scripts start",
