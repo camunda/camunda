@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.cleanup;
 
 import org.apache.commons.collections.ListUtils;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
@@ -36,9 +36,9 @@ import java.util.stream.IntStream;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
@@ -195,7 +195,10 @@ public class OptimizeProcessCleanupServiceTest {
     final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
 
     //then it fails with an exception
-    OptimizeConfigurationException exception = assertThrows(OptimizeConfigurationException.class, () -> doCleanup(underTest));
+    OptimizeConfigurationException exception = assertThrows(
+      OptimizeConfigurationException.class,
+      () -> doCleanup(underTest)
+    );
     assertThat(exception.getMessage(), containsString(configuredKey));
   }
 
@@ -289,7 +292,9 @@ public class OptimizeProcessCleanupServiceTest {
   }
 
   private ProcessDefinitionOptimizeDto createProcessDefinitionDto(String key) {
-    ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = new ProcessDefinitionOptimizeDto().setKey(key);
+    final ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = ProcessDefinitionOptimizeDto.builder()
+      .key(key)
+      .build();
     return processDefinitionOptimizeDto;
   }
 

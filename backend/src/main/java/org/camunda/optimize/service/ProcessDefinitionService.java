@@ -8,7 +8,7 @@ package org.camunda.optimize.service;
 
 
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;

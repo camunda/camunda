@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.definition;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 
 import java.util.ArrayList;
 import java.util.Comparator;

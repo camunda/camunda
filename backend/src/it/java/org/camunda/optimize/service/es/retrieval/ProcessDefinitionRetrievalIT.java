@@ -9,7 +9,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -264,10 +264,11 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
   }
 
   private void addProcessDefinitionWithoutXmlToElasticsearch() {
-    ProcessDefinitionOptimizeDto processDefinitionWithoutXml = new ProcessDefinitionOptimizeDto()
-      .setId("aProcDefId")
-      .setKey("aProcDefKey")
-      .setVersion("aProcDefVersion");
+    ProcessDefinitionOptimizeDto processDefinitionWithoutXml = ProcessDefinitionOptimizeDto.builder()
+      .id("aProcDefId")
+      .key("aProcDefKey")
+      .version("aProcDefVersion")
+      .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       PROCESS_DEFINITION_INDEX_NAME,
       "fooId",

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;

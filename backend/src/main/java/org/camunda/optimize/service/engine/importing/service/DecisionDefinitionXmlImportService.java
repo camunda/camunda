@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
@@ -76,8 +76,8 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
     String decisionKey = resolveDecisionDefinitionKey(engineEntity);
     return new DecisionDefinitionOptimizeDto(
       engineEntity.getId(),
-      engineEntity.getDmnXml(),
       engineContext.getEngineAlias(),
+      engineEntity.getDmnXml(),
       extractInputVariables(dmnModelInstance, decisionKey),
       extractOutputVariables(dmnModelInstance, decisionKey)
     );

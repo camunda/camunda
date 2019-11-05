@@ -751,6 +751,24 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetDefinitionByTypeAndKeyRequest(final String type, final String key) {
+    this.path = "/definition/" + type + "/" + key;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitions() {
+    this.path = "/definition";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionsGroupedByTenant() {
+    this.path = "/definition/_groupByTenant";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetDecisionDefinitionsRequest() {
     this.path = "decision-definition";
     this.requestType = GET;

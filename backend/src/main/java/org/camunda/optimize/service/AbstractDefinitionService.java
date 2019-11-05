@@ -7,9 +7,9 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionWithTenants;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 

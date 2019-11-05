@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.job.importing;
 
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
 

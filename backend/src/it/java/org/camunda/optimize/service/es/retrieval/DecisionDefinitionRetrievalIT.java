@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.junit.jupiter.api.Test;
 
@@ -203,10 +203,11 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
 
 
   private void addDecisionDefinitionWithoutXmlToElasticsearch() {
-    final DecisionDefinitionOptimizeDto decisionDefinitionWithoutXml = new DecisionDefinitionOptimizeDto()
-      .setId("aDecDefId")
-      .setKey("aDecDefKey")
-      .setVersion("aDevDefVersion");
+    final DecisionDefinitionOptimizeDto decisionDefinitionWithoutXml = DecisionDefinitionOptimizeDto.builder()
+      .id("aDecDefId")
+      .key("aDecDefKey")
+      .version("aDevDefVersion")
+      .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, "fooId", decisionDefinitionWithoutXml);
   }
 

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.cleanup;
 
 import org.apache.commons.collections.ListUtils;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
@@ -220,7 +220,9 @@ public class OptimizeDecisionCleanupServiceTest {
   }
 
   private DecisionDefinitionOptimizeDto createDecisionDefinitionDto(String key) {
-    DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto = new DecisionDefinitionOptimizeDto().setKey(key);
+    final DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto = DecisionDefinitionOptimizeDto.builder()
+      .key(key)
+      .build();
     return decisionDefinitionOptimizeDto;
   }
 

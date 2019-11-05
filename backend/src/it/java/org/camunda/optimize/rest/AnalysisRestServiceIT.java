@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
@@ -83,12 +83,13 @@ public class AnalysisRestServiceIT extends AbstractIT {
   }
 
   private void setupFullInstanceFlow() throws IOException {
-    final ProcessDefinitionOptimizeDto processDefinitionXmlDto = new ProcessDefinitionOptimizeDto()
-      .setId(PROCESS_DEFINITION_ID)
-      .setKey(PROCESS_DEFINITION_KEY)
-      .setVersion(PROCESS_DEFINITION_VERSION_1)
-      .setEngine(DEFAULT_ENGINE_ALIAS)
-      .setBpmn20Xml(readDiagram());
+    final ProcessDefinitionOptimizeDto processDefinitionXmlDto = ProcessDefinitionOptimizeDto.builder()
+      .id(PROCESS_DEFINITION_ID)
+      .key(PROCESS_DEFINITION_KEY)
+      .version(PROCESS_DEFINITION_VERSION_1)
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .bpmn20Xml(readDiagram())
+      .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID, processDefinitionXmlDto);
 
     processDefinitionXmlDto.setId(PROCESS_DEFINITION_ID_2);

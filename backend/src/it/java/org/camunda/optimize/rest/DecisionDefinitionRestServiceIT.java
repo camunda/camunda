@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.junit.jupiter.api.Test;
 
@@ -299,15 +299,16 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
                                                                     final String version,
                                                                     final String tenantId,
                                                                     final String name) {
-    DecisionDefinitionOptimizeDto decisionDefinitionDto = new DecisionDefinitionOptimizeDto()
-      .setId(key + "-" + version + "-" + tenantId)
-      .setKey(key)
-      .setVersion(version)
-      .setVersionTag(VERSION_TAG)
-      .setTenantId(tenantId)
-      .setEngine(DEFAULT_ENGINE_ALIAS)
-      .setName(name)
-      .setDmn10Xml("id-" + key + "-version-" + version + "-" + tenantId);
+    final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
+      .id(key + "-" + version + "-" + tenantId)
+      .key(key)
+      .version(version)
+      .versionTag(VERSION_TAG)
+      .tenantId(tenantId)
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .name(name)
+      .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
+      .build();
     addDecisionDefinitionToElasticsearch(decisionDefinitionDto);
     return decisionDefinitionDto;
   }

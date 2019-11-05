@@ -8,7 +8,7 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
 import org.camunda.optimize.rest.providers.CacheRequest;

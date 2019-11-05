@@ -7,7 +7,7 @@ package org.camunda.optimize.service.engine.importing.service;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.springframework.stereotype.Component;
 

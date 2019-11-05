@@ -7,6 +7,7 @@ package org.camunda.optimize.rest.providers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.glassfish.jersey.server.ParamException;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
@@ -33,8 +34,9 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
     if (NotFoundException.class.equals(errorClass)) {
       return Response.Status.NOT_FOUND;
-    }
-    if (BadRequestException.class.equals(errorClass)) {
+    } else if (BadRequestException.class.equals(errorClass)) {
+      return Response.Status.BAD_REQUEST;
+    } else if (ParamException.PathParamException.class.equals(errorClass)) {
       return Response.Status.BAD_REQUEST;
     }
 

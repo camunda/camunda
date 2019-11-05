@@ -6,7 +6,7 @@
 package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
@@ -13,20 +12,20 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class ProcessDefinitionIndex extends StrictIndexMappingCreator {
+public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
 
   public static final int VERSION = 2;
 
-  public static final String PROCESS_DEFINITION_ID = "id";
-  public static final String PROCESS_DEFINITION_KEY = "key";
-  public static final String PROCESS_DEFINITION_VERSION = "version";
-  public static final String PROCESS_DEFINITION_VERSION_TAG = "versionTag";
-  public static final String PROCESS_DEFINITION_NAME = "name";
+  public static final String PROCESS_DEFINITION_ID = DEFINITION_ID;
+  public static final String PROCESS_DEFINITION_KEY = DEFINITION_KEY;
+  public static final String PROCESS_DEFINITION_VERSION = DEFINITION_VERSION;
+  public static final String PROCESS_DEFINITION_VERSION_TAG = DEFINITION_VERSION_TAG;
+  public static final String PROCESS_DEFINITION_NAME = DEFINITION_NAME;
   public static final String PROCESS_DEFINITION_XML = "bpmn20Xml";
   public static final String FLOW_NODE_NAMES = "flowNodeNames";
   public static final String USER_TASK_NAMES = "userTaskNames";
-  public static final String ENGINE = "engine";
-  public static final String TENANT_ID = "tenantId";
+  public static final String ENGINE = DEFINITION_ENGINE;
+  public static final String TENANT_ID = DEFINITION_TENANT_ID;
 
   @Override
   public String getIndexName() {
@@ -41,28 +40,7 @@ public class ProcessDefinitionIndex extends StrictIndexMappingCreator {
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    return xContentBuilder
-      .startObject(PROCESS_DEFINITION_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_DEFINITION_KEY)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_DEFINITION_VERSION)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_DEFINITION_VERSION_TAG)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(ENGINE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(TENANT_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(PROCESS_DEFINITION_NAME)
-        .field("type", "keyword")
-      .endObject()
+    return super.addProperties(xContentBuilder)
       .startObject(FLOW_NODE_NAMES)
         .field("type", "object")
         .field("enabled", "false")

@@ -9,7 +9,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -256,11 +256,12 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void xmlFetchingIsNotRetriedOn4xx() throws IOException {
-    final ProcessDefinitionOptimizeDto procDef = new ProcessDefinitionOptimizeDto()
-      .setId("123")
-      .setKey("lol")
-      .setVersion("1")
-      .setEngine("1");
+    final ProcessDefinitionOptimizeDto procDef = ProcessDefinitionOptimizeDto.builder()
+      .id("123")
+      .key("lol")
+      .version("1")
+      .engine("1")
+      .build();
 
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, procDef.getId(), procDef);
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();

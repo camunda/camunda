@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeNamesResponseDto;
 import org.junit.jupiter.api.Test;
@@ -138,12 +138,13 @@ public class FlowNodeRestServiceIT extends AbstractIT {
                                        final Map<String, String> flowNodeNames,
                                        final String tenantId) {
     String expectedProcessDefinitionId = processDefinitionKey + ":" + processDefinitionVersion;
-    ProcessDefinitionOptimizeDto expected = new ProcessDefinitionOptimizeDto()
-      .setId(expectedProcessDefinitionId)
-      .setKey(processDefinitionKey)
-      .setVersion(processDefinitionVersion)
-      .setTenantId(tenantId)
-      .setEngine("testEngine");
+    ProcessDefinitionOptimizeDto expected = ProcessDefinitionOptimizeDto.builder()
+      .id(expectedProcessDefinitionId)
+      .key(processDefinitionKey)
+      .version(processDefinitionVersion)
+      .tenantId(tenantId)
+      .engine("testEngine")
+      .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedProcessDefinitionId, expected);
     createProcessDefinitionXml(processDefinitionKey, processDefinitionVersion, flowNodeNames, tenantId);
   }
@@ -153,13 +154,14 @@ public class FlowNodeRestServiceIT extends AbstractIT {
                                           final Map<String, String> flowNodeNames,
                                           final String tenantId) {
     String expectedProcessDefinitionId = processDefinitionKey + ":" + processDefinitionVersion;
-    ProcessDefinitionOptimizeDto expectedXml = new ProcessDefinitionOptimizeDto()
-      .setId(expectedProcessDefinitionId)
-      .setKey(processDefinitionKey)
-      .setVersion(processDefinitionVersion)
-      .setTenantId(tenantId)
-      .setFlowNodeNames(flowNodeNames)
-      .setBpmn20Xml("XML123");
+    ProcessDefinitionOptimizeDto expectedXml = ProcessDefinitionOptimizeDto.builder()
+      .id(expectedProcessDefinitionId)
+      .key(processDefinitionKey)
+      .version(processDefinitionVersion)
+      .tenantId(tenantId)
+      .flowNodeNames(flowNodeNames)
+      .bpmn20Xml("XML123")
+      .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, expectedProcessDefinitionId, expectedXml);
   }
 }

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.junit.jupiter.api.Test;
 
@@ -300,15 +300,16 @@ public class ProcessDefinitionRestServiceIT extends AbstractDefinitionRestServic
                                                                            final String version,
                                                                            final String tenantId,
                                                                            final String name) {
-    final ProcessDefinitionOptimizeDto expectedDto = new ProcessDefinitionOptimizeDto()
-      .setId(key + "-" + version + "-" + tenantId)
-      .setKey(key)
-      .setName(name)
-      .setVersion(version)
-      .setVersionTag(VERSION_TAG)
-      .setTenantId(tenantId)
-      .setEngine(DEFAULT_ENGINE_ALIAS)
-      .setBpmn20Xml(key + version + tenantId);
+    final ProcessDefinitionOptimizeDto expectedDto = ProcessDefinitionOptimizeDto.builder()
+      .id(key + "-" + version + "-" + tenantId)
+      .key(key)
+      .name(name)
+      .version(version)
+      .versionTag(VERSION_TAG)
+      .tenantId(tenantId)
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .bpmn20Xml(key + version + tenantId)
+      .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       PROCESS_DEFINITION_INDEX_NAME,
       expectedDto.getId(),
