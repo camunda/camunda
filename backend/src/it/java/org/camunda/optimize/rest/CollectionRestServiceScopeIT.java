@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -17,16 +18,17 @@ import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefini
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
+import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.Collections;
-import java.util.stream.Collectors;
+import java.util.List;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 
 public class CollectionRestServiceScopeIT extends AbstractIT {
 
@@ -45,9 +47,58 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus()).isEqualTo(204);
     final SimpleCollectionDefinitionDto collection = getCollection(collectionId);
-    assertThat(collection.getData().getScope(), is(expectedCollection.getData().getScope()));
+    assertThat(collection.getData().getScope()).isEqualTo(expectedCollection.getData().getScope());
+  }
+
+  @Test
+  public void getScopeForCollection() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    addScopeEntryToCollection(collectionId, entry);
+
+    // when
+    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetScopeForCollectionRequest(collectionId)
+      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      });
+
+    // then
+    assertThat(scopeEntries)
+      .containsExactly(
+        new CollectionScopeEntryRestDto().setDefinitionKey("_KEY_")
+          .setDefinitionName("_KEY_")
+          .setDefinitionType(PROCESS)
+          .setTenants(Collections.singletonList(TENANT_NOT_DEFINED))
+      );
+  }
+
+  @Test
+  public void scopesAreOrderByDefinitionTypeAndThenDefinitionName() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto decisionScope1 = createSimpleScopeEntry("DECISION_KEY_LAST", DECISION);
+    final CollectionScopeEntryDto decisionScope2 = createSimpleScopeEntry("DECISION_KEY_FIRST", DECISION);
+    final CollectionScopeEntryDto processScope1 = createSimpleScopeEntry("PROCESS_KEY_LAST", PROCESS);
+    final CollectionScopeEntryDto processScope2 = createSimpleScopeEntry("PROCESS_KEY_FIRST", PROCESS);
+    addScopeEntryToCollection(collectionId, decisionScope1);
+    addScopeEntryToCollection(collectionId, processScope1);
+    addScopeEntryToCollection(collectionId, decisionScope2);
+    addScopeEntryToCollection(collectionId, processScope2);
+
+    // when
+    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetScopeForCollectionRequest(collectionId)
+      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
+      });
+
+    // then
+    assertThat(scopeEntries)
+      .hasSize(4)
+      .extracting(CollectionScopeEntryRestDto::getDefinitionName)
+      .containsExactly("PROCESS_KEY_FIRST", "PROCESS_KEY_LAST", "DECISION_KEY_FIRST","DECISION_KEY_LAST");
   }
 
   @Test
@@ -63,9 +114,9 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute(SimpleCollectionDefinitionDto.class, 200);
 
     // then
-    assertThat(scopeEntryId, is("process:_KEY_"));
-    assertThat(collectionDefinitionDto.getData().getScope().size(), is(1));
-    assertThat(collectionDefinitionDto.getData().getScope().get(0).getId(), is(scopeEntryId));
+    assertThat(scopeEntryId).isEqualTo("process:_KEY_");
+    assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
+    assertThat(collectionDefinitionDto.getData().getScope().get(0).getId()).isEqualTo(scopeEntryId);
   }
 
   @Test
@@ -84,9 +135,9 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute(SimpleCollectionDefinitionDto.class, 200);
 
     // then
-    assertThat(scopeEntryId1, is("process:_KEY1_"));
-    assertThat(scopeEntryId2, is("process:_KEY2_"));
-    assertThat(collectionDefinitionDto.getData().getScope(), containsInAnyOrder(entry1, entry2));
+    assertThat(scopeEntryId1).isEqualTo("process:_KEY1_");
+    assertThat(scopeEntryId2).isEqualTo("process:_KEY2_");
+    assertThat(collectionDefinitionDto.getData().getScope()).containsExactlyInAnyOrder(entry1, entry2);
   }
 
   @Test
@@ -122,8 +173,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .buildGetCollectionRequest(collectionId)
       .execute(ResolvedCollectionDefinitionDto.class, 200);
 
-    assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().size(), is(1));
-    assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().get(0), is("1"));
+    assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().size()).isEqualTo(1);
+    assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().get(0)).isEqualTo("1");
   }
 
   @Test
@@ -145,9 +196,9 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(HttpStatus.SC_NOT_FOUND));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NOT_FOUND);
 
-    assertThat(getCollection(collectionId), is(expectedCollection));
+    assertThat(getCollection(collectionId)).isEqualTo(expectedCollection);
   }
 
   @Test
@@ -161,7 +212,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .buildGetCollectionRequest(collectionId)
       .execute(SimpleCollectionDefinitionDto.class, 200);
 
-    assertThat(collectionDefinitionDto.getData().getScope().size(), is(1));
+    assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
 
     embeddedOptimizeExtension.getRequestExecutor()
       .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
@@ -171,7 +222,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .buildGetCollectionRequest(collectionId)
       .execute(SimpleCollectionDefinitionDto.class, 200);
 
-    assertThat(collectionDefinitionDto.getData().getScope().size(), is(0));
+    assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(0);
   }
 
   @Test
@@ -190,10 +241,9 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
       .execute(ConflictResponseDto.class, 409);
 
-    assertThat(
-      conflictResponseDto.getConflictedItems().stream().map(ConflictedItemDto::getId).collect(Collectors.toList()),
-      contains(reportId)
-    );
+    assertThat(conflictResponseDto.getConflictedItems())
+      .extracting(ConflictedItemDto::getId)
+      .containsExactly(reportId);
   }
 
   @Test
@@ -206,8 +256,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   }
 
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey) {
+    return createSimpleScopeEntry(definitionKey, PROCESS);
+  }
+
+  private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
     return new CollectionScopeEntryDto(
-      DefinitionType.PROCESS, definitionKey, Collections.singletonList("ALL"), Collections.singletonList(null)
+      definitionType, definitionKey, Collections.singletonList(null), Collections.singletonList("ALL")
     );
   }
 

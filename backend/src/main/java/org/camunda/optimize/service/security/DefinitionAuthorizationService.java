@@ -6,12 +6,11 @@
 package org.camunda.optimize.service.security;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import lombok.Value;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.importing.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionOptimizeDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.TenantService;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
@@ -39,6 +39,11 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class DefinitionAuthorizationService
   extends AbstractCachingAuthorizationService<Map<String, EngineAuthorizations>> {
   private static final List<String> RELEVANT_PERMISSIONS = ImmutableList.of(ALL_PERMISSION, READ_HISTORY_PERMISSION);
+  private static final Map<DefinitionType, Integer> definitionToResourceType =
+    ImmutableMap.of(
+      DefinitionType.DECISION, RESOURCE_TYPE_DECISION_DEFINITION,
+      DefinitionType.PROCESS, RESOURCE_TYPE_PROCESS_DEFINITION
+    );
 
   private final ApplicationAuthorizationService applicationAuthorizationService;
   private final TenantAuthorizationService tenantAuthorizationService;
@@ -94,21 +99,6 @@ public class DefinitionAuthorizationService
     );
   }
 
-  public boolean isAuthorizedToSeeDefinition(final String userId,
-                                             final DefinitionOptimizeDto definition) {
-    if (definition instanceof ProcessDefinitionOptimizeDto) {
-      return isAuthorizedToSeeFullyQualifiedDefinition(
-        userId, definition.getKey(), RESOURCE_TYPE_PROCESS_DEFINITION, definition.getTenantId(), definition.getEngine()
-      );
-    } else if (definition instanceof DecisionDefinitionOptimizeDto) {
-      return isAuthorizedToSeeFullyQualifiedDefinition(
-        userId, definition.getKey(), RESOURCE_TYPE_DECISION_DEFINITION, definition.getTenantId(), definition.getEngine()
-      );
-    } else {
-      throw new OptimizeRuntimeException("Unsupported definition type: " + definition.getClass().getSimpleName());
-    }
-  }
-
   public boolean isAuthorizedToSeeProcessDefinition(final String userId,
                                                     final String definitionKey,
                                                     final List<String> tenantIds) {
@@ -125,10 +115,28 @@ public class DefinitionAuthorizationService
     );
   }
 
-  public boolean isAuthorizedToSeeDefinition(final String userId,
+  public boolean isAuthorizedToSeeDefinitionWithAtLeastOneTenantAuthorized(final String userId,
+                                                                           final String definitionKey,
+                                                                           final DefinitionType definitionType,
+                                                                           final List<String> tenantIds) {
+    final Integer resourceType = definitionToResourceType.get(definitionType);
+    // user needs to be authorized for at least one considered tenant & engine pairs to get access
+    return isAuthorizedToSeeDefinition(userId, definitionKey, resourceType, tenantIds, Boolean::logicalOr);
+  }
+
+  private boolean isAuthorizedToSeeDefinition(final String userId,
+                                              final String definitionKey,
+                                              final int resourceType,
+                                              final List<String> tenantIds) {
+    // user needs to be authorized for all considered tenant & engine pairs to get access
+    return isAuthorizedToSeeDefinition(userId, definitionKey, resourceType, tenantIds, Boolean::logicalAnd);
+  }
+
+  private boolean isAuthorizedToSeeDefinition(final String userId,
                                              final String definitionKey,
                                              final int resourceType,
-                                             final List<String> tenantIds) {
+                                             final List<String> tenantIds,
+                                             final BinaryOperator<Boolean> combineTenantAuthorizationChecks) {
     if (definitionKey == null || definitionKey.isEmpty()) {
       return true;
     }
@@ -152,8 +160,7 @@ public class DefinitionAuthorizationService
       .map(tenantAndEnginePair -> isAuthorizedToSeeFullyQualifiedDefinition(
         userId, definitionKey, resourceType, tenantAndEnginePair.getTenantId(), tenantAndEnginePair.getEngine()
       ))
-      // user needs to be authorized for all considered tenant & engine pairs to get access
-      .reduce(Boolean::logicalAnd)
+      .reduce(combineTenantAuthorizationChecks)
       .orElse(false);
   }
 

@@ -16,8 +16,10 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.report.ReportService;
@@ -48,6 +50,7 @@ import java.util.Optional;
 public class CollectionRestService {
   private final AlertService alertService;
   private final CollectionService collectionService;
+  private final CollectionScopeService collectionScopeService;
   private final SessionService sessionService;
   private final ReportService reportService;
 
@@ -153,9 +156,19 @@ public class CollectionRestService {
   public void updateScopeEntry(@Context ContainerRequestContext requestContext,
                                @PathParam("id") String collectionId,
                                @NotNull CollectionScopeEntryUpdateDto entryDto,
-                               @PathParam("scopeEntryId") String scopeEntryId) throws OptimizeConflictException {
+                               @PathParam("scopeEntryId") String scopeEntryId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     collectionService.updateScopeEntry(userId, collectionId, entryDto, scopeEntryId);
+  }
+
+  @GET
+  @Path("/{id}/scope")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public List<CollectionScopeEntryRestDto> getScopes(@Context ContainerRequestContext requestContext,
+                                                     @PathParam("id") String collectionId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return collectionScopeService.getCollectionScope(userId, collectionId);
   }
 
   @GET

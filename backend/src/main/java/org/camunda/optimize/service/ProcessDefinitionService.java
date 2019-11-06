@@ -42,12 +42,6 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
 
   public Optional<String> getProcessDefinitionXml(final String userId,
                                                   final String definitionKey,
-                                                  final String definitionVersion) {
-    return getProcessDefinitionXml(userId, definitionKey, definitionVersion, null);
-  }
-
-  public Optional<String> getProcessDefinitionXml(final String userId,
-                                                  final String definitionKey,
                                                   final List<String> definitionVersions,
                                                   final String tenantId) {
     String mostRecentValidVersion = convertToValidDefinitionVersion(

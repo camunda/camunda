@@ -188,7 +188,7 @@ public class CollectionService {
   public void updateScopeEntry(String userId,
                                String collectionId,
                                CollectionScopeEntryUpdateDto entryDto,
-                               String scopeEntryId) throws OptimizeConflictException {
+                               String scopeEntryId) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     collectionWriter.updateScopeEntity(collectionId, entryDto, userId, scopeEntryId);
   }
@@ -315,11 +315,12 @@ public class CollectionService {
     }
   }
 
+  @SuppressWarnings("Convert2MethodRef")
   private void enrichRoleIdentityMetaData(final BaseCollectionDefinitionDto<?> collectionDefinitionDto) {
     final CollectionDataDto collectionData = collectionDefinitionDto.getData();
     collectionData.setRoles(
       collectionData.getRoles().stream()
-        .map(roleDto -> {
+        .peek(roleDto -> {
           final IdentityDto roleIdentity = roleDto.getIdentity();
           switch (roleIdentity.getType()) {
             case GROUP:
@@ -337,7 +338,6 @@ public class CollectionService {
             default:
               throw new OptimizeRuntimeException("Unsupported identity type " + roleIdentity.getType());
           }
-          return roleDto;
         })
         .collect(Collectors.toList())
     );
@@ -378,10 +378,7 @@ public class CollectionService {
       collectionEntities
         .stream()
         .filter(Objects::nonNull)
-        .map(entityDto -> {
-          entityDto.setCurrentUserRole(currentUserResourceRole);
-          return entityDto;
-        })
+        .peek(entityDto -> entityDto.setCurrentUserRole(currentUserResourceRole))
         .sorted(
           Comparator.comparing(EntityDto::getEntityType)
             .thenComparing(EntityDto::getLastModified, Comparator.reverseOrder())

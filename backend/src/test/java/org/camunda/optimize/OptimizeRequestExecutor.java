@@ -878,6 +878,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetScopeForCollectionRequest(final String collectionId) {
+    this.path = "collection/" + collectionId + "/scope";
+    this.requestType = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildAddScopeEntryToCollectionRequest(String collectionId,
                                                                        CollectionScopeEntryDto entryDto) {
     this.path = "collection/" + collectionId + "/scope";
