@@ -32,6 +32,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
@@ -64,6 +65,7 @@ public class CollectionService {
   private final CollectionWriter collectionWriter;
   private final ReportService reportService;
   private final ReportReader reportReader;
+  private final AlertService alertService;
   private final DashboardService dashboardService;
   private final CollectionRelationService collectionRelationService;
   private final AuthorizedEntitiesService entitiesService;
@@ -249,6 +251,7 @@ public class CollectionService {
             )
               .getId()
           );
+          alertService.copyAndMoveAlerts(e.getId(), uniqueReportCopies.get(e.getId()));
           break;
         case DASHBOARD:
           dashboardService.copyAndMoveDashboard(

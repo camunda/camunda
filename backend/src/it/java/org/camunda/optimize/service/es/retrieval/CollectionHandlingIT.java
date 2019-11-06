@@ -12,6 +12,9 @@ import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
@@ -26,13 +29,23 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.util.ProcessReportDataBuilder;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
@@ -42,9 +55,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
@@ -56,6 +75,10 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionHandlingIT extends AbstractIT {
+
+  private static Stream<Integer> definitionTypes() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
+  }
 
   @Test
   public void collectionIsWrittenToElasticsearch() throws IOException {
@@ -657,6 +680,45 @@ public class CollectionHandlingIT extends AbstractIT {
     assertThat(copiedCollectionWithoutNewName.getName().toLowerCase().contains("copy"), is(true));
   }
 
+  @ParameterizedTest(name = "Copy collection and all alerts within the collection for report definition type {0}")
+  @MethodSource("definitionTypes")
+  public void copyCollectionAndAllContainingAlerts(final int definitionType) {
+    // given
+    IdDto originalId = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateCollectionRequest()
+      .execute(IdDto.class, 200);
+
+    List<String> reportsToCopy = new ArrayList<>();
+    reportsToCopy.add(createReportForCollection(originalId.getId(), definitionType));
+    reportsToCopy.add(createReportForCollection(originalId.getId(), definitionType));
+
+    List<String> alertsToCopy = new ArrayList<>();
+    reportsToCopy.stream()
+      .forEach(reportId -> alertsToCopy.add(createAlertForReport(reportId)));
+
+    // when
+    ResolvedCollectionDefinitionDto copy = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCopyCollectionRequest(originalId.getId())
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
+
+    // then
+    List<AuthorizedReportDefinitionDto> copiedReports = getReportsForCollection(copy.getId());
+    List<AlertDefinitionDto> copiedAlerts = getAlertsForCollection(copy.getId());
+    Set<String> copiedReportIdsWithAlert = copiedAlerts.stream().map(alert -> alert.getReportId()).collect(toSet());
+
+    assertThat(copiedReports.size(), is(reportsToCopy.size()));
+    assertThat(copiedAlerts.size(), is(alertsToCopy.size()));
+    assertThat(
+      copiedReportIdsWithAlert.size(),
+      is(copiedReports.size())
+    );
+    assertThat(
+      copiedReports.stream().allMatch(report -> copiedReportIdsWithAlert.contains(report.getDefinitionDto().getId())),
+      is(true)
+    );
+  }
 
   private DashboardDefinitionDto getDashboardDefinitionDto(String dashboardId) {
     return embeddedOptimizeExtension
@@ -811,4 +873,105 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute(ResolvedCollectionDefinitionDto.class, 200);
   }
 
+  private String createAlertForReport(final String reportId) {
+    AlertCreationDto alertCreationDto = new AlertCreationDto();
+
+    AlertInterval interval = new AlertInterval();
+    interval.setUnit("Seconds");
+    interval.setValue(1);
+    alertCreationDto.setCheckInterval(interval);
+    alertCreationDto.setThreshold(0);
+    alertCreationDto.setThresholdOperator(">");
+    alertCreationDto.setEmail("test@camunda.com");
+    alertCreationDto.setName("test alert");
+    alertCreationDto.setReportId(reportId);
+
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateAlertRequest(alertCreationDto)
+      .execute(String.class, 200);
+  }
+
+  private List<AuthorizedReportDefinitionDto> getReportsForCollection(final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetReportsForCollectionRequest(collectionId)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .executeAndReturnList(
+        AuthorizedReportDefinitionDto.class,
+        200
+      );
+  }
+
+  private List<AlertDefinitionDto> getAlertsForCollection(final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAlertsForCollectionRequest(collectionId)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .executeAndReturnList(
+        AlertDefinitionDto.class,
+        200
+      );
+  }
+
+  private String createReportForCollection(final String collectionId, final int resourceType) {
+    switch (resourceType) {
+      case RESOURCE_TYPE_PROCESS_DEFINITION:
+        SingleProcessReportDefinitionDto procReport = getProcessReportDefinitionDto(collectionId);
+        return createNewProcessReportAsUser(procReport);
+
+      case RESOURCE_TYPE_DECISION_DEFINITION:
+        SingleDecisionReportDefinitionDto decReport = getDecisionReportDefinitionDto(collectionId);
+        return createNewDecisionReportAsUser(decReport);
+
+      default:
+        throw new OptimizeRuntimeException("Unknown resource type provided.");
+    }
+  }
+
+  private SingleProcessReportDefinitionDto getProcessReportDefinitionDto(final String collectionId) {
+    ProcessReportDataDto reportData = ProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey("someKey")
+      .setProcessDefinitionVersion("someVersion")
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
+    report.setData(reportData);
+    report.setName("aProcessReport");
+    report.setCollectionId(collectionId);
+    return report;
+  }
+
+  private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDto(final String collectionId) {
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDecisionDefinitionKey("someKey")
+      .setDecisionDefinitionVersion("someVersion")
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+
+    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
+    report.setData(reportData);
+    report.setName("aDecisionReport");
+    report.setCollectionId(collectionId);
+    return report;
+  }
+
+  private String createNewDecisionReportAsUser(final SingleDecisionReportDefinitionDto decReport) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .buildCreateSingleDecisionReportRequest(decReport)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private String createNewProcessReportAsUser(final SingleProcessReportDefinitionDto procReport) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .buildCreateSingleProcessReportRequest(procReport)
+      .execute(IdDto.class, 200)
+      .getId();
+  }
 }

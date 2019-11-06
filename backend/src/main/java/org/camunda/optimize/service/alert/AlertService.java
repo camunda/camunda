@@ -243,6 +243,14 @@ public class AlertService implements ReportReferencingService {
     return alert;
   }
 
+  public void copyAndMoveAlerts(String oldReportId, String newReportId) {
+    List<AlertDefinitionDto> oldAlerts = findFirstAlertsForReport(oldReportId);
+    for (AlertDefinitionDto alert : oldAlerts) {
+      alert.setReportId(newReportId);
+      createAlert(alert, alert.getOwner());
+    }
+  }
+
   private void scheduleAlert(AlertDefinitionDto alert) {
     try {
       JobDetail jobDetail = alertCheckJobFactory.createJobDetails(alert);
@@ -305,7 +313,6 @@ public class AlertService implements ReportReferencingService {
       getScheduler().deleteJob(toUnschedule);
     }
   }
-
 
   private void unscheduleCheckJob(AlertDefinitionDto toDelete) throws SchedulerException {
     JobKey toUnschedule = alertCheckJobFactory.getJobKey(toDelete);

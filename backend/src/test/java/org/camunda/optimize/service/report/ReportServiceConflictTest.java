@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
@@ -53,6 +54,9 @@ public class ReportServiceConflictTest {
 
   @Mock
   AuthorizedCollectionService collectionService;
+
+  @Mock
+  AlertService alertService;
 
   ReportService underTest;
 
@@ -100,7 +104,10 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForUpdatedReport(any(), any())).thenReturn(conflicts);
 
     // when
-    assertThrows(OptimizeConflictException.class, () -> underTest.updateSingleProcessReport("test1", updateDto, "user1", false));
+    assertThrows(
+      OptimizeConflictException.class,
+      () -> underTest.updateSingleProcessReport("test1", updateDto, "user1", false)
+    );
   }
 
   @Test
@@ -134,7 +141,10 @@ public class ReportServiceConflictTest {
     when(reportRelationService.getConflictedItemsForUpdatedReport(any(), any())).thenReturn(conflicts);
 
     // when
-    assertThrows(OptimizeConflictException.class, () -> underTest.updateSingleDecisionReport("test1", updateDto, "user1", false));
+    assertThrows(
+      OptimizeConflictException.class,
+      () -> underTest.updateSingleDecisionReport("test1", updateDto, "user1", false)
+    );
   }
 
   @Test
