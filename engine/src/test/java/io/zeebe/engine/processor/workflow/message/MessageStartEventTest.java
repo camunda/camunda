@@ -335,6 +335,30 @@ public class MessageStartEventTest {
         .hasSize(1);
   }
 
+  @Test
+  public void shouldTriggerOnlyMessageStartEvent() {
+    // given
+    final var processBuilder = Bpmn.createExecutableProcess("process");
+    processBuilder.startEvent("none-start").endEvent();
+    processBuilder.startEvent("message-start").message(MESSAGE_NAME1).endEvent();
+    processBuilder.startEvent("timer-start").timerWithCycle("R/PT1H").endEvent();
+
+    engine.deployment().withXmlResource(processBuilder.done()).deploy();
+
+    // when
+    messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED).await();
+
+    engine.message().withCorrelationKey("order-123").withName(MESSAGE_NAME1).publish();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .limitToWorkflowInstanceCompleted()
+                .withElementType(BpmnElementType.START_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsOnly("message-start");
+  }
+
   private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {
     return Bpmn.createExecutableProcess("processId")
         .startEvent(EVENT_ID1)

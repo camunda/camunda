@@ -16,7 +16,6 @@
 package io.zeebe.model.bpmn.validation;
 
 import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
@@ -61,7 +60,7 @@ public class ZeebeCallActivityTest extends AbstractZeebeValidationTest {
             .callActivity("call", c -> c.zeebeProcessId("x"))
             .endEvent()
             .done(),
-        emptyList()
+        valid()
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -69,7 +68,7 @@ public class ZeebeCallActivityTest extends AbstractZeebeValidationTest {
             .callActivity("call", c -> c.zeebeProcessIdExpression("y"))
             .endEvent()
             .done(),
-        emptyList()
+        valid()
       },
     };
   }

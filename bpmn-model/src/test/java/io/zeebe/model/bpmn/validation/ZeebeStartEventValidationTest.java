@@ -62,11 +62,8 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
             expect(SubProcess.class, "Must have exactly one start event"))
       },
       {
-        getProcessWithMultipleNoneStartEvents(),
-        singletonList(
-            expect(
-                Process.class,
-                "Must be either one none start event or multiple message/timer start events"))
+        processWithMultipleNoneStartEvents(),
+        singletonList(expect(Process.class, "Multiple none start events are not allowed"))
       },
       {
         cycleTimerStartEventSubprocess(false), emptyList(),
@@ -77,11 +74,12 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
             expect(
                 SubProcess.class,
                 "Interrupting timer start events in event subprocesses can't have time cycles")),
-      }
+      },
+      {processWithNoneStartEventAndMultipleOtherStartEvents(), valid()},
     };
   }
 
-  private static BpmnModelInstance getProcessWithMultipleNoneStartEvents() {
+  private static BpmnModelInstance processWithMultipleNoneStartEvents() {
     final ProcessBuilder process = Bpmn.createExecutableProcess();
     process.startEvent().endEvent();
     return process.startEvent().endEvent().done();
@@ -97,5 +95,13 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
         .timerWithCycle("R/PT60S")
         .endEvent()
         .done();
+  }
+
+  private static BpmnModelInstance processWithNoneStartEventAndMultipleOtherStartEvents() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess();
+    process.startEvent().endEvent();
+    process.startEvent().timerWithCycle("R/PT1H");
+    process.startEvent().message("start");
+    return process.done();
   }
 }

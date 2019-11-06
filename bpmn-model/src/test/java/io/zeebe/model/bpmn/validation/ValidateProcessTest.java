@@ -17,7 +17,6 @@
 package io.zeebe.model.bpmn.validation;
 
 import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
@@ -29,12 +28,8 @@ public class ValidateProcessTest extends AbstractZeebeValidationTest {
   @Parameters(name = "{index}: {1}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {
-        "non-executable-elements.bpmn", emptyList() // should be valid
-      },
-      {
-        "collaboration-with-lanes.bpmn", emptyList() // should be valid
-      },
+      {"non-executable-elements.bpmn", valid()},
+      {"collaboration-with-lanes.bpmn", valid()},
       {
         Bpmn.createExecutableProcess().done(),
         singletonList(expect(Process.class, "Must have at least one start event"))
