@@ -37,7 +37,7 @@ public class JobPollerTest extends ClientTest {
             (t) -> false);
 
     // when
-    jobPoller.poll(123, job -> {}, integer -> {});
+    jobPoller.poll(123, job -> {}, integer -> {}, () -> true);
 
     // then
     rule.verifyRequestTimeout(requestTimeout);
