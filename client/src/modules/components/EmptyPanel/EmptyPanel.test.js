@@ -5,17 +5,39 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
-import EmptyIncidents from './EmptyPanel';
+import {mount} from 'enzyme';
+import EmptyPanel, {WithRowCount} from './EmptyPanel';
 
 describe('EmptyPanel', () => {
   it('should display a warning message', () => {
-    const node = shallow(<EmptyIncidents label="someLabel" type="warning" />);
+    const node = mount(<EmptyPanel label="someLabel" type="warning" />);
     expect(node).toMatchSnapshot();
   });
 
   it('should display a success message', () => {
-    const node = shallow(<EmptyIncidents label="someLabel" type="info" />);
+    const node = mount(<EmptyPanel label="someLabel" type="info" />);
     expect(node).toMatchSnapshot();
+  });
+
+  it('should display a skeleton', () => {
+    const node = mount(
+      <EmptyPanel label="someLabel" type="info" Skeleton={<div></div>} />
+    );
+    expect(node).toMatchSnapshot();
+  });
+
+  describe('WithRowCount', () => {
+    it('should calculate number of shown skeleton rows', () => {
+      const containerRef = {current: {clientHeight: 200}};
+      const SkeletonMock = () => <div />;
+
+      const node = mount(
+        <WithRowCount rowHeight={12} containerRef={containerRef}>
+          <SkeletonMock />
+        </WithRowCount>
+      );
+
+      expect(node.find(SkeletonMock).props().rowsToDisplay).toBe(15);
+    });
   });
 });

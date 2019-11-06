@@ -13,12 +13,12 @@ export const EmptyPanel = themed(styled.div`
   height: 100%;
   width: 100%;
 
-  border-width: 1px;
-  border-style: solid;
-  border-color: ${themeStyle({
+  /* border-width: 1px; */
+  /* border-style: solid; */
+  /* border-color: ${themeStyle({
     dark: Colors.uiDark04,
     light: Colors.uiLight05
-  })};
+  })}; */
 `);
 
 const errorStyle = css`
