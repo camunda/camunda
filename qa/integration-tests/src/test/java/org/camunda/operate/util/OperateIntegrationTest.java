@@ -74,7 +74,7 @@ public abstract class OperateIntegrationTest {
 
       return mockMvc.perform(request)
         .andExpect(status().isOk())
-        .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+        .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
         .andReturn();
   }
   
