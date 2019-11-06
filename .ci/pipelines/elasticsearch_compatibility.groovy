@@ -61,19 +61,17 @@ spec:
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
+      - name: JAVA_OPTS
+        value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
       requests:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml
@@ -153,19 +151,17 @@ spec:
   - name: cambpm
     image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
     env:
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
+      - name: JAVA_OPTS
+        value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
       requests:
         cpu: 1
-        memory: 1Gi
+        memory: 2Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml
