@@ -9,6 +9,7 @@ import PropTypes from 'prop-types';
 
 import Copyright from 'modules/components/Copyright';
 import {FlowNodeTimeStampProvider} from 'modules/contexts/FlowNodeTimeStampContext';
+import {EXPAND_STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 
@@ -16,11 +17,23 @@ import TimeStampPill from './TimeStampPill';
 
 export default class BottomPanel extends React.PureComponent {
   static propTypes = {
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ])
   };
+
+  renderChildren() {
+    return React.Children.map(
+      this.props.children,
+      child =>
+        child &&
+        React.cloneElement(child, {
+          expandState: this.props.expandState
+        })
+    );
+  }
 
   render() {
     return (
@@ -32,7 +45,7 @@ export default class BottomPanel extends React.PureComponent {
               <TimeStampPill />
             </Styled.Pills>
           </Styled.PaneHeader>
-          <Styled.PaneBody>{this.props.children}</Styled.PaneBody>
+          <Styled.PaneBody>{this.renderChildren()}</Styled.PaneBody>
           <Styled.PaneFooter>
             <Copyright />
           </Styled.PaneFooter>

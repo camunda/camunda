@@ -26,7 +26,8 @@ import {isRunning} from 'modules/utils/instance';
 import * as api from 'modules/api/instances';
 import {withData} from 'modules/DataManager';
 
-import FlowNodeInstancesTree from './FlowNodeInstancesTree';
+// import FlowNodeInstancesTree from './FlowNodeInstancesTree';
+import FlowNodeInstanceLog from './FlowNodeInstanceLog';
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import TopPanel from './TopPanel';
@@ -489,6 +490,7 @@ class Instance extends Component {
       selection,
       activityIdToActivityInstanceMap,
       nodeMetaDataMap,
+      activityInstancesTree,
       variables,
       editMode
     } = this.state;
@@ -518,21 +520,14 @@ class Instance extends Component {
               onTreeRowSelection={this.handleTreeRowSelection}
             />
             <BottomPanel>
-              <Styled.Panel>
-                <Styled.FlowNodeInstanceLog>
-                  <Styled.NodeContainer>
-                    {diagramDefinitions && activityIdToActivityInstanceMap && (
-                      <FlowNodeInstancesTree
-                        node={this.state.activityInstancesTree}
-                        getNodeWithMetaData={this.getNodeWithMetaData}
-                        treeDepth={1}
-                        selectedTreeRowIds={this.state.selection.treeRowIds}
-                        onTreeRowSelection={this.handleTreeRowSelection}
-                      />
-                    )}
-                  </Styled.NodeContainer>
-                </Styled.FlowNodeInstanceLog>
-              </Styled.Panel>
+              <FlowNodeInstanceLog
+                diagramDefinitions={diagramDefinitions}
+                activityInstancesTree={activityInstancesTree}
+                getNodeWithMetaData={this.getNodeWithMetaData}
+                selectedTreeRowIds={this.state.selection.treeRowIds}
+                onTreeRowSelection={this.handleTreeRowSelection}
+              />
+
               <Variables
                 isRunning={isRunning({state: this.state.instance.state})}
                 variables={variables}

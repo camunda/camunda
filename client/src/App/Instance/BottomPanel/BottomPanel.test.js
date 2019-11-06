@@ -21,7 +21,9 @@ describe('BottomPanel', () => {
   let node;
   let ChildNode;
   beforeEach(() => {
-    ChildNode = props => <div {...props} data-test="ChildNode" />;
+    ChildNode = ({expandState, ...props}) => (
+      <div {...props} data-test="ChildNode" />
+    );
     node = mount(
       <Router>
         <ThemeProvider>

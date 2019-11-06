@@ -33,6 +33,7 @@ import BottomPanel from './BottomPanel';
 import Diagram from 'modules/components/Diagram';
 import Variables from './BottomPanel/Variables';
 import IncidentsWrapper from './IncidentsWrapper';
+import FlowNodeInstanceLog from './FlowNodeInstanceLog';
 
 import Header from '../Header';
 
@@ -70,6 +71,12 @@ jest.mock('./TopPanel', () => {
 
 jest.mock('./InstanceDetail', () => {
   return function InstanceDetails() {
+    return <div />;
+  };
+});
+
+jest.mock('./FlowNodeInstanceLog', () => {
+  return function FlowNodeInstanceLog() {
     return <div />;
   };
 });
