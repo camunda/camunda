@@ -38,10 +38,19 @@ public class MockMvcTestRule extends ExternalResource {
 
   private HttpMessageConverter mappingJackson2HttpMessageConverter;
 
+  /*
+   *  From spring boot documentation:
+   *  
+   *  [...] 
+   *  in favor of APPLICATION_JSON since major browsers like Chrome now comply with the specification 
+   *  and interpret correctly UTF-8 special characters without requiring a charset=UTF-8 parameter.
+   *  [...]
+   */
   private MediaType contentType = new MediaType(MediaType.APPLICATION_JSON.getType(),
-    MediaType.APPLICATION_JSON.getSubtype(),
-    Charset.forName("utf8"));
-
+                                                MediaType.APPLICATION_JSON.getSubtype()
+                                                //,Charset.forName("utf8")                                      
+                                  );
+  
   @Autowired
   void setConverters(HttpMessageConverter<?>[] converters) {
 
