@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -94,9 +93,6 @@ public class CollectionIndex extends StrictIndexMappingCreator {
             .field("type", "keyword")
           .endObject()
           .startObject(CollectionScopeEntryDto.Fields.id.name())
-            .field("type", "keyword")
-          .endObject()
-          .startObject(CollectionScopeEntryDto.Fields.versions.name())
             .field("type", "keyword")
           .endObject()
           .startObject(CollectionScopeEntryDto.Fields.tenants.name())

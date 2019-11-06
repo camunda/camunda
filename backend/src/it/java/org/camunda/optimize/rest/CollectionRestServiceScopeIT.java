@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -98,7 +99,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     assertThat(scopeEntries)
       .hasSize(4)
       .extracting(CollectionScopeEntryRestDto::getDefinitionName)
-      .containsExactly("PROCESS_KEY_FIRST", "PROCESS_KEY_LAST", "DECISION_KEY_FIRST","DECISION_KEY_LAST");
+      .containsExactly("PROCESS_KEY_FIRST", "PROCESS_KEY_LAST", "DECISION_KEY_FIRST", "DECISION_KEY_LAST");
   }
 
   @Test
@@ -161,7 +162,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
 
     // when
-    entry.setVersions(Collections.singletonList("1"));
+    final String tenant1 = "tenant1";
+    entry.setTenants(Lists.newArrayList(null, tenant1));
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(entry))
       .execute(204);
@@ -173,8 +175,11 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .buildGetCollectionRequest(collectionId)
       .execute(ResolvedCollectionDefinitionDto.class, 200);
 
-    assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().size()).isEqualTo(1);
-    assertThat(collectionDefinitionDto.getData().getScope().get(0).getVersions().get(0)).isEqualTo("1");
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(
+        scopeEntryDto -> assertThat(scopeEntryDto.getTenants()).containsExactly(null, tenant1)
+      );
   }
 
   @Test
@@ -260,9 +265,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   }
 
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
-    return new CollectionScopeEntryDto(
-      definitionType, definitionKey, Collections.singletonList(null), Collections.singletonList("ALL")
-    );
+    return new CollectionScopeEntryDto(definitionType, definitionKey, Collections.singletonList(null));
   }
 
   private String addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {

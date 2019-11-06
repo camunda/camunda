@@ -231,15 +231,11 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
                                       List<String> tenants, final int resourceType) {
     switch (resourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        final CollectionScopeEntryDto processScope = new CollectionScopeEntryDto(
-          PROCESS, definitionKey, tenants, Collections.singletonList("ALL")
-        );
+        final CollectionScopeEntryDto processScope = new CollectionScopeEntryDto(PROCESS, definitionKey, tenants);
         addScopeEntryToCollection(collectionId, processScope);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        final CollectionScopeEntryDto decisionScope = new CollectionScopeEntryDto(
-          DECISION, definitionKey, tenants, Collections.singletonList("ALL")
-        );
+        final CollectionScopeEntryDto decisionScope = new CollectionScopeEntryDto(DECISION, definitionKey, tenants);
         addScopeEntryToCollection(collectionId, decisionScope);
         break;
       default:
@@ -249,9 +245,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   }
 
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
-    return new CollectionScopeEntryDto(
-      definitionType, definitionKey, Collections.singletonList(null), Collections.singletonList("ALL")
-    );
+    return new CollectionScopeEntryDto(definitionType, definitionKey, Collections.singletonList(null));
   }
 
   private void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {

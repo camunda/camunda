@@ -18,10 +18,8 @@ import java.util.List;
 @AllArgsConstructor
 public class CollectionScopeEntryUpdateDto {
   private List<String> tenants = new ArrayList<>();
-  private List<String> versions;
 
   public CollectionScopeEntryUpdateDto(CollectionScopeEntryDto scopeEntryDto) {
     this.tenants = scopeEntryDto.getTenants();
-    this.versions = scopeEntryDto.getVersions();
   }
 }

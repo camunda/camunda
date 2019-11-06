@@ -489,7 +489,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private CollectionScopeEntryUpdateDto createScopeUpdate() {
-    return new CollectionScopeEntryUpdateDto(Collections.singletonList("1"), Collections.singletonList("tenant1"));
+    return new CollectionScopeEntryUpdateDto(Collections.singletonList("tenant1"));
   }
 
   private CollectionScopeEntryDto createProcessScope() {

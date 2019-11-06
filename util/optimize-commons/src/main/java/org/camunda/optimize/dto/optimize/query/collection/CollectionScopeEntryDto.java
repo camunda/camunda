@@ -27,7 +27,6 @@ public class CollectionScopeEntryDto {
   private DefinitionType definitionType;
   private String definitionKey;
   private List<String> tenants = new ArrayList<>();
-  private List<String> versions = new ArrayList<>();
 
   public CollectionScopeEntryDto(final String id) {
     this(DefinitionType.valueOf(id.split(ID_SEGMENT_SEPARATOR)[0].toUpperCase()), id.split(ID_SEGMENT_SEPARATOR)[1]);
@@ -37,21 +36,20 @@ public class CollectionScopeEntryDto {
     this.definitionKey = oldEntry.definitionKey;
     this.definitionType = oldEntry.definitionType;
     this.tenants = oldEntry.tenants;
-    this.versions = oldEntry.versions;
     this.id = convertTypeAndKeyToScopeEntryId(this.definitionType, this.definitionKey);
   }
 
   public CollectionScopeEntryDto(final DefinitionType definitionType, final String definitionKey) {
-    this(definitionType, definitionKey, new ArrayList<>(), new ArrayList<>());
+    this(definitionType, definitionKey, new ArrayList<>());
   }
 
-  public CollectionScopeEntryDto(final DefinitionType definitionType, final String definitionKey,
-                                 final List<String> tenants, final List<String> versions) {
+  public CollectionScopeEntryDto(final DefinitionType definitionType,
+                                 final String definitionKey,
+                                 final List<String> tenants) {
     this.id = convertTypeAndKeyToScopeEntryId(definitionType, definitionKey);
     this.definitionType = definitionType;
     this.definitionKey = definitionKey;
     this.tenants = tenants;
-    this.versions = versions;
   }
 
   public String getId() {
