@@ -28,6 +28,7 @@ import {
   addAllVersionsOption,
   getLastVersionOfWorkflow,
   checkIsDateComplete,
+  checkIsDateValid,
   checkIsVariableNameComplete,
   checkIsVariableValueComplete,
   checkIsVariableValueValid,
@@ -278,6 +279,7 @@ export default class Filters extends React.Component {
                       placeholder="Start Date yyyy-mm-dd hh:mm:ss"
                       onChange={this.handleControlledInputChange}
                       checkIsComplete={checkIsDateComplete}
+                      checkIsValid={checkIsDateValid}
                       onFilterChange={() =>
                         this.waitForTimer(this.propagateFilter)
                       }
@@ -292,6 +294,7 @@ export default class Filters extends React.Component {
                       placeholder="End Date yyyy-mm-dd hh:mm:ss"
                       onChange={this.handleControlledInputChange}
                       checkIsComplete={checkIsDateComplete}
+                      checkIsValid={checkIsDateValid}
                       onFilterChange={() =>
                         this.waitForTimer(this.propagateFilter)
                       }

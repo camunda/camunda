@@ -6,6 +6,7 @@
 
 import {
   checkIsDateComplete,
+  checkIsDateValid,
   sanitizeFilter,
   checkIsVariableNameComplete,
   checkIsVariableValueComplete,
@@ -61,6 +62,28 @@ describe('Filters/service', () => {
 
     it('should return false for invalid date in correct format', () => {
       expect(checkIsDateComplete('2019-99-99')).toBe(false);
+    });
+  });
+
+  describe('checkIsDateValid', () => {
+    it('should return true for YYYY-MM-DD HH:mm:ss', () => {
+      expect(checkIsDateValid('2019-03-12 12:59:30')).toBe(true);
+    });
+
+    it('should return true for empty string', () => {
+      expect(checkIsDateValid('')).toBe(true);
+    });
+
+    it('should return false for invalid characters', () => {
+      expect(checkIsDateValid('ABCD-EF-GH')).toBe(false);
+    });
+
+    it('should return true for date with whitespaces', () => {
+      expect(checkIsDateValid('     2019-03-12 12:59:30     ')).toBe(true);
+    });
+
+    it('should return true for only whitespace', () => {
+      expect(checkIsDateValid('     ')).toBe(true);
     });
   });
 

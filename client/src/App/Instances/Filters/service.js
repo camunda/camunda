@@ -69,6 +69,16 @@ export function checkIsDateComplete(date) {
   return !!trimmedDate.match(/^\d{4}-\d{2}-\d{2}(\W\d{2}:\d{2}(:\d{2})?)?$/);
 }
 
+export function checkIsDateValid(date) {
+  const trimmedDate = trimValue(date);
+
+  if (trimmedDate === '') {
+    return true;
+  }
+
+  return !!trimmedDate.match(/^[ \d:-]+$/);
+}
+
 function isValidJson(value) {
   try {
     JSON.parse(value);
