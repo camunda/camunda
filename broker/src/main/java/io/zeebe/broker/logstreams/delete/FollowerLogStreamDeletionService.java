@@ -8,26 +8,27 @@
 package io.zeebe.broker.logstreams.delete;
 
 import io.zeebe.broker.logstreams.state.StatePositionSupplier;
-import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.state.Snapshot;
+import io.zeebe.logstreams.state.SnapshotDeletionListener;
 
-public class FollowerLogStreamDeletionService implements DeletionService {
+public class FollowerLogStreamDeletionService implements SnapshotDeletionListener {
   private final LogStream logStream;
-  private StatePositionSupplier positionSupplier;
+  private final StatePositionSupplier positionSupplier;
 
   public FollowerLogStreamDeletionService(
-      LogStream logStream, StatePositionSupplier positionSupplier) {
+      final LogStream logStream, final StatePositionSupplier positionSupplier) {
     this.logStream = logStream;
     this.positionSupplier = positionSupplier;
   }
 
   @Override
-  public void delete(final long position) {
-    final long minPosition = Math.min(position, getMinimumExportedPosition());
+  public void onSnapshotDeleted(final Snapshot snapshot) {
+    final long minPosition = Math.min(snapshot.getPosition(), getMinimumExportedPosition(snapshot));
     logStream.delete(minPosition);
   }
 
-  private long getMinimumExportedPosition() {
-    return positionSupplier.getMinimumExportedPosition();
+  private long getMinimumExportedPosition(final Snapshot snapshot) {
+    return positionSupplier.getMinimumExportedPosition(snapshot.getPath());
   }
 }

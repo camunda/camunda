@@ -11,6 +11,7 @@ import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocator;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -23,10 +24,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class BufferedLogStreamReader implements LogStreamReader {
   public static final int DEFAULT_INITIAL_BUFFER_CAPACITY = 32 * 1024;
   public static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; // 128MB
-
+  static final long FIRST_POSITION = Long.MIN_VALUE;
   private static final int UNINITIALIZED = -1;
-  private static final long FIRST_POSITION = Long.MIN_VALUE;
-
   // configuration
   private final CompleteEventsInBlockProcessor completeEventsInBlockProcessor =
       new CompleteEventsInBlockProcessor();
@@ -36,8 +35,8 @@ public class BufferedLogStreamReader implements LogStreamReader {
   // buffer
   private final BufferAllocator bufferAllocator = new DirectBufferAllocator();
   private final DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
-  // wrapped logstream
-  private LogStorage logStorage;
+  // stateful storage reader
+  private LogStorageReader storageReader;
   // state
   private IteratorState state;
   private long nextLogStorageReadAddress;
@@ -56,7 +55,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
   }
 
   @Override
-  public boolean seekToNextEvent(long position) {
+  public boolean seekToNextEvent(final long position) {
 
     if (position <= -1) {
       seekToFirstEvent();
@@ -79,7 +78,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
     }
 
     final long seekAddress =
-        logStorage.lookUpApproximateAddress(
+        storageReader.lookUpApproximateAddress(
             position,
             blockAddress -> {
               invalidateBufferAndOffsets();
@@ -102,7 +101,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
     // invalidate events first as the buffer content may change
     invalidateBufferAndOffsets();
 
-    final long blockAddress = logStorage.getFirstBlockAddress();
+    final long blockAddress = storageReader.getFirstBlockAddress();
     if (blockAddress < 0) {
       // no block found => empty log
       state = IteratorState.EMPTY_LOG_STREAM;
@@ -110,18 +109,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
     } else {
       readLastBlockIntoBuffer();
       return completeEventsInBlockProcessor.getLastReadEventPosition();
-    }
-  }
-
-  private boolean seekFrom(final long blockAddress, final long position) {
-    if (blockAddress < 0) {
-      // no block found => empty log
-      state = IteratorState.EMPTY_LOG_STREAM;
-      return false;
-    } else {
-      readBlockIntoBuffer(blockAddress);
-      readNextEvent();
-      return searchPositionInBuffer(position);
     }
   }
 
@@ -158,13 +145,29 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   @Override
   public void wrap(final LogStorage logStorage, final long position) {
-    this.logStorage = logStorage;
+    wrap(logStorage.newReader(), position);
+  }
+
+  public void wrap(final LogStorageReader reader, final long position) {
+    this.storageReader = reader;
 
     if (isClosed()) {
       allocateBuffer(DEFAULT_INITIAL_BUFFER_CAPACITY);
     }
 
     seek(position);
+  }
+
+  private boolean seekFrom(final long blockAddress, final long position) {
+    if (blockAddress < 0) {
+      // no block found => empty log
+      state = IteratorState.EMPTY_LOG_STREAM;
+      return false;
+    } else {
+      readBlockIntoBuffer(blockAddress);
+      readNextEvent();
+      return searchPositionInBuffer(position);
+    }
   }
 
   @Override
@@ -176,7 +179,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
       directBuffer.wrap(0, 0);
       bufferOffset = 0;
 
-      logStorage = null;
+      storageReader = null;
 
       state = IteratorState.WRAP_NOT_CALLED;
     }
@@ -296,16 +299,16 @@ public class BufferedLogStreamReader implements LogStreamReader {
   private void readLastBlockIntoBuffer() {
     executeReadMethod(
         Long.MAX_VALUE,
-        readAddress -> logStorage.readLastBlock(byteBuffer, completeEventsInBlockProcessor));
+        readAddress -> storageReader.readLastBlock(byteBuffer, completeEventsInBlockProcessor));
   }
 
   private boolean readBlockIntoBuffer(final long blockAddress) {
     return executeReadMethod(
         blockAddress,
-        readAddress -> logStorage.read(byteBuffer, readAddress, completeEventsInBlockProcessor));
+        readAddress -> storageReader.read(byteBuffer, readAddress, completeEventsInBlockProcessor));
   }
 
-  private boolean executeReadMethod(final long blockAddress, LongUnaryOperator readMethod) {
+  private boolean executeReadMethod(final long blockAddress, final LongUnaryOperator readMethod) {
     if (byteBuffer.remaining() < LogEntryDescriptor.HEADER_BLOCK_LENGTH) {
       compactBuffer();
     }

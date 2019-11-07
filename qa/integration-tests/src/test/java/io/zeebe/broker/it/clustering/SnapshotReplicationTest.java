@@ -11,7 +11,11 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.it.clustering.ClusteredDataDeletionTest.TestExporter;
 import io.zeebe.broker.it.util.GrpcClientRule;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
+import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -21,9 +25,11 @@ import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import org.junit.Before;
@@ -37,13 +43,17 @@ public class SnapshotReplicationTest {
   private static final int PARTITION_COUNT = 1;
   private static final int SNAPSHOT_PERIOD_SECONDS = 30;
 
+  // ensures we do not trigger deletion after replication; if we do, then the followers might open
+  // the database which causes extra files to appear and messes up the checksum counting
+  private static final int MAX_SNAPSHOTS = 2;
+
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   // NOTE: the configuration removes the RecordingExporter from the broker's configuration to enable
   // data deletion so it can't be used in tests
   public ClusteringRule clusteringRule =
-      new ClusteringRule(PARTITION_COUNT, 3, 3, ClusteredDataDeletionTest::configureCustomExporter);
+      new ClusteringRule(PARTITION_COUNT, 3, 3, SnapshotReplicationTest::configureCustomExporter);
   public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
@@ -129,13 +139,27 @@ public class SnapshotReplicationTest {
 
   private File getSnapshotsDirectory(Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/snapshots");
+    return new File(dataDir, "raft-atomix/partitions/1/snapshots");
   }
 
   protected void waitForValidSnapshotAtBroker(final Broker broker) {
     final File snapshotsDir = getSnapshotsDirectory(broker);
+    waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
+  }
 
-    waitUntil(
-        () -> Arrays.stream(snapshotsDir.listFiles()).anyMatch(f -> !f.getName().contains("tmp")));
+  private static void configureCustomExporter(final BrokerCfg brokerCfg) {
+    final DataCfg data = brokerCfg.getData();
+    data.setMaxSnapshots(MAX_SNAPSHOTS);
+    data.setSnapshotPeriod(SNAPSHOT_PERIOD_SECONDS + "s");
+    data.setLogSegmentSize("8k");
+    brokerCfg.getNetwork().setMaxMessageSize("8K");
+
+    final ExporterCfg exporterCfg = new ExporterCfg();
+    exporterCfg.setClassName(TestExporter.class.getName());
+    exporterCfg.setId("data-delete-test-exporter");
+
+    // overwrites RecordingExporter on purpose because since it doesn't update its position
+    // we wouldn't be able to delete data
+    brokerCfg.setExporters(Collections.singletonList(exporterCfg));
   }
 }

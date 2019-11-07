@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.zeebe.broker.engine.EngineServiceNames;
 import io.zeebe.broker.exporter.ExporterDirectorService;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
@@ -59,6 +60,7 @@ public class LeaderLogStreamDeletionTest {
   @Test
   public void shouldDeleteWithDelayedExporter() {
     // given
+    final var snapshot = mockSnapshot(POSITION_TO_DELETE + 2);
     when(mockExporterDirectorService.getLowestExporterPosition())
         .thenReturn(CompletableActorFuture.completed(POSITION_TO_DELETE));
 
@@ -68,7 +70,7 @@ public class LeaderLogStreamDeletionTest {
             new Actor() {
               @Override
               protected void onActorStarted() {
-                deletionService.delete(POSITION_TO_DELETE + 2);
+                deletionService.onSnapshotDeleted(snapshot);
               }
             })
         .join();
@@ -80,6 +82,7 @@ public class LeaderLogStreamDeletionTest {
   @Test
   public void shouldDeleteWithNoExporter() {
     // given
+    final var snapshot = mockSnapshot(POSITION_TO_DELETE);
     when(mockExporterDirectorService.getLowestExporterPosition())
         .thenReturn(CompletableActorFuture.completed(Long.MAX_VALUE));
 
@@ -89,7 +92,7 @@ public class LeaderLogStreamDeletionTest {
             new Actor() {
               @Override
               protected void onActorStarted() {
-                deletionService.delete(POSITION_TO_DELETE);
+                deletionService.onSnapshotDeleted(snapshot);
               }
             })
         .join();
@@ -101,6 +104,7 @@ public class LeaderLogStreamDeletionTest {
   @Test
   public void shouldNotDeleteOnNegativePosition() {
     // given
+    final var snapshot = mockSnapshot(-1);
     when(mockExporterDirectorService.getLowestExporterPosition())
         .thenReturn(CompletableActorFuture.completed(Long.MAX_VALUE));
 
@@ -110,12 +114,18 @@ public class LeaderLogStreamDeletionTest {
             new Actor() {
               @Override
               protected void onActorStarted() {
-                deletionService.delete(-1);
+                deletionService.onSnapshotDeleted(snapshot);
               }
             })
         .join();
 
     // then
     verify(mockLogStream, never()).delete(POSITION_TO_DELETE);
+  }
+
+  private Snapshot mockSnapshot(final long position) {
+    final var snapshot = mock(Snapshot.class);
+    when(snapshot.getPosition()).thenReturn(position);
+    return snapshot;
   }
 }

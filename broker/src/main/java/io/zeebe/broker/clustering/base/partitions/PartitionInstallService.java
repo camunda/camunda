@@ -20,11 +20,13 @@ import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.p
 import static io.zeebe.broker.exporter.ExporterServiceNames.exporterDirectorServiceName;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVICE_NAME;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 
-import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.protocols.raft.RaftCommitListener;
 import io.atomix.protocols.raft.partition.RaftPartition;
+import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
+import io.atomix.protocols.raft.zeebe.ZeebeEntry;
+import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.engine.AsyncSnapshotingDirectorService;
@@ -34,18 +36,16 @@ import io.zeebe.broker.exporter.ExporterDirectorService;
 import io.zeebe.broker.exporter.jar.ExporterJarLoadException;
 import io.zeebe.broker.exporter.repo.ExporterLoadException;
 import io.zeebe.broker.exporter.repo.ExporterRepository;
-import io.zeebe.broker.logstreams.restore.BrokerRestoreServer;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
-import io.zeebe.distributedlog.StorageConfiguration;
-import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LeaderOpenLogStreamAppenderService;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
@@ -63,15 +63,13 @@ import org.slf4j.Logger;
  * to attach to.
  */
 public class PartitionInstallService extends Actor
-    implements Service<PartitionInstallService>, PartitionRoleChangeListener {
+    implements Service<PartitionInstallService>, PartitionRoleChangeListener, RaftCommitListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-  private final StorageConfiguration configuration;
-  private final int partitionId;
   private final ClusterEventService clusterEventService;
-  private final ClusterCommunicationService communicationService;
   private final BrokerCfg brokerCfg;
   private final RaftPartition partition;
+  private final ServiceContainer serviceContainer;
   private final ExporterRepository exporterRepository = new ExporterRepository();
 
   private ServiceStartContext startContext;
@@ -84,19 +82,17 @@ public class PartitionInstallService extends Actor
   private ActorFuture<PartitionLeaderElection> leaderElectionInstallFuture;
   private PartitionLeaderElection leaderElection;
   private ActorFuture<Void> transitionFuture;
-  private ServiceName<LogStorage> logStorageServiceName;
+  private LogStream logStream;
+  private ActorFuture<LogStream> logStreamFuture;
 
   public PartitionInstallService(
-      RaftPartition partition,
-      ClusterEventService clusterEventService,
-      ClusterCommunicationService communicationService,
-      final StorageConfiguration configuration,
-      BrokerCfg brokerCfg) {
+      final RaftPartition partition,
+      final ClusterEventService clusterEventService,
+      final ServiceContainer serviceContainer,
+      final BrokerCfg brokerCfg) {
     this.partition = partition;
-    this.configuration = configuration;
-    this.partitionId = configuration.getPartitionId();
     this.clusterEventService = clusterEventService;
-    this.communicationService = communicationService;
+    this.serviceContainer = serviceContainer;
     this.brokerCfg = brokerCfg;
   }
 
@@ -113,7 +109,19 @@ public class PartitionInstallService extends Actor
           if (e == null) {
             leaderElection.addListener(this);
           } else {
-            LOG.error("Could not install leader election for partition {}", partitionId, e);
+            LOG.error("Could not install leader election for partition {}", partition.id().id(), e);
+          }
+        });
+    actor.runOnCompletion(
+        logStreamFuture,
+        (log, error) -> {
+          if (error == null) {
+            setLogStream(log);
+          } else {
+            LOG.error(
+                "Failed to install log stream service for partition {}",
+                partition.id().id(),
+                error);
           }
         });
   }
@@ -122,7 +130,7 @@ public class PartitionInstallService extends Actor
   public void start(final ServiceStartContext startContext) {
     this.startContext = startContext;
 
-    final int partitionId = configuration.getPartitionId();
+    final int partitionId = partition.id().id();
     logName = Partition.getPartitionName(partitionId);
 
     // TODO: rename/remove?
@@ -131,10 +139,15 @@ public class PartitionInstallService extends Actor
     final CompositeServiceBuilder partitionInstall =
         startContext.createComposite(raftInstallServiceName);
 
+    // installs the logstream service
     logStreamServiceName = LogStreamServiceNames.logStreamServiceName(logName);
-    logStorageServiceName = LogStreamServiceNames.logStorageServiceName(logName);
-    leaderInstallRootServiceName = PartitionServiceNames.leaderInstallServiceRootName(logName);
+    logStreamFuture =
+        LogStreams.createAtomixLogStream(partition)
+            .withMaxFragmentSize((int) brokerCfg.getNetwork().getMaxMessageSize().toBytes())
+            .withServiceContainer(serviceContainer)
+            .buildAsync();
 
+    leaderInstallRootServiceName = PartitionServiceNames.leaderInstallServiceRootName(logName);
     leaderElection = new PartitionLeaderElection(partition);
     final ServiceName<PartitionLeaderElection> partitionLeaderElectionServiceName =
         partitionLeaderElectionServiceName(logName);
@@ -149,11 +162,12 @@ public class PartitionInstallService extends Actor
     partitionInstall.install();
 
     // load and validate exporters
-    for (ExporterCfg exporterCfg : brokerCfg.getExporters()) {
+    for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
       try {
         exporterRepository.load(exporterCfg);
       } catch (ExporterLoadException | ExporterJarLoadException e) {
-        throw new RuntimeException("Failed to load exporter with configuration: " + exporterCfg, e);
+        throw new IllegalStateException(
+            "Failed to load exporter with configuration: " + exporterCfg, e);
       }
     }
 
@@ -164,8 +178,13 @@ public class PartitionInstallService extends Actor
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     leaderElection.removeListener(this);
+    partition.getServer().removeCommitListener(this);
+
+    if (logStream != null) {
+      stopContext.async(logStream.closeAsync());
+    }
   }
 
   @Override
@@ -173,87 +192,68 @@ public class PartitionInstallService extends Actor
     return this;
   }
 
-  private void transitionToLeader(CompletableActorFuture<Void> transitionComplete, long term) {
+  private void transitionToLeader(final CompletableActorFuture<Void> transitionComplete) {
     actor.runOnCompletion(
         removeFollowerPartitionService(),
         (nothing, error) ->
             actor.runOnCompletion(
-                installLeaderPartition(term), (v, e) -> transitionComplete.complete(null)));
+                installLeaderPartition(), (v, e) -> transitionComplete.complete(null)));
   }
 
   @Override
-  public void onTransitionToFollower(int partitionId, long term) {
+  public void onTransitionToFollower(final int partitionId) {
     actor.call(
         () -> {
           final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
           if (transitionFuture != null && !transitionFuture.isDone()) {
             // wait until previous transition is complete
             actor.runOnCompletion(
-                transitionFuture, (r, e) -> transitionToFollower(nextTransitionFuture, term));
+                transitionFuture, (r, e) -> transitionToFollower(nextTransitionFuture));
 
           } else {
-            transitionToFollower(nextTransitionFuture, term);
+            transitionToFollower(nextTransitionFuture);
           }
           transitionFuture = nextTransitionFuture;
         });
   }
 
   @Override
-  public void onTransitionToLeader(int partitionId, long term) {
+  public void onTransitionToLeader(final int partitionId) {
     actor.call(
         () -> {
           final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
           if (transitionFuture != null && !transitionFuture.isDone()) {
             // wait until previous transition is complete
             actor.runOnCompletion(
-                transitionFuture, (r, e) -> transitionToLeader(nextTransitionFuture, term));
+                transitionFuture, (r, e) -> transitionToLeader(nextTransitionFuture));
 
           } else {
-            transitionToLeader(nextTransitionFuture, term);
+            transitionToLeader(nextTransitionFuture);
           }
           transitionFuture = nextTransitionFuture;
         });
   }
 
-  private void transitionToFollower(CompletableActorFuture<Void> transitionComplete, long term) {
+  private void transitionToFollower(final CompletableActorFuture<Void> transitionComplete) {
     actor.runOnCompletion(
         removeLeaderPartitionService(),
         (nothing, error) ->
             actor.runOnCompletion(
-                installFollowerPartition(term),
-                (partition, err) -> transitionComplete.complete(null)));
+                installFollowerPartition(), (ignored, err) -> transitionComplete.complete(null)));
   }
 
   private ActorFuture<Void> removeLeaderPartitionService() {
-    LOG.debug("Removing leader partition services for partition {}", partitionId);
+    LOG.debug("Removing leader partition services for partition {}", partition.id());
     return startContext.removeService(leaderInstallRootServiceName);
   }
 
-  private ActorFuture<Void> installLeaderPartition(long leaderTerm) {
-    LOG.debug("Installing leader partition service for partition {}", partitionId);
-    final BrokerRestoreServer restoreServer =
-        new BrokerRestoreServer(communicationService, partitionId);
+  private ActorFuture<Void> installLeaderPartition() {
+    LOG.debug("Installing leader partition service for partition {}", partition.id());
     final Partition partition =
-        new Partition(
-            configuration,
-            brokerCfg,
-            clusterEventService,
-            partitionId,
-            RaftState.LEADER,
-            leaderTerm,
-            restoreServer);
+        new Partition(brokerCfg, this.partition, clusterEventService, RaftState.LEADER);
 
     final CompositeServiceBuilder leaderInstallService =
         startContext.createComposite(leaderInstallRootServiceName);
-
-    // Get an instance of DistributedLog
-    final DistributedLogstreamPartition distributedLogstreamPartition =
-        new DistributedLogstreamPartition(partitionId, leaderTerm);
-
-    leaderInstallService
-        .createService(distributedLogPartitionServiceName(logName), distributedLogstreamPartition)
-        .dependency(ATOMIX_SERVICE, distributedLogstreamPartition.getAtomixInjector())
-        .install();
 
     // Open logStreamAppender
     final LeaderOpenLogStreamAppenderService leaderOpenLogStreamAppenderService =
@@ -261,24 +261,22 @@ public class PartitionInstallService extends Actor
     leaderInstallService
         .createService(openLogStreamServiceName, leaderOpenLogStreamAppenderService)
         .dependency(logStreamServiceName, leaderOpenLogStreamAppenderService.getLogStreamInjector())
-        .dependency(distributedLogPartitionServiceName(logName))
         .install();
 
     leaderInstallService
         .createService(leaderPartitionServiceName, partition)
         .dependency(openLogStreamServiceName)
         .dependency(logStreamServiceName, partition.getLogStreamInjector())
-        .dependency(logStorageServiceName, partition.getLogStorageInjector())
         .group(LEADER_PARTITION_GROUP_NAME)
         .install();
 
     createEngineServices(leaderInstallService);
-    createExporterServices(leaderInstallService, partitionId);
+    createExporterServices(leaderInstallService);
 
     return leaderInstallService.install();
   }
 
-  private void createEngineServices(CompositeServiceBuilder leaderInstallService) {
+  private void createEngineServices(final CompositeServiceBuilder leaderInstallService) {
     final StreamProcessorService streamProcessorService = new StreamProcessorService(brokerCfg);
     leaderInstallService
         .createService(
@@ -296,7 +294,6 @@ public class PartitionInstallService extends Actor
         .dependency(
             LogStreamServiceNames.logWriteBufferServiceName(logName),
             streamProcessorService.getLogStreamWriteBufferInjector())
-        .dependency(logStorageServiceName, streamProcessorService.getLogStorageInjector())
         .install();
 
     final Duration snapshotPeriod = DurationUtil.parse(brokerCfg.getData().getSnapshotPeriod());
@@ -317,42 +314,42 @@ public class PartitionInstallService extends Actor
         .install();
   }
 
-  private void createExporterServices(
-      CompositeServiceBuilder leaderInstallService, int partitionId) {
+  private void createExporterServices(final CompositeServiceBuilder leaderInstallService) {
     final ExporterDirectorService exporterDirectorService =
         new ExporterDirectorService(brokerCfg, exporterRepository);
 
     leaderInstallService
-        .createService(exporterDirectorServiceName(partitionId), exporterDirectorService)
+        .createService(exporterDirectorServiceName(partition.id().id()), exporterDirectorService)
         .dependency(leaderPartitionServiceName, exporterDirectorService.getPartitionInjector())
-        .dependency(logStorageServiceName, exporterDirectorService.getLogStorageInjector())
         .install();
   }
 
-  private ActorFuture<Partition> installFollowerPartition(long term) {
-    LOG.debug("Installing follower partition service for partition {}", partitionId);
-    final BrokerRestoreServer restoreServer =
-        new BrokerRestoreServer(communicationService, partitionId);
+  private ActorFuture<Partition> installFollowerPartition() {
+    LOG.debug("Installing follower partition service for partition {}", partition.id());
     final Partition partition =
-        new Partition(
-            configuration,
-            brokerCfg,
-            clusterEventService,
-            partitionId,
-            RaftState.FOLLOWER,
-            term,
-            restoreServer);
+        new Partition(brokerCfg, this.partition, clusterEventService, RaftState.FOLLOWER);
 
     return startContext
         .createService(followerPartitionServiceName, partition)
         .dependency(logStreamServiceName, partition.getLogStreamInjector())
-        .dependency(logStorageServiceName, partition.getLogStorageInjector())
         .group(FOLLOWER_PARTITION_GROUP_NAME)
         .install();
   }
 
   private ActorFuture<Void> removeFollowerPartitionService() {
-    LOG.debug("Removing follower partition service for partition {}", partitionId);
+    LOG.debug("Removing follower partition service for partition {}", partition.id());
     return startContext.removeService(followerPartitionServiceName);
+  }
+
+  private void setLogStream(final LogStream logStream) {
+    this.logStream = logStream;
+    partition.getServer().addCommitListener(this);
+  }
+
+  @Override
+  public <T extends RaftLogEntry> void onCommit(final Indexed<T> indexed) {
+    if (indexed.type() == ZeebeEntry.class) {
+      this.logStream.setCommitPosition(indexed.<ZeebeEntry>cast().entry().highestPosition());
+    }
   }
 }

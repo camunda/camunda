@@ -180,12 +180,17 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>atomix-raft</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>atomix-primitive</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>atomix-raft</artifactId>
+      <artifactId>atomix-storage</artifactId>
     </dependency>
 
     <dependency>
@@ -229,6 +234,14 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-workflow-engine</artifactId>
+      <type>test-jar</type>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-logstreams</artifactId>
       <type>test-jar</type>
       <classifier>tests</classifier>
       <scope>test</scope>

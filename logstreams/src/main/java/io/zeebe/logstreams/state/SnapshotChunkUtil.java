@@ -21,24 +21,24 @@ public class SnapshotChunkUtil {
   }
 
   public static SnapshotChunk createSnapshotChunkFromFile(
-      File snapshotChunkFile, long snapshotPosition, int totalCount) throws IOException {
+      File snapshotChunkFile, String snapshotId, int totalCount) throws IOException {
     final byte[] content;
     content = Files.readAllBytes(snapshotChunkFile.toPath());
     final long checksum = createChecksum(content);
     return new SnapshotChunkImpl(
-        snapshotPosition, totalCount, snapshotChunkFile.getName(), checksum, content);
+        snapshotId, totalCount, snapshotChunkFile.getName(), checksum, content);
   }
 
   private static final class SnapshotChunkImpl implements SnapshotChunk {
-    private final long snapshotPosition;
+    private final String snapshotId;
     private final int totalCount;
     private final String chunkName;
     private final byte[] content;
     private final long checksum;
 
     SnapshotChunkImpl(
-        long snapshotPosition, int totalCount, String chunkName, long checksum, byte[] content) {
-      this.snapshotPosition = snapshotPosition;
+        String snapshotId, int totalCount, String chunkName, long checksum, byte[] content) {
+      this.snapshotId = snapshotId;
       this.totalCount = totalCount;
       this.chunkName = chunkName;
       this.checksum = checksum;
@@ -46,8 +46,8 @@ public class SnapshotChunkUtil {
     }
 
     @Override
-    public long getSnapshotPosition() {
-      return snapshotPosition;
+    public String getSnapshotId() {
+      return snapshotId;
     }
 
     @Override

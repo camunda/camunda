@@ -86,8 +86,8 @@ public class StreamProcessorRule implements TestRule {
             .around(new CleanUpRule(tempFolder::getRoot))
             .around(serviceContainerRule)
             .around(closeables)
-            .around(new FailedTestRecordPrinter())
-            .around(rule);
+            .around(rule)
+            .around(new FailedTestRecordPrinter());
   }
 
   @Override

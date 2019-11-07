@@ -69,11 +69,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-logstreams</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>atomix-cluster</artifactId>
     </dependency>
 
@@ -85,16 +80,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>atomix</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-raft</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-primitive</artifactId>
     </dependency>
 
     <dependency>
