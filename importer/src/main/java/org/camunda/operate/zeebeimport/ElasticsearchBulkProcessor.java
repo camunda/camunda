@@ -112,7 +112,7 @@ public class ElasticsearchBulkProcessor {
       break;
     }
 
-    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, true);
+    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
   }
 
 }

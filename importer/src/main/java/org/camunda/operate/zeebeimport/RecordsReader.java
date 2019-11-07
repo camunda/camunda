@@ -157,7 +157,8 @@ public class RecordsReader {
         searchSourceBuilder = searchSourceBuilder.size(size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size); //this size will be bigger than needed
       }
       final SearchRequest searchRequest = new SearchRequest(aliasName)
-          .source(searchSourceBuilder);
+          .source(searchSourceBuilder)
+          .routing(String.valueOf(partitionId));
 
       final SearchResponse searchResponse =
           zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);

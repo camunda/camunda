@@ -106,8 +106,6 @@ public class ListViewZeebeRecordProcessor {
             //TODO must be idempotent
             //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
             elasticsearchManager.completeOperation(record.getKey(), null, OperationType.CANCEL_WORKFLOW_INSTANCE);
-            //if we update smth, we need it to have affect at once
-            bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
           }
           wiEntity = updateWorkflowInstance(importBatch, record, intentStr, recordValue, wiEntity);
         } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
