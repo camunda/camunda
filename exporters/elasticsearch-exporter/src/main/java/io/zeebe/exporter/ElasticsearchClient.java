@@ -69,7 +69,8 @@ public class ElasticsearchClient {
 
     final IndexRequest request =
         new IndexRequest(indexFor(record), typeFor(record), idFor(record))
-            .source(record.toJson(), XContentType.JSON);
+            .source(record.toJson(), XContentType.JSON)
+            .routing(String.valueOf(record.getPartitionId()));
     bulk(request);
   }
 
