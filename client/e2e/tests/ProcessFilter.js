@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import setup from '../setup';
+import {ensureLicense, cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
@@ -13,7 +13,8 @@ import * as Filter from './Filter.elements.js';
 
 fixture('Process Report Filter')
   .page(config.endpoint)
-  .before(setup)
+  .before(ensureLicense)
+  .after(cleanEntities)
   .beforeEach(u.login);
 
 test('variable filter modal dependent on variable type', async t => {

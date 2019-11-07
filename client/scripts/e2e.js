@@ -19,7 +19,9 @@ const ciMode = process.argv.indexOf('ci') > -1;
 // argument to determine if we want to use headlessChrome instead of default Browserstack
 const chromeheadlessMode = process.argv.indexOf('chromeheadless') > -1;
 
-console.debug('executing e2e script in [ci=' + ciMode + ', chromeheadlessMode=' + chromeheadlessMode + ']');
+console.debug(
+  'executing e2e script in [ci=' + ciMode + ', chromeheadlessMode=' + chromeheadlessMode + ']'
+);
 
 if (!ciMode) {
   // credentials for local testing, in CI we get credentials from jenkins
@@ -29,9 +31,9 @@ if (!ciMode) {
 process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 process.env.BROWSERSTACK_DISPLAY_RESOLUTION = '1920x1080';
 
-const browsers = chromeheadlessMode ?
-  ['chrome:headless'] :
-  ['browserstack:Edge', 'browserstack:Firefox', 'browserstack:Chrome'];
+const browsers = chromeheadlessMode
+  ? ['chrome:headless']
+  : ['browserstack:Edge', 'browserstack:Firefox', 'browserstack:Chrome'];
 
 const backendProcess = spawn('yarn', ['run', 'start-backend', ciMode ? 'ci' : undefined]);
 const frontendProcess = spawn('yarn', ['start']);
@@ -115,21 +117,19 @@ async function startTest() {
   const testCafe = await createTestCafe('localhost');
   let hasFailures = false;
   try {
-    for (let i = 0; i < browsers.length; i++) {
-      if (
-        await testCafe
-          .createRunner()
-          .src('e2e/tests/*.js')
-          .browsers(browsers[i])
-          .run({
-            skipJsErrors: true,
-            disableScreenshots: true,
-            assertionTimeout: 10000,
-            pageLoadTimeout: 10000
-          })
-      ) {
-        hasFailures = true;
-      }
+    if (
+      await testCafe
+        .createRunner()
+        .src('e2e/tests/*.js')
+        .browsers(browsers)
+        .run({
+          skipJsErrors: true,
+          disableScreenshots: true,
+          assertionTimeout: 10000,
+          pageLoadTimeout: 10000
+        })
+    ) {
+      hasFailures = true;
     }
   } finally {
     await testCafe.close();

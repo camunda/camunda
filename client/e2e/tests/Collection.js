@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import setup from '../setup';
+import {ensureLicense, cleanEntities} from '../setup';
 import config from '../config';
-import {login, save} from '../utils';
+import {login, save, getUser} from '../utils';
 
 import * as Homepage from './Homepage.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
@@ -14,7 +14,8 @@ import * as e from './Collection.elements.js';
 
 fixture('Collection')
   .page(config.endpoint)
-  .before(setup);
+  .before(ensureLicense)
+  .after(cleanEntities);
 
 test('create a collection and entities inside it', async t => {
   await login(t);
@@ -117,9 +118,11 @@ test('changing user permission', async t => {
   await t.hover(e.groupItem);
   await t.expect(Homepage.contextMenu(e.groupItem).visible).ok();
 
-  await t.click(Homepage.contextMenu(e.groupItem));
-  await t.click(Homepage.edit(e.groupItem));
+  const {username} = getUser(t, 'user2');
 
+  await t.click(e.addUserButton);
+  await t.typeText(e.typeaheadInput, username, {replace: true});
+  await t.click(e.typeaheadOption(username));
   await t.click(e.roleOption('Manager'));
   await t.click(e.confirmModalButton);
 
@@ -141,7 +144,7 @@ test('changing user permission', async t => {
 });
 
 test('deleting a collection', async t => {
-  await login(t, 'john');
+  await login(t, 'user2');
 
   await t.click(Homepage.collectionItem);
 

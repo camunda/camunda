@@ -6,12 +6,25 @@
 
 import {Selector} from 'testcafe';
 
-export async function login(t, user = 'demo') {
+import config from './config';
+
+export async function login(t, userHandle = 'user1') {
+  const user = getUser(t, userHandle);
+
+  t.fixtureCtx.users = t.fixtureCtx.users || [];
+  if (!t.fixtureCtx.users.find(existingUser => existingUser.username === user.username)) {
+    t.fixtureCtx.users.push(user);
+  }
+
   await t
     .maximizeWindow()
-    .typeText('input[name="username"]', user)
-    .typeText('input[name="password"]', user)
+    .typeText('input[name="username"]', user.username)
+    .typeText('input[name="password"]', user.password)
     .click('.primary');
+}
+
+export function getUser(t, userHandle) {
+  return config.users[t.testRun.browserConnection.browserInfo.parsedUserAgent.family][userHandle];
 }
 
 export async function createNewReport(t) {
