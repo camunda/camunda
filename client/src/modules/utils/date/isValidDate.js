@@ -4,8 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {format} from 'date-fns';
+import {isValid, parseISO} from 'date-fns';
 
-export function formatDate(dateString) {
-  return dateString ? format(dateString, 'YYYY-MM-DD HH:mm:ss') : '--';
+export function isValidDate(dateString) {
+  if (typeof dateString !== 'string') {
+    throw new TypeError('please provide date as string');
+  }
+
+  return isValid(parseISO(dateString));
 }

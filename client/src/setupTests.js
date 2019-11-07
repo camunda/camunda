@@ -20,4 +20,4 @@ global.localStorage = localStorageMock;
 Enzyme.configure({adapter: new Adapter()});
 
 // mock date util
-jest.mock('modules/utils/date');
+jest.mock('modules/utils/date/formatDate');

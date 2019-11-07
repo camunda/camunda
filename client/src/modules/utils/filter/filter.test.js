@@ -14,6 +14,8 @@ import {
 
 import {DEFAULT_FILTER} from 'modules/constants';
 
+jest.unmock('modules/utils/date/formatDate');
+
 const workflows = {
   demoProcess: {
     bpmnProcessId: 'demoProcess',

@@ -30,7 +30,7 @@ const parseDate = (value, name) => {
   const isValidDate = isValid(date);
   let dateAfter, dateBefore;
   // enforce no comma in the timezone
-  const formatWithTimezone = 'YYYY-MM-DDTHH:mm:ss.SSSZZ';
+  const formatWithTimezone = "yyyy-MM-dd'T'HH:mm:ss.SSSxx";
 
   if (value === '') {
     return {

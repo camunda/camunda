@@ -5,6 +5,7 @@
  */
 
 import {ALL_VERSIONS_OPTION} from './constants';
+import {isValidDate} from 'modules/utils/date';
 import {compactObject} from 'modules/utils';
 import {trimValue} from 'modules/utils';
 import {trimVariable} from 'modules/utils/variable';
@@ -61,8 +62,7 @@ export function checkIsDateComplete(date) {
     return true;
   }
 
-  const parsedDate = new Date(trimmedDate);
-  if (!(parsedDate instanceof Date) || isNaN(parsedDate)) {
+  if (!isValidDate(trimmedDate)) {
     return false;
   }
 
