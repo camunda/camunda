@@ -5,45 +5,45 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.clustering.base.gossip;
+package io.zeebe.broker.clustering.atomix;
 
 import io.atomix.core.Atomix;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.concurrent.CompletableFuture;
 
-public class AtomixJoinService implements Service<Void> {
+/**
+ * This should eventually become our partition service, and we will start {@link
+ * io.atomix.cluster.AtomixCluster} in the {@link AtomixService}, before bootstrapping the
+ * partitions here
+ */
+public class AtomixJoinService implements Service<Atomix> {
 
   private final Injector<Atomix> atomixInjector = new Injector<>();
   private Atomix atomix;
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
+    final var started = new CompletableActorFuture<Void>();
     atomix = atomixInjector.getValue();
+    atomix
+        .start()
+        .whenComplete(
+            (nothing, error) -> {
+              if (error != null) {
+                started.completeExceptionally(error);
+              } else {
+                started.complete(null);
+              }
+            });
 
-    final CompletableFuture<Void> startFuture = atomix.start();
-    startContext.async(mapCompletableFuture(startFuture), true);
+    startContext.async(started);
   }
 
   @Override
-  public Void get() {
-    return null;
-  }
-
-  private ActorFuture<Void> mapCompletableFuture(CompletableFuture<Void> atomixFuture) {
-    final ActorFuture<Void> mappedActorFuture = new CompletableActorFuture<>();
-
-    atomixFuture
-        .thenAccept(mappedActorFuture::complete)
-        .exceptionally(
-            t -> {
-              mappedActorFuture.completeExceptionally(t);
-              return null;
-            });
-    return mappedActorFuture;
+  public Atomix get() {
+    return atomix;
   }
 
   public Injector<Atomix> getAtomixInjector() {

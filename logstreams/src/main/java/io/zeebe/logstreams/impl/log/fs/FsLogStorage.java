@@ -17,6 +17,7 @@ import static io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor.METADATA_LE
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
 import io.zeebe.util.FileUtil;
 import java.io.File;
@@ -29,7 +30,7 @@ import java.util.List;
 import java.util.function.LongUnaryOperator;
 import org.slf4j.Logger;
 
-public class FsLogStorage implements LogStorage {
+public class FsLogStorage implements LogStorage, LogStorageReader {
   public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
 
   private static final int STATE_CREATED = 0;
@@ -201,8 +202,8 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
-  public boolean isByteAddressable() {
-    return true;
+  public LogStorageReader newReader() {
+    return this;
   }
 
   @Override

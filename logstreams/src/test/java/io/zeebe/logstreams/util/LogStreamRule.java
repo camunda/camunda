@@ -17,7 +17,7 @@ import io.zeebe.distributedlog.DistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.impl.LogStreamBuilder;
+import io.zeebe.logstreams.impl.FsLogStreamBuilder;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
@@ -39,27 +39,27 @@ import org.mockito.stubbing.Answer;
 public final class LogStreamRule extends ExternalResource {
   private final TemporaryFolder temporaryFolder;
   private final ControlledActorClock clock = new ControlledActorClock();
-  private Consumer<LogStreamBuilder> streamBuilder;
+  private Consumer<FsLogStreamBuilder> streamBuilder;
   private ActorScheduler actorScheduler;
   private ServiceContainer serviceContainer;
   private LogStream logStream;
   private BufferedLogStreamReader logStreamReader;
   private DistributedLogstreamService distributedLogImpl;
-  private LogStreamBuilder builder;
+  private FsLogStreamBuilder builder;
   private ActorSchedulerRule actorSchedulerRule;
   private final boolean shouldStartByDefault;
 
   private LogStreamRule(
       final TemporaryFolder temporaryFolder,
       final boolean shouldStart,
-      final Consumer<LogStreamBuilder> streamBuilder) {
+      final Consumer<FsLogStreamBuilder> streamBuilder) {
     this.temporaryFolder = temporaryFolder;
     this.shouldStartByDefault = shouldStart;
     this.streamBuilder = streamBuilder;
   }
 
   public static LogStreamRule startByDefault(
-      final TemporaryFolder temporaryFolder, final Consumer<LogStreamBuilder> streamBuilder) {
+      final TemporaryFolder temporaryFolder, final Consumer<FsLogStreamBuilder> streamBuilder) {
     return new LogStreamRule(temporaryFolder, true, streamBuilder);
   }
 
@@ -71,7 +71,7 @@ public final class LogStreamRule extends ExternalResource {
     return new LogStreamRule(temporaryFolder, false, b -> {});
   }
 
-  public LogStream startLogStreamWithConfiguration(Consumer<LogStreamBuilder> streamBuilder) {
+  public LogStream startLogStreamWithConfiguration(Consumer<FsLogStreamBuilder> streamBuilder) {
     this.streamBuilder = streamBuilder;
     startLogStream();
     return logStream;
@@ -102,8 +102,8 @@ public final class LogStreamRule extends ExternalResource {
 
     builder =
         LogStreams.createFsLogStream(0)
-            .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
-            .serviceContainer(serviceContainer);
+            .withLogDirectory(temporaryFolder.getRoot().getAbsolutePath())
+            .withServiceContainer(serviceContainer);
 
     // apply additional configs
     streamBuilder.accept(builder);
@@ -173,7 +173,7 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   public void openLogStream() {
-    logStream = builder.build().join();
+    logStream = builder.build();
     openDistributedLog();
     logStream.openAppender().join();
   }

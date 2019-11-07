@@ -24,8 +24,8 @@ public class ClusterBaseLayerServiceNames {
 
   public static final ServiceName<Atomix> ATOMIX_SERVICE =
       ServiceName.newServiceName("cluster.base.atomix", Atomix.class);
-  public static final ServiceName<Void> ATOMIX_JOIN_SERVICE =
-      ServiceName.newServiceName("cluster.base.atomix.join", Void.class);
+  public static final ServiceName<Atomix> ATOMIX_JOIN_SERVICE =
+      ServiceName.newServiceName("cluster.base.atomix.join", Atomix.class);
   public static final ServiceName<PartitionLeaderElection> LEADERSHIP_SERVICE_GROUP =
       ServiceName.newServiceName("cluster.base.leadership.service", PartitionLeaderElection.class);
 

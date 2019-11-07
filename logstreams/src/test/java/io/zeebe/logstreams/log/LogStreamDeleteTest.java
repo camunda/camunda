@@ -42,7 +42,7 @@ public class LogStreamDeleteTest {
     final File logDir = temporaryFolder.getRoot();
     final LogStream logStream =
         logStreamRule.startLogStreamWithConfiguration(
-            b -> b.logRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
+            b -> b.withLogRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
 
     // when
     logStream.close();
@@ -56,7 +56,7 @@ public class LogStreamDeleteTest {
   public void shouldNotDeleteOnCloseByDefault() {
     final File logDir = temporaryFolder.getRoot();
     final LogStream logStream =
-        logStreamRule.startLogStreamWithConfiguration(b -> b.logRootPath(logDir.getAbsolutePath()));
+        logStreamRule.startLogStreamWithConfiguration(b -> b.withLogRootPath(logDir.getAbsolutePath()));
 
     // when
     logStream.close();
@@ -111,7 +111,7 @@ public class LogStreamDeleteTest {
             - 1);
     final LogStream logStream =
         logStreamRule.startLogStreamWithConfiguration(
-            c -> c.logSegmentSize(segmentSize).maxFragmentSize(segmentSize));
+            c -> c.withLogSegmentSize(segmentSize).withMaxFragmentSize(segmentSize));
     final byte[] largeEvent = new byte[remainingCapacity];
 
     // written from segment 0 4096 -> 8192

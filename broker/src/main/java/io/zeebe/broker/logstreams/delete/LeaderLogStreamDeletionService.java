@@ -17,7 +17,7 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class LeaderLogStreamDeletionService implements DeletionService, Service {
+public class LeaderLogStreamDeletionService implements DeletionService, Service<DeletionService> {
   private final Injector<ExporterDirectorService> exporterDirectorInjector = new Injector<>();
   private final LogStream logStream;
   private ExporterDirectorService exporterDirector;

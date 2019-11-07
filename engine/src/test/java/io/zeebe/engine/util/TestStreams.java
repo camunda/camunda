@@ -138,12 +138,11 @@ public class TestStreams {
     final LogStream logStream =
         spy(
             LogStreams.createFsLogStream(partitionId)
-                .logDirectory(segments.getAbsolutePath())
-                .serviceContainer(serviceContainer)
-                .logName(name)
+                .withLogDirectory(segments.getAbsolutePath())
+                .withServiceContainer(serviceContainer)
+                .withLogName(name)
                 .deleteOnClose(true)
-                .build()
-                .join());
+                .build());
 
     // Create distributed log service
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);

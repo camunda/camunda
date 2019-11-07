@@ -99,11 +99,10 @@ public class CommandApiMessageHandlerTest {
     final String logName = "test";
     logStream =
         LogStreams.createFsLogStream(LOG_STREAM_PARTITION_ID)
-            .logRootPath(tempFolder.getRoot().getAbsolutePath())
-            .serviceContainer(serviceContainerRule.get())
-            .logName(logName)
-            .build()
-            .join();
+            .withLogRootPath(tempFolder.getRoot().getAbsolutePath())
+            .withServiceContainer(serviceContainerRule.get())
+            .withLogName(logName)
+            .build();
 
     // Create distributed log service
     final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);

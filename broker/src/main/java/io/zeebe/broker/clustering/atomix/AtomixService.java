@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.clustering.base.gossip;
+package io.zeebe.broker.clustering.atomix;
 
 import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryBuilder;
@@ -32,15 +32,16 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
 public class AtomixService implements Service<Atomix> {
-
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final BrokerCfg configuration;
@@ -52,14 +53,10 @@ public class AtomixService implements Service<Atomix> {
 
   @Override
   public void start(final ServiceStartContext startContext) {
-    final ClusterCfg clusterCfg = configuration.getCluster();
-
-    final int nodeId = clusterCfg.getNodeId();
-    final String localMemberId = Integer.toString(nodeId);
-
-    final NetworkCfg networkCfg = configuration.getNetwork();
-    final String host = networkCfg.getInternalApi().getAdvertisedHost();
-    final int port = networkCfg.getInternalApi().getAdvertisedPort();
+    final var clusterCfg = configuration.getCluster();
+    final var nodeId = clusterCfg.getNodeId();
+    final var localMemberId = Integer.toString(nodeId);
+    final var networkCfg = configuration.getNetwork();
 
     final NodeDiscoveryProvider discoveryProvider =
         createDiscoveryProvider(clusterCfg, localMemberId);
@@ -70,23 +67,21 @@ public class AtomixService implements Service<Atomix> {
         Atomix.builder()
             .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
-            .withAddress(Address.from(host, port))
+            .withAddress(
+                Address.from(
+                    networkCfg.getInternalApi().getAdvertisedHost(),
+                    networkCfg.getInternalApi().getAdvertisedPort()))
             .withMessagingPort(networkCfg.getInternalApi().getPort())
             .withMessagingInterface(networkCfg.getInternalApi().getHost())
             .withMembershipProvider(discoveryProvider);
 
     final DataCfg dataConfiguration = configuration.getData();
     final String rootDirectory = dataConfiguration.getDirectories().get(0);
+    IoUtil.ensureDirectoryExists(new File(rootDirectory), "Zeebe data directory");
 
     final String systemPartitionName = "system";
     final File systemDirectory = new File(rootDirectory, systemPartitionName);
-    if (!systemDirectory.exists()) {
-      try {
-        Files.createDirectory(systemDirectory.toPath());
-      } catch (final IOException e) {
-        throw new RuntimeException("Unable to create directory " + systemDirectory, e);
-      }
-    }
+    IoUtil.ensureDirectoryExists(systemDirectory, "Raft system directory");
 
     final RaftPartitionGroup systemGroup =
         RaftPartitionGroup.builder(systemPartitionName)
@@ -131,13 +126,7 @@ public class AtomixService implements Service<Atomix> {
       final String rootDirectory, final String raftPartitionGroupName) {
 
     final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
-    if (!raftDirectory.exists()) {
-      try {
-        Files.createDirectory(raftDirectory.toPath());
-      } catch (final IOException e) {
-        throw new RuntimeException("Unable to create directory " + raftDirectory, e);
-      }
-    }
+    IoUtil.ensureDirectoryExists(raftDirectory, "Raft data directory");
 
     final ClusterCfg clusterCfg = configuration.getCluster();
     final DataCfg dataCfg = configuration.getData();
@@ -149,6 +138,7 @@ public class AtomixService implements Service<Atomix> {
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
+            .withStateMachineFactory(ZeebeRaftStateMachine::new)
             .withFlushOnCommit();
 
     // by default, the Atomix max entry size is 1 MB

@@ -10,13 +10,13 @@ package io.zeebe.logstreams.impl;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
-import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 
 import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
 import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.impl.service.FsLogStorageService;
 import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -29,67 +29,78 @@ import java.util.Objects;
 import java.util.function.Function;
 import org.agrona.concurrent.status.AtomicLongPosition;
 
-public class LogStreamBuilder {
-  protected final int partitionId;
-  protected final AtomicLongPosition commitPosition = new AtomicLongPosition();
-  protected final ActorConditions onCommitPositionUpdatedConditions = new ActorConditions();
-  protected ServiceContainer serviceContainer;
-  protected String logName;
-  protected String logRootPath;
-  protected String logDirectory;
-  protected int initialLogSegmentId = 0;
-  protected boolean deleteOnClose;
-  protected int maxFragmentSize = 1024 * 1024 * 4;
-  protected int logSegmentSize = 1024 * 1024 * 128;
-  protected Function<FsLogStorage, FsLogStorage> logStorageStubber = Function.identity();
+public class FsLogStreamBuilder extends LogStreamBuilder<FsLogStreamBuilder> {
+  private final AtomicLongPosition commitPosition;
+  private final ActorConditions onCommitPositionUpdatedConditions;
 
-  public LogStreamBuilder(final int partitionId) {
+  private String logName;
+  private String logRootPath;
+  private String logDirectory;
+  private int initialLogSegmentId = 0;
+  private boolean deleteOnClose;
+  private int logSegmentSize = 1024 * 1024 * 128;
+  private Function<FsLogStorage, FsLogStorage> logStorageStubber;
+
+  public FsLogStreamBuilder(final int partitionId) {
     this.partitionId = partitionId;
+    logStorageStubber = Function.identity();
+    onCommitPositionUpdatedConditions = new ActorConditions();
+    commitPosition = new AtomicLongPosition();
   }
 
-  public LogStreamBuilder serviceContainer(final ServiceContainer serviceContainer) {
-    this.serviceContainer = serviceContainer;
-    return this;
+  @Override
+  public ActorFuture<LogStream> buildAsync() {
+    Objects.requireNonNull(serviceContainer, "serviceContainer");
+    validate();
+
+    final CompositeServiceBuilder installOperation =
+        serviceContainer.createComposite(logStreamRootServiceName(logName));
+
+    final ServiceName<LogStream> logStreamServiceName = addServices(installOperation);
+
+    return installOperation.installAndReturn(logStreamServiceName);
   }
 
-  public LogStreamBuilder logName(final String logName) {
+  @Override
+  protected void validate() {
+    super.validate();
+
+    if (logSegmentSize < maxFragmentSize) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected the log segment size greater than the max fragment size of %s, but was %s.",
+              ByteValue.ofBytes(maxFragmentSize), ByteValue.ofBytes(logSegmentSize)));
+    }
+  }
+
+  public FsLogStreamBuilder withLogName(final String logName) {
     this.logName = logName;
     return this;
   }
 
-  public LogStreamBuilder logRootPath(final String logRootPath) {
+  public FsLogStreamBuilder withLogRootPath(final String logRootPath) {
     this.logRootPath = logRootPath;
     return this;
   }
 
-  public LogStreamBuilder logDirectory(final String logDir) {
+  public FsLogStreamBuilder withLogDirectory(final String logDir) {
     logDirectory = logDir;
     return this;
   }
 
-  public LogStreamBuilder initialLogSegmentId(final int logFragmentId) {
-    initialLogSegmentId = logFragmentId;
-    return this;
-  }
-
-  public LogStreamBuilder logSegmentSize(final int logSegmentSize) {
+  public FsLogStreamBuilder withLogSegmentSize(final int logSegmentSize) {
     this.logSegmentSize = logSegmentSize;
     return this;
   }
 
-  public LogStreamBuilder deleteOnClose(final boolean deleteOnClose) {
+  public FsLogStreamBuilder deleteOnClose(final boolean deleteOnClose) {
     this.deleteOnClose = deleteOnClose;
     return this;
   }
 
-  public LogStreamBuilder logStorageStubber(
+  public FsLogStreamBuilder logStorageStubber(
       final Function<FsLogStorage, FsLogStorage> logStorageStubber) {
     this.logStorageStubber = logStorageStubber;
-    return this;
-  }
-
-  public LogStreamBuilder maxFragmentSize(final int maxFragmentSize) {
-    this.maxFragmentSize = maxFragmentSize;
     return this;
   }
 
@@ -124,18 +135,6 @@ public class LogStreamBuilder {
     return onCommitPositionUpdatedConditions;
   }
 
-  public ActorFuture<LogStream> build() {
-    Objects.requireNonNull(serviceContainer, "serviceContainer");
-    validate();
-
-    final CompositeServiceBuilder installOperation =
-        serviceContainer.createComposite(logStreamRootServiceName(logName));
-
-    final ServiceName<LogStream> logStreamServiceName = addServices(installOperation);
-
-    return installOperation.installAndReturn(logStreamServiceName);
-  }
-
   private ServiceName<LogStream> addServices(final CompositeServiceBuilder installOperation) {
     final ServiceName<LogStorage> logStorageServiceName = logStorageServiceName(logName);
     final ServiceName<LogStream> logStreamServiceName = logStreamServiceName(logName);
@@ -155,17 +154,5 @@ public class LogStreamBuilder {
         .install();
 
     return logStreamServiceName;
-  }
-
-  private void validate() {
-    Objects.requireNonNull(logName, "logName");
-    ensureGreaterThanOrEqual("partitionId", partitionId, 0);
-
-    if (logSegmentSize < maxFragmentSize) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the log segment size greater than the max fragment size of %s, but was %s.",
-              ByteValue.ofBytes(maxFragmentSize), ByteValue.ofBytes(logSegmentSize)));
-    }
   }
 }

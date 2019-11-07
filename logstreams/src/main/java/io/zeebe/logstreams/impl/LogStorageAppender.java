@@ -11,7 +11,6 @@ import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.impl.backpressure.AlgorithmCfg;
 import io.zeebe.logstreams.impl.backpressure.AppendBackpressureMetrics;
 import io.zeebe.logstreams.impl.backpressure.AppendEntryLimiter;
@@ -20,6 +19,7 @@ import io.zeebe.logstreams.impl.backpressure.AppenderGradient2Cfg;
 import io.zeebe.logstreams.impl.backpressure.AppenderVegasCfg;
 import io.zeebe.logstreams.impl.backpressure.BackpressureConstants;
 import io.zeebe.logstreams.impl.backpressure.NoopAppendLimiter;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.Environment;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -42,25 +42,26 @@ public class LogStorageAppender extends Actor {
   private final String name;
   private final Subscription writeBufferSubscription;
   private final int maxAppendBlockSize;
-  private final DistributedLogstreamPartition distributedLog;
+  private final LogStorage logStorage;
   private final AppendLimiter appendEntryLimiter;
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
+  private final LoggedEventImpl positionReader = new LoggedEventImpl();
   private long currentInFlightBytes;
   private final Runnable peekedBlockHandler = this::appendBlock;
 
   public LogStorageAppender(
-      String name,
-      DistributedLogstreamPartition distributedLog,
-      Subscription writeBufferSubscription,
-      int maxBlockSize) {
+      final String name,
+      final int partitionId,
+      final LogStorage logStorage,
+      final Subscription writeBufferSubscription,
+      final int maxBlockSize) {
     this.env = new Environment();
     this.name = name;
-    this.distributedLog = distributedLog;
+    this.logStorage = logStorage;
     this.writeBufferSubscription = writeBufferSubscription;
     this.maxAppendBlockSize = maxBlockSize;
 
-    final int partitionId = distributedLog.getPartitionId();
     appendBackpressureMetrics = new AppendBackpressureMetrics(partitionId);
 
     final boolean isBackpressureEnabled =
@@ -69,7 +70,7 @@ public class LogStorageAppender extends Actor {
         isBackpressureEnabled ? initBackpressure(partitionId) : initNoBackpressure(partitionId);
   }
 
-  private AppendLimiter initBackpressure(int partitionId) {
+  private AppendLimiter initBackpressure(final int partitionId) {
     final String algorithmName =
         env.get(BackpressureConstants.ENV_BP_APPENDER_ALGORITHM).orElse("vegas").toLowerCase();
     final AlgorithmCfg algorithmCfg =
@@ -91,7 +92,7 @@ public class LogStorageAppender extends Actor {
         .build();
   }
 
-  private AppendLimiter initNoBackpressure(int partition) {
+  private AppendLimiter initNoBackpressure(final int partition) {
     LOG.warn(
         "No back pressure for the log appender (partition = {}) configured! This might cause problems.",
         partition);
@@ -101,16 +102,15 @@ public class LogStorageAppender extends Actor {
   private void appendBlock() {
     final ByteBuffer rawBuffer = blockPeek.getRawBuffer();
     final int bytes = rawBuffer.remaining();
-    final var bytesToAppend = new byte[bytes];
-    rawBuffer.get(bytesToAppend);
+    final ByteBuffer copiedBuffer = ByteBuffer.allocate(bytes).put(rawBuffer).flip();
+    final Positions positions = readPositions(copiedBuffer);
 
     // Commit position is the position of the last event. DistributedLogstream uses this position
     // to identify duplicate append requests during recovery.
-    final long lastEventPosition = getLastEventPosition(bytesToAppend);
     appendBackpressureMetrics.newEntryToAppend();
-    if (appendEntryLimiter.tryAcquire(lastEventPosition)) {
+    if (appendEntryLimiter.tryAcquire(positions.highest)) {
       currentInFlightBytes += bytes;
-      appendToPrimitive(bytesToAppend, lastEventPosition);
+      appendToPrimitive(copiedBuffer, positions);
       blockPeek.markCompleted();
     } else {
       appendBackpressureMetrics.deferred();
@@ -123,47 +123,29 @@ public class LogStorageAppender extends Actor {
     }
   }
 
-  private void appendToPrimitive(byte[] bytesToAppend, long lastEventPosition) {
+  private void appendToPrimitive(final ByteBuffer bytesToAppend, final Positions positions) {
     actor.submit(
         () -> {
-          distributedLog
-              .asyncAppend(bytesToAppend, lastEventPosition)
+          final var length = bytesToAppend.remaining();
+          logStorage
+              .appendAsync(positions.lowest, positions.highest, bytesToAppend)
               .whenComplete(
                   (appendPosition, error) -> {
                     if (error != null) {
                       LOG.error(
                           "Failed to append block with last event position {}, retry.",
-                          lastEventPosition);
-                      appendToPrimitive(bytesToAppend, lastEventPosition);
+                          positions.highest);
+                      appendToPrimitive(bytesToAppend, positions);
                     } else {
                       actor.run(
                           () -> {
-                            appendEntryLimiter.onCommit(lastEventPosition);
-                            currentInFlightBytes -= bytesToAppend.length;
+                            appendEntryLimiter.onCommit(positions.highest);
+                            currentInFlightBytes -= length;
                             actor.run(this::peekBlock);
                           });
                     }
                   });
         });
-  }
-
-  /* Iterate over the events in buffer and find the position of the last event */
-  private long getLastEventPosition(byte[] buffer) {
-    int bufferOffset = 0;
-    final DirectBuffer directBuffer = new UnsafeBuffer(0, 0);
-
-    directBuffer.wrap(buffer);
-    long lastEventPosition = -1;
-
-    final LoggedEventImpl nextEvent = new LoggedEventImpl();
-    int remaining = buffer.length - bufferOffset;
-    while (remaining > 0) {
-      nextEvent.wrap(directBuffer, bufferOffset);
-      bufferOffset += nextEvent.getFragmentLength();
-      lastEventPosition = nextEvent.getPosition();
-      remaining = buffer.length - bufferOffset;
-    }
-    return lastEventPosition;
   }
 
   public ActorFuture<Void> close() {
@@ -195,5 +177,28 @@ public class LogStorageAppender extends Actor {
 
   public boolean isFailed() {
     return isFailed.get();
+  }
+
+  private Positions readPositions(final ByteBuffer buffer) {
+    final var view = new UnsafeBuffer(buffer);
+    final var positions = new Positions();
+    var offset = 0;
+    do {
+      positionReader.wrap(view, offset);
+      positions.accept(positionReader.getPosition());
+      offset += positionReader.getLength();
+    } while (offset < view.capacity());
+
+    return positions;
+  }
+
+  private static final class Positions {
+    private long lowest = Long.MAX_VALUE;
+    private long highest = Long.MIN_VALUE;
+
+    private void accept(final long position) {
+      lowest = Math.min(lowest, position);
+      highest = Math.max(highest, position);
+    }
   }
 }

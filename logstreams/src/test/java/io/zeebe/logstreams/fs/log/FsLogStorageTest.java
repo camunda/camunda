@@ -67,11 +67,6 @@ public class FsLogStorageTest {
   }
 
   @Test
-  public void shouldBeByteAddressable() {
-    assertThat(fsLogStorage.isByteAddressable()).isTrue();
-  }
-
-  @Test
   public void shouldGetFirstBlockAddressIfEmpty() throws IOException {
     fsLogStorage.open();
 
