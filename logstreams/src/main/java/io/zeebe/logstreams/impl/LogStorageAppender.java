@@ -105,8 +105,7 @@ public class LogStorageAppender extends Actor {
     final ByteBuffer copiedBuffer = ByteBuffer.allocate(bytes).put(rawBuffer).flip();
     final Positions positions = readPositions(copiedBuffer);
 
-    // Commit position is the position of the last event. DistributedLogstream uses this position
-    // to identify duplicate append requests during recovery.
+    // Commit position is the position of the last event.
     appendBackpressureMetrics.newEntryToAppend();
     if (appendEntryLimiter.tryAcquire(positions.highest)) {
       currentInFlightBytes += bytes;

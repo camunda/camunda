@@ -26,7 +26,6 @@ import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 
@@ -51,10 +50,6 @@ public class ClusterComponent implements Component {
         new NodeInfo(
             brokerConfig.getCluster().getNodeId(),
             networkCfg.getCommandApi().getAdvertisedAddress());
-
-    /* A hack so that DistributedLogstream primitive can create logstream services using this serviceContainer */
-    LogstreamConfig.putServiceContainer(
-        String.valueOf(localMember.getNodeId()), context.getServiceContainer());
 
     final TopologyManagerService topologyManagerService =
         new TopologyManagerService(localMember, brokerConfig.getCluster());

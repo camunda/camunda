@@ -16,7 +16,6 @@ import io.atomix.core.Atomix;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.ByteValue;
@@ -77,7 +76,6 @@ public class RestoreTest {
     waitUntilAtomixBackup(clusteringRule.getLeaderForPartition(1).getNodeId());
 
     clusteringRule.restartBroker(2);
-    waitUntil(() -> !LogstreamConfig.isRestoring("2", 1));
     waitForValidSnapshotAtBroker(clusteringRule.getBroker(2));
 
     clusteringRule.stopBroker(1);
@@ -88,8 +86,6 @@ public class RestoreTest {
     waitUntilAtomixBackup(clusteringRule.getLeaderForPartition(1).getNodeId());
 
     clusteringRule.restartBroker(1);
-    waitUntil(() -> !LogstreamConfig.isRestoring("1", 1));
-
     clusteringRule.stopBroker(0);
 
     // then

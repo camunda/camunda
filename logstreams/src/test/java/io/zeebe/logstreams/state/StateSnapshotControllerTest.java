@@ -13,8 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
-import io.zeebe.distributedlog.restore.snapshot.impl.NullSnapshotRestoreInfo;
+import io.zeebe.logstreams.spi.SnapshotInfo;
 import io.zeebe.logstreams.util.RocksDBWrapper;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
@@ -259,9 +258,9 @@ public class StateSnapshotControllerTest {
     final File snapshotDir = storage.getSnapshotDirectoryFor(1L);
 
     // then
-    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
-    assertThat(restoreInfo.getSnapshotId()).isEqualTo(1L);
-    assertThat(restoreInfo.getNumChunks())
+    final SnapshotInfo snapshotInfo = snapshotController.getLatestSnapshotInfo();
+    assertThat(snapshotInfo.getSnapshotId()).isEqualTo(1L);
+    assertThat(snapshotInfo.getNumChunks())
         .isEqualTo(snapshotDir.listFiles().length)
         .isGreaterThan(0);
   }
@@ -277,9 +276,9 @@ public class StateSnapshotControllerTest {
     final File snapshotDir = snapshotController.getLastValidSnapshotDirectory();
 
     // then
-    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
-    assertThat(restoreInfo.getSnapshotId()).isEqualTo(1L);
-    assertThat(restoreInfo.getNumChunks())
+    final SnapshotInfo snapshotInfo = snapshotController.getLatestSnapshotInfo();
+    assertThat(snapshotInfo.getSnapshotId()).isEqualTo(1L);
+    assertThat(snapshotInfo.getNumChunks())
         .isEqualTo(snapshotDir.listFiles().length)
         .isGreaterThan(0);
   }
@@ -290,8 +289,8 @@ public class StateSnapshotControllerTest {
     snapshotController.openDb();
 
     // when/then
-    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
-    assertThat(restoreInfo).isEqualToComparingFieldByField(new NullSnapshotRestoreInfo());
+    final SnapshotInfo snapshotInfo = snapshotController.getLatestSnapshotInfo();
+    assertThat(snapshotInfo).isEqualToComparingFieldByField(new NullSnapshotInfo());
   }
 
   @Test
@@ -309,9 +308,9 @@ public class StateSnapshotControllerTest {
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class), storage, 2);
 
     // then
-    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
-    assertThat(restoreInfo.getSnapshotId()).isEqualTo(1L);
-    assertThat(restoreInfo.getNumChunks())
+    final SnapshotInfo snapshotInfo = snapshotController.getLatestSnapshotInfo();
+    assertThat(snapshotInfo.getSnapshotId()).isEqualTo(1L);
+    assertThat(snapshotInfo.getNumChunks())
         .isEqualTo(snapshotDir.listFiles().length)
         .isGreaterThan(0);
   }
@@ -333,7 +332,7 @@ public class StateSnapshotControllerTest {
     snapshotController.openDb();
 
     // then
-    final SnapshotRestoreInfo restoreInfo = snapshotController.getLatestSnapshotRestoreInfo();
+    final SnapshotInfo restoreInfo = snapshotController.getLatestSnapshotInfo();
     assertThat(restoreInfo.getSnapshotId()).isEqualTo(1L);
     assertThat(restoreInfo.getNumChunks())
         .isEqualTo(snapshotDir.listFiles().length)
@@ -350,7 +349,7 @@ public class StateSnapshotControllerTest {
     wrapper.putInt(key, value);
   }
 
-  private void corruptSnapshot(long position) throws IOException {
+  private void corruptSnapshot(final long position) throws IOException {
     final File snapshot = storage.getSnapshotDirectoryFor(position);
     assertThat(snapshot).isNotNull();
 

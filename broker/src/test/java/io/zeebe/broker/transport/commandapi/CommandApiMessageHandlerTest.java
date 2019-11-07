@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.transport.commandapi;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.distributedLogPartitionServiceName;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -19,9 +18,6 @@ import com.netflix.concurrency.limits.limit.SettableLimit;
 import io.zeebe.broker.transport.backpressure.CommandRateLimiter;
 import io.zeebe.broker.transport.backpressure.NoopRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
-import io.zeebe.distributedlog.DistributedLogstreamService;
-import io.zeebe.distributedlog.impl.DefaultDistributedLogstreamService;
-import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -88,7 +84,6 @@ public class CommandApiMessageHandlerTest {
   protected BufferingServerOutput serverOutput;
   private LogStream logStream;
   private CommandApiMessageHandler messageHandler;
-  private DistributedLogstreamService distributedLogImpl;
   private RequestLimiter noneLimiter = new NoopRequestLimiter();
 
   @Before
@@ -103,50 +98,6 @@ public class CommandApiMessageHandlerTest {
             .withServiceContainer(serviceContainerRule.get())
             .withLogName(logName)
             .build();
-
-    // Create distributed log service
-    final DistributedLogstreamPartition mockDistLog = mock(DistributedLogstreamPartition.class);
-
-    distributedLogImpl = new DefaultDistributedLogstreamService();
-
-    final String nodeId = "0";
-    try {
-      FieldSetter.setField(
-          distributedLogImpl,
-          DefaultDistributedLogstreamService.class.getDeclaredField("logStream"),
-          logStream);
-
-      FieldSetter.setField(
-          distributedLogImpl,
-          DefaultDistributedLogstreamService.class.getDeclaredField("currentLeader"),
-          nodeId);
-
-    } catch (NoSuchFieldException e) {
-      e.printStackTrace();
-    }
-    doAnswer(
-            (Answer<CompletableFuture<Long>>)
-                invocation -> {
-                  final Object[] arguments = invocation.getArguments();
-                  if (arguments != null
-                      && arguments.length > 1
-                      && arguments[0] != null
-                      && arguments[1] != null) {
-                    final byte[] bytes = (byte[]) arguments[0];
-                    final long pos = (long) arguments[1];
-                    return CompletableFuture.completedFuture(
-                        distributedLogImpl.append(nodeId, pos, bytes));
-                  }
-                  return null;
-                })
-        .when(mockDistLog)
-        .asyncAppend(any(byte[].class), anyLong());
-
-    serviceContainerRule
-        .get()
-        .createService(distributedLogPartitionServiceName(logName), () -> mockDistLog)
-        .install()
-        .join();
 
     logStream.openAppender().join();
 

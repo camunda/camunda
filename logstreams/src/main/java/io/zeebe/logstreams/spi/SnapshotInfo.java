@@ -5,6 +5,12 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.distributedlog;
+package io.zeebe.logstreams.spi;
 
-public interface DistributedLogstreamClient {}
+public interface SnapshotInfo {
+  /** @return the id of the snapshot to restore from */
+  long getSnapshotId();
+
+  /** @return number of chunks in the snapshot at id {@link this::getSnapshotId()} */
+  int getNumChunks();
+}

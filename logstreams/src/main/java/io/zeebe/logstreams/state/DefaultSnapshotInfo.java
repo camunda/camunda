@@ -5,15 +5,15 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.distributedlog.restore.snapshot.impl;
+package io.zeebe.logstreams.state;
 
-import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
+import io.zeebe.logstreams.spi.SnapshotInfo;
 
-public class DefaultSnapshotRestoreInfo implements SnapshotRestoreInfo {
+public class DefaultSnapshotInfo implements SnapshotInfo {
   private long snapshotId;
   private int numChunks;
 
-  public DefaultSnapshotRestoreInfo(long snapshotId, int numChunks) {
+  public DefaultSnapshotInfo(final long snapshotId, final int numChunks) {
     this.snapshotId = snapshotId;
     this.numChunks = numChunks;
   }

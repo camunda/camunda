@@ -8,7 +8,6 @@
 package io.zeebe.logstreams.impl.service;
 
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.Injector;

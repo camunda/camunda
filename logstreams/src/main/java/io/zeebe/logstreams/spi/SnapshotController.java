@@ -8,7 +8,6 @@
 package io.zeebe.logstreams.spi;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -87,5 +86,5 @@ public interface SnapshotController extends AutoCloseable {
    * Returns a {@link io.zeebe.distributedlog.restore.RestoreInfoResponse RestoreInfoResponse} for
    * the latest valid snapshot
    */
-  SnapshotRestoreInfo getLatestSnapshotRestoreInfo();
+  SnapshotInfo getLatestSnapshotInfo();
 }

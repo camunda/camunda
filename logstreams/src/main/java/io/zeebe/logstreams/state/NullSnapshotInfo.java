@@ -5,20 +5,18 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.distributedlog.restore.snapshot.impl;
+package io.zeebe.logstreams.state;
 
-import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreResponse;
-import io.zeebe.logstreams.state.SnapshotChunk;
+import io.zeebe.logstreams.spi.SnapshotInfo;
 
-public class InvalidSnapshotRestoreResponse implements SnapshotRestoreResponse {
-
+public class NullSnapshotInfo implements SnapshotInfo {
   @Override
-  public boolean isSuccess() {
-    return false;
+  public long getSnapshotId() {
+    return -1;
   }
 
   @Override
-  public SnapshotChunk getSnapshotChunk() {
-    return null;
+  public int getNumChunks() {
+    return -1;
   }
 }

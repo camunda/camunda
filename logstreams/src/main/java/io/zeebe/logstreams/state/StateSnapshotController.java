@@ -9,13 +9,11 @@ package io.zeebe.logstreams.state;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
-import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRestoreInfo;
-import io.zeebe.distributedlog.restore.snapshot.impl.NullSnapshotRestoreInfo;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.impl.delete.NoopDeletionService;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.spi.SnapshotInfo;
 import io.zeebe.logstreams.spi.ValidSnapshotListener;
 import io.zeebe.util.FileUtil;
 import java.io.File;
@@ -39,22 +37,22 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   private final int maxSnapshotCount;
   private ZeebeDb db;
   private DeletionService deletionService = new NoopDeletionService();
-  private volatile SnapshotRestoreInfo snapshotRestoreInfo = new NullSnapshotRestoreInfo();
+  private volatile SnapshotInfo snapshotInfo = new NullSnapshotInfo();
 
   public StateSnapshotController(final ZeebeDbFactory rocksDbFactory, final StateStorage storage) {
     this(rocksDbFactory, storage, new NoneSnapshotReplication(), 1);
   }
 
   public StateSnapshotController(
-      final ZeebeDbFactory rocksDbFactory, final StateStorage storage, int maxSnapshotCount) {
+      final ZeebeDbFactory rocksDbFactory, final StateStorage storage, final int maxSnapshotCount) {
     this(rocksDbFactory, storage, new NoneSnapshotReplication(), maxSnapshotCount);
   }
 
   public StateSnapshotController(
-      ZeebeDbFactory zeebeDbFactory,
-      StateStorage storage,
-      SnapshotReplication replication,
-      int maxSnapshotCount) {
+      final ZeebeDbFactory zeebeDbFactory,
+      final StateStorage storage,
+      final SnapshotReplication replication,
+      final int maxSnapshotCount) {
     this.storage = storage;
     this.zeebeDbFactory = zeebeDbFactory;
     this.maxSnapshotCount = maxSnapshotCount;
@@ -64,15 +62,15 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   }
 
   @Override
-  public void takeSnapshot(long lowerBoundSnapshotPosition) {
+  public void takeSnapshot(final long lowerBoundSnapshotPosition) {
     if (db == null) {
       throw new IllegalStateException("Cannot create snapshot of not open database.");
     }
 
     final File snapshotDir = storage.getSnapshotDirectoryFor(lowerBoundSnapshotPosition);
     db.createSnapshot(snapshotDir);
-    snapshotRestoreInfo =
-        new DefaultSnapshotRestoreInfo(lowerBoundSnapshotPosition, snapshotDir.listFiles().length);
+    snapshotInfo =
+        new DefaultSnapshotInfo(lowerBoundSnapshotPosition, snapshotDir.listFiles().length);
   }
 
   @Override
@@ -87,7 +85,7 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   }
 
   @Override
-  public void moveValidSnapshot(long lowerBoundSnapshotPosition) throws IOException {
+  public void moveValidSnapshot(final long lowerBoundSnapshotPosition) throws IOException {
     if (db == null) {
       throw new IllegalStateException("Cannot create snapshot of not open database.");
     }
@@ -114,7 +112,8 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
     onNewValidSnapshot();
   }
 
-  public void replicateLatestSnapshot(Consumer<Runnable> executor) {
+  @Override
+  public void replicateLatestSnapshot(final Consumer<Runnable> executor) {
     final List<File> snapshots = storage.listByPositionDesc();
 
     if (snapshots != null && !snapshots.isEmpty()) {
@@ -123,7 +122,7 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
       final long snapshotPosition = Long.parseLong(latestSnapshotDirectory.getName());
 
       final File[] files = latestSnapshotDirectory.listFiles();
-      for (File snapshotChunkFile : files) {
+      for (final File snapshotChunkFile : files) {
         executor.accept(
             () -> {
               LOG.trace("Replicate snapshot chunk {}", snapshotChunkFile.toPath());
@@ -133,6 +132,7 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
     }
   }
 
+  @Override
   public void consumeReplicatedSnapshots() {
     replicationController.consumeReplicatedSnapshots();
   }
@@ -164,10 +164,10 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
 
         lowerBoundSnapshotPosition = Long.parseLong(snapshotDirectory.getName());
 
-        snapshotRestoreInfo =
-            new DefaultSnapshotRestoreInfo(
+        snapshotInfo =
+            new DefaultSnapshotInfo(
                 lowerBoundSnapshotPosition, snapshotDirectory.listFiles().length);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         FileUtil.deleteFolder(runtimeDirectory.getAbsolutePath());
 
         if (snapshotIterator.hasNext()) {
@@ -201,7 +201,8 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
     return db;
   }
 
-  public long getPositionToDelete(int maxSnapshotCount) {
+  @Override
+  public long getPositionToDelete(final int maxSnapshotCount) {
     return storage.listByPositionDesc().stream()
         .skip(maxSnapshotCount - 1)
         .findFirst()
@@ -233,16 +234,16 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   }
 
   @Override
-  public File getSnapshotDirectoryFor(long snapshotId) {
+  public File getSnapshotDirectoryFor(final long snapshotId) {
     return storage.getSnapshotDirectoryFor(snapshotId);
   }
 
   @Override
-  public SnapshotRestoreInfo getLatestSnapshotRestoreInfo() {
-    return snapshotRestoreInfo;
+  public SnapshotInfo getLatestSnapshotInfo() {
+    return snapshotInfo;
   }
 
-  public void setDeletionService(DeletionService deletionService) {
+  public void setDeletionService(final DeletionService deletionService) {
     this.deletionService = deletionService;
   }
 
@@ -250,12 +251,12 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
   public void onNewValidSnapshot() {
     try {
       final File latestSnapshot = getLastValidSnapshotDirectory();
-      snapshotRestoreInfo =
-          new DefaultSnapshotRestoreInfo(
+      snapshotInfo =
+          new DefaultSnapshotInfo(
               Long.parseLong(latestSnapshot.getName()), latestSnapshot.listFiles().length);
 
       ensureMaxSnapshotCount();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOG.error(ERROR_MSG_ENSURING_MAX_SNAPSHOT_COUNT, e);
     }
 
@@ -297,7 +298,7 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
    * @param oldestValidSnapshotIndex the index of the oldest valid snapshot
    * @throws IOException can be thrown on deletion
    */
-  private void cleanUpTemporarySnapshots(List<File> snapshots, int oldestValidSnapshotIndex)
+  private void cleanUpTemporarySnapshots(final List<File> snapshots, final int oldestValidSnapshotIndex)
       throws IOException {
     final File oldestValidSnapshot = snapshots.get(oldestValidSnapshotIndex);
     final long oldestValidSnapshotPosition = Long.parseLong(oldestValidSnapshot.getName());
@@ -334,7 +335,7 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
       final long lastSnapshotPosition = Long.parseLong(lastSnapshot.getName());
 
       if (lastSnapshotPosition > -1L && numFiles > 0) {
-        snapshotRestoreInfo = new DefaultSnapshotRestoreInfo(lastSnapshotPosition, numFiles);
+        snapshotInfo = new DefaultSnapshotInfo(lastSnapshotPosition, numFiles);
       }
     }
   }
