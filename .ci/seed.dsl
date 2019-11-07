@@ -57,7 +57,12 @@ def seedJob = job('seed-job-zeebe') {
     }
   }
 
-  logRotator(-1, 5, -1, 1)
+  logRotator {
+    daysToKeep(-1)
+    numToKeep(5)
+    artifactDaysToKeep(-1)
+    artifactNumToKeep(1)
+  }
 }
 
 queue(seedJob)
