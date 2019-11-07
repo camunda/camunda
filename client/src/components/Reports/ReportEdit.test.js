@@ -11,6 +11,7 @@ import ReportEdit from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
+import {EntityNameForm} from 'components';
 
 jest.mock('react-router-dom', () => {
   const rest = jest.requireActual('react-router-dom');
@@ -245,7 +246,7 @@ it('should invoke updateOverview when saving the report', async () => {
   const spy = jest.fn();
   const node = shallow(<ReportEdit {...props} report={report} updateOverview={spy} />).dive();
 
-  await node.instance().save();
+  await node.find(EntityNameForm).prop('onSave')();
 
   expect(spy).toHaveBeenCalled();
 });

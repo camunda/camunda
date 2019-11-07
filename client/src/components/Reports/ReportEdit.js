@@ -64,7 +64,7 @@ export default withRouter(
               {name, data},
               {query: {force: this.state.conflict !== null}}
             ),
-            () => resolve(this.updateReportState(id, name)),
+            () => resolve(id),
             async error => {
               if (error.statusText === 'Conflict') {
                 const conflictData = await error.json();
@@ -85,12 +85,6 @@ export default withRouter(
         });
       };
 
-      updateReportState = (id, name) => {
-        nowPristine();
-        this.props.updateOverview(update(this.state.report, {name: {$set: name}, id: {$set: id}}));
-        this.setState({redirect: this.props.isNew ? `../${id}/` : './'});
-      };
-
       save = () => {
         return new Promise(async (resolve, reject) => {
           this.setState({saveLoading: true});
@@ -100,15 +94,22 @@ export default withRouter(
           if (this.props.isNew) {
             const collectionId = getCollection(this.props.location.pathname);
 
-            this.props.mightFail(
-              createEntity(endpoint, {collectionId, name, data}),
-              id => resolve(this.updateReportState(id, name)),
-              () => reject(this.showSaveError(name))
+            this.props.mightFail(createEntity(endpoint, {collectionId, name, data}), resolve, () =>
+              reject(this.showSaveError(name))
             );
           } else {
             resolve(await this.saveUpdatedReport({endpoint, id, name, data}));
           }
         });
+      };
+
+      saveAndGoBack = async () => {
+        const id = await this.save();
+
+        nowPristine();
+
+        this.props.updateOverview(update(this.state.report, {id: {$set: id}}));
+        this.setState({redirect: this.props.isNew ? `../${id}/` : './'});
       };
 
       cancel = () => {
@@ -217,7 +218,7 @@ export default withRouter(
             <ConfirmationModal
               open={confirmModalVisible}
               onClose={this.closeConfirmModal}
-              onConfirm={this.save}
+              onConfirm={this.saveAndGoBack}
               conflict={conflict}
               entityName={name}
               loading={saveLoading}
@@ -229,7 +230,7 @@ export default withRouter(
                   entity="Report"
                   isNew={this.props.isNew}
                   onChange={this.updateName}
-                  onSave={this.save}
+                  onSave={this.saveAndGoBack}
                   onCancel={this.cancel}
                   disabledButtons={saveLoading}
                 />

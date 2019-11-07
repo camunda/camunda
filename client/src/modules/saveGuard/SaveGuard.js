@@ -8,6 +8,7 @@ import React from 'react';
 import {Prompt} from 'react-router-dom';
 
 import {Modal, Button} from 'components';
+import {addHandler, removeHandler} from 'request';
 import {t} from 'translation';
 
 let instance = null;
@@ -22,13 +23,30 @@ export default class SaveGuard extends React.Component {
 
   componentDidMount() {
     window.addEventListener('beforeunload', this.unloadHandler);
+    addHandler(this.handleUnauthorized);
 
     instance = this;
   }
 
   componentWillUnmount() {
     window.removeEventListener('beforeunload', this.unloadHandler);
+    removeHandler(this.handleUnauthorized);
   }
+
+  handleUnauthorized = response => {
+    const {dirty, confirm} = this.state;
+
+    if (response.status === 401 && dirty && confirm) {
+      // the private route will show a login screen before the save operation
+      // is officially finished. We are still awaiting the saveHandler in the
+      // saveAndProceed function, but want to hide the modal now to allow the
+      // user to login again
+
+      this.setState({confirm: null});
+    }
+
+    return response;
+  };
 
   setDirty = (dirty, label = '', saveHandler = null) => {
     this.setState({dirty, label, saveHandler}, () => {
