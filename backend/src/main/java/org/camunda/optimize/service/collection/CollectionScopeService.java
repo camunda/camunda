@@ -42,14 +42,19 @@ public class CollectionScopeService {
       .getData()
       .getScope()
       .stream()
-      .filter(
-        scope ->
-          definitionAuthorizationService
-            .isAuthorizedToSeeDefinitionWithAtLeastOneTenantAuthorized(
-              userId, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
-            )
-      )
-      .map(scope -> mapScopeEntryToRestDto(scope, getDefinitionName(userId, scope), tenantsForUserById))
+      .map(scope -> {
+        final List<TenantDto> authorizedTenantDtos = definitionAuthorizationService
+          .filterAuthorizedTenantsForDefinition(
+            userId, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
+          )
+          .stream()
+          .map(tenantsForUserById::get)
+          .filter(Objects::nonNull)
+          .collect(Collectors.toList());
+        return mapScopeEntryToRestDto(scope, getDefinitionName(userId, scope), authorizedTenantDtos);
+      })
+      // at least one authorized tenant is required for an entry to be included in the result
+      .filter(collectionScopeEntryRestDto -> collectionScopeEntryRestDto.getTenants().size() > 0)
       .sorted(
         Comparator.comparing(CollectionScopeEntryRestDto::getDefinitionType)
           .thenComparing(CollectionScopeEntryRestDto::getDefinitionName)
@@ -65,18 +70,12 @@ public class CollectionScopeService {
 
   private CollectionScopeEntryRestDto mapScopeEntryToRestDto(final CollectionScopeEntryDto scope,
                                                              final String scopeDefinitionName,
-                                                             final Map<String, TenantDto> tenantsForUserById) {
-
-    final List<TenantDto> tenants = scope.getTenants()
-      .stream()
-      .map(tenantsForUserById::get)
-      .filter(Objects::nonNull)
-      .collect(Collectors.toList());
+                                                             final List<TenantDto> tenantDtos) {
     return new CollectionScopeEntryRestDto()
       .setDefinitionKey(scope.getDefinitionKey())
       .setDefinitionName(scopeDefinitionName)
       .setDefinitionType(scope.getDefinitionType())
-      .setTenants(tenants);
+      .setTenants(tenantDtos);
   }
 
 }

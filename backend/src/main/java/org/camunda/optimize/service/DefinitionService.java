@@ -95,12 +95,16 @@ public class DefinitionService {
 
     return stream
       .map(definitionWithTenantIds -> {
-        final List<TenantRestDto> authorizedTenants = definitionWithTenantIds.getTenantIds().stream()
-          // ensure that the user is authorized for the particular definition and tenant combination
-          .filter(tenantId -> definitionAuthorizationService.isAuthorizedToSeeDefinition(
-            userId, definitionWithTenantIds.getKey(), definitionWithTenantIds.getType(), tenantId
-          ))
-          // resolve tenantDto
+        // ensure that the user is authorized for the particular definition and tenant combination
+        final List<TenantRestDto> authorizedTenants = definitionAuthorizationService
+          .filterAuthorizedTenantsForDefinition(
+            userId,
+            definitionWithTenantIds.getKey(),
+            definitionWithTenantIds.getType(),
+            definitionWithTenantIds.getTenantIds()
+          )
+          .stream()
+          // resolve tenantDto for authorized tenantId
           .map(authorizedTenantDtosById::get)
           .filter(Objects::nonNull)
           .sorted(Comparator.comparing(TenantRestDto::getId, Comparator.nullsFirst(naturalOrder())))
