@@ -8,10 +8,11 @@ import java.util.Objects;
 @SuppressWarnings("unchecked")
 public abstract class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
   private static final int MINIMUM_FRAGMENT_SIZE = 32 * 1024;
-  protected ServiceContainer serviceContainer;
   protected int maxFragmentSize = 1024 * 1024 * 4;
+  protected int partitionId = -1;
+  protected ServiceContainer serviceContainer;
   protected LogStorage logStorage;
-  protected int partitionId;
+  protected String logName;
 
   public SELF withServiceContainer(final ServiceContainer serviceContainer) {
     this.serviceContainer = serviceContainer;
@@ -30,6 +31,11 @@ public abstract class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
 
   public SELF withPartitionId(final int partitionId) {
     this.partitionId = partitionId;
+    return (SELF) this;
+  }
+
+  public SELF withLogName(final String logName) {
+    this.logName = logName;
     return (SELF) this;
   }
 

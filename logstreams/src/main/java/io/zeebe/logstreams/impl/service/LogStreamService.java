@@ -10,6 +10,7 @@ package io.zeebe.logstreams.impl.service;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferSubscriptionServiceName;
 
@@ -35,6 +36,7 @@ import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
@@ -93,6 +95,12 @@ public class LogStreamService implements LogStream, Service<LogStream> {
       logStorage = logStorageInjector.getValue();
     }
 
+    try {
+      logStorage.open();
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
     commitPosition.setVolatile(INVALID_ADDRESS);
     serviceContext = startContext;
     this.reader = new BufferedLogStreamReader(this);
@@ -126,7 +134,8 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    return serviceContainer.removeService(logStreamRootServiceName(logName));
+    logStorage.close();
+    return serviceContainer.removeService(logStreamServiceName(logName));
   }
 
   @Override

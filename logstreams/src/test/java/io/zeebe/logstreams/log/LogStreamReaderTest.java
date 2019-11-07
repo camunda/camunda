@@ -14,6 +14,7 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.google.common.base.Stopwatch;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
@@ -22,6 +23,7 @@ import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.ByteValue;
 import java.util.NoSuchElementException;
 import java.util.Random;
+import java.util.concurrent.locks.LockSupport;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +41,9 @@ public class LogStreamReaderTest {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
   public LogStreamRule logStreamRule =
       LogStreamRule.startByDefault(
-          temporaryFolder, builder -> builder.withLogSegmentSize(LOG_SEGMENT_SIZE));
+          temporaryFolder,
+          builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE),
+          builder -> builder.withMaxEntrySize(LOG_SEGMENT_SIZE));
   public LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
   public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
@@ -337,7 +341,8 @@ public class LogStreamReaderTest {
             + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
 
     // when
-    ((BufferedLogStreamReader) reader).wrap(logStorageReader, BufferedLogStreamReader.FIRST_POSITION);
+    ((BufferedLogStreamReader) reader)
+        .wrap(logStorageReader, BufferedLogStreamReader.FIRST_POSITION);
   }
 
   @Test

@@ -15,9 +15,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.util.buffer.BufferUtil;
-import java.io.File;
+import java.io.IOException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -37,40 +38,31 @@ public class LogStreamDeleteTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder).around(logStreamRule);
 
-  @Test
-  public void shouldDeleteOnClose() {
-    final File logDir = temporaryFolder.getRoot();
+  @Before
+  public void setUp() throws IOException {
+    final int segmentSize = 1024;
+    final int entrySize = Math.floorDiv(segmentSize, 2) + 1;
+
     final LogStream logStream =
-        logStreamRule.startLogStreamWithConfiguration(
-            b -> b.withLogRootPath(logDir.getAbsolutePath()).deleteOnClose(true));
+        logStreamRule.startLogStreamWithStorageConfiguration(
+            b -> b.withMaxSegmentSize(segmentSize).withMaxEntrySize(entrySize));
 
-    // when
-    logStream.close();
-
-    // then
-    final File[] files = logDir.listFiles();
-    assertThat(files).isNull();
-  }
-
-  @Test
-  public void shouldNotDeleteOnCloseByDefault() {
-    final File logDir = temporaryFolder.getRoot();
-    final LogStream logStream =
-        logStreamRule.startLogStreamWithConfiguration(b -> b.withLogRootPath(logDir.getAbsolutePath()));
-
-    // when
-    logStream.close();
-
-    // then
-    final File[] files = logDir.listFiles();
-    assertThat(files).isNotNull();
-    assertThat(files.length).isGreaterThan(0);
+    // remove some bytes for padding per entry
+    final byte[] largeEvent = new byte[entrySize - 90];
+    // written from segment 0 4096 -> 8192
+    firstPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
+    // written from segment 1 4096 -> 8192
+    secondPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
+    // written from segment 2 4096 -> 8192
+    thirdPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
+    // written from segment 3 4096 -> 8192
+    fourthPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
   }
 
   @Test
   public void shouldDeleteFromLogStream() {
     // given
-    final LogStream logStream = prepareLogstream();
+    final LogStream logStream = logStreamRule.getLogStream();
 
     // when
     logStream.delete(fourthPosition);
@@ -88,7 +80,7 @@ public class LogStreamDeleteTest {
   @Test
   public void shouldNotDeleteOnNegativePosition() {
     // given
-    final LogStream logStream = prepareLogstream();
+    final LogStream logStream = logStreamRule.getLogStream();
 
     // when
     logStream.delete(-1);
@@ -100,32 +92,6 @@ public class LogStreamDeleteTest {
     assertThat(events().filter(e -> e.getPosition() == secondPosition).findAny()).isNotEmpty();
     assertThat(events().filter(e -> e.getPosition() == thirdPosition).findAny()).isNotEmpty();
     assertThat(events().filter(e -> e.getPosition() == fourthPosition).findAny()).isNotEmpty();
-  }
-
-  private LogStream prepareLogstream() {
-    final int segmentSize = 1024 * 8;
-    final int remainingCapacity =
-        (segmentSize
-            - FsLogSegmentDescriptor.METADATA_LENGTH
-            - alignedLength(HEADER_BLOCK_LENGTH + 2 + 8)
-            - 1);
-    final LogStream logStream =
-        logStreamRule.startLogStreamWithConfiguration(
-            c -> c.withLogSegmentSize(segmentSize).withMaxFragmentSize(segmentSize));
-    final byte[] largeEvent = new byte[remainingCapacity];
-
-    // written from segment 0 4096 -> 8192
-    firstPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
-    // written from segment 1 4096 -> 8192
-    secondPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
-    // written from segment 2 4096 -> 8192
-    thirdPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
-    // written from segment 3 4096 -> 8192
-    fourthPosition = writeEvent(logStream, BufferUtil.wrapArray(largeEvent));
-
-    //    logStream.setCommitPosition(fourthPosition);
-
-    return logStream;
   }
 
   private Stream<LoggedEvent> events() {

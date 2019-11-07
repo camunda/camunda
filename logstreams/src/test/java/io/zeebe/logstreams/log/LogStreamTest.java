@@ -12,7 +12,6 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -33,12 +32,7 @@ public class LogStreamTest {
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private final LogStreamRule logStreamRule =
-      LogStreamRule.startByDefault(
-          temporaryFolder,
-          b -> {
-            b.logStorageStubber(logStorage -> spy(logStorage));
-          });
+  private final LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder).around(logStreamRule);
 
@@ -99,35 +93,11 @@ public class LogStreamTest {
     assertThat(writeBuffer.isClosed()).isTrue();
   }
 
-  @Test
-  public void shouldSetCommitPosition() {
-    // given
-
-    // when
-    logStream.append(123L, ByteBuffer.wrap("foo".getBytes()));
-
-    // then
-    assertThat(logStream.getCommitPosition()).isEqualTo(123L);
-  }
-
-  @Test
-  public void shouldRetryOnAppend() throws Exception {
-    // given
-    doThrow(IOException.class).doCallRealMethod().when(logStorageSpy).append(any());
-
-    // when
-    logStream.append(123L, ByteBuffer.wrap("foo".getBytes()));
-
-    // then
-    assertThat(logStream.getCommitPosition()).isEqualTo(123L);
-    verify(logStorageSpy, timeout(5_000).times(2)).append(any());
-  }
-
   static long writeEvent(final LogStream logStream) {
     return writeEvent(logStream, wrapString("event"));
   }
 
-  static long writeEvent(final LogStream logStream, DirectBuffer value) {
+  static long writeEvent(final LogStream logStream, final DirectBuffer value) {
     final LogStreamWriterImpl writer = new LogStreamWriterImpl(logStream);
 
     long position = -1L;

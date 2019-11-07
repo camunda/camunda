@@ -7,19 +7,21 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
+import com.google.common.base.Stopwatch;
 import io.atomix.protocols.raft.storage.log.RaftLogReader;
 import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
+import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.spi.ReadResultProcessor;
 import io.zeebe.logstreams.spi.LogStorageReader;
+import io.zeebe.logstreams.spi.ReadResultProcessor;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.function.LongUnaryOperator;
 
 public class AtomixLogStorageReader implements LogStorageReader {
   private static final ReadResultProcessor DEFAULT_READ_PROCESSOR =
-    (buffer, readResult) -> readResult;
+      (buffer, readResult) -> readResult;
 
   private final RaftLogReader reader;
 
@@ -39,7 +41,7 @@ public class AtomixLogStorageReader implements LogStorageReader {
 
   @Override
   public long read(
-    final ByteBuffer readBuffer, final long address, final ReadResultProcessor processor) {
+      final ByteBuffer readBuffer, final long address, final ReadResultProcessor processor) {
     if (address < reader.getFirstIndex()) {
       return LogStorage.OP_RESULT_INVALID_ADDR;
     }
@@ -49,9 +51,9 @@ public class AtomixLogStorageReader implements LogStorageReader {
     }
 
     final var result =
-      findEntry(address)
-        .map(indexed -> copyEntryData(indexed, readBuffer, processor))
-        .orElse(LogStorage.OP_RESULT_NO_DATA);
+        findEntry(address)
+            .map(indexed -> copyEntryData(indexed, readBuffer, processor))
+            .orElse(LogStorage.OP_RESULT_NO_DATA);
 
     if (result < 0) {
       return result;
@@ -81,9 +83,14 @@ public class AtomixLogStorageReader implements LogStorageReader {
    */
   @Override
   public long lookUpApproximateAddress(
-    final long position, final LongUnaryOperator positionReader) {
+      final long position, final LongUnaryOperator positionReader) {
     var low = reader.getFirstIndex();
     var high = reader.getLastIndex();
+
+    if (position == Long.MIN_VALUE) {
+      final var maybeEntry = findEntry(reader.getFirstIndex());
+      return maybeEntry.map(Indexed::index).orElse(LogStorage.OP_RESULT_INVALID_ADDR);
+    }
 
     // when the log is empty, last index is defined as first index - 1
     if (low >= high) {
@@ -100,28 +107,25 @@ public class AtomixLogStorageReader implements LogStorageReader {
     while (low <= high) {
       final var pivotIndex = (low + high) >>> 1;
       final var pivotEntry = findEntry(pivotIndex);
-      final long pivotPosition;
 
       if (pivotEntry.isPresent()) {
-        pivotPosition =  positionReader.applyAsLong(pivotEntry.get().index());
+        final Indexed<ZeebeEntry> entry = pivotEntry.get();
+        if (position < entry.entry().lowestPosition()) {
+          high = pivotIndex - 1;
+        } else if (position > entry.entry().highestPosition()) {
+          low = pivotIndex + 1;
+        } else {
+          return pivotIndex;
+        }
         atLeastOneZeebeEntry = true;
       } else {
         high = pivotIndex - 1;
-        continue;
-      }
-
-      if (position > pivotPosition) {
-        low = pivotIndex + 1;
-      } else if (position < pivotPosition) {
-        high = pivotIndex - 1;
-      } else {
-        return pivotIndex;
       }
     }
 
     return atLeastOneZeebeEntry
-      ? Math.max(high, reader.getFirstIndex())
-      : LogStorage.OP_RESULT_NO_DATA;
+        ? Math.max(high, reader.getFirstIndex())
+        : LogStorage.OP_RESULT_NO_DATA;
   }
 
   @Override
@@ -157,14 +161,18 @@ public class AtomixLogStorageReader implements LogStorageReader {
   }
 
   private long copyEntryData(
-    final Indexed<ZeebeEntry> entry, final ByteBuffer dest, final ReadResultProcessor processor) {
+      final Indexed<ZeebeEntry> entry, final ByteBuffer dest, final ReadResultProcessor processor) {
     final var data = entry.entry().data();
     final var length = data.remaining();
     if (dest.remaining() < length) {
       return LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
     }
 
-    dest.put(data);
+    // old loop to avoid updating the position of the data buffer
+    for (int i = 0; i < length; i++) {
+      dest.put(data.get(i));
+    }
+
     return processor.process(dest, length);
   }
 }

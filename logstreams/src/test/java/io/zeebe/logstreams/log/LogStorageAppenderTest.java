@@ -12,7 +12,6 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.spy;
 
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.impl.LogStorageAppender;
@@ -34,12 +33,7 @@ public class LogStorageAppenderTest {
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  private final LogStreamRule logStreamRule =
-      LogStreamRule.startByDefault(
-          temporaryFolder,
-          b -> {
-            b.logStorageStubber(logStorage -> spy(logStorage));
-          });
+  private final LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
 
   private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
   private final LogStreamReaderRule reader = new LogStreamReaderRule(logStreamRule);

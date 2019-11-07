@@ -25,9 +25,19 @@ public class AtomixLogStreamBuilder extends LogStreamBuilder<AtomixLogStreamBuil
 
   @Override
   public LogStreamService build() {
-    if (logStorage == null) {
-      final var server = new AtomixRaftServer(partition.getServer());
-      logStorage = new AtomixLogStorage(server, server, server);
+    if (partition != null) {
+      if (logStorage == null) {
+        final var server = new AtomixRaftServer(partition.getServer());
+        logStorage = new AtomixLogStorage(server, server, server);
+      }
+
+      if (partitionId < 0) {
+        partitionId = partition.id().id();
+      }
+
+      if (logName == null) {
+        logName = partition.name();
+      }
     }
 
     validate();
@@ -35,8 +45,8 @@ public class AtomixLogStreamBuilder extends LogStreamBuilder<AtomixLogStreamBuil
     return new LogStreamService(
         serviceContainer,
         new ActorConditions(),
-        partition.name(),
-        partition.id().id(),
+        logName,
+        partitionId,
         ByteValue.ofBytes(maxFragmentSize),
         new AtomicLongPosition(),
         logStorage);

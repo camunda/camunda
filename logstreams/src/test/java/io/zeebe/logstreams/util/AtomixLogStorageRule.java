@@ -7,6 +7,8 @@
  */
 package io.zeebe.logstreams.util;
 
+import static org.mockito.Mockito.spy;
+
 import io.atomix.protocols.raft.partition.impl.RaftNamespaces;
 import io.atomix.protocols.raft.storage.RaftStorage;
 import io.atomix.protocols.raft.storage.log.RaftLog;
@@ -24,7 +26,9 @@ import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogCompactor;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixReaderFactory;
+import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -125,20 +129,26 @@ public class AtomixLogStorageRule extends ExternalResource
     this.positionListener = positionListener;
   }
 
-  public void open() throws IOException {
+  public void open() {
     open(builder);
   }
 
-  public void open(final UnaryOperator<RaftStorage.Builder> builder) throws IOException {
+  public void open(final UnaryOperator<RaftStorage.Builder> builder) {
+    final File directory;
     close();
 
-    final var directory = temporaryFolder.newFolder(String.format("atomix-%d", partitionId));
+    try {
+      directory = temporaryFolder.newFolder(String.format("atomix-%d", partitionId));
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
     raftStorage = builder.apply(buildDefaultStorage()).withDirectory(directory).build();
     raftLog = raftStorage.openLog();
     snapshotStore = raftStorage.openSnapshotStore();
     metaStore = raftStorage.openMetaStore();
 
-    storage = new AtomixLogStorage(this, this, this);
+    storage = spy(new AtomixLogStorage(this, this, this));
   }
 
   public void close() {
