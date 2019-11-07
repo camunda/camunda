@@ -48,7 +48,7 @@ const parseDate = (value, name) => {
   const hasTime = value.indexOf(':') !== -1;
 
   dateAfter = hasTime ? date : startOfDay(date);
-  dateBefore = hasTime ? addMinutes(date, 1) : addDays(date, 1);
+  dateBefore = hasTime ? addMinutes(date, 1) : addDays(startOfDay(date), 1);
 
   return {
     [`${name}After`]: format(dateAfter, formatWithTimezone),
