@@ -9,13 +9,17 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -25,10 +29,14 @@ public class CollectionScopeService {
 
   private final CollectionService collectionService;
   private final TenantService tenantService;
+  private final DefinitionService definitionService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
 
   public List<CollectionScopeEntryRestDto> getCollectionScope(final String userId,
                                                               final String collectionId) {
+    final Map<String, TenantDto> tenantsForUserById = tenantService.getTenantsForUser(userId)
+      .stream()
+      .collect(Collectors.toMap(TenantDto::getId, tenantDto -> tenantDto));
     return collectionService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
       .getDefinitionDto()
       .getData()
@@ -38,13 +46,10 @@ public class CollectionScopeService {
         scope ->
           definitionAuthorizationService
             .isAuthorizedToSeeDefinitionWithAtLeastOneTenantAuthorized(
-              userId,
-              scope.getDefinitionKey(),
-              scope.getDefinitionType(),
-              scope.getTenants()
+              userId, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
             )
       )
-      .map(scope -> mapScopeEntryToRestDto(userId, scope))
+      .map(scope -> mapScopeEntryToRestDto(scope, getDefinitionName(userId, scope), tenantsForUserById))
       .sorted(
         Comparator.comparing(CollectionScopeEntryRestDto::getDefinitionType)
           .thenComparing(CollectionScopeEntryRestDto::getDefinitionName)
@@ -52,17 +57,26 @@ public class CollectionScopeService {
       .collect(Collectors.toList());
   }
 
-  private CollectionScopeEntryRestDto mapScopeEntryToRestDto(final String userId,
-                                                             final CollectionScopeEntryDto scope) {
+  private String getDefinitionName(final String userId, final CollectionScopeEntryDto scope) {
+    return definitionService.getDefinition(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
+      .map(DefinitionWithTenantsDto::getName)
+      .orElse(scope.getDefinitionKey());
+  }
 
-    final List<TenantDto> tenants = tenantService.getTenantsForUser(userId)
+  private CollectionScopeEntryRestDto mapScopeEntryToRestDto(final CollectionScopeEntryDto scope,
+                                                             final String scopeDefinitionName,
+                                                             final Map<String, TenantDto> tenantsForUserById) {
+
+    final List<TenantDto> tenants = scope.getTenants()
       .stream()
-      .filter(t -> scope.getTenants().contains(t.getId()))
+      .map(tenantsForUserById::get)
+      .filter(Objects::nonNull)
       .collect(Collectors.toList());
     return new CollectionScopeEntryRestDto()
       .setDefinitionKey(scope.getDefinitionKey())
-      .setDefinitionName(scope.getDefinitionKey())
+      .setDefinitionName(scopeDefinitionName)
       .setDefinitionType(scope.getDefinitionType())
       .setTenants(tenants);
   }
+
 }

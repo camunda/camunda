@@ -9,7 +9,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
@@ -30,6 +32,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 
 public class CollectionRestServiceScopeIT extends AbstractIT {
 
@@ -81,19 +86,26 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     // given
     final String collectionId = createNewCollection();
     final CollectionScopeEntryDto decisionScope1 = createSimpleScopeEntry("DECISION_KEY_LAST", DECISION);
-    final CollectionScopeEntryDto decisionScope2 = createSimpleScopeEntry("DECISION_KEY_FIRST", DECISION);
+    final CollectionScopeEntryDto decisionScope2 = createSimpleScopeEntry("xdecKey2", DECISION);
     final CollectionScopeEntryDto processScope1 = createSimpleScopeEntry("PROCESS_KEY_LAST", PROCESS);
-    final CollectionScopeEntryDto processScope2 = createSimpleScopeEntry("PROCESS_KEY_FIRST", PROCESS);
+    final CollectionScopeEntryDto processScope2 = createSimpleScopeEntry("xprocKey2", PROCESS);
+    // should fallback to key as name when name is null
+    addDecisionDefinitionToElasticsearch(decisionScope1.getDefinitionKey(), null);
     addScopeEntryToCollection(collectionId, decisionScope1);
+    addProcessDefinitionToElasticsearch(processScope1.getDefinitionKey(), null);
     addScopeEntryToCollection(collectionId, processScope1);
+    addDecisionDefinitionToElasticsearch(decisionScope2.getDefinitionKey(), "DECISION_KEY_FIRST");
     addScopeEntryToCollection(collectionId, decisionScope2);
+    addProcessDefinitionToElasticsearch(processScope2.getDefinitionKey(), "PROCESS_KEY_FIRST");
     addScopeEntryToCollection(collectionId, processScope2);
+
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
-      });
+      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {});
 
     // then
     assertThat(scopeEntries)
@@ -258,6 +270,36 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildRemoveScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
       .execute(404);
+  }
+
+  private DecisionDefinitionOptimizeDto addDecisionDefinitionToElasticsearch(final String key,
+                                                                             final String name) {
+    final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
+      .id(key)
+      .key(key)
+      .version("1")
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .name(name)
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
+    );
+    return decisionDefinitionDto;
+  }
+
+  private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
+                                                                           final String name) {
+    final ProcessDefinitionOptimizeDto expectedDto = ProcessDefinitionOptimizeDto.builder()
+      .id(key)
+      .key(key)
+      .name(name)
+      .version("1")
+      .engine(DEFAULT_ENGINE_ALIAS)
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto
+    );
+    return expectedDto;
   }
 
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey) {
