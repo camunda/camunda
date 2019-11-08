@@ -11,6 +11,8 @@ import io.atomix.cluster.Node;
 import io.atomix.cluster.discovery.BootstrapDiscoveryBuilder;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
+import io.atomix.cluster.protocol.GroupMembershipProtocol;
+import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
 import io.atomix.core.AtomixBuilder;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
@@ -33,6 +35,7 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -64,12 +67,18 @@ public class AtomixService implements Service<Atomix> {
     final NodeDiscoveryProvider discoveryProvider =
         createDiscoveryProvider(clusterCfg, localMemberId);
 
-    LOG.debug("Setup atomix node in cluster {}", clusterCfg.getClusterName());
+    final GroupMembershipProtocol membershipProtocol =
+        SwimMembershipProtocol.builder()
+            .withFailureTimeout(Duration.ofMillis(clusterCfg.getGossipFailureTimeout()))
+            .withGossipInterval(Duration.ofMillis(clusterCfg.getGossipInterval()))
+            .withProbeInterval(Duration.ofMillis(clusterCfg.getGossipProbeInterval()))
+            .build();
 
     final AtomixBuilder atomixBuilder =
         Atomix.builder()
             .withClusterId(clusterCfg.getClusterName())
             .withMemberId(localMemberId)
+            .withMembershipProtocol(membershipProtocol)
             .withAddress(Address.from(host, port))
             .withMessagingPort(networkCfg.getInternalApi().getPort())
             .withMessagingInterface(networkCfg.getInternalApi().getHost())
