@@ -17,6 +17,16 @@ export default {
         password: 'Plasoner'
       }
     },
+    HeadlessChrome: {
+      user1: {
+        username: 'Owee1964',
+        password: 'Owee1964'
+      },
+      user2: {
+        username: 'Plasoner',
+        password: 'Plasoner'
+      }
+    },
     Firefox: {
       user1: {
         username: 'Figirs',
