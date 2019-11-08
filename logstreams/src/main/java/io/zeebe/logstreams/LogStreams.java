@@ -8,14 +8,14 @@
 package io.zeebe.logstreams;
 
 import io.atomix.protocols.raft.partition.RaftPartition;
-import io.zeebe.logstreams.impl.FsLogStreamBuilder;
+import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
 
 public final class LogStreams {
   private LogStreams() {}
 
-  public static FsLogStreamBuilder createFsLogStream(final int partitionId) {
-    return new FsLogStreamBuilder(partitionId).withLogName(Integer.toString(partitionId));
+  public static LogStreamBuilder createLogStream() {
+    return new LogStreamBuilder();
   }
 
   public static AtomixLogStreamBuilder createAtomixLogStream(final RaftPartition partition) {

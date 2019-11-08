@@ -7,18 +7,17 @@
  */
 package io.zeebe.broker.transport.commandapi;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 
 import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.zeebe.broker.test.AtomixLogStorageRule;
 import io.zeebe.broker.transport.backpressure.CommandRateLimiter;
 import io.zeebe.broker.transport.backpressure.NoopRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -40,7 +39,6 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -50,8 +48,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.MockitoAnnotations;
-import org.mockito.internal.util.reflection.FieldSetter;
-import org.mockito.stubbing.Answer;
 
 public class CommandApiMessageHandlerTest {
   protected static final RemoteAddress DEFAULT_ADDRESS =
@@ -69,35 +65,45 @@ public class CommandApiMessageHandlerTest {
     JOB_EVENT = buffer.byteArray();
   }
 
-  public TemporaryFolder tempFolder = new TemporaryFolder();
-  public ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
-  public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(agentRunnerService);
+  private TemporaryFolder tempFolder = new TemporaryFolder();
+  private ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
+  private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(agentRunnerService);
 
   @Rule
   public RuleChain ruleChain =
       RuleChain.outerRule(tempFolder).around(agentRunnerService).around(serviceContainerRule);
 
-  protected final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
-  protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
-  protected final ExecuteCommandRequestEncoder commandRequestEncoder =
+  private AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(tempFolder);
+  private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
+  private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
+  private final ExecuteCommandRequestEncoder commandRequestEncoder =
       new ExecuteCommandRequestEncoder();
-  protected BufferingServerOutput serverOutput;
+  private BufferingServerOutput serverOutput;
   private LogStream logStream;
   private CommandApiMessageHandler messageHandler;
   private RequestLimiter noneLimiter = new NoopRequestLimiter();
 
   @Before
   public void setup() {
+    final var logName = "test";
     MockitoAnnotations.initMocks(this);
 
+    logStorageRule.open();
     serverOutput = new BufferingServerOutput();
-    final String logName = "test";
     logStream =
-        LogStreams.createFsLogStream(LOG_STREAM_PARTITION_ID)
-            .withLogRootPath(tempFolder.getRoot().getAbsolutePath())
+        LogStreams.createLogStream()
+            .withPartitionId(LOG_STREAM_PARTITION_ID)
+            .withLogName(logName)
             .withServiceContainer(serviceContainerRule.get())
             .withLogName(logName)
+            .withLogStorage(logStorageRule.getStorage())
             .build();
+    logStorageRule.setPositionListener(logStream::setCommitPosition);
+    serviceContainerRule
+        .get()
+        .createService(logStreamServiceName(logName), (LogStreamService) logStream)
+        .install()
+        .join();
 
     logStream.openAppender().join();
 
@@ -108,6 +114,7 @@ public class CommandApiMessageHandlerTest {
   @After
   public void cleanUp() {
     logStream.close();
+    logStorageRule.close();
   }
 
   @Test

@@ -21,8 +21,6 @@ public class AtomixLogStorage implements LogStorage {
   private final AtomixLogCompactor logCompacter;
   private final AtomixAppenderSupplier appenderSupplier;
 
-  private final LoggedEventImpl positionReader = new LoggedEventImpl();
-
   private boolean opened;
 
   public AtomixLogStorage(

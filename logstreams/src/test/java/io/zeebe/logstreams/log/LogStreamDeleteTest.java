@@ -7,12 +7,9 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
 import static io.zeebe.logstreams.log.LogStreamTest.writeEvent;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;

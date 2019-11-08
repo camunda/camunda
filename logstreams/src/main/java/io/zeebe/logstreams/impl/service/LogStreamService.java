@@ -18,7 +18,6 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.Subscription;
-import io.zeebe.logstreams.impl.FsLogStreamBuilder;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -62,15 +61,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
   private LogStorageAppender appender;
-
-  public LogStreamService(final FsLogStreamBuilder builder) {
-    logName = builder.getLogName();
-    partitionId = builder.getPartitionId();
-    serviceContainer = builder.getServiceContainer();
-    onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
-    commitPosition = builder.getCommitPosition();
-    maxFrameLength = ByteValue.ofBytes(builder.getMaxFragmentSize());
-  }
 
   public LogStreamService(
       final ServiceContainer serviceContainer,

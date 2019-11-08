@@ -1,12 +1,17 @@
 package io.zeebe.logstreams.log;
 
+import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.util.ByteValue;
+import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Objects;
+import org.agrona.concurrent.status.AtomicLongPosition;
 
 @SuppressWarnings("unchecked")
-public abstract class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
+public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
   private static final int MINIMUM_FRAGMENT_SIZE = 32 * 1024;
   protected int maxFragmentSize = 1024 * 1024 * 4;
   protected int partitionId = -1;
@@ -39,11 +44,25 @@ public abstract class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
     return (SELF) this;
   }
 
-  public abstract ActorFuture<LogStream> buildAsync();
-
-  public LogStream build() {
-    return buildAsync().join();
+  public ActorFuture<LogStream> buildAsync() {
+    return CompletableActorFuture.completed(build());
   }
+
+  public LogStreamService build() {
+    applyDefaults();
+    validate();
+
+    return new LogStreamService(
+        serviceContainer,
+        new ActorConditions(),
+        logName,
+        partitionId,
+        ByteValue.ofBytes(maxFragmentSize),
+        new AtomicLongPosition(),
+        logStorage);
+  }
+
+  protected void applyDefaults() {}
 
   protected void validate() {
     Objects.requireNonNull(serviceContainer, "Must specify a service container");

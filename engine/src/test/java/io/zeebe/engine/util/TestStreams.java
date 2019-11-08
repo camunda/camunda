@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.util;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -28,6 +29,7 @@ import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
@@ -53,6 +55,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,7 +77,6 @@ public class TestStreams {
   private final TemporaryFolder dataDirectory;
   private final AutoCloseableRule closeables;
   private final ServiceContainer serviceContainer;
-
   private final ActorScheduler actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
@@ -120,25 +122,28 @@ public class TestStreams {
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
-    File segments = null;
+    final File segments;
     try {
       segments = dataDirectory.newFolder(name, "segments");
     } catch (final IOException e) {
-      e.printStackTrace();
+      throw new UncheckedIOException(e);
     }
 
-    final LogStream logStream =
+    final AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(dataDirectory, partitionId);
+    logStorageRule.open(b -> b.withDirectory(segments));
+    final LogStreamService logStream =
         spy(
-            LogStreams.createFsLogStream(partitionId)
-                .withLogDirectory(segments.getAbsolutePath())
-                .withServiceContainer(serviceContainer)
+            LogStreams.createLogStream()
                 .withLogName(name)
-                .deleteOnClose(true)
+                .withLogStorage(logStorageRule.getStorage())
+                .withPartitionId(partitionId)
+                .withServiceContainer(serviceContainer)
                 .build());
-
+    serviceContainer.createService(logStreamServiceName(name), logStream).install().join();
+    logStorageRule.setPositionListener(logStream::setCommitPosition);
     logStream.openAppender().join();
 
-    final LogContext logContext = LogContext.createLogContext(logStream);
+    final LogContext logContext = LogContext.createLogContext(logStream, logStorageRule);
     logContextMap.put(name, logContext);
     closeables.manage(logContext);
 
@@ -367,18 +372,24 @@ public class TestStreams {
 
   private static final class LogContext implements AutoCloseable {
     private final LogStream logStream;
+    private final AtomixLogStorageRule logStorageRule;
 
-    private LogContext(final LogStream logStream) {
+    private LogContext(final LogStream logStream, final AtomixLogStorageRule logStorageRule) {
       this.logStream = logStream;
+      this.logStorageRule = logStorageRule;
     }
 
-    public static LogContext createLogContext(final LogStream logStream) {
-      return new LogContext(logStream);
+    public static LogContext createLogContext(
+        final LogStream logStream, final AtomixLogStorageRule logStorageRule) {
+      return new LogContext(logStream, logStorageRule);
     }
 
     @Override
     public void close() {
       logStream.close();
+      // closing it causes the record printer to fail...so don't close it?
+      // not ideal however :s
+      // logStorageRule.close();
     }
 
     public LogStream getLogStream() {
