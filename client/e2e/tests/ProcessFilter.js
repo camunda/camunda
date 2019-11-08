@@ -14,8 +14,8 @@ import * as Filter from './Filter.elements.js';
 fixture('Process Report Filter')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities)
-  .beforeEach(u.login);
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
 test('variable filter modal dependent on variable type', async t => {
   await u.createNewReport(t);

@@ -15,11 +15,48 @@ import * as Dashboard from './Dashboard.elements.js';
 fixture('Homepage')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities);
+  .beforeEach(login)
+  .afterEach(cleanEntities);
 
-test('create reports and show them on the Homepage', async t => {
-  await login(t);
+test('navigate to report view and edit pages', async t => {
+  await t.click(e.createNewMenu).hover(e.newReportOption);
+  await t.click(e.submenuOption('Process Report'));
+  await save(t);
+  await t.click(e.homepageLink);
 
+  await t.click(e.reportItem);
+
+  await t.expect(e.setupNotice.visible).ok();
+  await t.expect(e.setupNotice.textContent).contains('Select the Edit button above');
+
+  await t.click(e.homepageLink);
+
+  await t.hover(e.reportItem);
+  await t.click(e.contextMenu(e.reportItem));
+  await t.click(e.edit(e.reportItem));
+
+  await t.expect(e.reportControlPanel.visible).ok();
+});
+
+test('navigate to dashboard view and edit pages', async t => {
+  await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+  await save(t);
+  await t.click(e.homepageLink);
+
+  await t.click(e.dashboardItem);
+
+  await t.expect(e.editButton.visible).ok();
+
+  await t.click(e.homepageLink);
+
+  await t.hover(e.dashboardItem);
+  await t.click(e.contextMenu(e.dashboardItem));
+  await t.click(e.edit(e.dashboardItem));
+
+  await t.expect(e.addButton.visible).ok();
+});
+
+test('complex Homepage actions', async t => {
   await t.click(e.createNewMenu).hover(e.newReportOption);
 
   await t.expect(e.createNewMenu.textContent).contains('New Collection');
@@ -41,10 +78,6 @@ test('create reports and show them on the Homepage', async t => {
 
   await t.expect(e.reportItem.visible).ok();
   await t.expect(e.reportItem.textContent).contains('Monthly Sales');
-});
-
-test('create a dashboard and show it on the homepage', async t => {
-  await login(t);
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
@@ -59,52 +92,15 @@ test('create a dashboard and show it on the homepage', async t => {
   await t.expect(e.dashboardItem.visible).ok();
   await t.expect(e.dashboardItem.textContent).contains('Sales Dashboard');
   await t.expect(e.dashboardItem.textContent).contains('3 Reports');
-});
 
-test('navigate to report view and edit pages', async t => {
-  await login(t);
-
-  await t.click(e.reportItem);
-
-  await t.expect(e.setupNotice.visible).ok();
-  await t.expect(e.setupNotice.textContent).contains('Select the Edit button above');
-
-  await t.click(e.homepageLink);
-
-  await t.hover(e.reportItem);
-  await t.click(e.contextMenu(e.reportItem));
-  await t.click(e.edit(e.reportItem));
-
-  await t.expect(e.reportControlPanel.visible).ok();
-});
-
-test('navigate to dashboard view and edit pages', async t => {
-  await login(t);
-  await t.click(e.dashboardItem);
-
-  await t.expect(e.editButton.visible).ok();
-
-  await t.click(e.homepageLink);
-
-  await t.hover(e.dashboardItem);
-  await t.click(e.contextMenu(e.dashboardItem));
-  await t.click(e.edit(e.dashboardItem));
-
-  await t.expect(e.addButton.visible).ok();
-});
-
-test('use breadcrumbs to navigate back from a report to the parent dashboard', async t => {
-  await login(t);
-
+  // breadcrumb navigation
   await t.click(e.dashboardItem);
   await t.click(e.dashboardReportLink);
   await t.click(e.breadcrumb('Sales Dashboard'));
 
   await t.expect(e.dashboardView.visible).ok();
-});
 
-test('create a new collection and display it on the homepage', async t => {
-  await login(t);
+  await t.click(e.homepageLink);
 
   await t.click(e.createNewMenu).click(e.option('New Collection'));
   await t.typeText(e.modalNameInput, 'Marketing', {replace: true});
@@ -148,11 +144,8 @@ test('create a new collection and display it on the homepage', async t => {
   await t.expect(e.collectionItem.textContent).contains('1 Dashboard, 2 Reports');
 
   await t.takeElementScreenshot(e.entityList, 'homepage/home.png');
-});
 
-test('filter for the name entered', async t => {
-  await login(t);
-
+  // search
   await t.typeText(e.searchField, 'sales', {replace: true});
   await t.expect(e.collectionItem.visible).ok();
   await t.expect(e.dashboardItem.visible).ok();
@@ -172,11 +165,9 @@ test('filter for the name entered', async t => {
   await t.expect(e.collectionItem.exists).notOk();
   await t.expect(e.dashboardItem.exists).notOk();
   await t.expect(e.reportItem.exists).notOk();
-});
 
-test('copy to a new location', async t => {
-  await login(t);
-
+  await t.click(e.searchField).pressKey('ctrl+a delete');
+  // copy to new location
   await t.hover(e.dashboardItem);
   await t.click(e.contextMenu(e.dashboardItem));
   await t.click(e.copy(e.dashboardItem));

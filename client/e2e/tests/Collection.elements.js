@@ -36,3 +36,4 @@ export const groupItem = Selector('.ListItem.group');
 export const roleOption = text => Selector('.Modal .LabeledInput .label.after').withText(text);
 export const userList = Selector('.UserList');
 export const addUserModal = Selector('.AddUserModal');
+export const logoutButton = Selector('.LogoutButton');

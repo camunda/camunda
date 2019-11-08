@@ -28,7 +28,7 @@ async function getSession(user) {
   return await resp.text();
 }
 
-export async function cleanEntities(ctx) {
+export async function cleanEntities({ctx}) {
   if (ctx.users) {
     for (let i = 0; i < ctx.users.length; i++) {
       const headers = {

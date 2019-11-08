@@ -14,8 +14,8 @@ import * as Analysis from './Analysis.elements.js';
 fixture('Process Analysis')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities)
-  .beforeEach(u.login);
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
 test('show the statistics diagram', async t => {
   await t.click(Analysis.navItem);

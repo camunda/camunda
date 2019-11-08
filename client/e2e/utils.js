@@ -11,9 +11,9 @@ import config from './config';
 export async function login(t, userHandle = 'user1') {
   const user = getUser(t, userHandle);
 
-  t.fixtureCtx.users = t.fixtureCtx.users || [];
-  if (!t.fixtureCtx.users.find(existingUser => existingUser.username === user.username)) {
-    t.fixtureCtx.users.push(user);
+  t.ctx.users = t.ctx.users || [];
+  if (!t.ctx.users.find(existingUser => existingUser.username === user.username)) {
+    t.ctx.users.push(user);
   }
 
   await t

@@ -16,10 +16,10 @@ import * as Collection from './Collection.elements.js';
 fixture('Alerts')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities)
-  .beforeEach(u.login);
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
-test('add an alert', async t => {
+test('create, edit and remove an alert', async t => {
   await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
   await t.typeText(Homepage.modalNameInput, 'Test Collection', {replace: true});
   await t.click(Homepage.confirmButton);
@@ -37,6 +37,7 @@ test('add an alert', async t => {
   await t.click(Collection.collectionBreadcrumb);
   await t.click(Collection.alertTab);
 
+  // CREATE
   await t.click(Alert.newAlertButton);
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test Alert', {replace: true});
@@ -59,12 +60,8 @@ test('add an alert', async t => {
     .resizeWindow(1200, 500)
     .takeScreenshot('alerting/alerts-overview.png', {fullPage: true})
     .maximizeWindow();
-});
 
-test('edit an alert', async t => {
-  await t.click(Homepage.collectionItem);
-  await t.click(Collection.alertTab);
-
+  // EDIT
   await t.click(Alert.listItem);
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Edited Alert', {replace: true});
@@ -79,12 +76,8 @@ test('edit an alert', async t => {
   await t.click(Alert.primaryModalButton);
 
   await t.expect(Alert.list.textContent).contains('Saved Alert');
-});
 
-test('delete an alert', async t => {
-  await t.click(Homepage.collectionItem);
-  await t.click(Collection.alertTab);
-
+  // DELETE
   await t.hover(Alert.listItem);
   await t.click(Homepage.contextMenu(Alert.listItem));
   await t.click(Homepage.del(Alert.listItem));

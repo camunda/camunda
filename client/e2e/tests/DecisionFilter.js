@@ -15,8 +15,8 @@ import * as Filter from './Filter.elements.js';
 fixture('Decision Report Filter')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities)
-  .beforeEach(u.login);
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
 test('should apply a filter to the report result', async t => {
   await t.click(Homepage.createNewMenu);

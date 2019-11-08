@@ -9,13 +9,12 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './Dashboard.elements.js';
-import * as Homepage from './Homepage.elements.js';
 
 fixture('Dashboard')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities)
-  .beforeEach(u.login);
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
 test('create a report and add it to the Dashboard', async t => {
   await u.createNewReport(t);
@@ -34,9 +33,7 @@ test('create a report and add it to the Dashboard', async t => {
 });
 
 test('renaming a dashboard', async t => {
-  await t.hover(e.dashboard);
-  await t.click(Homepage.contextMenu(e.dashboard));
-  await t.click(e.editButton);
+  await u.createNewDashboard(t);
   await t.typeText(e.nameEditField, 'New Name', {replace: true});
 
   await u.save(t);
@@ -45,14 +42,14 @@ test('renaming a dashboard', async t => {
 });
 
 test('cancel changes', async t => {
-  await t.hover(e.dashboard);
-  await t.click(Homepage.contextMenu(e.dashboard));
-  await t.click(e.editButton);
-  await t.typeText(e.nameEditField, 'Another new Name', {replace: true});
+  await u.createNewDashboard(t);
+  await u.save(t);
 
+  await t.click(e.editButton);
+  await t.typeText(e.nameEditField, 'New Name', {replace: true});
   await u.cancel(t);
 
-  await t.expect(e.dashboardName.textContent).eql('New Name');
+  await t.expect(e.dashboardName.textContent).notEql('New Name');
 });
 
 // enable this test once https://github.com/DevExpress/testcafe/issues/2863 is fixed
@@ -69,7 +66,15 @@ test('cancel changes', async t => {
 // });
 
 test('sharing', async t => {
-  await t.click(e.dashboard);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Raw Data');
+  await u.save(t);
+  await u.gotoOverview(t);
+  await u.createNewDashboard(t);
+  await u.addReportToDashboard(t, 'New Report');
+
+  await u.save(t);
 
   await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
 
@@ -86,9 +91,14 @@ test('sharing', async t => {
 });
 
 test('remove a report from a dashboard', async t => {
-  await t.hover(e.dashboard);
-  await t.click(Homepage.contextMenu(e.dashboard));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Raw Data');
+  await u.save(t);
+  await u.gotoOverview(t);
+  await u.createNewDashboard(t);
+  await u.addReportToDashboard(t, 'New Report');
+
   await t.click(e.reportDeleteButton);
   await u.save(t);
 
@@ -96,9 +106,7 @@ test('remove a report from a dashboard', async t => {
 });
 
 test('external datasources', async t => {
-  await t.hover(e.dashboard);
-  await t.click(Homepage.contextMenu(e.dashboard));
-  await t.click(e.editButton);
+  await u.createNewDashboard(t);
 
   await t.click(e.addButton);
 
@@ -115,7 +123,9 @@ test('external datasources', async t => {
 });
 
 test('deleting', async t => {
-  await t.click(e.dashboard);
+  await u.createNewDashboard(t);
+
+  await u.save(t);
 
   await t.click(e.deleteButton);
   await t.click(e.modalConfirmbutton);

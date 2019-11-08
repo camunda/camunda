@@ -15,8 +15,8 @@ import * as Combined from './CombinedReport.elements.js';
 fixture('Combined Report')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities)
-  .beforeEach(u.login);
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
 async function createReport(
   t,
@@ -84,7 +84,7 @@ test('combine two single number reports', async t => {
   await t.expect(Homepage.reportLabel.textContent).contains('Combined');
 });
 
-test('combine two single table reports', async t => {
+test('combine two single table reports and reorder them', async t => {
   await createReport(t, 'Another Table Report', 'Lead Qualification', 'Table');
   await createReport(t, 'Table Report', 'Lead Qualification', 'Table', true);
 
@@ -104,21 +104,12 @@ test('combine two single table reports', async t => {
     .takeScreenshot('process/combined-report/table-report.png', {fullPage: true})
     .maximizeWindow();
 
-  await u.save(t);
-});
-
-test('reorder table reports', async t => {
-  const combinedChartReport = Combined.report('Combined Table Report');
-  await t.hover(combinedChartReport);
-  await t.click(Homepage.contextMenu(combinedChartReport));
-  await t.click(Combined.editButton(combinedChartReport));
-
   await t.dragToElement(Combined.singleReport('Table Report'), Combined.dragEndIndicator);
 
   await t.expect(Combined.reportTable.visible).ok();
 });
 
-test('combine two single chart reports', async t => {
+test('combine two single chart reports and change their colors', async t => {
   await createReport(t, 'Line Report - 1', 'Lead Qualification', 'Line Chart');
   await createReport(t, 'Line Report - 2', 'Lead Qualification', 'Line Chart', true);
 
@@ -133,15 +124,6 @@ test('combine two single chart reports', async t => {
 
   await t.typeText(Report.nameEditField, 'Combined Chart Report', {replace: true});
 
-  await u.save(t);
-});
-
-test('change the color of one of the report in a combined chart report', async t => {
-  const combinedChartReport = Combined.report('Combined Chart Report');
-  await t.hover(combinedChartReport);
-  await t.click(Homepage.contextMenu(combinedChartReport));
-  await t.click(Combined.editButton(combinedChartReport));
-
   await t.resizeWindow(1150, 700);
 
   await t.click(Combined.reportColorPopover('Line Report - 2'));
@@ -153,8 +135,6 @@ test('change the color of one of the report in a combined chart report', async t
   await t.click(Combined.redColor);
 
   await t.expect(Combined.reportChart.visible).ok();
-
-  await u.save(t);
 });
 
 test('open the configuration popover and add a goal line', async t => {

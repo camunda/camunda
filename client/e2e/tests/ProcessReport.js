@@ -10,13 +10,12 @@ import * as u from '../utils';
 import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as e from './ProcessReport.elements.js';
-import * as Homepage from './Homepage.elements.js';
 
 fixture('Process Report')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities)
-  .beforeEach(u.login);
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
 test('create and name a report', async t => {
   await u.createNewReport(t);
@@ -39,9 +38,17 @@ test('create and name a report', async t => {
 });
 
 test('sharing', async t => {
+  await u.createNewReport(t);
+
+  await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
+
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Flow Node', 'Count');
+
   await t.resizeWindow(1000, 650);
 
-  await t.click(e.report);
+  await u.selectVisualization(t, 'Heatmap');
+  await u.save(t);
 
   await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
 
@@ -61,9 +68,8 @@ test('sharing', async t => {
 });
 
 test('version selection', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'None');
@@ -108,10 +114,8 @@ test('version selection', async t => {
 });
 
 test('sort table columns', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
-
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
   await u.selectView(t, 'Raw Data');
 
   await t.typeText(e.nameEditField, 'Table Report', {replace: true});
@@ -143,14 +147,12 @@ test('sort table columns', async t => {
 
   await t.expect(a >= b).ok();
   await t.expect(b >= c).ok();
-
-  await u.save(t);
 });
 
 test('exclude raw data columns', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Raw Data');
 
   await t.resizeWindow(1600, 750);
 
@@ -171,20 +173,21 @@ test('exclude raw data columns', async t => {
 });
 
 test('cancel changes', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
+  await u.createNewReport(t);
+
+  await u.save(t);
+
   await t.click(e.editButton);
   await t.typeText(e.nameEditField, 'Another new Name', {replace: true});
-
   await u.cancel(t);
 
   await t.expect(e.reportName.textContent).notEql('Another new Name');
 });
 
 test('update definition', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Raw Data');
 
   await u.selectDefinition(t, 'Lead Qualification');
 
@@ -193,9 +196,8 @@ test('update definition', async t => {
 });
 
 test('should only enable valid combinations for process instance count grouped by none', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
   await u.selectView(t, 'Process Instance', 'Count');
 
   await t.click(e.groupbyDropdown);
@@ -215,14 +217,11 @@ test('should only enable valid combinations for process instance count grouped b
   await t.expect(e.option('Heatmap').hasAttribute('disabled')).ok();
 
   await t.expect(e.reportNumber.visible).ok();
-
-  await u.save(t);
 });
 
 test('Limit the precsion in number report', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
   await t.typeText(e.nameEditField, 'Number Report', {replace: true});
 
@@ -242,9 +241,8 @@ test('Limit the precsion in number report', async t => {
 });
 
 test('Disable absolute and relative values for table reports', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
   await u.selectView(t, 'Process Instance', 'Count');
   await u.selectGroupby(t, 'Start Date of Process Instance', 'Month');
@@ -260,10 +258,7 @@ test('Disable absolute and relative values for table reports', async t => {
 });
 
 test('select process instance count grouped by end date', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
-
+  await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Process Instance', 'Count');
 
@@ -284,9 +279,8 @@ test('select process instance count grouped by end date', async t => {
 });
 
 test('select process instance count grouped by variable', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
   await u.selectView(t, 'Process Instance', 'Count');
 
@@ -308,9 +302,8 @@ test('select process instance count grouped by variable', async t => {
 });
 
 test('should only enable valid combinations for Flow Node Count', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
   await u.selectView(t, 'Flow Node', 'Count');
 
@@ -322,17 +315,13 @@ test('should only enable valid combinations for Flow Node Count', async t => {
   await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Heatmap').hasAttribute('disabled')).notOk();
-
-  await t.click(e.option('Table'));
-  await u.save(t);
 });
 
 test('select which flow nodes to show from the configuration', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
-
+  await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectVisualization(t, 'Table');
 
   await t.expect(e.nodeTableCell('Assign Approver Group').exists).ok();
 
@@ -355,14 +344,13 @@ test('select which flow nodes to show from the configuration', async t => {
   await t.click(e.primaryModalButton);
 
   await t.expect(e.nodeTableCell('Assign Approver Group').exists).notOk();
-
-  u.save(t);
 });
 
 test('select to show only running or completed nodes', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectVisualization(t, 'Table');
 
   await t.click(e.configurationButton);
   await t.click(e.flowNodeStatusSelect);
@@ -375,10 +363,7 @@ test('select to show only running or completed nodes', async t => {
 });
 
 test('bar/line chart configuration', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
-
+  await u.createNewReport(t);
   await t.typeText(e.nameEditField, 'Bar Chart Report', {replace: true});
 
   await u.selectDefinition(t, 'Multi-Instance Subprocess', 'All');
@@ -419,11 +404,10 @@ test('bar/line chart configuration', async t => {
 });
 
 test('different visualizations', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
-
+  await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
+  await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportTable.visible).ok();
 
@@ -442,16 +426,14 @@ test('different visualizations', async t => {
 
   await t.expect(e.reportDiagram.exists).notOk();
   await t.expect(e.reportNumber.visible).ok();
-
-  await u.save(t);
 });
 
 test('aggregators and reset to default', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
-
+  await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
+  await u.selectView(t, 'Process Instance', 'Duration');
+  await u.selectGroupby(t, 'None');
+
   await t.click(e.filterButton);
   await t.click(e.filterOption('Completed Instances Only'));
 
@@ -491,11 +473,11 @@ test('aggregators and reset to default', async t => {
 });
 
 test('progress bar', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Lead Qualification');
 
   await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'None');
 
   await t.click(e.configurationButton);
 
@@ -522,9 +504,7 @@ test('progress bar', async t => {
 });
 
 test('heatmap target values', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
 
   await t.typeText(e.nameEditField, 'Invoice Pipeline', {replace: true});
 
@@ -576,18 +556,16 @@ test('heatmap target values', async t => {
   await t.expect(e.tooltip.textContent).notContains('target\u00A0duration');
 
   await t.maximizeWindow();
-
-  await u.save(t);
 });
 
 test('always show tooltips', async t => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Flow Node', 'Count');
+
   await t.resizeWindow(1650, 850);
 
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
-
-  await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectVisualization(t, 'Heatmap');
 
   await t.expect(e.tooltip.exists).notOk();
 
@@ -601,9 +579,9 @@ test('always show tooltips', async t => {
 });
 
 test('should only enable valid combinations for user task', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+
   await u.selectView(t, 'User Task', 'Count');
 
   await t.click(e.groupbyDropdown);
@@ -632,14 +610,12 @@ test('should only enable valid combinations for user task', async t => {
   await t.click(e.option('Table'));
 
   await t.expect(e.reportTable.visible).ok();
-
-  await u.save(t);
 });
 
 test('should be able to distribute candidate group by user task', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'User Task', 'Count');
 
   await u.selectGroupby(t, 'Candidate Group');
 
@@ -668,13 +644,10 @@ test('should be able to distribute candidate group by user task', async t => {
 });
 
 test('should be able to select how the time of the user task is calculated', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
-
-  await t.click(e.configurationButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
   await u.selectView(t, 'User Task', 'Duration');
-
+  await u.selectGroupby(t, 'Candidate Group');
   await u.selectVisualization(t, 'Table');
 
   await t.click(e.configurationButton);
@@ -691,9 +664,9 @@ test('should be able to select how the time of the user task is calculated', asy
 });
 
 test('show process instance count', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
+  await u.selectView(t, 'Raw Data');
 
   await t.click(e.configurationButton);
   await t.click(e.instanceCountSwitch);
@@ -703,9 +676,8 @@ test('show process instance count', async t => {
 });
 
 test('process parts', async t => {
-  await t.hover(e.report);
-  await t.click(Homepage.contextMenu(e.report));
-  await t.click(e.editButton);
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt', 'All');
 
   await u.selectView(t, 'Process Instance', 'Duration');
   await u.selectGroupby(t, 'None');
@@ -729,8 +701,9 @@ test('process parts', async t => {
 });
 
 test('deleting', async t => {
-  await t.click(e.report);
+  await u.createNewReport(t);
 
+  await u.save(t);
   await t.click(e.deleteButton);
   await t.click(e.modalConfirmbutton);
 

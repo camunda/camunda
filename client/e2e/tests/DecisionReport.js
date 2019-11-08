@@ -15,8 +15,8 @@ import * as ProcessReport from './ProcessReport.elements.js';
 fixture('Decision Report')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities)
-  .beforeEach(u.login);
+  .beforeEach(u.login)
+  .afterEach(cleanEntities);
 
 test('create a dmn js table report', async t => {
   await t.click(Homepage.createNewMenu);

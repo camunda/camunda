@@ -15,14 +15,17 @@ import * as e from './Collection.elements.js';
 fixture('Collection')
   .page(config.endpoint)
   .before(ensureLicense)
-  .after(cleanEntities);
+  .beforeEach(login)
+  .afterEach(cleanEntities);
+
+async function createCollection(t, name = 'Test Collection') {
+  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
+  await t.typeText(Homepage.modalNameInput, name, {replace: true});
+  await t.click(Homepage.confirmButton);
+}
 
 test('create a collection and entities inside it', async t => {
-  await login(t);
-
-  await t.click(Homepage.createNewMenu).click(Homepage.option('New Collection'));
-  await t.typeText(Homepage.modalNameInput, 'Test Collection', {replace: true});
-  await t.click(Homepage.confirmButton);
+  await createCollection(t, 'Test Collection');
 
   await t.expect(e.collectionTitle.visible).ok();
   await t.expect(e.collectionTitle.textContent).contains('Test Collection');
@@ -41,10 +44,8 @@ test('create a collection and entities inside it', async t => {
   await t.expect(e.dashboardItem.textContent).contains('New Dashboard');
 });
 
-test('renaming the collection', async t => {
-  await login(t);
-
-  await t.click(Homepage.collectionItem);
+test('renaming a collection', async t => {
+  await createCollection(t);
 
   await t.click(e.collectionContextMenu);
   await t.click(e.editCollectionNameButton);
@@ -55,10 +56,8 @@ test('renaming the collection', async t => {
   await t.expect(e.collectionTitle.textContent).contains('another Collection Name');
 });
 
-test('copy the collection', async t => {
-  await login(t);
-
-  await t.click(Homepage.collectionItem);
+test('copy a collection', async t => {
+  await createCollection(t);
 
   await t.click(e.collectionContextMenu);
   await t.click(e.copyCollectionButton);
@@ -70,10 +69,14 @@ test('copy the collection', async t => {
   await t.expect(e.collectionTitle.textContent).contains('copied collection');
 });
 
-test('adding a new user', async t => {
-  await login(t);
+test('user permissions', async t => {
+  await createCollection(t);
 
-  await t.click(Homepage.collectionItem);
+  await t.click(e.createNewMenu);
+  await t.click(e.option('New Dashboard'));
+  await save(t);
+  await t.click(e.collectionBreadcrumb);
+
   await t.click(e.userTab);
 
   await t.click(e.addUserButton);
@@ -104,14 +107,8 @@ test('adding a new user', async t => {
     .resizeWindow(1150, 600)
     .takeElementScreenshot(e.userList, 'homepage/users.png')
     .maximizeWindow();
-});
 
-test('changing user permission', async t => {
-  await login(t);
-
-  await t.click(Homepage.collectionItem);
-  await t.click(e.userTab);
-
+  // change permissions
   await t.hover(e.userItem.nth(0));
   await t.expect(Homepage.contextMenu(e.userItem.nth(0)).exists).notOk();
 
@@ -141,9 +138,10 @@ test('changing user permission', async t => {
   await t.click(Homepage.dashboardItem);
 
   await t.expect(Dashboard.editButton.exists).notOk();
-});
 
-test('deleting a collection', async t => {
+  // delete collection
+  await t.click(e.logoutButton);
+
   await login(t, 'user2');
 
   await t.click(Homepage.collectionItem);
