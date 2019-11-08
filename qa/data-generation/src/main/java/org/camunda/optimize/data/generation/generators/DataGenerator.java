@@ -78,7 +78,7 @@ public abstract class DataGenerator implements Runnable {
     try {
       this.tenants.stream()
         .filter(Objects::nonNull)
-        .forEach(tenantId -> engineClient.createTenantAndRandomlyAuthorizeStandardUsersToIt(tenantId));
+        .forEach(tenantId -> engineClient.createTenant(tenantId));
       createMessageEventCorrelater();
       List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions, tenants);
       deployAdditionalDiagrams();

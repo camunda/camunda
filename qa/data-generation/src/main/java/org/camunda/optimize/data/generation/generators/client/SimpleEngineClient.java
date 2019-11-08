@@ -19,7 +19,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
@@ -60,13 +59,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 
 @Slf4j
 public class SimpleEngineClient {
@@ -101,25 +100,18 @@ public class SimpleEngineClient {
 
   @SneakyThrows
   public void initializeStandardUserAndGroupAuthorizations() {
-    STANDARD_USERS.forEach(this::grantUserOptimizeAndAllDefinitionAuthorization);
-    STANDARD_GROUPS.forEach(this::grantGroupOptimizeAndAllDefinitionAuthorization);
+    STANDARD_USERS.forEach(this::grantUserOptimizeAllDefinitionAndAllTenantsAuthorization);
+    STANDARD_GROUPS.forEach(this::grantGroupOptimizeAllDefinitionAndAllTenantsAuthorization);
   }
 
+
   @SneakyThrows
-  public void createTenantAndRandomlyAuthorizeStandardUsersToIt(final String tenantId) {
-    HttpPost createTenantPost = new HttpPost(engineRestEndpoint + "/tenant/create");
+  public void createTenant(final String tenantId) {
+    final HttpPost createTenantPost = new HttpPost(engineRestEndpoint + "/tenant/create");
     createTenantPost.setEntity(new StringEntity("{\"id\": \"" + tenantId + "\", \"name\": \"" + tenantId + "\"}"));
     createTenantPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse tenantCreatedResponse = client.execute(createTenantPost)) {
       log.info("Created tenant {}.", tenantId);
-      for (String user : STANDARD_USERS) {
-        if (ThreadLocalRandom.current().nextBoolean()) {
-          HttpPut userTenantPut = new HttpPut(engineRestEndpoint + "/tenant/" + tenantId + "/user-members/" + user);
-          try (CloseableHttpResponse userAuthorizationResponse = client.execute(userTenantPut)) {
-            log.info("Authorized user {} to tenant {}.", user, tenantId);
-          }
-        }
-      }
     }
   }
 
@@ -152,16 +144,18 @@ public class SimpleEngineClient {
     }
   }
 
-  public void grantGroupOptimizeAndAllDefinitionAuthorization(final String groupId) {
+  public void grantGroupOptimizeAllDefinitionAndAllTenantsAuthorization(final String groupId) {
     createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_APPLICATION, groupId);
     createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_PROCESS_DEFINITION, groupId);
     createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_DECISION_DEFINITION, groupId);
+    createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_TENANT, groupId);
   }
 
-  public void grantUserOptimizeAndAllDefinitionAuthorization(final String userId) {
+  public void grantUserOptimizeAllDefinitionAndAllTenantsAuthorization(final String userId) {
     createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_APPLICATION, userId);
     createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_PROCESS_DEFINITION, userId);
     createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_DECISION_DEFINITION, userId);
+    createGrantAllOfTypeUserAuthorization(RESOURCE_TYPE_TENANT, userId);
   }
 
   public void cleanUpDeployments() {
