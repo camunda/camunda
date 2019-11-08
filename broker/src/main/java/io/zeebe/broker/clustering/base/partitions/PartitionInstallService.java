@@ -41,6 +41,7 @@ import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LeaderOpenLogStreamAppenderService;
+import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
@@ -82,6 +83,7 @@ public class PartitionInstallService extends Actor
   private ActorFuture<PartitionLeaderElection> leaderElectionInstallFuture;
   private PartitionLeaderElection leaderElection;
   private ActorFuture<Void> transitionFuture;
+  private LogStreamService logStream;
 
   public PartitionInstallService(
       final RaftPartition partition,
@@ -127,7 +129,7 @@ public class PartitionInstallService extends Actor
 
     // installs the logstream service
     logStreamServiceName = LogStreamServiceNames.logStreamServiceName(logName);
-    final var logStream =
+    logStream =
         LogStreams.createAtomixLogStream(partition)
             .withMaxFragmentSize((int) brokerCfg.getNetwork().getMaxMessageSize().toBytes())
             .withServiceContainer(serviceContainer)
@@ -180,6 +182,7 @@ public class PartitionInstallService extends Actor
   @Override
   public void stop(final ServiceStopContext stopContext) {
     leaderElection.removeListener(this);
+    stopContext.async(logStream.closeAsync());
   }
 
   @Override

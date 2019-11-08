@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
 import static io.zeebe.broker.clustering.base.partitions.Partition.getPartitionName;
 import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.partitionInstallServiceName;
 
@@ -80,7 +81,9 @@ public class BootstrapPartitions implements Service<Void> {
         new PartitionInstallService(
             partition, atomix.getEventService(), serviceContainer, brokerCfg);
 
-    startContext.createService(partitionInstallServiceName, partitionInstallService).install();
+    startContext.createService(partitionInstallServiceName, partitionInstallService)
+      .dependency(ATOMIX_JOIN_SERVICE)
+      .install();
   }
 
   public Injector<Atomix> getAtomixInjector() {

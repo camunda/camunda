@@ -147,6 +147,10 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
       }
     } else {
       logger.error("Cannot apply index {}", index);
+      logger.debug(
+          "Expected next index is {} and reader hasNext {}",
+          reader.getNextIndex(),
+          reader.hasNext());
       if (future != null) {
         future.completeExceptionally(new IndexOutOfBoundsException("Cannot apply index " + index));
       }

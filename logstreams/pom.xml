@@ -80,34 +80,12 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>atomix-primary-backup</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-protocol-impl</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>atomix-raft</artifactId>
     </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>atomix-cluster</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-utils</artifactId>
+      <artifactId>atomix-storage</artifactId>
     </dependency>
 
     <dependency>

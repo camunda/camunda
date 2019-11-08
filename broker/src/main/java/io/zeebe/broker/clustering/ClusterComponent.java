@@ -73,11 +73,13 @@ public class ClusterComponent implements Component {
     context.addRequiredStartAction(baseLayerInstall.install());
   }
 
-  private void initGateway(final CompositeServiceBuilder baseLayerInstall, final BrokerCfg brokerConfig) {
+  private void initGateway(
+      final CompositeServiceBuilder baseLayerInstall, final BrokerCfg brokerConfig) {
     final EmbeddedGatewayService gatewayService = new EmbeddedGatewayService(brokerConfig);
     baseLayerInstall
         .createService(GATEWAY_SERVICE, gatewayService)
         .dependency(ATOMIX_SERVICE, gatewayService.getAtomixClusterInjector())
+        .dependency(ATOMIX_JOIN_SERVICE)
         .install();
   }
 
@@ -102,7 +104,8 @@ public class ClusterComponent implements Component {
       final CompositeServiceBuilder baseLayerInstall, final SystemContext context) {
     final BootstrapPartitions partitionBootstrapService =
         new BootstrapPartitions(context.getBrokerConfiguration(), context.getServiceContainer());
-    baseLayerInstall
+    context
+        .getServiceContainer()
         .createService(PARTITIONS_BOOTSTRAP_SERVICE, partitionBootstrapService)
         .dependency(ATOMIX_SERVICE, partitionBootstrapService.getAtomixInjector())
         .dependency(ATOMIX_JOIN_SERVICE)
