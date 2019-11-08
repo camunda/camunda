@@ -10,16 +10,10 @@ package io.zeebe.logstreams.log;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
-import java.io.IOException;
-import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;

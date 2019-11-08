@@ -27,9 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-/**
- * @author Christopher Zell <christopher.zell@camunda.com>
- */
+/** @author Christopher Zell <christopher.zell@camunda.com> */
 public class CompleteInBlockProcessorTest {
   private static final int LENGTH = headerLength(0); // 44 -> 52
   private static final int ALIGNED_LEN = alignedFramedLength(LENGTH); // 56 -> 64

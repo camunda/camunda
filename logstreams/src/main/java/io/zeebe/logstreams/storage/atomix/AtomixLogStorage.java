@@ -8,7 +8,6 @@
 package io.zeebe.logstreams.storage.atomix;
 
 import io.atomix.storage.journal.Indexed;
-import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import java.io.IOException;

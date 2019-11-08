@@ -24,10 +24,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class BufferedLogStreamReader implements LogStreamReader {
   public static final int DEFAULT_INITIAL_BUFFER_CAPACITY = 32 * 1024;
   public static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; // 128MB
-
-  private static final int UNINITIALIZED = -1;
   static final long FIRST_POSITION = Long.MIN_VALUE;
-
+  private static final int UNINITIALIZED = -1;
   // configuration
   private final CompleteEventsInBlockProcessor completeEventsInBlockProcessor =
       new CompleteEventsInBlockProcessor();

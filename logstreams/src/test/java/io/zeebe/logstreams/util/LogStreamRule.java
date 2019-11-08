@@ -45,9 +45,9 @@ public final class LogStreamRule extends ExternalResource {
   private AtomixLogStorageRule logStorageRule;
 
   private LogStreamRule(
-    final TemporaryFolder temporaryFolder,
-    final boolean shouldStart,
-    final Consumer<LogStreamBuilder> streamBuilder) {
+      final TemporaryFolder temporaryFolder,
+      final boolean shouldStart,
+      final Consumer<LogStreamBuilder> streamBuilder) {
     this(temporaryFolder, shouldStart, streamBuilder, UnaryOperator.identity());
   }
 
@@ -55,7 +55,7 @@ public final class LogStreamRule extends ExternalResource {
       final TemporaryFolder temporaryFolder,
       final boolean shouldStart,
       final Consumer<LogStreamBuilder> streamBuilder,
-    final UnaryOperator<Builder> storageBuilder) {
+      final UnaryOperator<Builder> storageBuilder) {
     this.temporaryFolder = temporaryFolder;
     this.shouldStartByDefault = shouldStart;
     this.streamBuilder = streamBuilder;
@@ -68,7 +68,9 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   public static LogStreamRule startByDefault(
-    final TemporaryFolder temporaryFolder, final Consumer<LogStreamBuilder> streamBuilder, UnaryOperator<Builder> storageBuilder) {
+      final TemporaryFolder temporaryFolder,
+      final Consumer<LogStreamBuilder> streamBuilder,
+      UnaryOperator<Builder> storageBuilder) {
     return new LogStreamRule(temporaryFolder, true, streamBuilder, storageBuilder);
   }
 

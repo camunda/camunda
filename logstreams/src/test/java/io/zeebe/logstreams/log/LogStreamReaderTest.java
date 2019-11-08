@@ -14,7 +14,6 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.google.common.base.Stopwatch;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
@@ -23,7 +22,6 @@ import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.ByteValue;
 import java.util.NoSuchElementException;
 import java.util.Random;
-import java.util.concurrent.locks.LockSupport;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;

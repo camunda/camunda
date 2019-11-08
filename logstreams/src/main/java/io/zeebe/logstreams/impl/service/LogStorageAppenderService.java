@@ -25,7 +25,8 @@ public class LogStorageAppenderService implements Service<LogStorageAppender> {
 
   private LogStorageAppender service;
 
-  public LogStorageAppenderService(final LogStorage logStorage, final int partitionId, final int maxAppendBlockSize) {
+  public LogStorageAppenderService(
+      final LogStorage logStorage, final int partitionId, final int maxAppendBlockSize) {
     this.logStorage = logStorage;
     this.partitionId = partitionId;
     this.maxAppendBlockSize = maxAppendBlockSize;
@@ -37,11 +38,7 @@ public class LogStorageAppenderService implements Service<LogStorageAppender> {
 
     service =
         new LogStorageAppender(
-            startContext.getName(),
-            partitionId,
-            logStorage,
-            subscription,
-            maxAppendBlockSize);
+            startContext.getName(), partitionId, logStorage, subscription, maxAppendBlockSize);
 
     startContext.async(startContext.getScheduler().submitActor(service, SchedulingHints.ioBound()));
   }

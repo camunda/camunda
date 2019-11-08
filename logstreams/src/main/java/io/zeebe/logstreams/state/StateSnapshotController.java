@@ -298,8 +298,8 @@ public class StateSnapshotController implements SnapshotController, ValidSnapsho
    * @param oldestValidSnapshotIndex the index of the oldest valid snapshot
    * @throws IOException can be thrown on deletion
    */
-  private void cleanUpTemporarySnapshots(final List<File> snapshots, final int oldestValidSnapshotIndex)
-      throws IOException {
+  private void cleanUpTemporarySnapshots(
+      final List<File> snapshots, final int oldestValidSnapshotIndex) throws IOException {
     final File oldestValidSnapshot = snapshots.get(oldestValidSnapshotIndex);
     final long oldestValidSnapshotPosition = Long.parseLong(oldestValidSnapshot.getName());
     LOG.debug(

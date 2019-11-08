@@ -47,7 +47,7 @@ public interface LogStream extends AutoCloseable {
   /** @return the current commit position, or a negative value if no entry is committed. */
   long getCommitPosition();
 
-  /** sets the new commit position **/
+  /** sets the new commit position * */
   void setCommitPosition(long position);
 
   /**
