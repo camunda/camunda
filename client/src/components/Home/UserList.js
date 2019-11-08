@@ -42,10 +42,17 @@ export default withErrorHandling(
       const {id} = this.state.deleting;
       this.resetDelete();
       this.setState({deleteInProgress: true});
-      this.props.mightFail(removeUser(this.props.collection, id), this.props.onChange, error => {
-        showError(error);
-        this.setState({deleteInProgress: false});
-      });
+      this.props.mightFail(
+        removeUser(this.props.collection, id),
+        () => {
+          this.props.onChange();
+          this.setState({deleteInProgress: false});
+        },
+        error => {
+          showError(error);
+          this.setState({deleteInProgress: false});
+        }
+      );
     };
 
     openAddUserModal = () => this.setState({addingUser: true});

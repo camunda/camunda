@@ -9,19 +9,19 @@ exports[`should check the versions based on the selected specific versions 1`] =
     compact={true}
   >
     <FormGroup>
-      <LabeledInput
+      <ForwardRef(LabeledInput)
         checked={false}
         label="All"
         onChange={[Function]}
         type="radio"
       />
-      <LabeledInput
+      <ForwardRef(LabeledInput)
         checked={true}
         label="Always display latest"
         onChange={[Function]}
         type="radio"
       />
-      <LabeledInput
+      <ForwardRef(LabeledInput)
         checked={false}
         label="Specific versions"
         onChange={[Function]}
@@ -31,7 +31,7 @@ exports[`should check the versions based on the selected specific versions 1`] =
         className="specificVersions disabled"
         noSpacing={true}
       >
-        <LabeledInput
+        <ForwardRef(LabeledInput)
           checked={true}
           disabled={true}
           key="3"
@@ -46,7 +46,7 @@ exports[`should check the versions based on the selected specific versions 1`] =
           onChange={[Function]}
           type="checkbox"
         />
-        <LabeledInput
+        <ForwardRef(LabeledInput)
           checked={false}
           disabled={true}
           key="2"
@@ -58,7 +58,7 @@ exports[`should check the versions based on the selected specific versions 1`] =
           onChange={[Function]}
           type="checkbox"
         />
-        <LabeledInput
+        <ForwardRef(LabeledInput)
           checked={true}
           disabled={true}
           key="1"

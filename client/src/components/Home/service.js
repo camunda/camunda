@@ -28,6 +28,23 @@ export async function getSources(collection) {
   return await response.json();
 }
 
+export async function addSource(collection, source) {
+  const add = async source => await post(`api/collection/${collection}/scope`, source);
+
+  if (Array.isArray(source)) {
+    for (let i = 0; i < source.length; i++) {
+      await add(source[i]);
+    }
+    return;
+  }
+
+  return await add(source);
+}
+
+export async function editSource(collection, scopeId, tenants) {
+  return await put(`api/collection/${collection}/scope/${scopeId}`, {tenants});
+}
+
 export async function removeSource(collection, scopeId) {
   return await del(`api/collection/${collection}/scope/${scopeId}`);
 }

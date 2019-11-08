@@ -13,10 +13,12 @@ import {withErrorHandling} from 'HOC';
 
 import ListItem from './ListItem';
 
-import {removeSource, getSources} from './service';
+import {getSources, addSource, editSource, removeSource} from './service';
 
 import {ReactComponent as ProcessIcon} from './icons/process.svg';
 import {ReactComponent as DecisionIcon} from './icons/decision.svg';
+import AddSourceModal from './modals/AddSourceModal';
+import EditSourceModal from './modals/EditSourceModal';
 
 import './SourcesList.scss';
 
@@ -26,7 +28,8 @@ export default withErrorHandling(
       sources: null,
       deleting: null,
       deleteInProgress: false,
-      searchQuery: ''
+      searchQuery: '',
+      addingSource: false
     };
 
     componentDidMount() {
@@ -48,12 +51,15 @@ export default withErrorHandling(
     resetDelete = () => this.setState({deleting: null, deleteInProgress: false});
 
     deleteSource = () => {
-      const {definitionKey} = this.state.deleting;
+      const {id} = this.state.deleting;
       this.resetDelete();
       this.setState({deleteInProgress: true});
       this.props.mightFail(
-        removeSource(this.props.collection, definitionKey),
-        this.getSources,
+        removeSource(this.props.collection, id),
+        () => {
+          this.getSources();
+          this.setState({deleteInProgress: false});
+        },
         error => {
           showError(error);
           this.setState({deleteInProgress: false});
@@ -61,8 +67,26 @@ export default withErrorHandling(
       );
     };
 
+    openAddSourceModal = () => this.setState({addingSource: true});
+    addSource = source => {
+      this.closeAddSourceModal();
+      this.props.mightFail(addSource(this.props.collection, source), this.getSources, showError);
+    };
+    closeAddSourceModal = () => this.setState({addingSource: false});
+
+    openEditSourceModal = editing => this.setState({editing});
+    editSource = tenants => {
+      this.props.mightFail(
+        editSource(this.props.collection, this.state.editing.id, tenants),
+        this.getSources,
+        showError
+      );
+      this.closeEditSourceModal();
+    };
+    closeEditSourceModal = () => this.setState({editing: null});
+
     render() {
-      const {deleting, deleteInProgress, searchQuery} = this.state;
+      const {deleting, editing, deleteInProgress, searchQuery, addingSource} = this.state;
       const {readOnly} = this.props;
 
       return (
@@ -81,7 +105,9 @@ export default withErrorHandling(
                 onClear={() => this.setState({searchQuery: ''})}
               />
             </div>
-            {!readOnly && <Button>{t('common.add')}</Button>}
+            {!readOnly && (
+              <Button onClick={() => this.setState({addingSource: true})}>{t('common.add')}</Button>
+            )}
           </div>
           <div className="content">
             <ul>{this.renderList()}</ul>
@@ -93,6 +119,18 @@ export default withErrorHandling(
             entityName={deleting && (deleting.definitionName || deleting.definitionKey)}
             loading={deleteInProgress}
           />
+          <AddSourceModal
+            open={addingSource}
+            onClose={this.closeAddSourceModal}
+            onConfirm={this.addSource}
+          />
+          {editing && (
+            <EditSourceModal
+              source={editing}
+              onClose={this.closeEditSourceModal}
+              onConfirm={this.editSource}
+            />
+          )}
         </div>
       );
     }
@@ -133,7 +171,7 @@ export default withErrorHandling(
             {!readOnly && (
               <div className="contextMenu">
                 <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                  <Dropdown.Option>
+                  <Dropdown.Option onClick={() => this.openEditSourceModal(source)}>
                     <Icon type="edit" />
                     {t('common.edit')}
                   </Dropdown.Option>

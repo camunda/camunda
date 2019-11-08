@@ -1,0 +1,56 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Modal
+  className="EditSourceModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Edit defName
+  </Component>
+  <Component>
+    <Form>
+      Tenants
+      <FormGroup>
+        <Checklist
+          data={
+            Array [
+              Object {
+                "id": null,
+                "name": "Not defined",
+              },
+              Object {
+                "id": "test",
+                "name": "testName",
+              },
+            ]
+          }
+          deselectAll={[Function]}
+          formatter={[Function]}
+          onChange={[Function]}
+          selectAll={[Function]}
+        />
+      </FormGroup>
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={false}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Apply
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;

@@ -1,0 +1,70 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Fragment>
+  <FormGroup>
+    <Labeled
+      label="Tenants"
+    >
+      <Typeahead
+        disabled={false}
+        formatter={[Function]}
+        noValuesMessage="No results found"
+        onSelect={[Function]}
+        placeholder="Select..."
+        values={
+          Array [
+            Object {
+              "definitions": Array [
+                Object {
+                  "key": "invoice-assign-approver",
+                  "name": "Assign Approver Group",
+                  "type": "decision",
+                },
+                Object {
+                  "key": "beverages",
+                  "name": "Beverages",
+                  "type": "decision",
+                },
+              ],
+              "id": null,
+              "name": "Not defined",
+            },
+            Object {
+              "definitions": Array [
+                Object {
+                  "key": "hiring-demo-5-tenants",
+                  "name": "Hiring Demo 5 Tenants",
+                  "type": "process",
+                },
+              ],
+              "id": "csm",
+              "name": "csm",
+            },
+          ]
+        }
+      />
+    </Labeled>
+  </FormGroup>
+</Fragment>
+`;
+
+exports[`should show the shared definition when selecting a tenant 1`] = `
+Array [
+  Object {
+    "key": "hiring-demo-5-tenants",
+    "name": "Hiring Demo 5 Tenants",
+    "type": "process",
+  },
+  Object {
+    "key": "invoice-assign-approver",
+    "name": "Assign Approver Group",
+    "type": "decision",
+  },
+  Object {
+    "key": "beverages",
+    "name": "Beverages",
+    "type": "decision",
+  },
+]
+`;

@@ -8,7 +8,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import CountTargetInput from './CountTargetInput';
-
+import {LabeledInput} from 'components';
 const validProps = {
   baseline: 10,
   target: 200,
@@ -18,8 +18,8 @@ const validProps = {
 it('should display the current target values', () => {
   const node = shallow(<CountTargetInput {...validProps} />);
 
-  expect(node.find('LabeledInput').first()).toHaveValue(10);
-  expect(node.find('LabeledInput').at(1)).toHaveValue(200);
+  expect(node.find(LabeledInput).first()).toHaveValue(10);
+  expect(node.find(LabeledInput).at(1)).toHaveValue(200);
 });
 
 it('should update target values', () => {
@@ -27,7 +27,7 @@ it('should update target values', () => {
   const node = shallow(<CountTargetInput {...validProps} onChange={spy} />);
 
   node
-    .find('LabeledInput')
+    .find(LabeledInput)
     .at(1)
     .simulate('change', {target: {value: '73'}});
 

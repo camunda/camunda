@@ -1,0 +1,49 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<Fragment>
+  <FormGroup>
+    <Labeled
+      label="Definitions"
+    >
+      <Typeahead
+        disabled={false}
+        formatter={[Function]}
+        noValuesMessage="No defintions found"
+        onSelect={[Function]}
+        placeholder="Select..."
+        values={
+          Array [
+            Object {
+              "key": "hiring-demo",
+              "name": "Hiring Demo",
+              "tenants": Array [
+                Object {
+                  "id": "csm",
+                  "name": "csm",
+                },
+                Object {
+                  "id": "engineering",
+                  "name": "engineering",
+                },
+              ],
+              "type": "process",
+            },
+            Object {
+              "key": "invoiceClassification",
+              "name": "Invoice Classification",
+              "tenants": Array [
+                Object {
+                  "id": null,
+                  "name": "Not defined",
+                },
+              ],
+              "type": "decision",
+            },
+          ]
+        }
+      />
+    </Labeled>
+  </FormGroup>
+</Fragment>
+`;

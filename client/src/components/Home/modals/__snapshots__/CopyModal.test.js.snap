@@ -13,7 +13,7 @@ exports[`should hide option to move the copy for collection entities 1`] = `
   <Component>
     <Form>
       <FormGroup>
-        <LabeledInput
+        <ForwardRef(LabeledInput)
           autoComplete="off"
           label="Name of Copy"
           onChange={[Function]}
@@ -59,7 +59,7 @@ exports[`should match snapshot 1`] = `
   <Component>
     <Form>
       <FormGroup>
-        <LabeledInput
+        <ForwardRef(LabeledInput)
           autoComplete="off"
           label="Name of Copy"
           onChange={[Function]}

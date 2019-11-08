@@ -216,7 +216,7 @@ export default class DefinitionSelection extends React.Component {
                 />
               </div>
               <div className="tenant entry">
-                <Labeled label={t('common.definitionSelection.tenant.label')} />
+                <Labeled label={t('common.tenant.label')} />
                 <TenantPopover
                   tenants={this.getAvailableTenants(selectedKey, versions)}
                   selected={this.getSelectedTenants()}

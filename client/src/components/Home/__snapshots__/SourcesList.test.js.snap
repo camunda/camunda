@@ -33,7 +33,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
   >
     <ul>
       <ListItem
-        className="PROCESS"
+        className="process"
         key="defKey"
       >
         <ListItemSection
@@ -47,7 +47,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           <div
             className="type"
           >
-            Unknown Entity
+            Process
           </div>
           <div
             className="entityName"
@@ -62,13 +62,13 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
         </ListItemSection>
       </ListItem>
       <ListItem
-        className="DECISION"
+        className="decision"
         key="defKey2"
       >
         <ListItemSection
           className="icon"
         >
-          <ForwardRef(SvgProcess) />
+          <ForwardRef(SvgDecision) />
         </ListItemSection>
         <ListItemSection
           className="name"
@@ -76,7 +76,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           <div
             className="type"
           >
-            Unknown Entity
+            Decision Table
           </div>
           <div
             className="entityName"
@@ -98,6 +98,11 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     onClose={[Function]}
     onConfirm={[Function]}
     open={null}
+  />
+  <AddSourceModalErrorHandler
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={false}
   />
 </div>
 `;
@@ -129,7 +134,9 @@ exports[`should match snapshot 1`] = `
         value=""
       />
     </div>
-    <ForwardRef(Button)>
+    <ForwardRef(Button)
+      onClick={[Function]}
+    >
       Add
     </ForwardRef(Button)>
   </div>
@@ -138,7 +145,7 @@ exports[`should match snapshot 1`] = `
   >
     <ul>
       <ListItem
-        className="PROCESS"
+        className="process"
         key="defKey"
       >
         <ListItemSection
@@ -152,7 +159,7 @@ exports[`should match snapshot 1`] = `
           <div
             className="type"
           >
-            Unknown Entity
+            Process
           </div>
           <div
             className="entityName"
@@ -176,7 +183,9 @@ exports[`should match snapshot 1`] = `
               />
             }
           >
-            <ForwardRef(DropdownOption)>
+            <ForwardRef(DropdownOption)
+              onClick={[Function]}
+            >
               <Icon
                 type="edit"
               />
@@ -194,13 +203,13 @@ exports[`should match snapshot 1`] = `
         </div>
       </ListItem>
       <ListItem
-        className="DECISION"
+        className="decision"
         key="defKey2"
       >
         <ListItemSection
           className="icon"
         >
-          <ForwardRef(SvgProcess) />
+          <ForwardRef(SvgDecision) />
         </ListItemSection>
         <ListItemSection
           className="name"
@@ -208,7 +217,7 @@ exports[`should match snapshot 1`] = `
           <div
             className="type"
           >
-            Unknown Entity
+            Decision Table
           </div>
           <div
             className="entityName"
@@ -232,7 +241,9 @@ exports[`should match snapshot 1`] = `
               />
             }
           >
-            <ForwardRef(DropdownOption)>
+            <ForwardRef(DropdownOption)
+              onClick={[Function]}
+            >
               <Icon
                 type="edit"
               />
@@ -257,6 +268,11 @@ exports[`should match snapshot 1`] = `
     onClose={[Function]}
     onConfirm={[Function]}
     open={null}
+  />
+  <AddSourceModalErrorHandler
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={false}
   />
 </div>
 `;

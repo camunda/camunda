@@ -9,28 +9,32 @@ import {shallow} from 'enzyme';
 
 import {ConfirmationModal, Dropdown} from 'components';
 
-import {removeSource} from './service';
+import {removeSource, editSource, addSource} from './service';
 
 import SourcesListWithErrorHandling from './SourcesList';
+import EditSourceModal from './modals/EditSourceModal';
+import AddSourceModal from './modals/AddSourceModal';
 
 jest.mock('./service', () => ({
   getSources: jest.fn().mockReturnValue([
     {
-      definitionType: 'PROCESS',
+      id: 'process:defKey',
+      definitionType: 'process',
       definitionKey: 'defKey',
       definitionName: 'definition name',
-      versions: ['1', '2'],
       tenants: [{id: null, name: 'Not defined'}, {id: 'tenant1', name: 'Sales'}]
     },
     {
-      definitionType: 'DECISION',
+      id: 'decision:defKey2',
+      definitionType: 'decision',
       definitionKey: 'defKey2',
       definitionName: 'decision report',
-      versions: ['ALL'],
       tenants: [{id: null, name: 'Not defined'}, {id: 'tenant1', name: 'Marketing'}]
     }
   ]),
-  removeSource: jest.fn()
+  removeSource: jest.fn(),
+  editSource: jest.fn(),
+  addSource: jest.fn()
 }));
 
 const SourcesList = SourcesListWithErrorHandling.WrappedComponent;
@@ -38,7 +42,8 @@ const SourcesList = SourcesListWithErrorHandling.WrappedComponent;
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   collection: 'collectionId',
-  readOnly: false
+  readOnly: false,
+  onChange: jest.fn()
 };
 
 it('should match snapshot', () => {
@@ -67,8 +72,45 @@ it('should show delete modal when clicking delete button', () => {
 it('should delete source', () => {
   const node = shallow(<SourcesList {...props} />);
 
-  node.setState({deleting: {definitionKey: 'defKey'}});
+  node.setState({deleting: {id: 'sourceId'}});
+
   node.find(ConfirmationModal).prop('onConfirm')();
 
-  expect(removeSource).toHaveBeenCalledWith('collectionId', 'defKey');
+  expect(removeSource).toHaveBeenCalledWith('collectionId', 'sourceId');
+});
+
+it('should show an edit modal when clicking the edit button', () => {
+  const node = shallow(<SourcesList {...props} />);
+
+  node
+    .find(Dropdown.Option)
+    .at(0)
+    .simulate('click');
+
+  expect(node.find(EditSourceModal)).toExist();
+});
+
+it('should modify the tenants in source', () => {
+  const node = shallow(<SourcesList {...props} />);
+
+  node.setState({editing: {id: 'sourceId'}});
+  const updatedTenants = [{id: 'newTenant', name: 'New Tenant'}];
+  node.find(EditSourceModal).prop('onConfirm')(updatedTenants);
+
+  expect(editSource).toHaveBeenCalledWith('collectionId', 'sourceId', updatedTenants);
+});
+
+it('should add a new Source when addSourceModal is confirmed', () => {
+  const node = shallow(<SourcesList {...props} />);
+
+  node.setState({addingSource: true});
+  const newSource = {
+    id: 'sourceId',
+    definitionType: 'process',
+    definitionKey: 'defKey',
+    tenants: ['tenantId']
+  };
+  node.find(AddSourceModal).prop('onConfirm')(newSource);
+
+  expect(addSource).toHaveBeenCalledWith('collectionId', newSource);
 });

@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+import {LabeledInput} from 'components';
 
 import DurationTargetInput from './DurationTargetInput';
 
@@ -18,9 +19,9 @@ const validProps = {
 it('should display the current target values', () => {
   const node = shallow(<DurationTargetInput {...validProps} />);
 
-  expect(node.find('LabeledInput').first()).toHaveValue('12');
+  expect(node.find(LabeledInput).first()).toHaveValue('12');
   expect(node.find('Select').first()).toHaveValue('weeks');
-  expect(node.find('LabeledInput').at(1)).toHaveValue('15');
+  expect(node.find(LabeledInput).at(1)).toHaveValue('15');
   expect(node.find('Select').at(1)).toHaveValue('months');
 });
 
@@ -29,7 +30,7 @@ it('should update target values', () => {
   const node = shallow(<DurationTargetInput {...validProps} onChange={spy} />);
 
   node
-    .find('LabeledInput')
+    .find(LabeledInput)
     .at(1)
     .simulate('change', {target: {value: '73'}});
 

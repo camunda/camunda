@@ -22,7 +22,7 @@ exports[`should match snapshot 1`] = `
       </FormGroup>
       User role
       <FormGroup>
-        <LabeledInput
+        <ForwardRef(LabeledInput)
           checked={true}
           label={
             <React.Fragment>
@@ -41,7 +41,7 @@ exports[`should match snapshot 1`] = `
           onChange={[Function]}
           type="radio"
         />
-        <LabeledInput
+        <ForwardRef(LabeledInput)
           checked={false}
           label={
             <React.Fragment>
@@ -60,7 +60,7 @@ exports[`should match snapshot 1`] = `
           onChange={[Function]}
           type="radio"
         />
-        <LabeledInput
+        <ForwardRef(LabeledInput)
           checked={false}
           label={
             <React.Fragment>

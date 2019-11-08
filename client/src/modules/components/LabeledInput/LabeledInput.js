@@ -9,7 +9,7 @@ import React from 'react';
 import {Labeled, Input} from 'components';
 import classnames from 'classnames';
 
-export default function LabeledInput({label, className, children, ...props}) {
+export default React.forwardRef(function LabeledInput({label, className, children, ...props}, ref) {
   return (
     <div className={classnames('LabeledInput', className)}>
       <Labeled
@@ -17,9 +17,9 @@ export default function LabeledInput({label, className, children, ...props}) {
         appendLabel={props.type === 'checkbox' || props.type === 'radio'}
         disabled={props.disabled}
       >
-        <Input {...props} />
+        <Input ref={ref} {...props} />
       </Labeled>
       {children}
     </div>
   );
-}
+});

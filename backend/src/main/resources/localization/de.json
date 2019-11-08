@@ -83,7 +83,12 @@
       "title": "Datenquellen",
       "decision": "Entscheidungstabelle",
       "process": "Prozess",
-      "notCreated": "Es wurden noch keine Quellen hinzugefügt"
+      "notCreated": "Es wurden noch keine Quellen hinzugefügt",
+      "add": "Quelle hinzufügen",
+      "definition": {
+        "label-plural": "Definitionen"
+      },
+      "noTenantFound": "Keine Mandanten gefunden"
     },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
     "empty": "Es wurde noch nichts erstellt"
@@ -417,6 +422,10 @@
     "viewDetails": "Details anzeigen",
     "notFound": "keine Ergebnisse gefunden",
     "searchForMore": "Es werden nur {count} Einträge angezeigt. Suche verfeinern.",
+    "tenant": {
+      "label": "Mandant",
+      "label-plural": "Mandanten"
+    },
     "multiSelect": {
       "available": "Verfügbare Elemente",
       "selected": "Ausgewählte Elemente",
@@ -607,7 +616,6 @@
         }
       },
       "tenant": {
-        "label": "Mandant",
         "includeData": "Daten einschließen von"
       },
       "versionWarning": "Hinweis: Daten aus älteren Versionen können abweichen, daher können die Berichtsdaten inkonsistent sein."
