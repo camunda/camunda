@@ -72,6 +72,7 @@ public class CollectionScopeService {
                                                              final String scopeDefinitionName,
                                                              final List<TenantDto> tenantDtos) {
     return new CollectionScopeEntryRestDto()
+      .setId(scope.getId())
       .setDefinitionKey(scope.getDefinitionKey())
       .setDefinitionName(scopeDefinitionName)
       .setDefinitionType(scope.getDefinitionType())

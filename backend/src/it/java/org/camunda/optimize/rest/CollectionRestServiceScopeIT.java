@@ -62,7 +62,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   public void getScopeForCollection() {
     // given
     final String collectionId = createNewCollection();
-    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final String definitionKey = "_KEY_";
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry(definitionKey);
     addScopeEntryToCollection(collectionId, entry);
 
     // when
@@ -74,8 +75,10 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     // then
     assertThat(scopeEntries)
       .containsExactly(
-        new CollectionScopeEntryRestDto().setDefinitionKey("_KEY_")
-          .setDefinitionName("_KEY_")
+        new CollectionScopeEntryRestDto()
+          .setId(PROCESS + ":" + definitionKey)
+          .setDefinitionKey(definitionKey)
+          .setDefinitionName(definitionKey)
           .setDefinitionType(PROCESS)
           .setTenants(Collections.singletonList(TENANT_NOT_DEFINED))
       );
