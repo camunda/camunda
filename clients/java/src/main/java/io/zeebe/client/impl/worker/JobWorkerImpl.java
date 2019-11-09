@@ -102,7 +102,8 @@ public class JobWorkerImpl implements JobWorker, Closeable {
               activatedJobs -> {
                 remainingJobs.addAndGet(activatedJobs);
                 this.jobPoller.set(jobPoller);
-              });
+              },
+              this::isOpen);
         } catch (Exception e) {
           LOG.warn("Failed to activate jobs", e);
           this.jobPoller.set(jobPoller);
