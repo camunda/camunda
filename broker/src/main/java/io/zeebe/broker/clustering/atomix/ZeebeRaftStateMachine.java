@@ -3,6 +3,7 @@ package io.zeebe.broker.clustering.atomix;
 import io.atomix.protocols.raft.RaftException;
 import io.atomix.protocols.raft.RaftStateMachine;
 import io.atomix.protocols.raft.impl.RaftContext;
+import io.atomix.protocols.raft.metrics.RaftServiceMetrics;
 import io.atomix.protocols.raft.storage.log.RaftLogReader;
 import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
@@ -21,6 +22,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
   private final RaftLogReader reader;
   private final Logger logger;
   private final ThreadContext compactionContext;
+  private final RaftServiceMetrics metrics;
 
   // used when performing compaction; may be updated from a different thread
   private volatile long compactableIndex;
@@ -37,9 +39,12 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     this.threadContextFactory = threadContextFactory;
 
     this.compactionContext = this.threadContextFactory.createContext();
-    this.lastEnqueued = this.raft.getSnapshotStore().getCurrentSnapshotIndex();
-    this.reader = raft.getLog().openReader(this.lastEnqueued, RaftLogReader.Mode.COMMITS);
+    this.reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
+
+    this.lastEnqueued =
+        reader.getFirstIndex() - 1; // this.raft.getSnapshotStore().getCurrentSnapshotIndex();
     this.logger = LoggerFactory.getLogger(this.getClass());
+    this.metrics = new RaftServiceMetrics(raft.getName());
   }
 
   @Override
@@ -90,6 +95,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
 
   @Override
   public void close() {
+    compactionContext.close();
     reader.close();
   }
 
@@ -113,7 +119,9 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     compactionContext.checkThread();
 
     try {
+      final var startTime = System.currentTimeMillis();
       raft.getLog().compact(index);
+      metrics.compactionTime(System.currentTimeMillis() - startTime);
       future.complete(null);
     } catch (final Exception e) {
       logger.error("Failed to compact up to index {}", index, e);
@@ -124,8 +132,8 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
   private void safeApplyAll(final long index) {
     threadContext.checkThread();
 
-    final long currentSnapshotIndex = raft.getSnapshotStore().getCurrentSnapshotIndex();
-    lastEnqueued = Math.max(currentSnapshotIndex, lastEnqueued);
+    // final long currentSnapshotIndex = raft.getSnapshotStore().getCurrentSnapshotIndex();
+    // lastEnqueued = Math.max(currentSnapshotIndex, lastEnqueued);
     while (lastEnqueued < index) {
       final long nextIndex = ++lastEnqueued;
       threadContext.execute(() -> safeApplyIndex(nextIndex, null));
