@@ -14,6 +14,8 @@ import io.atomix.core.Atomix;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
+import io.jaegertracing.Configuration;
+import io.opentracing.Tracer;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.broker.bootstrap.CloseProcess;
@@ -40,12 +42,15 @@ import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.zeebe.broker.system.partitions.ZeebePartition;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
+import io.zeebe.broker.transport.commandapi.CommandTracer;
+import io.zeebe.broker.transport.commandapi.DefaultCommandTracer;
 import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.zeebe.protocol.impl.tracing.SbeTracingCodec;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportFactory;
 import io.zeebe.util.LogUtil;
@@ -225,7 +230,19 @@ public final class Broker implements AutoCloseable {
               backpressure.getAlgorithm(), backpressure.useWindowed());
     }
 
-    commandHandler = new CommandApiService(serverTransport, localBroker, limiter);
+    CommandTracer commandTracer = new CommandTracer.NoopCommandTracer();
+
+    if (brokerCfg.getMonitoring().isTracing()) {
+      final Tracer tracer =
+        Configuration.fromEnv("io.zeebe.broker")
+          .getTracerBuilder()
+          .registerInjector(SbeTracingCodec.format(), SbeTracingCodec.codec())
+          .registerExtractor(SbeTracingCodec.format(), SbeTracingCodec.codec())
+          .build();
+      commandTracer = new DefaultCommandTracer(tracer);
+    }
+
+    commandHandler = new CommandApiService(serverTransport, localBroker, limiter, commandTracer);
     partitionListeners.add(commandHandler);
     scheduleActor(commandHandler);
 

@@ -34,6 +34,8 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
   private final ServerResponseImpl response = new ServerResponseImpl();
   private final ServerOutput output;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private final CommandTracer tracer;
+
   private int partitionId = partitionIdNullValue();
   private long key = keyNullValue();
   private BufferWriter valueWriter;
@@ -42,8 +44,9 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
   private short intent = Intent.NULL_VAL;
   private RejectionType rejectionType = RejectionType.NULL_VAL;
 
-  public CommandResponseWriterImpl(final ServerOutput output) {
+  public CommandResponseWriterImpl(final ServerOutput output, final CommandTracer tracer) {
     this.output = output;
+    this.tracer = tracer;
   }
 
   @Override
@@ -100,7 +103,7 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
 
     try {
       response.reset().setPartitionId(remoteStreamId).setRequestId(requestId).writer(this);
-
+      tracer.finish(remoteStreamId, requestId, false);
       output.sendResponse(response);
     } finally {
       reset();

@@ -11,6 +11,8 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static java.lang.String.format;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.transport.commandapi.CommandTracer.NoopCommandTracer;
+import io.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.ErrorResponseEncoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;
@@ -45,15 +47,17 @@ public final class ErrorResponseWriter implements BufferWriter {
   private final ErrorResponseEncoder errorResponseEncoder = new ErrorResponseEncoder();
   private final ServerOutput output;
   private final ServerResponseImpl response = new ServerResponseImpl();
+  private final CommandTracer tracer;
   private ErrorCode errorCode;
   private byte[] errorMessage;
 
-  public ErrorResponseWriter() {
-    this(null);
+  public ErrorResponseWriter(final CommandTracer tracer) {
+    this(null, tracer);
   }
 
-  public ErrorResponseWriter(final ServerOutput output) {
+  public ErrorResponseWriter(final ServerOutput output, final CommandTracer tracer) {
     this.output = output;
+    this.tracer = tracer;
   }
 
   public <T> ErrorResponseWriter unsupportedMessage(
@@ -138,30 +142,31 @@ public final class ErrorResponseWriter implements BufferWriter {
   }
 
   public void tryWriteResponseOrLogFailure(
-      final ServerOutput output, final int streamId, final long requestId) {
-    tryWriteResponse(output, streamId, requestId);
+      final ServerOutput output, final int partitionId, final long requestId) {
+    tryWriteResponse(output, partitionId, requestId);
   }
 
-  public void tryWriteResponseOrLogFailure(final int streamId, final long requestId) {
-    tryWriteResponseOrLogFailure(this.output, streamId, requestId);
+  public void tryWriteResponseOrLogFailure(final int partitionId, final long requestId) {
+    tryWriteResponseOrLogFailure(this.output, partitionId, requestId);
   }
 
   public void tryWriteResponse(
-      final ServerOutput output, final int streamId, final long requestId) {
+      final ServerOutput output, final int partitionId, final long requestId) {
     EnsureUtil.ensureNotNull("error code", errorCode);
     EnsureUtil.ensureNotNull("error message", errorMessage);
 
     try {
-      response.reset().setPartitionId(streamId).writer(this).setRequestId(requestId);
+      response.reset().setPartitionId(partitionId).writer(this).setRequestId(requestId);
 
+      tracer.finish(partitionId, requestId, true);
       output.sendResponse(response);
     } finally {
       reset();
     }
   }
 
-  public void tryWriteResponse(final int streamId, final long requestId) {
-    tryWriteResponse(this.output, streamId, requestId);
+  public void tryWriteResponse(final int partitionId, final long requestId) {
+    tryWriteResponse(this.output, partitionId, requestId);
   }
 
   @Override

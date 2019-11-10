@@ -24,6 +24,7 @@ public final class BrokerCfg {
   private List<ExporterCfg> exporters = new ArrayList<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
+  private MonitoringCfg monitoring = new MonitoringCfg();
 
   private String stepTimeout = "5m";
 
@@ -40,6 +41,7 @@ public final class BrokerCfg {
     exporters.forEach(e -> e.init(this, brokerBase, environment));
     gateway.init(this, brokerBase, environment);
     backpressure.init(this, brokerBase, environment);
+    monitoring.init(this, brokerBase, environment);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -124,6 +126,15 @@ public final class BrokerCfg {
     this.stepTimeout = stepTimeout;
   }
 
+  public MonitoringCfg getMonitoring() {
+    return monitoring;
+  }
+
+  public BrokerCfg setMonitoring(final MonitoringCfg monitoring) {
+    this.monitoring = monitoring;
+    return this;
+  }
+
   @Override
   public String toString() {
     return "BrokerCfg{"
@@ -144,6 +155,8 @@ public final class BrokerCfg {
         + ", stepTimeout='"
         + stepTimeout
         + '\''
+        + ", monitoring="
+        + monitoring
         + '}';
   }
 

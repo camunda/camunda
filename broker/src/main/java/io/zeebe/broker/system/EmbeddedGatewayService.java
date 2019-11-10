@@ -11,6 +11,7 @@ import io.atomix.core.Atomix;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.gateway.Gateway;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.BrokerClientFactory;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.util.sched.ActorScheduler;
@@ -23,9 +24,9 @@ public final class EmbeddedGatewayService implements AutoCloseable {
 
   public EmbeddedGatewayService(
       final BrokerCfg configuration, final ActorScheduler actorScheduler, final Atomix atomix) {
-    final Function<GatewayCfg, BrokerClient> brokerClientFactory =
-        cfg -> new BrokerClientImpl(cfg, atomix, actorScheduler, false);
-    gateway = new Gateway(configuration.getGateway(), brokerClientFactory, actorScheduler);
+    final BrokerClientFactory brokerClientFactory =
+      (cfg, tracer) -> new BrokerClientImpl(cfg, atomix, tracer, actorScheduler, false);
+    gateway = new Gateway(configuration.getGateway(), actorScheduler, brokerClientFactory);
     startGateway();
   }
 

@@ -29,15 +29,18 @@ public final class CommandApiService extends Actor implements PartitionListener 
   private final CommandApiRequestHandler requestHandler;
   private final IntHashSet leadPartitions = new IntHashSet();
   private final String actorName;
+  private final CommandTracer tracer;
 
   public CommandApiService(
       final ServerTransport serverTransport,
       final BrokerInfo localBroker,
-      final PartitionAwareRequestLimiter limiter) {
+      final PartitionAwareRequestLimiter limiter,
+      final CommandTracer tracer) {
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     requestHandler = new CommandApiRequestHandler();
     this.actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
+    this.tracer = tracer;
   }
 
   @Override
@@ -107,7 +110,7 @@ public final class CommandApiService extends Actor implements PartitionListener 
   }
 
   public CommandResponseWriter newCommandResponseWriter() {
-    return new CommandResponseWriterImpl(serverTransport);
+    return new CommandResponseWriterImpl(serverTransport, tracer);
   }
 
   public Consumer<TypedRecord> getOnProcessedListener(final int partitionId) {

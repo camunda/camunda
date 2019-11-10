@@ -11,6 +11,7 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.VarDataUtil.readBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.transport.commandapi.CommandTracer.NoopCommandTracer;
 import io.zeebe.protocol.record.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
 import io.zeebe.protocol.record.RecordType;
@@ -40,7 +41,7 @@ public final class CommandResponseWriterImplTest {
   @Test
   public void shouldWriteResponse() {
     // given
-    responseWriter = new CommandResponseWriterImpl(null);
+    responseWriter = new CommandResponseWriterImpl(null, new NoopCommandTracer());
 
     eventWriter.wrap(new UnsafeBuffer(EVENT), 0, EVENT.length);
 

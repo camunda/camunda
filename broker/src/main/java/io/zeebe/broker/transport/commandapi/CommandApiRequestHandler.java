@@ -10,10 +10,12 @@ package io.zeebe.broker.transport.commandapi;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
+import io.zeebe.broker.transport.commandapi.CommandTracer.NoopCommandTracer;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
@@ -42,9 +44,8 @@ import org.slf4j.Logger;
 final class CommandApiRequestHandler implements RequestHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
+  private final ExecuteCommandRequest requestWrapper = new ExecuteCommandRequest();
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-  private final ExecuteCommandRequestDecoder executeCommandRequestDecoder =
-      new ExecuteCommandRequestDecoder();
   private final Queue<Runnable> cmdQueue = new ManyToOneConcurrentLinkedQueue<>();
   private final Consumer<Runnable> cmdConsumer = Runnable::run;
 
@@ -53,13 +54,20 @@ final class CommandApiRequestHandler implements RequestHandler {
       new Int2ObjectHashMap<>();
   private final RecordMetadata eventMetadata = new RecordMetadata();
 
-  private final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
+  private final ErrorResponseWriter errorResponseWriter;
 
   private final Map<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
   private final BackpressureMetrics metrics;
+  private final CommandTracer tracer;
 
-  CommandApiRequestHandler() {
+  public CommandApiRequestHandler() {
+    this(new NoopCommandTracer());
+  }
+
+  public CommandApiRequestHandler(final CommandTracer tracer) {
     this.metrics = new BackpressureMetrics();
+    this.tracer = tracer;
+    this.errorResponseWriter = new ErrorResponseWriter(tracer);
     initEventTypeMap();
   }
 
@@ -82,16 +90,16 @@ final class CommandApiRequestHandler implements RequestHandler {
       final DirectBuffer buffer,
       final int messageOffset,
       final int messageLength) {
-    executeCommandRequestDecoder.wrap(
-        buffer,
-        messageOffset + messageHeaderDecoder.encodedLength(),
-        messageHeaderDecoder.blockLength(),
-        messageHeaderDecoder.version());
+    requestWrapper.wrap(buffer, messageOffset, messageLength);
 
-    final long key = executeCommandRequestDecoder.key();
+    final long key = requestWrapper.getKey();
+    final ValueType eventType = requestWrapper.getValueType();
+    final Intent eventIntent = requestWrapper.getIntent();
 
-    final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
+    tracer.start(
+        requestWrapper.getSpanContext(), partitionId, requestId);
 
+      final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
     if (logStreamWriter == null) {
       errorResponseWriter
           .partitionLeaderMismatch(partitionId)
@@ -99,10 +107,7 @@ final class CommandApiRequestHandler implements RequestHandler {
       return;
     }
 
-    final ValueType eventType = executeCommandRequestDecoder.valueType();
-    final short intent = executeCommandRequestDecoder.intent();
     final UnpackedObject event = recordsByType.get(eventType);
-
     if (event == null) {
       errorResponseWriter
           .unsupportedMessage(eventType.name(), recordsByType.keySet().toArray())
@@ -110,15 +115,11 @@ final class CommandApiRequestHandler implements RequestHandler {
       return;
     }
 
-    final int eventOffset =
-        executeCommandRequestDecoder.limit() + ExecuteCommandRequestDecoder.valueHeaderLength();
-    final int eventLength = executeCommandRequestDecoder.valueLength();
-
     event.reset();
 
     try {
       // verify that the event / command is valid
-      event.wrap(buffer, eventOffset, eventLength);
+      event.wrap(requestWrapper.getValue(), 0, requestWrapper.getValue().capacity());
     } catch (final RuntimeException e) {
       LOG.error("Failed to deserialize message of type {} in client API", eventType.name(), e);
 
@@ -129,7 +130,6 @@ final class CommandApiRequestHandler implements RequestHandler {
     }
 
     eventMetadata.recordType(RecordType.COMMAND);
-    final Intent eventIntent = Intent.fromProtocolValue(eventType, intent);
     eventMetadata.intent(eventIntent);
     eventMetadata.valueType(eventType);
 
@@ -149,25 +149,20 @@ final class CommandApiRequestHandler implements RequestHandler {
 
     boolean written = false;
     try {
-      written = writeCommand(eventMetadata, buffer, key, logStreamWriter, eventOffset, eventLength);
+      written = writeCommand(eventMetadata, key, logStreamWriter);
     } catch (final Exception ex) {
       LOG.error("Unexpected error on writing {} command", eventIntent, ex);
     } finally {
       if (!written) {
+        tracer.finish(partitionId, requestId, true);
         limiter.onIgnore(partitionId, requestId);
       }
     }
   }
 
   private boolean writeCommand(
-      final RecordMetadata eventMetadata,
-      final DirectBuffer buffer,
-      final long key,
-      final LogStreamRecordWriter logStreamWriter,
-      final int eventOffset,
-      final int eventLength) {
-    logStreamWriter.reset();
-
+      final RecordMetadata eventMetadata, final long key, final LogStreamRecordWriter logStreamWriter) {
+      logStreamWriter.reset();
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
       logStreamWriter.key(key);
     } else {
@@ -177,7 +172,7 @@ final class CommandApiRequestHandler implements RequestHandler {
     final long eventPosition =
         logStreamWriter
             .metadataWriter(eventMetadata)
-            .value(buffer, eventOffset, eventLength)
+            .value(requestWrapper.getValue(), 0, requestWrapper.getValue().capacity())
             .tryWrite();
 
     return eventPosition >= 0;
