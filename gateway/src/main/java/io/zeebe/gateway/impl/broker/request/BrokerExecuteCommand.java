@@ -7,6 +7,11 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.contrib.grpc.OpenTracingContextKey;
+import io.opentracing.propagation.Format.Builtin;
 import io.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerRejectionResponse;
@@ -91,6 +96,11 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
       throw new UnsupportedBrokerResponseException(
           request.getValueType().name(), response.getValueType().name());
     }
+  }
+
+  @Override
+  public void injectTrace(final Tracer tracer, final SpanContext context) {
+    tracer.inject(context, Builtin.BINARY, request.getSpanContextAdapter());
   }
 
   @Override

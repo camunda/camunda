@@ -38,6 +38,10 @@
 # This setting can also be overridden using the environment variable ENV_STEP_TIMEOUT.
 # stepTimeout = 5m
 
+[monitoring]
+# Tracing controls whether or not Zeebe will collect distributed traces using OpenTracing.
+# tracing = false
+
 [gateway]
 # Enable the embedded gateway to start on broker startup.
 # This setting can also be overridden using the environment variable ZEEBE_EMBED_GATEWAY.
@@ -74,6 +78,8 @@
 [gateway.monitoring]
 # Enables the metrics collection in the gateway
 # enabled = false
+# Tracing controls whether or not Zeebe will collect distributed traces using OpenTracing.
+# tracing = false
 
 [gateway.security]
 # Enables TLS authentication between clients and the gateway

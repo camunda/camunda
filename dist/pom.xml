@@ -83,6 +83,11 @@
       <artifactId>log4j-api</artifactId>
       <version>2.13.0</version>
     </dependency>
+
+    <dependency>
+      <groupId>io.opentracing</groupId>
+      <artifactId>opentracing-api</artifactId>
+    </dependency>
   </dependencies>
   <build>
     <plugins>

@@ -7,6 +7,7 @@
  */
 package io.zeebe.gateway.impl.broker;
 
+import io.opentracing.Tracer;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.BrokerResponseException;
@@ -43,16 +44,19 @@ public final class BrokerRequestManager extends Actor {
   private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerTopologyManagerImpl topologyManager;
   private final Duration requestTimeout;
+  private final Tracer tracer;
 
   public BrokerRequestManager(
       final ClientTransport clientTransport,
       final BrokerTopologyManagerImpl topologyManager,
       final RequestDispatchStrategy dispatchStrategy,
-      final Duration requestTimeout) {
+      final Duration requestTimeout,
+      final Tracer tracer) {
     this.clientTransport = clientTransport;
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
     this.requestTimeout = requestTimeout;
+    this.tracer = tracer;
   }
 
   private static boolean responseValidation(final DirectBuffer responseContent) {
@@ -166,6 +170,15 @@ public final class BrokerRequestManager extends Actor {
       final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
       final Duration requestTimeout) {
     final BrokerAddressProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
+    final var span =
+        tracer
+            .buildSpan("io.zeebe.commandApi.request")
+            .withTag("span.kind", "client")
+            .withTag("component", "io.zeebe.gateway")
+            .withTag("message_bus.destination", request.getPartitionId())
+            .asChildOf(request.getActiveSpan())
+            .start();
+    request.injectTrace(tracer, span.context());
 
     final ActorFuture<DirectBuffer> responseFuture =
         clientTransport.sendRequestWithRetry(
@@ -175,6 +188,7 @@ public final class BrokerRequestManager extends Actor {
       actor.runOnCompletion(
           responseFuture,
           (clientResponse, error) -> {
+            span.finish();
             try {
               if (error == null) {
                 final BrokerResponse<T> response = request.getResponse(clientResponse);
@@ -187,6 +201,7 @@ public final class BrokerRequestManager extends Actor {
             }
           });
     } else {
+      span.setTag("error", true).finish();
       responseConsumer.accept(null, new ClientOutOfMemoryException());
     }
   }

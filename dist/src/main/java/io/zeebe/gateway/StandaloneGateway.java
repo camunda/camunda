@@ -15,7 +15,7 @@ import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.prometheus.client.exporter.HTTPServer;
 import io.prometheus.client.hotspot.DefaultExports;
-import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.BrokerClientFactory;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -23,7 +23,6 @@ import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 
 public class StandaloneGateway {
@@ -36,9 +35,10 @@ public class StandaloneGateway {
   public StandaloneGateway(final GatewayCfg gatewayCfg) {
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
     actorScheduler = createActorScheduler(gatewayCfg);
-    final Function<GatewayCfg, BrokerClient> brokerClientFactory =
-        cfg -> new BrokerClientImpl(cfg, atomixCluster, actorScheduler, false);
-    gateway = new Gateway(gatewayCfg, brokerClientFactory, actorScheduler);
+    final BrokerClientFactory brokerClientFactory =
+        (config, tracer) ->
+            new BrokerClientImpl(config, atomixCluster, tracer, actorScheduler, false);
+    gateway = new Gateway(gatewayCfg, actorScheduler, brokerClientFactory);
     this.gatewayCfg = gatewayCfg;
   }
 

@@ -7,6 +7,10 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
+import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
+import io.opentracing.contrib.grpc.OpenTracingContextKey;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.cmd.UnsupportedBrokerResponseException;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
@@ -30,10 +34,16 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   protected final int schemaId;
   protected final int templateId;
+  protected final Span activeSpan;
 
   public BrokerRequest(final int schemaId, final int templateId) {
+    this(schemaId, templateId, OpenTracingContextKey.activeSpan());
+  }
+
+  public BrokerRequest(final int schemaId, final int templateId, final Span activeSpan) {
     this.schemaId = schemaId;
     this.templateId = templateId;
+    this.activeSpan = activeSpan;
   }
 
   public abstract void setPartitionId(int partitionId);
@@ -62,6 +72,12 @@ public abstract class BrokerRequest<T> implements ClientRequest {
   protected abstract BrokerResponse<T> readResponse();
 
   protected abstract T toResponseDto(DirectBuffer buffer);
+
+  public abstract void injectTrace(Tracer tracer, SpanContext context);
+
+  public Span getActiveSpan() {
+    return activeSpan;
+  }
 
   public BrokerResponse<T> getResponse(final DirectBuffer responseBuffer) {
     try {

@@ -11,6 +11,8 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.messaging.Subscription;
+import io.opentracing.Tracer;
+import io.opentracing.noop.NoopTracerFactory;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
@@ -45,16 +47,28 @@ public final class BrokerClientImpl implements BrokerClient {
   private Subscription jobAvailableSubscription;
 
   public BrokerClientImpl(final GatewayCfg configuration, final AtomixCluster atomixCluster) {
-    this(configuration, atomixCluster, null);
+    this(configuration, atomixCluster, NoopTracerFactory.create());
+  }
+
+  public BrokerClientImpl(
+      final GatewayCfg configuration, final AtomixCluster atomixCluster, final Tracer tracer) {
+    this(configuration, atomixCluster, tracer, null);
+  }
+
+  public BrokerClientImpl(
+      final GatewayCfg configuration, final AtomixCluster atomixCluster, final ActorClock clock) {
+    this(configuration, atomixCluster, NoopTracerFactory.create(), clock);
   }
 
   public BrokerClientImpl(
       final GatewayCfg configuration,
       final AtomixCluster atomixCluster,
+      final Tracer tracer,
       final ActorClock actorClock) {
     this(
         configuration,
         atomixCluster,
+        tracer,
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
             .setIoBoundActorThreadCount(0)
@@ -67,6 +81,7 @@ public final class BrokerClientImpl implements BrokerClient {
   public BrokerClientImpl(
       final GatewayCfg configuration,
       final AtomixCluster atomixCluster,
+      final Tracer tracer,
       final ActorScheduler actorScheduler,
       final boolean ownsActorScheduler) {
     this.atomixCluster = atomixCluster;
@@ -95,7 +110,8 @@ public final class BrokerClientImpl implements BrokerClient {
             atomixTransportAdapter,
             topologyManager,
             new RoundRobinDispatchStrategy(topologyManager),
-            clusterCfg.getRequestTimeout());
+            clusterCfg.getRequestTimeout(),
+            tracer);
     actorScheduler.submitActor(requestManager);
   }
 
