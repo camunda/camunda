@@ -16,6 +16,7 @@
 package io.zeebe.client;
 
 import io.grpc.ClientInterceptor;
+import io.opentracing.Tracer;
 import io.zeebe.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import java.time.Duration;
 import java.util.Properties;
@@ -88,6 +89,9 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder keepAlive(Duration keepAlive);
 
   ZeebeClientBuilder withInterceptors(ClientInterceptor... interceptor);
+
+  /** Tracer to use in order to create client spans for Zeebe. */
+  ZeebeClientBuilder tracer(Tracer tracer);
 
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();

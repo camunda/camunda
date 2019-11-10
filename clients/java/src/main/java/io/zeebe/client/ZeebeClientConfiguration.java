@@ -16,6 +16,7 @@
 package io.zeebe.client;
 
 import io.grpc.ClientInterceptor;
+import io.opentracing.Tracer;
 import java.time.Duration;
 import java.util.List;
 
@@ -57,4 +58,7 @@ public interface ZeebeClientConfiguration {
   Duration getKeepAlive();
 
   List<ClientInterceptor> getInterceptors();
+
+  /** @see ZeebeClientBuilder#tracer(Tracer) */
+  Tracer getTracer();
 }
