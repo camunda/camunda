@@ -8,7 +8,6 @@
 package io.zeebe.gateway.impl.broker.request;
 
 import io.opentracing.Span;
-import io.opentracing.SpanContext;
 import io.opentracing.Tracer;
 import io.opentracing.contrib.grpc.OpenTracingContextKey;
 import io.zeebe.gateway.Loggers;
@@ -73,7 +72,7 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   protected abstract T toResponseDto(DirectBuffer buffer);
 
-  public abstract void injectTrace(Tracer tracer, SpanContext context);
+  public abstract void injectTrace(Tracer tracer);
 
   public Span getActiveSpan() {
     return activeSpan;
