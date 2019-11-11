@@ -41,8 +41,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     this.compactionContext = this.threadContextFactory.createContext();
     this.reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
 
-    this.lastEnqueued =
-        reader.getFirstIndex() - 1; // this.raft.getSnapshotStore().getCurrentSnapshotIndex();
+    this.lastEnqueued = reader.getFirstIndex() - 1;
     this.logger = LoggerFactory.getLogger(this.getClass());
     this.metrics = new RaftServiceMetrics(raft.getName());
   }
@@ -76,13 +75,14 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
 
   @Override
   public void applyAll(final long index) {
-    threadContext.execute(() -> safeApplyAll(index));
+    logger.debug("applyAll: {}", index);
+    threadContext.execute(() -> safeApplyAll(index, null));
   }
 
   @Override
   public <T> CompletableFuture<T> apply(final long index) {
     final var future = new CompletableFuture<T>();
-    threadContext.execute(() -> safeApplyIndex(index, future));
+    threadContext.execute(() -> safeApplyAll(index, future));
     return future;
   }
 
@@ -129,18 +129,16 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     }
   }
 
-  private void safeApplyAll(final long index) {
+  private void safeApplyAll(final long index, CompletableFuture<?> future) {
     threadContext.checkThread();
 
-    // final long currentSnapshotIndex = raft.getSnapshotStore().getCurrentSnapshotIndex();
-    // lastEnqueued = Math.max(currentSnapshotIndex, lastEnqueued);
     while (lastEnqueued < index) {
       final long nextIndex = ++lastEnqueued;
-      threadContext.execute(() -> safeApplyIndex(nextIndex, null));
+      threadContext.execute(() -> safeApplyIndex(nextIndex, future));
     }
   }
 
-  private <T> void safeApplyIndex(final long index, final CompletableFuture<T> future) {
+  private void safeApplyIndex(final long index, final CompletableFuture<?> future) {
     threadContext.checkThread();
 
     // Apply entries prior to this entry.

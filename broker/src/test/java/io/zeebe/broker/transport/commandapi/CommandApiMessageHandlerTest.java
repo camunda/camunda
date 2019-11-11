@@ -99,12 +99,6 @@ public class CommandApiMessageHandlerTest {
             .withLogStorage(logStorageRule.getStorage())
             .build();
     logStorageRule.setPositionListener(logStream::setCommitPosition);
-    serviceContainerRule
-        .get()
-        .createService(logStreamServiceName(logName), (LogStreamService) logStream)
-        .install()
-        .join();
-
     logStream.openAppender().join();
 
     messageHandler = new CommandApiMessageHandler();

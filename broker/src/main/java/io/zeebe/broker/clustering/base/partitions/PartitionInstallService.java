@@ -41,7 +41,6 @@ import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LeaderOpenLogStreamAppenderService;
-import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
@@ -64,7 +63,7 @@ import org.slf4j.Logger;
  * to attach to.
  */
 public class PartitionInstallService extends Actor
-    implements Service<PartitionInstallService>, PartitionRoleChangeListener {
+    implements Service<PartitionInstallService>, PartitionRoleChangeListener, RaftCommitListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final ClusterEventService clusterEventService;
@@ -83,7 +82,8 @@ public class PartitionInstallService extends Actor
   private ActorFuture<PartitionLeaderElection> leaderElectionInstallFuture;
   private PartitionLeaderElection leaderElection;
   private ActorFuture<Void> transitionFuture;
-  private LogStreamService logStream;
+  private LogStream logStream;
+  private ActorFuture<LogStream> logStreamFuture;
 
   public PartitionInstallService(
       final RaftPartition partition,
@@ -112,6 +112,18 @@ public class PartitionInstallService extends Actor
             LOG.error("Could not install leader election for partition {}", partition.id().id(), e);
           }
         });
+    actor.runOnCompletion(
+        logStreamFuture,
+        (log, error) -> {
+          if (error == null) {
+            setLogStream(log);
+          } else {
+            LOG.error(
+                "Failed to install log stream service for partition {}",
+                partition.id().id(),
+                error);
+          }
+        });
   }
 
   @Override
@@ -129,26 +141,11 @@ public class PartitionInstallService extends Actor
 
     // installs the logstream service
     logStreamServiceName = LogStreamServiceNames.logStreamServiceName(logName);
-    logStream =
+    logStreamFuture =
         LogStreams.createAtomixLogStream(partition)
             .withMaxFragmentSize((int) brokerCfg.getNetwork().getMaxMessageSize().toBytes())
             .withServiceContainer(serviceContainer)
-            .build();
-    partitionInstall
-        .createService(logStreamServiceName, logStream)
-        .dependency(ATOMIX_JOIN_SERVICE)
-        .install();
-    partition
-        .getServer()
-        .addCommitListener(
-            new RaftCommitListener() {
-              @Override
-              public <T extends RaftLogEntry> void onCommit(final Indexed<T> entry) {
-                if (entry.type() == ZeebeEntry.class) {
-                  logStream.setCommitPosition(entry.<ZeebeEntry>cast().entry().highestPosition());
-                }
-              }
-            });
+            .buildAsync();
 
     leaderInstallRootServiceName = PartitionServiceNames.leaderInstallServiceRootName(logName);
     leaderElection = new PartitionLeaderElection(partition);
@@ -182,7 +179,11 @@ public class PartitionInstallService extends Actor
   @Override
   public void stop(final ServiceStopContext stopContext) {
     leaderElection.removeListener(this);
-    stopContext.async(logStream.closeAsync());
+    partition.getServer().removeCommitListener(this);
+
+    if (logStream != null) {
+      stopContext.async(logStream.closeAsync());
+    }
   }
 
   @Override
@@ -334,5 +335,17 @@ public class PartitionInstallService extends Actor
   private ActorFuture<Void> removeFollowerPartitionService() {
     LOG.debug("Removing follower partition service for partition {}", partition.id());
     return startContext.removeService(followerPartitionServiceName);
+  }
+
+  private void setLogStream(final LogStream logStream) {
+    this.logStream = logStream;
+    partition.getServer().addCommitListener(this);
+  }
+
+  @Override
+  public <T extends RaftLogEntry> void onCommit(final Indexed<T> indexed) {
+    if (indexed.type() == ZeebeEntry.class) {
+      this.logStream.setCommitPosition(indexed.<ZeebeEntry>cast().entry().highestPosition());
+    }
   }
 }
