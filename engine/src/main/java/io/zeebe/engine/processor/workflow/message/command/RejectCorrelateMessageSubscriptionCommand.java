@@ -22,6 +22,7 @@ public class RejectCorrelateMessageSubscriptionCommand
       new RejectCorrelateMessageSubscriptionDecoder();
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long messageKey;
@@ -44,6 +45,7 @@ public class RejectCorrelateMessageSubscriptionCommand
     messageKey = RejectCorrelateMessageSubscriptionDecoder.messageKeyNullValue();
     messageName.wrap(0, 0);
     correlationKey.wrap(0, 0);
+    bpmnProcessId.wrap(0, 0);
   }
 
   @Override
@@ -52,7 +54,9 @@ public class RejectCorrelateMessageSubscriptionCommand
         + RejectCorrelateMessageSubscriptionDecoder.messageNameHeaderLength()
         + messageName.capacity()
         + RejectCorrelateMessageSubscriptionDecoder.correlationKeyHeaderLength()
-        + correlationKey.capacity();
+        + correlationKey.capacity()
+        + RejectCorrelateMessageSubscriptionDecoder.bpmnProcessIdHeaderLength()
+        + bpmnProcessId.capacity();
   }
 
   @Override
@@ -64,7 +68,8 @@ public class RejectCorrelateMessageSubscriptionCommand
         .workflowInstanceKey(workflowInstanceKey)
         .messageKey(messageKey)
         .putMessageName(messageName, 0, messageName.capacity())
-        .putCorrelationKey(correlationKey, 0, correlationKey.capacity());
+        .putCorrelationKey(correlationKey, 0, correlationKey.capacity())
+        .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
   }
 
   @Override
@@ -77,6 +82,7 @@ public class RejectCorrelateMessageSubscriptionCommand
 
     decoder.wrapMessageName(messageName);
     decoder.wrapCorrelationKey(correlationKey);
+    decoder.wrapBpmnProcessId(bpmnProcessId);
   }
 
   public int getSubscriptionPartitionId() {
@@ -109,5 +115,9 @@ public class RejectCorrelateMessageSubscriptionCommand
 
   public DirectBuffer getCorrelationKey() {
     return correlationKey;
+  }
+
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessId;
   }
 }

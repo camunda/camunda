@@ -30,6 +30,12 @@ public interface WorkflowInstanceSubscriptionRecordValue extends RecordValueWith
   /** @return the element instance key */
   long getElementInstanceKey();
 
+  /** @return the BPMN process id */
+  String getBpmnProcessId();
+
+  /** @return the key of the correlated message */
+  long getMessageKey();
+
   /** @return the message name */
   String getMessageName();
 }

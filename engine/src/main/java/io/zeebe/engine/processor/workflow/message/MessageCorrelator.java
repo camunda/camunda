@@ -31,18 +31,18 @@ public class MessageCorrelator {
   private long messageKey;
 
   public MessageCorrelator(
-      MessageState messageState,
-      MessageSubscriptionState subscriptionState,
-      SubscriptionCommandSender commandSender) {
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
+      final SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
   }
 
   public void correlateNextMessage(
-      MessageSubscription subscription,
-      MessageSubscriptionRecord subscriptionRecord,
-      Consumer<SideEffectProducer> sideEffect) {
+      final MessageSubscription subscription,
+      final MessageSubscriptionRecord subscriptionRecord,
+      final Consumer<SideEffectProducer> sideEffect) {
     this.subscription = subscription;
     this.subscriptionRecord = subscriptionRecord;
     this.sideEffect = sideEffect;
@@ -56,7 +56,7 @@ public class MessageCorrelator {
     messageKey = message.getKey();
     final boolean isCorrelatedBefore =
         messageState.existMessageCorrelation(
-            messageKey, subscriptionRecord.getWorkflowInstanceKey());
+            messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
 
     if (!isCorrelatedBefore) {
       subscriptionState.updateToCorrelatingState(
@@ -66,7 +66,7 @@ public class MessageCorrelator {
       messageVariables.wrap(message.getVariables());
       sideEffect.accept(this::sendCorrelateCommand);
 
-      messageState.putMessageCorrelation(messageKey, subscriptionRecord.getWorkflowInstanceKey());
+      messageState.putMessageCorrelation(messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
     }
 
     return isCorrelatedBefore;
@@ -76,6 +76,7 @@ public class MessageCorrelator {
     return commandSender.correlateWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
+        subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer(),
         messageKey,
         messageVariables);

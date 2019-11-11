@@ -19,6 +19,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -357,6 +358,48 @@ public class MessageStartEventTest {
                 .withElementType(BpmnElementType.START_EVENT))
         .extracting(r -> r.getValue().getElementId())
         .containsOnly("message-start");
+  }
+
+  @Test
+  public void shouldCorrelateMessageOnlyToCreatedInstanceIfExists() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("process")
+                .startEvent("start")
+                .message("message")
+                .intermediateCatchEvent(
+                    "catch", c -> c.message(m -> m.name("message").zeebeCorrelationKey("key")))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-123")
+        .withVariables(Map.of("key", "order-123"))
+        .publish();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).await();
+
+    engine
+        .message()
+        .withName("message")
+        .withCorrelationKey("order-123")
+        .withVariables(Map.of("key", "order-123"))
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .limitToWorkflowInstanceCompleted()
+                .withIntent(WorkflowInstanceIntent.EVENT_OCCURRED))
+        .extracting(r -> r.getValue().getBpmnElementType())
+        .hasSize(2)
+        .containsExactly(BpmnElementType.START_EVENT, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
   }
 
   private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {

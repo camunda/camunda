@@ -285,6 +285,7 @@ public class WorkflowInstanceSubscriptionStateTest {
     return new WorkflowInstanceSubscription(
         1L,
         elementInstanceKey,
+        wrapString("workflow"),
         wrapString(handlerId),
         wrapString(name),
         wrapString(correlationKey),

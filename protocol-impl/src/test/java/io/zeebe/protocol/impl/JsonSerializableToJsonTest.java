@@ -409,13 +409,15 @@ public class JsonSerializableToJsonTest {
               final String messageName = "name";
               final String startEventId = "startEvent";
               final int workflowKey = 22334;
+              final String bpmnProcessId = "workflow";
 
               return new MessageStartEventSubscriptionRecord()
                   .setMessageName(wrapString(messageName))
                   .setStartEventId(wrapString(startEventId))
-                  .setWorkflowKey(workflowKey);
+                  .setWorkflowKey(workflowKey)
+                  .setBpmnProcessId(wrapString(bpmnProcessId));
             },
-        "{'workflowKey':22334,'messageName':'name','startEventId':'startEvent'}"
+        "{'workflowKey':22334,'messageName':'name','startEventId':'startEvent','bpmnProcessId':'workflow'}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -429,7 +431,7 @@ public class JsonSerializableToJsonTest {
 
               return new MessageStartEventSubscriptionRecord().setWorkflowKey(workflowKey);
             },
-        "{'workflowKey':22334,'messageName':'','startEventId':''}"
+        "{'workflowKey':22334,'messageName':'','startEventId':'','bpmnProcessId':''}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -439,20 +441,22 @@ public class JsonSerializableToJsonTest {
         "MessageSubscriptionRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
-              final long activityInstanceKey = 1L;
+              final long elementInstanceKey = 1L;
+              final String bpmnProcessId = "workflow";
               final String messageName = "name";
-              final long workflowInstanceKey = 1L;
+              final long workflowInstanceKey = 2L;
               final String correlationKey = "key";
-              final long messageKey = 1L;
+              final long messageKey = 3L;
 
               return new MessageSubscriptionRecord()
-                  .setElementInstanceKey(activityInstanceKey)
+                  .setElementInstanceKey(elementInstanceKey)
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setMessageKey(messageKey)
                   .setMessageName(wrapString(messageName))
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setCorrelationKey(wrapString(correlationKey));
             },
-        "{'workflowInstanceKey':1,'elementInstanceKey':1,'messageName':'name','correlationKey':'key'}"
+        "{'workflowInstanceKey':2,'elementInstanceKey':1,'messageName':'name','correlationKey':'key','bpmnProcessId':'workflow','messageKey':3}"
       },
       /////////////////////////////////////////////////////////////////////////////////////////////
       ///////////////////////////////// Empty MessageSubscriptionRecord
@@ -469,7 +473,7 @@ public class JsonSerializableToJsonTest {
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },
-        "{'workflowInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':''}"
+        "{'workflowInstanceKey':1,'elementInstanceKey':13,'messageName':'','correlationKey':'','bpmnProcessId':'','messageKey':-1}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -479,21 +483,23 @@ public class JsonSerializableToJsonTest {
         "WorkflowInstanceSubscriptionRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
-              final long activityInstanceKey = 123;
+              final long elementInstanceKey = 123;
+              final String bpmnProcessId = "workflow";
               final String messageName = "test-message";
               final int subscriptionPartitionId = 2;
               final int messageKey = 3;
               final long workflowInstanceKey = 1345;
 
               return new WorkflowInstanceSubscriptionRecord()
-                  .setElementInstanceKey(activityInstanceKey)
+                  .setElementInstanceKey(elementInstanceKey)
+                  .setBpmnProcessId(wrapString(bpmnProcessId))
                   .setMessageName(wrapString(messageName))
                   .setMessageKey(messageKey)
                   .setSubscriptionPartitionId(subscriptionPartitionId)
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setVariables(VARIABLES_MSGPACK);
             },
-        "{'elementInstanceKey':123,'messageName':'test-message','workflowInstanceKey':1345,'variables':{'foo':'bar'}}"
+        "{'elementInstanceKey':123,'messageName':'test-message','workflowInstanceKey':1345,'variables':{'foo':'bar'},'bpmnProcessId':'workflow','messageKey':3}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -510,7 +516,7 @@ public class JsonSerializableToJsonTest {
                   .setWorkflowInstanceKey(workflowInstanceKey)
                   .setElementInstanceKey(elementInstanceKey);
             },
-        "{'elementInstanceKey':123,'messageName':'','workflowInstanceKey':1345,'variables':{}}"
+        "{'elementInstanceKey':123,'messageName':'','workflowInstanceKey':1345,'variables':{},'bpmnProcessId':'','messageKey':-1}"
       },
 
       /////////////////////////////////////////////////////////////////////////////////////////////
@@ -677,7 +683,7 @@ public class JsonSerializableToJsonTest {
     JsonUtil.assertEquality(json, expectedJson);
   }
 
-  private static String errorRecordAsJson(long workflowInstanceKey, String stacktrace) {
+  private static String errorRecordAsJson(final long workflowInstanceKey, final String stacktrace) {
     final Map<String, Object> params = new HashMap<>();
     params.put("exceptionMessage", "test");
     params.put("workflowInstanceKey", workflowInstanceKey);
@@ -686,7 +692,7 @@ public class JsonSerializableToJsonTest {
 
     try {
       return new ObjectMapper().writeValueAsString(params);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }

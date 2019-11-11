@@ -7,6 +7,8 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.LongProperty;
@@ -14,7 +16,6 @@ import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
-import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class MessageSubscriptionRecord extends UnifiedRecordValue
@@ -22,19 +23,21 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
 
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
-  private final LongProperty messageKeyProp = new LongProperty("messageKey");
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
   private final BooleanProperty closeOnCorrelateProp =
       new BooleanProperty("closeOnCorrelate", true);
 
   public MessageSubscriptionRecord() {
-    this.declareProperty(workflowInstanceKeyProp)
+    declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp)
-        .declareProperty(closeOnCorrelateProp);
+        .declareProperty(closeOnCorrelateProp)
+        .declareProperty(bpmnProcessIdProp);
   }
 
   public boolean shouldCloseOnCorrelate() {
@@ -46,42 +49,53 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return correlationKeyProp.getValue();
   }
 
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
 
-  @Override
-  public String getMessageName() {
-    return BufferUtil.bufferAsString(messageNameProp.getValue());
-  }
-
-  @Override
-  public String getCorrelationKey() {
-    return BufferUtil.bufferAsString(correlationKeyProp.getValue());
-  }
-
-  public MessageSubscriptionRecord setCorrelationKey(DirectBuffer correlationKey) {
-    correlationKeyProp.setValue(correlationKey);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setMessageName(DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
-    return this;
-  }
-
-  public MessageSubscriptionRecord setElementInstanceKey(long key) {
+  public MessageSubscriptionRecord setElementInstanceKey(final long key) {
     elementInstanceKeyProp.setValue(key);
     return this;
   }
 
-  @JsonIgnore
+  @Override
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  @Override
+  public String getMessageName() {
+    return bufferAsString(messageNameProp.getValue());
+  }
+
+  @Override
+  public String getCorrelationKey() {
+    return bufferAsString(correlationKeyProp.getValue());
+  }
+
+  public MessageSubscriptionRecord setCorrelationKey(final DirectBuffer correlationKey) {
+    correlationKeyProp.setValue(correlationKey);
+    return this;
+  }
+
+  @Override
   public long getMessageKey() {
     return messageKeyProp.getValue();
   }
 
-  public MessageSubscriptionRecord setMessageKey(long messageKey) {
-    this.messageKeyProp.setValue(messageKey);
+  public MessageSubscriptionRecord setMessageKey(final long messageKey) {
+    messageKeyProp.setValue(messageKey);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setMessageName(final DirectBuffer messageName) {
+    messageNameProp.setValue(messageName);
+    return this;
+  }
+
+  public MessageSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
@@ -90,17 +104,23 @@ public class MessageSubscriptionRecord extends UnifiedRecordValue
     return messageNameProp.getValue();
   }
 
+  @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKeyProp.getValue();
   }
 
-  public MessageSubscriptionRecord setWorkflowInstanceKey(long key) {
+  public MessageSubscriptionRecord setWorkflowInstanceKey(final long key) {
     workflowInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public MessageSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
-    this.closeOnCorrelateProp.setValue(closeOnCorrelate);
+  public MessageSubscriptionRecord setCloseOnCorrelate(final boolean closeOnCorrelate) {
+    closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
   }
 }

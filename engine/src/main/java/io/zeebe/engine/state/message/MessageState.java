@@ -7,6 +7,9 @@
  */
 package io.zeebe.engine.state.message;
 
+import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
+import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
+
 import io.zeebe.db.ColumnFamily;
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
@@ -62,13 +65,13 @@ public class MessageState {
       messageIdColumnFamily;
 
   /**
-   * <pre>key | workflow instance key -> []
+   * <pre>key | bpmn process id -> []
    *
-   * check if a message is correlated to a workflow instance */
-  private final DbCompositeKey<DbLong, DbLong> messageWorkflowKey;
+   * check if a message is correlated to a workflow */
+  private final DbCompositeKey<DbLong, DbString> messageBpmnProcessIdKey;
 
-  private final DbLong workflowInstanceKey;
-  private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> correlatedMessageColumnFamily;
+  private final DbString bpmnProcessIdKey;
+  private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil> correlatedMessageColumnFamily;
 
   public MessageState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
     messageKey = new DbLong();
@@ -96,11 +99,14 @@ public class MessageState {
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.MESSAGE_IDS, dbContext, nameCorrelationMessageIdKey, DbNil.INSTANCE);
 
-    workflowInstanceKey = new DbLong();
-    messageWorkflowKey = new DbCompositeKey<>(messageKey, workflowInstanceKey);
+    bpmnProcessIdKey = new DbString();
+    messageBpmnProcessIdKey = new DbCompositeKey<>(messageKey, bpmnProcessIdKey);
     correlatedMessageColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.MESSAGE_CORRELATED, dbContext, messageWorkflowKey, DbNil.INSTANCE);
+            ZbColumnFamilies.MESSAGE_CORRELATED,
+            dbContext,
+            messageBpmnProcessIdKey,
+            DbNil.INSTANCE);
   }
 
   public void put(final Message message) {
@@ -121,24 +127,33 @@ public class MessageState {
     }
   }
 
-  public void putMessageCorrelation(long messageKey, long workflowInstanceKey) {
+  public void putMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId) {
+    ensureGreaterThan("message key", messageKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+
     this.messageKey.wrapLong(messageKey);
-    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
-    correlatedMessageColumnFamily.put(messageWorkflowKey, DbNil.INSTANCE);
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    correlatedMessageColumnFamily.put(messageBpmnProcessIdKey, DbNil.INSTANCE);
   }
 
-  public boolean existMessageCorrelation(long messageKey, long workflowInstanceKey) {
-    this.messageKey.wrapLong(messageKey);
-    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
+  public boolean existMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId) {
+    ensureGreaterThan("message key", messageKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
 
-    return correlatedMessageColumnFamily.exists(messageWorkflowKey);
+    this.messageKey.wrapLong(messageKey);
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+
+    return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
   }
 
-  public void removeMessageCorrelation(long messageKey, long workflowInstanceKey) {
-    this.messageKey.wrapLong(messageKey);
-    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
+  public void removeMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId) {
+    ensureGreaterThan("message key", messageKey, 0);
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
 
-    correlatedMessageColumnFamily.delete(messageWorkflowKey);
+    this.messageKey.wrapLong(messageKey);
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+
+    correlatedMessageColumnFamily.delete(messageBpmnProcessIdKey);
   }
 
   public void visitMessages(
@@ -193,7 +208,7 @@ public class MessageState {
     messageColumnFamily.delete(messageKey);
 
     messageName.wrapBuffer(message.getName());
-    this.correlationKey.wrapBuffer(message.getCorrelationKey());
+    correlationKey.wrapBuffer(message.getCorrelationKey());
 
     nameCorrelationMessageColumnFamily.delete(nameCorrelationMessageKey);
 
