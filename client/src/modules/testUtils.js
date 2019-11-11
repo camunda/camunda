@@ -5,7 +5,6 @@
  */
 
 import {STATE} from 'modules/constants';
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
 
 /**
  * flushes promises in queue
@@ -29,9 +28,6 @@ export const mockResolvedAsyncFn = value => {
 export const mockRejectedAsyncFn = value => {
   return jest.fn(() => Promise.reject(value));
 };
-
-//TODO: remove and change directories.
-export const mockDataManager = dataManagerHelper.mockDataManager;
 
 /**
  * @returns a higher order function which executes the wrapped method x times;

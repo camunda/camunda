@@ -10,9 +10,10 @@ import {mount} from 'enzyme';
 import {
   mockResolvedAsyncFn,
   createInstance,
-  createOperation,
-  mockDataManager
+  createOperation
 } from 'modules/testUtils';
+
+import * as dataManagerHelper from 'modules/testHelpers/dataManager';
 
 import {SUBSCRIPTION_TOPIC} from 'modules/constants';
 
@@ -49,7 +50,7 @@ api.fetchWorkflowInstancesByIds = mockResolvedAsyncFn({
 
 jest.mock('modules/DataManager/core');
 
-DataManager.mockImplementation(mockDataManager);
+DataManager.mockImplementation(dataManagerHelper.mockDataManager);
 
 describe('InstancesPollContext', () => {
   beforeEach(() => {
