@@ -8,16 +8,20 @@ package org.camunda.optimize.dto.optimize;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SimpleDefinitionDto {
+  @EqualsAndHashCode.Include
   @NonNull
   private String key;
   private String name;
+  @EqualsAndHashCode.Include
   @NonNull
   private DefinitionType type;
 }

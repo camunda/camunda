@@ -168,7 +168,7 @@ public class DefinitionRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getDefinitions_multiTenant() {
+  public void getDefinitions_multiTenant_specificTenantDefinitions() {
     //given
     final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
     createTenant(tenant1);
@@ -178,9 +178,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
     createTenant(tenant3);
 
     final DefinitionOptimizeDto processDefinition1_1 = createDefinition(
-      DefinitionType.PROCESS, "process1", "1", null, "Process Definition1"
-    );
-    final DefinitionOptimizeDto processDefinition1_2 = createDefinition(
       DefinitionType.PROCESS, "process1", "1", tenant1.getId(), "Process Definition1"
     );
     final DefinitionOptimizeDto processDefinition1_3 = createDefinition(
@@ -193,9 +190,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
       DefinitionType.PROCESS, "process2", "1", tenant2.getId(), "Process Definition2"
     );
     final DefinitionOptimizeDto decisionDefinition1_1 = createDefinition(
-      DefinitionType.DECISION, "decision1", "1", null, "Decision Definition1"
-    );
-    final DefinitionOptimizeDto decisionDefinition1_2 = createDefinition(
       DefinitionType.DECISION, "decision1", "2", tenant1.getId(), "Decision Definition1"
     );
     final DefinitionOptimizeDto decisionDefinition1_3 = createDefinition(
@@ -221,23 +215,141 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .containsExactly(
         new DefinitionWithTenantsDto(
           decisionDefinition1_1.getKey(), decisionDefinition1_1.getName(), DefinitionType.DECISION,
-          // expected order is not defined first, then by id
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, tenant1, tenant2)
+          // expected order is by id
+          Lists.newArrayList(tenant1, tenant2)
         ),
         new DefinitionWithTenantsDto(
           decisionDefinition2_1.getKey(), decisionDefinition2_1.getName(), DefinitionType.DECISION,
-          // expected order is by name
+          // expected order is by id
           Lists.newArrayList(tenant2, tenant3)
         ),
         new DefinitionWithTenantsDto(
           processDefinition1_1.getKey(), processDefinition1_1.getName(), DefinitionType.PROCESS,
-          // expected order is not defined first, then by id
-          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, tenant1, tenant2)
+          // expected order is by id
+          Lists.newArrayList(tenant1, tenant2)
         ),
         new DefinitionWithTenantsDto(
           processDefinition2_1.getKey(), processDefinition2_1.getName(), DefinitionType.PROCESS,
           // expected order is by id
           Lists.newArrayList(tenant2, tenant3)
+        )
+      );
+  }
+
+  @Test
+  public void getDefinitions_multiTenant_sharedDefinitions() {
+    //given
+    final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
+    createTenant(tenant1);
+    final TenantRestDto tenant2 = new TenantRestDto("tenant2", "Tenant 2");
+    createTenant(tenant2);
+    final TenantRestDto tenant3 = new TenantRestDto("tenant3", "Tenant 3");
+    createTenant(tenant3);
+
+    final DefinitionOptimizeDto processDefinition1_1 = createDefinition(
+      DefinitionType.PROCESS, "process1", "1", null, "Process Definition1"
+    );
+    final DefinitionOptimizeDto decisionDefinition1_1 = createDefinition(
+      DefinitionType.DECISION, "decision1", "1", null, "Decision Definition1"
+    );
+
+    // when
+    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitions()
+      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+
+    assertThat(definitions)
+      .isNotEmpty()
+      .hasSize(2)
+      .containsExactly(
+        new DefinitionWithTenantsDto(
+          decisionDefinition1_1.getKey(), decisionDefinition1_1.getName(), DefinitionType.DECISION,
+          // for shared definition expected order is not defined first, then all tenants by id
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, tenant1, tenant2, tenant3)
+        ),
+        new DefinitionWithTenantsDto(
+          processDefinition1_1.getKey(), processDefinition1_1.getName(), DefinitionType.PROCESS,
+          // for shared definition expected order is not defined first, then all tenants by id
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, tenant1, tenant2, tenant3)
+        )
+      );
+  }
+
+  @Test
+  public void getDefinitions_multiTenant_sharedAndSpecificDefinitions() {
+    //given
+    final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
+    createTenant(tenant1);
+    final TenantRestDto tenant2 = new TenantRestDto("tenant2", "Tenant 2");
+    createTenant(tenant2);
+    final TenantRestDto tenant3 = new TenantRestDto("tenant3", "Tenant 3");
+    createTenant(tenant3);
+
+    final String processKey1 = "process1";
+    final String processName1 = "Process Definition1";
+    final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
+      processKey1, processName1, DefinitionType.PROCESS
+    );
+    createDefinition(DefinitionType.PROCESS, processKey1, "1", null, processName1);
+    createDefinition(DefinitionType.PROCESS, processKey1, "1", tenant1.getId(), processName1);
+    createDefinition(DefinitionType.PROCESS, processKey1, "1", tenant2.getId(), processName1);
+    final String processKey2 = "process2";
+    // `A` prefix should put this first in any list
+    final String processName2 = "A Process Definition2";
+    final SimpleDefinitionDto processDefinition2 = new SimpleDefinitionDto(
+      processKey2, processName2, DefinitionType.PROCESS
+    );
+    createDefinition(DefinitionType.PROCESS, processKey2, "1", tenant3.getId(), processName2);
+    createDefinition(DefinitionType.PROCESS, processKey2, "1", tenant2.getId(), processName2);
+    final String decisionKey1 = "decision1";
+    final String decisionName1 = "Decision Definition1";
+    final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
+      decisionKey1, decisionName1, DefinitionType.DECISION
+    );
+    createDefinition(DefinitionType.DECISION, decisionKey1, "1", null, decisionName1);
+    createDefinition(DefinitionType.DECISION, decisionKey1, "2", tenant1.getId(), decisionName1);
+    createDefinition(DefinitionType.DECISION, decisionKey1, "2", tenant2.getId(), decisionName1);
+    // create tenant3 definition first, to ensure creation order does not affect result
+    final String decisionKey2 = "decision2";
+    // lowercase to ensure it doesn't affect ordering
+    final String decisionName2 = "decision Definition2";
+    createDefinition(DefinitionType.DECISION, decisionKey2, "1", tenant3.getId(), decisionName2);
+    createDefinition(DefinitionType.DECISION, decisionKey2, "1", tenant2.getId(), decisionName2);
+    final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
+      decisionKey2, decisionName2, DefinitionType.DECISION
+    );
+
+    // when
+    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitions()
+      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+
+    assertThat(definitions)
+      .isNotEmpty()
+      .hasSize(4)
+      .containsExactly(
+        // order by name
+        new DefinitionWithTenantsDto(
+          processDefinition2.getKey(), processDefinition2.getName(), DefinitionType.PROCESS,
+          // expected order is by id
+          Lists.newArrayList(tenant2, tenant3)
+        ),
+        new DefinitionWithTenantsDto(
+          decisionDefinition1.getKey(), decisionDefinition1.getName(), DefinitionType.DECISION,
+          // expected order is by id
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, tenant1, tenant2, tenant3)
+        ),
+        new DefinitionWithTenantsDto(
+          decisionDefinition2.getKey(), decisionDefinition2.getName(), DefinitionType.DECISION,
+          // expected order is by id
+          Lists.newArrayList(tenant2, tenant3)
+        ),
+        new DefinitionWithTenantsDto(
+          processDefinition1.getKey(), processDefinition1.getName(), DefinitionType.PROCESS,
+          // for shared definition expected order is not defined first, then all tenants by id
+          Lists.newArrayList(SIMPLE_TENANT_NOT_DEFINED_DTO, tenant1, tenant2, tenant3)
         )
       );
   }
@@ -258,7 +370,135 @@ public class DefinitionRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getDefinitionsGroupedByTenant_multiTenant() {
+  public void getDefinitionsGroupedByTenant_multiTenant_specificTenantDefinitions() {
+    //given
+    final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
+    createTenant(tenant1);
+    final TenantRestDto tenant2 = new TenantRestDto("tenant2", "Tenant 2");
+    createTenant(tenant2);
+    final TenantRestDto tenant3 = new TenantRestDto("tenant3", "Tenant 3");
+    createTenant(tenant3);
+
+    final String processKey1 = "process1";
+    final String processName1 = "Process Definition1";
+    final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
+      processKey1, processName1, DefinitionType.PROCESS
+    );
+    createDefinition(DefinitionType.PROCESS, processKey1, "1", tenant1.getId(), processName1);
+    createDefinition(DefinitionType.PROCESS, processKey1, "1", tenant2.getId(), processName1);
+    final String processKey2 = "process2";
+    // `A` prefix should put this first in any list
+    final String processName2 = "A Process Definition2";
+    final SimpleDefinitionDto processDefinition2 = new SimpleDefinitionDto(
+      processKey2, processName2, DefinitionType.PROCESS
+    );
+    createDefinition(DefinitionType.PROCESS, processKey2, "1", tenant3.getId(), processName2);
+    createDefinition(DefinitionType.PROCESS, processKey2, "1", tenant2.getId(), processName2);
+    final String decisionKey1 = "decision1";
+    final String decisionName1 = "Decision Definition1";
+    final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
+      decisionKey1, decisionName1, DefinitionType.DECISION
+    );
+    createDefinition(DefinitionType.DECISION, decisionKey1, "2", tenant1.getId(), decisionName1);
+    createDefinition(DefinitionType.DECISION, decisionKey1, "2", tenant2.getId(), decisionName1);
+    // create tenant3 definition first, to ensure creation order does not affect result
+    final String decisionKey2 = "decision2";
+    // lowercase to ensure it doesn't affect ordering
+    final String decisionName2 = "decision Definition2";
+    createDefinition(DefinitionType.DECISION, decisionKey2, "1", tenant3.getId(), decisionName2);
+    createDefinition(DefinitionType.DECISION, decisionKey2, "1", tenant2.getId(), decisionName2);
+    final SimpleDefinitionDto decisionDefinition2 = new SimpleDefinitionDto(
+      decisionKey2, decisionName2, DefinitionType.DECISION
+    );
+
+    // when
+    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitionsGroupedByTenant()
+      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+
+    assertThat(tenantsWithDefinitions)
+      .isNotEmpty()
+      .hasSize(3)
+      .containsExactly(
+        new TenantWithDefinitionsDto(
+          tenant1.getId(), tenant1.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(decisionDefinition1, processDefinition1)
+        ),
+        new TenantWithDefinitionsDto(
+          tenant2.getId(), tenant2.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(processDefinition2, decisionDefinition1, decisionDefinition2, processDefinition1)
+        ),
+        new TenantWithDefinitionsDto(
+          tenant3.getId(), tenant3.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(processDefinition2, decisionDefinition2)
+        )
+      );
+  }
+
+  @Test
+  public void getDefinitionsGroupedByTenant_multiTenant_sharedDefinitions() {
+    //given
+    final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
+    createTenant(tenant1);
+    final TenantRestDto tenant2 = new TenantRestDto("tenant2", "Tenant 2");
+    createTenant(tenant2);
+    final TenantRestDto tenant3 = new TenantRestDto("tenant3", "Tenant 3");
+    createTenant(tenant3);
+
+    final String processKey1 = "process1";
+    final String processName1 = "Process Definition1";
+    final SimpleDefinitionDto processDefinition1 = new SimpleDefinitionDto(
+      processKey1, processName1, DefinitionType.PROCESS
+    );
+    createDefinition(DefinitionType.PROCESS, processKey1, "1", null, processName1);
+
+    final String decisionKey1 = "decision1";
+    final String decisionName1 = "Decision Definition1";
+    final SimpleDefinitionDto decisionDefinition1 = new SimpleDefinitionDto(
+      decisionKey1, decisionName1, DefinitionType.DECISION
+    );
+    createDefinition(DefinitionType.DECISION, decisionKey1, "1", null, decisionName1);
+
+    // when
+    final List<TenantWithDefinitionsDto> tenantsWithDefinitions = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitionsGroupedByTenant()
+      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+
+    assertThat(tenantsWithDefinitions)
+      .isNotEmpty()
+      .hasSize(4)
+      .containsExactly(
+        // tenants ordered by id, null tenant first
+        new TenantWithDefinitionsDto(
+          SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), SIMPLE_TENANT_NOT_DEFINED_DTO.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(decisionDefinition1, processDefinition1)
+        ),
+        new TenantWithDefinitionsDto(
+          tenant1.getId(), tenant1.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(decisionDefinition1, processDefinition1)
+        ),
+        new TenantWithDefinitionsDto(
+          tenant2.getId(), tenant2.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(decisionDefinition1, processDefinition1)
+        ),
+        new TenantWithDefinitionsDto(
+          tenant3.getId(), tenant3.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(decisionDefinition1, processDefinition1)
+        )
+      );
+  }
+
+  @Test
+  public void getDefinitionsGroupedByTenant_multiTenant_sharedAndSpecificDefinitions() {
     //given
     final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
     createTenant(tenant1);
@@ -310,29 +550,29 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(tenantsWithDefinitions)
       .isNotEmpty()
       .hasSize(4)
-    .containsExactly(
-      // tenants ordered by id, null tenant first
-      new TenantWithDefinitionsDto(
-        SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), SIMPLE_TENANT_NOT_DEFINED_DTO.getName(),
-        // definitions ordered by name
-        Lists.newArrayList(decisionDefinition1, processDefinition1)
-      ),
-      new TenantWithDefinitionsDto(
-        tenant1.getId(), tenant1.getName(),
-        // definitions ordered by name
-        Lists.newArrayList(decisionDefinition1, processDefinition1)
-      ),
-      new TenantWithDefinitionsDto(
-        tenant2.getId(), tenant2.getName(),
-        // definitions ordered by name
-        Lists.newArrayList(processDefinition2, decisionDefinition1, decisionDefinition2, processDefinition1)
-      ),
-      new TenantWithDefinitionsDto(
-        tenant3.getId(), tenant3.getName(),
-        // definitions ordered by name
-        Lists.newArrayList(processDefinition2, decisionDefinition2)
-      )
-    );
+      .containsExactly(
+        // tenants ordered by id, null tenant first
+        new TenantWithDefinitionsDto(
+          SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), SIMPLE_TENANT_NOT_DEFINED_DTO.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(decisionDefinition1, processDefinition1)
+        ),
+        new TenantWithDefinitionsDto(
+          tenant1.getId(), tenant1.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(decisionDefinition1, processDefinition1)
+        ),
+        new TenantWithDefinitionsDto(
+          tenant2.getId(), tenant2.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(processDefinition2, decisionDefinition1, decisionDefinition2, processDefinition1)
+        ),
+        new TenantWithDefinitionsDto(
+          tenant3.getId(), tenant3.getName(),
+          // definitions ordered by name
+          Lists.newArrayList(processDefinition2, decisionDefinition1, decisionDefinition2, processDefinition1)
+        )
+      );
   }
 
   @Test

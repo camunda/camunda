@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -71,7 +72,7 @@ public class DefinitionReader {
     return getDefinitionWithTenantIdsDtos(QueryBuilders.matchAllQuery(), ALL_DEFINITION_INDEXES);
   }
 
-  public List<TenantIdWithDefinitionsDto> getDefinitionsGroupedByTenant() {
+  public Map<String, TenantIdWithDefinitionsDto> getDefinitionsGroupedByTenant() {
     // four levels of aggregations
     // 4. group by name (should only be one)
     final TermsAggregationBuilder nameAggregation =
@@ -132,7 +133,7 @@ public class DefinitionReader {
             .collect(Collectors.toList());
           return new TenantIdWithDefinitionsDto(tenantId, definitionDtos);
         })
-        .collect(Collectors.toList());
+        .collect(Collectors.toMap(TenantIdWithDefinitionsDto::getId, entry -> entry));
     } catch (IOException e) {
       final String reason = "Was not able to fetch definitions.";
       log.error(reason, e);

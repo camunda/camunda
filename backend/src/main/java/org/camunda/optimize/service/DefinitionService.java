@@ -20,15 +20,19 @@ import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Comparator.naturalOrder;
+import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 
 @AllArgsConstructor
 @Component
@@ -60,10 +64,14 @@ public class DefinitionService {
   }
 
   public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant(final String userId) {
-    // load all authorized tenants at once to speedup mapping
-    final Map<String, TenantRestDto> authorizedTenantDtosById = getAuthorizedTenantsForUser(userId);
 
-    return definitionReader.getDefinitionsGroupedByTenant().stream()
+    final Map<String, TenantIdWithDefinitionsDto> definitionsGroupedByTenant =
+      definitionReader.getDefinitionsGroupedByTenant();
+
+    final Map<String, TenantRestDto> authorizedTenantDtosById = getAuthorizedTenantsForUser(userId);
+    addSharedDefinitionsToAllAuthorizedTenantEntries(definitionsGroupedByTenant, authorizedTenantDtosById.keySet());
+
+    return definitionsGroupedByTenant.values().stream()
       .map(tenantIdWithDefinitionsDto -> Pair.of(
         tenantIdWithDefinitionsDto,
         authorizedTenantDtosById.get(tenantIdWithDefinitionsDto.getId())
@@ -88,12 +96,51 @@ public class DefinitionService {
       .collect(Collectors.toList());
   }
 
+  private void addSharedDefinitionsToAllAuthorizedTenantEntries(
+    final Map<String, TenantIdWithDefinitionsDto> definitionsGroupedByTenant,
+    final Set<String> authorizedTenantIds) {
+    final TenantIdWithDefinitionsDto notDefinedTenantEntry = definitionsGroupedByTenant.get(TENANT_NOT_DEFINED.getId());
+    if (notDefinedTenantEntry != null) {
+      authorizedTenantIds.forEach(authorizedTenantId -> {
+        // definitions of the not defined tenant need to be added to all other tenant entries
+        // as technically there can be data on shared definitions for any of them
+        definitionsGroupedByTenant.compute(authorizedTenantId, (tenantId, tenantIdWithDefinitionsDto) -> {
+          if (tenantIdWithDefinitionsDto == null) {
+            tenantIdWithDefinitionsDto = new TenantIdWithDefinitionsDto(tenantId, new ArrayList<>());
+          }
+
+          final List<SimpleDefinitionDto> mergedDefinitionList = mergeTwoCollectionsWithDistinctValues(
+            tenantIdWithDefinitionsDto.getDefinitions(),
+            notDefinedTenantEntry.getDefinitions()
+          );
+
+          tenantIdWithDefinitionsDto.setDefinitions(mergedDefinitionList);
+
+          return tenantIdWithDefinitionsDto;
+        });
+      });
+    }
+  }
+
   private Stream<DefinitionWithTenantsDto> filterDefinitionsWithTenantsByAuthorizations(final String userId,
                                                                                         final Stream<DefinitionWithTenantIdsDto> stream) {
     // load all authorized tenants at once to speedup mapping
     final Map<String, TenantRestDto> authorizedTenantDtosById = getAuthorizedTenantsForUser(userId);
 
     return stream
+      .peek(definitionWithTenantIdsDto -> {
+        // we want all tenants to be available for shared definitions,
+        // as technically there can be data for any of them
+        final boolean hasNotDefinedTenant = definitionWithTenantIdsDto.getTenantIds()
+          .contains(TENANT_NOT_DEFINED.getId());
+        if (hasNotDefinedTenant) {
+          definitionWithTenantIdsDto.setTenantIds(
+            mergeTwoCollectionsWithDistinctValues(
+              authorizedTenantDtosById.keySet(), definitionWithTenantIdsDto.getTenantIds()
+            )
+          );
+        }
+      })
       .map(definitionWithTenantIds -> {
         // ensure that the user is authorized for the particular definition and tenant combination
         final List<TenantRestDto> authorizedTenants = definitionAuthorizationService
@@ -126,5 +173,12 @@ public class DefinitionService {
         TenantDto::getId,
         tenantDto -> new TenantRestDto(tenantDto.getId(), tenantDto.getName())
       ));
+  }
+
+  private static <T> List<T> mergeTwoCollectionsWithDistinctValues(final Collection<T> firstCollection,
+                                                                   final Collection<T> secondCollection) {
+    return Stream.concat(secondCollection.stream(), firstCollection.stream())
+      .distinct()
+      .collect(Collectors.toList());
   }
 }
