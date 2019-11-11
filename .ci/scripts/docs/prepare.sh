@@ -1,6 +1,6 @@
 #!/bin/sh -eux
 
-wget https://github.com/zeebe-io/mdBook/releases/download/zeebe-io/mdbook
+wget -sL https://github.com/rust-lang/mdBook/releases/download/v0.3.4/mdbook-v0.3.4-x86_64-unknown-linux-gnu.tar.gz | tar xzvf -
 
 chmod +x mdbook
 
