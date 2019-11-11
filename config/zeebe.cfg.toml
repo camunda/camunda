@@ -1,10 +1,4 @@
 [[exporters]]
-id = "debug"
-className = "io.zeebe.broker.exporter.debug.DebugHttpExporter"
-  [exporters.args]
-  limit = 3000
-
-[[exporters]]
 id = "elasticsearch"
 className = "io.zeebe.exporter.ElasticsearchExporter"
 
