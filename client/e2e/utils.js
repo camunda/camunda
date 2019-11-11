@@ -8,6 +8,13 @@ import {Selector} from 'testcafe';
 
 import config from './config';
 
+let instanceCount = {
+  Chrome: 0,
+  HeadlessChrome: 0,
+  Firefox: 0,
+  Edge: 0
+};
+
 export async function login(t, userHandle = 'user1') {
   const user = getUser(t, userHandle);
 
@@ -24,7 +31,14 @@ export async function login(t, userHandle = 'user1') {
 }
 
 export function getUser(t, userHandle) {
-  return config.users[t.testRun.browserConnection.browserInfo.parsedUserAgent.family][userHandle];
+  const {browserConnection} = t.testRun;
+  const {family} = browserConnection.browserInfo.parsedUserAgent;
+
+  if (typeof browserConnection.userId === 'undefined') {
+    browserConnection.userId = instanceCount[family]++;
+  }
+
+  return config.users[family][browserConnection.userId][userHandle];
 }
 
 export async function createNewReport(t) {

@@ -117,19 +117,22 @@ async function startTest() {
   const testCafe = await createTestCafe('localhost');
   let hasFailures = false;
   try {
-    if (
-      await testCafe
-        .createRunner()
-        .src('e2e/tests/*.js')
-        .browsers(browsers)
-        .run({
-          skipJsErrors: true,
-          disableScreenshots: true,
-          assertionTimeout: 10000,
-          pageLoadTimeout: 10000
-        })
-    ) {
-      hasFailures = true;
+    for (let i = 0; i < browsers.length; i++) {
+      if (
+        await testCafe
+          .createRunner()
+          .src('e2e/tests/*.js')
+          .browsers(browsers[i])
+          .run({
+            skipJsErrors: true,
+            disableScreenshots: true,
+            concurrency: 3,
+            assertionTimeout: 10000,
+            pageLoadTimeout: 10000
+          })
+      ) {
+        hasFailures = true;
+      }
     }
   } finally {
     await testCafe.close();
