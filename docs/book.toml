@@ -13,3 +13,5 @@ git-repository-url = "https://github.com/zeebe-io/zeebe/tree/develop/docs"
 [output.html.fold]
 enable = true
 level = 0
+
+[output.linkcheck]

@@ -1,3 +1,3 @@
 #!/bin/sh -eux
 
-./mdbook build docs/
+mdbook build docs/
