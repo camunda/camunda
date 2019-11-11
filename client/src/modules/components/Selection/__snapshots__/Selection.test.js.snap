@@ -12,7 +12,7 @@ exports[`Selection should contain Actions 1`] = `
         "attrs": Array [],
         "componentStyle": ComponentStyle {
           "componentId": "sc-gPEVay",
-          "isStatic": true,
+          "isStatic": false,
           "lastClassName": "fJMgbM",
           "rules": Array [
             "
@@ -49,7 +49,7 @@ exports[`Selection should contain Actions 1`] = `
               "attrs": Array [],
               "componentStyle": ComponentStyle {
                 "componentId": "sc-iRbamj",
-                "isStatic": true,
+                "isStatic": false,
                 "lastClassName": "fbWUjG",
                 "rules": Array [
                   "
@@ -104,7 +104,7 @@ exports[`Selection should contain Actions 1`] = `
                       "attrs": Array [],
                       "componentStyle": ComponentStyle {
                         "componentId": "sc-fjdhpX",
-                        "isStatic": true,
+                        "isStatic": false,
                         "lastClassName": "Yobvn",
                         "rules": Array [
                           "
@@ -254,7 +254,7 @@ exports[`Selection should contain Actions 1`] = `
                                       "attrs": Array [],
                                       "componentStyle": ComponentStyle {
                                         "componentId": "sc-hzDkRC",
-                                        "isStatic": true,
+                                        "isStatic": false,
                                         "lastClassName": "lgWyvY",
                                         "rules": Array [
                                           "
@@ -348,7 +348,7 @@ exports[`Selection should contain Actions 1`] = `
               "attrs": Array [],
               "componentStyle": ComponentStyle {
                 "componentId": "sc-jlyJG",
-                "isStatic": true,
+                "isStatic": false,
                 "lastClassName": "djeiJX",
                 "rules": Array [
                   "
@@ -387,7 +387,7 @@ exports[`Selection should contain Actions 1`] = `
                     "attrs": Array [],
                     "componentStyle": ComponentStyle {
                       "componentId": "sc-gipzik",
-                      "isStatic": true,
+                      "isStatic": false,
                       "lastClassName": "jsBKZL",
                       "rules": Array [
                         "
@@ -616,7 +616,7 @@ exports[`Selection should contain Instances 1`] = `
                           theme="light"
                         >
                           <li
-                            className="sc-cvbbAY fiOHD sc-fBuWsC liucns"
+                            className="sc-fBuWsC liucns sc-cvbbAY fiOHD"
                             data-test="addInstanceTransition"
                           >
                             <styled.div>
@@ -627,7 +627,7 @@ exports[`Selection should contain Instances 1`] = `
                                     "attrs": Array [],
                                     "componentStyle": ComponentStyle {
                                       "componentId": "sc-fMiknA",
-                                      "isStatic": true,
+                                      "isStatic": false,
                                       "lastClassName": "fppzUV",
                                       "rules": Array [
                                         "
@@ -671,7 +671,7 @@ exports[`Selection should contain Instances 1`] = `
                                                 "attrs": Array [],
                                                 "componentStyle": ComponentStyle {
                                                   "componentId": "sc-bwzfXH",
-                                                  "isStatic": true,
+                                                  "isStatic": false,
                                                   "lastClassName": "cjPJyG",
                                                   "rules": Array [
                                                     "
@@ -729,7 +729,7 @@ exports[`Selection should contain Instances 1`] = `
                                     "attrs": Array [],
                                     "componentStyle": ComponentStyle {
                                       "componentId": "sc-dVhcbM",
-                                      "isStatic": true,
+                                      "isStatic": false,
                                       "lastClassName": "bRMDnd",
                                       "rules": Array [
                                         "
@@ -764,7 +764,7 @@ exports[`Selection should contain Instances 1`] = `
                                     "attrs": Array [],
                                     "componentStyle": ComponentStyle {
                                       "componentId": "sc-eqIVtm",
-                                      "isStatic": true,
+                                      "isStatic": false,
                                       "lastClassName": "isjZyh",
                                       "rules": Array [
                                         "
@@ -799,7 +799,7 @@ exports[`Selection should contain Instances 1`] = `
                                     "attrs": Array [],
                                     "componentStyle": ComponentStyle {
                                       "componentId": "sc-fAjcbJ",
-                                      "isStatic": true,
+                                      "isStatic": false,
                                       "lastClassName": "gOJjVr",
                                       "rules": Array [
                                         "
@@ -897,7 +897,7 @@ exports[`Selection should contain Instances 1`] = `
                                           "attrs": Array [],
                                           "componentStyle": ComponentStyle {
                                             "componentId": "sc-caSCKo",
-                                            "isStatic": true,
+                                            "isStatic": false,
                                             "lastClassName": "lEUMA",
                                             "rules": Array [
                                               "
@@ -1038,28 +1038,28 @@ exports[`Selection should contain Instances 1`] = `
                                                 title="Instance id_1 has scheduled Operations"
                                               >
                                                 <Spinner
-                                                  className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
+                                                  className="sc-dxgOiQ evSBFh sc-caSCKo lEUMA"
                                                   theme="light"
                                                   title="Instance id_1 has scheduled Operations"
                                                 >
                                                   <Themed(styled.div)
-                                                    className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
+                                                    className="sc-dxgOiQ evSBFh sc-caSCKo lEUMA"
                                                     theme="light"
                                                     title="Instance id_1 has scheduled Operations"
                                                   >
                                                     <Themed
-                                                      className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
+                                                      className="sc-dxgOiQ evSBFh sc-caSCKo lEUMA"
                                                       forwardedRef={null}
                                                       theme="light"
                                                       title="Instance id_1 has scheduled Operations"
                                                     >
                                                       <styled.div
-                                                        className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
+                                                        className="sc-dxgOiQ evSBFh sc-caSCKo lEUMA"
                                                         theme="light"
                                                         title="Instance id_1 has scheduled Operations"
                                                       >
                                                         <StyledComponent
-                                                          className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh"
+                                                          className="sc-dxgOiQ evSBFh sc-caSCKo lEUMA"
                                                           forwardedComponent={
                                                             Object {
                                                               "$$typeof": Symbol(react.forward_ref),
@@ -1114,7 +1114,7 @@ exports[`Selection should contain Instances 1`] = `
                                                           title="Instance id_1 has scheduled Operations"
                                                         >
                                                           <div
-                                                            className="sc-caSCKo lEUMA sc-dxgOiQ evSBFh sc-kpOJdX gZIIml"
+                                                            className="sc-kpOJdX gZIIml sc-dxgOiQ evSBFh sc-caSCKo lEUMA"
                                                             title="Instance id_1 has scheduled Operations"
                                                           />
                                                         </StyledComponent>
@@ -1157,7 +1157,7 @@ exports[`Selection should contain a Footer 1`] = `
         "attrs": Array [],
         "componentStyle": ComponentStyle {
           "componentId": "sc-gisBJw",
-          "isStatic": true,
+          "isStatic": false,
           "lastClassName": "lmMLUe",
           "rules": Array [
             "
@@ -1200,7 +1200,7 @@ exports[`Selection should contain a Footer 1`] = `
               "attrs": Array [],
               "componentStyle": ComponentStyle {
                 "componentId": "sc-kjoXOD",
-                "isStatic": true,
+                "isStatic": false,
                 "lastClassName": "dDDfWe",
                 "rules": Array [
                   "

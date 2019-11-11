@@ -93,7 +93,7 @@ exports[`EmptyPanel should display a skeleton 1`] = `
                     "attrs": Array [],
                     "componentStyle": ComponentStyle {
                       "componentId": "sc-bwzfXH",
-                      "isStatic": true,
+                      "isStatic": false,
                       "lastClassName": "kbFnXb",
                       "rules": Array [
                         "
@@ -278,7 +278,7 @@ exports[`EmptyPanel should display a success message 1`] = `
                     "attrs": Array [],
                     "componentStyle": ComponentStyle {
                       "componentId": "sc-bwzfXH",
-                      "isStatic": true,
+                      "isStatic": false,
                       "lastClassName": "kbFnXb",
                       "rules": Array [
                         "
@@ -473,7 +473,7 @@ exports[`EmptyPanel should display a warning message 1`] = `
                     "attrs": Array [],
                     "componentStyle": ComponentStyle {
                       "componentId": "sc-bwzfXH",
-                      "isStatic": true,
+                      "isStatic": false,
                       "lastClassName": "kbFnXb",
                       "rules": Array [
                         "
@@ -507,7 +507,7 @@ exports[`EmptyPanel should display a warning message 1`] = `
                           "attrs": Array [],
                           "componentStyle": ComponentStyle {
                             "componentId": "sc-ifAKCX",
-                            "isStatic": true,
+                            "isStatic": false,
                             "lastClassName": "cZHWPV",
                             "rules": Array [
                               "
