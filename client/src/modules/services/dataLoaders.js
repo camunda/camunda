@@ -27,8 +27,13 @@ export async function getFlowNodeNames(processDefinitionKey, processDefinitionVe
   }
 }
 
-export async function loadDefinitions(type) {
-  const response = await get(`api/${type}-definition/definitionVersionsWithTenants`);
+export async function loadDefinitions(type, collectionId) {
+  const params = {};
+  if (collectionId) {
+    params.filterByCollectionScope = collectionId;
+  }
+
+  const response = await get(`api/${type}-definition/definitionVersionsWithTenants`, params);
 
   return await response.json();
 }

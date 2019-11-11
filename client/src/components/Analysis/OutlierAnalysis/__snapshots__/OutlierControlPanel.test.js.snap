@@ -10,7 +10,7 @@ exports[`show display a definition selection and an info message 1`] = `
     <li
       className="item"
     >
-      <DefinitionSelection
+      <withRouter(DefinitionSelection)
         definitionKey="aKey"
         infoMessage="Note: The outlier analysis is performed on completed flow nodes only"
         onChange={[Function]}

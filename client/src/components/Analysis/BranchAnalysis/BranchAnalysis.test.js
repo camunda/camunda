@@ -23,7 +23,6 @@ jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),
     loadProcessDefinitionXml: jest.fn(),
-    loadDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
     incompatibleFilters: jest.fn()
   };
 });

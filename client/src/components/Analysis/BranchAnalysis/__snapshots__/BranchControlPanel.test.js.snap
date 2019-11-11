@@ -11,7 +11,7 @@ exports[`should display a sentence to describe what the user can do on this page
       className="item summary"
     >
       For
-      <DefinitionSelection
+      <withRouter(DefinitionSelection)
         definitionKey=""
         onChange={[Function]}
         tenants={Array []}

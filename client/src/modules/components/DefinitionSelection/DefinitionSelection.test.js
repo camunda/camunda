@@ -13,7 +13,15 @@ import DefinitionSelection from './DefinitionSelection';
 import VersionPopover from './VersionPopover';
 import TenantPopover from './TenantPopover';
 
-import {loadDefinitions} from 'services';
+import {loadDefinitions, getCollection} from 'services';
+
+jest.mock('react-router-dom', () => {
+  const rest = jest.requireActual('react-router-dom');
+  return {
+    ...rest,
+    withRouter: a => a
+  };
+});
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -105,7 +113,8 @@ jest.mock('services', () => {
           }
         ]
       }
-    ])
+    ]),
+    getCollection: jest.fn()
   };
 });
 
@@ -114,6 +123,7 @@ const spy = jest.fn();
 const props = {
   type: 'process',
   tenants: [],
+  location: {pathname: '/report/1'},
   onChange: spy
 };
 
@@ -130,7 +140,14 @@ it('should display a loading indicator', () => {
 it('should initially load all definitions', () => {
   shallow(<DefinitionSelection {...props} />);
 
-  expect(loadDefinitions).toHaveBeenCalled();
+  expect(loadDefinitions).toHaveBeenCalledWith(props.type, undefined);
+});
+
+it('should load defintions in scope of collection', () => {
+  getCollection.mockReturnValue('123');
+  shallow(<DefinitionSelection {...props} />);
+
+  expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123');
 });
 
 it('should update to most recent version when key is selected', async () => {
