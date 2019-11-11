@@ -2,6 +2,9 @@
 title = "Zeebe Documentation"
 description = "Zeebe is an orchestration engine for distributed microservices"
 
+[preprocessor.commit-hash]
+command = "./preprocessors/commit-hash.py"
+
 [output.html]
 additional-css = ["custom.css"]
 additional-js = ["highlight.protobuf.js"]
