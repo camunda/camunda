@@ -9,3 +9,7 @@ command = "./preprocessors/commit-hash.py"
 additional-css = ["custom.css"]
 additional-js = ["highlight.protobuf.js"]
 git-repository-url = "https://github.com/zeebe-io/zeebe/tree/develop/docs"
+
+[output.html.fold]
+enable = true
+level = 0
