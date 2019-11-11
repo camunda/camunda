@@ -34,6 +34,10 @@ public class UserDto extends IdentityDto {
     this(id, null, null, null);
   }
 
+  public UserDto(final String id, final String firstName) {
+    this(id, firstName, null, null);
+  }
+
   @JsonCreator
   public UserDto(@JsonProperty(required = true, value = "id") final String id,
                  @JsonProperty(required = false, value = "firstName") final String firstName,

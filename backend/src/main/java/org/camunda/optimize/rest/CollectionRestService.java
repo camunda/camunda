@@ -178,10 +178,7 @@ public class CollectionRestService {
   public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
                                           @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
-      .getDefinitionDto()
-      .getData()
-      .getRoles();
+    return collectionService.getAllRolesOfCollectionSorted(userId, collectionId);
   }
 
   @POST

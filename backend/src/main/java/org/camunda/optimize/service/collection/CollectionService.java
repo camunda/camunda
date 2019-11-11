@@ -48,6 +48,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -193,6 +194,19 @@ public class CollectionService {
                                String scopeEntryId) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     collectionWriter.updateScopeEntity(collectionId, entryDto, userId, scopeEntryId);
+  }
+
+  public List<CollectionRoleDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
+    List<CollectionRoleDto> roles = getSimpleCollectionDefinitionWithRoleMetadata(
+      userId,
+      collectionId
+    )
+      .getDefinitionDto()
+      .getData()
+      .getRoles();
+
+    Collections.sort(roles);
+    return roles;
   }
 
   public CollectionRoleDto addRoleToCollection(final String userId,

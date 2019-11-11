@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,6 +38,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
 
   private static final String USER_KERMIT = "kermit";
   private static final String TEST_GROUP = "testGroup";
+  private static final String TEST_GROUP_B = "anotherTestGroup";
   private static final String USER_MISS_PIGGY = "MissPiggy";
 
   @Test
@@ -73,6 +75,55 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     // then
     assertThat(roles.size(), is(1));
     assertThat(roles, is(expectedCollection.getData().getRoles()));
+  }
+
+  @Test
+  public void getRolesSortedCorrectly() {
+    // given
+    final String collectionId = createNewCollection();
+    engineIntegrationExtension.createGroup(TEST_GROUP, TEST_GROUP);
+    engineIntegrationExtension.createGroup(TEST_GROUP_B, TEST_GROUP_B);
+    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_KERMIT);
+    engineIntegrationExtension.addUser(USER_MISS_PIGGY, USER_MISS_PIGGY);
+    engineIntegrationExtension.grantUserOptimizeAccess(USER_MISS_PIGGY);
+
+    GroupDto testGroupDto = new GroupDto(TEST_GROUP, TEST_GROUP);
+    GroupDto anotherTestGroupDto = new GroupDto(TEST_GROUP_B, TEST_GROUP_B);
+    UserDto kermitUserDto = new UserDto(USER_KERMIT, USER_KERMIT);
+    UserDto missPiggyUserDto = new UserDto(USER_MISS_PIGGY, USER_MISS_PIGGY);
+    UserDto demoUserDto = new UserDto(DEFAULT_USERNAME, DEFAULT_USERNAME);
+
+    List<IdentityDto> identities = new ArrayList<>();
+    identities.add(testGroupDto);
+    identities.add(anotherTestGroupDto);
+    identities.add(kermitUserDto);
+    identities.add(missPiggyUserDto);
+
+    identities.forEach(i -> embeddedOptimizeExtension.getIdentityService().addIdentity(i));
+
+    // TODO after OPT-2891 is fixed, addRoleToCollection can be called with CollectionRoleDtos whose identity name is
+    //  non null --> move addRoleToCollection calls to forEach loop above once OPT-2891 is done
+    addRoleToCollection(collectionId, new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR));
+    addRoleToCollection(collectionId, new CollectionRoleDto(new GroupDto(TEST_GROUP_B), RoleType.EDITOR));
+    addRoleToCollection(collectionId, new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR));
+    addRoleToCollection(collectionId, new CollectionRoleDto(new UserDto(USER_MISS_PIGGY), RoleType.EDITOR));
+
+    // when
+    List<CollectionRoleDto> roles = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(CollectionRoleDto.class, 200);
+
+    // then
+    // expected oder(groups first, user second, then by name ascending):
+    // anotherTestGroupRole, testGroupRole, demoManagerRole, kermitRole, missPiggyRole
+    assertThat(roles.size(), is(identities.size() + 1)); // +1 for demo manager role
+    assertThat(roles.get(0).getIdentity(), is(anotherTestGroupDto));
+    assertThat(roles.get(1).getIdentity(), is(testGroupDto));
+    assertThat(roles.get(2).getIdentity(), is(demoUserDto));
+    assertThat(roles.get(3).getIdentity(), is(kermitUserDto));
+    assertThat(roles.get(4).getIdentity(), is(missPiggyUserDto));
   }
 
   @Test

@@ -10,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -21,7 +22,7 @@ import java.util.Optional;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
-public class CollectionRoleDto {
+public class CollectionRoleDto implements Comparable<CollectionRoleDto> {
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
   @Setter(value = AccessLevel.PROTECTED)
@@ -59,5 +60,16 @@ public class CollectionRoleDto {
 
   private String convertIdentityToRoleId(final IdentityDto identity) {
     return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+  }
+
+  @Override
+  public int compareTo(final CollectionRoleDto other) {
+    if (this.identity instanceof UserDto && other.identity instanceof GroupDto) {
+      return 1;
+    } else if (this.identity instanceof GroupDto && other.identity instanceof UserDto) {
+      return -1;
+    } else {
+      return StringUtils.compareIgnoreCase(this.identity.getName(), other.identity.getName());
+    }
   }
 }
