@@ -161,13 +161,6 @@ public final class LogStreamRule extends ExternalResource {
   public void openLogStream() {
     logStream = builder.build();
     logStorageRule.setPositionListener(logStream::setCommitPosition);
-
-    // hack
-    serviceContainer
-        .createService(logStreamServiceName(logStream.getLogName()), (LogStreamService) logStream)
-        .install()
-        .join();
-
     logStream.openAppender().join();
   }
 

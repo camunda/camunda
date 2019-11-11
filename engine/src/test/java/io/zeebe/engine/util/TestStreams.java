@@ -131,7 +131,7 @@ public class TestStreams {
 
     final AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(dataDirectory, partitionId);
     logStorageRule.open(b -> b.withDirectory(segments));
-    final LogStreamService logStream =
+    final var logStream =
         spy(
             LogStreams.createLogStream()
                 .withLogName(name)
@@ -139,7 +139,6 @@ public class TestStreams {
                 .withPartitionId(partitionId)
                 .withServiceContainer(serviceContainer)
                 .build());
-    serviceContainer.createService(logStreamServiceName(name), logStream).install().join();
     logStorageRule.setPositionListener(logStream::setCommitPosition);
     logStream.openAppender().join();
 

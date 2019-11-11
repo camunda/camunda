@@ -24,11 +24,6 @@ public class LogStreamServiceNames {
         String.format("logstream.%s.service", logName), LogStream.class);
   }
 
-  public static final ServiceName<LogStorage> logStorageServiceName(String logName) {
-    return ServiceName.newServiceName(
-        String.format("logstream.%s.storage", logName), LogStorage.class);
-  }
-
   public static final ServiceName<LogStorageAppender> logStorageAppenderServiceName(
       String logName) {
     return ServiceName.newServiceName(

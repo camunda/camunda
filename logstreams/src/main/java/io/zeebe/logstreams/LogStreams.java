@@ -14,7 +14,7 @@ import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
 public final class LogStreams {
   private LogStreams() {}
 
-  public static LogStreamBuilder createLogStream() {
+  public static LogStreamBuilder<?> createLogStream() {
     return new LogStreamBuilder();
   }
 

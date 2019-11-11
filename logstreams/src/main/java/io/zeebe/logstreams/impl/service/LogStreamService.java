@@ -98,7 +98,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public void stop(final ServiceStopContext stopContext) {
-    // nothing to do
+    logStorage.close();
   }
 
   @Override
@@ -123,7 +123,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    logStorage.close();
     return serviceContainer.removeService(logStreamServiceName(logName));
   }
 

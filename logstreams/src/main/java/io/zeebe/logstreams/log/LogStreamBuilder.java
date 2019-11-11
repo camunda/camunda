@@ -7,13 +7,14 @@
  */
 package io.zeebe.logstreams.log;
 
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
+
 import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Objects;
 import org.agrona.concurrent.status.AtomicLongPosition;
 
@@ -52,21 +53,23 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
   }
 
   public ActorFuture<LogStream> buildAsync() {
-    return CompletableActorFuture.completed(build());
-  }
-
-  public LogStreamService build() {
     applyDefaults();
     validate();
 
-    return new LogStreamService(
-        serviceContainer,
-        new ActorConditions(),
-        logName,
-        partitionId,
-        ByteValue.ofBytes(maxFragmentSize),
-        new AtomicLongPosition(),
-        logStorage);
+    final var service =
+        new LogStreamService(
+            serviceContainer,
+            new ActorConditions(),
+            logName,
+            partitionId,
+            ByteValue.ofBytes(maxFragmentSize),
+            new AtomicLongPosition(),
+            logStorage);
+    return serviceContainer.createService(logStreamServiceName(logName), service).install();
+  }
+
+  public LogStream build() {
+    return buildAsync().join();
   }
 
   protected void applyDefaults() {}
