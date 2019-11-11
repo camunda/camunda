@@ -5,3 +5,4 @@ description = "Zeebe is an orchestration engine for distributed microservices"
 [output.html]
 additional-css = ["custom.css"]
 additional-js = ["highlight.protobuf.js"]
+git-repository-url = "https://github.com/zeebe-io/zeebe/tree/develop/docs"
