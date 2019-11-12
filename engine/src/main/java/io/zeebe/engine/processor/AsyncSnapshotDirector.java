@@ -34,7 +34,6 @@ public class AsyncSnapshotDirector extends Actor {
   private static final String ERROR_MSG_ENFORCED_SNAPSHOT =
       "Unexpected exception occurred on creating snapshot, was enforced to do so.";
 
-  private static final int INITIAL_POSITION = -1;
   private final SnapshotController snapshotController;
   private final LogStream logStream;
   private final String name;
@@ -42,7 +41,7 @@ public class AsyncSnapshotDirector extends Actor {
   private final String processorName;
   private final StreamProcessor streamProcessor;
   private ActorCondition commitCondition;
-  private long lastWrittenEventPosition = INITIAL_POSITION;
+  private Long lastWrittenEventPosition;
   private boolean pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private long lastValidSnapshotPosition;
@@ -71,6 +70,7 @@ public class AsyncSnapshotDirector extends Actor {
     actor.setSchedulingHints(SchedulingHints.ioBound());
     actor.runAtFixedRate(snapshotRate, prepareTakingSnapshot);
 
+    lastWrittenEventPosition = null;
     commitCondition = actor.onCondition(getConditionNameForPosition(), this::onCommitCheck);
     logStream.registerOnCommitPositionUpdatedCondition(commitCondition);
 
@@ -132,6 +132,7 @@ public class AsyncSnapshotDirector extends Actor {
 
           } else {
             pendingSnapshot = false;
+            lastWrittenEventPosition = null;
             LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
           }
         });
@@ -150,7 +151,9 @@ public class AsyncSnapshotDirector extends Actor {
   private void onCommitCheck() {
     final long currentCommitPosition = logStream.getCommitPosition();
 
-    if (pendingSnapshot && currentCommitPosition >= lastWrittenEventPosition) {
+    if (pendingSnapshot
+        && lastWrittenEventPosition != null
+        && currentCommitPosition >= lastWrittenEventPosition) {
       try {
 
         lastValidSnapshotPosition = lowerBoundSnapshotPosition;
@@ -160,6 +163,7 @@ public class AsyncSnapshotDirector extends Actor {
       } catch (Exception ex) {
         LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
       } finally {
+        lastWrittenEventPosition = null;
         pendingSnapshot = false;
       }
     }
