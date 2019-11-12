@@ -49,18 +49,18 @@ pipeline {
                 IMAGE = "camunda/zeebe"
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
                 TAG = 'current-test'
-            }         
+            }
 
             steps {
                 container('golang') {
                     sh '.ci/scripts/distribution/build-go.sh'
                 }
 
-                container('maven') {         
+                container('maven') {
                     sh '.ci/scripts/docker/prepare.sh'
                 }
 
-                container('docker') {         
+                container('docker') {
                     sh '.ci/scripts/docker/build.sh'
                 }
             }
@@ -105,7 +105,16 @@ pipeline {
                             sh '.ci/scripts/distribution/it-java.sh'
                         }
                     }
-                }     
+                }
+
+                stage('Build Docs') {
+                    steps {
+                        container('maven') {
+                            sh '.ci/scripts/docs/prepare.sh'
+                            sh '.ci/scripts/docs/build.sh'
+                        }
+                    }
+                }
             }
 
             post {
