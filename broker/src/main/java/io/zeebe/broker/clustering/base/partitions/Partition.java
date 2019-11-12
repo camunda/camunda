@@ -53,11 +53,11 @@ public class Partition implements Service<Partition> {
 
   public Partition(
       final StorageConfiguration configuration,
-      BrokerCfg brokerCfg,
-      ClusterEventService clusterEventService,
-      int partitionId,
-      RaftState state,
-      BrokerRestoreServer restoreServer) {
+      final BrokerCfg brokerCfg,
+      final ClusterEventService clusterEventService,
+      final int partitionId,
+      final RaftState state,
+      final BrokerRestoreServer restoreServer) {
     this.configuration = configuration;
     this.brokerCfg = brokerCfg;
     this.clusterEventService = clusterEventService;
@@ -104,7 +104,7 @@ public class Partition implements Service<Partition> {
       try {
         snapshotController.recover();
         zeebeDb = snapshotController.openDb();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new IllegalStateException(
             String.format(
                 "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
@@ -118,18 +118,29 @@ public class Partition implements Service<Partition> {
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
-    stateReplication.close();
+  public void stop(final ServiceStopContext stopContext) {
+    try {
+      stateReplication.close();
+      LOG.debug("State replication closed for partition {}", partitionId);
+    } catch (final Exception e) {
+      LOG.error(
+          "Unexpected error occurred while closing the state replication for partition {}.",
+          partitionId,
+          e);
+    }
     restoreServer.close();
+    LOG.debug("Restore server closed for partition {}", partitionId);
 
     try {
       snapshotController.close();
-    } catch (Exception e) {
+      LOG.debug("Snapshot controller closed for partition {}", partitionId);
+    } catch (final Exception e) {
       LOG.error(
           "Unexpected error occurred while closing the state snapshot controller for partition {}.",
           partitionId,
           e);
     }
+    LOG.debug("Partition {} closed.", partitionId);
   }
 
   @Override
@@ -137,7 +148,7 @@ public class Partition implements Service<Partition> {
     return this;
   }
 
-  private void startRestoreServer(CompletableActorFuture<Void> startedFuture) {
+  private void startRestoreServer(final CompletableActorFuture<Void> startedFuture) {
     restoreServer
         .start(logStream, snapshotController)
         .whenComplete(

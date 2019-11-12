@@ -26,5 +26,5 @@ public interface SnapshotReplication {
   void consume(Consumer<SnapshotChunk> consumer);
 
   /** Closes the snapshot replication. */
-  void close();
+  void close() throws Exception;
 }

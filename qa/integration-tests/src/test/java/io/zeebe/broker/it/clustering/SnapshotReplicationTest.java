@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.engine.Loggers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.File;
@@ -70,7 +69,7 @@ public class SnapshotReplicationTest {
     waitForValidSnapshotAtBroker(leader);
 
     final List<Broker> otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
-    for (Broker broker : otherBrokers) {
+    for (final Broker broker : otherBrokers) {
       waitForValidSnapshotAtBroker(broker);
     }
 
@@ -106,11 +105,8 @@ public class SnapshotReplicationTest {
               validSnapshotDir -> {
                 final File[] snapshotFiles = validSnapshotDir.listFiles();
                 if (snapshotFiles != null) {
-                  for (File snapshotFile : snapshotFiles) {
+                  for (final File snapshotFile : snapshotFiles) {
                     final long checksum = createCheckSumForFile(snapshotFile);
-
-                    Loggers.STREAM_PROCESSING.debug(
-                        "Created checksum {} for file {}", checksum, snapshotFile);
                     checksums.put(snapshotFile.getName(), checksum);
                   }
                 }
@@ -126,7 +122,7 @@ public class SnapshotReplicationTest {
       while (checkedInputStream.skip(512) > 0) {}
 
       return checkedInputStream.getChecksum().getValue();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -136,7 +132,7 @@ public class SnapshotReplicationTest {
     return new File(dataDir, "partition-1/state/snapshots");
   }
 
-  protected void waitForValidSnapshotAtBroker(Broker broker) {
+  protected void waitForValidSnapshotAtBroker(final Broker broker) {
     final File snapshotsDir = getSnapshotsDirectory(broker);
 
     waitUntil(
