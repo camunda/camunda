@@ -104,6 +104,98 @@ public class DefinitionRestServiceIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
   }
 
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionByTypeAndKey_multiTenant_specificTenantDefinitions(final DefinitionType definitionType) {
+    //given
+    final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
+    createTenant(tenant1);
+    final TenantRestDto tenant2 = new TenantRestDto("tenant2", "Tenant 2");
+    createTenant(tenant2);
+    // should not be in the result
+    final TenantRestDto tenant3 = new TenantRestDto("tenant3", "Tenant 3");
+    createTenant(tenant3);
+
+    final DefinitionOptimizeDto expectedDefinition = createDefinition(
+      definitionType, "key", "1", tenant2.getId(), "the name"
+    );
+
+    // when
+    final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitionByTypeAndKeyRequest(definitionType.getId(), expectedDefinition.getKey())
+      .execute(DefinitionWithTenantsDto.class, 200);
+
+    assertThat(definition).isNotNull();
+    assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
+    assertThat(definition.getType()).isEqualTo(definitionType);
+    assertThat(definition.getName()).isEqualTo(expectedDefinition.getName());
+    assertThat(definition.getTenants())
+      .isNotEmpty()
+      .extracting("id")
+      .containsExactly(tenant2.getId());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionByTypeAndKey_multiTenant_sharedDefinition(final DefinitionType definitionType) {
+    //given
+    final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
+    createTenant(tenant1);
+    final TenantRestDto tenant2 = new TenantRestDto("tenant2", "Tenant 2");
+    createTenant(tenant2);
+
+    final DefinitionOptimizeDto expectedDefinition = createDefinition(
+      definitionType, "key", "1", null, "the name"
+    );
+
+    // when
+    final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitionByTypeAndKeyRequest(definitionType.getId(), expectedDefinition.getKey())
+      .execute(DefinitionWithTenantsDto.class, 200);
+
+    assertThat(definition).isNotNull();
+    assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
+    assertThat(definition.getType()).isEqualTo(definitionType);
+    assertThat(definition.getName()).isEqualTo(expectedDefinition.getName());
+    assertThat(definition.getTenants())
+      .isNotEmpty()
+      .extracting("id")
+      .containsExactly(SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), tenant1.getId(), tenant2.getId());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionByTypeAndKey_multiTenant_sharedAndSpecificDefinition(final DefinitionType definitionType) {
+    //given
+    final TenantRestDto tenant1 = new TenantRestDto("tenant1", "Tenant 1");
+    createTenant(tenant1);
+    final TenantRestDto tenant2 = new TenantRestDto("tenant2", "Tenant 2");
+    createTenant(tenant2);
+
+    final DefinitionOptimizeDto expectedDefinition = createDefinition(
+      definitionType, "key", "1", null, "the name"
+    );
+    // having a mix should not distort the result
+    createDefinition(definitionType, "key", "1", tenant2.getId(), "the name");
+
+    // when
+    final DefinitionWithTenantsDto definition = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDefinitionByTypeAndKeyRequest(definitionType.getId(), expectedDefinition.getKey())
+      .execute(DefinitionWithTenantsDto.class, 200);
+
+    assertThat(definition).isNotNull();
+    assertThat(definition.getKey()).isEqualTo(expectedDefinition.getKey());
+    assertThat(definition.getType()).isEqualTo(definitionType);
+    assertThat(definition.getName()).isEqualTo(expectedDefinition.getName());
+    assertThat(definition.getTenants())
+      .isNotEmpty()
+      .extracting("id")
+      .containsExactly(SIMPLE_TENANT_NOT_DEFINED_DTO.getId(), tenant1.getId(), tenant2.getId());
+  }
+
   @Test
   public void getDefinitions() {
     //given
