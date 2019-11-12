@@ -32,7 +32,9 @@ const flowNodes = {
   //Gateways
   [TYPE.GATEWAY_EVENT_BASED]: Styled[TYPE.GATEWAY_EVENT_BASED],
   [TYPE.GATEWAY_PARALLEL]: Styled[TYPE.GATEWAY_PARALLEL],
-  [TYPE.GATEWAY_EXCLUSIVE]: Styled[TYPE.GATEWAY_EXCLUSIVE]
+  [TYPE.GATEWAY_EXCLUSIVE]: Styled[TYPE.GATEWAY_EXCLUSIVE],
+  //Other
+  [TYPE.EVENT_SUBPROCESS]: Styled[TYPE.EVENT_SUBPROCESS]
 };
 
 function getFlowNodeTypeIcon({elementType, eventType, multiInstanceType}) {

@@ -48,6 +48,8 @@ import {ReactComponent as FlowNodeEventTimerStart} from 'modules/components/Icon
 import {ReactComponent as FlowNodeEventTimerBoundaryInterrupting} from 'modules/components/Icon/flow-node-event-timer-boundary-interrupting.svg';
 import {ReactComponent as FlowNodeEventTimerBoundaryNonInerrupting} from 'modules/components/Icon/flow-node-event-timer-boundary-non-interrupting.svg';
 
+import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flownode-event-subprocess.svg';
+
 const newIconStyle = css`
   position: relative;
   color: ${themeStyle({
@@ -159,6 +161,14 @@ export const EVENT_MESSAGE_START = themed(styled(FlowNodeEventMessageStart)`
 `);
 
 export const EVENT_MESSAGE_END = themed(styled(FlowNodeEventMessageEnd)`
+  ${newIconStyle}
+`);
+
+/**
+ * Other Icons
+ */
+
+export const EVENT_SUBPROCESS = themed(styled(FlowNodeEventSubprocess)`
   ${newIconStyle}
 `);
 

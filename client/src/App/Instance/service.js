@@ -23,12 +23,17 @@ function getEventType(bpmnElement) {
 }
 
 function getElementType(bpmnElement) {
-  if (bpmnElement.$type === 'bpmn:BoundaryEvent') {
-    return bpmnElement.cancelActivity === false
+  const {$type: type, cancelActivity, triggeredByEvent} = bpmnElement;
+
+  if (type === 'bpmn:SubProcess' && triggeredByEvent) {
+    return TYPE.EVENT_SUBPROCESS;
+  }
+  if (type === 'bpmn:BoundaryEvent') {
+    return cancelActivity === false
       ? TYPE.EVENT_BOUNDARY_NON_INTERURPTING
       : TYPE.EVENT_BOUNDARY_INTERRUPTING;
   } else {
-    return FLOWNODE_TYPE_HANDLE[bpmnElement.$type];
+    return FLOWNODE_TYPE_HANDLE[type];
   }
 }
 
