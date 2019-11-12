@@ -227,8 +227,7 @@ concepts of Zeebe, see the [Basics chapter](/basics/README.html) of the
 documentation.
 
 In the [BPMN Workflows chapter](/bpmn-workflows/README.html) you can find an
-introduction to creating Workflows with BPMN. And the [BPMN Modeler
-chapter](/bpmn-modeler/README.html) shows you how to model them by yourself.
+introduction to creating Workflows with BPMN.
 
 The documentation also provides getting started guides for implementing job
 workers using [Java](/java-client/README.html) or [Go](/go-client/README.html).
