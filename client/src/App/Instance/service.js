@@ -30,7 +30,7 @@ function getElementType(bpmnElement) {
   }
   if (type === 'bpmn:BoundaryEvent') {
     return cancelActivity === false
-      ? TYPE.EVENT_BOUNDARY_NON_INTERURPTING
+      ? TYPE.EVENT_BOUNDARY_NON_INTERRUPTING
       : TYPE.EVENT_BOUNDARY_INTERRUPTING;
   } else {
     return FLOWNODE_TYPE_HANDLE[type];
