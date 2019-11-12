@@ -95,6 +95,18 @@ export const TD = themed(styled.td`
   }
 `);
 
+export const SkeletonTD = styled.td`
+  padding-top: 44px;
+`;
+
+export const SkeletonTR = styled.tr``;
+
+export const SkeletonTable = styled(Table)`
+  height: 100%;
+  /* overflow: hidden; */
+  /* padding-bottom: 44px; */
+`;
+
 const rowWithActiveOperationStyle = css`
   background-color: ${themeStyle({
     dark: 'rgba(91, 94, 99, 0.4)',
@@ -133,6 +145,7 @@ export const TR = themed(styled.tr`
   ${({hasActiveOperation}) =>
     !hasActiveOperation ? '' : rowWithActiveOperationStyle};
 `);
+
 export const THead = themed(styled.thead`
   tr:first-child {
     position: absolute;

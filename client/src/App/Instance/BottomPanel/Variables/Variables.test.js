@@ -10,7 +10,7 @@ import {mount} from 'enzyme';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createVariables} from 'modules/testUtils';
 
-import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
+import Skeleton from '../VariablePanel/Skeleton';
 import Variables from './Variables';
 
 const MODE = {
@@ -64,22 +64,10 @@ describe('Variables', () => {
     });
   });
 
-  describe('Messages', () => {
-    it('should render proper message for non existing variables', () => {
-      // given
-      const node = mountNode({variables: null});
+  it('should render skeleton', () => {
+    const node = mountNode({variables: []});
 
-      // then
-      expect(node.contains(NULL_PLACEHOLDER)).toBe(true);
-    });
-
-    it('should render proper message for empty variables', () => {
-      // given
-      const node = mountNode({variables: []});
-
-      // then
-      expect(node.contains(EMPTY_PLACEHOLDER)).toBe(true);
-    });
+    expect(node.find(Skeleton)).toExist();
   });
 
   describe('Disable "Add Variable" button', () => {

@@ -9,8 +9,6 @@ import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
 
-import {EMPTY_PLACEHOLDER, NULL_PLACEHOLDER} from './constants';
-
 import * as Styled from './styled';
 
 export default function Variables({
@@ -19,7 +17,10 @@ export default function Variables({
   editMode,
   onVariableUpdate,
   isEditable,
-  setEditMode
+  setEditMode,
+  Placeholder,
+  Overlay,
+  ...props
 }) {
   const MODE = {EDIT: 'edit', ADD: 'add'};
 
@@ -135,68 +136,87 @@ export default function Variables({
     );
   }
 
-  return (
-    <Styled.Variables>
-      <Styled.VariablesContent ref={variablesContentRef}>
-        {!editMode && (!variables || !variables.length) ? (
-          <Styled.Placeholder>
-            {!variables ? NULL_PLACEHOLDER : EMPTY_PLACEHOLDER}
-          </Styled.Placeholder>
-        ) : (
-          <Styled.TableScroll>
-            <Styled.Table>
-              <Styled.THead>
-                <Styled.TR>
-                  <Styled.TH>Variable</Styled.TH>
-                  <Styled.TH>Value</Styled.TH>
-                  <Styled.TH />
-                </Styled.TR>
-              </Styled.THead>
-              <tbody>
-                {variables.map(
-                  ({name, value: propValue, hasActiveOperation}) => (
-                    <Styled.TR
-                      key={name}
-                      data-test={name}
-                      hasActiveOperation={hasActiveOperation}
-                    >
-                      <Styled.TD isBold={true}>
-                        <Styled.VariableName>{name}</Styled.VariableName>
+  function renderContent() {
+    return (
+      <Styled.TableScroll>
+        <Styled.Table>
+          <Styled.THead>
+            <Styled.TR>
+              <Styled.TH>Variable</Styled.TH>
+              <Styled.TH>Value</Styled.TH>
+              <Styled.TH />
+            </Styled.TR>
+          </Styled.THead>
+          <tbody>
+            {variables &&
+              variables.map(({name, value: propValue, hasActiveOperation}) => (
+                <Styled.TR
+                  key={name}
+                  data-test={name}
+                  hasActiveOperation={hasActiveOperation}
+                >
+                  <Styled.TD isBold={true}>
+                    <Styled.VariableName>{name}</Styled.VariableName>
+                  </Styled.TD>
+                  {key === name && editMode === MODE.EDIT && isRunning ? (
+                    renderInlineEdit(propValue, name)
+                  ) : (
+                    <>
+                      <Styled.TD>
+                        <Styled.DisplayText>{propValue}</Styled.DisplayText>
                       </Styled.TD>
-                      {key === name && editMode === MODE.EDIT && isRunning ? (
-                        renderInlineEdit(propValue, name)
-                      ) : (
-                        <>
-                          <Styled.TD>
-                            <Styled.DisplayText>{propValue}</Styled.DisplayText>
-                          </Styled.TD>
-                          {isRunning && (
-                            <Styled.EditButtonsTD>
-                              {hasActiveOperation ? (
-                                <Styled.Spinner />
-                              ) : (
-                                <Styled.EditButton
-                                  title="Enter edit mode"
-                                  data-test="enter-edit-btn"
-                                  onClick={() =>
-                                    handleOpenEditVariable(name, propValue)
-                                  }
-                                >
-                                  <Styled.EditIcon />
-                                </Styled.EditButton>
-                              )}
-                            </Styled.EditButtonsTD>
+                      {isRunning && (
+                        <Styled.EditButtonsTD>
+                          {hasActiveOperation ? (
+                            <Styled.Spinner />
+                          ) : (
+                            <Styled.EditButton
+                              title="Enter edit mode"
+                              data-test="enter-edit-btn"
+                              onClick={() =>
+                                handleOpenEditVariable(name, propValue)
+                              }
+                            >
+                              <Styled.EditIcon />
+                            </Styled.EditButton>
                           )}
-                        </>
+                        </Styled.EditButtonsTD>
                       )}
-                    </Styled.TR>
-                  )
-                )}
-                {editMode === MODE.ADD && renderInlineAdd()}
-              </tbody>
-            </Styled.Table>
-          </Styled.TableScroll>
-        )}
+                    </>
+                  )}
+                </Styled.TR>
+              ))}
+            {editMode === MODE.ADD && renderInlineAdd()}
+          </tbody>
+        </Styled.Table>
+      </Styled.TableScroll>
+    );
+  }
+
+  function renderPlaceholder() {
+    return (
+      <Styled.SkeletonTable>
+        <Styled.THead>
+          <Styled.TR>
+            <Styled.TH>Variable</Styled.TH>
+            <Styled.TH>Value</Styled.TH>
+            <Styled.TH />
+          </Styled.TR>
+        </Styled.THead>
+        <tbody>
+          <Styled.SkeletonTR>
+            <Styled.SkeletonTD>{Placeholder()}</Styled.SkeletonTD>
+          </Styled.SkeletonTR>
+        </tbody>
+      </Styled.SkeletonTable>
+    );
+  }
+
+  return (
+    <>
+      <Styled.VariablesContent ref={variablesContentRef}>
+        {Overlay && Overlay()}
+        {!editMode && Placeholder ? renderPlaceholder() : renderContent()}
       </Styled.VariablesContent>
       <Styled.VariablesFooter>
         <Styled.Button
@@ -204,12 +224,12 @@ export default function Variables({
           size="small"
           data-test="enter-add-btn"
           onClick={() => handleOpenAddVariable()}
-          disabled={!!editMode || !isEditable}
+          disabled={!!editMode || !isEditable || props.isLoading}
         >
           <Styled.Plus /> Add Variable
         </Styled.Button>
       </Styled.VariablesFooter>
-    </Styled.Variables>
+    </>
   );
 }
 
@@ -219,5 +239,8 @@ Variables.propTypes = {
   editMode: PropTypes.string.isRequired,
   isEditable: PropTypes.bool.isRequired,
   onVariableUpdate: PropTypes.func.isRequired,
-  setEditMode: PropTypes.func.isRequired
+  setEditMode: PropTypes.func.isRequired,
+  // render props
+  Placeholder: PropTypes.func,
+  Overlay: PropTypes.func
 };
