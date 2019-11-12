@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 
 @Getter
 @Setter
-public class SimpleEventDto implements Serializable,OptimizeDto {
+public class SimpleEventDto implements Serializable, OptimizeDto {
 
   protected String id;
   protected String activityId;

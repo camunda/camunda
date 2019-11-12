@@ -30,12 +30,12 @@ public class EnginePluginClient {
   @SneakyThrows
   public void deployEngine(final String engineName) {
     log.info("Deploying engine with name {}", engineName);
-    final HttpPost purgeRequest = new HttpPost(
+    final HttpPost deployRequest = new HttpPost(
       new URIBuilder(ENGINE_IT_PLUGIN_ENDPOINT + DEPLOY_PATH)
         .addParameter("name", engineName)
         .build()
     );
-    try (CloseableHttpResponse response = httpClient.execute(purgeRequest)) {
+    try (CloseableHttpResponse response = httpClient.execute(deployRequest)) {
       final int statusCode = response.getStatusLine().getStatusCode();
       switch (statusCode) {
         case HttpServletResponse.SC_OK:

@@ -19,6 +19,7 @@ import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.EventBasedProcessIndex;
 import org.camunda.optimize.service.es.schema.index.EventIndex;
 import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
@@ -125,6 +126,7 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeStep(removeDocumentsForImportIndexWithId("processDefinitionXmlImportIndex"))
       .addUpgradeStep(movePrivateProcessReportsWithAlertsToAlertArchiveCollection())
       .addUpgradeStep(movePrivateDecisionReportsWithAlertsToAlertArchiveCollection())
+      .addUpgradeStep(new CreateIndexStep(new EventBasedProcessIndex()))
       .build();
   }
 

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.persistence.EventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -906,6 +907,39 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildCreateEventBasedProcessRequest(EventBasedProcessDto eventBasedProcessDto) {
+    this.path = "eventBasedProcess/";
+    this.body = getBody(eventBasedProcessDto);
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetEventBasedProcessRequest(String eventBasedProcessId) {
+    this.path = "eventBasedProcess/" + eventBasedProcessId;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetAllEventBasedProcessRequests() {
+    this.path = "eventBasedProcess";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateEventBasedProcessRequest(String eventBasedProcessId,
+                                                                     EventBasedProcessDto eventBasedProcessDto) {
+    this.path = "eventBasedProcess/" + eventBasedProcessId;
+    this.body = getBody(eventBasedProcessDto);
+    this.requestType = PUT;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteEventBasedProcessRequest(String eventBasedProcessId) {
+    this.path = "eventBasedProcess/" + eventBasedProcessId;
+    this.requestType = DELETE;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetScopeForCollectionRequest(final String collectionId) {
     this.path = "collection/" + collectionId + "/scope";
     this.requestType = GET;
@@ -951,13 +985,6 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildCopyCollectionRequest(String collectionId) {
     this.path = "/collection/" + collectionId + "/copy";
     this.requestType = POST;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildCopyCollectionRequest(String collectionId, String newName) {
-    this.path = "/collection/" + collectionId + "/copy";
-    this.requestType = POST;
-    this.addSingleQueryParam("name", newName);
     return this;
   }
 

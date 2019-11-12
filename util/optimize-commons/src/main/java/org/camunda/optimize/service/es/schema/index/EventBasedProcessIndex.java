@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.persistence.EventBasedProcessDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -14,12 +14,12 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-public class EventIndex extends StrictIndexMappingCreator {
+public class EventBasedProcessIndex extends StrictIndexMappingCreator {
   public static final int VERSION = 1;
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.EVENT_INDEX_NAME;
+    return ElasticsearchConstants.EVENT_BASED_PROCESS_INDEX_NAME;
   }
 
   @Override
@@ -31,31 +31,16 @@ public class EventIndex extends StrictIndexMappingCreator {
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(EventDto.Fields.id.name())
+      .startObject(EventBasedProcessDto.Fields.id.name())
         .field("type", "keyword")
       .endObject()
-      .startObject(EventDto.Fields.eventName.name())
+      .startObject(EventBasedProcessDto.Fields.name.name())
         .field("type", "keyword")
       .endObject()
-      .startObject(EventDto.Fields.traceId.name())
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EventDto.Fields.timestamp.name())
-        .field("type", "date")
-      .endObject()
-      .startObject(EventDto.Fields.duration.name())
-        .field("type", "long")
-      .endObject()
-      .startObject(EventDto.Fields.group.name())
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EventDto.Fields.source.name())
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EventDto.Fields.data.name())
-        .field("enabled", false)
-      .endObject()
-      ;
+      .startObject(EventBasedProcessDto.Fields.xml.name())
+        .field("type", "text")
+        .field("index", false)
+      .endObject();
     // @formatter:on
   }
 
