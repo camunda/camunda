@@ -12,6 +12,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
@@ -25,6 +26,7 @@ import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRes
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -35,6 +37,7 @@ import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public class CollectionRestServiceScopeIT extends AbstractIT {
 
@@ -170,7 +173,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   }
 
   @Test
-  public void updateDefinitionScopeEntry() {
+  public void updateDefinitionScopeEntry_addTenant() {
     // given
     final String collectionId = createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
@@ -178,12 +181,82 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // when
     final String tenant1 = "tenant1";
+    addTenantToElasticsearch(tenant1);
     entry.setTenants(Lists.newArrayList(null, tenant1));
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(entry))
       .execute(204);
 
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    // then
+    ResolvedCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
+
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(
+        scopeEntryDto -> assertThat(scopeEntryDto.getTenants()).containsExactly(null, tenant1)
+      );
+  }
+
+  @Test
+  public void updateDefinitionScopeEntry_removeTenant() {
+    // given
+    final String collectionId = createNewCollection();
+    final String tenant = "tenant";
+    addTenantToElasticsearch(tenant);
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    entry.getTenants().add(tenant);
+    final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
+
+    // when
+    entry.setTenants(Collections.singletonList(null));
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(entry))
+      .execute(204);
+
+    // then
+    ResolvedCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
+
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(
+        scopeEntryDto -> assertThat(scopeEntryDto.getTenants()).containsExactly((String) null)
+      );
+  }
+
+  @Test
+  public void updateUnknownScopeThrowsNotFound() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    addScopeEntryToCollection(collectionId, entry);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(collectionId, "fooScopeId", new CollectionScopeEntryUpdateDto(entry))
+      .execute();
+
+    // then not found is thrown
+    assertThat(response.getStatus()).isEqualTo(404);
+  }
+
+  @Test
+  public void updateUnknownTenantsAreFilteredOut() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
+
+    // when
+    final String tenant1 = "tenant1";
+    addTenantToElasticsearch(tenant1);
+    entry.setTenants(Lists.newArrayList(null, tenant1, "fooTenant"));
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(entry))
+      .execute(204);
 
     // then
     ResolvedCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
@@ -275,8 +348,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .execute(404);
   }
 
-  private DecisionDefinitionOptimizeDto addDecisionDefinitionToElasticsearch(final String key,
-                                                                             final String name) {
+  private void addDecisionDefinitionToElasticsearch(final String key,
+                                                    final String name) {
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
       .id(key)
       .key(key)
@@ -287,11 +360,10 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
     );
-    return decisionDefinitionDto;
   }
 
-  private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
-                                                                           final String name) {
+  private void addProcessDefinitionToElasticsearch(final String key,
+                                                   final String name) {
     final ProcessDefinitionOptimizeDto expectedDto = ProcessDefinitionOptimizeDto.builder()
       .id(key)
       .key(key)
@@ -302,7 +374,6 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       PROCESS_DEFINITION_INDEX_NAME, expectedDto.getId(), expectedDto
     );
-    return expectedDto;
   }
 
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey) {
@@ -310,7 +381,9 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   }
 
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
-    return new CollectionScopeEntryDto(definitionType, definitionKey, Collections.singletonList(null));
+    List<String> tenants = new ArrayList<>();
+    tenants.add(null);
+    return new CollectionScopeEntryDto(definitionType, definitionKey, tenants);
   }
 
   private String addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
@@ -341,5 +414,10 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  private void addTenantToElasticsearch(final String tenantId) {
+    TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 }

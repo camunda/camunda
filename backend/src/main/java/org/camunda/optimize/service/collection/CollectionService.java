@@ -13,48 +13,35 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.IdentityService;
-import org.camunda.optimize.service.alert.AlertService;
-import org.camunda.optimize.service.dashboard.DashboardService;
-import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
-import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -64,10 +51,6 @@ public class CollectionService {
 
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
-  private final ReportService reportService;
-  private final ReportReader reportReader;
-  private final AlertService alertService;
-  private final DashboardService dashboardService;
   private final CollectionRelationService collectionRelationService;
   private final AuthorizedEntitiesService entitiesService;
   private final IdentityService identityService;
@@ -84,26 +67,6 @@ public class CollectionService {
     );
     enrichRoleIdentityMetaData(simpleCollectionDefinition.getDefinitionDto());
     return simpleCollectionDefinition;
-  }
-
-  public IdDto copyCollection(String userId, String collectionId, String newCollectionName) {
-    AuthorizedSimpleCollectionDefinitionDto simpleAuthorizedCollectionDefinition = authorizedCollectionService
-      .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-
-    ResolvedCollectionDefinitionDto collectionDefinitionDto =
-      getResolvedCollectionDefinition(userId, simpleAuthorizedCollectionDefinition).getDefinitionDto();
-
-    IdDto newCollectionId = createNewCollectionAndReturnId(
-      userId,
-      new PartialCollectionDefinitionDto(
-        newCollectionName != null ? newCollectionName : collectionDefinitionDto.getName() + " – Copy"
-      )
-    );
-
-    copyCollectionScope(userId, collectionDefinitionDto, newCollectionId);
-    copyCollectionPermissions(userId, collectionDefinitionDto, newCollectionId);
-    copyCollectionEntities(userId, collectionDefinitionDto, newCollectionId);
-    return newCollectionId;
   }
 
   public AuthorizedResolvedCollectionDefinitionDto getResolvedCollectionDefinition(final String userId,
@@ -157,45 +120,6 @@ public class CollectionService {
     return new ConflictResponseDto(getConflictedItemsForDelete(userId, collectionId));
   }
 
-  public CollectionScopeEntryDto addScopeEntryToCollection(String userId,
-                                                           String collectionId,
-                                                           CollectionScopeEntryDto entryDto)
-    throws OptimizeConflictException {
-    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    return collectionWriter.addScopeEntryToCollection(collectionId, entryDto, userId);
-  }
-
-  public void removeScopeEntry(String userId, String collectionId, String scopeEntryId)
-    throws NotFoundException, OptimizeConflictException {
-    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-
-    List<ReportDefinitionDto> entities = reportReader.findReportsForCollectionOmitXml(collectionId);
-    CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
-
-    List<ReportDefinitionDto> conflictedItems = entities.stream()
-      .filter(report -> report.getData() instanceof SingleReportDataDto)
-      .filter(report ->
-                ((SingleReportDataDto) report.getData()).getDefinitionKey().equals(scopeEntry.getDefinitionKey())
-                  && report.getReportType().toString().equalsIgnoreCase(scopeEntry.getDefinitionType().getId()))
-      .collect(Collectors.toList());
-
-    if (conflictedItems.size() == 0) {
-      collectionWriter.removeScopeEntry(collectionId, scopeEntryId, userId);
-    } else {
-      throw new OptimizeConflictException(
-        conflictedItems.stream().map(this::reportToConflictedItem).collect(Collectors.toSet())
-      );
-    }
-  }
-
-  public void updateScopeEntry(String userId,
-                               String collectionId,
-                               CollectionScopeEntryUpdateDto entryDto,
-                               String scopeEntryId) {
-    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    collectionWriter.updateScopeEntity(collectionId, entryDto, userId, scopeEntryId);
-  }
-
   public List<CollectionRoleDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
     List<CollectionRoleDto> roles = getSimpleCollectionDefinitionWithRoleMetadata(
       userId,
@@ -231,82 +155,11 @@ public class CollectionService {
     collectionWriter.removeRoleFromCollection(collectionId, roleEntryId, userId);
   }
 
-  private AuthorizedResolvedCollectionDefinitionDto getResolvedCollectionDefinition(
-    final String userId,
-    final AuthorizedSimpleCollectionDefinitionDto simpleCollectionDefinitionDto
-  ) {
-    return mapToResolvedCollection(
-      simpleCollectionDefinitionDto,
-      entitiesService.getAuthorizedCollectionEntities(userId, simpleCollectionDefinitionDto.getDefinitionDto().getId())
-    );
-  }
+
 
   private AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
                                                                                 final String collectionId) {
     return authorizedCollectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
-  }
-
-  private void copyCollectionEntities(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
-                                      IdDto newCollectionId) {
-    final Map<String, String> uniqueReportCopies = new ConcurrentHashMap<>();
-
-    collectionDefinitionDto.getData().getEntities().forEach(e -> {
-      switch (e.getEntityType()) {
-        case REPORT:
-          uniqueReportCopies.computeIfAbsent(
-            e.getId(),
-            id -> reportService.copyAndMoveReport(
-              id,
-              userId,
-              newCollectionId.getId(),
-              e.getName(),
-              uniqueReportCopies,
-              true
-            )
-              .getId()
-          );
-          alertService.copyAndMoveAlerts(e.getId(), uniqueReportCopies.get(e.getId()));
-          break;
-        case DASHBOARD:
-          dashboardService.copyAndMoveDashboard(
-            e.getId(),
-            userId,
-            newCollectionId.getId(),
-            e.getName(),
-            uniqueReportCopies,
-            true
-          );
-          break;
-        default:
-          throw new OptimizeRuntimeException("You can't copy a " + e.getEntityType()
-            .toString()
-            .toLowerCase() + " to a collection");
-      }
-    });
-  }
-
-  private void copyCollectionPermissions(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
-                                         IdDto newCollectionId) {
-    collectionDefinitionDto.getData().getRoles().forEach(r -> {
-      try {
-        if (!r.getIdentity().getId().equals(userId)) {
-          addRoleToCollection(userId, newCollectionId.getId(), new CollectionRoleDto(r));
-        }
-      } catch (OptimizeConflictException e) {
-        log.error(e.getMessage());
-      }
-    });
-  }
-
-  private void copyCollectionScope(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
-                                   IdDto newCollectionId) {
-    collectionDefinitionDto.getData().getScope().forEach(e -> {
-      try {
-        addScopeEntryToCollection(userId, newCollectionId.getId(), new CollectionScopeEntryDto(e));
-      } catch (OptimizeConflictException ex) {
-        log.error(ex.getMessage());
-      }
-    });
   }
 
   public List<AuthorizedSimpleCollectionDefinitionDto> getAllSimpleCollectionDefinitions(final String userId) {
@@ -360,15 +213,7 @@ public class CollectionService {
     );
   }
 
-  private ConflictedItemDto reportToConflictedItem(CollectionEntity collectionEntity) {
-    return new ConflictedItemDto(
-      collectionEntity.getId(),
-      ConflictedItemType.REPORT,
-      collectionEntity.getName()
-    );
-  }
-
-  private AuthorizedResolvedCollectionDefinitionDto mapToResolvedCollection(
+  public AuthorizedResolvedCollectionDefinitionDto mapToResolvedCollection(
     final AuthorizedSimpleCollectionDefinitionDto authorizedCollectionDto,
     final Collection<EntityDto> collectionEntities) {
 

@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.service.collection.CollectionCopyService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
@@ -53,6 +54,7 @@ public class CollectionRestService {
   private final CollectionScopeService collectionScopeService;
   private final SessionService sessionService;
   private final ReportService reportService;
+  private final CollectionCopyService collectionCopyService;
 
   /**
    * Creates a new collection.
@@ -133,7 +135,7 @@ public class CollectionRestService {
                              @PathParam("id") String collectionId,
                              @NotNull CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final CollectionScopeEntryDto scopeEntryDto = collectionService.addScopeEntryToCollection(
+    final CollectionScopeEntryDto scopeEntryDto = collectionScopeService.addScopeEntryToCollection(
       userId, collectionId, entryDto
     );
     return new IdDto(scopeEntryDto.getId());
@@ -147,7 +149,7 @@ public class CollectionRestService {
                                                                                       NotFoundException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    collectionService.removeScopeEntry(userId, collectionId, scopeEntryId);
+    collectionScopeService.removeScopeEntry(userId, collectionId, scopeEntryId);
   }
 
   @PUT
@@ -158,7 +160,7 @@ public class CollectionRestService {
                                @NotNull CollectionScopeEntryUpdateDto entryDto,
                                @PathParam("scopeEntryId") String scopeEntryId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.updateScopeEntry(userId, collectionId, entryDto, scopeEntryId);
+    collectionScopeService.updateScopeEntry(userId, collectionId, entryDto, scopeEntryId);
   }
 
   @GET
@@ -213,7 +215,7 @@ public class CollectionRestService {
                               @PathParam("id") String collectionId,
                               @QueryParam("name") String newCollectionName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.copyCollection(userId, collectionId, newCollectionName);
+    return collectionCopyService.copyCollection(userId, collectionId, newCollectionName);
   }
 
   @DELETE
