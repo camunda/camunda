@@ -87,7 +87,7 @@ public class OptimizeProcessCleanupService implements OptimizeCleanupService {
   }
 
   private Set<String> getAllOptimizeProcessDefinitionKeys() {
-    return processDefinitionReader.getFullyImportedProcessDefinitions(false)
+    return processDefinitionReader.getProcessDefinitions(false, false)
       .stream()
       .map(ProcessDefinitionOptimizeDto::getKey)
       .collect(Collectors.toSet());

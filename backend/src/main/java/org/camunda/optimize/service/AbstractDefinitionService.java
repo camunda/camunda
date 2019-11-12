@@ -7,6 +7,7 @@ package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
@@ -28,14 +29,54 @@ abstract class AbstractDefinitionService {
   protected DefinitionAuthorizationService definitionAuthorizationService;
 
   List<DefinitionAvailableVersionsWithTenants> createDefinitionsWithAvailableVersionsAndTenants(
-    final String userId,
-    final List<? extends DefinitionOptimizeDto> definitions) {
+    @NonNull final String userId,
+    @NonNull final List<? extends DefinitionOptimizeDto> definitions) {
+    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions, null);
+  }
+
+  List<DefinitionAvailableVersionsWithTenants> createDefinitionsWithAvailableVersionsAndTenants(
+    @NonNull final String userId,
+    @NonNull final List<? extends DefinitionOptimizeDto> definitions,
+    final Map<String, List<String>> scopeKeysAndTenants) {
 
     final Map<String, Map<String, InternalDefinitionVersionWithTenants>> byKeyMap = groupDefinitionsByKeyAndVersion(
       userId, definitions
     );
 
-    return mapToAvailableDefinitionVersionsWithTenants(byKeyMap);
+    List<DefinitionAvailableVersionsWithTenants> definitionAvailableVersionsWithTenants =
+      mapToAvailableDefinitionVersionsWithTenants(byKeyMap);
+
+    if (scopeKeysAndTenants != null) {
+      // we have to filter as for shared definitions by default all tenants are available in the result
+      definitionAvailableVersionsWithTenants = filterDefinitionAvailableVersionsWithTenantsByKeysAndTenants(
+        definitionAvailableVersionsWithTenants, scopeKeysAndTenants
+      );
+    }
+
+    return definitionAvailableVersionsWithTenants;
+  }
+
+  private List<DefinitionAvailableVersionsWithTenants> filterDefinitionAvailableVersionsWithTenantsByKeysAndTenants(
+    final List<DefinitionAvailableVersionsWithTenants> definitionsWithAvailableVersionsAndTenants,
+    final Map<String, List<String>> collectionScope) {
+    return definitionsWithAvailableVersionsAndTenants
+      .stream()
+      .peek(entry -> {
+        final List<String> scopeTenantIdsForDefinitionKey = collectionScope.get(entry.getKey());
+        entry.setAllTenants(
+          entry.getAllTenants().stream()
+            .filter(tenantDto -> scopeTenantIdsForDefinitionKey.contains(tenantDto.getId()))
+            .collect(Collectors.toList())
+        );
+        entry.getVersions().forEach(versionEntry -> {
+          versionEntry.setTenants(
+            versionEntry.getTenants().stream()
+              .filter(tenantDto -> scopeTenantIdsForDefinitionKey.contains(tenantDto.getId()))
+              .collect(Collectors.toList())
+          );
+        });
+      })
+      .collect(Collectors.toList());
   }
 
   private Map<String, Map<String, InternalDefinitionVersionWithTenants>> groupDefinitionsByKeyAndVersion(

@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -19,7 +18,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.ScriptSortBuilder;
@@ -31,6 +30,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -44,8 +44,11 @@ import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.co
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -67,7 +70,7 @@ public class ProcessDefinitionReader {
 
     final String validVersion =
       convertToValidVersion(processDefinitionKey, processDefinitionVersion, this::getLatestVersionToKey);
-    final BoolQueryBuilder query = QueryBuilders.boolQuery()
+    final BoolQueryBuilder query = boolQuery()
       .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
       .must(termQuery(PROCESS_DEFINITION_VERSION, validVersion))
       .must(existsQuery(PROCESS_DEFINITION_XML));
@@ -124,7 +127,7 @@ public class ProcessDefinitionReader {
       return Optional.empty();
     }
 
-    final BoolQueryBuilder query = QueryBuilders.boolQuery()
+    final BoolQueryBuilder query = boolQuery()
       .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
       .must(termQuery(ENGINE, engineAlias));
 
@@ -157,33 +160,40 @@ public class ProcessDefinitionReader {
     return Optional.ofNullable(processDefinitionOptimizeDto);
   }
 
-  public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitions(final boolean withXml) {
-    final String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionIndex.PROCESS_DEFINITION_XML};
+  public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitionsForScope(
+    final boolean withXml,
+    final Map<String, List<String>> keysAndTenants) {
 
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(QueryBuilders.existsQuery(ProcessDefinitionIndex.PROCESS_DEFINITION_XML))
-      .size(LIST_FETCH_LIMIT)
-      .fetchSource(null, fieldsToExclude);
-    final SearchRequest searchRequest =
-      new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
-        .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
-
-    final SearchResponse scrollResp;
-    try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      log.error("Was not able to retrieve process definitions!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve process definitions!", e);
+    if (keysAndTenants.isEmpty()) {
+      return Collections.emptyList();
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
-      scrollResp,
-      ProcessDefinitionOptimizeDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticsearchScrollTimeout()
-    );
+    final BoolQueryBuilder scopeQuery = boolQuery().minimumShouldMatch(1);
+    keysAndTenants.forEach((key, tenants) -> {
+      final Object[] nonNullTenants = tenants.stream().filter(Objects::nonNull).toArray();
+      final BoolQueryBuilder tenantsQuery = boolQuery().minimumShouldMatch(1);
+      if (nonNullTenants.length > 0) {
+        tenantsQuery.should(termsQuery(TENANT_ID, nonNullTenants));
+      }
+      if (nonNullTenants.length < tenants.size()) {
+        tenantsQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
+      }
+      final BoolQueryBuilder definitionAndTenantsQuery = boolQuery()
+        .must(termQuery(PROCESS_DEFINITION_KEY, key))
+        .must(tenantsQuery);
+      scopeQuery.should(definitionAndTenantsQuery);
+    });
+
+    return fetchProcessDefinitions(true, withXml, scopeQuery);
+  }
+
+  public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitions(final boolean withXml) {
+    return getProcessDefinitions(true, withXml);
+  }
+
+  public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(final boolean fullyImported,
+                                                                  final boolean withXml) {
+    return fetchProcessDefinitions(fullyImported, withXml, matchAllQuery());
   }
 
   public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionIfAvailable(
@@ -239,6 +249,40 @@ public class ProcessDefinitionReader {
 
     }
     throw new OptimizeRuntimeException("Unable to retrieve latest version for process definition key: " + key);
+  }
+
+  private List<ProcessDefinitionOptimizeDto> fetchProcessDefinitions(final boolean fullyImported,
+                                                                     final boolean withXml,
+                                                                     final QueryBuilder query) {
+    final BoolQueryBuilder rootQuery = boolQuery().must(
+      fullyImported ? existsQuery(PROCESS_DEFINITION_XML) : matchAllQuery()
+    );
+    rootQuery.must(query);
+    final String[] fieldsToExclude = withXml ? null : new String[]{PROCESS_DEFINITION_XML};
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(rootQuery)
+      .size(LIST_FETCH_LIMIT)
+      .fetchSource(null, fieldsToExclude);
+    final SearchRequest searchRequest =
+      new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    final SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      log.error("Was not able to retrieve process definitions!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve process definitions!", e);
+    }
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      ProcessDefinitionOptimizeDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
   }
 
 }

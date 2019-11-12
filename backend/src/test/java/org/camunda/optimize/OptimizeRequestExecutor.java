@@ -639,8 +639,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants() {
+    return buildGetProcessDefinitionVersionsWithTenants(null);
+  }
+
+  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants(final String collectionId) {
     this.path = "process-definition/definitionVersionsWithTenants";
     this.requestType = GET;
+    addSingleQueryParam("filterByCollectionScope", collectionId);
     return this;
   }
 
@@ -776,8 +781,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetDecisionDefinitionVersionsWithTenants() {
+    return buildGetDecisionDefinitionVersionsWithTenants(null);
+  }
+
+  public OptimizeRequestExecutor buildGetDecisionDefinitionVersionsWithTenants(final String collectionId) {
     this.path = "decision-definition/definitionVersionsWithTenants";
     this.requestType = GET;
+    addSingleQueryParam("filterByCollectionScope", collectionId);
     return this;
   }
 

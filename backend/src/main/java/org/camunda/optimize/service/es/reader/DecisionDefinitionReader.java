@@ -10,7 +10,6 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -31,6 +30,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex.DECISION_DEFINITION_KEY;
@@ -42,9 +42,11 @@ import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.cre
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @AllArgsConstructor
 @Component
@@ -150,39 +152,40 @@ public class DecisionDefinitionReader {
     return Optional.ofNullable(definitionOptimizeDto);
   }
 
+  public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitionsForScope(
+    final boolean withXml,
+    final Map<String, List<String>> keysAndTenants) {
+
+    if (keysAndTenants.isEmpty()) {
+      return Collections.emptyList();
+    }
+
+    final BoolQueryBuilder scopeQuery = boolQuery().minimumShouldMatch(1);
+    keysAndTenants.forEach((key, tenants) -> {
+      final Object[] nonNullTenants = tenants.stream().filter(Objects::nonNull).toArray();
+      final BoolQueryBuilder tenantsQuery = boolQuery().minimumShouldMatch(1);
+      if (nonNullTenants.length > 0) {
+        tenantsQuery.should(termsQuery(TENANT_ID, nonNullTenants));
+      }
+      if (nonNullTenants.length < tenants.size()) {
+        tenantsQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
+      }
+      final BoolQueryBuilder definitionAndTenantsQuery = boolQuery()
+        .must(termQuery(DECISION_DEFINITION_KEY, key))
+        .must(tenantsQuery);
+      scopeQuery.should(definitionAndTenantsQuery);
+    });
+
+    return fetchDecisionDefinitions(true, withXml, scopeQuery);
+  }
+
   public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(final boolean withXml) {
     return getDecisionDefinitions(true, withXml);
   }
 
   public List<DecisionDefinitionOptimizeDto> getDecisionDefinitions(final boolean fullyImported,
                                                                     final boolean withXml) {
-    final String[] fieldsToExclude = withXml ? null : new String[]{DecisionDefinitionIndex.DECISION_DEFINITION_XML};
-
-    final QueryBuilder query = fullyImported ? existsQuery(DECISION_DEFINITION_XML) : matchAllQuery();
-
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(query)
-      .size(LIST_FETCH_LIMIT)
-      .fetchSource(null, fieldsToExclude);
-    final SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
-      .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
-
-    final SearchResponse scrollResp;
-    try {
-      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      log.error("Was not able to retrieve decision definitions!", e);
-      throw new OptimizeRuntimeException("Was not able to retrieve decision definitions!", e);
-    }
-
-    return ElasticsearchHelper.retrieveAllScrollResults(
-      scrollResp,
-      DecisionDefinitionOptimizeDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticsearchScrollTimeout()
-    );
+    return fetchDecisionDefinitions(fullyImported, withXml, matchAllQuery());
   }
 
   private DecisionDefinitionOptimizeDto parseDecisionDefinition(final String responseAsString) {
@@ -232,6 +235,40 @@ public class DecisionDefinitionReader {
 
     }
     throw new OptimizeRuntimeException("Unable to retrieve latest version for decision definition key: " + key);
+  }
+
+  private List<DecisionDefinitionOptimizeDto> fetchDecisionDefinitions(final boolean fullyImported,
+                                                                       final boolean withXml,
+                                                                       final QueryBuilder query) {
+    final BoolQueryBuilder rootQuery = boolQuery().must(
+      fullyImported ? existsQuery(DECISION_DEFINITION_XML) : matchAllQuery()
+    );
+    rootQuery.must(query);
+    final String[] fieldsToExclude = withXml ? null : new String[]{DECISION_DEFINITION_XML};
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(rootQuery)
+      .size(LIST_FETCH_LIMIT)
+      .fetchSource(null, fieldsToExclude);
+    final SearchRequest searchRequest =
+      new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
+        .source(searchSourceBuilder)
+        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+
+    final SearchResponse scrollResp;
+    try {
+      scrollResp = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      log.error("Was not able to retrieve decision definitions!", e);
+      throw new OptimizeRuntimeException("Was not able to retrieve decision definitions!", e);
+    }
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      DecisionDefinitionOptimizeDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
   }
 
 }

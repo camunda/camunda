@@ -16,6 +16,8 @@ import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
+import java.util.AbstractMap;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -37,24 +39,21 @@ public class CollectionScopeService {
     final Map<String, TenantDto> tenantsForUserById = tenantService.getTenantsForUser(userId)
       .stream()
       .collect(Collectors.toMap(TenantDto::getId, tenantDto -> tenantDto));
-    return collectionService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
-      .getDefinitionDto()
-      .getData()
-      .getScope()
+    return getAuthorizedCollectionScopeEntries(userId, collectionId)
       .stream()
       .map(scope -> {
-        final List<TenantDto> authorizedTenantDtos = definitionAuthorizationService
-          .filterAuthorizedTenantsForDefinition(
-            userId, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
-          )
+        final List<TenantDto> authorizedTenantDtos = scope.getTenants()
           .stream()
           .map(tenantsForUserById::get)
           .filter(Objects::nonNull)
           .collect(Collectors.toList());
-        return mapScopeEntryToRestDto(scope, getDefinitionName(userId, scope), authorizedTenantDtos);
+        return new CollectionScopeEntryRestDto()
+          .setId(scope.getId())
+          .setDefinitionKey(scope.getDefinitionKey())
+          .setDefinitionName(getDefinitionName(userId, scope))
+          .setDefinitionType(scope.getDefinitionType())
+          .setTenants(authorizedTenantDtos);
       })
-      // at least one authorized tenant is required for an entry to be included in the result
-      .filter(collectionScopeEntryRestDto -> collectionScopeEntryRestDto.getTenants().size() > 0)
       .sorted(
         Comparator.comparing(CollectionScopeEntryRestDto::getDefinitionType)
           .thenComparing(CollectionScopeEntryRestDto::getDefinitionName)
@@ -62,21 +61,39 @@ public class CollectionScopeService {
       .collect(Collectors.toList());
   }
 
+  public Map<String, List<String>> getAvailableKeysAndTenantsFromCollectionScope(final String userId,
+                                                                                 final String collectionId) {
+    if (collectionId == null) {
+      return Collections.emptyMap();
+    }
+    return getAuthorizedCollectionScopeEntries(userId, collectionId)
+      .stream()
+      .map(scopeEntryDto -> new AbstractMap.SimpleEntry<>(scopeEntryDto.getDefinitionKey(), scopeEntryDto.getTenants()))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
+
+  private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String userId,
+                                                                            final String collectionId) {
+    return collectionService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
+      .getDefinitionDto()
+      .getData()
+      .getScope()
+      .stream()
+      .peek(scope -> scope.setTenants(
+        definitionAuthorizationService
+          .filterAuthorizedTenantsForDefinition(
+            userId, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
+          )
+      ))
+      // at least one authorized tenant is required for an entry to be included in the result
+      .filter(scopeEntryDto -> scopeEntryDto.getTenants().size() > 0)
+      .collect(Collectors.toList());
+  }
+
   private String getDefinitionName(final String userId, final CollectionScopeEntryDto scope) {
     return definitionService.getDefinition(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
       .map(DefinitionWithTenantsDto::getName)
       .orElse(scope.getDefinitionKey());
-  }
-
-  private CollectionScopeEntryRestDto mapScopeEntryToRestDto(final CollectionScopeEntryDto scope,
-                                                             final String scopeDefinitionName,
-                                                             final List<TenantDto> tenantDtos) {
-    return new CollectionScopeEntryRestDto()
-      .setId(scope.getId())
-      .setDefinitionKey(scope.getDefinitionKey())
-      .setDefinitionName(scopeDefinitionName)
-      .setDefinitionType(scope.getDefinitionType())
-      .setTenants(tenantDtos);
   }
 
 }

@@ -10,12 +10,14 @@ package org.camunda.optimize.service;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
+import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -26,12 +28,15 @@ import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.co
 public class ProcessDefinitionService extends AbstractDefinitionService {
 
   private final ProcessDefinitionReader processDefinitionReader;
+  private final CollectionScopeService collectionScopeService;
 
   public ProcessDefinitionService(final TenantService tenantService,
                                   final DefinitionAuthorizationService definitionAuthorizationService,
-                                  final ProcessDefinitionReader processDefinitionReader) {
+                                  final ProcessDefinitionReader processDefinitionReader,
+                                  final CollectionScopeService collectionScopeService) {
     super(tenantService, definitionAuthorizationService);
     this.processDefinitionReader = processDefinitionReader;
+    this.collectionScopeService = collectionScopeService;
   }
 
   public Optional<String> getProcessDefinitionXml(final String userId,
@@ -53,9 +58,9 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   }
 
   public Optional<String> getProcessDefinitionXml(final String userId,
-                                                   final String definitionKey,
-                                                   final String definitionVersion,
-                                                   final String tenantId) {
+                                                  final String definitionKey,
+                                                  final String definitionVersion,
+                                                  final String tenantId) {
     return getProcessDefinitionXmlAsService(definitionKey, definitionVersion, tenantId)
       .map(processDefinitionOptimizeDto -> {
         if (isAuthorizedToReadProcessDefinition(userId, processDefinitionOptimizeDto)) {
@@ -94,10 +99,26 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   }
 
   public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(final String userId) {
-    final List<ProcessDefinitionOptimizeDto> definitions = getFullyImportedProcessDefinitions(userId, false);
+    List<ProcessDefinitionOptimizeDto> definitions = processDefinitionReader
+      .getFullyImportedProcessDefinitions(false);
+
+    definitions = filterAuthorizedProcessDefinitions(userId, definitions);
+
     return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
   }
 
+  public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(final String userId,
+                                                                                              final String collectionId) {
+    final Map<String, List<String>> keysAndTenants = collectionScopeService
+      .getAvailableKeysAndTenantsFromCollectionScope(userId, collectionId);
+
+    List<ProcessDefinitionOptimizeDto> definitions = processDefinitionReader
+      .getFullyImportedProcessDefinitionsForScope(false, keysAndTenants);
+
+    definitions = filterAuthorizedProcessDefinitions(userId, definitions);
+
+    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions, keysAndTenants);
+  }
 
   private List<ProcessDefinitionOptimizeDto> filterAuthorizedProcessDefinitions(
     final String userId,

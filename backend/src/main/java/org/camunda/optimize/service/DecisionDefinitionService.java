@@ -6,15 +6,18 @@
 
 package org.camunda.optimize.service;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
+import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -23,12 +26,15 @@ import java.util.stream.Collectors;
 public class DecisionDefinitionService extends AbstractDefinitionService {
 
   private final DecisionDefinitionReader decisionDefinitionReader;
+  private final CollectionScopeService collectionScopeService;
 
   public DecisionDefinitionService(final TenantService tenantService,
                                    final DefinitionAuthorizationService definitionAuthorizationService,
-                                   final DecisionDefinitionReader decisionDefinitionReader) {
+                                   final DecisionDefinitionReader decisionDefinitionReader,
+                                   final CollectionScopeService collectionScopeService) {
     super(tenantService, definitionAuthorizationService);
     this.decisionDefinitionReader = decisionDefinitionReader;
+    this.collectionScopeService = collectionScopeService;
   }
 
   public Optional<String> getDecisionDefinitionXml(final String userId,
@@ -67,9 +73,26 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
     return definitionsResult;
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(final String userId) {
-    final List<DecisionDefinitionOptimizeDto> definitions = getFullyImportedDecisionDefinitions(userId, false);
+  public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId) {
+    List<DecisionDefinitionOptimizeDto> definitions = decisionDefinitionReader
+      .getFullyImportedDecisionDefinitions(false);
+
+    definitions = filterAuthorizedDecisionDefinitions(userId, definitions);
+
     return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
+  }
+
+  public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId,
+                                                                                               @NonNull final String collectionId) {
+    final Map<String, List<String>> keysAndTenants = collectionScopeService
+      .getAvailableKeysAndTenantsFromCollectionScope(userId, collectionId);
+
+    List<DecisionDefinitionOptimizeDto> definitions = decisionDefinitionReader
+      .getFullyImportedDecisionDefinitionsForScope(false, keysAndTenants);
+
+    definitions = filterAuthorizedDecisionDefinitions(userId, definitions);
+
+    return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions, keysAndTenants);
   }
 
   private List<DecisionDefinitionOptimizeDto> filterAuthorizedDecisionDefinitions(

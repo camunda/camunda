@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.camunda.optimize.rest.mapper.DefinitionVersionsWithTenantsMapper;
 import org.camunda.optimize.rest.providers.CacheRequest;
@@ -27,6 +28,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 
 @AllArgsConstructor
@@ -56,11 +58,16 @@ public class DecisionDefinitionRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Path("/definitionVersionsWithTenants")
   public List<DefinitionVersionsWithTenantsRestDto> getProcessDefinitionVersionsWithTenants(
-    @Context ContainerRequestContext requestContext) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return DefinitionVersionsWithTenantsMapper.mapToDefinitionVersionsWithTenantsRestDto(
-      decisionDefinitionService.getDecisionDefinitionVersionsWithTenants(userId)
-    );
+    @Context final ContainerRequestContext requestContext,
+    @QueryParam("filterByCollectionScope") final String collectionId) {
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final Optional<String> optionalCollectionId = Optional.ofNullable(collectionId);
+
+    final List<DefinitionAvailableVersionsWithTenants> definitionVersionsWithTenants = optionalCollectionId
+      .map(id -> decisionDefinitionService.getDecisionDefinitionVersionsWithTenants(userId, id))
+      .orElseGet(() -> decisionDefinitionService.getDecisionDefinitionVersionsWithTenants(userId));
+
+    return DefinitionVersionsWithTenantsMapper.mapToDefinitionVersionsWithTenantsRestDto(definitionVersionsWithTenants);
   }
 
   /**
