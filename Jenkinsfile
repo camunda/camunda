@@ -9,6 +9,7 @@ pipeline {
         cloud 'zeebe-ci'
         label "zeebe-ci-build_${buildName}"
         defaultContainer 'jnlp'
+        slaveConnectTimeout 600
         yamlFile '.ci/podSpecs/distribution.yml'
       }
     }

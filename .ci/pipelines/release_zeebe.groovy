@@ -9,6 +9,7 @@ pipeline {
             cloud 'zeebe-ci'
             label "zeebe-ci-release_${buildName}"
             defaultContainer 'jnlp'
+            slaveConnectTimeout 600
             yaml '''\
 metadata:
   labels:

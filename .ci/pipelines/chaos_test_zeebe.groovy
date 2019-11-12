@@ -24,6 +24,7 @@ pipeline {
             cloud "${PROJECT}-ci"
             label "${PROJECT}-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
             defaultContainer 'jnlp'
+            slaveConnectTimeout 600
             yaml pythonAgent()
         }
     }
