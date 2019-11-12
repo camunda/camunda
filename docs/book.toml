@@ -15,3 +15,8 @@ enable = true
 level = 0
 
 [output.linkcheck]
+exclude = [ "localhost" ]
+
+# enable the following line to check external links, this will increase
+# the build time
+#follow-web-links = true
