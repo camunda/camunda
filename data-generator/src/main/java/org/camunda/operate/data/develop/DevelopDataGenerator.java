@@ -222,21 +222,16 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         sendMessages("newClientMessage", "{\"clientId\": \"" + random.nextInt(10) + "\"\n}", 1);
 
         //call activity process
-        //some of this instances will have incident on call activity
-        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
-        try {
-          Thread.sleep(500);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-        ZeebeTestUtil.deployWorkflow(client, "develop/calledProcess.bpmn");
-        //these instances must be fine
+        //these instances will have incident on call activity
         workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
       }
 
       if (version == 2) {
         workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "interruptingBoundaryEvent", null));
         workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "nonInterruptingBoundaryEvent", null));
+        //call activity process
+        //these instances must be fine
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
       }
       if (version < 2) {
         workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "prWithSubprocess", null));
@@ -264,6 +259,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     ZeebeTestUtil.deployWorkflow(client, "develop/interruptingBoundaryEvent_v_2.bpmn");
 
     ZeebeTestUtil.deployWorkflow(client, "develop/nonInterruptingBoundaryEvent_v_2.bpmn");
+
+    ZeebeTestUtil.deployWorkflow(client, "develop/calledProcess.bpmn");
 
   }
 
