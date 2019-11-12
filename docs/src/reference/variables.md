@@ -100,7 +100,7 @@ Input/output variable mappings can be used to create new variables or customize 
 
 Variable mappings are defined in the workflow as extension elements under `ioMapping`. Every variable mapping has a `source` and a `target` expression. The *source* expression defines where the value is copied from. The *target* expression defines where the value is copied to. The expressions reference a variable by its name or a nested property of a variable.
 
-If a variable or a nested property of a *target* expression doesn't exist then it is created. But if a variable or a nested property of a *source* expression doesn't exist then an [incident](reference/incidents.html) is created.
+If a variable or a nested property of a *target* expression doesn't exist then it is created. But if a variable or a nested property of a *source* expression doesn't exist then an [incident](/reference/incidents.html) is created.
 
 Example:
 

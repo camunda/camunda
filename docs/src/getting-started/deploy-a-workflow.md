@@ -188,6 +188,6 @@ You should see the workflow model we just deployed – the same model we built i
 
 ![Zeebe Configuration File](/getting-started/img/tutorial-4.0-workflow-in-operate.png)
 
-[**Next Page: Create and Complete Instances >>**](getting-started/create-workflow-instance.html)
+[**Next Page: Create and Complete Instances >>**](/getting-started/create-workflow-instance.html)
 
-[**<< Previous Page: Create a Workflow**](getting-started/create-a-workflow.html)
+[**<< Previous Page: Create a Workflow**](/getting-started/create-a-workflow.html)

@@ -2,7 +2,7 @@
 
 _New to BPMN and want to learn more before moving forward? [This blog post](https://zeebe.io/blog/2018/08/bpmn-for-microservices-orchestration-a-primer-part-1/) helps to explain the standard and why it's a good fit for microservices orchestration._
 
-_In case you're already familiar with BPMN and how to create a BPMN model in Zeebe Modeler, you can find the finished model that we create during the tutorial here: [Zeebe Getting Started Tutorial Workflow Model](getting-started/img/order-process.bpmn)._ 
+_In case you're already familiar with BPMN and how to create a BPMN model in Zeebe Modeler, you can find the finished model that we create during the tutorial here: [Zeebe Getting Started Tutorial Workflow Model](/getting-started/img/order-process.bpmn)._ 
 
 _If you're using the finished model we provide rather than building your own, you can also move ahead to [section 3.3: Deploy a Workflow](/getting-started/deploy-a-workflow.html)._
 
@@ -193,6 +193,6 @@ Here's what you should see in the Modeler after these last few updates:
 
 That's all for our modeling step. Remember to save the file one more time to prepare to deploy the workflow to Zeebe, create workflow instances, and complete them.
 
-[**Next Page: Deploy a Workflow >>**](getting-started/deploy-a-workflow.html)
+[**Next Page: Deploy a Workflow >>**](/getting-started/deploy-a-workflow.html)
 
-[**<< Previous Page: Tutorial Setup**](getting-started/tutorial-setup.html)
+[**<< Previous Page: Tutorial Setup**](/getting-started/tutorial-setup.html)

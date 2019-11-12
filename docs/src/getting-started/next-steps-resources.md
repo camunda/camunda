@@ -21,4 +21,4 @@ Lastly, we do a lot of writing about project news along with an occasional deep 
 
 Thanks so much for working through this tutorial with us. We're really glad you're here, and we're happy to welcome you to the Zeebe community!
 
-[**<< Previous Page: Create and Complete Instances**](getting-started/create-workflow-instance.html)
+[**<< Previous Page: Create and Complete Instances**](/getting-started/create-workflow-instance.html)

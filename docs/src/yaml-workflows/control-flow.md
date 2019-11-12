@@ -80,4 +80,4 @@ In the `switch` element, there is one `case` element per alternative to choose f
 
 ## Additional Resources
 
-* [Conditions](reference/conditions.html)
+* [Conditions](/reference/conditions.html)

@@ -14,18 +14,18 @@ Import the Maven project in the `samples` directory into your IDE to start hacki
 
 ## Workflow
 
-* [Deploy a Workflow](java-client-examples/workflow-deploy.html)
-* [Create a Workflow Instance](java-client-examples/workflow-instance-create.html)
-* [Create Workflow Instances Non-Blocking](java-client-examples/workflow-instance-create-nonblocking.html)
+* [Deploy a Workflow](/java-client-examples/workflow-deploy.html)
+* [Create a Workflow Instance](/java-client-examples/workflow-instance-create.html)
+* [Create Workflow Instances Non-Blocking](/java-client-examples/workflow-instance-create-nonblocking.html)
 
 ## Job
 
-* [Open a Job Worker](java-client-examples/job-worker-open.html)
+* [Open a Job Worker](/java-client-examples/job-worker-open.html)
 
 ## Data
 
-* [Handle variables as POJO](java-client-examples/data-pojo.html)
+* [Handle variables as POJO](/java-client-examples/data-pojo.html)
 
 ## Cluster
 
-* [Request Cluster Topology](java-client-examples/cluster-topology-request.html)
+* [Request Cluster Topology](/java-client-examples/cluster-topology-request.html)

@@ -392,7 +392,7 @@ Hurray! You finished this tutorial and learned the basic usage of the Java clien
 Next steps:
 * Learn more about the [concepts behind Zeebe](/basics/README.html)
 * Learn more about [BPMN workflows](/bpmn-workflows/README.html)
-* Take a deeper look into the [Java client](java-client/README.html)
+* Take a deeper look into the [Java client](/java-client/README.html)
 
 [job worker]: ../basics/job-workers.html
 [zeebe-docker-compose]: https://github.com/zeebe-io/zeebe-docker-compose

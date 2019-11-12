@@ -265,6 +265,6 @@ Hooray! You've completed the tutorial! Congratulations.
 
 In the next and final section, we'll point you to resources we think you'll find helpful as you continue working with Zeebe.
 
-[**Next Page: Next Steps & Resources >>**](getting-started/next-steps-resources.html)
+[**Next Page: Next Steps & Resources >>**](/getting-started/next-steps-resources.html)
 
-[**<< Previous Page: Deploy a Workflow**](getting-started/deploy-a-workflow.html)
+[**<< Previous Page: Deploy a Workflow**](/getting-started/deploy-a-workflow.html)

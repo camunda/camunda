@@ -18,6 +18,6 @@ tasks:
 
 Read more about:
 
-* [Tasks](yaml-workflows/tasks.html)
-* [Control Flow](yaml-workflows/control-flow.html)
-* [Data Flow](yaml-workflows/data-flow.html)
+* [Tasks](/yaml-workflows/tasks.html)
+* [Control Flow](/yaml-workflows/control-flow.html)
+* [Data Flow](/yaml-workflows/data-flow.html)

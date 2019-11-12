@@ -170,6 +170,6 @@ Workflow instance records of an intermediate message catch event:
 </details>
 
 References:
-* [Message Correlation](reference/message-correlation.html)
-* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)
+* [Message Correlation](/reference/message-correlation.html)
+* [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)
 * [Incidents](/reference/incidents.html)

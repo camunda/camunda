@@ -31,5 +31,5 @@ When Zeebe executes a task, it creates a job that is handed to a job worker. The
 
 Related resources:
 
-* [Introduction to Jobs and Job Workers](basics/job-workers.html)
+* [Introduction to Jobs and Job Workers](/basics/job-workers.html)
 

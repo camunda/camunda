@@ -1,3 +1,3 @@
 # Zeebe Go Client
 
-* [Get Started](go-client/get-started.html)
+* [Get Started](/go-client/get-started.html)
