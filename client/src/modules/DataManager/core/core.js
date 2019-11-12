@@ -182,10 +182,11 @@ export class DataManager {
     });
 
     Promise.all([
-      ...endpoints.map(endpointName => {
-        const cachedEndpoints = this.cache.getEndpointsbyNames([endpointName]);
-        if (cachedEndpoints[endpointName]) {
-          const {params, apiCall} = cachedEndpoints[endpointName];
+      ...endpoints.map(({name}) => {
+        const cachedEndpoints = this.cache.getEndpointsbyNames([name]);
+        if (cachedEndpoints[name]) {
+          const {params, apiCall} = cachedEndpoints[name];
+
           return apiCall(params);
         }
         return null;
@@ -196,7 +197,7 @@ export class DataManager {
           state: LOADING_STATE.LOADED,
           response: {
             ...response.reduce((acc, response, index) => {
-              const responseName = endpoints[index];
+              const responseName = endpoints[index].name;
               return {...acc, [responseName]: response};
             }, {}),
             ...staticData

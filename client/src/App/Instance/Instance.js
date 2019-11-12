@@ -32,7 +32,7 @@ import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import TopPanel from './TopPanel';
 import BottomPanel from './BottomPanel';
-import Variables from './BottomPanel/Variables';
+import VariablePanel from './BottomPanel/VariablePanel';
 import {
   isRunningInstance,
   createNodeMetaDataMap,
@@ -215,13 +215,22 @@ class Instance extends Component {
     let updateParams = {
       topic: SUBSCRIPTION_TOPIC.CONSTANT_REFRESH,
       endpoints: [
-        SUBSCRIPTION_TOPIC.LOAD_INSTANCE,
-        SUBSCRIPTION_TOPIC.LOAD_VARIABLES,
-        SUBSCRIPTION_TOPIC.LOAD_INCIDENTS,
-        SUBSCRIPTION_TOPIC.LOAD_EVENTS,
-        SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE
+        {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE},
+        {name: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS},
+        {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},
+        {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE}
       ]
     };
+    const {selection, instance} = this.state;
+    if (selection.treeRowIds.length === 1) {
+      updateParams.endpoints = [
+        ...updateParams.endpoints,
+        {
+          name: SUBSCRIPTION_TOPIC.LOAD_VARIABLES,
+          payload: {instanceId: instance.id, scopeId: selection.treeRowIds[0]}
+        }
+      ];
+    }
     this.props.dataManager.update(updateParams);
   }
 
@@ -528,7 +537,7 @@ class Instance extends Component {
                 onTreeRowSelection={this.handleTreeRowSelection}
               />
 
-              <Variables
+              <VariablePanel
                 isRunning={isRunning({state: this.state.instance.state})}
                 variables={variables}
                 editMode={editMode}
