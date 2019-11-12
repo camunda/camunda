@@ -9,13 +9,13 @@ import {LabeledInput} from 'components';
 import './Checklist.scss';
 import {t} from 'translation';
 
-export default function Checklist({data, formatter, onChange, selectAll, deselectAll}) {
-  const formattedData = data.map(formatter);
-  const allSelected = formattedData.every(({checked}) => checked);
-  const allDeselected = formattedData.every(({checked}) => !checked);
+export default function Checklist({data, onChange, selectAll, deselectAll}) {
+  const allSelected = data.every(({checked}) => checked);
+  const allDeselected = data.every(({checked}) => !checked);
+
   return (
     <div className="Checklist">
-      {formattedData.length > 1 && (
+      {data.length > 1 && (
         <LabeledInput
           ref={input => {
             if (input != null) {
@@ -29,7 +29,7 @@ export default function Checklist({data, formatter, onChange, selectAll, deselec
         />
       )}
       <div className="itemsList">
-        {formattedData.map(({id, label, checked}) => (
+        {data.map(({id, label, checked}) => (
           <LabeledInput
             key={id}
             type="checkbox"

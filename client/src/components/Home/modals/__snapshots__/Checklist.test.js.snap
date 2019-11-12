@@ -10,7 +10,6 @@ exports[`should hide selectAll if there is only one item 1`] = `
     <ForwardRef(LabeledInput)
       checked={true}
       key="id1"
-      label="name 1"
       onChange={[Function]}
       type="checkbox"
     />
@@ -34,14 +33,12 @@ exports[`should match snapshot 1`] = `
     <ForwardRef(LabeledInput)
       checked={true}
       key="id1"
-      label="name 1"
       onChange={[Function]}
       type="checkbox"
     />
     <ForwardRef(LabeledInput)
       checked={false}
       key="id2"
-      label="name 2"
       onChange={[Function]}
       type="checkbox"
     />

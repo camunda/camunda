@@ -86,6 +86,7 @@
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
       "add": "Quelle hinzufügen",
       "definition": {
+        "label": "Definition",
         "label-plural": "Definitionen"
       },
       "noTenantFound": "Keine Mandanten gefunden"

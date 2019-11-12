@@ -5,66 +5,47 @@
  */
 
 import React, {Component} from 'react';
-import Checklist from './Checklist';
+import ItemsList from './ItemsList';
 import {Typeahead, LoadingIndicator, Form, Labeled} from 'components';
 import {t} from 'translation';
 import equal from 'deep-equal';
-import {formatDefintionName} from './service';
+import {formatDefintionName, formatTenants} from './service';
 
 export default class DefinitionSource extends Component {
   state = {
-    selectedDefintion: null,
+    selectedDefinition: null,
     selectedTenants: []
   };
 
   componentDidUpdate(_, prevState) {
-    const {selectedDefintion, selectedTenants} = this.state;
+    const {selectedDefinition, selectedTenants} = this.state;
     if (
-      !equal(prevState.selectedDefintion, selectedDefintion) ||
+      !equal(prevState.selectedDefinition, selectedDefinition) ||
       !equal(prevState.selectedTenants, selectedTenants)
     ) {
-      this.onChange();
+      if (selectedDefinition && selectedTenants.length) {
+        this.props.onChange({
+          definitionType: selectedDefinition.type,
+          definitionKey: selectedDefinition.key,
+          tenants: selectedTenants.map(({id}) => id)
+        });
+      } else {
+        this.props.setInvalid();
+      }
     }
   }
 
-  onChange = () => {
-    const {selectedDefintion, selectedTenants} = this.state;
-    if (selectedDefintion && selectedTenants.length) {
-      this.props.onChange({
-        definitionType: selectedDefintion.type,
-        definitionKey: selectedDefintion.key,
-        tenants: selectedTenants.map(({id}) => id)
-      });
-    } else {
-      this.props.setInvalid();
-    }
-  };
-
-  updateSelectedTenants = (id, checked) => {
-    let newTenants;
-    if (checked) {
-      const tenantsToSelect = this.state.selectedDefintion.tenants.find(tenant => tenant.id === id);
-      newTenants = [...this.state.selectedTenants, tenantsToSelect];
-    } else {
-      newTenants = this.state.selectedTenants.filter(tenant => tenant.id !== id);
-    }
-    this.setState({selectedTenants: newTenants});
-  };
-
-  updateSelectedDefinition = selectedDefintion => {
-    const newSelectionState = {selectedDefintion, selectedTenants: []};
-    if (selectedDefintion.tenants.length === 1) {
+  updateSelectedDefinition = selectedDefinition => {
+    if (selectedDefinition.tenants.length === 1) {
       // preselect if there is only one tenant
-      newSelectionState.selectedTenants = [selectedDefintion.tenants[0]];
+      this.setState({selectedDefinition, selectedTenants: [selectedDefinition.tenants[0]]});
     } else {
-      newSelectionState.selectedTenants = [];
+      this.setState({selectedDefinition, selectedTenants: []});
     }
-
-    this.setState(newSelectionState);
   };
 
   render() {
-    const {selectedDefintion, selectedTenants} = this.state;
+    const {selectedDefinition, selectedTenants} = this.state;
     const {definitionsWithTenants} = this.props;
 
     if (!definitionsWithTenants) {
@@ -85,19 +66,14 @@ export default class DefinitionSource extends Component {
             />
           </Labeled>
         </Form.Group>
-        {selectedDefintion && selectedDefintion.tenants.length !== 1 && (
+        {selectedDefinition && selectedDefinition.tenants.length !== 1 && (
           <Form.Group>
             <Labeled label={t('common.tenant.label-plural')}>
-              <Checklist
-                data={selectedDefintion.tenants}
-                onChange={this.updateSelectedTenants}
-                selectAll={() => this.setState({selectedTenants: selectedDefintion.tenants})}
-                deselectAll={() => this.setState({selectedTenants: []})}
-                formatter={({id, name}) => ({
-                  id,
-                  label: name,
-                  checked: selectedTenants.some(tenant => tenant.id === id)
-                })}
+              <ItemsList
+                selectedItems={selectedTenants}
+                allItems={selectedDefinition.tenants}
+                onChange={selectedTenants => this.setState({selectedTenants})}
+                formatter={formatTenants}
               />
             </Labeled>
           </Form.Group>

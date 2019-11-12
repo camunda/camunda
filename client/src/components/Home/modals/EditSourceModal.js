@@ -6,14 +6,14 @@
 
 import React, {Component} from 'react';
 
-import {Button, Modal, Form, LoadingIndicator} from 'components';
+import {Button, Modal, Form} from 'components';
 import {t} from 'translation';
-import {getDefinitionTenants} from './service';
+import {getDefinitionTenants, formatTenants} from './service';
 import {withErrorHandling} from 'HOC';
-import Checklist from './Checklist';
+import ItemsList from './ItemsList';
 
 export default withErrorHandling(
-  class EditSourcesModal extends Component {
+  class EditSourceModal extends Component {
     constructor(props) {
       super(props);
 
@@ -23,7 +23,7 @@ export default withErrorHandling(
       };
     }
 
-    async componentDidMount() {
+    componentDidMount() {
       const {definitionKey, definitionType} = this.props.source;
       this.props.mightFail(getDefinitionTenants(definitionKey, definitionType), ({tenants}) => {
         this.setState({
@@ -33,42 +33,10 @@ export default withErrorHandling(
     }
 
     onConfirm = () => {
-      if (this.state.selectedTenants.length > 0) {
-        this.props.onConfirm(this.state.selectedTenants.map(({id}) => id));
+      const {selectedTenants} = this.state;
+      if (selectedTenants.length > 0) {
+        this.props.onConfirm(selectedTenants.map(({id}) => id));
       }
-    };
-
-    updateSelectedTenants = (id, checked) => {
-      let newTenants;
-      if (checked) {
-        const tenantsToSelect = this.state.definitionTenants.find(tenant => tenant.id === id);
-        newTenants = [...this.state.selectedTenants, tenantsToSelect];
-      } else {
-        newTenants = this.state.selectedTenants.filter(tenant => tenant.id !== id);
-      }
-      this.setState({selectedTenants: newTenants});
-    };
-
-    renderTenantsList = () => {
-      const {selectedTenants, definitionTenants} = this.state;
-
-      if (!definitionTenants) {
-        return <LoadingIndicator />;
-      }
-
-      return (
-        <Checklist
-          data={definitionTenants}
-          onChange={this.updateSelectedTenants}
-          selectAll={() => this.setState({selectedTenants: definitionTenants})}
-          deselectAll={() => this.setState({selectedTenants: []})}
-          formatter={({id, name}) => ({
-            id,
-            label: name,
-            checked: selectedTenants.some(tenant => tenant.id === id)
-          })}
-        />
-      );
     };
 
     render() {
@@ -76,6 +44,8 @@ export default withErrorHandling(
         onClose,
         source: {definitionName, definitionKey}
       } = this.props;
+
+      const {selectedTenants, definitionTenants} = this.state;
 
       return (
         <Modal className="EditSourceModal" open onClose={onClose} onConfirm={this.onConfirm}>
@@ -85,7 +55,14 @@ export default withErrorHandling(
           <Modal.Content>
             <Form>
               {t('common.tenant.label-plural')}
-              <Form.Group>{this.renderTenantsList()}</Form.Group>
+              <Form.Group>
+                <ItemsList
+                  selectedItems={selectedTenants}
+                  allItems={definitionTenants}
+                  onChange={selectedTenants => this.setState({selectedTenants})}
+                  formatter={formatTenants}
+                />
+              </Form.Group>
             </Form>
           </Modal.Content>
           <Modal.Actions>
@@ -96,7 +73,7 @@ export default withErrorHandling(
               variant="primary"
               color="blue"
               className="confirm"
-              disabled={!this.state.selectedTenants.length}
+              disabled={!selectedTenants.length}
               onClick={this.onConfirm}
             >
               {t('common.apply')}

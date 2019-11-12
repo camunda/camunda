@@ -5,11 +5,11 @@
  */
 
 import React, {Component} from 'react';
-import Checklist from './Checklist';
+import ItemsList from './ItemsList';
 import {Typeahead, LoadingIndicator, Labeled, Form} from 'components';
 import {t} from 'translation';
 import equal from 'deep-equal';
-import {formatDefintionName} from './service';
+import {formatDefinitions} from './service';
 
 export default class TenantSource extends Component {
   state = {
@@ -23,52 +23,21 @@ export default class TenantSource extends Component {
       !equal(prevState.selectedTenant, selectedTenant) ||
       !equal(prevState.selectedDefinitions, selectedDefinitions)
     ) {
-      this.onChange();
+      if (selectedTenant && selectedDefinitions.length) {
+        const sources = selectedDefinitions.map(({type, key}) => ({
+          definitionType: type,
+          definitionKey: key,
+          tenants: [selectedTenant.id]
+        }));
+        this.props.onChange(sources);
+      } else {
+        this.props.setInvalid();
+      }
     }
   }
 
-  onChange = () => {
-    const {selectedTenant, selectedDefinitions} = this.state;
-    if (selectedTenant && selectedDefinitions.length) {
-      const sources = selectedDefinitions.map(({type, key}) => ({
-        definitionType: type,
-        definitionKey: key,
-        tenants: [selectedTenant.id]
-      }));
-      this.props.onChange(sources);
-    } else {
-      this.props.setInvalid();
-    }
-  };
-
-  updateSelectedDefinitions = (key, checked) => {
-    let newDefinitions;
-    if (checked) {
-      const definitionsToSelect = this.state.selectedTenant.definitions.find(
-        def => def.key === key
-      );
-      newDefinitions = [...this.state.selectedDefinitions, definitionsToSelect];
-    } else {
-      newDefinitions = this.state.selectedDefinitions.filter(def => def.key !== key);
-    }
-    this.setState({selectedDefinitions: newDefinitions});
-  };
-
   selectTenant = selectedTenant => {
-    let tenantToSelect;
-    if (!selectedTenant.id) {
-      tenantToSelect = selectedTenant;
-    } else {
-      tenantToSelect = {
-        ...selectedTenant,
-        definitions: [
-          ...selectedTenant.definitions,
-          ...this.props.tenantsWithDefinitions[0].definitions
-        ]
-      };
-    }
-
-    this.setState({selectedTenant: tenantToSelect, selectedDefinitions: []});
+    this.setState({selectedTenant, selectedDefinitions: []});
   };
 
   render() {
@@ -96,16 +65,11 @@ export default class TenantSource extends Component {
         {selectedTenant && (
           <Form.Group>
             <Labeled label={t('home.sources.definition.label-plural')}>
-              <Checklist
-                data={selectedTenant.definitions}
-                onChange={this.updateSelectedDefinitions}
-                selectAll={() => this.setState({selectedDefinitions: selectedTenant.definitions})}
-                deselectAll={() => this.setState({selectedDefinitions: []})}
-                formatter={({key, name, type}) => ({
-                  id: key,
-                  label: formatDefintionName({name, type}),
-                  checked: selectedDefinitions.some(def => def.key === key)
-                })}
+              <ItemsList
+                selectedItems={selectedDefinitions}
+                allItems={selectedTenant.definitions}
+                onChange={selectedDefinitions => this.setState({selectedDefinitions})}
+                formatter={formatDefinitions}
               />
             </Labeled>
           </Form.Group>

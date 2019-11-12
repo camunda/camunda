@@ -48,7 +48,7 @@ it('should match snapshot', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should inoke onChange with the selected source', () => {
+it('should invoke onChange with the selected source', () => {
   const node = shallow(<TenantSource {...props} />);
 
   node
@@ -57,22 +57,17 @@ it('should inoke onChange with the selected source', () => {
     .onSelect(props.tenantsWithDefinitions[0]);
 
   node
-    .find('Checklist')
+    .find('ItemsList')
     .props()
-    .onChange('invoice-assign-approver', true);
+    .onChange([
+      {
+        key: 'invoice-assign-approver',
+        name: 'Assign Approver Group',
+        type: 'decision'
+      }
+    ]);
 
   expect(props.onChange).toHaveBeenCalledWith([
     {definitionKey: 'invoice-assign-approver', definitionType: 'decision', tenants: [null]}
   ]);
-});
-
-it('should show the shared definition when selecting a tenant', () => {
-  const node = shallow(<TenantSource {...props} />);
-
-  node
-    .find('Typeahead')
-    .props()
-    .onSelect(props.tenantsWithDefinitions[1]);
-
-  expect(node.find('Checklist').props().data).toMatchSnapshot();
 });

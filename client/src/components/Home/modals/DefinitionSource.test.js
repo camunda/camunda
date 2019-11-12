@@ -38,7 +38,7 @@ it('should match snapshot', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should inoke onChange with the selected source', () => {
+it('should invoke onChange with the selected source', () => {
   const node = shallow(<DefinitionSource {...props} />);
 
   node
@@ -47,9 +47,9 @@ it('should inoke onChange with the selected source', () => {
     .onSelect(props.definitionsWithTenants[0]);
 
   node
-    .find('Checklist')
+    .find('ItemsList')
     .props()
-    .onChange('csm', true);
+    .onChange([{id: 'csm', name: 'csm'}]);
 
   expect(props.onChange).toHaveBeenCalledWith({
     definitionKey: 'hiring-demo',
@@ -57,7 +57,8 @@ it('should inoke onChange with the selected source', () => {
     tenants: ['csm']
   });
 });
-it('should preselect the only tenant and inoke onChange', () => {
+
+it('should preselect the only tenant and invoke onChange', () => {
   const node = shallow(<DefinitionSource {...props} />);
 
   node

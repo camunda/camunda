@@ -39,13 +39,13 @@ it('should get defintion tenants on mount', () => {
   expect(getDefinitionTenants).toHaveBeenCalled();
 });
 
-it('should update selected tenants on checklist change', () => {
+it('should update selected tenants on itemList change', () => {
   const node = shallow(<EditSourceModal {...props} />);
 
   node
-    .find('Checklist')
+    .find('ItemsList')
     .props()
-    .onChange('test', false);
+    .onChange([{id: null, name: 'Not defined'}]);
 
   node.find('.confirm').simulate('click');
 

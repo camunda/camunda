@@ -31,6 +31,22 @@ export async function getTenantsWithDefinitions() {
   return await response.json();
 }
 
+export function formatTenants(tenants, selectedTenants) {
+  return tenants.map(({id, name}) => ({
+    id,
+    label: name,
+    checked: selectedTenants.some(tenant => tenant.id === id)
+  }));
+}
+
+export function formatDefinitions(definitions, selectedDefinitions) {
+  return definitions.map(({key, name, type}) => ({
+    id: key,
+    label: formatDefintionName({name, type}),
+    checked: selectedDefinitions.some(def => def.key === key)
+  }));
+}
+
 export function formatDefintionName({name, type}) {
   const typeLabel = type === 'process' ? t('home.sources.process') : t('home.sources.decision');
 

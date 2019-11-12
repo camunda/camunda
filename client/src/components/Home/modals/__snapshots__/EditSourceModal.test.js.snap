@@ -14,8 +14,8 @@ exports[`should match snapshot 1`] = `
     <Form>
       Tenants
       <FormGroup>
-        <Checklist
-          data={
+        <ItemsList
+          allItems={
             Array [
               Object {
                 "id": null,
@@ -27,10 +27,19 @@ exports[`should match snapshot 1`] = `
               },
             ]
           }
-          deselectAll={[Function]}
-          formatter={[Function]}
           onChange={[Function]}
-          selectAll={[Function]}
+          selectedItems={
+            Array [
+              Object {
+                "id": null,
+                "name": "Not defined",
+              },
+              Object {
+                "id": "test",
+                "name": "testName",
+              },
+            ]
+          }
         />
       </FormGroup>
     </Form>

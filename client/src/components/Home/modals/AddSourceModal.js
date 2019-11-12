@@ -26,21 +26,21 @@ export default withErrorHandling(
 
     componentDidMount() {
       this.loadDefinitionsWithTenants();
-      this.loadtenantsWithDefinitions();
+      this.loadTenantsWithDefinitions();
     }
 
-    loadDefinitionsWithTenants = async () =>
+    loadDefinitionsWithTenants = () =>
       this.props.mightFail(
         getDefinitionsWithTenants(),
         definitionsWithTenants => this.setState({definitionsWithTenants}),
-        error => showError(error)
+        showError
       );
 
-    loadtenantsWithDefinitions = async () =>
+    loadTenantsWithDefinitions = () =>
       this.props.mightFail(
         getTenantsWithDefinitions(),
         tenantsWithDefinitions => this.setState({tenantsWithDefinitions}),
-        error => showError(error)
+        showError
       );
 
     onClose = () => {
@@ -77,10 +77,10 @@ export default withErrorHandling(
                 active={addBy === 'definition'}
                 onClick={() => this.changeAddBy('definition')}
               >
-                Definition
+                {t('home.sources.definition.label')}
               </Button>
               <Button active={addBy === 'tenant'} onClick={() => this.changeAddBy('tenant')}>
-                Tenant
+                {t('common.tenant.label')}
               </Button>
             </ButtonGroup>
             <Form>

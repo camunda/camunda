@@ -86,6 +86,7 @@
       "notCreated": "There are no sources added yet",
       "add": "Add Source",
       "definition": {
+        "label": "Definition",
         "label-plural": "Definitions"
       },
       "noTenantFound": "No Tenants found"
