@@ -4,7 +4,7 @@
     "analysis": "Analysis",
     "logout": "Logout",
     "logoutFailed": "Logout failed.",
-    "configLoadingError": "An error occured while loading the UI configurations"
+    "configLoadingError": "An error occurred while loading the UI configurations"
   },
   "login": {
     "username": "Username",
@@ -172,7 +172,7 @@
       "actualDuration": "actual duration: {duration}<br/>{percentage}% of the target value",
       "noValueAvailable": "No actual value available.<br/>Cannot compare target and actual value."
     },
-    "invalidCominationError": "Cannot display data for the given report settings. Please choose another combination!",
+    "invalidCombinationError": "Cannot display data for the given report settings. Please choose another combination!",
     "noDataNotice": "No data to display",
     "editSetupMessage": "To display this report, edit your set-up above.",
     "incompleteNotice": {
@@ -187,9 +187,9 @@
     },
     "definition": {
       "process": "Process Definition",
-      "decision": "Decision Defintion"
+      "decision": "Decision Definition"
     },
-    "noDefintionMessage": {
+    "noDefinitionMessage": {
       "process": "Select a <b>Process Definition</b> above.",
       "decision": "Select a <b>Decision Definition</b> above."
     },
@@ -297,7 +297,7 @@
     "label-plural": "Dashboards",
     "new": "New Dashboard",
     "cannotSave": "Dashboard \"{name}\" could not be saved",
-    "cannotShare": "You are not authorized to share the dashboard, because you don't have access to all reports on the dashboard!",
+    "cannotShare": "You are not authorized to share the dashboard because you don't have access to all reports on the dashboard!",
     "toggleTheme": "Toggle Theme",
     "enterFullscreen": "Enter Fullscreen",
     "leaveFullscreen": "Leave Fullscreen",
@@ -326,7 +326,7 @@
       "report": "When Report",
       "reportPlaceholder": "Select a Report",
       "noReports": "No number reports have been created",
-      "reportInfo": "Alerts only available for reports visualised as numbers",
+      "reportInfo": "Alerts only available for reports visualized as numbers",
       "threshold": "Has a Value",
       "frequency": "Check Report Every",
       "email": "Send Email to",
@@ -376,7 +376,7 @@
       }
     },
     "selectLabel": "For",
-    "gatwayLabel": "analyse how the branches of",
+    "gatewayLabel": "analyze how the branches of",
     "endEventLabel": "affect the probability that an instance reached",
     "emptySelectionLabel": {
       "gateway": "Select Gateway",
@@ -448,7 +448,7 @@
       "showLess": "Show less...",
       "namePlaceholder": {
         "Report": "Report name",
-        "Dashboard": "dashboard name"
+        "Dashboard": "Dashboard name"
       }
     },
     "user": {
@@ -603,7 +603,7 @@
     "definitionSelection": {
       "latest": "Latest",
       "multiple": "Multiple",
-      "noDefinition": "No defintions found",
+      "noDefinition": "No definitions found",
       "select": {
         "process": "Select Process",
         "decision": "Select Decision"
