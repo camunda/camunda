@@ -191,4 +191,4 @@ See the [Sub Processes](/bpmn-workflows/subprocesses.html) section on which type
 * [BPMN Specification](http://www.bpmn.org/)
 * [BPMN Tutorial](https://camunda.com/bpmn/)
 * [Full BPMN Reference](https://camunda.com/bpmn/reference/)
-* [BPMN Book](https://www.amazon.com/Real-Life-BPMN-3rd-introductions-CMMN-ebook/dp/B01NAL67J8)
+* [BPMN Book](https://www.amazon.com/Real-Life-BPMN-introductions-CMMN-DMN/dp/1541163443)
