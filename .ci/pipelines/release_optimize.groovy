@@ -10,13 +10,15 @@ static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 static String PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 static String PUBLIC_DOCKER_IMAGE() { return "optimize.registry.camunda.cloud/optimize" }
 
-String calculatePreviousVersion(releaseVersion) {
+static boolean isMajorOrMinorRelease(releaseVersion) {
   def version = releaseVersion.tokenize('.')
-  def majorVersion = version[0]
-  def minorVersion = version[1]
   def patchVersion = version[2]
 
-  if (!patchVersion.contains('-') && patchVersion == '0') {
+  return !patchVersion.contains('-') && patchVersion == '0'
+}
+
+String calculatePreviousVersion(releaseVersion) {
+  if (isMajorOrMinorRelease(releaseVersion)) {
     // only major / minor GA (.0) release versions will trigger an auto-update of previousVersion property.
     println 'Auto-updating previousVersion property as release version is a valid major/minor version.'
     return releaseVersion
@@ -237,6 +239,7 @@ pipeline {
         VERSION = "${params.RELEASE_VERSION}"
         GCR_REGISTRY = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
+        MAJOR_OR_MINOR = ${isMajorOrMinorRelease(params.RELEASE_VERSION)}
       }
       steps {
         container('docker') {
@@ -254,6 +257,11 @@ pipeline {
 
             docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE()}:${VERSION}
             docker push ${PUBLIC_DOCKER_IMAGE()}:${VERSION}
+
+            if [ "${MAJOR_OR_MINOR}" = true ]; then
+              docker tag ${PROJECT_DOCKER_IMAGE()}:${VERSION} ${PUBLIC_DOCKER_IMAGE()}:latest
+              docker push ${PUBLIC_DOCKER_IMAGE()}:latest
+            fi
           """)
         }
       }
