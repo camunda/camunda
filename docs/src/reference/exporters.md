@@ -37,7 +37,7 @@ heavy work during instantiation/configuration.
 
 Exporter specific configuration is handled through the exporter's `[exporters.args]`
 nested map. This provides a simple `Map<String, Object>` which is passed directly
-in form of a [Configuration](https://github.com/zeebe-io/zeebe/tree/{{commit}}/exporter-api/src/main/java/io/zeebe/exporter/context/Configuration.java)
+in form of a [Configuration](https://github.com/zeebe-io/zeebe/tree/{{commit}}/exporter-api/src/main/java/io/zeebe/exporter/api/context/Configuration.java)
 object when the broker calls the `Exporter#configure(Configuration)` method.
 
 Configuration occurs at two different phases: during the broker startup phase, and
@@ -48,7 +48,7 @@ once every time a leader is elected for a partition.
 At any given point, there is exactly one leader
 node for a given partition. Whenever a node becomes the leader for a partition, one
 of the things it will do is run an instance of an
-[exporter stream processor](https://github.com/zeebe-io/zeebe/tree/{{commit}}/broker/src/main/java/io/zeebe/broker/exporter/stream/ExporterStreamProcessor.java).
+[exporter stream processor](https://github.com/zeebe-io/zeebe/tree/{{commit}}/broker/src/main/java/io/zeebe/broker/exporter/stream/ExporterDirector.java).
 
 This stream processor will create exactly one instance of each configured exporter,
 and forward every record written on the stream to each of these in turn.
