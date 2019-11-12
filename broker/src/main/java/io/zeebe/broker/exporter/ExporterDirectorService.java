@@ -50,8 +50,10 @@ public class ExporterDirectorService implements Service<ExporterDirectorService>
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
-    stopContext.async(director.stopAsync());
+  public void stop(final ServiceStopContext stopContext) {
+    if (director != null) {
+      stopContext.async(director.stopAsync());
+    }
   }
 
   @Override
