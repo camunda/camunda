@@ -60,6 +60,8 @@ export const TYPE = {
   TASK_RECEIVE: 'TASK_RECEIVE',
   TASK_SEND: 'TASK_SEND',
   TASK_SUBPROCESS: 'TASK_SUBPROCESS',
+  TASK_CALL_ACTIVITY: 'TASK_CALL_ACTIVITY',
+
   WORKFLOW: 'WORKFLOW',
   MULTI_INSTANCE_BODY: 'MULTI_INSTANCE_BODY'
 };
@@ -83,7 +85,8 @@ export const FLOWNODE_TYPE_HANDLE = {
   'bpmn:SubProcess': TYPE.TASK_SUBPROCESS,
   'bpmn:ServiceTask': TYPE.TASK_SERVICE,
   'bpmn:ReceiveTask': TYPE.TASK_RECEIVE,
-  'bpmn:SendTask': TYPE.TASK_SEND
+  'bpmn:SendTask': TYPE.TASK_SEND,
+  'bpmn:CallActivity': TYPE.TASK_CALL_ACTIVITY
 };
 
 export const FILTER_TYPES = {
