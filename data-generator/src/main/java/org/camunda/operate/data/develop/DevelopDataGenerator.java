@@ -92,6 +92,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     jobWorkers.add(progressSimpleTask("task1"));
     jobWorkers.add(progressSimpleTask("task2"));
 
+    //call activity process
+    jobWorkers.add(progressSimpleTask("called-task"));
+
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
     sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
@@ -204,6 +207,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "develop/timerProcess_v_1.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "develop/callActivityProcess.bpmn");
+
   }
 
   @Override
@@ -215,6 +220,18 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       if (version == 1) {
         //eventBasedGatewayProcess v.1
         sendMessages("newClientMessage", "{\"clientId\": \"" + random.nextInt(10) + "\"\n}", 1);
+
+        //call activity process
+        //some of this instances will have incident on call activity
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
+        try {
+          Thread.sleep(500);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+        ZeebeTestUtil.deployWorkflow(client, "develop/calledProcess.bpmn");
+        //these instances must be fine
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
       }
 
       if (version == 2) {

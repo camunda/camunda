@@ -20,6 +20,7 @@ public class IncidentEntity extends OperateZeebeEntity {
     ErrorType2Title.put(ErrorType.JOB_NO_RETRIES, "No more retries left");
     ErrorType2Title.put(ErrorType.CONDITION_ERROR, "Condition error");
     ErrorType2Title.put(ErrorType.EXTRACT_VALUE_ERROR, "Extract value error");
+    ErrorType2Title.put(ErrorType.CALLED_ELEMENT_ERROR, "Called element error");
   }
 
   private ErrorType errorType;
