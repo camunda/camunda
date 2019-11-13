@@ -1,0 +1,9 @@
+{
+  "source": {
+    "index": ["v1.0.0-operate-operation_"]
+  },
+  "dest": {
+    "index": "operate-operation_",
+    "pipeline": "operate-operation-v1.0.0-to-v1.1.0"
+  }
+}

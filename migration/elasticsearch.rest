@@ -1,0 +1,50 @@
+### Delete
+#  templates
+DELETE /_template/operate*
+#  indices
+DELETE /*operate*
+#  pipelines
+DELETE /_ingest/pipeline/*operate*
+
+### Read
+#  templates
+GET /_template/
+#  indices
+GET /_cat/indices
+#  aliases
+GET /_cat/aliases/
+# pipelines
+GET /_ingest/pipeline
+
+###### SNAPSHOTS ###########
+# Restore snapshot
+POST /_snapshot/operate/snapshot-2019.10.30/_restore
+  {
+  "indices": "operate-*",
+  "ignore_unavailable": true,
+  "include_global_state": true,
+  "include_aliases": true
+  }
+
+# Export snapshot with current date (synchron)
+PUT /_snapshot/operate/%3Csnapshot-%7Bnow%2Fd%7D%3E?wait_for_completion=true
+{
+  "indices": "operate*",
+  "ignore_unavailable": true,
+  "include_global_state": false,
+  "metadata": {
+    "taken_because": "backup before upgrading"
+  }
+}
+# Get snapshots infos
+GET /_snapshot/operate/*
+
+# Register snapshot
+PUT /_snapshot/operate
+{
+    "type": "fs",
+    "settings": {
+      "location": "/usr/app/snapshots"
+    }
+}
+

@@ -1,0 +1,19 @@
+{
+    "description" : "Migrate sequence-flow from version v1.0.0 to v1.1.0",
+    "processors" : [
+      {
+        "rename" : {
+          "field" : "workflowInstanceId",
+          "target_field" : "workflowInstanceKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "workflowInstanceKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      }
+    ]
+  }

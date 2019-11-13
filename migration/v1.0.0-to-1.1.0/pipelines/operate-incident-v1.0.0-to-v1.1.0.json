@@ -1,0 +1,47 @@
+{
+    "description" : "Migrate incident from version v1.0.0 to v1.1.0",
+    "processors" : [
+      {
+        "rename" : {
+          "field" : "flowNodeInstanceId",
+          "target_field" : "flowNodeInstanceKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "flowNodeInstanceKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      },
+      {
+        "rename" : {
+          "field" : "jobId",
+          "target_field" : "jobKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "jobKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      },
+      {
+        "rename" : {
+          "field" : "workflowInstanceId",
+          "target_field" : "workflowInstanceKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "workflowInstanceKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      }
+    ]
+  }

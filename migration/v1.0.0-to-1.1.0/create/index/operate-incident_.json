@@ -1,0 +1,81 @@
+{
+    "aliases" : {
+      "operate-incident_alias" : {
+        "is_write_index" : true
+      }
+    },
+    "mappings" : {
+      "_doc" : {
+        "dynamic" : "strict",
+        "dynamic_templates" : [
+          {
+            "string_template" : {
+              "path_match" : "*",
+              "match_mapping_type" : "string",
+              "mapping" : {
+                "index_options" : "docs",
+                "norms" : {
+                  "enabled" : false
+                },
+                "type" : "string"
+              }
+            }
+          }
+        ],
+        "properties" : {
+          "creationTime" : {
+            "type" : "date",
+            "format" : "date_time"
+          },
+          "errorMessage" : {
+            "type" : "keyword",
+            "eager_global_ordinals" : true
+          },
+          "errorType" : {
+            "type" : "keyword"
+          },
+          "flowNodeId" : {
+            "type" : "keyword"
+          },
+          "flowNodeInstanceKey" : {
+            "type" : "long"
+          },
+          "id" : {
+            "type" : "keyword"
+          },
+          "jobKey" : {
+            "type" : "long"
+          },
+          "key" : {
+            "type" : "long"
+          },
+          "partitionId" : {
+            "type" : "integer"
+          },
+          "state" : {
+            "type" : "keyword"
+          },
+          "workflowInstanceKey" : {
+            "type" : "long"
+          },
+          "workflowKey" : {
+            "type" : "long"
+          }
+        }
+      }
+    },
+    "settings" : {
+      "index" : {
+        "refresh_interval" : "2s",
+        "number_of_shards" : "1",
+        "analysis" : {
+          "normalizer" : {
+            "case_insensitive" : {
+              "filter" : "lowercase"
+            }
+          }
+        },
+        "number_of_replicas" : "0"
+      }
+    }
+  }

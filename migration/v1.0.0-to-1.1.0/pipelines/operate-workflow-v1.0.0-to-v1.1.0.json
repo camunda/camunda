@@ -1,0 +1,10 @@
+ {
+    "description" : "Migrate workflow from version v1.0.0 to v1.1.0",
+    "processors" : [
+      {
+        "remove" : {
+          "field" : "workflowId"
+        }
+      }
+    ]
+  }
