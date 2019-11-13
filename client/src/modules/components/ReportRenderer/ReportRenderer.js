@@ -79,7 +79,7 @@ export default function ReportRenderer(props) {
       </ErrorBoundary>
     );
   } else {
-    return <Message type="error">{t('report.invalidCominationError')}</Message>;
+    return <Message type="error">{t('report.invalidCombinationError')}</Message>;
   }
 }
 
@@ -111,7 +111,7 @@ function checkCombined(data) {
 
 function checkDecisionReport(data) {
   if (isEmpty(data.decisionDefinitionKey) || isEmpty(data.decisionDefinitionVersions)) {
-    return <p dangerouslySetInnerHTML={{__html: t('report.noDefintionMessage.decision')}} />;
+    return <p dangerouslySetInnerHTML={{__html: t('report.noDefinitionMessage.decision')}} />;
   } else {
     return checkSingleReport(data);
   }
@@ -119,7 +119,7 @@ function checkDecisionReport(data) {
 
 function checkProcessReport(data) {
   if (isEmpty(data.processDefinitionKey) || isEmpty(data.processDefinitionVersions)) {
-    return <p dangerouslySetInnerHTML={{__html: t('report.noDefintionMessage.process')}} />;
+    return <p dangerouslySetInnerHTML={{__html: t('report.noDefinitionMessage.process')}} />;
   } else {
     return checkSingleReport(data);
   }

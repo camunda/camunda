@@ -115,7 +115,7 @@ export default class BranchControlPanel extends React.Component {
                 })
               }
             />
-            {t('analysis.gatwayLabel')}
+            {t('analysis.gatewayLabel')}
             {this.renderInput({type: 'gateway', bpmnKey: 'bpmn:Gateway'})}
             {t('analysis.endEventLabel')}
             {this.renderInput({type: 'endEvent', bpmnKey: 'bpmn:EndEvent'})}
