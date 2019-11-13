@@ -21,8 +21,9 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUp
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -70,7 +71,8 @@ public class CollectionWriter {
     simpleCollectionDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     simpleCollectionDefinitionDto.setOwner(userId);
     simpleCollectionDefinitionDto.setLastModifier(userId);
-    simpleCollectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName()).orElse(DEFAULT_COLLECTION_NAME));
+    simpleCollectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName())
+                                            .orElse(DEFAULT_COLLECTION_NAME));
 
     final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
     newCollectionDataDto.getRoles().add(new CollectionRoleDto(new UserDto(userId), RoleType.MANAGER));
@@ -169,7 +171,7 @@ public class CollectionWriter {
 
   public CollectionScopeEntryDto addScopeEntryToCollection(String collectionId,
                                                            CollectionScopeEntryDto entryDto,
-                                                           String userId) throws OptimizeConflictException {
+                                                           String userId) throws OptimizeCollectionConflictException {
     try {
       final Map<String, Object> params = new HashMap<>();
       params.put("entryDto", objectMapper.convertValue(entryDto, Object.class));
@@ -200,7 +202,7 @@ public class CollectionWriter {
       if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
         final String message = String.format("Scope entity for id [%s] already exists.", entryDto.getId());
         log.warn(message);
-        throw new OptimizeConflictException(message);
+        throw new OptimizeCollectionConflictException(message);
       }
 
       return entryDto;
@@ -315,7 +317,7 @@ public class CollectionWriter {
   }
 
   public CollectionRoleDto addRoleToCollection(String collectionId, CollectionRoleDto roleDto, String userId)
-    throws OptimizeConflictException {
+    throws OptimizeCollectionConflictException {
     log.debug("Adding role [{}] to collection with id [{}] in Elasticsearch.", roleDto.getId(), collectionId);
 
     try {
@@ -351,7 +353,7 @@ public class CollectionWriter {
       if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
         final String message = String.format("Role resource for id [%s] already exists.", roleDto.getId());
         log.warn(message);
-        throw new OptimizeConflictException(message);
+        throw new OptimizeCollectionConflictException(message);
       }
 
       return roleDto;

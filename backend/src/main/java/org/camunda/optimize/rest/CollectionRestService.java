@@ -22,7 +22,7 @@ import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.collection.CollectionCopyService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;

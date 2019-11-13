@@ -15,7 +15,7 @@ import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;

@@ -22,7 +22,8 @@ import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -100,7 +101,7 @@ public class CollectionScopeService {
   public CollectionScopeEntryDto addScopeEntryToCollection(String userId,
                                                            String collectionId,
                                                            CollectionScopeEntryDto entryDto)
-    throws OptimizeConflictException {
+    throws OptimizeCollectionConflictException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     return collectionWriter.addScopeEntryToCollection(collectionId, entryDto, userId);
   }

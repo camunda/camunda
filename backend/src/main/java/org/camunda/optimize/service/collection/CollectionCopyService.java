@@ -16,7 +16,8 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefini
 import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.dashboard.DashboardService;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
@@ -115,7 +116,7 @@ public class CollectionCopyService {
         if (!r.getIdentity().getId().equals(userId)) {
           collectionService.addRoleToCollection(userId, newCollectionId.getId(), new CollectionRoleDto(r));
         }
-      } catch (OptimizeConflictException e) {
+      } catch (OptimizeCollectionConflictException e) {
         log.error(e.getMessage());
       }
     });
@@ -126,7 +127,7 @@ public class CollectionCopyService {
     collectionDefinitionDto.getData().getScope().forEach(e -> {
       try {
         collectionScopeService.addScopeEntryToCollection(userId, newCollectionId.getId(), new CollectionScopeEntryDto(e));
-      } catch (OptimizeConflictException ex) {
+      } catch (OptimizeCollectionConflictException ex) {
         log.error(ex.getMessage());
       }
     });

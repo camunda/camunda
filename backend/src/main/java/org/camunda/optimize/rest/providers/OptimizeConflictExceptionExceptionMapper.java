@@ -8,7 +8,7 @@ package org.camunda.optimize.rest.providers;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;

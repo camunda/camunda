@@ -27,8 +27,9 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
-import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
@@ -135,7 +136,8 @@ public class CollectionService {
 
   public CollectionRoleDto addRoleToCollection(final String userId,
                                                final String collectionId,
-                                               final CollectionRoleDto roleDto) throws OptimizeConflictException {
+                                               final CollectionRoleDto roleDto) throws
+                                                                                OptimizeCollectionConflictException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     verifyIdentityExists(roleDto.getIdentity());
     return collectionWriter.addRoleToCollection(collectionId, roleDto, userId);
@@ -154,7 +156,6 @@ public class CollectionService {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
     collectionWriter.removeRoleFromCollection(collectionId, roleEntryId, userId);
   }
-
 
 
   private AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
