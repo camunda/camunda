@@ -87,7 +87,7 @@ export default class Filters extends React.Component {
     this.setFilterFromProps();
   };
 
-  componentDidUpdate = (prevProps, prevState) => {
+  componentDidUpdate = prevProps => {
     if (!isEqual(prevProps.filter, this.props.filter)) {
       this.setFilterFromProps();
     }
@@ -134,7 +134,7 @@ export default class Filters extends React.Component {
   };
 
   setFilterFromProps = () => {
-    this.setFilterState(sanitizeFilter(this.props.filter));
+    this.setFilterState(this.props.filter);
   };
 
   handleWorkflowNameChange = event => {
