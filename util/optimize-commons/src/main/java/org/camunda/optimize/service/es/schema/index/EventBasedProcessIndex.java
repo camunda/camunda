@@ -39,7 +39,8 @@ public class EventBasedProcessIndex extends StrictIndexMappingCreator {
       .endObject()
       .startObject(EventBasedProcessDto.Fields.xml.name())
         .field("type", "text")
-        .field("index", false)
+        .field("index", true)
+        .field("analyzer", "is_present_analyzer")
       .endObject();
     // @formatter:on
   }

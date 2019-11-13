@@ -50,6 +50,7 @@ public class DecisionDefinitionIndex extends AbstractDefinitionIndex {
       .startObject(DECISION_DEFINITION_XML)
         .field("type", "text")
         .field("index", true)
+        .field("analyzer", "is_present_analyzer")
       .endObject();
     // @formatter:on
   }

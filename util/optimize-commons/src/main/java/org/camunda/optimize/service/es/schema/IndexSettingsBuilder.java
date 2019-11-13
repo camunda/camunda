@@ -44,13 +44,6 @@ public class IndexSettingsBuilder {
     return toSettings(builder);
   }
 
-  public static String buildAllSettingsAsString(ConfigurationService configurationService) throws IOException {
-
-    final Settings settings = buildAllSettings(configurationService);
-    // we need to wrap the settings to satisfy the Elasticsearch structure
-    return String.format("{ \"settings\": { \"index\": %s } }", settings.toString());
-  }
-
   private static XContentBuilder addStaticSettings(final ConfigurationService configurationService,
                                                    final XContentBuilder builder) throws IOException {
     return builder
@@ -75,6 +68,14 @@ public class IndexSettingsBuilder {
           .field("tokenizer", "ngram_tokenizer")
           .field("filter", "lowercase")
         .endObject()
+        // this analyzer is supposed to be used for large text fields for which we only want to
+        // query for whether they are empty or not, e.g. the xml of definitions
+        // see https://app.camunda.com/jira/browse/OPT-2911
+        .startObject("is_present_analyzer")
+          .field("type", "custom")
+          .field("tokenizer", "keyword")
+          .field("filter", "is_present_filter")
+        .endObject()
       .endObject()
       .startObject("normalizer")
         .startObject("lowercase_normalizer")
@@ -87,6 +88,12 @@ public class IndexSettingsBuilder {
           .field("type", "nGram")
           .field("min_gram", 1)
           .field("max_gram", MAX_GRAM)
+        .endObject()
+      .endObject()
+      .startObject("filter")
+        .startObject("is_present_filter")
+          .field("type", "truncate")
+          .field("length", "1")
         .endObject()
       .endObject()
     .endObject();
