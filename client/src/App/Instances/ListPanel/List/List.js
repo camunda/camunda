@@ -225,7 +225,7 @@ WrappedList.Item.Message = class Message extends React.Component {
     return (
       <TBody>
         <Styled.EmptyTR>
-          <TD colSpan={5}>
+          <TD colSpan={6}>
             <EmptyMessage
               message={this.props.message}
               data-test="empty-message-instances-list"
