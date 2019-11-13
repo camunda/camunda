@@ -1,6 +1,6 @@
 # Install
 
-This page guides you through the initial installation of a Zeebe broker for development purposes. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/README.html) as well.
+This page guides you through the initial installation of a Zeebe broker for development purposes. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/) as well.
 
 There are different ways to install Zeebe:
 

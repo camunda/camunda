@@ -357,5 +357,5 @@ workflowKey:2251799813686750 bpmnProcessId:"order-process" version:4 workflowIns
 Yay! You finished this tutorial and learned the basic usage of the Go client.
 
 Next steps:
-* Learn more about the [concepts behind Zeebe](/basics/README.html)
-* Learn more about [BPMN workflows](/bpmn-workflows/README.html)
+* Learn more about the [concepts behind Zeebe](/basics/)
+* Learn more about [BPMN workflows](/bpmn-workflows/)

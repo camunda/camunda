@@ -18,7 +18,7 @@ gRPC has many nice features that make it a good fit for Zeebe. It:
 
 ## Supported clients
 
-At the moment, Zeebe officially supports two gRPC clients: one in [Java](/java-client/README.md), and one in [Golang](/go-client/README.md).
+At the moment, Zeebe officially supports two gRPC clients: one in [Java](/java-client/), and one in [Golang](/go-client/).
 
 If Zeebe does not provide an officially-supported client in your target language, you can read the official [Quick Start](https://grpc.io/docs/quickstart/) page to find out how
 to create a very basic one.
@@ -33,13 +33,13 @@ When a broker receives a user request, it is written to the *event stream* first
 If the processing is slow or if there are many user requests in the stream, it might take too long for the processor to start processing the command.
 If the broker keeps accepting new requests from the user, the back log increases and the processing latency can grow beyond an acceptable time.
 To avoid such problems, Zeebe employs a back-pressure mechanism.
-When the broker receives more requests than it can process with an acceptable latency, it rejects some requests. 
+When the broker receives more requests than it can process with an acceptable latency, it rejects some requests.
 
 The maximum rate of requests that can be processed by a broker depends on the processing capacity of the machine, the network latency, current load of the system and so on.
-Hence, there is no fixed limit configured in Zeebe for the maximum rate of requests it accepts. 
+Hence, there is no fixed limit configured in Zeebe for the maximum rate of requests it accepts.
 Instead, Zeebe uses an adaptive algorithm to dynamically determine the limit of the number of inflight requests (the requests that are accepted by the broker, but not yet processed).
 The inflight request count is incremented when a request is accepted and decremented when a response is sent back to the client.
-The broker rejects requests when the inflight request count reaches the limit. 
+The broker rejects requests when the inflight request count reaches the limit.
 
 When the broker rejects requests due to back-pressure, the clients can retry them with an appropriate retry strategy.
 If the rejection rate is high, it indicates that the broker is constantly under high load.

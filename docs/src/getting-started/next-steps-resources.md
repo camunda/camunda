@@ -7,7 +7,7 @@ Zeebe's Java and Go clients each have Getting Started guides of their own, showi
 
 Beyond Java and Go, it's possible to create clients for Zeebe in a range of other programming languages, including JavaScript and C#, via community-supported libraries. The [Awesome Zeebe](https://awesome.zeebe.io/) page includes community-contributed clients in other languages, and [this blog post](https://zeebe.io/blog/2018/11/grpc-generating-a-zeebe-python-client/) walks through how to generate a new client stub for Zeebe using gRPC.
 
-The [Zeebe docs](https://docs.zeebe.io/README.html) (where this tutorial is located) contain resources to help you move your Zeebe project forward.
+The [Zeebe docs](https://docs.zeebe.io/) (where this tutorial is located) contain resources to help you move your Zeebe project forward.
 
 If you have questions, you can get in touch with us via the:
 

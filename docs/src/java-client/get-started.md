@@ -390,9 +390,9 @@ When we have a look at the Zeebe Monitor, then we can see that the variable `tot
 Hurray! You finished this tutorial and learned the basic usage of the Java client.
 
 Next steps:
-* Learn more about the [concepts behind Zeebe](/basics/README.html)
-* Learn more about [BPMN workflows](/bpmn-workflows/README.html)
-* Take a deeper look into the [Java client](/java-client/README.html)
+* Learn more about the [concepts behind Zeebe](/basics/)
+* Learn more about [BPMN workflows](/bpmn-workflows/)
+* Take a deeper look into the [Java client](/java-client/)
 
 [job worker]: ../basics/job-workers.html
 [zeebe-docker-compose]: https://github.com/zeebe-io/zeebe-docker-compose

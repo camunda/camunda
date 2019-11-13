@@ -3,7 +3,7 @@
 ## Related Resources
 
 * [Workflow Basics](/basics/workflows.html)
-* [BPMN Introduction](/bpmn-workflows/README.html)
+* [BPMN Introduction](/bpmn-workflows/)
 
 ## Prerequisites
 

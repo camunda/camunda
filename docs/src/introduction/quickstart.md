@@ -223,11 +223,11 @@ If you want to visualize the state of the workflow instances you can start the
 ## Next steps
 
 To continue working with Zeebe we recommend to get more familiar with the basic
-concepts of Zeebe, see the [Basics chapter](/basics/README.html) of the
+concepts of Zeebe, see the [Basics chapter](/basics/) of the
 documentation.
 
-In the [BPMN Workflows chapter](/bpmn-workflows/README.html) you can find an
+In the [BPMN Workflows chapter](/bpmn-workflows/) you can find an
 introduction to creating Workflows with BPMN.
 
 The documentation also provides getting started guides for implementing job
-workers using [Java](/java-client/README.html) or [Go](/go-client/README.html).
+workers using [Java](/java-client/) or [Go](/go-client/).
