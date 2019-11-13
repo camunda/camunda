@@ -1,0 +1,199 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="EntityList"
+>
+  <div
+    className="header"
+  >
+    <h1>
+      EntityList Name
+    </h1>
+    <div
+      className="searchContainer"
+    >
+      <Icon
+        className="searchIcon"
+        type="search"
+      />
+      <ForwardRef(Input)
+        className="searchInput"
+        onChange={[Function]}
+        onClear={[Function]}
+        placeholder="Filter for name..."
+        required={true}
+        type="text"
+        value=""
+      />
+    </div>
+    <div
+      className="action"
+    >
+      <button>
+        Click Me
+      </button>
+    </div>
+  </div>
+  <div
+    className="content"
+  >
+    <ul>
+      <ListItem
+        key="0"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <p>
+            An Image
+          </p>
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            Collection
+          </div>
+          <div
+            className="entityName"
+            title="aCollectionName"
+          >
+            aCollectionName
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="meta1"
+        >
+          Some info
+        </ListItemSection>
+        <ListItemSection
+          className="meta2"
+        >
+          Some additional info
+        </ListItemSection>
+        <ListItemSection
+          className="meta3"
+        >
+          Some other info
+        </ListItemSection>
+        <div
+          className="contextMenu"
+          onClick={[Function]}
+        >
+          <Dropdown
+            label={
+              <Icon
+                size="24px"
+                type="overflow-menu-vertical"
+              />
+            }
+          >
+            <ForwardRef(DropdownOption)
+              key="0"
+              onClick={[MockFunction]}
+            >
+              <Icon
+                type="edit"
+              />
+               
+              Edit
+            </ForwardRef(DropdownOption)>
+          </Dropdown>
+        </div>
+      </ListItem>
+      <ListItem
+        key="1"
+      >
+        <ListItemSection
+          className="icon"
+        >
+          <p>
+            An Image
+          </p>
+        </ListItemSection>
+        <ListItemSection
+          className="name"
+        >
+          <div
+            className="type"
+          >
+            Dashboard
+          </div>
+          <div
+            className="entityName"
+            title="aDashboard"
+          >
+            aDashboard
+          </div>
+        </ListItemSection>
+        <ListItemSection
+          className="meta1"
+        >
+          Some info
+        </ListItemSection>
+        <ListItemSection
+          className="meta2"
+        >
+          Some additional info
+        </ListItemSection>
+        <ListItemSection
+          className="meta3"
+        >
+          Some other info
+        </ListItemSection>
+      </ListItem>
+      <ListItem
+        key="2"
+      >
+        <Link
+          to="link/to/somewhere"
+        >
+          <ListItemSection
+            className="icon"
+          >
+            <p>
+              An Image
+            </p>
+          </ListItemSection>
+          <ListItemSection
+            className="name"
+          >
+            <div
+              className="type"
+            >
+              Report
+            </div>
+            <div
+              className="entityName"
+              title="aReport"
+            >
+              aReport
+            </div>
+          </ListItemSection>
+          <ListItemSection
+            className="meta1"
+          >
+            Some info
+          </ListItemSection>
+          <ListItemSection
+            className="meta2"
+          >
+            Some additional info
+          </ListItemSection>
+          <ListItemSection
+            className="meta3"
+          >
+            Some other info
+          </ListItemSection>
+        </Link>
+      </ListItem>
+    </ul>
+    <div>
+      Some additional Content
+    </div>
+  </div>
+</div>
+`;

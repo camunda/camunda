@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ConfirmationModal, Dropdown} from 'components';
+import {EntityList, Deleter} from 'components';
 
 import {editUser, removeUser} from './service';
 import EditUserModal from './modals/EditUserModal';
@@ -31,7 +31,7 @@ jest.mock('./service', () => ({
         type: 'group',
         memberCount: 2
       },
-      role: 'viewer'
+      role: 'manager'
     }
   ]),
   editUser: jest.fn(),
@@ -59,22 +59,22 @@ it('should hide add button and edit menu when in readOnly mode', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should show delete modal when clicking delete button', () => {
+it('should pass Entity to Deleter', () => {
   const node = shallow(<UserList {...props} />);
 
   node
-    .find(Dropdown.Option)
-    .at(1)
-    .simulate('click');
+    .find(EntityList)
+    .prop('data')[0]
+    .actions[1].action();
 
-  expect(node.find(ConfirmationModal).prop('open')).toBeTruthy();
+  expect(node.find(Deleter).prop('entity').id).toBe('kermit');
 });
 
 it('should delete collection', () => {
   const node = shallow(<UserList {...props} />);
 
   node.setState({deleting: {id: 'USER:kermit', identity: {id: 'kermit'}}});
-  node.find(ConfirmationModal).prop('onConfirm')();
+  node.find(Deleter).prop('deleteEntity')();
 
   expect(removeUser).toHaveBeenCalledWith('collectionId', 'USER:kermit');
 });
@@ -83,9 +83,9 @@ it('should show an edit modal when clicking the edit button', () => {
   const node = shallow(<UserList {...props} />);
 
   node
-    .find(Dropdown.Option)
-    .at(0)
-    .simulate('click');
+    .find(EntityList)
+    .prop('data')[0]
+    .actions[0].action();
 
   expect(node.find(EditUserModal)).toExist();
 });

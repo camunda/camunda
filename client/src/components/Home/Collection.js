@@ -5,25 +5,33 @@
  */
 
 import React from 'react';
+import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 import classnames from 'classnames';
 
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
-import {Icon, Dropdown, ConfirmationModal} from 'components';
-import {loadEntity, updateEntity, deleteEntity} from 'services';
+import {Icon, Dropdown, EntityList, Deleter} from 'components';
+import {loadEntity, updateEntity, checkDeleteConflict} from 'services';
 import {showError, addNotification} from 'notifications';
 import {refreshBreadcrumbs} from 'components/navigation';
-import {copyEntity} from './service';
-import CopyModal from './modals/CopyModal';
+import Copier from './Copier';
+import CreateNewButton from './CreateNewButton';
 
 import {ReactComponent as CollectionIcon} from './icons/collection.svg';
 
-import EntityList from './EntityList';
 import UserList from './UserList';
 import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
+
+import {
+  formatLink,
+  formatType,
+  formatSubEntities,
+  formatUserCount,
+  getEntityIcon
+} from './formatters';
 
 import './Collection.scss';
 
@@ -34,7 +42,6 @@ export default withErrorHandling(
       editingCollection: false,
       deleting: false,
       redirect: '',
-      deleteInProgress: false,
       copying: null
     };
 
@@ -67,57 +74,8 @@ export default withErrorHandling(
       this.setState({editingCollection: false});
     };
 
-    confirmDelete = () => {
-      this.setState({deleting: true});
-    };
-
-    deleteCollection = () => {
-      this.setState({deleteInProgress: true});
-      this.props.mightFail(
-        deleteEntity('collection', this.state.collection.id),
-        () => {
-          this.setState({redirect: '/'});
-        },
-        error => {
-          showError(error);
-          this.setState({deleteInProgress: false});
-        }
-      );
-    };
-
-    resetDelete = () => {
-      this.setState({deleting: false, deleteInProgress: false});
-    };
-
-    openCopyModal = entity => this.setState({copying: {...entity, entityType: 'collection'}});
-
-    closeCopyModal = () => this.setState({copying: null});
-
-    copyEntity = (name, redirect) => {
-      const {id, entityType} = this.state.copying;
-      this.props.mightFail(
-        copyEntity(entityType, id, name),
-        newCollectionId => {
-          if (redirect) {
-            this.setState({redirect: newCollectionId ? `/collection/${newCollectionId}/` : '/'});
-          } else {
-            addNotification({type: 'success', text: t('common.collection.created', {name})});
-          }
-        },
-        showError
-      );
-      this.closeCopyModal();
-    };
-
     render() {
-      const {
-        collection,
-        deleting,
-        deleteInProgress,
-        editingCollection,
-        redirect,
-        copying
-      } = this.state;
+      const {collection, deleting, editingCollection, redirect, copying} = this.state;
 
       const homeTab = this.props.match.params.viewMode === undefined;
       const userTab = this.props.match.params.viewMode === 'users';
@@ -127,6 +85,8 @@ export default withErrorHandling(
       if (redirect) {
         return <Redirect to={redirect} />;
       }
+
+      const collectionEntity = {...collection, entityType: 'collection'};
 
       return (
         <div className="Collection">
@@ -147,11 +107,13 @@ export default withErrorHandling(
                           <Icon type="edit" />
                           {t('common.edit')}
                         </Dropdown.Option>
-                        <Dropdown.Option onClick={() => this.openCopyModal(collection)}>
+                        <Dropdown.Option onClick={() => this.setState({copying: collectionEntity})}>
                           <Icon type="copy-document" />
                           {t('common.copy')}
                         </Dropdown.Option>
-                        <Dropdown.Option onClick={this.confirmDelete}>
+                        <Dropdown.Option
+                          onClick={() => this.setState({deleting: collectionEntity})}
+                        >
                           <Icon type="delete" />
                           {t('common.delete')}
                         </Dropdown.Option>
@@ -179,10 +141,58 @@ export default withErrorHandling(
           <div className="content">
             {homeTab && (
               <EntityList
-                readOnly={!collection || collection.currentUserRole === 'viewer'}
-                data={collection ? collection.data.entities : null}
-                onChange={this.loadCollection}
-                collection={collection ? collection.id : null}
+                name={t('home.collectionTitle')}
+                action={<CreateNewButton collection={collection && collection.id} />}
+                empty={t('home.empty')}
+                isLoading={!collection}
+                data={
+                  collection &&
+                  collection.data.entities.map(entity => {
+                    const {
+                      id,
+                      entityType,
+                      currentUserRole,
+                      lastModified,
+                      name,
+                      data,
+                      reportType,
+                      combined
+                    } = entity;
+
+                    const actions = [
+                      {
+                        icon: 'copy-document',
+                        text: t('common.copy'),
+                        action: () => this.setState({copying: entity})
+                      }
+                    ];
+
+                    if (currentUserRole === 'editor') {
+                      actions.unshift({
+                        icon: 'edit',
+                        text: t('common.edit'),
+                        action: () => this.setState({redirect: formatLink(id, entityType) + 'edit'})
+                      });
+                      actions.push({
+                        icon: 'delete',
+                        text: t('common.delete'),
+                        action: () => this.setState({deleting: entity})
+                      });
+                    }
+
+                    return {
+                      className: entityType,
+                      link: formatLink(id, entityType),
+                      icon: getEntityIcon(entityType),
+                      type: formatType(entityType, reportType, combined),
+                      name,
+                      meta1: formatSubEntities(data.subEntityCounts),
+                      meta2: moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                      meta3: formatUserCount(data.roleCounts),
+                      actions
+                    };
+                  })
+                }
               />
             )}
             {alertTab && collection && (
@@ -205,13 +215,6 @@ export default withErrorHandling(
               />
             )}
           </div>
-          <ConfirmationModal
-            open={deleting}
-            onClose={this.resetDelete}
-            onConfirm={this.deleteCollection}
-            entityName={collection && collection.name}
-            loading={deleteInProgress}
-          />
           {editingCollection && (
             <CollectionModal
               title={t('common.collection.modal.title.edit')}
@@ -226,14 +229,39 @@ export default withErrorHandling(
               }}
             />
           )}
-          {copying && (
-            <CopyModal
-              entity={copying}
-              onClose={this.closeCopyModal}
-              onConfirm={this.copyEntity}
-              jumpToEntity
-            />
-          )}
+          <Deleter
+            entity={deleting}
+            onDelete={() => {
+              if (deleting.entityType === 'collection') {
+                this.setState({redirect: '/'});
+              } else {
+                this.loadCollection();
+              }
+            }}
+            checkConflicts={async () => {
+              const {entityType, id} = deleting;
+              if (entityType === 'report') {
+                return checkDeleteConflict(id, entityType);
+              }
+              return {conflictedItems: []};
+            }}
+            onClose={() => this.setState({deleting: null})}
+          />
+          <Copier
+            entity={copying}
+            collection={collection && collection.id}
+            onCopy={(name, redirect) => {
+              const entity = this.state.copying;
+              if (!redirect && entity.entityType === 'collection') {
+                addNotification({type: 'success', text: t('common.collection.created', {name})});
+              }
+              if (!redirect && entity.entityType !== 'collection') {
+                this.loadCollection();
+              }
+              this.setState({copying: null});
+            }}
+            onCancel={() => this.setState({copying: null})}
+          />
         </div>
       );
     }

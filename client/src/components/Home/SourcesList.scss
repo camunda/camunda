@@ -1,15 +1,20 @@
 .SourcesList {
-  .header .Button {
-    width: 95px;
-  }
+  .EntityList {
+    .header .Button {
+      width: 95px;
+    }
 
-  .ListItemSection {
-    &.name {
+    .name {
       width: 532px;
     }
 
-    &.tenants {
+    .meta1 {
       width: 360px;
+    }
+
+    .meta2,
+    .meta3 {
+      display: none;
     }
   }
 }

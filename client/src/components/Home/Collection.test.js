@@ -7,14 +7,13 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Dropdown, ConfirmationModal} from 'components';
+import {Dropdown, EntityList, Deleter} from 'components';
 import {refreshBreadcrumbs} from 'components/navigation';
-import {loadEntity, deleteEntity, updateEntity} from 'services';
+import {loadEntity, updateEntity} from 'services';
 
 import CollectionWithErrorHandling from './Collection';
+import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
-import CopyModal from './modals/CopyModal';
-import {copyEntity} from './service';
 
 jest.mock('./service', () => ({copyEntity: jest.fn()}));
 
@@ -51,7 +50,8 @@ jest.mock('services', () => {
             data: {
               subEntityCounts: {
                 report: 8
-              }
+              },
+              roleCounts: {}
             }
           },
           {
@@ -64,6 +64,10 @@ jest.mock('services', () => {
             reportType: 'process', // or "decision"
             combined: false,
             entityType: 'report',
+            data: {
+              subEntityCounts: {},
+              roleCounts: {}
+            },
             currentUserRole: 'editor' // or viewer
           }
         ],
@@ -87,30 +91,15 @@ const props = {
   match: {params: {id: 'aCollectionId'}}
 };
 
-it('should match snapshot', () => {
-  const node = shallow(<Collection {...props} />);
-
-  expect(node).toMatchSnapshot();
-});
-
-it('should show delete modal when clicking delete button', () => {
+it('should pass Entity to Deleter', () => {
   const node = shallow(<Collection {...props} />);
 
   node
-    .find(Dropdown.Option)
-    .at(2)
-    .simulate('click');
+    .find(EntityList)
+    .prop('data')[0]
+    .actions[2].action();
 
-  expect(node.find(ConfirmationModal).prop('open')).toBe(true);
-});
-
-it('should delete collection', () => {
-  const node = shallow(<Collection {...props} />);
-
-  node.find(ConfirmationModal).prop('onConfirm')();
-
-  expect(deleteEntity).toHaveBeenCalledWith('collection', 'aCollectionId');
-  expect(node).toMatchSnapshot();
+  expect(node.find(Deleter).prop('entity').id).toBe('aDashboardId');
 });
 
 it('should show an edit modal when clicking the edit button', () => {
@@ -167,23 +156,5 @@ it('should show the copy modal when clicking the copy button', () => {
     .at(1)
     .simulate('click');
 
-  expect(node.find(CopyModal)).toExist();
-});
-
-it('should copy entity and redirect to collection', () => {
-  copyEntity.mockReturnValue('copyCollectionID');
-  const node = shallow(<Collection {...props} />);
-
-  node
-    .find(Dropdown.Option)
-    .at(1)
-    .simulate('click');
-
-  node.find(CopyModal).prop('onConfirm')('new Name', true);
-
-  expect(copyEntity).toHaveBeenCalledWith('collection', 'aCollectionId', 'new Name');
-
-  expect(node.find('Redirect').props().to).toBe('/collection/copyCollectionID/');
-
-  expect(node.find(CopyModal)).not.toExist();
+  expect(node.find(Copier)).toExist();
 });

@@ -7,13 +7,12 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {LoadingIndicator, Icon, Dropdown, Input, ConfirmationModal, Button} from 'components';
+import {Button, EntityList, Deleter} from 'components';
 import {showError} from 'notifications';
 import {formatters, loadReports, isDurationReport} from 'services';
 import {withErrorHandling} from 'HOC';
 
 import AlertModal from './modals/AlertModal';
-import ListItem from './ListItem';
 
 import {loadAlerts, addAlert, editAlert, removeAlert} from './service';
 
@@ -28,10 +27,8 @@ export default withErrorHandling(
     state = {
       deleting: null,
       editing: null,
-      deleteInProgress: false,
       reports: null,
-      alerts: null,
-      searchQuery: ''
+      alerts: null
     };
 
     componentDidMount() {
@@ -71,31 +68,8 @@ export default withErrorHandling(
       });
     };
 
-    confirmDelete = entity => {
-      this.setState({deleting: entity});
-    };
-
-    resetDelete = () => this.setState({deleting: null, deleteInProgress: false});
-
-    deleteAlert = () => {
-      const {id} = this.state.deleting;
-      this.resetDelete();
-      this.setState({deleteInProgress: true});
-      this.props.mightFail(
-        removeAlert(id),
-        () => {
-          this.loadAlerts();
-          this.setState({deleteInProgress: false});
-        },
-        error => {
-          showError(error);
-          this.setState({deleteInProgress: false});
-        }
-      );
-    };
-
     openAddAlertModal = () => this.setState({editing: {}});
-    openEditUserModal = editing => this.setState({editing});
+    openEditAlertModal = editing => this.setState({editing});
 
     addAlert = newAlert => {
       this.closeEditAlertModal();
@@ -113,36 +87,53 @@ export default withErrorHandling(
     closeEditAlertModal = () => this.setState({editing: null});
 
     render() {
-      const {deleting, editing, deleteInProgress, searchQuery, reports} = this.state;
+      const {deleting, editing, alerts, reports} = this.state;
       const {readOnly} = this.props;
+
+      const isLoading = alerts === null || reports === null;
 
       return (
         <div className="AlertList">
-          <div className="header">
-            <h1>{t('alert.label-plural')}</h1>
-            <div className="searchContainer">
-              <Icon className="searchIcon" type="search" />
-              <Input
-                required
-                type="text"
-                className="searchInput"
-                placeholder={t('home.search.name')}
-                value={searchQuery}
-                onChange={({target: {value}}) => this.setState({searchQuery: value})}
-                onClear={() => this.setState({searchQuery: ''})}
-              />
-            </div>
-            {!readOnly && <Button onClick={this.openAddAlertModal}>{t('alert.createNew')}</Button>}
-          </div>
-          <div className="content">
-            <ul>{this.renderList()}</ul>
-          </div>
-          <ConfirmationModal
-            open={deleting}
-            onClose={this.resetDelete}
-            onConfirm={this.deleteAlert}
-            entityName={deleting && deleting.name}
-            loading={deleteInProgress}
+          <EntityList
+            name={t('alert.label-plural')}
+            action={
+              !readOnly && <Button onClick={this.openAddAlertModal}>{t('alert.createNew')}</Button>
+            }
+            empty={t('alert.notCreated')}
+            isLoading={isLoading}
+            data={
+              !isLoading &&
+              this.state.alerts.map(alert => {
+                const {name, email, reportId, threshold, thresholdOperator} = alert;
+
+                return {
+                  icon: <AlertIcon />,
+                  type: t('alert.label'),
+                  name,
+                  meta1: email,
+                  meta2: this.formatDescription(reportId, thresholdOperator, threshold),
+                  action: () => this.openEditAlertModal(alert),
+                  actions: !this.props.readOnly && [
+                    {
+                      icon: 'edit',
+                      text: t('common.edit'),
+                      action: () => this.openEditAlertModal(alert)
+                    },
+                    {
+                      icon: 'delete',
+                      text: t('common.delete'),
+                      action: () => this.setState({deleting: alert})
+                    }
+                  ]
+                };
+              })
+            }
+          />
+          <Deleter
+            entity={deleting}
+            onDelete={this.loadAlerts}
+            onClose={() => this.setState({deleting: null})}
+            deleteEntity={({id}) => removeAlert(id)}
           />
           {editing && reports && (
             <AlertModal
@@ -173,65 +164,5 @@ export default withErrorHandling(
         thresholdValue
       });
     };
-
-    renderList() {
-      const {readOnly} = this.props;
-      const {alerts, reports} = this.state;
-
-      if (alerts === null || reports === null) {
-        return <LoadingIndicator />;
-      }
-
-      if (alerts.length === 0) {
-        return <div className="empty">{t('alert.notCreated')}</div>;
-      }
-
-      const searchFilteredData = alerts.filter(({name}) =>
-        name.toLowerCase().includes(this.state.searchQuery.toLowerCase())
-      );
-
-      if (searchFilteredData.length === 0) {
-        return <div className="empty">{t('common.notFound')}</div>;
-      }
-
-      return searchFilteredData.map(alert => {
-        const {id, name, email, reportId, threshold, thresholdOperator} = alert;
-
-        const description = this.formatDescription(reportId, thresholdOperator, threshold);
-        return (
-          <ListItem key={id} onClick={!readOnly ? () => this.openEditUserModal(alert) : undefined}>
-            <ListItem.Section className="icon">
-              <AlertIcon />
-            </ListItem.Section>
-            <ListItem.Section className="name">
-              <div className="type">{t('alert.label')}</div>
-              <div className="entityName" title={name}>
-                {name}
-              </div>
-            </ListItem.Section>
-            <ListItem.Section className="email" title={email}>
-              {email}
-            </ListItem.Section>
-            <ListItem.Section className="condition" title={description}>
-              {description}
-            </ListItem.Section>
-            {!readOnly && (
-              <div className="contextMenu" onClick={evt => evt.stopPropagation()}>
-                <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                  <Dropdown.Option onClick={() => this.openEditUserModal(alert)}>
-                    <Icon type="edit" />
-                    {t('common.edit')}
-                  </Dropdown.Option>
-                  <Dropdown.Option onClick={() => this.confirmDelete(alert)}>
-                    <Icon type="delete" />
-                    {t('common.delete')}
-                  </Dropdown.Option>
-                </Dropdown>
-              </div>
-            )}
-          </ListItem>
-        );
-      });
-    }
   }
 );

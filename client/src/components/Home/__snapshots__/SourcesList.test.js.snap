@@ -4,100 +4,38 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
 <div
   className="SourcesList"
 >
-  <div
-    className="header"
-  >
-    <h1>
-      Data Sources
-    </h1>
-    <div
-      className="searchContainer"
-    >
-      <Icon
-        className="searchIcon"
-        type="search"
-      />
-      <ForwardRef(Input)
-        className="searchInput"
-        onChange={[Function]}
-        onClear={[Function]}
-        placeholder="Filter for name..."
-        required={true}
-        type="text"
-        value=""
-      />
-    </div>
-  </div>
-  <div
-    className="content"
-  >
-    <ul>
-      <ListItem
-        className="process"
-        key="defKey"
-      >
-        <ListItemSection
-          className="icon"
-        >
-          <ForwardRef(SvgProcess) />
-        </ListItemSection>
-        <ListItemSection
-          className="name"
-        >
-          <div
-            className="type"
-          >
-            Process
-          </div>
-          <div
-            className="entityName"
-          >
-            definition name
-          </div>
-        </ListItemSection>
-        <ListItemSection
-          className="tenants"
-        >
-          Not defined, Sales
-        </ListItemSection>
-      </ListItem>
-      <ListItem
-        className="decision"
-        key="defKey2"
-      >
-        <ListItemSection
-          className="icon"
-        >
-          <ForwardRef(SvgDecision) />
-        </ListItemSection>
-        <ListItemSection
-          className="name"
-        >
-          <div
-            className="type"
-          >
-            Decision Table
-          </div>
-          <div
-            className="entityName"
-          >
-            decision report
-          </div>
-        </ListItemSection>
-        <ListItemSection
-          className="tenants"
-        >
-          Not defined, Marketing
-        </ListItemSection>
-      </ListItem>
-    </ul>
-  </div>
-  <ConfirmationModal
-    entityName={null}
-    loading={false}
+  <EntityList
+    action={false}
+    data={
+      Array [
+        Object {
+          "actions": false,
+          "className": "process",
+          "icon": <ForwardRef(SvgProcess) />,
+          "meta1": "Not defined, Sales",
+          "name": "definition name",
+          "type": "Process",
+        },
+        Object {
+          "actions": false,
+          "className": "decision",
+          "icon": <ForwardRef(SvgDecision) />,
+          "meta1": "Not defined, Marketing",
+          "name": "decision report",
+          "type": "Decision Table",
+        },
+      ]
+    }
+    empty="There are no sources added yet"
+    isLoading={false}
+    name="Data Sources"
+  />
+  <DeleterErrorHandler
+    deleteEntity={[Function]}
+    entity={null}
+    getName={[Function]}
     onClose={[Function]}
-    onConfirm={[Function]}
-    open={null}
+    onDelete={[Function]}
   />
   <AddSourceModalErrorHandler
     onClose={[Function]}
@@ -111,163 +49,66 @@ exports[`should match snapshot 1`] = `
 <div
   className="SourcesList"
 >
-  <div
-    className="header"
-  >
-    <h1>
-      Data Sources
-    </h1>
-    <div
-      className="searchContainer"
-    >
-      <Icon
-        className="searchIcon"
-        type="search"
-      />
-      <ForwardRef(Input)
-        className="searchInput"
-        onChange={[Function]}
-        onClear={[Function]}
-        placeholder="Filter for name..."
-        required={true}
-        type="text"
-        value=""
-      />
-    </div>
-    <ForwardRef(Button)
-      onClick={[Function]}
-    >
-      Add
-    </ForwardRef(Button)>
-  </div>
-  <div
-    className="content"
-  >
-    <ul>
-      <ListItem
-        className="process"
-        key="defKey"
+  <EntityList
+    action={
+      <ForwardRef(Button)
+        onClick={[Function]}
       >
-        <ListItemSection
-          className="icon"
-        >
-          <ForwardRef(SvgProcess) />
-        </ListItemSection>
-        <ListItemSection
-          className="name"
-        >
-          <div
-            className="type"
-          >
-            Process
-          </div>
-          <div
-            className="entityName"
-          >
-            definition name
-          </div>
-        </ListItemSection>
-        <ListItemSection
-          className="tenants"
-        >
-          Not defined, Sales
-        </ListItemSection>
-        <div
-          className="contextMenu"
-        >
-          <Dropdown
-            label={
-              <Icon
-                size="24px"
-                type="overflow-menu-vertical"
-              />
-            }
-          >
-            <ForwardRef(DropdownOption)
-              onClick={[Function]}
-            >
-              <Icon
-                type="edit"
-              />
-              Edit
-            </ForwardRef(DropdownOption)>
-            <ForwardRef(DropdownOption)
-              onClick={[Function]}
-            >
-              <Icon
-                type="delete"
-              />
-              Delete
-            </ForwardRef(DropdownOption)>
-          </Dropdown>
-        </div>
-      </ListItem>
-      <ListItem
-        className="decision"
-        key="defKey2"
-      >
-        <ListItemSection
-          className="icon"
-        >
-          <ForwardRef(SvgDecision) />
-        </ListItemSection>
-        <ListItemSection
-          className="name"
-        >
-          <div
-            className="type"
-          >
-            Decision Table
-          </div>
-          <div
-            className="entityName"
-          >
-            decision report
-          </div>
-        </ListItemSection>
-        <ListItemSection
-          className="tenants"
-        >
-          Not defined, Marketing
-        </ListItemSection>
-        <div
-          className="contextMenu"
-        >
-          <Dropdown
-            label={
-              <Icon
-                size="24px"
-                type="overflow-menu-vertical"
-              />
-            }
-          >
-            <ForwardRef(DropdownOption)
-              onClick={[Function]}
-            >
-              <Icon
-                type="edit"
-              />
-              Edit
-            </ForwardRef(DropdownOption)>
-            <ForwardRef(DropdownOption)
-              onClick={[Function]}
-            >
-              <Icon
-                type="delete"
-              />
-              Delete
-            </ForwardRef(DropdownOption)>
-          </Dropdown>
-        </div>
-      </ListItem>
-    </ul>
-  </div>
-  <ConfirmationModal
-    entityName={null}
-    loading={false}
+        Add
+      </ForwardRef(Button)>
+    }
+    data={
+      Array [
+        Object {
+          "actions": Array [
+            Object {
+              "action": [Function],
+              "icon": "edit",
+              "text": "Edit",
+            },
+            Object {
+              "action": [Function],
+              "icon": "delete",
+              "text": "Delete",
+            },
+          ],
+          "className": "process",
+          "icon": <ForwardRef(SvgProcess) />,
+          "meta1": "Not defined, Sales",
+          "name": "definition name",
+          "type": "Process",
+        },
+        Object {
+          "actions": Array [
+            Object {
+              "action": [Function],
+              "icon": "edit",
+              "text": "Edit",
+            },
+            Object {
+              "action": [Function],
+              "icon": "delete",
+              "text": "Delete",
+            },
+          ],
+          "className": "decision",
+          "icon": <ForwardRef(SvgDecision) />,
+          "meta1": "Not defined, Marketing",
+          "name": "decision report",
+          "type": "Decision Table",
+        },
+      ]
+    }
+    empty="There are no sources added yet"
+    isLoading={false}
+    name="Data Sources"
+  />
+  <DeleterErrorHandler
+    deleteEntity={[Function]}
+    entity={null}
+    getName={[Function]}
     onClose={[Function]}
-    onConfirm={[Function]}
-    open={null}
+    onDelete={[Function]}
   />
   <AddSourceModalErrorHandler
     onClose={[Function]}

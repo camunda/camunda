@@ -1,168 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should delete collection 1`] = `
-<Redirect
-  to="/"
-/>
-`;
-
-exports[`should match snapshot 1`] = `
-<div
-  className="Collection"
->
-  <div
-    className="header"
-  >
-    <div
-      className="indicator"
-    />
-    <div
-      className="icon"
-    >
-      <ForwardRef(SvgCollection) />
-    </div>
-    <div
-      className="text"
-    >
-      <div
-        className="type"
-      >
-        Collection
-      </div>
-      <div
-        className="name"
-      >
-        <span
-          title="aCollectionName"
-        >
-          aCollectionName
-        </span>
-        <Dropdown
-          label={
-            <Icon
-              size="24px"
-              type="overflow-menu-vertical"
-            />
-          }
-        >
-          <ForwardRef(DropdownOption)
-            onClick={[Function]}
-          >
-            <Icon
-              type="edit"
-            />
-            Edit
-          </ForwardRef(DropdownOption)>
-          <ForwardRef(DropdownOption)
-            onClick={[Function]}
-          >
-            <Icon
-              type="copy-document"
-            />
-            Copy
-          </ForwardRef(DropdownOption)>
-          <ForwardRef(DropdownOption)
-            onClick={[Function]}
-          >
-            <Icon
-              type="delete"
-            />
-            Delete
-          </ForwardRef(DropdownOption)>
-        </Dropdown>
-      </div>
-    </div>
-    <ul
-      className="navigation"
-    >
-      <li
-        className="active"
-      >
-        <Link
-          to="."
-        >
-          Dashboards & Reports
-        </Link>
-      </li>
-      <li
-        className=""
-      >
-        <Link
-          to="alerts"
-        >
-          Alerts
-        </Link>
-      </li>
-      <li
-        className=""
-      >
-        <Link
-          to="users"
-        >
-          Users
-        </Link>
-      </li>
-      <li
-        className=""
-      >
-        <Link
-          to="sources"
-        >
-          Data Sources
-        </Link>
-      </li>
-    </ul>
-  </div>
-  <div
-    className="content"
-  >
-    <EntityListErrorHandler
-      collection="aCollectionId"
-      data={
-        Array [
-          Object {
-            "created": "2017-11-11T11:11:11.1111+0200",
-            "currentUserRole": "editor",
-            "data": Object {
-              "subEntityCounts": Object {
-                "report": 8,
-              },
-            },
-            "entityType": "dashboard",
-            "id": "aDashboardId",
-            "lastModified": "2017-11-11T11:11:11.1111+0200",
-            "lastModifier": "user_id",
-            "name": "aDashboard",
-            "owner": "user_id",
-          },
-          Object {
-            "combined": false,
-            "created": "2017-11-11T11:11:11.1111+0200",
-            "currentUserRole": "editor",
-            "entityType": "report",
-            "id": "aReportId",
-            "lastModified": "2017-11-11T11:11:11.1111+0200",
-            "lastModifier": "user_id",
-            "name": "aReport",
-            "owner": "user_id",
-            "reportType": "process",
-          },
-        ]
-      }
-      onChange={[Function]}
-      readOnly={false}
-    />
-  </div>
-  <ConfirmationModal
-    entityName="aCollectionName"
-    loading={false}
-    onClose={[Function]}
-    onConfirm={[Function]}
-    open={false}
-  />
-</div>
-`;
-
 exports[`should render content depending on the selected tab 1`] = `
 <div
   className="Collection"
@@ -279,12 +116,17 @@ exports[`should render content depending on the selected tab 1`] = `
       readOnly={false}
     />
   </div>
-  <ConfirmationModal
-    entityName="aCollectionName"
-    loading={false}
+  <DeleterErrorHandler
+    checkConflicts={[Function]}
+    entity={false}
     onClose={[Function]}
-    onConfirm={[Function]}
-    open={false}
+    onDelete={[Function]}
+  />
+  <CopierErrorHandler
+    collection="aCollectionId"
+    entity={null}
+    onCancel={[Function]}
+    onCopy={[Function]}
   />
 </div>
 `;

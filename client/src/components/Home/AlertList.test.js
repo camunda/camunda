@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button, Dropdown} from 'components';
+import {EntityList} from 'components';
 import {loadReports} from 'services';
 
 import AlertListWithErrorHandling from './AlertList';
@@ -85,15 +85,15 @@ it('should format durations with value and unit', async () => {
 
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find('.condition').prop('children')).toContain('12s');
+  expect(node.find(EntityList).prop('data')[0].meta2).toContain('12s');
 });
 
-it('should show a loading indicator', () => {
+it('should set the loading', () => {
   const node = shallow(<AlertList {...props} />);
 
   node.setState({alerts: null}); // simulate missing response from alert query
 
-  expect(node.find('LoadingIndicator')).toExist();
+  expect(node.find(EntityList).prop('isLoading')).toBe(true);
 });
 
 it('should load data', () => {
@@ -105,30 +105,22 @@ it('should load data', () => {
 it('should show information about alerts', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find('.entityName')).toIncludeText('Some Alert');
-});
-
-it('should show no data indicator', async () => {
-  loadAlerts.mockReturnValueOnce([]);
-  const node = shallow(<AlertList {...props} />);
-
-  expect(node.find('.empty')).toExist();
+  expect(node.find(EntityList).prop('data')[0].name).toBe('Some Alert');
 });
 
 it('should show create Alert button', () => {
   const node = shallow(<AlertList {...props} />);
 
-  expect(node.find(Button)).toExist();
+  expect(node.find(EntityList).prop('action')).toMatchSnapshot();
 });
 
-it('should show confirmation modal when deleting Alert', async () => {
+it('should Alert to Deleter', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  await node
-    .find('.contextMenu')
-    .find(Dropdown.Option)
-    .last()
-    .simulate('click');
+  node
+    .find(EntityList)
+    .prop('data')[0]
+    .actions[1].action();
 
   expect(node.state('deleting')).toEqual({
     id: 'alertID',
@@ -144,10 +136,9 @@ it('should open a modal when editing an alert', async () => {
   const node = shallow(<AlertList {...props} />);
 
   node
-    .find('.contextMenu')
-    .find(Dropdown.Option)
-    .first()
-    .simulate('click');
+    .find(EntityList)
+    .prop('data')[0]
+    .actions[0].action();
 
   expect(node.find(AlertModal)).toExist();
   expect(node.find(AlertModal).prop('initialAlert')).toEqual({

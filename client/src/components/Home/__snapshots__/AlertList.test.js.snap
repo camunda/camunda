@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show create Alert button 1`] = `
+<ForwardRef(Button)
+  onClick={[Function]}
+>
+  Create New Alert
+</ForwardRef(Button)>
+`;

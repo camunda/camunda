@@ -7,13 +7,12 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {LoadingIndicator, Icon, Dropdown, Input, ConfirmationModal, Button} from 'components';
+import {Button, EntityList, Deleter} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
 import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
-import ListItem from './ListItem';
 
 import {addUser, editUser, removeUser, getUsers} from './service';
 
@@ -28,9 +27,7 @@ export default withErrorHandling(
       users: null,
       deleting: null,
       editing: null,
-      addingUser: false,
-      deleteInProgress: false,
-      searchQuery: ''
+      addingUser: false
     };
 
     componentDidMount() {
@@ -48,29 +45,6 @@ export default withErrorHandling(
     updateList = () => {
       this.getUsers();
       this.props.onChange();
-    };
-
-    confirmDelete = entity => {
-      this.setState({deleting: entity});
-    };
-
-    resetDelete = () => this.setState({deleting: null, deleteInProgress: false});
-
-    deleteEntity = () => {
-      const {id} = this.state.deleting;
-      this.resetDelete();
-      this.setState({deleteInProgress: true});
-      this.props.mightFail(
-        removeUser(this.props.collection, id),
-        () => {
-          this.updateList();
-          this.setState({deleteInProgress: false});
-        },
-        error => {
-          showError(error);
-          this.setState({deleteInProgress: false});
-        }
-      );
     };
 
     openAddUserModal = () => this.setState({addingUser: true});
@@ -96,36 +70,58 @@ export default withErrorHandling(
     closeEditUserModal = () => this.setState({editing: null});
 
     render() {
-      const {users, deleting, editing, deleteInProgress, searchQuery, addingUser} = this.state;
-      const {readOnly} = this.props;
+      const {users, deleting, editing, addingUser} = this.state;
+      const {readOnly, collection} = this.props;
 
       return (
         <div className="UserList">
-          <div className="header">
-            <h1>{t('home.userTitle')}</h1>
-            <div className="searchContainer">
-              <Icon className="searchIcon" type="search" />
-              <Input
-                required
-                type="text"
-                className="searchInput"
-                placeholder={t('home.search.name')}
-                value={searchQuery}
-                onChange={({target: {value}}) => this.setState({searchQuery: value})}
-                onClear={() => this.setState({searchQuery: ''})}
-              />
-            </div>
-            {!readOnly && <Button onClick={this.openAddUserModal}>{t('common.add')}</Button>}
-          </div>
-          <div className="content">
-            <ul>{this.renderList()}</ul>
-          </div>
-          <ConfirmationModal
-            open={deleting}
-            onClose={this.resetDelete}
-            onConfirm={this.deleteEntity}
-            entityName={deleting && deleting.identity.id}
-            loading={deleteInProgress}
+          <EntityList
+            name={t('home.userTitle')}
+            action={!readOnly && <Button onClick={this.openAddUserModal}>{t('common.add')}</Button>}
+            empty={t('common.notFound')}
+            isLoading={!users}
+            data={
+              users &&
+              users.map(user => {
+                const {identity, role} = user;
+
+                const numberOfManagers = users.filter(({role}) => role === 'manager').length;
+                const isLastManager = role === 'manager' && numberOfManagers === 1;
+
+                return {
+                  className: identity.type,
+                  icon: getEntityIcon(identity.type),
+                  type: formatType(identity.type),
+                  name: identity.name || identity.id,
+                  meta1: identity.type === 'group' && (
+                    <>
+                      {identity.memberCount}{' '}
+                      {t('common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label'))}
+                    </>
+                  ),
+                  meta2: formatRole(role),
+                  actions: !readOnly &&
+                    !isLastManager && [
+                      {
+                        icon: 'edit',
+                        text: t('common.edit'),
+                        action: () => this.openEditUserModal(user)
+                      },
+                      {
+                        icon: 'delete',
+                        text: t('common.delete'),
+                        action: () => this.setState({deleting: user})
+                      }
+                    ]
+                };
+              })
+            }
+          />
+          <Deleter
+            entity={deleting && deleting.identity}
+            onDelete={this.updateList}
+            onClose={() => this.setState({deleting: null})}
+            deleteEntity={() => removeUser(collection, deleting.id)}
           />
           <AddUserModal
             open={addingUser}
@@ -143,64 +139,6 @@ export default withErrorHandling(
           )}
         </div>
       );
-    }
-
-    renderList() {
-      const {readOnly} = this.props;
-      const {users, searchQuery} = this.state;
-
-      if (users === null) {
-        return <LoadingIndicator />;
-      }
-
-      const searchFilteredUsers = users.filter(({identity: {id, name}}) =>
-        (name || id).toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-      if (searchFilteredUsers.length === 0) {
-        return <div className="empty">{t('common.notFound')}</div>;
-      }
-
-      const numberOfManagers = users.filter(({role}) => role === 'manager').length;
-
-      return searchFilteredUsers.map(entity => {
-        const {id, identity, role} = entity;
-
-        const isLastManager = role === 'manager' && numberOfManagers === 1;
-
-        return (
-          <ListItem key={id} className={identity.type}>
-            <ListItem.Section className="icon">{getEntityIcon(identity.type)}</ListItem.Section>
-            <ListItem.Section className="name">
-              <div className="type">{formatType(identity.type)}</div>
-              <div className="entityName">{identity.name || identity.id}</div>
-            </ListItem.Section>
-            <ListItem.Section className="containedEntities">
-              {identity.type === 'group' && (
-                <>
-                  {identity.memberCount}{' '}
-                  {t('common.user.' + (identity.memberCount > 1 ? 'label-plural' : 'label'))}
-                </>
-              )}
-            </ListItem.Section>
-            <ListItem.Section className="role">{formatRole(role)}</ListItem.Section>
-            {!readOnly && !isLastManager && (
-              <div className="contextMenu">
-                <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
-                  <Dropdown.Option onClick={() => this.openEditUserModal(entity)}>
-                    <Icon type="edit" />
-                    {t('common.edit')}
-                  </Dropdown.Option>
-                  <Dropdown.Option onClick={() => this.confirmDelete(entity)}>
-                    <Icon type="delete" />
-                    {t('common.delete')}
-                  </Dropdown.Option>
-                </Dropdown>
-              </div>
-            )}
-          </ListItem>
-        );
-      });
     }
   }
 );

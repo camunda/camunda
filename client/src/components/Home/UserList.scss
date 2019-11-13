@@ -1,16 +1,15 @@
 .UserList {
-  .header .Button {
-    width: 95px;
-  }
+  .EntityList {
+    .header .Button {
+      width: 95px;
+    }
 
-  .ListItemSection {
-    &.name {
+    .name {
       width: 532px;
     }
 
-    &.containedEntities,
-    &.role {
-      width: 200px;
+    .meta3 {
+      display: none;
     }
   }
 }

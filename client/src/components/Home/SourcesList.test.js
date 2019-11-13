@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ConfirmationModal, Dropdown} from 'components';
+import {EntityList, Deleter} from 'components';
 
 import {removeSource, editSource, addSources} from './service';
 
@@ -63,15 +63,15 @@ it('should hide add button and edit menu when in readOnly mode', () => {
   expect(node).toMatchSnapshot();
 });
 
-it('should show delete modal when clicking delete button', () => {
+it('should pass entity to Deleter', () => {
   const node = shallow(<SourcesList {...props} />);
 
   node
-    .find(Dropdown.Option)
-    .at(1)
-    .simulate('click');
+    .find(EntityList)
+    .prop('data')[0]
+    .actions[1].action();
 
-  expect(node.find(ConfirmationModal).prop('open')).toBeTruthy();
+  expect(node.find(Deleter).prop('entity').id).toBe('process:defKey');
 });
 
 it('should delete source', () => {
@@ -79,7 +79,7 @@ it('should delete source', () => {
 
   node.setState({deleting: {id: 'sourceId'}});
 
-  node.find(ConfirmationModal).prop('onConfirm')();
+  node.find(Deleter).prop('deleteEntity')();
 
   expect(removeSource).toHaveBeenCalledWith('collectionId', 'sourceId');
 });
@@ -88,9 +88,9 @@ it('should show an edit modal when clicking the edit button', () => {
   const node = shallow(<SourcesList {...props} />);
 
   node
-    .find(Dropdown.Option)
-    .at(0)
-    .simulate('click');
+    .find(EntityList)
+    .prop('data')[0]
+    .actions[0].action();
 
   expect(node.find(EditSourceModal)).toExist();
 });

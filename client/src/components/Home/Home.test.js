@@ -13,7 +13,21 @@ import {loadEntities} from './service';
 const Home = HomeWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
-  loadEntities: jest.fn().mockReturnValue({isEntitiesList: true})
+  loadEntities: jest.fn().mockReturnValue([
+    {
+      id: '1',
+      entityType: 'report',
+      currentUserRole: 'editor',
+      lastModified: '2019-11-18T12:29:37+0000',
+      name: 'Test Report',
+      data: {
+        roleCounts: {},
+        subEntityCounts: {}
+      },
+      reportType: 'process',
+      combined: false
+    }
+  ])
 }));
 
 const props = {
@@ -24,10 +38,4 @@ it('should load entities', () => {
   shallow(<Home {...props} />);
 
   expect(loadEntities).toHaveBeenCalled();
-});
-
-it('should pass loaded entities to the EntityList', () => {
-  const node = shallow(<Home {...props} />);
-
-  expect(node).toMatchSnapshot();
 });

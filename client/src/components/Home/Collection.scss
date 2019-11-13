@@ -141,4 +141,15 @@
     position: absolute;
     overflow: auto;
   }
+
+  .EntityList {
+    .ListItem {
+      &.report .indicator {
+        background-color: #00acac;
+      }
+      &.dashboard .indicator {
+        background-color: #0565b2;
+      }
+    }
+  }
 }

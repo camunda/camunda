@@ -1,0 +1,18 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should not render anything when no entity is set 1`] = `""`;
+
+exports[`should show the confirmation modal when entity is set 1`] = `
+<ConfirmationModal
+  conflict={
+    Object {
+      "items": Array [],
+      "type": "delete",
+    }
+  }
+  entityName="Doomed Report"
+  loading={false}
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+/>
+`;

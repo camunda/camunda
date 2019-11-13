@@ -1,14 +1,17 @@
 .AlertList {
-  .ListItemSection {
-    &.email {
+  .EntityList {
+    .meta1 {
       width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    &.condition {
+    .meta2 {
       width: 400px;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .meta3 {
+      display: none;
     }
   }
 }
