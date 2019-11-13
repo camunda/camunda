@@ -88,7 +88,7 @@ pipeline {
               // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
               sh '''
                 JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+1))" \
-                mvn verify -s settings.xml -P -docker -e -B -T$LIMITS_CPU --fail-at-end
+                mvn verify -s settings.xml -P -docker,skipFrontendBuild -B -T$LIMITS_CPU --fail-at-end
               '''
             }
           }
