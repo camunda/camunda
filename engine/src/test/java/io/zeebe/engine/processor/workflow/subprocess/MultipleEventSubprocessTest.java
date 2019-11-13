@@ -23,6 +23,7 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,7 +31,7 @@ import org.junit.Test;
 public class MultipleEventSubprocessTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
-
+  private static final String PROCESS_ID = "proc";
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
@@ -40,7 +41,7 @@ public class MultipleEventSubprocessTest {
 
     // when
     final long wfInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("key", "123").create();
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
     triggerTimerStart(wfInstanceKey);
     triggerMessageStart(wfInstanceKey, helper.getMessageName());
 
@@ -68,7 +69,7 @@ public class MultipleEventSubprocessTest {
 
     // when
     final long wfInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("key", "123").create();
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     triggerTimerStart(wfInstanceKey);
     assertThat(
@@ -95,7 +96,7 @@ public class MultipleEventSubprocessTest {
             tuple("event_sub_proc_timer", WorkflowInstanceIntent.ELEMENT_TERMINATED),
             tuple("event_sub_proc_msg", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple("event_sub_proc_msg", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("proc", WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -105,7 +106,7 @@ public class MultipleEventSubprocessTest {
 
     // when
     final long wfInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("key", "123").create();
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
 
     assertThat(
             RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
@@ -134,7 +135,7 @@ public class MultipleEventSubprocessTest {
 
     // when
     final long wfInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("key", "123").create();
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
     triggerMessageStart(wfInstanceKey, helper.getMessageName());
     triggerMessageStart(wfInstanceKey, helper.getMessageName());
 
@@ -155,7 +156,7 @@ public class MultipleEventSubprocessTest {
     ENGINE.deployment().withXmlResource(model).deploy();
 
     final long wfInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("key", "123").create();
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
     triggerTimerStart(wfInstanceKey);
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -180,7 +181,7 @@ public class MultipleEventSubprocessTest {
             tuple("event_sub_task_timer", WorkflowInstanceIntent.ELEMENT_ACTIVATED),
             tuple("end_proc", WorkflowInstanceIntent.ELEMENT_COMPLETED),
             tuple("event_sub_task_timer", WorkflowInstanceIntent.ELEMENT_COMPLETED),
-            tuple("proc", WorkflowInstanceIntent.ELEMENT_COMPLETED));
+            tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -191,7 +192,7 @@ public class MultipleEventSubprocessTest {
     ENGINE.deployment().withXmlResource(model).deploy();
 
     final long wfInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("key", "123").create();
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "123").create();
     triggerTimerStart(wfInstanceKey);
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -213,6 +214,44 @@ public class MultipleEventSubprocessTest {
             tuple(BpmnElementType.SERVICE_TASK, WorkflowInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.SUB_PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldOnlyInterruptOnce() {
+    // given
+    final BpmnModelInstance model =
+        twoEventSubprocWithTasksModel(true, true, helper.getMessageName());
+    ENGINE.deployment().withXmlResource(model).deploy();
+    final long wfInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("key", 123))
+            .create();
+
+    triggerTimerStart(wfInstanceKey);
+    RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED)
+        .withWorkflowInstanceKey(wfInstanceKey)
+        .withElementId("event_sub_start_timer")
+        .await();
+
+    // when
+    triggerMessageStart(wfInstanceKey, helper.getMessageName());
+    RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED)
+        .withWorkflowInstanceKey(wfInstanceKey)
+        .withElementId("event_sub_start_msg")
+        .await();
+    ENGINE.job().ofInstance(wfInstanceKey).withType("timerTask").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(wfInstanceKey)
+                .limitToWorkflowInstanceCompleted()
+                .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.SUB_PROCESS))
+        .extracting(r -> r.getValue().getElementId())
+        .containsExactly("event_sub_proc_timer");
   }
 
   private void triggerMessageStart(long wfInstanceKey, String msgName) {
@@ -243,7 +282,7 @@ public class MultipleEventSubprocessTest {
 
   private BpmnModelInstance twoEventSubprocModel(
       boolean timerInterrupt, boolean msgInterrupt, String msgName) {
-    final ProcessBuilder builder = Bpmn.createExecutableProcess("proc");
+    final ProcessBuilder builder = Bpmn.createExecutableProcess(PROCESS_ID);
 
     builder
         .eventSubProcess("event_sub_proc_timer")
@@ -267,7 +306,7 @@ public class MultipleEventSubprocessTest {
 
   private BpmnModelInstance twoEventSubprocWithTasksModel(
       boolean timerInterrupt, boolean msgInterrupt, String msgName) {
-    final ProcessBuilder builder = Bpmn.createExecutableProcess("proc");
+    final ProcessBuilder builder = Bpmn.createExecutableProcess(PROCESS_ID);
 
     builder
         .eventSubProcess("event_sub_proc_timer")
@@ -292,7 +331,7 @@ public class MultipleEventSubprocessTest {
 
   private static BpmnModelInstance nestedMsgModel(String msgName) {
     final StartEventBuilder procBuilder =
-        Bpmn.createExecutableProcess("proc").startEvent("proc_start");
+        Bpmn.createExecutableProcess(PROCESS_ID).startEvent("proc_start");
     procBuilder.serviceTask("proc_task", b -> b.zeebeTaskType("proc_type")).endEvent();
     final EmbeddedSubProcessBuilder subProcBuilder =
         procBuilder.subProcess("sub_proc").embeddedSubProcess();

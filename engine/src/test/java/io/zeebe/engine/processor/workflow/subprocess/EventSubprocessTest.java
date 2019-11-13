@@ -23,12 +23,15 @@ import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.protocol.record.value.JobBatchRecordValue;
+import io.zeebe.protocol.record.value.VariableDocumentUpdateSemantic;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
 import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.junit.Before;
@@ -41,6 +44,7 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public class EventSubprocessTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  private static final String PROCESS_ID = "proc";
 
   private static String messageName;
 
@@ -198,7 +202,71 @@ public class EventSubprocessTest {
         .isNotNull();
   }
 
-  private static void assertEventSubprocessLifecycle(final long workflowInstanceKey) {
+  @Test
+  public void shouldHaveScopeVariableIfInterrupting() {
+    // given
+    final BpmnModelInstance model = eventSubProcTaskModel(true, "type", helper.getJobType());
+    final long wfInstanceKey = createInstanceAndWaitForTask(model);
+
+    final long procTaskKey =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(wfInstanceKey)
+            .withElementId("task")
+            .getFirst()
+            .getKey();
+    ENGINE
+        .variables()
+        .ofScope(procTaskKey)
+        .withDocument(Map.of("y", 2))
+        .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
+        .update();
+
+    // when
+    triggerEventSubprocess.accept(wfInstanceKey);
+    assertThat(
+            RecordingExporter.jobRecords(JobIntent.CREATED)
+                .withWorkflowInstanceKey(wfInstanceKey)
+                .withType(helper.getJobType())
+                .exists())
+        .isTrue();
+
+    // then
+    final Record<JobBatchRecordValue> job = ENGINE.jobs().withType(helper.getJobType()).activate();
+    final Map<String, Object> jobVariables =
+        job.getValue().getJobs().iterator().next().getVariables();
+    assertThat(jobVariables).containsOnly(Map.entry("key", 123));
+  }
+
+  @Test
+  public void shouldNotPropagateVariablesToScope() {
+    // given
+    final BpmnModelInstance model = eventSubProcTaskModel(false, helper.getJobType(), "sub_type");
+    final long wfInstanceKey = createInstanceAndTriggerEvent(model);
+    final long eventSubprocKey =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withWorkflowInstanceKey(wfInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst()
+            .getKey();
+
+    ENGINE
+        .variables()
+        .ofScope(eventSubprocKey)
+        .withDocument(Map.of("y", 2))
+        .withUpdateSemantic(VariableDocumentUpdateSemantic.LOCAL)
+        .update();
+    ENGINE.job().ofInstance(wfInstanceKey).withType("sub_type").complete();
+
+    // then
+    final Record<JobBatchRecordValue> job = ENGINE.jobs().withType(helper.getJobType()).activate();
+    final Map<String, Object> jobVariables =
+        job.getValue().getJobs().iterator().next().getVariables();
+
+    // when
+    assertThat(jobVariables).containsOnly(Map.entry("key", 123));
+  }
+
+  private static void assertEventSubprocessLifecycle(long workflowInstanceKey) {
     final List<Record<WorkflowInstanceRecordValue>> events =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
@@ -225,6 +293,12 @@ public class EventSubprocessTest {
   }
 
   private long createInstanceAndTriggerEvent(final BpmnModelInstance model) {
+    final long wfInstanceKey = createInstanceAndWaitForTask(model);
+    triggerEventSubprocess.accept(wfInstanceKey);
+    return wfInstanceKey;
+  }
+
+  private long createInstanceAndWaitForTask(BpmnModelInstance model) {
     currentWorkflow =
         ENGINE
             .deployment()
@@ -235,22 +309,24 @@ public class EventSubprocessTest {
             .get(0);
 
     final long wfInstanceKey =
-        ENGINE.workflowInstance().ofBpmnProcessId("proc").withVariable("key", "123").create();
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariables(Map.of("key", 123))
+            .create();
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED)
                 .withWorkflowInstanceKey(wfInstanceKey)
                 .exists())
         .describedAs("Expected job to be created")
         .isTrue();
-
-    triggerEventSubprocess.accept(wfInstanceKey);
     return wfInstanceKey;
   }
 
   private static BpmnModelInstance eventSubprocModel(
       final boolean interrupting,
       final Function<StartEventBuilder, StartEventBuilder> startBuilder) {
-    final ProcessBuilder builder = Bpmn.createExecutableProcess("proc");
+    final ProcessBuilder builder = Bpmn.createExecutableProcess(PROCESS_ID);
     startBuilder
         .apply(
             builder
@@ -269,7 +345,7 @@ public class EventSubprocessTest {
   private static BpmnModelInstance nestedInterruptingEventSubprocess(
       final Function<StartEventBuilder, StartEventBuilder> builder) {
     final EmbeddedSubProcessBuilder embeddedBuilder =
-        Bpmn.createExecutableProcess("proc")
+        Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent("proc_start")
             .subProcess("sub_proc")
             .embeddedSubProcess();
@@ -284,6 +360,25 @@ public class EventSubprocessTest {
         .startEvent("sub_start")
         .serviceTask("task", t -> t.zeebeTaskType("type"))
         .endEvent("sub_end")
+        .done();
+  }
+
+  private BpmnModelInstance eventSubProcTaskModel(
+      boolean interrupting, String procTaskType, String subprocTaskType) {
+    final ProcessBuilder modelBuilder = Bpmn.createExecutableProcess(PROCESS_ID);
+    builder
+        .apply(
+            modelBuilder
+                .eventSubProcess("event_sub_proc")
+                .startEvent("event_sub_start")
+                .interrupting(interrupting))
+        .serviceTask("event_sub_task", t -> t.zeebeTaskType(subprocTaskType))
+        .endEvent("event_sub_end");
+
+    return modelBuilder
+        .startEvent("start_proc")
+        .serviceTask("task", t -> t.zeebeTaskType(procTaskType))
+        .endEvent("end_proc")
         .done();
   }
 }

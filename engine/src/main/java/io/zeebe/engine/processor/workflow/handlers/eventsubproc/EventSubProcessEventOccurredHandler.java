@@ -36,6 +36,8 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
     if (triggeredEvent == null) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error("No triggered event for key {}", context.getKey());
       return false;
+    } else if (context.getFlowScopeInstance().getInterruptingEventKey() != -1) {
+      return false;
     }
 
     final ExecutableStartEvent startEvent = context.getElement();

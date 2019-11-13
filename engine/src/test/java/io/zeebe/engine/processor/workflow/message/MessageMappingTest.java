@@ -12,11 +12,13 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.model.bpmn.builder.ZeebeVariablesMappingBuilder;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
+import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.VariableIntent;
@@ -98,6 +100,22 @@ public class MessageMappingTest {
 
   private String correlationKey;
 
+  private static BpmnModelInstance createEventSubprocessModel() {
+    final ProcessBuilder builder = Bpmn.createExecutableProcess(PROCESS_ID);
+    builder
+        .eventSubProcess("catch")
+        .startEvent("event_sub_start_msg")
+        .interrupting(true)
+        .message(b -> b.name(MESSAGE_NAME).zeebeCorrelationKey(CORRELATION_VARIABLE))
+        .endEvent("event_sub_end_msg");
+
+    return builder
+        .startEvent("start_proc")
+        .serviceTask("task", t -> t.zeebeTaskType("type"))
+        .endEvent("end_proc")
+        .done();
+  }
+
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
     return new Object[][] {
@@ -106,6 +124,7 @@ public class MessageMappingTest {
       {"event-based gateway", EVENT_BASED_GATEWAY_WORKFLOW},
       {"interrupting boundary event", INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
       {"non-interrupting boundary event", NON_INTERRUPTING_BOUNDARY_EVENT_WORKFLOW},
+      {"interrupting event subprocess", createEventSubprocessModel()}
     };
   }
 
@@ -190,7 +209,6 @@ public class MessageMappingTest {
             .create();
 
     // when
-
     ENGINE_RULE
         .message()
         .withCorrelationKey(correlationKey)
@@ -210,7 +228,7 @@ public class MessageMappingTest {
         .hasScopeKey(workflowInstanceKey);
   }
 
-  private long deployWorkflowWithMapping(Consumer<ZeebeVariablesMappingBuilder<?>> c) {
+  private void deployWorkflowWithMapping(Consumer<ZeebeVariablesMappingBuilder<?>> c) {
     final BpmnModelInstance modifiedWorkflow = workflow.clone();
     final ModelElementInstance element = modifiedWorkflow.getModelElementById("catch");
     if (element instanceof IntermediateCatchEvent) {
@@ -219,16 +237,12 @@ public class MessageMappingTest {
       c.accept(((StartEvent) element).builder());
     } else if (element instanceof BoundaryEvent) {
       c.accept(((BoundaryEvent) element).builder());
+    } else if (element instanceof SubProcess) {
+      c.accept(((SubProcess) element).builder());
     } else {
       c.accept(((ReceiveTask) element).builder());
     }
-    return ENGINE_RULE
-        .deployment()
-        .withXmlResource(modifiedWorkflow)
-        .deploy()
-        .getValue()
-        .getDeployedWorkflows()
-        .get(0)
-        .getWorkflowKey();
+
+    ENGINE_RULE.deployment().withXmlResource(modifiedWorkflow).deploy();
   }
 }
