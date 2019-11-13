@@ -54,6 +54,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.ID;
@@ -107,7 +108,7 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeStep(updateTypeForDocumentsInIndex(new TimestampBasedImportIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new AlertIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new DecisionDefinitionIndex()))
-      .addUpgradeStep(updateTypeForDocumentsInIndex(new ProcessInstanceIndex()))
+      .addUpgradeStep(new UpdateIndexStep(new ProcessInstanceIndex(), getRenameProcessInstanceDurationFieldScript()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new MetadataIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new ImportIndexIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new TerminatedUserSessionIndex()))
@@ -237,6 +238,26 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       script,
       () -> getAlertArchiveMapParamMap()
     );
+  }
+
+  private String getRenameProcessInstanceDurationFieldScript() {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("oldDurationField", "durationInMs")
+        .put("newDurationField", DURATION)
+        .build()
+    );
+
+    // @formatter:off
+    String script = substitutor.replace(
+      "if (ctx._source.${oldDurationField} != null) {\n" +
+        "ctx._source.${newDurationField} = ctx._source.${oldDurationField};\n" +
+        "ctx._source.remove(\"${oldDurationField}\");\n" +
+      "}\n"
+    );
+    // @formatter:on
+
+    return script;
   }
 
   private Map<String, Object> getAlertArchiveMapParamMap() {

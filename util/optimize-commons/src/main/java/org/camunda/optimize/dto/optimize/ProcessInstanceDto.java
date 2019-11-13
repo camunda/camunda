@@ -3,12 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.importing;
+package org.camunda.optimize.dto.optimize;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
@@ -20,6 +21,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@FieldNameConstants
 public class ProcessInstanceDto implements OptimizeDto {
 
   private String processDefinitionKey;
@@ -29,7 +31,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   private String businessKey;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
-  private Long durationInMs;
+  private Long duration; // duration in ms
   private String state;
   private List<SimpleEventDto> events = new ArrayList<>();
   private List<UserTaskInstanceDto> userTasks = new ArrayList<>();
@@ -40,7 +42,7 @@ public class ProcessInstanceDto implements OptimizeDto {
   public ProcessInstanceDto(final String processDefinitionKey, final String processDefinitionVersion,
                             final String processDefinitionId, final String processInstanceId,
                             final String businessKey, final OffsetDateTime startDate, final OffsetDateTime endDate,
-                            final Long durationInMs, final String state, final String engine, final String tenantId) {
+                            final Long duration, final String state, final String engine, final String tenantId) {
     this.processDefinitionKey = processDefinitionKey;
     this.processDefinitionVersion = processDefinitionVersion;
     this.processDefinitionId = processDefinitionId;
@@ -48,7 +50,7 @@ public class ProcessInstanceDto implements OptimizeDto {
     this.businessKey = businessKey;
     this.startDate = startDate;
     this.endDate = endDate;
-    this.durationInMs = durationInMs;
+    this.duration = duration;
     this.state = state;
     this.engine = engine;
     this.tenantId = tenantId;

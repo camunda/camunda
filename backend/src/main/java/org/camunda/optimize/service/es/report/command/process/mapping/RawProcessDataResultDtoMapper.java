@@ -8,12 +8,11 @@ package org.camunda.optimize.service.es.report.command.process.mapping;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -59,7 +58,7 @@ public class RawProcessDataResultDtoMapper {
       processInstanceDto.getBusinessKey(),
       processInstanceDto.getStartDate(),
       processInstanceDto.getEndDate(),
-      processInstanceDto.getDurationInMs(),
+      processInstanceDto.getDuration(),
       processInstanceDto.getEngine(),
       processInstanceDto.getTenantId(),
       variables

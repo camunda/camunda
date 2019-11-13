@@ -3,18 +3,19 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.importing;
+package org.camunda.optimize.dto.optimize;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
+import lombok.experimental.FieldNameConstants;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 @Getter
 @Setter
-public class SimpleEventDto implements Serializable, OptimizeDto {
+@FieldNameConstants
+public class SimpleEventDto implements Serializable,OptimizeDto {
 
   protected String id;
   protected String activityId;

@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.analysis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_INSTANCE_ID;
 

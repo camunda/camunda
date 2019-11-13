@@ -106,7 +106,7 @@ public class DurationOutliersReader {
 
     long interval = getInterval(query, outlierParams.getFlowNodeId());
     HistogramAggregationBuilder histogram = AggregationBuilders.histogram(AGG_HISTOGRAM)
-      .field(EVENTS + "." + ProcessInstanceIndex.DURATION)
+      .field(EVENTS + "." + ACTIVITY_DURATION)
       .interval(interval);
 
     NestedAggregationBuilder termsAgg = buildNestedFlowNodeFilterAggregation(outlierParams.getFlowNodeId(), histogram);
@@ -612,7 +612,7 @@ public class DurationOutliersReader {
 
   private long getInterval(final BoolQueryBuilder query, final String flowNodeId) {
     StatsAggregationBuilder statsAgg = AggregationBuilders.stats(AGG_STATS)
-      .field(EVENTS + "." + ProcessInstanceIndex.DURATION);
+      .field(EVENTS + "." + ACTIVITY_DURATION);
 
     NestedAggregationBuilder termsAgg = buildNestedFlowNodeFilterAggregation(flowNodeId, statsAgg);
 

@@ -18,7 +18,7 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants
 public class CandidateGroupOperationDto implements OptimizeDto {
 
   @EqualsAndHashCode.Include

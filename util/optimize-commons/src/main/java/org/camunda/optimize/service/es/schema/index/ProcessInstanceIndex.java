@@ -5,8 +5,12 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
+import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -21,68 +25,66 @@ public class ProcessInstanceIndex extends StrictIndexMappingCreator implements D
 
   public static final int VERSION = 4;
 
-  public static final String START_DATE = "startDate";
-  public static final String END_DATE = "endDate";
-  public static final String DURATION = "durationInMs";
-  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
-  public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
-  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
-  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
-  public static final String BUSINESS_KEY = "businessKey";
-  public static final String STATE = "state";
+  public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
+  public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
+  public static final String DURATION = ProcessInstanceDto.Fields.duration;
+  public static final String PROCESS_DEFINITION_KEY = ProcessInstanceDto.Fields.processDefinitionKey;
+  public static final String PROCESS_DEFINITION_VERSION = ProcessInstanceDto.Fields.processDefinitionVersion;
+  public static final String PROCESS_DEFINITION_ID = ProcessInstanceDto.Fields.processDefinitionId;
+  public static final String PROCESS_INSTANCE_ID = ProcessInstanceDto.Fields.processInstanceId;
+  public static final String BUSINESS_KEY = ProcessInstanceDto.Fields.businessKey;
+  public static final String STATE = ProcessInstanceDto.Fields.state;
 
-  public static final String EVENTS = "events";
+  public static final String EVENTS = ProcessInstanceDto.Fields.events;
+  public static final String EVENT_ID = SimpleEventDto.Fields.id;
+  public static final String ACTIVITY_ID = SimpleEventDto.Fields.activityId;
+  public static final String ACTIVITY_TYPE = SimpleEventDto.Fields.activityType;
+  public static final String ACTIVITY_DURATION = SimpleEventDto.Fields.durationInMs;
+  public static final String ACTIVITY_START_DATE = SimpleEventDto.Fields.startDate;
+  public static final String ACTIVITY_END_DATE = SimpleEventDto.Fields.endDate;
 
-  public static final String EVENT_ID = "id";
-  public static final String ACTIVITY_ID = "activityId";
-  public static final String ACTIVITY_TYPE = "activityType";
-  public static final String ACTIVITY_DURATION = "durationInMs";
-  public static final String ACTIVITY_START_DATE = "startDate";
-  public static final String ACTIVITY_END_DATE = "endDate";
+  public static final String VARIABLES = ProcessInstanceDto.Fields.variables;
+  public static final String VARIABLE_ID = SimpleProcessVariableDto.Fields.id;
+  public static final String VARIABLE_NAME = SimpleProcessVariableDto.Fields.name;
+  public static final String VARIABLE_TYPE = SimpleProcessVariableDto.Fields.type;
+  public static final String VARIABLE_VALUE = SimpleProcessVariableDto.Fields.value;
+  public static final String VARIABLE_VERSION = SimpleProcessVariableDto.Fields.version;
 
-  public static final String VARIABLES = "variables";
-  public static final String VARIABLE_ID = "id";
-  public static final String VARIABLE_NAME = "name";
-  public static final String VARIABLE_TYPE = "type";
-  public static final String VARIABLE_VALUE = "value";
-  public static final String VARIABLE_VERSION = "version";
+  public static final String USER_TASKS = ProcessInstanceDto.Fields.userTasks;
+  public static final String USER_TASK_ID = UserTaskInstanceDto.Fields.id;
 
-  public static final String USER_TASKS = "userTasks";
+  public static final String USER_TASK_ACTIVITY_ID = UserTaskInstanceDto.Fields.activityId;
+  public static final String USER_TASK_ACTIVITY_INSTANCE_ID = UserTaskInstanceDto.Fields.activityInstanceId;
 
+  public static final String USER_TASK_TOTAL_DURATION = UserTaskInstanceDto.Fields.totalDurationInMs;
+  public static final String USER_TASK_IDLE_DURATION = UserTaskInstanceDto.Fields.idleDurationInMs;
+  public static final String USER_TASK_WORK_DURATION = UserTaskInstanceDto.Fields.workDurationInMs;
 
-  public static final String USER_TASK_ID = "id";
+  public static final String USER_TASK_START_DATE = UserTaskInstanceDto.Fields.startDate;
+  public static final String USER_TASK_END_DATE = UserTaskInstanceDto.Fields.endDate;
+  public static final String USER_TASK_DUE_DATE = UserTaskInstanceDto.Fields.dueDate;
+  public static final String USER_TASK_CLAIM_DATE = UserTaskInstanceDto.Fields.claimDate;
 
-  public static final String USER_TASK_ACTIVITY_ID = "activityId";
-  public static final String USER_TASK_ACTIVITY_INSTANCE_ID = "activityInstanceId";
+  public static final String USER_TASK_ASSIGNEE = UserTaskInstanceDto.Fields.assignee;
+  public static final String USER_TASK_CANDIDATE_GROUPS = UserTaskInstanceDto.Fields.candidateGroups;
+  public static final String USER_TASK_ASSIGNEE_OPERATIONS = UserTaskInstanceDto.Fields.assigneeOperations;
+  public static final String USER_TASK_CANDIDATE_GROUP_OPERATIONS =
+    UserTaskInstanceDto.Fields.candidateGroupOperations;
 
-  public static final String USER_TASK_TOTAL_DURATION = "totalDurationInMs";
-  public static final String USER_TASK_IDLE_DURATION = "idleDurationInMs";
-  public static final String USER_TASK_WORK_DURATION = "workDurationInMs";
+  public static final String USER_TASK_DELETE_REASON = UserTaskInstanceDto.Fields.deleteReason;
 
-  public static final String USER_TASK_START_DATE = "startDate";
-  public static final String USER_TASK_END_DATE = "endDate";
-  public static final String USER_TASK_DUE_DATE = "dueDate";
-  public static final String USER_TASK_CLAIM_DATE = "claimDate";
+  public static final String ENGINE = ProcessInstanceDto.Fields.engine;
+  public static final String TENANT_ID = ProcessInstanceDto.Fields.tenantId;
 
-  public static final String USER_TASK_ASSIGNEE = "assignee";
-  public static final String USER_TASK_CANDIDATE_GROUPS = "candidateGroups";
-  public static final String USER_TASK_ASSIGNEE_OPERATIONS = "assigneeOperations";
-  public static final String USER_TASK_CANDIDATE_GROUP_OPERATIONS = "candidateGroupOperations";
+  public static final String ASSIGNEE_OPERATION_ID = AssigneeOperationDto.Fields.id;
+  public static final String ASSIGNEE_OPERATION_USER_ID = AssigneeOperationDto.Fields.userId;
+  public static final String ASSIGNEE_OPERATION_TYPE = AssigneeOperationDto.Fields.operationType;
+  public static final String ASSIGNEE_OPERATION_TIMESTAMP = AssigneeOperationDto.Fields.timestamp;
 
-  public static final String USER_TASK_DELETE_REASON = "deleteReason";
-
-  public static final String ENGINE = "engine";
-  public static final String TENANT_ID = "tenantId";
-
-  public static final String ASSIGNEE_OPERATION_ID = AssigneeOperationDto.Fields.id.name();
-  public static final String ASSIGNEE_OPERATION_USER_ID = AssigneeOperationDto.Fields.userId.name();
-  public static final String ASSIGNEE_OPERATION_TYPE = AssigneeOperationDto.Fields.operationType.name();
-  public static final String ASSIGNEE_OPERATION_TIMESTAMP = AssigneeOperationDto.Fields.timestamp.name();
-
-  public static final String CANDIDATE_GROUP_OPERATION_ID = CandidateGroupOperationDto.Fields.id.name();
-  public static final String CANDIDATE_GROUP_OPERATION_GROUP_ID = CandidateGroupOperationDto.Fields.groupId.name();
-  public static final String CANDIDATE_GROUP_OPERATION_TYPE = CandidateGroupOperationDto.Fields.operationType.name();
-  public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP = CandidateGroupOperationDto.Fields.timestamp.name();
+  public static final String CANDIDATE_GROUP_OPERATION_ID = CandidateGroupOperationDto.Fields.id;
+  public static final String CANDIDATE_GROUP_OPERATION_GROUP_ID = CandidateGroupOperationDto.Fields.groupId;
+  public static final String CANDIDATE_GROUP_OPERATION_TYPE = CandidateGroupOperationDto.Fields.operationType;
+  public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP = CandidateGroupOperationDto.Fields.timestamp;
 
   @Override
   public String getIndexName() {
