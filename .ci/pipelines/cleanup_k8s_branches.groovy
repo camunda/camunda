@@ -4,7 +4,7 @@
 def static NODE_POOL() { return "slaves" }
 def static DOCKER_IMAGE() { return "google/cloud-sdk:alpine" }
 
-static String agent(env) {
+static String agentYaml(env) {
   return """
 metadata:
   labels:
@@ -56,7 +56,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml agent(env)
+      yaml agentYaml(env)
     }
   }
 

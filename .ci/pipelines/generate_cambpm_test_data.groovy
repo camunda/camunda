@@ -3,11 +3,20 @@
 
 // general properties for CI execution
 def static NODE_POOL() { return "slaves-ssd-stable" }
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
-def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}" }
 
-static String agent(env, postgresVersion='9.6-alpine', cambpmVersion = '7.10.0') {
+def static NODE_POOL_SIMPLE_AGENT() { return "slaves" }
+
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+
+def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
+
+def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
+    return "registry.camunda.cloud/camunda-bpm-platform-ee:${cambpmVersion}"
+}
+
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
+
+static String dataGenerationAgent(env, postgresVersion = '9.6-alpine', cambpmVersion) {
     return """
 metadata:
   labels:
@@ -140,19 +149,44 @@ spec:
         subPath: gcloud
 """
 }
+
+static String mavenAgent() {
+    return """
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL_SIMPLE_AGENT()}
+  tolerations:
+    - key: "${NODE_POOL_SIMPLE_AGENT()}"
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+"""
+}
 /******** START PIPELINE *******/
 
 pipeline {
-    agent {
-        kubernetes {
-            cloud 'optimize-ci'
-            label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-            defaultContainer 'jnlp'
-            slaveConnectTimeout 600
-            yaml agent(env, POSTGRES_VERSION, CAMBPM_VERSION)
-        }
-    }
-
+    agent none
     environment {
         NEXUS = credentials("camunda-nexus")
     }
@@ -164,58 +198,95 @@ pipeline {
     }
 
     stages {
-        stage('Prepare') {
+        stage('Retrieve Cambpm Version') {
+            agent {
+                kubernetes {
+                    cloud 'optimize-ci'
+                    label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+                    defaultContainer 'jnlp'
+                    yaml mavenAgent()
+                }
+            }
             steps {
-                git url: 'git@github.com:camunda/camunda-optimize',
-                        branch: "$BRANCH",
-                        credentialsId: 'camunda-jenkins-github-ssh',
-                        poll: false
+                cloneGitRepo()
+                script {
+                    env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: readMavenPom().getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+                }
+            }
+        }
+        stage('Prepare') {
+            agent {
+                kubernetes {
+                    cloud 'optimize-ci'
+                    label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+                    defaultContainer 'jnlp'
+                    slaveConnectTimeout 600
+                    yaml dataGenerationAgent(env, POSTGRES_VERSION, env.CAMBPM_VERSION)
+                }
+            }
+            steps {
+                cloneGitRepo()
                 container('postgres') {
-                    sh ("df -h /export /var/lib/postgresql/data")
+                    sh("df -h /export /var/lib/postgresql/data")
                 }
                 container('gcloud') {
-                    sh ("apk add --no-cache jq")
+                    sh("apk add --no-cache jq")
                 }
                 container('maven') {
-                    sh ("apt-get update && apt-get install -y jq")
+                    sh("apt-get update && apt-get install -y jq")
                 }
             }
         }
         stage('Data Generation') {
-            steps {
-                container('maven') {
-                    // Generate Data
-                    sh ("""
-                      if [ "${USE_E2E_PRESETS}" = true ]; then
-                        mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--removeDeployments false --numberOfProcessInstances \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances) --definitions \$(cat client/e2e_presets.json | jq -r .definitions)"
-                      else
-                        mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--numberOfProcessInstances ${NUM_INSTANCES}"
-                      fi
-                    """)
+            agent {
+                kubernetes {
+                    cloud 'optimize-ci'
+                    label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+                    defaultContainer 'jnlp'
+                    slaveConnectTimeout 600
+                    yaml dataGenerationAgent(env, POSTGRES_VERSION, env.CAMBPM_VERSION)
                 }
             }
-        }
-        stage('Dump Data') {
-            steps {
-                container('postgres') {
-                    // Export dump
-                    sh ("pg_dump -h localhost -U camunda -n public --format=c --file=\"/export/${SQL_DUMP}\" engine")
+
+            stages {
+                stage('Generate Data') {
+                    steps {
+                        container('maven') {
+                            cloneGitRepo()
+                            // Generate Data
+                            sh("""
+                              if [ "${USE_E2E_PRESETS}" = true ]; then
+                                mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--removeDeployments false --numberOfProcessInstances \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances) --definitions \$(cat client/e2e_presets.json | jq -r .definitions)"
+                              else
+                                mvn -T1C -B -s settings.xml -f qa/data-generation compile exec:java -Dexec.args="--numberOfProcessInstances ${NUM_INSTANCES}"
+                              fi
+                            """)
+                        }
+                    }
                 }
-            }
-        }
-        stage('Upload Data') {
-            steps {
-                container('gcloud') {
-                    // Upload data
-                    sh ("""
-                      if [ "${USE_E2E_PRESETS}" = true ]; then
-                        gsutil -h "x-goog-meta-NUM_INSTANCES: \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances)" cp "/export/${SQL_DUMP}" gs://optimize-data/
-                      else
-                        gsutil -h "x-goog-meta-NUM_INSTANCES: ${NUM_INSTANCES}" cp "/export/${SQL_DUMP}" gs://optimize-data/
-                      fi
-                    """)
-                    // Cleanup
-                    sh ("rm /export/${SQL_DUMP}")
+                stage('Dump Data') {
+                    steps {
+                        container('postgres') {
+                            // Export dump
+                            sh("pg_dump -h localhost -U camunda -n public --format=c --file=\"/export/${SQL_DUMP}\" engine")
+                        }
+                    }
+                }
+                stage('Upload Data') {
+                    steps {
+                        container('gcloud') {
+                            // Upload data
+                            sh("""
+                              if [ "${USE_E2E_PRESETS}" = true ]; then
+                                gsutil -h "x-goog-meta-NUM_INSTANCES: \$(cat client/e2e_presets.json | jq -r .numberOfProcessInstances)" cp "/export/${SQL_DUMP}" gs://optimize-data/
+                              else
+                                gsutil -h "x-goog-meta-NUM_INSTANCES: ${NUM_INSTANCES}" cp "/export/${SQL_DUMP}" gs://optimize-data/
+                              fi
+                                """)
+                            // Cleanup
+                            sh("rm /export/${SQL_DUMP}")
+                        }
+                    }
                 }
             }
         }
@@ -228,12 +299,19 @@ pipeline {
     }
 }
 
+private void cloneGitRepo() {
+    git url: 'git@github.com:camunda/camunda-optimize',
+            branch: "$BRANCH",
+            credentialsId: 'camunda-jenkins-github-ssh',
+            poll: false
+}
+
 void buildNotification(String buildStatus) {
     // build status of null means successful
     buildStatus = buildStatus ?: 'SUCCESS'
 
     String buildResultUrl = "${env.BUILD_URL}"
-    if(env.RUN_DISPLAY_URL) {
+    if (env.RUN_DISPLAY_URL) {
         buildResultUrl = "${env.RUN_DISPLAY_URL}"
     }
 

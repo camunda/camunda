@@ -129,7 +129,6 @@
                     </ac:if>
                     <echo message="Starting Optimize @{currentVersion}..." />
                     <exec dir="${project.build.directory}/@{currentVersion}/" executable="${project.build.directory}/@{currentVersion}/optimize-startup.sh" spawn="true" />
-
                     <echo message="Waiting for Optimize to start..." />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />

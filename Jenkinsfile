@@ -18,7 +18,8 @@ MAVEN_DOCKER_IMAGE = "maven:3.6.1-jdk-8-slim"
 
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
-CAMBPM_VERSION_LATEST = "7.11.0"
+ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 
 String getCamBpmDockerImage(String camBpmVersion) {
@@ -90,7 +91,7 @@ spec:
     """
 }
 
-String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST, boolean usePostgres = false) {
+String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false) {
   String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
   String additionalEnv = usePostgres ? """
       - name: DB_DRIVER
@@ -131,7 +132,7 @@ ${additionalEnv}
     """
 }
 
-String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false, httpPort = "9200") {
+String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false, httpPort = "9200", String esVersion) {
   String basicAuthConfig = (basicAuth) ? """
       - name: ELASTIC_PASSWORD
         value: optimize
@@ -159,7 +160,7 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
     """ : ""
   return """
   - name: elasticsearch-${httpPort}
-    image: docker.elastic.co/elasticsearch/${imageName}:6.2.0
+    image: docker.elastic.co/elasticsearch/${imageName}:${esVersion}
     securityContext:
       privileged: true
       capabilities:
@@ -233,15 +234,15 @@ String gcloudContainerSpec() {
   """
 }
 
-String integrationTestPodSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
-  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec()
+String integrationTestPodSpec(String camBpmVersion, String esVersion) {
+  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
 }
 
-String e2eTestPodSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
+String e2eTestPodSpec(String camBpmVersion, String esVersion) {
   // use Docker image with preinstalled Chrome (large) and install Maven (small)
   // manually for performance reasons
   return basePodSpec('selenium/node-chrome:3.141.59-xenon') +
-    camBpmContainerSpec(camBpmVersion, true) + elasticSearchContainerSpec() +
+    camBpmContainerSpec(camBpmVersion, true) + elasticSearchContainerSpec(esVersion) +
     postgresContainerSpec() + gcloudContainerSpec()
 }
 
@@ -260,6 +261,9 @@ pipeline {
     NODE_ENV = "ci"
     NEXUS = credentials("camunda-nexus")
     GCR_REGISTRY = credentials('docker-registry-ci3')
+    def mavenProps = readMavenPom().getProperties()
+    ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+    CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
   }
 
   options {
@@ -337,7 +341,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec()
+              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
           }
           steps {
@@ -359,7 +363,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec()
+              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
           }
           steps {
@@ -375,7 +379,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-latest_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec()
+              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
           }
           steps {
@@ -396,7 +400,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-e2e_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml e2eTestPodSpec()
+              yaml e2eTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION)
             }
           }
           steps {

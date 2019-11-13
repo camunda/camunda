@@ -1,6 +1,10 @@
 #!/usr/bin/env groovy
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+def static NODE_POOL() { return "slaves" }
+
+ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+
 
 String basePodSpec() {
   return """
@@ -11,7 +15,7 @@ metadata:
     agent: optimize-ci-build
 spec:
   nodeSelector:
-    cloud.google.com/gke-nodepool: slaves
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
   tolerations:
     - key: "slaves"
       operator: "Exists"
@@ -63,10 +67,10 @@ spec:
     """
 }
 
-String elasticSearchContainerSpec() {
+String elasticSearchContainerSpec(def esVersion) {
   return """
   - name: elasticsearch-9200
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.0
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
     securityContext:
       privileged: true
       capabilities:
@@ -124,6 +128,40 @@ String camBpmContainerSpec(String camBpmVersion) {
     """
 }
 
+static String mavenAgent() {
+  return """
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+    - key: "${NODE_POOL()}"
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+"""
+}
+
 void integrationTestSteps(String camBpmVersion) {
   gitCheckoutOptimize()
   container('maven') {
@@ -135,8 +173,8 @@ void runMaven(String cmd) {
   sh("mvn ${cmd} -s settings.xml -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
 }
 
-String integrationTestPodSpec(String camBpmVersion) {
-  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec()
+String integrationTestPodSpec(String camBpmVersion, def esVersion) {
+  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
 }
 
 String getCamBpmDockerImage(String camBpmVersion) {
@@ -155,8 +193,14 @@ void gitCheckoutOptimize() {
 }
 
 pipeline {
-
-  agent none
+  agent {
+    kubernetes {
+      cloud 'optimize-ci'
+      label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+      defaultContainer 'jnlp'
+      yaml mavenAgent()
+    }
+  }
 
   environment {
     CAM_REGISTRY = credentials('repository-camunda-cloud')
@@ -166,6 +210,15 @@ pipeline {
   }
   
   stages {
+    stage("Prepare") {
+      agent none
+      steps {
+        gitCheckoutOptimize()
+        script {
+          env.ES_VERSION = readMavenPom().getProperties().getProperty(ES_TEST_VERSION_POM_PROPERTY)
+        }
+      }
+    }
     stage('IT') {
       failFast false
       parallel {
@@ -175,7 +228,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.9.12')
+              yaml integrationTestPodSpec('7.9.12', env.ES_VERSION)
             }
           }
           steps {
@@ -195,7 +248,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.10_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.10.6')
+              yaml integrationTestPodSpec('7.10.6', env.ES_VERSION)
             }
           }
           steps {

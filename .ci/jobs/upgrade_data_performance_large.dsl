@@ -12,8 +12,8 @@ pipelineJob('upgrade-performance-large-static-dataset') {
 
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
-    stringParam('CAMBPM_VERSION', '7.11.0', 'Camunda BPM version to use.')
-    stringParam('ES_VERSION', '6.2.0', 'Elasticsearch version to use.')
+    stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
+    stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
     stringParam('UPGRADE_TIMEOUT', '1800', 'Timeout for the upgrade to complete')
   }
 

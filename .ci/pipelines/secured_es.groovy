@@ -5,11 +5,12 @@ def static NODE_POOL() { return "slaves" }
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
+ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
+
 String getCamBpmDockerImage(String camBpmVersion) {
     return "registry.camunda.cloud/camunda-bpm-platform-ee:${camBpmVersion}"
 }
-
-CAMBPM_VERSION_LATEST = "7.11.0"
 
 String basePodSpec() {
     return """
@@ -70,7 +71,7 @@ spec:
     """
 }
 
-String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
+String camBpmContainerSpec(String camBpmVersion) {
     String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
     return """
   - name: cambpm
@@ -98,7 +99,7 @@ String camBpmContainerSpec(String camBpmVersion = CAMBPM_VERSION_LATEST) {
     """
 }
 
-String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false, httpPort = "9200") {
+String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false, httpPort = "9200", def esVersion) {
     String basicAuthConfig = (basicAuth) ? """
       - name: ELASTIC_PASSWORD
         value: optimize
@@ -126,7 +127,7 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
     """ : ""
     return """
   - name: elasticsearch-${httpPort}
-    image: docker.elastic.co/elasticsearch/${imageName}:6.2.0
+    image: docker.elastic.co/elasticsearch/${imageName}:${esVersion}
     securityContext:
       privileged: true
       capabilities:
@@ -156,7 +157,7 @@ String elasticSearchContainerSpec(boolean ssl = false, boolean basicAuth = false
    """ + basicAuthConfig + sslConfig
 }
 
-static String mavenElasticsearchAgent() {
+static String mavenAgent() {
     return """
 metadata:
   labels:
@@ -182,19 +183,19 @@ spec:
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 3
-        memory: 3Gi
+        cpu: 1
+        memory: 512Mi
       requests:
-        cpu: 3
-        memory: 3Gi
+        cpu: 1
+        memory: 512Mi
 """
 }
 
-String securityTestPodSpec() {
-    def esConfigBasicAuthAndSsl = elasticSearchContainerSpec(true, true, 9200)
-    def esConfigSsl = elasticSearchContainerSpec(true, false, 9201)
-    def esConfigBasicAuth = elasticSearchContainerSpec(false, true, 9202)
-    return basePodSpec() + camBpmContainerSpec() + esConfigBasicAuthAndSsl + esConfigSsl + esConfigBasicAuth
+String securityTestPodSpec(def esVersion, def camBpmVersion) {
+    def esConfigBasicAuthAndSsl = elasticSearchContainerSpec(true, true, 9200, esVersion)
+    def esConfigSsl = elasticSearchContainerSpec(true, false, 9201, esVersion)
+    def esConfigBasicAuth = elasticSearchContainerSpec(false, true, 9202, esVersion)
+    return basePodSpec() + camBpmContainerSpec(camBpmVersion) + esConfigBasicAuthAndSsl + esConfigSsl + esConfigBasicAuth
 }
 
 pipeline {
@@ -210,13 +211,31 @@ pipeline {
     }
 
     stages {
+        stage("Prepare") {
+            agent {
+                kubernetes {
+                    cloud 'optimize-ci'
+                    label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+                    defaultContainer 'jnlp'
+                    yaml mavenAgent()
+                }
+            }
+            steps {
+                cloneGitRepo()
+                script {
+                    def mavenProps = readMavenPom().getProperties()
+                    env.ES_VERSION = mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+                    env.CAMBPM_VERSION = mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+                }
+            }
+        }
         stage('Security') {
             agent {
                 kubernetes {
                     cloud 'optimize-ci'
                     label "optimize-ci-build-it-security_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
                     defaultContainer 'jnlp'
-                    yaml securityTestPodSpec()
+                    yaml securityTestPodSpec(env.ES_VERSION, env.CAMBPM_VERSION)
                 }
             }
             steps {
@@ -234,14 +253,18 @@ pipeline {
 }
 
 void securityTestSteps() {
-    git url: 'git@github.com:camunda/camunda-optimize',
-            branch: "${params.BRANCH}",
-            credentialsId: 'camunda-jenkins-github-ssh',
-            poll: false
+    cloneGitRepo()
     container('maven') {
         // run migration tests
         runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/connect-to-secured-es-tests -am -Psecured-es-it")
     }
+}
+
+private void cloneGitRepo() {
+    git url: 'git@github.com:camunda/camunda-optimize',
+            branch: "${params.BRANCH}",
+            credentialsId: 'camunda-jenkins-github-ssh',
+            poll: false
 }
 
 void runMaven(String cmd) {

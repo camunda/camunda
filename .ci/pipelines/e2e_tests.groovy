@@ -13,7 +13,10 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
   return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
 }
 
-static String e2eTestConfig(esVersion = "6.2.0", cambpmVersion = "7.11.0") {
+ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
+
+static String e2eTestConfig(esVersion, cambpmVersion) {
   return """
 metadata:
   labels:
@@ -108,6 +111,40 @@ spec:
 """
 }
 
+static String mavenAgent() {
+  return """
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+    - key: "${NODE_POOL()}"
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+"""
+}
+
 void buildNotification(String buildStatus) {
   // build status of null means successful
   buildStatus = buildStatus ?: 'SUCCESS'
@@ -128,23 +165,9 @@ void runMaven(String cmd) {
   sh("mvn ${cmd} -s settings.xml -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
 }
 
-void gitCheckoutOptimize() {
-  git url: 'git@github.com:camunda/camunda-optimize',
-          branch: "${params.BRANCH}",
-          credentialsId: 'camunda-jenkins-github-ssh',
-          poll: false
-}
 
 pipeline {
-  agent {
-    kubernetes {
-      cloud 'optimize-ci'
-      label "optimize-ci-build_e2etests_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-      defaultContainer 'jnlp'
-      yaml e2eTestConfig("${params.ES_VERSION}", "${params.CAMBPM_VERSION}")
-    }
-  }
-
+  agent none
   environment {
     NEXUS = credentials("camunda-nexus")
     BROWSERSTACK_USERNAME = credentials('browserstack-username')
@@ -158,37 +181,67 @@ pipeline {
   }
 
   stages {
-    stage('Build') {
+    stage("Prepare") {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml mavenAgent()
+        }
+      }
       steps {
-        retry(2) {
-          gitCheckoutOptimize()
-          container('maven') {
-            runMaven('install -Pengine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
-          }
+        cloneGitRepo()
+        script {
+          def mavenProps = readMavenPom().getProperties()
+          env.ES_VERSION = params.ES_VERSION ? params.ES_VERSION : mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+          env.CAMBPM_VERSION = params.CAMBPM_VERSION ? params.CAMBPM_VERSION : mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
         }
       }
     }
-    stage('Generate Test Data') {
-      steps {
-        retry(2) {
-          timeout(20) {
-            container('maven') {
-              runMaven('generate-test-resources -Pclient.generate-data -T\$LIMITS_CPU')
+    stage('End to End Tests') {
+      agent {
+        kubernetes {
+          cloud 'optimize-ci'
+          label "optimize-ci-build_e2etests_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+          defaultContainer 'jnlp'
+          yaml e2eTestConfig("${env.ES_VERSION}", "${env.CAMBPM_VERSION}")
+        }
+      }
+      stages {
+        stage('Build') {
+          steps {
+            retry(2) {
+              cloneGitRepo()
+              container('maven') {
+                runMaven('install -Pengine-latest -Dskip.docker -DskipTests -T\$LIMITS_CPU')
+              }
             }
           }
         }
-      }
-    }
-    stage('Run E2E Tests') {
-      steps {
-        container('maven') {
-          sh 'cd ./client'
-          runMaven('test -Pclient.e2etests-browserstack')
+        stage('Generate Test Data') {
+          steps {
+            retry(2) {
+              timeout(20) {
+                container('maven') {
+                  runMaven('generate-test-resources -Pclient.generate-data -T\$LIMITS_CPU')
+                }
+              }
+            }
+          }
         }
-      }
-      post {
-        always {
-          archiveArtifacts artifacts: 'client/build/*.log'
+        stage('Run E2E Tests') {
+          steps {
+            container('maven') {
+              sh 'cd ./client'
+              runMaven('test -Pclient.e2etests-browserstack')
+            }
+          }
+          post {
+            always {
+              archiveArtifacts artifacts: 'client/build/*.log'
+            }
+          }
         }
       }
     }
@@ -199,4 +252,11 @@ pipeline {
       buildNotification(currentBuild.result)
     }
   }
+}
+
+private void cloneGitRepo() {
+  git url: 'git@github.com:camunda/camunda-optimize',
+          branch: "${params.BRANCH}",
+          credentialsId: 'camunda-jenkins-github-ssh',
+          poll: false
 }

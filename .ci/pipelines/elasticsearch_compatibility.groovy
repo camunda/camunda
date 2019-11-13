@@ -13,7 +13,10 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
   return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
 }
 
-static String mavenElasticsearchIntegrationTestAgent(esVersion = "6.2.0", cambpmVersion = "7.11.0") {
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
+
+
+static String mavenElasticsearchIntegrationTestAgent(esVersion, cambpmVersion) {
   return """
 metadata:
   labels:
@@ -101,7 +104,7 @@ spec:
 """
 }
 
-static String mavenElasticsearchAWSIntegrationTestAgent(cambpmVersion = "7.11.0") {
+static String mavenElasticsearchAWSIntegrationTestAgent(cambpmVersion) {
   return """
 metadata:
   labels:
@@ -220,10 +223,49 @@ void integrationTestStepsAWS() {
   }
 }
 
+static String mavenAgent() {
+  return """
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+    - key: "${NODE_POOL()}"
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+"""
+}
 
 pipeline {
-
-  agent none
+  agent {
+    kubernetes {
+      cloud 'optimize-ci'
+      label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+      defaultContainer 'jnlp'
+      yaml mavenAgent()
+    }
+  }
 
   environment {
     NEXUS = credentials("camunda-nexus")
@@ -236,6 +278,14 @@ pipeline {
   }
 
   stages {
+    stage("Prepare") {
+      steps {
+        gitCheckoutOptimize()
+        script {
+          env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: readMavenPom().getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+        }
+      }
+    }
     stage('Elasticsearch Integration Tests') {
       failFast false
       parallel {
@@ -245,7 +295,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.3.1_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.3.1", "${params.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("6.3.1", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -265,7 +315,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.4.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.4.0", "${params.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("6.4.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -285,7 +335,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.5.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.5.0", "${params.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("6.5.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -305,7 +355,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.6.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.6.0", "${params.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("6.6.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -325,7 +375,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.7.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.7.0", "${params.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("6.7.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -345,7 +395,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-6.8.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.8.0", "${params.CAMBPM_VERSION}")
+              yaml mavenElasticsearchIntegrationTestAgent("6.8.0", "${env.CAMBPM_VERSION}")
             }
           }
           steps {
@@ -365,7 +415,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build_es-AWS_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml mavenElasticsearchAWSIntegrationTestAgent("${params.CAMBPM_VERSION}")
+              yaml mavenElasticsearchAWSIntegrationTestAgent("${env.CAMBPM_VERSION}")
             }
           }
 

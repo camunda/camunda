@@ -2,13 +2,22 @@
 
 // general properties for CI execution
 def static NODE_POOL() { return "slaves-ssd" }
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
-def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
-def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
-static String mavenElasticsearchAgent(env, postgresVersion='9.6-alpine', esVersion = '6.2.0', cambpmVersion = '7.11.0') {
-  return """
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+
+def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
+
+def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
+
+def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
+    return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}"
+}
+
+ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
+
+static String mavenElasticsearchAgent(env, postgresVersion = '9.6-alpine', esVersion, cambpmVersion) {
+    return """
 metadata:
   labels:
     agent: optimize-ci-build
@@ -161,77 +170,129 @@ spec:
 """
 }
 
+static String mavenAgent() {
+    return """
+metadata:
+  labels:
+    agent: optimize-ci-build
+spec:
+  nodeSelector:
+    cloud.google.com/gke-nodepool: ${NODE_POOL()}
+  tolerations:
+    - key: "${NODE_POOL()}"
+      operator: "Exists"
+      effect: "NoSchedule"
+  containers:
+  - name: maven
+    image: ${MAVEN_DOCKER_IMAGE()}
+    command: ["cat"]
+    tty: true
+    env:
+      - name: LIMITS_CPU
+        valueFrom:
+          resourceFieldRef:
+            resource: limits.cpu
+      - name: TZ
+        value: Europe/Berlin
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+"""
+}
+
+
 void buildNotification(String buildStatus) {
-  // build status of null means successful
-  buildStatus = buildStatus ?: 'SUCCESS'
+    // build status of null means successful
+    buildStatus = buildStatus ?: 'SUCCESS'
 
-  String buildResultUrl = "${env.BUILD_URL}"
-  if(env.RUN_DISPLAY_URL) {
-    buildResultUrl = "${env.RUN_DISPLAY_URL}"
-  }
+    String buildResultUrl = "${env.BUILD_URL}"
+    if (env.RUN_DISPLAY_URL) {
+        buildResultUrl = "${env.RUN_DISPLAY_URL}"
+    }
 
-  def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-  def body = "See: ${buildResultUrl}"
-  def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
+    def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
+    def body = "See: ${buildResultUrl}"
+    def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
 
-  emailext subject: subject, body: body, recipientProviders: recipients
+    emailext subject: subject, body: body, recipientProviders: recipients
 }
 
 pipeline {
-
-  agent {
-    kubernetes {
-      cloud 'optimize-ci'
-      label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-      defaultContainer 'jnlp'
-      yaml mavenElasticsearchAgent(env, params.POSTGRES_VERSION, params.ES_VERSION, params.CAMBPM_VERSION)
+    agent none
+    environment {
+        NEXUS = credentials("camunda-nexus")
     }
-  }
 
-  environment {
-    NEXUS = credentials("camunda-nexus")
-  }
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '50'))
+        timestamps()
+        timeout(time: 45, unit: 'MINUTES')
+    }
 
-  options {
-    buildDiscarder(logRotator(numToKeepStr: '50'))
-    timestamps()
-    timeout(time: 45, unit: 'MINUTES')
-  }
+    stages {
+        stage('Prepare') {
+            agent {
+                kubernetes {
+                    cloud 'optimize-ci'
+                    label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+                    defaultContainer 'jnlp'
+                    yaml mavenAgent()
+                }
+            }
+            steps {
+                cloneGitRepo()
+                script {
+                    def mavenProps = readMavenPom().getProperties()
+                    env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+                    env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+                }
+            }
+        }
+        stage('Performance') {
+            agent {
+                kubernetes {
+                    cloud 'optimize-ci'
+                    label "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+                    defaultContainer 'jnlp'
+                    yaml mavenElasticsearchAgent(env, params.POSTGRES_VERSION, env.ES_VERSION, env.CAMBPM_VERSION)
+                }
+            }
+            steps {
+                cloneGitRepo()
+                container('maven') {
+                    sh 'mvn -T\$LIMITS_CPU -pl backend,qa/data-generation -am -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
+                    sh 'mvn -Plive-data-import-performance-test -f qa/import-performance-tests/pom.xml -s settings.xml clean test -B'
+                }
+            }
+            post {
+                always {
+                    container('maven') {
+                        sh 'curl localhost:9200/_cat/indices?v'
+                        sh('''#!/bin/bash -ex
+                          cp -R --parents /es-storage/logs /cambpm-storage .
+                          chown -R 10000:1000 ./{es-storage,cambpm-storage}
+                        ''')
+                        archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*', onlyIfSuccessful: false
+                    }
+                }
+            }
+        }
+    }
 
-  stages {
-    stage('Prepare') {
-      steps {
-        git url: 'git@github.com:camunda/camunda-optimize',
+    post {
+        changed {
+            buildNotification(currentBuild.result)
+        }
+    }
+}
+
+private void cloneGitRepo() {
+    git url: 'git@github.com:camunda/camunda-optimize',
             branch: "${params.BRANCH}",
             credentialsId: 'camunda-jenkins-github-ssh',
             poll: false
-      }
-    }
-    stage('Performance') {
-      steps {
-        container('maven') {
-          sh 'mvn -T\$LIMITS_CPU -pl backend,qa/data-generation -am -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
-          sh 'mvn -Plive-data-import-performance-test -f qa/import-performance-tests/pom.xml -s settings.xml clean test -B'
-        }
-      }
-      post {
-        always {
-          container('maven') {
-            sh 'curl localhost:9200/_cat/indices?v'
-            sh ('''#!/bin/bash -ex
-              cp -R --parents /es-storage/logs /cambpm-storage .
-              chown -R 10000:1000 ./{es-storage,cambpm-storage}
-            ''')
-            archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*', onlyIfSuccessful: false
-          }
-        }
-      }
-    }
-  }
-
-  post {
-    changed {
-      buildNotification(currentBuild.result)
-    }
-  }
 }

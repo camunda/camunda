@@ -12,8 +12,8 @@ pipelineJob('e2e_tests') {
 
   parameters {
     stringParam('BRANCH', 'master', 'Branch to use for E2E tests.')
-    stringParam('ES_VERSION', '6.2.0', 'Elasticsearch version to use.')
-    stringParam('CAMBPM_VERSION', '7.11.0', 'Camunda BPM version to use.')
+    stringParam('ES_VERSION', '', 'Elasticsearch version to use, defaults to reading it from pom.xml.')
+    stringParam('CAMBPM_VERSION', '', 'Camunda BPM version to use, defaults to reading it from pom.xml.')
   }
 
   triggers {
