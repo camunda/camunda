@@ -7,7 +7,7 @@ package org.camunda.optimize.service.exceptions;
 
 public class OptimizeException extends Exception {
 
-  public OptimizeException(){
+  public OptimizeException() {
     super();
   }
 
@@ -17,5 +17,9 @@ public class OptimizeException extends Exception {
 
   public OptimizeException(String message, Exception e) {
     super(message, e);
+  }
+
+  public String getErrorCode() {
+    return "serverError";
   }
 }

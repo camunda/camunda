@@ -680,5 +680,9 @@
         "label-plural": "million"
       }
     }
+  },
+  "apiErrors": {
+    "serverError": "An internal server error occurred.",
+    "reportConflict": "Could not apply the changes due to conflicts."
   }
 }

@@ -17,19 +17,20 @@ public class ConflictResponseDto extends ErrorResponseDto {
   private Set<ConflictedItemDto> conflictedItems;
 
   protected ConflictResponseDto() {
-    this(null, Collections.emptySet());
+    this(null, null, null, Collections.emptySet());
   }
 
   public ConflictResponseDto(final Set<ConflictedItemDto> conflictedItems) {
-    this(null, conflictedItems);
+    this(null, null, null, conflictedItems);
   }
 
-  public ConflictResponseDto(final String errorMessage) {
-    this(errorMessage, Collections.emptySet());
+  public ConflictResponseDto(final String errorCode, final String errorMessage, final String detailedErrorMessage) {
+    this(errorCode, errorMessage, detailedErrorMessage, Collections.emptySet());
   }
 
-  public ConflictResponseDto(final String errorMessage, final Set<ConflictedItemDto> conflictedItems) {
-    super(errorMessage);
+  public ConflictResponseDto(final String errorCode, final String errorMessage, final String detailedErrorMessage,
+                             final Set<ConflictedItemDto> conflictedItems) {
+    super(errorCode, errorMessage, detailedErrorMessage);
     this.conflictedItems = conflictedItems;
   }
 }

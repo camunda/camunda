@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import lombok.AllArgsConstructor;
@@ -20,6 +21,7 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Map;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -28,6 +30,7 @@ import java.util.Optional;
 public class LocalizationService implements ConfigurationReloadable {
 
   public static final String LOCALIZATION_PATH = "localization/";
+  public static final String API_ERRORS_FIELD = "apiErrors";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final ConfigurationService configurationService;
@@ -38,6 +41,10 @@ public class LocalizationService implements ConfigurationReloadable {
       : configurationService.getFallbackLocale();
 
     return getFileBytes(resolveLocaleFilePath(resolvedLocaleCode));
+  }
+
+  public String getDefaultLocaleMessageForBackendErrorCode(final String code) throws IOException {
+    return getMessageForCode(configurationService.getFallbackLocale(), API_ERRORS_FIELD, code);
   }
 
   @Override
@@ -98,5 +105,18 @@ public class LocalizationService implements ConfigurationReloadable {
     }
 
     return result.orElseThrow(() -> new OptimizeRuntimeException("Could not load localization file: " + localeFileName));
+  }
+
+  private String getMessageForCode(final String localeCode,
+                                   final String categoryCode, final String messageCode) throws IOException {
+    final String localeFileName = resolveLocaleFilePath(localeCode);
+    final URL localizationFile = getClass().getClassLoader().getResource(localeFileName);
+    Map<String, Map> localisationMap = objectMapper.readValue(
+      localizationFile,
+      new TypeReference<Map<String, Map>>() {
+      }
+    );
+    Map<String, String> errorCodeMap = localisationMap.get(categoryCode);
+    return errorCodeMap.get(messageCode);
   }
 }

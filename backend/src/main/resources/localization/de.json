@@ -680,5 +680,9 @@
         "label-plural": "Millionen"
       }
     }
+  },
+  "apiErrors": {
+    "serverError": "Es ist ein interner Server Fehler aufgetreten.",
+    "reportConflict": "Die Änderung konnte aufgrund von Konflikten nicht ausgeführt werden."
   }
 }

@@ -38,6 +38,7 @@ import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluation
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeException;
+import org.camunda.optimize.service.exceptions.OptimizeReportConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.ReportRelationService;
@@ -314,7 +315,7 @@ public class ReportService implements CollectionReferencingService {
       final Set<ConflictedItemDto> conflictedItems = getConflictedItemsForDeleteReport(reportDefinition);
 
       if (!conflictedItems.isEmpty()) {
-        throw new OptimizeConflictException(conflictedItems);
+        throw new OptimizeReportConflictException(conflictedItems);
       }
     }
 
@@ -467,7 +468,7 @@ public class ReportService implements CollectionReferencingService {
     );
 
     if (!conflictedItems.isEmpty()) {
-      throw new OptimizeConflictException(conflictedItems);
+      throw new OptimizeReportConflictException(conflictedItems);
     }
   }
 
@@ -480,7 +481,7 @@ public class ReportService implements CollectionReferencingService {
     );
 
     if (!conflictedItems.isEmpty()) {
-      throw new OptimizeConflictException(conflictedItems);
+      throw new OptimizeReportConflictException(conflictedItems);
     }
   }
 
