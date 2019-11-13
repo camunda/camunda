@@ -16,7 +16,7 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
-static String e2eTestConfig(esVersion, cambpmVersion) {
+static String e2eTestConfig(esVersion, camBpmVersion) {
   return """
 metadata:
   labels:
@@ -35,6 +35,8 @@ spec:
     configMap:
       # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
       name: ci-optimize-cambpm-config
+  - name: gcloud2postgres
+    emptyDir: {}
   initContainers:
     - name: init-sysctl
       image: busybox
@@ -61,27 +63,39 @@ spec:
       requests:
         cpu: 4
         memory: 4Gi
+""" \
+ + gcloudContainerSpec() \
+ + postgresContainerSpec() + camBpmContainerSpec(camBpmVersion) \
+ + elasticSearchContainerSpec(esVersion)
+}
+
+static String camBpmContainerSpec(String camBpmVersion) {
+  return """
   - name: cambpm
-    image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    image: ${CAMBPM_DOCKER_IMAGE(camBpmVersion)}
+    tty: true
     env:
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:+UnlockExperimentalVMOptions
-          -XX:+UseCGroupMemoryLimitForHeap
       - name: JAVA_OPTS
-        value: |
-          -Xms1g 
-          -Xmx1g 
-          -XX:MaxMetaspaceSize=256m
+        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
+      - name: DB_DRIVER
+        value: "org.postgresql.Driver"
+      - name: DB_USERNAME
+        value: "camunda"
+      - name: DB_PASSWORD
+        value: "camunda"
+      - name: DB_URL
+        value: "jdbc:postgresql://localhost:5432/engine"
+      - name: WAIT_FOR
+        value: localhost:5432
     resources:
       limits:
-        cpu: 2
-        memory: 2Gi 
+        cpu: 4
+        memory: 3Gi
       requests:
-        cpu: 2
-        memory: 2Gi
+        cpu: 4
+        memory: 3Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml
@@ -89,6 +103,11 @@ spec:
     - name: cambpm-config
       mountPath: /camunda/webapps/manager/META-INF/context.xml
       subPath: context.xml
+    """
+}
+
+static String elasticSearchContainerSpec(esVersion) {
+  return """
   - name: elasticsearch
     image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
     env:
@@ -108,7 +127,51 @@ spec:
       requests:
         cpu: 2
         memory: 2Gi
-"""
+  """
+}
+
+static String postgresContainerSpec() {
+  return """
+  - name: postgresql
+    image: postgres:11.2
+    env:
+      - name: POSTGRES_USER
+        value: camunda
+      - name: POSTGRES_PASSWORD
+        value: camunda
+      - name: POSTGRES_DB
+        value: engine
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+    volumeMounts:
+    - name: gcloud2postgres
+      mountPath: /db_dump/
+  """
+}
+
+static String gcloudContainerSpec() {
+  return """
+  - name: gcloud
+    image: google/cloud-sdk:slim
+    imagePullPolicy: Always
+    command: ["cat"]
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 512Mi
+      requests:
+        cpu: 1
+        memory: 512Mi
+    volumeMounts:
+    - name: gcloud2postgres
+      mountPath: /db_dump/
+  """
 }
 
 static String mavenAgent() {
@@ -165,7 +228,6 @@ void runMaven(String cmd) {
   sh("mvn ${cmd} -s settings.xml -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn")
 }
 
-
 pipeline {
   agent none
   environment {
@@ -219,12 +281,15 @@ pipeline {
             }
           }
         }
-        stage('Generate Test Data') {
+        stage('Restore Test Data') {
           steps {
             retry(2) {
               timeout(20) {
-                container('maven') {
-                  runMaven('generate-test-resources -Pclient.generate-data -T\$LIMITS_CPU')
+                container('gcloud') {
+                  sh 'gsutil -q -m cp gs://optimize-data/optimize_large_data-e2e.sqlc /db_dump/dump.sqlc'
+                }
+                container('postgresql') {
+                  sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc'
                 }
               }
             }
@@ -233,8 +298,7 @@ pipeline {
         stage('Run E2E Tests') {
           steps {
             container('maven') {
-              sh 'cd ./client'
-              runMaven('test -Pclient.e2etests-browserstack')
+              runMaven('test -pl client -Pclient.e2etests-browserstack -Dskip.yarn.build')
             }
           }
           post {
