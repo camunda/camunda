@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
+ */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import io.atomix.protocols.raft.storage.snapshot.PendingSnapshot;
@@ -13,22 +20,40 @@ import java.nio.file.StandardOpenOption;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
+/**
+ * Represents a pending snapshot, that is a snapshot in the process of being written. It is not in a
+ * usable state as it may be mutated at any moment; primarily used for replication.
+ */
 public class DbPendingSnapshot implements PendingSnapshot {
   private static final Logger LOGGER = new ZbLogger(DbPendingSnapshot.class);
 
   private final long index;
   private final long term;
   private final WallClockTimestamp timestamp;
+
   private final Path directory;
+  private final DbSnapshotStore snapshotStore;
 
   private ByteBuffer expectedId;
 
+  /**
+   * @param index the snapshot's index
+   * @param term the snapshot's term
+   * @param timestamp the snapshot's creation timestamp
+   * @param directory the snapshot's working directory (i.e. where we should write chunks)
+   * @param snapshotStore the store which will be called when the snapshot is to be committed
+   */
   public DbPendingSnapshot(
-      final long index, final long term, final WallClockTimestamp timestamp, final Path directory) {
+      final long index,
+      final long term,
+      final WallClockTimestamp timestamp,
+      final Path directory,
+      final DbSnapshotStore snapshotStore) {
     this.index = index;
     this.term = term;
     this.timestamp = timestamp;
     this.directory = directory;
+    this.snapshotStore = snapshotStore;
   }
 
   @Override
@@ -47,7 +72,7 @@ public class DbPendingSnapshot implements PendingSnapshot {
   }
 
   @Override
-  public boolean contains(final ByteBuffer chunkId) {
+  public boolean containsChunk(final ByteBuffer chunkId) {
     return Files.exists(directory.resolve(getFile(chunkId)));
   }
 
@@ -76,12 +101,14 @@ public class DbPendingSnapshot implements PendingSnapshot {
   }
 
   @Override
-  public void expect(final ByteBuffer nextChunkId) {
+  public void setNextExpected(final ByteBuffer nextChunkId) {
     expectedId = nextChunkId;
   }
 
   @Override
-  public void commit() {}
+  public void commit() {
+    snapshotStore.put(this);
+  }
 
   @Override
   public void abort() {

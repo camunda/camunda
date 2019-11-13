@@ -145,7 +145,7 @@ public class AtomixLogStorageRule extends ExternalResource
 
     raftStorage = builder.apply(buildDefaultStorage()).withDirectory(directory).build();
     raftLog = raftStorage.openLog();
-    snapshotStore = raftStorage.openSnapshotStore();
+    snapshotStore = raftStorage.getSnapshotStore();
     metaStore = raftStorage.openMetaStore();
 
     storage = spy(new AtomixLogStorage(this, this, this));

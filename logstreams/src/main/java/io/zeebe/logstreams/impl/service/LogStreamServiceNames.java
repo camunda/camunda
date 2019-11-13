@@ -11,7 +11,6 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class LogStreamServiceNames {

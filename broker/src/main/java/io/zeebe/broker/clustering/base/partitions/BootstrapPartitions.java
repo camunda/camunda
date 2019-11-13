@@ -72,7 +72,8 @@ public class BootstrapPartitions implements Service<Void> {
     installPartition(startContext, partition);
   }
 
-  private void installPartition(final ServiceStartContext startContext, final RaftPartition partition) {
+  private void installPartition(
+      final ServiceStartContext startContext, final RaftPartition partition) {
     final String partitionName = getPartitionName(partition.id().id());
     final ServiceName<PartitionInstallService> partitionInstallServiceName =
         partitionInstallServiceName(partitionName);
@@ -81,9 +82,10 @@ public class BootstrapPartitions implements Service<Void> {
         new PartitionInstallService(
             partition, atomix.getEventService(), serviceContainer, brokerCfg);
 
-    startContext.createService(partitionInstallServiceName, partitionInstallService)
-      .dependency(ATOMIX_JOIN_SERVICE)
-      .install();
+    startContext
+        .createService(partitionInstallServiceName, partitionInstallService)
+        .dependency(ATOMIX_JOIN_SERVICE)
+        .install();
   }
 
   public Injector<Atomix> getAtomixInjector() {

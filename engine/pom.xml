@@ -153,6 +153,18 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>atomix-raft</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>atomix-storage</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>

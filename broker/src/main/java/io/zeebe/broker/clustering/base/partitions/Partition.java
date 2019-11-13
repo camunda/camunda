@@ -127,8 +127,7 @@ public class Partition implements Service<Partition> {
 
   private StateSnapshotController createSnapshotController() {
 
-    final StateStorageFactory storageFactory =
-        new StateStorageFactory(partition.dataDirectory());
+    final StateStorageFactory storageFactory = new StateStorageFactory(partition.dataDirectory());
     final StateStorage stateStorage = storageFactory.create();
 
     stateReplication =

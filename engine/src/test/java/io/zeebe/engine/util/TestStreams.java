@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.util;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -29,7 +28,6 @@ import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
@@ -129,7 +127,8 @@ public class TestStreams {
       throw new UncheckedIOException(e);
     }
 
-    final AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(dataDirectory, partitionId);
+    final AtomixLogStorageRule logStorageRule =
+        new AtomixLogStorageRule(dataDirectory, partitionId);
     logStorageRule.open(b -> b.withDirectory(segments));
     final var logStream =
         spy(

@@ -7,10 +7,7 @@
  */
 package io.zeebe.logstreams.util;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
-
 import io.atomix.protocols.raft.storage.RaftStorage.Builder;
-import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBuilder;
@@ -70,7 +67,7 @@ public final class LogStreamRule extends ExternalResource {
   public static LogStreamRule startByDefault(
       final TemporaryFolder temporaryFolder,
       final Consumer<LogStreamBuilder> streamBuilder,
-      UnaryOperator<Builder> storageBuilder) {
+      final UnaryOperator<Builder> storageBuilder) {
     return new LogStreamRule(temporaryFolder, true, streamBuilder, storageBuilder);
   }
 
