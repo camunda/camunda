@@ -7,7 +7,6 @@
  */
 package io.zeebe.exporter;
 
-import static io.zeebe.exporter.ElasticsearchClient.INDEX_DELIMITER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.carrotsearch.hppc.cursors.ObjectCursor;
@@ -69,30 +68,24 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   protected void assertIndexSettings() {
     final ImmutableOpenMap<String, Settings> settingsForIndices = esClient.getSettingsForIndices();
     for (ObjectCursor<String> key : settingsForIndices.keys()) {
-      final Settings settings = settingsForIndices.get(key.value);
+      final String indexName = key.value;
+      final Settings settings = settingsForIndices.get(indexName);
       final Integer numberOfShards = settings.getAsInt("index.number_of_shards", -1);
       final Integer numberOfReplicas = settings.getAsInt("index.number_of_replicas", -1);
 
-      int expectedNumberOfShards = 1;
-      if (key.value.toLowerCase().contains(indexDef(ValueType.WORKFLOW_INSTANCE))
-          || key.value.toLowerCase().contains(indexDef(ValueType.JOB))) {
-        expectedNumberOfShards = 3;
-      }
+      final int expectedNumberOfShards = numberOfShardsForIndex(indexName);
+
       assertThat(numberOfShards)
           .withFailMessage(
               "Expected number of shards of index %s to be %d but was %d",
-              key.value, expectedNumberOfShards, numberOfShards)
+              indexName, expectedNumberOfShards, numberOfShards)
           .isEqualTo(expectedNumberOfShards);
       assertThat(numberOfReplicas)
           .withFailMessage(
               "Expected number of replicas of index %s to be 0 but was %d",
-              key.value, numberOfReplicas)
+              indexName, numberOfReplicas)
           .isEqualTo(0);
     }
-  }
-
-  private String indexDef(final ValueType valueType) {
-    return valueType.name().toLowerCase().replaceAll("_", "-") + INDEX_DELIMITER;
   }
 
   protected void assertRecordExported(Record<?> record) {
@@ -119,6 +112,16 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     }
 
     return MAPPER.convertValue(jsonNode, Map.class);
+  }
+
+  private int numberOfShardsForIndex(String indexName) {
+    if (indexName.startsWith(
+            esClient.indexPrefixForValueTypeWithDelimiter(ValueType.WORKFLOW_INSTANCE))
+        || indexName.startsWith(esClient.indexPrefixForValueTypeWithDelimiter(ValueType.JOB))) {
+      return 3;
+    } else {
+      return 1;
+    }
   }
 
   protected ElasticsearchExporterConfiguration getDefaultConfiguration() {

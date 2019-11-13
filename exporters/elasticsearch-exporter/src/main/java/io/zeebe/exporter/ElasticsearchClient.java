@@ -211,8 +211,7 @@ public class ElasticsearchClient {
 
   protected String indexFor(final Record<?> record) {
     final Instant timestamp = Instant.ofEpochMilli(record.getTimestamp());
-    return indexPrefixForValueType(record.getValueType())
-        + INDEX_DELIMITER
+    return indexPrefixForValueTypeWithDelimiter(record.getValueType())
         + formatter.format(timestamp);
   }
 
@@ -222,6 +221,10 @@ public class ElasticsearchClient {
 
   protected String typeFor(final Record<?> record) {
     return "_doc";
+  }
+
+  protected String indexPrefixForValueTypeWithDelimiter(final ValueType valueType) {
+    return indexPrefixForValueType(valueType) + INDEX_DELIMITER;
   }
 
   private String indexPrefixForValueType(final ValueType valueType) {
