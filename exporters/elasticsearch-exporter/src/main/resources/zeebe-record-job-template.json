@@ -3,6 +3,9 @@
     "zeebe-record-job_*"
   ],
   "order": 20,
+  "settings": {
+    "number_of_shards": 3
+  },
   "aliases": {
     "zeebe-record-job": {}
   },
