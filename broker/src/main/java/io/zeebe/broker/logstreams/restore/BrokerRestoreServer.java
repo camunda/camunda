@@ -12,7 +12,7 @@ import io.zeebe.distributedlog.restore.RestoreServer;
 import io.zeebe.distributedlog.restore.impl.DefaultRestoreInfoRequestHandler;
 import io.zeebe.distributedlog.restore.log.impl.DefaultLogReplicationRequestHandler;
 import io.zeebe.distributedlog.restore.snapshot.impl.DefaultSnapshotRequestHandler;
-import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.util.ZbLogger;
 import java.util.concurrent.CompletableFuture;
@@ -58,11 +58,12 @@ public class BrokerRestoreServer implements RestoreServer {
     this.logger = logger;
   }
 
-  public CompletableFuture<Void> start(LogStream logStream, SnapshotController snapshotController) {
+  public CompletableFuture<Void> start(
+      int partitionId, LogStorage logStorage, SnapshotController snapshotController) {
     final LogReplicationRequestHandler logReplicationHandler =
-        new DefaultLogReplicationRequestHandler(logStream);
+        new DefaultLogReplicationRequestHandler(logStorage);
     final RestoreInfoRequestHandler restoreInfoHandler =
-        new DefaultRestoreInfoRequestHandler(logStream, snapshotController);
+        new DefaultRestoreInfoRequestHandler(partitionId, logStorage, snapshotController);
     final SnapshotRequestHandler snapshotRequestHandler =
         new DefaultSnapshotRequestHandler(snapshotController);
 

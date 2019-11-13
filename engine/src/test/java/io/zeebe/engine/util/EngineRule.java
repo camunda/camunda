@@ -277,7 +277,7 @@ public final class EngineRule extends ExternalResource {
       final LogStream logStream = context.getLogStream();
       logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
 
-      logStreamReader = new BufferedLogStreamReader(logStream);
+      logStreamReader = new BufferedLogStreamReader(logStream.getLogStorage());
     }
 
     private void onNewEventCommitted() {

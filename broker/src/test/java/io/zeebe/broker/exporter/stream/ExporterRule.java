@@ -95,6 +95,7 @@ public class ExporterRule implements TestRule {
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
             .logStream(stream)
+            .logStorage(stream.getLogStorage())
             .zeebeDb(capturedZeebeDb)
             .maxSnapshots(1)
             .descriptors(exporterDescriptors)

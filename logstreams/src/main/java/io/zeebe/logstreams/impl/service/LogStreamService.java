@@ -77,7 +77,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
     serviceContext = startContext;
     logStorage = logStorageInjector.getValue();
-    this.reader = new BufferedLogStreamReader(this);
+    this.reader = new BufferedLogStreamReader(logStorage);
     setCommitPosition(reader.seekToEnd());
   }
 

@@ -179,7 +179,8 @@ public class CommandApiMessageHandlerTest {
     // then
     assertThat(isHandled).isTrue();
 
-    final BufferedLogStreamReader logStreamReader = new BufferedLogStreamReader(logStream);
+    final BufferedLogStreamReader logStreamReader =
+        new BufferedLogStreamReader(logStream.getLogStorage());
     waitForAvailableEvent(logStreamReader);
 
     final LoggedEvent loggedEvent = logStreamReader.next();

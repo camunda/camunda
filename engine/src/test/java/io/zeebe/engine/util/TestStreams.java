@@ -206,7 +206,7 @@ public class TestStreams {
   public Stream<LoggedEvent> events(final String logName) {
     final LogStream logStream = getLogStream(logName);
 
-    final LogStreamReader reader = new BufferedLogStreamReader(logStream);
+    final LogStreamReader reader = new BufferedLogStreamReader(logStream.getLogStorage());
     closeables.manage(reader);
 
     reader.seekToFirstEvent();
@@ -282,6 +282,8 @@ public class TestStreams {
             .actorScheduler(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
+            .writeBuffer(stream.getWriteBuffer())
+            .logStorage(stream.getLogStorage())
             .streamProcessorFactory(
                 (context) -> {
                   final TypedRecordProcessors processors = factory.createProcessors(context);
@@ -323,7 +325,8 @@ public class TestStreams {
 
   public long writeBatch(String logName, RecordToWrite[] recordToWrites) {
     final LogStream logStream = getLogStream(logName);
-    final LogStreamBatchWriterImpl logStreamBatchWriter = new LogStreamBatchWriterImpl(logStream);
+    final LogStreamBatchWriterImpl logStreamBatchWriter =
+        new LogStreamBatchWriterImpl(logStream.getPartitionId(), logStream.getWriteBuffer());
 
     for (RecordToWrite recordToWrite : recordToWrites) {
       logStreamBatchWriter

@@ -13,6 +13,7 @@ import io.zeebe.engine.processor.TypedStreamWriterImpl;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 
@@ -41,8 +42,9 @@ public class MessageObserver implements StreamProcessorLifecycleAware {
 
     final ActorControl actor = processingContext.getActor();
 
+    final LogStream logStream = processingContext.getLogStream();
     final TypedStreamWriterImpl typedStreamWriter =
-        new TypedStreamWriterImpl(processingContext.getLogStream());
+        new TypedStreamWriterImpl(logStream.getPartitionId(), logStream.getWriteBuffer());
     final MessageTimeToLiveChecker timeToLiveChecker =
         new MessageTimeToLiveChecker(typedStreamWriter, messageState);
     processingContext

@@ -76,7 +76,7 @@ public class DistributedLogPartitionRule {
 
     logStream = logStreamInjector.getValue();
     assertThat(logStream).isNotNull();
-    reader = new BufferedLogStreamReader(logStream);
+    reader = new BufferedLogStreamReader(logStream.getLogStorage());
   }
 
   private void createDistributedLog() {

@@ -20,6 +20,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -116,26 +117,43 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
     try {
       containerCloseFuture.get(awaitTime, timeUnit);
     } catch (Exception ex) {
-      LOG.debug("Service container closing failed. Print dependencies.");
-
-      final StringBuilder builder = new StringBuilder();
-      dependencyResolver
-          .getControllers()
-          .forEach(
-              (c) -> {
-                builder.append("\n").append(c).append("\n\t\\");
-                c.getDependencies()
-                    .forEach(
-                        (d) -> {
-                          builder.append("\n \t-- ").append(dependencyResolver.getService(d));
-                        });
-              });
-
-      LOG.debug(builder.toString());
+      LOG.debug("Service container closing failed.");
+      printDependencies();
       throw ex;
     } finally {
       onClosed();
     }
+  }
+
+  private void printDependencies() {
+    final StringBuilder dotBuilder = new StringBuilder();
+    dotBuilder.append("digraph dependencyGraph").append("\n{");
+    dependencyResolver
+        .getControllers()
+        .forEach(
+            (c) -> {
+              final Set<ServiceName<?>> dependencies = c.getDependencies();
+              final String serviceName =
+                  c.getServiceName().getName().replace(".", "_").replace("-", "_");
+              if (!dependencies.isEmpty()) {
+                dependencies.forEach(
+                    (d) -> {
+                      final String name = d.getName().replace(".", "_").replace("-", "_");
+                      dotBuilder
+                          .append("\n")
+                          .append(serviceName)
+                          .append(" -> ")
+                          .append(name)
+                          .append(";");
+                    });
+              } else {
+                dotBuilder.append("\n").append(serviceName).append(";");
+              }
+            });
+    dotBuilder.append("\n}");
+    LOG.debug(
+        "Dependency graph will be printed. To show the resulting graph copy it to a file and run 'dot -Tpng output.dot > output.png'\n{}",
+        dotBuilder.toString());
   }
 
   @Override

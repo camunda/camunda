@@ -20,6 +20,7 @@ import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
@@ -37,6 +38,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -60,6 +62,7 @@ public class ExporterDirector extends Actor {
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
+  private final LogStorage logStorage;
   private EventFilter eventFilter;
   private ExportersState state;
 
@@ -71,7 +74,8 @@ public class ExporterDirector extends Actor {
     this.containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
-    this.logStream = context.getLogStream();
+    this.logStream = Objects.requireNonNull(context.getLogStream());
+    this.logStorage = Objects.requireNonNull(context.getLogStorage());
     final int partitionId = logStream.getPartitionId();
     this.recordExporter = new RecordExporter(containers, partitionId);
     this.logStreamReader = context.getLogStreamReader();
@@ -98,7 +102,7 @@ public class ExporterDirector extends Actor {
 
   @Override
   protected void onActorStarting() {
-    this.logStreamReader.wrap(logStream);
+    this.logStreamReader.wrap(logStorage);
   }
 
   @Override

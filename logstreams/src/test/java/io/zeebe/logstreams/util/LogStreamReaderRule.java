@@ -34,7 +34,7 @@ public class LogStreamReaderRule extends ExternalResource {
   @Override
   protected void before() {
     final LogStream logStream = logStreamRule.getLogStream();
-    logStreamReader.wrap(logStream);
+    logStreamReader.wrap(logStream.getLogStorage());
   }
 
   @Override

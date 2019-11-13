@@ -46,23 +46,13 @@ public class BufferedLogStreamReader implements LogStreamReader {
   private ByteBuffer byteBuffer;
   private int bufferOffset;
 
-  public BufferedLogStreamReader(final LogStream logStream) {
+  public BufferedLogStreamReader(final LogStorage logStorage) {
     this();
-    wrap(logStream);
+    wrap(logStorage);
   }
 
   public BufferedLogStreamReader() {
     state = IteratorState.WRAP_NOT_CALLED;
-  }
-
-  @Override
-  public void wrap(final LogStream log) {
-    wrap(log, FIRST_POSITION);
-  }
-
-  @Override
-  public void wrap(final LogStream log, final long position) {
-    wrap(log.getLogStorage(), position);
   }
 
   @Override
@@ -161,10 +151,12 @@ public class BufferedLogStreamReader implements LogStreamReader {
     return allocatedBuffer == null;
   }
 
+  @Override
   public void wrap(final LogStorage logStorage) {
     wrap(logStorage, FIRST_POSITION);
   }
 
+  @Override
   public void wrap(final LogStorage logStorage, final long position) {
     this.logStorage = logStorage;
 

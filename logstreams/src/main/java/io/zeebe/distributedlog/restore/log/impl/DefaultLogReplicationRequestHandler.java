@@ -11,9 +11,9 @@ import io.zeebe.distributedlog.restore.RestoreServer.LogReplicationRequestHandle
 import io.zeebe.distributedlog.restore.log.LogReplicationRequest;
 import io.zeebe.distributedlog.restore.log.LogReplicationResponse;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.spi.LogStorage;
 import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -25,12 +25,12 @@ public class DefaultLogReplicationRequestHandler implements LogReplicationReques
   private final LogStreamReader reader;
   private final MutableDirectBuffer readerBuffer;
 
-  public DefaultLogReplicationRequestHandler(LogStream logStream) {
-    this(logStream, DEFAULT_READ_BUFFER_SIZE);
+  public DefaultLogReplicationRequestHandler(LogStorage logStorage) {
+    this(logStorage, DEFAULT_READ_BUFFER_SIZE);
   }
 
-  public DefaultLogReplicationRequestHandler(LogStream logStream, int bufferSize) {
-    this.reader = new BufferedLogStreamReader(logStream);
+  public DefaultLogReplicationRequestHandler(LogStorage logStorage, int bufferSize) {
+    this.reader = new BufferedLogStreamReader(logStorage);
     this.readerBuffer = new UnsafeBuffer(ByteBuffer.allocate(bufferSize));
   }
 

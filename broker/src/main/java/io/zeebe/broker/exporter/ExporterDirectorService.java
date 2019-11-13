@@ -15,6 +15,7 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -33,6 +34,7 @@ public class ExporterDirectorService implements Service<ExporterDirectorService>
   private ServiceStartContext startContext;
   private ExporterDirector director;
   private final Injector<Partition> partitionInjector = new Injector<>();
+  private Injector<LogStorage> logStorageInjector = new Injector<>();
 
   public ExporterDirectorService(BrokerCfg brokerCfg, ExporterRepository exporterRepository) {
     this.dataCfg = brokerCfg.getData();
@@ -69,11 +71,13 @@ public class ExporterDirectorService implements Service<ExporterDirectorService>
           new ExporterClearStateService(partition.getZeebeDb());
       clearStateService.start();
     } else {
+      final LogStorage logStorage = logStorageInjector.getValue();
       final ExporterDirectorContext context =
           new ExporterDirectorContext()
               .id(EXPORTER_PROCESSOR_ID)
               .name(String.format(EXPORTER_NAME, partition.getPartitionId()))
               .logStream(partition.getLogStream())
+              .logStorage(logStorage)
               .zeebeDb(zeebeDb)
               .maxSnapshots(dataCfg.getMaxSnapshots())
               .descriptors(exporterRepository.getExporters().values())
@@ -91,5 +95,9 @@ public class ExporterDirectorService implements Service<ExporterDirectorService>
     } else {
       return director.getLowestExporterPosition();
     }
+  }
+
+  public Injector<LogStorage> getLogStorageInjector() {
+    return logStorageInjector;
   }
 }

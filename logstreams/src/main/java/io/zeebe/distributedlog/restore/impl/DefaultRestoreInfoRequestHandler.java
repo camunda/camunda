@@ -13,22 +13,20 @@ import io.zeebe.distributedlog.restore.RestoreInfoResponse.ReplicationTarget;
 import io.zeebe.distributedlog.restore.RestoreServer.RestoreInfoRequestHandler;
 import io.zeebe.distributedlog.restore.snapshot.SnapshotRestoreInfo;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.SnapshotController;
 import org.slf4j.Logger;
 
 public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandler {
   private final SnapshotController snapshotController;
   private final LogStreamReader reader;
-  private final LogStream logStream;
   private final int partitionId;
 
   public DefaultRestoreInfoRequestHandler(
-      LogStream logStream, SnapshotController snapshotController) {
-    this.logStream = logStream;
-    partitionId = logStream.getPartitionId();
-    this.reader = new BufferedLogStreamReader(logStream);
+      int partitionId, LogStorage logStorage, SnapshotController snapshotController) {
+    this.partitionId = partitionId;
+    this.reader = new BufferedLogStreamReader(logStorage);
     this.snapshotController = snapshotController;
   }
 
@@ -51,10 +49,9 @@ public class DefaultRestoreInfoRequestHandler implements RestoreInfoRequestHandl
     }
 
     logger.trace(
-        "Responding restore info request with {} (snapshot position: {}, log position: {}) for partition {}",
+        "Responding restore info request with {} (snapshot position: {}) for partition {}",
         response,
         lastValidSnapshotPosition,
-        logStream.getCommitPosition(),
         partitionId);
     return response;
   }
