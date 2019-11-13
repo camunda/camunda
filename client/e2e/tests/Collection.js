@@ -79,7 +79,7 @@ test('user permissions', async t => {
 
   await t.click(e.userTab);
 
-  await t.click(e.addUserButton);
+  await t.click(e.addButton);
   await t.click(e.optionsButton);
   await t.typeText(e.typeaheadInput, 'sales', {replace: true});
   await t.click(e.typeaheadOption('sales'));
@@ -90,14 +90,14 @@ test('user permissions', async t => {
   await t.expect(e.groupItem.textContent).contains('Sales');
   await t.expect(e.groupItem.textContent).contains('Viewer');
 
-  await t.click(e.addUserButton);
+  await t.click(e.addButton);
   await t.typeText(e.typeaheadInput, 'mary', {replace: true});
   await t.click(e.typeaheadOption('mary'));
   await t.takeElementScreenshot(e.addUserModal, 'homepage/addUser.png');
   await t.click(e.roleOption('Editor'));
   await t.click(e.confirmModalButton);
 
-  await t.click(e.addUserButton);
+  await t.click(e.addButton);
   await t.typeText(e.typeaheadInput, 'peter', {replace: true});
   await t.click(e.typeaheadOption('peter'));
   await t.click(e.roleOption('Editor'));
@@ -117,7 +117,7 @@ test('user permissions', async t => {
 
   const {username} = getUser(t, 'user2');
 
-  await t.click(e.addUserButton);
+  await t.click(e.addButton);
   await t.typeText(e.typeaheadInput, username, {replace: true});
   await t.click(e.typeaheadOption(username));
   await t.click(e.roleOption('Manager'));
@@ -132,7 +132,7 @@ test('user permissions', async t => {
   await t.click(e.roleOption('Viewer'));
   await t.click(e.confirmModalButton);
 
-  await t.expect(e.addUserButton.exists).notOk();
+  await t.expect(e.addButton.exists).notOk();
 
   await t.click(e.entityTab);
   await t.click(Homepage.dashboardItem);
@@ -151,4 +151,51 @@ test('user permissions', async t => {
   await t.click(Homepage.confirmButton);
 
   await t.expect(Homepage.collectionItem.exists).notOk();
+});
+
+test('add, edit and delete sources', async t => {
+  await createCollection(t);
+  await t.click(e.sourcesTab);
+
+  // add source by definition
+  await t.click(e.addButton);
+  const definitionName = 'Hiring Demo 5 Tenants';
+  await t.typeText(e.typeaheadInput, definitionName, {replace: true});
+  await t.click(e.typeaheadOption(definitionName));
+  await t.click(e.checkbox('Select All'));
+  await t.click(e.confirmModalButton);
+  await t.expect(e.processItem.visible).ok();
+  await t.expect(e.processItem.textContent).contains(definitionName);
+  await t.expect(e.processItem.textContent).contains('Process');
+  await t.expect(e.processItem.textContent).contains('engineering');
+
+  // add source by tenant
+  await t.click(e.addButton);
+  const tenantName = 'engineering';
+  await t.click(e.tenantSource);
+  await t.typeText(e.typeaheadInput, tenantName, {replace: true});
+  await t.click(e.typeaheadOption(tenantName));
+  await t.click(e.checkbox('Beverages'));
+  await t.click(e.checkbox('Book Request'));
+  await t.click(e.confirmModalButton);
+  await t.expect(e.processItem.visible).ok();
+  await t.expect(e.decisionItem.visible).ok();
+  await t.expect(e.processItem.nth(0).textContent).contains('Book Request');
+  await t.expect(e.decisionItem.textContent).contains('Beverages');
+
+  // edit source
+  await t.hover(e.processItem.nth(1));
+  await t.expect(Homepage.contextMenu(e.processItem.nth(1)).visible).ok();
+  await t.click(Homepage.contextMenu(e.processItem.nth(1)));
+  await t.click(Homepage.edit(e.processItem.nth(1)));
+  await t.click(e.checkbox('engineering'));
+  await t.click(e.confirmModalButton);
+  await t.expect(e.processItem.nth(1).textContent).notContains('engineering');
+
+  //delete source
+  await t.hover(e.decisionItem);
+  await t.click(Homepage.contextMenu(e.decisionItem));
+  await t.click(Homepage.del(e.decisionItem));
+  await t.click(e.confirmModalButton);
+  await t.expect(e.decisionItem.exists).notOk();
 });
