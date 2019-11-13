@@ -61,14 +61,9 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
 
-  public LogStreamBatchWriterImpl(final LogStream logStream) {
-    wrap(logStream);
-  }
-
-  @Override
-  public void wrap(final LogStream logStream) {
-    this.logWriteBuffer = logStream.getWriteBuffer();
-    this.logId = logStream.getPartitionId();
+  public LogStreamBatchWriterImpl(int partitionId, Dispatcher dispatcher) {
+    this.logWriteBuffer = dispatcher;
+    this.logId = partitionId;
 
     reset();
   }

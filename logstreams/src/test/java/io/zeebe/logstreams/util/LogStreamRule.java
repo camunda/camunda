@@ -21,6 +21,7 @@ import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.sched.ActorScheduler;
@@ -186,7 +187,7 @@ public final class LogStreamRule extends ExternalResource {
     if (logStreamReader == null) {
       logStreamReader = new BufferedLogStreamReader();
     }
-    logStreamReader.wrap(logStream);
+    logStreamReader.wrap(getLogStorage());
     return logStreamReader;
   }
 
@@ -194,15 +195,11 @@ public final class LogStreamRule extends ExternalResource {
     return logStream;
   }
 
+  public LogStorage getLogStorage() {
+    return logStream.getLogStorage();
+  }
+
   public ControlledActorClock getClock() {
     return clock;
-  }
-
-  public ActorScheduler getActorScheduler() {
-    return actorScheduler;
-  }
-
-  public ServiceContainer getServiceContainer() {
-    return serviceContainer;
   }
 }

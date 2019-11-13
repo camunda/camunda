@@ -7,6 +7,7 @@
  */
 package io.zeebe.logstreams.log;
 
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.CloseableSilently;
 import java.util.Iterator;
 
@@ -32,17 +33,17 @@ public interface LogStreamReader extends Iterator<LoggedEvent>, CloseableSilentl
   /**
    * Initialize the reader and seek to the first event.
    *
-   * @param log the stream which provides the log
+   * @param log the log storage to read from
    */
-  void wrap(LogStream log);
+  void wrap(LogStorage log);
 
   /**
    * Initialize the reader and seek to the given log position.
    *
-   * @param log the stream which provides the log
+   * @param log the log storage to read from
    * @param position the position in the log to seek to
    */
-  void wrap(LogStream log, long position);
+  void wrap(LogStorage log, long position);
 
   /**
    * Seeks to the event after the given position. On negative position it seeks to the first event.

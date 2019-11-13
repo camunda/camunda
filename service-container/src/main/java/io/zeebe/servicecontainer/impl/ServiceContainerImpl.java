@@ -133,22 +133,27 @@ public class ServiceContainerImpl extends Actor implements ServiceContainer {
         .forEach(
             (c) -> {
               final Set<ServiceName<?>> dependencies = c.getDependencies();
-              final String serviceName = c.getServiceName().getName().replace(".", "_").replace("-", "_");
-              if (!dependencies.isEmpty())
-              {
-                dependencies
-                  .forEach(
+              final String serviceName =
+                  c.getServiceName().getName().replace(".", "_").replace("-", "_");
+              if (!dependencies.isEmpty()) {
+                dependencies.forEach(
                     (d) -> {
                       final String name = d.getName().replace(".", "_").replace("-", "_");
-                      dotBuilder.append("\n").append(serviceName).append(" -> ").append(name).append(";");
+                      dotBuilder
+                          .append("\n")
+                          .append(serviceName)
+                          .append(" -> ")
+                          .append(name)
+                          .append(";");
                     });
-              }
-              else {
+              } else {
                 dotBuilder.append("\n").append(serviceName).append(";");
               }
             });
     dotBuilder.append("\n}");
-    LOG.debug("Dependency graph will be printed. To show the resulting graph copy it to a file and run 'dot -Tpng output.dot > output.png'\n{}", dotBuilder.toString());
+    LOG.debug(
+        "Dependency graph will be printed. To show the resulting graph copy it to a file and run 'dot -Tpng output.dot > output.png'\n{}",
+        dotBuilder.toString());
   }
 
   @Override

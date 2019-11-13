@@ -56,7 +56,7 @@ public class ReplicatingRestoreClient implements RestoreClient {
   public CompletableFuture<LogReplicationResponse> requestLogReplication(
       MemberId server, LogReplicationRequest request) {
     return CompletableFuture.completedFuture(
-        new DefaultLogReplicationRequestHandler(serverLogstream)
+        new DefaultLogReplicationRequestHandler(serverLogstream.getLogStorage())
             .onReplicationRequest(request, NOPLogger.NOP_LOGGER));
   }
 
@@ -65,7 +65,10 @@ public class ReplicatingRestoreClient implements RestoreClient {
       MemberId server, RestoreInfoRequest request) {
     if (autoResponse) {
       return CompletableFuture.completedFuture(
-          new DefaultRestoreInfoRequestHandler(serverLogstream, replicatorSnapshotController)
+          new DefaultRestoreInfoRequestHandler(
+                  serverLogstream.getPartitionId(),
+                  serverLogstream.getLogStorage(),
+                  replicatorSnapshotController)
               .onRestoreInfoRequest(request, NOPLogger.NOP_LOGGER));
     }
     return restoreInfoResponse;

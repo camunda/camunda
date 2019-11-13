@@ -23,6 +23,7 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotReplication;
 import io.zeebe.logstreams.state.StateSnapshotController;
@@ -39,7 +40,8 @@ public class Partition implements Service<Partition> {
   public static final String GROUP_NAME = "raft-atomix";
   public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   private static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
-  private final Injector<LogStream> logStreamInjector = new Injector<>();
+  private final Injector<LogStorage> logStorageInjector = new Injector<>();
+  private Injector<LogStream> logStreamInjector = new Injector<>();
   private final ClusterEventService clusterEventService;
   private final int partitionId;
   private final RaftState state;
@@ -49,6 +51,7 @@ public class Partition implements Service<Partition> {
   private StateSnapshotController snapshotController;
   private SnapshotReplication stateReplication;
   private LogStream logStream;
+  private LogStorage logStorage;
   private ZeebeDb zeebeDb;
 
   public Partition(
@@ -74,6 +77,7 @@ public class Partition implements Service<Partition> {
   public void start(final ServiceStartContext startContext) {
     final CompletableActorFuture<Void> startedFuture = new CompletableActorFuture<>();
     logStream = logStreamInjector.getValue();
+    logStorage = logStorageInjector.getValue();
     snapshotController = createSnapshotController();
 
     final DeletionService deletionService;
@@ -139,7 +143,7 @@ public class Partition implements Service<Partition> {
 
   private void startRestoreServer(CompletableActorFuture<Void> startedFuture) {
     restoreServer
-        .start(logStream, snapshotController)
+        .start(partitionId, logStorage, snapshotController)
         .whenComplete(
             (nothing, error) -> {
               if (error != null) {
@@ -194,6 +198,10 @@ public class Partition implements Service<Partition> {
 
   public Injector<LogStream> getLogStreamInjector() {
     return logStreamInjector;
+  }
+
+  public Injector<LogStorage> getLogStorageInjector() {
+    return logStorageInjector;
   }
 
   public ZeebeDb getZeebeDb() {

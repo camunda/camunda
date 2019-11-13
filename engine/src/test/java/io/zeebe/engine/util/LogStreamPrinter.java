@@ -45,7 +45,7 @@ public class LogStreamPrinter {
     final EnumMap<ValueType, UnpackedObject> eventCache = new EnumMap<>(ValueType.class);
     EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
 
-    try (LogStreamReader streamReader = new BufferedLogStreamReader(logStream)) {
+    try (LogStreamReader streamReader = new BufferedLogStreamReader(logStream.getLogStorage())) {
       streamReader.seekToFirstEvent();
 
       while (streamReader.hasNext()) {

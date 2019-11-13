@@ -769,7 +769,6 @@ public class StreamProcessorTest {
   public void shouldInvokeOnProcessedListener() throws InterruptedException {
     // given
     final CountDownLatch processLatch = new CountDownLatch(1);
-    final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, state) ->
             processors.onEvent(

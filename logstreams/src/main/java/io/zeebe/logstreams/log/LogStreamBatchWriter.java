@@ -17,9 +17,6 @@ import org.agrona.DirectBuffer;
  * <p>Note that the log entry data is buffered until {@link #tryWrite()} is called.
  */
 public interface LogStreamBatchWriter extends LogStreamWriter {
-  /** Initialize the write for the given log stream. */
-  void wrap(LogStream log);
-
   /** Set the source event for all log entries. */
   LogStreamBatchWriter sourceRecordPosition(long position);
 

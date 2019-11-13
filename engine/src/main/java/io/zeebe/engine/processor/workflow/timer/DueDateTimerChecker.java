@@ -12,6 +12,7 @@ import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedStreamWriterImpl;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.util.sched.ActorControl;
@@ -95,7 +96,9 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onOpen(final ReadonlyProcessingContext processingContext) {
     this.actor = processingContext.getActor();
-    streamWriter = new TypedStreamWriterImpl(processingContext.getLogStream());
+    final LogStream logStream = processingContext.getLogStream();
+    streamWriter =
+        new TypedStreamWriterImpl(logStream.getPartitionId(), logStream.getWriteBuffer());
   }
 
   @Override

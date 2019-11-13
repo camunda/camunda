@@ -43,6 +43,7 @@ import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.logstreams.impl.service.LeaderOpenLogStreamAppenderService;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
@@ -83,6 +84,7 @@ public class PartitionInstallService extends Actor
   private ActorFuture<PartitionLeaderElection> leaderElectionInstallFuture;
   private PartitionLeaderElection leaderElection;
   private ActorFuture<Void> transitionFuture;
+  private ServiceName<LogStorage> logStorageServiceName;
 
   public PartitionInstallService(
       RaftPartition partition,
@@ -130,6 +132,7 @@ public class PartitionInstallService extends Actor
         startContext.createComposite(raftInstallServiceName);
 
     logStreamServiceName = LogStreamServiceNames.logStreamServiceName(logName);
+    logStorageServiceName = LogStreamServiceNames.logStorageServiceName(logName);
     leaderInstallRootServiceName = PartitionServiceNames.leaderInstallServiceRootName(logName);
 
     leaderElection = new PartitionLeaderElection(partition);
@@ -263,6 +266,7 @@ public class PartitionInstallService extends Actor
         .createService(leaderPartitionServiceName, partition)
         .dependency(openLogStreamServiceName)
         .dependency(logStreamServiceName, partition.getLogStreamInjector())
+        .dependency(logStorageServiceName, partition.getLogStorageInjector())
         .group(LEADER_PARTITION_GROUP_NAME)
         .install();
 
@@ -287,6 +291,10 @@ public class PartitionInstallService extends Actor
         .dependency(
             LEADER_MANAGEMENT_REQUEST_HANDLER,
             streamProcessorService.getLeaderManagementRequestInjector())
+        .dependency(
+            LogStreamServiceNames.logWriteBufferServiceName(logName),
+            streamProcessorService.getLogStreamWriteBufferInjector())
+        .dependency(logStorageServiceName, streamProcessorService.getLogStorageInjector())
         .install();
 
     final Duration snapshotPeriod = DurationUtil.parse(brokerCfg.getData().getSnapshotPeriod());
@@ -315,6 +323,7 @@ public class PartitionInstallService extends Actor
     leaderInstallService
         .createService(exporterDirectorServiceName(partitionId), exporterDirectorService)
         .dependency(leaderPartitionServiceName, exporterDirectorService.getPartitionInjector())
+        .dependency(logStorageServiceName, exporterDirectorService.getLogStorageInjector())
         .install();
   }
 
@@ -334,6 +343,7 @@ public class PartitionInstallService extends Actor
     return startContext
         .createService(followerPartitionServiceName, partition)
         .dependency(logStreamServiceName, partition.getLogStreamInjector())
+        .dependency(logStorageServiceName, partition.getLogStorageInjector())
         .group(FOLLOWER_PARTITION_GROUP_NAME)
         .install();
   }
