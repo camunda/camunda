@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.alert.AlertService;
-import org.camunda.optimize.service.collection.CollectionCopyService;
+import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
@@ -51,10 +51,10 @@ import java.util.Optional;
 public class CollectionRestService {
   private final AlertService alertService;
   private final CollectionService collectionService;
+  private final CollectionRoleService collectionRoleService;
   private final CollectionScopeService collectionScopeService;
   private final SessionService sessionService;
   private final ReportService reportService;
-  private final CollectionCopyService collectionCopyService;
 
   /**
    * Creates a new collection.
@@ -177,7 +177,7 @@ public class CollectionRestService {
   public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
                                           @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionService.getAllRolesOfCollectionSorted(userId, collectionId);
+    return collectionRoleService.getAllRolesOfCollectionSorted(userId, collectionId);
   }
 
   @POST
@@ -188,7 +188,7 @@ public class CollectionRestService {
                        @PathParam("id") String collectionId,
                        @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    CollectionRoleDto collectionRoleDto = collectionService.addRoleToCollection(userId, collectionId, roleDtoRequest);
+    CollectionRoleDto collectionRoleDto = collectionRoleService.addRoleToCollection(userId, collectionId, roleDtoRequest);
     return new IdDto(collectionRoleDto.getId());
   }
 
@@ -202,7 +202,7 @@ public class CollectionRestService {
                          @NotNull CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    collectionService.updateRoleOfCollection(userId, collectionId, roleEntryId, roleUpdateDto);
+    collectionRoleService.updateRoleOfCollection(userId, collectionId, roleEntryId, roleUpdateDto);
   }
 
   @POST
@@ -212,7 +212,7 @@ public class CollectionRestService {
                               @PathParam("id") String collectionId,
                               @QueryParam("name") String newCollectionName) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionCopyService.copyCollection(userId, collectionId, newCollectionName);
+    return collectionService.copyCollection(userId, collectionId, newCollectionName);
   }
 
   @DELETE
@@ -222,7 +222,7 @@ public class CollectionRestService {
                          @PathParam("id") String collectionId,
                          @PathParam("roleEntryId") String roleEntryId) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionService.removeRoleFromCollection(userId, collectionId, roleEntryId);
+    collectionRoleService.removeRoleFromCollection(userId, collectionId, roleEntryId);
   }
 
   @GET

@@ -5,6 +5,22 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
-public class SimpleCollectionDefinitionDto extends BaseCollectionDefinitionDto<CollectionDataDto> {
+import lombok.NoArgsConstructor;
 
+import java.time.OffsetDateTime;
+
+@NoArgsConstructor
+public class SimpleCollectionDefinitionDto extends BaseCollectionDefinitionDto<CollectionDataDto> {
+  
+  public SimpleCollectionDefinitionDto(CollectionDataDto data, OffsetDateTime created, String id, String name,
+                                       OffsetDateTime lastModified, String lastModifier, String owner) {
+    super();
+    this.data = data;
+    this.created = created;
+    this.id = id;
+    this.name = name;
+    this.lastModified = lastModified;
+    this.lastModifier = lastModifier;
+    this.owner = owner;
+  }
 }

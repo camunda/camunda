@@ -83,6 +83,11 @@ public class CollectionWriter {
     }
     simpleCollectionDefinitionDto.setData(newCollectionDataDto);
 
+    persistCollection(id, simpleCollectionDefinitionDto);
+    return new IdDto(id);
+  }
+
+  private void persistCollection(String id, SimpleCollectionDefinitionDto simpleCollectionDefinitionDto) {
     try {
       IndexRequest request = new IndexRequest(COLLECTION_INDEX_NAME)
         .id(id)
@@ -103,7 +108,10 @@ public class CollectionWriter {
     }
 
     log.debug("Collection with id [{}] has successfully been created.", id);
-    return new IdDto(id);
+  }
+
+  public void createNewCollection(@NonNull SimpleCollectionDefinitionDto simpleCollectionDefinitionDto) {
+    persistCollection(simpleCollectionDefinitionDto.getId(), simpleCollectionDefinitionDto);
   }
 
   public void updateCollection(CollectionDefinitionUpdateDto collection, String id) {

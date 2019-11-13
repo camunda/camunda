@@ -7,14 +7,10 @@ package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
@@ -25,22 +21,25 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefini
 import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.CollectionRelationService;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.BadRequestException;
+import java.time.OffsetDateTime;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -54,20 +53,14 @@ public class CollectionService {
   private final CollectionWriter collectionWriter;
   private final CollectionRelationService collectionRelationService;
   private final AuthorizedEntitiesService entitiesService;
-  private final IdentityService identityService;
+  private final CollectionRoleService collectionRoleService;
+  private final AlertService alertService;
+  private final ReportService reportService;
+  private final DashboardService dashboardService;
 
   public IdDto createNewCollectionAndReturnId(final String userId,
                                               final PartialCollectionDefinitionDto partialCollectionDefinitionDto) {
     return collectionWriter.createNewCollectionAndReturnId(userId, partialCollectionDefinitionDto);
-  }
-
-  public AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinitionWithRoleMetadata(final String userId,
-                                                                                               final String collectionId) {
-    final AuthorizedSimpleCollectionDefinitionDto simpleCollectionDefinition = getSimpleCollectionDefinition(
-      userId, collectionId
-    );
-    enrichRoleIdentityMetaData(simpleCollectionDefinition.getDefinitionDto());
-    return simpleCollectionDefinition;
   }
 
   public AuthorizedResolvedCollectionDefinitionDto getResolvedCollectionDefinition(final String userId,
@@ -75,7 +68,7 @@ public class CollectionService {
     log.debug("Fetching resolved collection with id [{}]", collectionId);
 
     final AuthorizedSimpleCollectionDefinitionDto simpleCollectionDefinition =
-      getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId);
+      collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId);
 
     final List<EntityDto> collectionEntities = entitiesService.getAuthorizedCollectionEntities(userId, collectionId);
 
@@ -121,97 +114,14 @@ public class CollectionService {
     return new ConflictResponseDto(getConflictedItemsForDelete(userId, collectionId));
   }
 
-  public List<CollectionRoleDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
-    List<CollectionRoleDto> roles = getSimpleCollectionDefinitionWithRoleMetadata(
-      userId,
-      collectionId
-    )
-      .getDefinitionDto()
-      .getData()
-      .getRoles();
 
-    Collections.sort(roles);
-    return roles;
-  }
-
-  public CollectionRoleDto addRoleToCollection(final String userId,
-                                               final String collectionId,
-                                               final CollectionRoleDto roleDto) throws
-                                                                                OptimizeCollectionConflictException {
-    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    verifyIdentityExists(roleDto.getIdentity());
-    return collectionWriter.addRoleToCollection(collectionId, roleDto, userId);
-  }
-
-  public void updateRoleOfCollection(final String userId,
-                                     final String collectionId,
-                                     final String roleEntryId,
-                                     final CollectionRoleUpdateDto roleUpdateDto) throws OptimizeConflictException {
-    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    collectionWriter.updateRoleInCollection(collectionId, roleEntryId, roleUpdateDto, userId);
-  }
-
-  public void removeRoleFromCollection(String userId, String collectionId, String roleEntryId)
-    throws OptimizeConflictException {
-    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    collectionWriter.removeRoleFromCollection(collectionId, roleEntryId, userId);
-  }
-
-
-  private AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
+  AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
                                                                                 final String collectionId) {
     return authorizedCollectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
   }
 
   public List<AuthorizedSimpleCollectionDefinitionDto> getAllSimpleCollectionDefinitions(final String userId) {
     return authorizedCollectionService.getAuthorizedSimpleCollectionDefinitions(userId);
-  }
-
-  private void verifyIdentityExists(final IdentityDto identity) {
-    final boolean identityFound;
-    switch (identity.getType()) {
-      case USER:
-        identityFound = identityService.getUserById(identity.getId()).isPresent();
-        break;
-      case GROUP:
-        identityFound = identityService.getGroupById(identity.getId()).isPresent();
-        break;
-      default:
-        throw new OptimizeRuntimeException("Unsupported identity type: " + identity.getType());
-    }
-    if (!identityFound) {
-      throw new BadRequestException(
-        String.format("%s with id %s does not exist in Optimize", identity.getType(), identity.getId())
-      );
-    }
-  }
-
-  @SuppressWarnings("Convert2MethodRef")
-  private void enrichRoleIdentityMetaData(final BaseCollectionDefinitionDto<?> collectionDefinitionDto) {
-    final CollectionDataDto collectionData = collectionDefinitionDto.getData();
-    collectionData.setRoles(
-      collectionData.getRoles().stream()
-        .peek(roleDto -> {
-          final IdentityDto roleIdentity = roleDto.getIdentity();
-          switch (roleIdentity.getType()) {
-            case GROUP:
-              // Note: Method reference cannot be used here as it might trigger
-              // a compilation AssertionError on newer JDK's.
-              // See https://bugs.openjdk.java.net/browse/JDK-8210734
-              identityService.getGroupById(roleIdentity.getId()).ifPresent(groupDto -> roleDto.setIdentity(groupDto));
-              break;
-            case USER:
-              // Note: Method reference cannot be used here as it might trigger
-              // a compilation AssertionError on newer JDK's.
-              // See https://bugs.openjdk.java.net/browse/JDK-8210734
-              identityService.getUserById(roleIdentity.getId()).ifPresent(userDto -> roleDto.setIdentity(userDto));
-              break;
-            default:
-              throw new OptimizeRuntimeException("Unsupported identity type " + roleIdentity.getType());
-          }
-        })
-        .collect(Collectors.toList())
-    );
   }
 
   public AuthorizedResolvedCollectionDefinitionDto mapToResolvedCollection(
@@ -259,5 +169,69 @@ public class CollectionService {
     return collectionRelationService.getConflictedItemsForDelete(
       getSimpleCollectionDefinition(userId, collectionId).getDefinitionDto()
     );
+  }
+
+  public IdDto copyCollection(String userId, String collectionId, String newCollectionName) {
+    AuthorizedSimpleCollectionDefinitionDto oldSimpleCollection = authorizedCollectionService
+      .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+
+    SimpleCollectionDefinitionDto newSimpleCollection = new SimpleCollectionDefinitionDto(
+      oldSimpleCollection.getDefinitionDto().getData(),
+      OffsetDateTime.now(),
+      IdGenerator.getNextId(),
+      newCollectionName != null ? newCollectionName : oldSimpleCollection.getDefinitionDto()
+        .getName() + " – Copy",
+      OffsetDateTime.now(),
+      userId,
+      userId
+    );
+
+    ResolvedCollectionDefinitionDto oldResolvedCollection =
+      getResolvedCollectionDefinition(userId, oldSimpleCollection).getDefinitionDto();
+
+    collectionWriter.createNewCollection(newSimpleCollection);
+
+    copyCollectionEntities(userId, oldResolvedCollection, newSimpleCollection.getId());
+    return new IdDto(newSimpleCollection.getId());
+  }
+
+  private AuthorizedResolvedCollectionDefinitionDto getResolvedCollectionDefinition(
+    final String userId,
+    final AuthorizedSimpleCollectionDefinitionDto simpleCollectionDefinitionDto
+  ) {
+    return mapToResolvedCollection(
+      simpleCollectionDefinitionDto,
+      entitiesService.getAuthorizedCollectionEntities(userId, simpleCollectionDefinitionDto.getDefinitionDto().getId())
+    );
+  }
+
+  private void copyCollectionEntities(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
+                                      String newCollectionId) {
+    final Map<String, String> uniqueReportCopies = new HashMap<>();
+
+    collectionDefinitionDto.getData().getEntities().forEach(e -> {
+      final String originalEntityId = e.getId();
+      switch (e.getEntityType()) {
+        case REPORT:
+          String entityCopyId = uniqueReportCopies.get(originalEntityId);
+          if (entityCopyId == null) {
+            entityCopyId = reportService.copyAndMoveReport(
+              originalEntityId, userId, newCollectionId, e.getName(), uniqueReportCopies, true
+            ).getId();
+            uniqueReportCopies.put(originalEntityId, entityCopyId);
+          }
+          alertService.copyAndMoveAlerts(originalEntityId, entityCopyId);
+          break;
+        case DASHBOARD:
+          dashboardService.copyAndMoveDashboard(
+            originalEntityId, userId, newCollectionId, e.getName(), uniqueReportCopies, true
+          );
+          break;
+        default:
+          throw new OptimizeRuntimeException(
+            "You can't copy a " + e.getEntityType().toString().toLowerCase() + " to a collection"
+          );
+      }
+    });
   }
 }

@@ -47,11 +47,11 @@ public class CollectionScopeService {
   public static final TenantDto UNAUTHORIZED_TENANT_MASK =
     new TenantDto(UNAUTHORIZED_TENANT_MASK_ID, UNAUTHORIZED_TENANT_MASK_NAME, "unknownEngine");
 
-  private final CollectionService collectionService;
   private final TenantService tenantService;
   private final DefinitionService definitionService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final ReportReader reportReader;
+  private final CollectionRoleService collectionRoleService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
 
@@ -60,7 +60,7 @@ public class CollectionScopeService {
     final Map<String, TenantDto> tenantsForUserById = tenantService.getTenantsForUser(userId)
       .stream()
       .collect(Collectors.toMap(TenantDto::getId, tenantDto -> tenantDto));
-    return collectionService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
+    return collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
@@ -188,7 +188,7 @@ public class CollectionScopeService {
 
   private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String userId,
                                                                             final String collectionId) {
-    return collectionService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
+    return collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
