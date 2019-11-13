@@ -35,4 +35,17 @@ const focus = {
   selector: focusSelector
 };
 
+export const errorBorders = css`
+  &:not(:focus) {
+    ${props => props.hasError && `border-color: ${Colors.incidentsAndErrors};`}
+  }
+
+  &:focus {
+    ${props =>
+      props.hasError &&
+      `box-shadow: 0 0 0 1px ${Colors.incidentsAndErrors}, 0 0 0 4px #ffafaf; 
+  `}
+  }
+`;
+
 export default {focus};

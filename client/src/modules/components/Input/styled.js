@@ -7,6 +7,7 @@
 import styled, {css} from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
+import {errorBorders} from 'modules/theme/interactions';
 
 const placeholderStyle = css`
   &::placeholder {
@@ -19,6 +20,9 @@ const placeholderStyle = css`
 `;
 
 export const Input = themed(styled.input`
+  ${errorBorders};
+  ${placeholderStyle};
+
   font-family: IBMPlexSans;
   font-size: 13px;
 
@@ -36,19 +40,9 @@ export const Input = themed(styled.input`
     dark: Colors.uiDark02,
     light: Colors.uiLight04
   })};
+
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
     light: Colors.uiDark03
   })};
-
-  ${props => props.hasError && `border-color: ${Colors.incidentsAndErrors};`}
-
-  &:focus {
-    ${props =>
-      props.hasError &&
-      `box-shadow: 0 0 0 4px #ffafaf, 0 0 0 1px 
-    ${Colors.incidentsAndErrors};`}
-  }
-
-  ${placeholderStyle};
 `);
