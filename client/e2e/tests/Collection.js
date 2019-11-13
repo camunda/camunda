@@ -109,8 +109,9 @@ test('user permissions', async t => {
     .maximizeWindow();
 
   // change permissions
-  await t.hover(e.userItem.nth(0));
-  await t.expect(Homepage.contextMenu(e.userItem.nth(0)).exists).notOk();
+  const managerName = await e.managerName.textContent;
+  await t.hover(e.userItem(managerName));
+  await t.expect(Homepage.contextMenu(e.userItem(managerName)).exists).notOk();
 
   await t.hover(e.groupItem);
   await t.expect(Homepage.contextMenu(e.groupItem).visible).ok();
@@ -123,11 +124,11 @@ test('user permissions', async t => {
   await t.click(e.roleOption('Manager'));
   await t.click(e.confirmModalButton);
 
-  await t.hover(e.userItem.nth(0));
-  await t.expect(Homepage.contextMenu(e.userItem.nth(0)).visible).ok();
+  await t.hover(e.userItem(managerName));
+  await t.expect(Homepage.contextMenu(e.userItem(managerName)).visible).ok();
 
-  await t.click(Homepage.contextMenu(e.userItem.nth(0)));
-  await t.click(Homepage.edit(e.userItem.nth(0)));
+  await t.click(Homepage.contextMenu(e.userItem(managerName)));
+  await t.click(Homepage.edit(e.userItem(managerName)));
 
   await t.click(e.roleOption('Viewer'));
   await t.click(e.confirmModalButton);

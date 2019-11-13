@@ -194,7 +194,6 @@ export default withErrorHandling(
             {userTab && collection && (
               <UserList
                 readOnly={collection.currentUserRole !== 'manager'}
-                data={collection.data.roles}
                 onChange={this.loadCollection}
                 collection={collection.id}
               />

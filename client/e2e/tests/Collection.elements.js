@@ -33,7 +33,10 @@ export const typeaheadInput = Selector('.Typeahead input');
 export const typeaheadOption = text => Selector('.Typeahead .DropdownOption').withText(text);
 export const checkbox = text => Selector('.Checklist .label').withText(text);
 export const confirmModalButton = Selector('.confirm.Button');
-export const userItem = Selector('.ListItem.user');
+export const managerName = Selector('.ListItem.user')
+  .withText('Manager')
+  .find('.entityName');
+export const userItem = text => Selector('.ListItem.user').withText(text);
 export const groupItem = Selector('.ListItem.group');
 export const processItem = Selector('.ListItem.process');
 export const decisionItem = Selector('.ListItem.decision');

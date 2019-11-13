@@ -15,7 +15,7 @@ import AddUserModal from './modals/AddUserModal';
 import EditUserModal from './modals/EditUserModal';
 import ListItem from './ListItem';
 
-import {addUser, editUser, removeUser} from './service';
+import {addUser, editUser, removeUser, getUsers} from './service';
 
 import {ReactComponent as UserIcon} from './icons/user.svg';
 import {ReactComponent as GroupIcon} from './icons/usergroup.svg';
@@ -25,11 +25,29 @@ import './UserList.scss';
 export default withErrorHandling(
   class UserList extends React.Component {
     state = {
+      users: null,
       deleting: null,
       editing: null,
       addingUser: false,
       deleteInProgress: false,
       searchQuery: ''
+    };
+
+    componentDidMount() {
+      this.getUsers();
+    }
+
+    getUsers = () => {
+      this.props.mightFail(
+        getUsers(this.props.collection),
+        users => this.setState({users}),
+        showError
+      );
+    };
+
+    updateList = () => {
+      this.getUsers();
+      this.props.onChange();
     };
 
     confirmDelete = entity => {
@@ -45,7 +63,7 @@ export default withErrorHandling(
       this.props.mightFail(
         removeUser(this.props.collection, id),
         () => {
-          this.props.onChange();
+          this.updateList();
           this.setState({deleteInProgress: false});
         },
         error => {
@@ -60,7 +78,7 @@ export default withErrorHandling(
       this.closeAddUserModal();
       this.props.mightFail(
         addUser(this.props.collection, name, type, role),
-        this.props.onChange,
+        this.updateList,
         showError
       );
     };
@@ -70,7 +88,7 @@ export default withErrorHandling(
     editUser = role => {
       this.props.mightFail(
         editUser(this.props.collection, this.state.editing.id, role),
-        this.props.onChange,
+        this.updateList,
         showError
       );
       this.closeEditUserModal();
@@ -78,7 +96,7 @@ export default withErrorHandling(
     closeEditUserModal = () => this.setState({editing: null});
 
     render() {
-      const {deleting, editing, deleteInProgress, searchQuery, addingUser} = this.state;
+      const {users, deleting, editing, deleteInProgress, searchQuery, addingUser} = this.state;
       const {readOnly} = this.props;
 
       return (
@@ -111,7 +129,7 @@ export default withErrorHandling(
           />
           <AddUserModal
             open={addingUser}
-            existingUsers={this.props.data}
+            existingUsers={users}
             onClose={this.closeAddUserModal}
             onConfirm={this.addUser}
           />
@@ -128,23 +146,24 @@ export default withErrorHandling(
     }
 
     renderList() {
-      const {data, readOnly} = this.props;
+      const {readOnly} = this.props;
+      const {users, searchQuery} = this.state;
 
-      if (data === null) {
+      if (users === null) {
         return <LoadingIndicator />;
       }
 
-      const searchFilteredData = this.props.data.filter(({identity: {id, name}}) =>
-        (name || id).toLowerCase().includes(this.state.searchQuery.toLowerCase())
+      const searchFilteredUsers = users.filter(({identity: {id, name}}) =>
+        (name || id).toLowerCase().includes(searchQuery.toLowerCase())
       );
 
-      if (searchFilteredData.length === 0) {
+      if (searchFilteredUsers.length === 0) {
         return <div className="empty">{t('common.notFound')}</div>;
       }
 
-      const numberOfManagers = this.props.data.filter(({role}) => role === 'manager').length;
+      const numberOfManagers = users.filter(({role}) => role === 'manager').length;
 
-      return searchFilteredData.map(entity => {
+      return searchFilteredUsers.map(entity => {
         const {id, identity, role} = entity;
 
         const isLastManager = role === 'manager' && numberOfManagers === 1;

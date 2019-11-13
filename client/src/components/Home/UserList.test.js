@@ -14,16 +14,8 @@ import EditUserModal from './modals/EditUserModal';
 
 import UserListWithErrorHandling from './UserList';
 
-jest.mock('./service', () => ({editUser: jest.fn(), removeUser: jest.fn()}));
-
-const UserList = UserListWithErrorHandling.WrappedComponent;
-
-const props = {
-  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  collection: 'collectionId',
-  onChange: jest.fn(),
-  readOnly: false,
-  data: [
+jest.mock('./service', () => ({
+  getUsers: jest.fn().mockReturnValue([
     {
       id: 'USER:kermit',
       identity: {
@@ -41,7 +33,18 @@ const props = {
       },
       role: 'viewer'
     }
-  ]
+  ]),
+  editUser: jest.fn(),
+  removeUser: jest.fn()
+}));
+
+const UserList = UserListWithErrorHandling.WrappedComponent;
+
+const props = {
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  collection: 'collectionId',
+  readOnly: false,
+  onChange: jest.fn()
 };
 
 it('should match snapshot', () => {
@@ -70,7 +73,7 @@ it('should show delete modal when clicking delete button', () => {
 it('should delete collection', () => {
   const node = shallow(<UserList {...props} />);
 
-  node.setState({deleting: props.data[0]});
+  node.setState({deleting: {id: 'USER:kermit', identity: {id: 'kermit'}}});
   node.find(ConfirmationModal).prop('onConfirm')();
 
   expect(removeUser).toHaveBeenCalledWith('collectionId', 'USER:kermit');
@@ -90,8 +93,9 @@ it('should show an edit modal when clicking the edit button', () => {
 it('should modify the user role', () => {
   const node = shallow(<UserList {...props} />);
 
-  node.setState({editing: props.data[0]});
+  node.setState({editing: {id: 'USER:kermit', identity: {id: 'kermit'}}});
   node.find(EditUserModal).prop('onConfirm')('viewer');
 
   expect(editUser).toHaveBeenCalledWith('collectionId', 'USER:kermit', 'viewer');
+  expect(props.onChange).toHaveBeenCalled();
 });

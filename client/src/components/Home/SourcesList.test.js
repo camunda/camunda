@@ -42,8 +42,7 @@ const SourcesList = SourcesListWithErrorHandling.WrappedComponent;
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   collection: 'collectionId',
-  readOnly: false,
-  onChange: jest.fn()
+  readOnly: false
 };
 
 it('should match snapshot', () => {

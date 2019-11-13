@@ -36,11 +36,11 @@ export default withErrorHandling(
       this.getSources();
     }
 
-    getSources = async () => {
+    getSources = () => {
       this.props.mightFail(
         getSources(this.props.collection),
         sources => this.setState({sources}),
-        error => showError(error)
+        showError
       );
     };
 

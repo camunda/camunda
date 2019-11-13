@@ -275,17 +275,6 @@ exports[`should render content depending on the selected tab 1`] = `
   >
     <UserListErrorHandler
       collection="aCollectionId"
-      data={
-        Array [
-          Object {
-            "identity": Object {
-              "id": "kermit",
-              "type": "user",
-            },
-            "role": "manager",
-          },
-        ]
-      }
       onChange={[Function]}
       readOnly={false}
     />
