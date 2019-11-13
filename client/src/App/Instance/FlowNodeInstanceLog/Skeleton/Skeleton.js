@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
-function Row({parent}) {
+export function Row({parent}) {
   return (
     <Styled.Row>
       <Styled.Circle />
