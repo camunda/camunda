@@ -239,7 +239,7 @@ pipeline {
         VERSION = "${params.RELEASE_VERSION}"
         GCR_REGISTRY = credentials('docker-registry-ci3')
         REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
-        MAJOR_OR_MINOR = ${isMajorOrMinorRelease(params.RELEASE_VERSION)}
+        MAJOR_OR_MINOR = isMajorOrMinorRelease(params.RELEASE_VERSION)
       }
       steps {
         container('docker') {
