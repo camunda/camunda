@@ -5,9 +5,11 @@
   margin-bottom: 24px;
   display: flex;
   flex-direction: column;
+  position: relative;
+  @include scrollable;
 
   .Configuration {
-    right: 30px;
+    right: 10px;
     list-style: none;
     position: absolute;
   }
