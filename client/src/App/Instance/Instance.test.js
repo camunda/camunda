@@ -31,9 +31,8 @@ import TopPanel from './TopPanel';
 import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 import BottomPanel from './BottomPanel';
 import Diagram from 'modules/components/Diagram';
-import Variables from './BottomPanel/Variables';
+import VariablePanel from './BottomPanel/VariablePanel';
 import IncidentsWrapper from './IncidentsWrapper';
-import FlowNodeInstanceLog from './FlowNodeInstanceLog';
 
 import Header from '../Header';
 
@@ -83,6 +82,12 @@ jest.mock('./FlowNodeInstanceLog', () => {
 
 jest.mock('./FlowNodeInstancesTree', () => {
   return function FlowNodeInstancesTree() {
+    return <div />;
+  };
+});
+
+jest.mock('./BottomPanel/VariablePanel', () => {
+  return function VariablePanel() {
     return <div />;
   };
 });
@@ -587,7 +592,7 @@ describe('Instance', () => {
       expect(node.find(Header)).toHaveLength(1);
       expect(node.find(TopPanel)).toHaveLength(1);
       expect(node.find(BottomPanel)).toHaveLength(1);
-      expect(node.find(Variables)).toHaveLength(1);
+      expect(node.find(VariablePanel)).toHaveLength(1);
       expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
     });
   });

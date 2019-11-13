@@ -135,6 +135,8 @@ class VariablePanel extends React.Component {
           <TableReplacement />
         ) : (
           <Variables
+            Placeholder={this.constructPlaceHolder()}
+            Overlay={this.constructOverlay()}
             isRunning={isRunning}
             variables={variables}
             editMode={editMode}
@@ -142,8 +144,6 @@ class VariablePanel extends React.Component {
             isLoading={this.state.loadingState === LOADING_STATE.LOADING}
             onVariableUpdate={onVariableUpdate}
             setEditMode={setEditMode}
-            Placeholder={this.constructPlaceHolder()}
-            Overlay={this.constructOverlay()}
           />
         )}
       </Styled.Variables>

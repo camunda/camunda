@@ -1,0 +1,29 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`VariablePanel Placeholder should show skeleton when initially loaded 1`] = `
+<EmptyPanel
+  Skeleton={
+    Object {
+      "$$typeof": Symbol(react.memo),
+      "compare": null,
+      "type": [Function],
+    }
+  }
+  rowHeight={32}
+  type="skeleton"
+/>
+`;
+
+exports[`VariablePanel Placeholder should show the Message when scope doesnt have variable  1`] = `
+<EmptyPanel
+  label="The Flow Node has no variables."
+  type="info"
+/>
+`;
+
+exports[`VariablePanel Spinner should render spinner when data is loading 1`] = `
+<ForwardRef(Styled(EmptyPanel))
+  Skeleton={[Function]}
+  type="skeleton"
+/>
+`;

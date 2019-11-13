@@ -10,7 +10,7 @@ import {mount} from 'enzyme';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createVariables} from 'modules/testUtils';
 
-import Skeleton from '../VariablePanel/Skeleton';
+// import Skeleton from '../VariablePanel/Skeleton';
 import Variables from './Variables';
 
 const MODE = {
@@ -62,12 +62,6 @@ describe('Variables', () => {
       expect(columns.at(0).text()).toContain(variable.name);
       expect(columns.at(1).text()).toContain(variable.value);
     });
-  });
-
-  it('should render skeleton', () => {
-    const node = mountNode({variables: []});
-
-    expect(node.find(Skeleton)).toExist();
   });
 
   describe('Disable "Add Variable" button', () => {
