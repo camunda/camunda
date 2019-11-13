@@ -181,9 +181,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
         final Set<IdentityDto> currentGroupIdentities = new HashSet<>();
         consumeIdentitiesInBatches(
           currentGroupIdentities::addAll,
-          (pageStartIndex, pageLimit) -> fetchPageOfGroupMembers(
-            engineContext, revokedGroupId, pageStartIndex, pageLimit
-          ),
+          (pageStartIndex, pageLimit) -> engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, revokedGroupId),
           userDto -> true
         );
         return currentGroupIdentities.stream();
@@ -194,7 +192,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
     // then iterate all users... that's the price you pay for global access
     consumeIdentitiesInBatches(
       identityCache::addIdentities,
-      (pageStartIndex, pageLimit) -> fetchPageOfUsers(engineContext, pageStartIndex, pageLimit),
+      engineContext::fetchPageOfUsers,
       userDto ->
         // @formatter:off
         // add them if not already present
@@ -229,7 +227,7 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
       authorizedIdentities.getGrantedGroupIds()
         .forEach(groupId -> consumeIdentitiesInBatches(
           identityCache::addIdentities,
-          (pageStartIndex, pageLimit) -> fetchPageOfGroupMembers(engineContext, groupId, pageStartIndex, pageLimit),
+          (pageStartIndex, pageLimit) -> engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, groupId),
           userDto -> !authorizedIdentities.getRevokedUserIds().contains(userDto.getId())
             && !identityCache.getUserIdentityById(userDto.getId()).isPresent()
         ));
@@ -241,33 +239,6 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
       .collect(Collectors.toSet());
     Iterables.partition(grantedUserIdsNotYetImported, getIdentitySyncConfiguration().getMaxPageSize())
       .forEach(userIdBatch -> identityCache.addIdentities(fetchUsersById(engineContext, userIdBatch)));
-  }
-
-  private List<UserDto> fetchPageOfUsers(final EngineContext engineContext,
-                                         final int pageStartIndex,
-                                         final int pageLimit) {
-    if (getIdentitySyncConfiguration().isIncludeUserMetaData()) {
-      return engineContext.fetchPageOfUsers(pageStartIndex, pageLimit);
-    } else {
-      return engineContext.fetchPageOfUsers(pageStartIndex, pageLimit)
-        .stream()
-        .map(userDto -> new UserDto(userDto.getId()))
-        .collect(Collectors.toList());
-    }
-  }
-
-  private List<UserDto> fetchPageOfGroupMembers(final EngineContext engineContext,
-                                                final String groupId,
-                                                final int pageStartIndex,
-                                                final int pageLimit) {
-    if (getIdentitySyncConfiguration().isIncludeUserMetaData()) {
-      return engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, groupId);
-    } else {
-      return engineContext.fetchPageOfUsers(pageStartIndex, pageLimit, groupId)
-        .stream()
-        .map(userDto -> new UserDto(userDto.getId()))
-        .collect(Collectors.toList());
-    }
   }
 
   private List<UserDto> fetchUsersById(final EngineContext engineContext, final List<String> userIdBatch) {

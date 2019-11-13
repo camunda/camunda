@@ -24,7 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_EMAIL_DOMAIN;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -127,33 +131,12 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   }
 
   @Test
-  public void getRolesNoUserMetadataAvailable() {
-    //given
-    final String collectionId = createNewCollection();
-
-    // when
-    List<CollectionRoleDto> roles = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(CollectionRoleDto.class, 200);
-
-    // then
-    assertThat(roles.size(), is(1));
-    final UserDto userDto = (UserDto) roles.get(0).getIdentity();
-    assertThat(userDto.getId(), is(DEFAULT_USERNAME));
-    assertThat(userDto.getName(), is(nullValue()));
-    assertThat(userDto.getFirstName(), is(nullValue()));
-    assertThat(userDto.getLastName(), is(nullValue()));
-    assertThat(userDto.getEmail(), is(nullValue()));
-  }
-
-  @Test
-  public void getRolesContainsUserMetadata() {
+  public void getRolesContainsUserMetadata_retrieveFromCache() {
     //given
     final String collectionId = createNewCollection();
 
     UserDto expectedUserDtoWithData =
-      new UserDto(DEFAULT_USERNAME, "firstName", "lastName", "me@camunda.com");
+      new UserDto(DEFAULT_USERNAME, DEFAULT_FIRSTNAME, DEFAULT_LASTNAME, "me@camunda.com");
 
     embeddedOptimizeExtension.getIdentityService().addIdentity(expectedUserDtoWithData);
 
@@ -175,6 +158,32 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
       is(expectedUserDtoWithData.getFirstName() + " " + expectedUserDtoWithData.getLastName())
     );
     assertThat(userDto.getEmail(), is(expectedUserDtoWithData.getEmail()));
+  }
+
+  @Test
+  public void getRolesContainsUserMetadata_fetchIfNotInCache() {
+    //given
+    final String collectionId = createNewCollection();
+
+    // when
+    List<CollectionRoleDto> roles = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(CollectionRoleDto.class, 200);
+
+    // then
+    assertThat(roles.size(), is(1));
+    final IdentityDto identityDto = roles.get(0).getIdentity();
+    assertThat(identityDto, is(instanceOf(UserDto.class)));
+    final UserDto userDto = (UserDto) identityDto;
+    assertThat(userDto.getId(), is(DEFAULT_USERNAME));
+    assertThat(userDto.getFirstName(), is(DEFAULT_FIRSTNAME));
+    assertThat(userDto.getLastName(), is(DEFAULT_LASTNAME));
+    assertThat(
+      userDto.getName(),
+      is(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME)
+    );
+    assertThat(userDto.getEmail(), endsWith(DEFAULT_EMAIL_DOMAIN));
   }
 
   @Test
@@ -276,10 +285,9 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
   }
 
   @Test
-  public void addUserRoleFailsNotAuthorizedUser() {
+  public void addUserRoleFailsForUnknownUsers() {
     // given
     final String collectionId = createNewCollection();
-    engineIntegrationExtension.addUser(USER_KERMIT, USER_KERMIT);
 
     // when
     final CollectionRoleDto roleDto = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);

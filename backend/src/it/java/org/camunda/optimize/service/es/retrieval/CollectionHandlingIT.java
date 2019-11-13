@@ -63,6 +63,8 @@ import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
@@ -601,6 +603,12 @@ public class CollectionHandlingIT extends AbstractIT {
   @Test
   public void copyCollectionWithANestedReport() {
     //given
+    // we are adding the default user here to the cache, since otherwise the
+    // test becomes flaky due to time outs from fetching the user
+    UserDto expectedUserDtoWithData =
+      new UserDto(DEFAULT_USERNAME, DEFAULT_FIRSTNAME, DEFAULT_LASTNAME, "me@camunda.com");
+    embeddedOptimizeExtension.getIdentityService().addIdentity(expectedUserDtoWithData);
+
     String collectionId = createNewCollection();
     String originalReportId = createNewSingleProcessReportInCollection(collectionId);
     String combinedReportId = createNewCombinedReportInCollection(collectionId);

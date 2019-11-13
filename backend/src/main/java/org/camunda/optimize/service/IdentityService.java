@@ -51,6 +51,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   }
 
   public void addIdentity(final IdentityDto identity) {
+
     syncedIdentityCache.addIdentity(identity);
   }
 
@@ -65,15 +66,13 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
   public Optional<UserDto> getUserById(final String userId) {
     return syncedIdentityCache.getUserIdentityById(userId)
       .map(Optional::of)
-      .orElseGet(() -> {
-        if (applicationAuthorizationService.isAuthorizedToAccessOptimize(userId)) {
-          final UserDto userDto = new UserDto(userId, null, null, null);
-          addIdentity(userDto);
-          return Optional.of(userDto);
-        } else {
-          return Optional.empty();
-        }
-      });
+      .orElseGet(() -> engineContextFactory.getConfiguredEngines().stream()
+        .map(engineContext -> engineContext.getUserById(userId))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .peek(this::addIdentity)
+        .findFirst()
+      );
   }
 
   public Optional<GroupDto> getGroupById(final String groupId) {

@@ -132,7 +132,20 @@ public class EngineContext {
       log.error("Could not fetch user with id [{}]", userId, e);
     }
     return Optional.ofNullable(engineUserDto)
-      .map(user -> new UserDto(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail()));
+      .map(this::mapEngineUser);
+  }
+
+  private UserDto mapEngineUser(EngineListUserDto engineUser) {
+    if (this.configurationService.getIdentitySyncConfiguration().isIncludeUserMetaData()) {
+      return new UserDto(
+        engineUser.getId(),
+        engineUser.getFirstName(),
+        engineUser.getLastName(),
+        engineUser.getEmail()
+      );
+    } else {
+      return new UserDto(engineUser.getId());
+    }
   }
 
   public List<UserDto> getUsersById(final List<String> userIds) {
@@ -164,9 +177,7 @@ public class EngineContext {
       return response.readEntity(new GenericType<List<EngineListUserDto>>() {})
       // @formatter:on
         .stream()
-        .map(engineDto -> new UserDto(
-          engineDto.getId(), engineDto.getFirstName(), engineDto.getLastName(), engineDto.getEmail())
-        )
+        .map(this::mapEngineUser)
         .collect(toList());
 
     } else {
