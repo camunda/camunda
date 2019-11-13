@@ -134,7 +134,20 @@ export default class Filters extends React.Component {
   };
 
   setFilterFromProps = () => {
-    this.setFilterState(this.props.filter);
+    const {
+      errorMessage,
+      startDate,
+      endDate,
+      variable,
+      ids,
+      // fields that are evaluated immediately will be overwritten by props
+      ...immediateFilter
+    } = this.props.filter;
+
+    const debouncedFilter = {errorMessage, startDate, endDate, variable, ids};
+    const sanitizedDebouncedFilter = sanitizeFilter(debouncedFilter);
+
+    this.setFilterState({...immediateFilter, ...sanitizedDebouncedFilter});
   };
 
   handleWorkflowNameChange = event => {
