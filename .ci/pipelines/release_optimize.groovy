@@ -116,15 +116,6 @@ void runRelease(params) {
       sed -i "s/project.previousVersion>.*</project.previousVersion>${params.RELEASE_VERSION}</g" pom.xml
       git add pom.xml
 
-      cd qa/upgrade-optimize-data/post-migration-test/
-
-      sed -i "s/,\\\${project.version}<\\/upgrade.versions>/<\\/upgrade.versions>/g" pom.xml
-      sed -i "s/<\\/upgrade.versions>/,${params.RELEASE_VERSION}<\\/upgrade.versions>/g" pom.xml
-      sed -i "s/<\\/upgrade.versions>/,\\\${project.version}<\\/upgrade.versions>/g" pom.xml
-      git add pom.xml
-
-      cd ../../../
-
       git diff --staged --quiet
       if [ \$? -ne 0 ]; then
         git commit -m \"chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}\"
