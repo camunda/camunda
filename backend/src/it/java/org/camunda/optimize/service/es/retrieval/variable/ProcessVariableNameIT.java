@@ -27,7 +27,7 @@ import java.util.stream.IntStream;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 

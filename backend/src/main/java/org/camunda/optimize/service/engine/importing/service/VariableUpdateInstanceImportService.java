@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.engine.importing.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.plugin.ImportAdapterProvider;
@@ -15,19 +16,16 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.VariableUpdateElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
+@Slf4j
 public class VariableUpdateInstanceImportService implements ImportService<HistoricVariableUpdateInstanceDto> {
-
-  protected Logger logger = LoggerFactory.getLogger(getClass());
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private ImportAdapterProvider importAdapterProvider;
@@ -48,7 +46,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
 
   @Override
   public void executeImport(List<HistoricVariableUpdateInstanceDto> pageOfEngineEntities, Runnable callback) {
-    logger.trace("Importing entities from engine...");
+    log.trace("Importing entities from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
@@ -136,47 +134,47 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
 
   private boolean isValidVariable(PluginVariableDto variableDto) {
     if (variableDto == null) {
-      logger.info("Refuse to add null variable from import adapter plugin.");
+      log.info("Refuse to add null variable from import adapter plugin.");
       return false;
     } else if (isNullOrEmpty(variableDto.getId())) {
-      logger.info(
+      log.info(
         "Refuse to add variable with name [{}] from variable import adapter plugin. Variable has no id.",
         variableDto.getName()
       );
       return false;
     } else if (isNullOrEmpty(variableDto.getName())) {
-      logger.info(
+      log.info(
         "Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",
         variableDto.getId()
       );
       return false;
     } else if (isNullOrEmpty(variableDto.getType()) || !isVariableTypeSupported(variableDto.getType())) {
-      logger.info(
+      log.info(
         "Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not " +
           "supported.",
         variableDto.getName()
       );
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessInstanceId())) {
-      logger.info(
+      log.info(
         "Refuse to add variable [{}] from variable import adapter plugin. Variable has no process instance id.",
         variableDto.getName()
       );
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessDefinitionId())) {
-      logger.info(
+      log.info(
         "Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition id.",
         variableDto.getName()
       );
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessDefinitionKey())) {
-      logger.info(
+      log.info(
         "Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition key.",
         variableDto.getName()
       );
       return false;
     } else if (isNullOrZero(variableDto.getVersion())) {
-      logger.info(
+      log.info(
         "Refuse to add variable [{}] with version [{}] from variable import adapter plugin. Variable has no version " +
           "or version is invalid.",
         variableDto.getName(),
@@ -184,7 +182,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
       );
       return false;
     } else if (isNullOrEmpty(variableDto.getEngineAlias())) {
-      logger.info(
+      log.info(
         "Refuse to add variable [{}] from variable import adapter plugin. Variable has no engine alias.",
         variableDto.getName()
       );

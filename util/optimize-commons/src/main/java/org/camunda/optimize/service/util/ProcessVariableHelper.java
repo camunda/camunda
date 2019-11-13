@@ -5,12 +5,11 @@
  */
 package org.camunda.optimize.service.util;
 
+import lombok.experimental.UtilityClass;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.InstanceType.MULTIVALUE_FIELD_DATE;
@@ -26,18 +25,8 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@UtilityClass
 public class ProcessVariableHelper {
-
-  private ProcessVariableHelper() {
-  }
-
-  public static boolean isVariableTypeSupported(String variableTypeString) {
-    return isVariableTypeSupported(VariableType.getTypeForId(variableTypeString));
-  }
-
-  public static boolean isVariableTypeSupported(VariableType variableType) {
-    return Arrays.asList(ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES).contains(variableType);
-  }
 
   public static String getNestedVariableNameField() {
     return VARIABLES + "." + VARIABLE_NAME;

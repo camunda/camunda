@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.ProcessVariableHelper.isVariableTypeSupported;
+import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
 @AllArgsConstructor
 @Slf4j
@@ -127,8 +127,8 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     }
 
     return outputInstanceDtoList.stream()
-      .map(this::mapPluginOutputDtoToOptimizeOutputDto)
       .filter(this::isValidOutputInstanceDto)
+      .map(this::mapPluginOutputDtoToOptimizeOutputDto)
       .collect(Collectors.toList());
   }
 
@@ -144,8 +144,8 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     }
 
     return inputInstanceDtoList.stream()
-      .map(this::mapPluginInputDtoToOptimizeInputDto)
       .filter(this::isValidInputInstanceDto)
+      .map(this::mapPluginInputDtoToOptimizeInputDto)
       .collect(Collectors.toList());
   }
 
@@ -224,12 +224,16 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     );
   }
 
-  private boolean isValidInputInstanceDto(final InputInstanceDto inputInstanceDto) {
+  private boolean isValidInputInstanceDto(final PluginDecisionInputDto inputInstanceDto) {
     if (!isVariableTypeSupported(inputInstanceDto.getType())) {
       log.info(
-        "Refuse to add input variable [{}] of type [{}]. Variable has no type or type is not supported.",
+        "Refuse to add input variable [id: {}, clauseId: {}, clauseName: {}, type: {}] " +
+          "for decision instance with id [{}]. Variable has no type or type is not supported.",
         inputInstanceDto.getId(),
-        inputInstanceDto.getType()
+        inputInstanceDto.getClauseId(),
+        inputInstanceDto.getClauseName(),
+        inputInstanceDto.getType(),
+        inputInstanceDto.getDecisionInstanceId()
       );
       return false;
     }
@@ -237,12 +241,16 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
 
-  private boolean isValidOutputInstanceDto(final OutputInstanceDto outputInstanceDto) {
+  private boolean isValidOutputInstanceDto(final PluginDecisionOutputDto outputInstanceDto) {
     if (!isVariableTypeSupported(outputInstanceDto.getType())) {
       log.info(
-        "Refuse to add output variable [{}] of type [{}]. Variable has no type or type is not supported.",
+        "Refuse to add output variable [id: {}, clauseId: {}, clauseName: {}, type: {}] " +
+          "for decision instance with id [{}]. Variable has no type or type is not supported.",
         outputInstanceDto.getId(),
-        outputInstanceDto.getType()
+        outputInstanceDto.getClauseId(),
+        outputInstanceDto.getClauseName(),
+        outputInstanceDto.getType(),
+        outputInstanceDto.getDecisionInstanceId()
       );
       return false;
     }
