@@ -29,7 +29,7 @@ Zeebe was designed to operate at very large scale, and to achieve this, it provi
 * **A language-agnostic client model**, making it possible to build a Zeebe client in just about any programming language that an organization uses to build microservices.
 * **Operational ease-of-use** as a self-contained and self-sufficient system. Zeebe does **not** require a cluster coordinator such as ZooKeeper. Because all nodes in a Zeebe cluster are equal, it's relatively easy to scale, and it plays nicely with modern resource managers and container orchestrators such as [Docker](https://www.docker.com/), [Kubernetes](https://kubernetes.io/), and [DC/OS](https://dcos.io/). Zeebe's CLI (Command Line Interface) allows you to script and automate management and operations tasks.
 
-You can learn more about these technical concepts [in the "Basics" section of the documentation](https://docs.zeebe.io/basics/).
+You can learn more about these technical concepts [in the "Basics" section of the documentation](/basics/).
 
 ## Zeebe is simple and lightweight
 

@@ -10,7 +10,7 @@ In Production, we recommend using Kubernetes and container images. This provides
 
 ## Tools For Monitoring And Managing Workflows
 
-Operate is a tool that was built for monitoring and managing Zeebe workflows. We walk through how to install Operate in the ["Getting Started" tutorial](https://docs.zeebe.io/getting-started/).
+Operate is a tool that was built for monitoring and managing Zeebe workflows. We walk through how to install Operate in the ["Getting Started" tutorial](/getting-started/).
 
 The current Operate release is a developer preview and is available for _non-production use only._ [You can find the Operate preview license here.](https://zeebe.io/legal/operate-evaluation-license/)
 

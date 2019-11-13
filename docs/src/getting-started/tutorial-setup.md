@@ -11,9 +11,9 @@ Welcome to the Getting Started tutorial for Zeebe and Operate. In this tutorial,
 
 If this is your first time working with Zeebe, we expect this entire guide to take you 30-45 minutes to complete.
 
-If you're looking for a very fast (but less comprehensive) "first contact" experience, you might prefer the [Quickstart](https://docs.zeebe.io/introduction/quickstart.html).
+If you're looking for a very fast (but less comprehensive) "first contact" experience, you might prefer the [Quickstart](/introduction/quickstart.html).
 
-The tutorial assumes you have some basic knowledge of what Zeebe is and what it's used for. If you're completely new to Zeebe, you might find it helpful to read through the ["What is Zeebe?"](https://docs.zeebe.io/introduction/what-is-zeebe.html) docs article first.
+The tutorial assumes you have some basic knowledge of what Zeebe is and what it's used for. If you're completely new to Zeebe, you might find it helpful to read through the ["What is Zeebe?"](/introduction/what-is-zeebe.html) docs article first.
 
 Below are the components you'll use in the tutorial. The easiest way to run them is to download the [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases) and use the `operate` docker-compose profile in the [zeebe-docker-compose](https://github.com/zeebe-io/zeebe-docker-compose) repository. Further instructions for using Zeebe with Docker can be found in the README.md file in that repository.
  

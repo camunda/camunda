@@ -56,8 +56,8 @@ This is what you should see in your Modeler now.
 
 This _Type_ field represents the _job type_ in Zeebe. A couple of concepts that are important to understand at this point:
 
-*   A _job_ is simply a work item in a workflow that needs to be completed before a workflow instance can proceed to the next step. (_[See: Job Workers](https://docs.zeebe.io/basics/job-workers.html)_)
-*   A _workflow instance_ is one running instance of a workflow model--in our case, an individual order to be fulfilled. (_[See: Workflows](https://docs.zeebe.io/basics/workflows.html)_)
+*   A _job_ is simply a work item in a workflow that needs to be completed before a workflow instance can proceed to the next step. (_[See: Job Workers](/basics/job-workers.html)_)
+*   A _workflow instance_ is one running instance of a workflow model--in our case, an individual order to be fulfilled. (_[See: Workflows](/basics/workflows.html)_)
 
 For every workflow instance that arrives at the "Initiate Payment" Service Task, Zeebe will create a job with type `initiate-payment`. The external worker service responsible for payment processing--the so-called job worker--will poll Zeebe intermittently to ask if any jobs of type `initiate-payment` are available.
 
@@ -74,7 +74,7 @@ Next, we'll add a Message Event to the workflow:
 
 
 
-We use message catch events in Zeebe when the workflow engine needs to receive a message from an external system before the workflow instance can advance. (_[See: Message Events](https://docs.zeebe.io/bpmn-workflows/message-events/message-events.html)_)
+We use message catch events in Zeebe when the workflow engine needs to receive a message from an external system before the workflow instance can advance. (_[See: Message Events](/bpmn-workflows/message-events/message-events.html)_)
 
 In the scenario we're modeling, we _initiate_ a payment with our Service Task, but we need to wait for some other external system to actually confirm that the payment was received. This confirmation comes in the form of a message that will be sent to Zeebe - asynchronously - by an external service.
 
