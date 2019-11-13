@@ -501,6 +501,30 @@ public class CallActivityTest {
         .isGreaterThan(incidentResolved.getPosition());
   }
 
+  @Test
+  public void shouldCreateInstanceOfCalledElementAtNoneStartEvent() {
+    // given
+    final var processBuilder = Bpmn.createExecutableProcess(PROCESS_ID_CHILD);
+    processBuilder.startEvent("none-start").endEvent();
+    processBuilder.startEvent("timer-start").timerWithCycle("R/PT1H").endEvent();
+    processBuilder.startEvent("message-start").message("start").endEvent();
+
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", processBuilder.done()).deploy();
+
+    // when
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withParentWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceCompleted()
+                .withElementType(BpmnElementType.START_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsOnly("none-start");
+  }
+
   private void completeJobWith(Map<String, Object> variables) {
 
     RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).getFirst().getValue();

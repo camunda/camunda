@@ -16,7 +16,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -52,7 +51,7 @@ public class TimerStartEventTest {
           .endEvent("end_3")
           .done();
 
-  private static final BpmnModelInstance TIMER_AND_MESSAGE_MODEL =
+  private static final BpmnModelInstance MULTIPLE_START_EVENTS_MODEL =
       createTimerAndMessageStartEventsModel();
 
   private static final BpmnModelInstance MULTI_TIMER_START_MODEL = createMultipleTimerStartModel();
@@ -61,7 +60,8 @@ public class TimerStartEventTest {
 
   private static BpmnModelInstance createTimerAndMessageStartEventsModel() {
     final ProcessBuilder builder = Bpmn.createExecutableProcess("process");
-    builder.startEvent("timer_start").timerWithCycle("R/PT1S").endEvent("timer_end");
+    builder.startEvent("none_start").endEvent("none_end");
+    builder.startEvent("timer_start").timerWithCycle("R1/PT1S").endEvent("timer_end");
     return builder.startEvent("msg_start").message("msg1").endEvent("msg_end").done();
   }
 
@@ -635,48 +635,30 @@ public class TimerStartEventTest {
   }
 
   @Test
-  public void shouldTriggerTimerAndMessageStartEvent() {
+  public void shouldTriggerOnlyTimerStartEvent() {
     // given
     final DeployedWorkflow deployedWorkflow =
         engine
             .deployment()
-            .withXmlResource(TIMER_AND_MESSAGE_MODEL)
+            .withXmlResource(MULTIPLE_START_EVENTS_MODEL)
             .deploy()
             .getValue()
             .getDeployedWorkflows()
             .get(0);
     final long workflowKey = deployedWorkflow.getWorkflowKey();
-    assertThat(
-            RecordingExporter.timerRecords(TimerIntent.CREATED)
-                .withWorkflowKey(workflowKey)
-                .exists())
-        .isTrue();
-    assertThat(
-            RecordingExporter.messageStartEventSubscriptionRecords(
-                    MessageStartEventSubscriptionIntent.OPENED)
-                .withWorkfloKey(workflowKey)
-                .exists())
-        .isTrue();
+
+    RecordingExporter.timerRecords(TimerIntent.CREATED).withWorkflowKey(workflowKey).await();
 
     // when
     engine.increaseTime(Duration.ofSeconds(1));
-    engine.message().withName("msg1").withCorrelationKey("123").publish();
 
     // then
-    final long timerInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("timer_end")
-            .withWorkflowKey(deployedWorkflow.getWorkflowKey())
-            .getFirst()
-            .getValue()
-            .getWorkflowInstanceKey();
-
-    final long messageInstanceKey =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementId("msg_end")
-            .getFirst()
-            .getValue()
-            .getWorkflowInstanceKey();
-    assertThat(messageInstanceKey).isNotEqualTo(timerInstanceKey);
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowKey(workflowKey)
+                .limitToWorkflowInstanceCompleted()
+                .withElementType(BpmnElementType.START_EVENT))
+        .extracting(r -> r.getValue().getElementId())
+        .containsOnly("timer_start");
   }
 }
