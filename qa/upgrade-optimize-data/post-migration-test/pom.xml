@@ -4,7 +4,7 @@
 
   <properties>
     <skipTests>true</skipTests>
-    <upgrade.versions>${project.previousVersion},2.6.0,${project.version}</upgrade.versions>
+    <upgrade.versions>${project.previousVersion},${project.version}</upgrade.versions>
   </properties>
 
   <parent>
