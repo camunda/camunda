@@ -4,13 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import {Table, Button, Icon} from 'components';
 import {loadCommonOutliersVariables, getInstancesDownloadUrl} from './service';
 import {t} from 'translation';
 import './VariablesTable.scss';
 
-export default class VariablesTable extends Component {
+export default class VariablesTable extends React.Component {
   state = {
     data: []
   };

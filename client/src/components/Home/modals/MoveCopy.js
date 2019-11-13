@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import {showError} from 'notifications';
 
 import {loadEntities} from '../service';
@@ -13,7 +13,7 @@ import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 
 export default withErrorHandling(
-  class MoveCopy extends Component {
+  class MoveCopy extends React.Component {
     state = {
       availableCollections: []
     };

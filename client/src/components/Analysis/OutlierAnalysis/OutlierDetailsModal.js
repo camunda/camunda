@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 
 import {Modal, ButtonGroup, Button} from 'components';
 
@@ -13,7 +13,7 @@ import {t} from 'translation';
 import DurationChart from './DurationChart';
 import VariablesTable from './VariablesTable';
 
-export default class OutlierDetailsModal extends Component {
+export default class OutlierDetailsModal extends React.Component {
   state = {
     tableView: false
   };

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 
 import OutlierControlPanel from './OutlierControlPanel';
 import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
@@ -17,7 +17,7 @@ import {t} from 'translation';
 
 import './OutlierAnalysis.scss';
 
-export default class OutlierAnalysis extends Component {
+export default class OutlierAnalysis extends React.Component {
   state = {
     config: {
       processDefinitionKey: '',

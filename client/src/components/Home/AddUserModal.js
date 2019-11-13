@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 
 import {Button, LabeledInput, Modal, Form, Typeahead, ErrorMessage} from 'components';
 import {searchIdentities} from './service';
@@ -16,7 +16,7 @@ const defaultState = {
   activeRole: 'viewer'
 };
 
-export default class AddUserModal extends Component {
+export default class AddUserModal extends React.Component {
   state = defaultState;
 
   onConfirm = () => {

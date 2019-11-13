@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
@@ -18,7 +18,7 @@ import {checkDeleteConflict, deleteEntity} from 'services';
 import './ReportView.scss';
 import {t} from 'translation';
 
-export default class ReportView extends Component {
+export default class ReportView extends React.Component {
   state = {
     confirmModalVisible: false,
     conflict: null,

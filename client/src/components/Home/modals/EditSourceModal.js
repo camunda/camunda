@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 
 import {Button, Modal, Form} from 'components';
 import {t} from 'translation';
@@ -13,7 +13,7 @@ import {withErrorHandling} from 'HOC';
 import ItemsList from './ItemsList';
 
 export default withErrorHandling(
-  class EditSourceModal extends Component {
+  class EditSourceModal extends React.Component {
     constructor(props) {
       super(props);
 

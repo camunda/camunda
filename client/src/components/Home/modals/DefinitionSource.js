@@ -4,14 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import ItemsList from './ItemsList';
 import {Typeahead, LoadingIndicator, Form, Labeled} from 'components';
 import {t} from 'translation';
 import equal from 'deep-equal';
 import {formatDefintionName, formatTenants} from './service';
 
-export default class DefinitionSource extends Component {
+export default class DefinitionSource extends React.Component {
   state = {
     selectedDefinition: null,
     selectedTenants: []

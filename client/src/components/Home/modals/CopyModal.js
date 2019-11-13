@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 
 import {Button, LabeledInput, Modal, Form, InfoMessage} from 'components';
 import {t} from 'translation';
@@ -12,7 +12,7 @@ import MoveCopy from './MoveCopy';
 
 import './CopyModal.scss';
 
-export default class CopyModal extends Component {
+export default class CopyModal extends React.Component {
   constructor(props) {
     super(props);
 

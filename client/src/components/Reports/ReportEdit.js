@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 import {Redirect, withRouter} from 'react-router-dom';
@@ -35,7 +35,7 @@ import {t} from 'translation';
 
 export default withRouter(
   withErrorHandling(
-    class ReportEdit extends Component {
+    class ReportEdit extends React.Component {
       state = {
         loadingReportData: false,
         redirect: '',

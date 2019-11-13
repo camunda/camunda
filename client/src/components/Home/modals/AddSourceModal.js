@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import {ButtonGroup, Button, Modal, Form} from 'components';
 
 import {withErrorHandling} from 'HOC';
@@ -15,7 +15,7 @@ import TenantSource from './TenantSource';
 import {showError} from 'notifications';
 
 export default withErrorHandling(
-  class AddSourceModal extends Component {
+  class AddSourceModal extends React.Component {
     state = {
       addBy: 'definition',
       source: {},

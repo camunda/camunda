@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 
 import {Input, Icon, Button} from 'components';
 import {Link} from 'react-router-dom';
@@ -12,7 +12,7 @@ import {Link} from 'react-router-dom';
 import './EntityNameForm.scss';
 import {t} from 'translation';
 
-export default class EntityNameForm extends Component {
+export default class EntityNameForm extends React.Component {
   nameInput = React.createRef();
 
   componentDidMount() {

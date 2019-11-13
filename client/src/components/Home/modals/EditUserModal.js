@@ -4,12 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 
 import {Button, LabeledInput, Modal, Form} from 'components';
 import {t} from 'translation';
 
-export default class EditUserModal extends Component {
+export default class EditUserModal extends React.Component {
   constructor(props) {
     super(props);
 

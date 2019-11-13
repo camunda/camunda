@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 import {Redirect} from 'react-router-dom';
 
 import {Button, LabeledInput, Modal, Form} from 'components';
@@ -13,7 +13,7 @@ import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
 export default withErrorHandling(
-  class CollectionModal extends Component {
+  class CollectionModal extends React.Component {
     constructor(props) {
       super(props);
 

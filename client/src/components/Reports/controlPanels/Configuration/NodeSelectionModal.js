@@ -4,14 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
+import React from 'react';
 
 import {Modal, Button, BPMNDiagram, ClickBehavior} from 'components';
 
 import './NodeSelectionModal.scss';
 import {t} from 'translation';
 
-export default class NodeSelectionModal extends Component {
+export default class NodeSelectionModal extends React.Component {
   constructor(props) {
     super(props);
 
