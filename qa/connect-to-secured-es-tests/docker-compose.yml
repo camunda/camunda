@@ -108,14 +108,6 @@ services:
       timeout: 5s
       retries: 6
 
-  squid:
-    image: sameersbn/squid:3.5.27-1
-    container_name: proxy
-    ports:
-      - 3128:3128
-    volumes:
-      - "./src/test/resources/squid.conf:/etc/squid/squid.conf"
-
   wait_until_ready:
     image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-6.2.0}
     command: /usr/bin/true
