@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: Role
 metadata:
-  name: performance-optimize-readonly
+  name: optimize-team-read-permissions
   namespace: ${NAMESPACE}
 rules:
   - apiGroups: [""]
@@ -26,12 +26,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: RoleBinding
 metadata:
-  name: performance-optimize-readonly
+  name: optimize-team-read-permissions
   namespace: ${NAMESPACE}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: performance-optimize-readonly
+  name: optimize-team-read-permissions
 subjects:
   - kind: ServiceAccount
     name: johannes-heinemann
@@ -40,5 +40,11 @@ subjects:
     name: sebastian-bathke
     namespace: optimize
   - kind: ServiceAccount
-    name: michael-wagner
+    name: kyrylo-zakurdaiev
+    namespace: optimize
+  - kind: ServiceAccount
+    name: helene-waechtler
+    namespace: optimize
+  - kind: ServiceAccount
+    name: joshua-windels
     namespace: optimize

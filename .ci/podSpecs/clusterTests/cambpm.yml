@@ -23,7 +23,7 @@ spec:
           effect: "NoSchedule"
       containers:
         - name: cambpm
-          image: camunda/camunda-bpm-platform:7.11.0
+          image: camunda/camunda-bpm-platform:${CAMBPM_VERSION}
           env:
             - name: JAVA_OPTS
               value: "-Xmx512m -XX:MaxMetaspaceSize=128m"

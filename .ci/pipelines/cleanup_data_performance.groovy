@@ -1,7 +1,11 @@
 #!/usr/bin/env groovy
+
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
-static String gcloudAgent() {
+ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
+
+static String gCloudAndMavenAgent() {
   return """
 metadata:
   labels:
@@ -73,7 +77,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml gcloudAgent()
+      yaml gCloudAndMavenAgent()
     }
   }
 
@@ -90,12 +94,20 @@ pipeline {
   }
 
   stages {
+    stage('Retrieve CamBPM and Elasticsearch version') {
+      steps {
+        container('maven') {
+          cloneGitRepo()
+          script {
+            def mavenProps = readMavenPom().getProperties()
+            env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+            env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+          }
+        }
+      }
+    }
     stage('Prepare') {
       steps {
-        git url: 'git@github.com:camunda/camunda-optimize',
-                branch: "${params.BRANCH}",
-                credentialsId: 'camunda-jenkins-github-ssh',
-                poll: false
         container('gcloud') {
           sh ("""
                 # install jq
@@ -103,7 +115,7 @@ pipeline {
                 # kubectl
                 gcloud components install kubectl --quiet
                 
-                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${REGISTRY_USR}" "${REGISTRY_PSW}" "${SQL_DUMP}"
+                bash .ci/podSpecs/performanceTests/deploy.sh "${NAMESPACE}" "${REGISTRY_USR}" "${REGISTRY_PSW}" "${SQL_DUMP}" "${ES_VERSION}" "${CAMBPM_VERSION}"
             """)
         }
       }
@@ -121,7 +133,7 @@ pipeline {
     stage('CleanupPerformanceTest') {
       steps {
         container('maven') {
-          runMaven('-T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker clean install')
+          runMaven('-T\$LIMITS_CPU -pl backend -DskipTests -Dskip.fe.build -Dskip.docker clean install')
           runMaven("-Pcleanup-performance-test -f qa/cleanup-performance-tests/pom.xml test -Ddb.url=jdbc:postgresql://postgres.${NAMESPACE}:5432/engine -Dengine.url=http://cambpm.${NAMESPACE}:8080/engine-rest -Des.host=elasticsearch.${NAMESPACE} -Dcleanup.timeout.minutes=${CLEANUP_TIMEOUT_MINUTES}")
         }
       }
@@ -145,4 +157,11 @@ pipeline {
       }
     }
   }
+}
+
+private void cloneGitRepo() {
+  git url: 'git@github.com:camunda/camunda-optimize',
+          branch: "${params.BRANCH}",
+          credentialsId: 'camunda-jenkins-github-ssh',
+          poll: false
 }

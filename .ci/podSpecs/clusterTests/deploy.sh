@@ -4,15 +4,19 @@ die () {
     exit 1
 }
 
-[[ "$#" -eq 1 ]] || die "1 arguments required [NAMESPACE], $# provided"
+[[ "$#" -eq 3 ]] || die "3 arguments required [NAMESPACE] [ES_VERSION] [CAMPBM_VERSION], $# provided"
 
 NAMESPACE=$1
+ES_VERSION=$2
+CAMPBM_VERSION=$3
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/ns.yml | kubectl apply -f -
 
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/rbac.yml | kubectl apply -f -
+
 #Spawning elasticsearch
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/elasticsearch-cfg.yml | kubectl apply -f -
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/elasticsearch.yml | kubectl apply -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${ES_VERSION}/$ES_VERSION/g" < .ci/podSpecs/clusterTests/elasticsearch.yml | kubectl apply -f -
 # The following command does not work due to https://github.com/kubernetes/kubernetes/issues/52653
 # Can be removed when we migrate to kubernetes version > 1.12.0
 #kubectl rollout status -f .ci/podSpecs/clusterTests/elasticsearch.yml --watch=true
@@ -22,7 +26,7 @@ done
 
 #Spawning cambpm
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/cambpm-cfg.yml | kubectl apply -f -
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/cambpm.yml | kubectl apply -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${CAMBPM_VERSION}/$CAMBPM_VERSION/g" < .ci/podSpecs/clusterTests/cambpm.yml | kubectl apply -f -
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/clusterTests/cambpm.yml | kubectl rollout status -f - --watch=true
 
 #Spawning optimize-no-import-cluster (No import cluster with >1 replicas)

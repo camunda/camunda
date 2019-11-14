@@ -4,12 +4,14 @@ die () {
     exit 1
 }
 
-[[ "$#" -eq 4 ]] || die "4 arguments required [NAMESPACE, DOCKER_REGISTRY_USER, DOCKER_REGISTRY_PW, SQL_DUMP_NAME], $# provided"
+[[ "$#" -eq 6 ]] || die "4 arguments required [NAMESPACE] [DOCKER_REGISTRY_USER] [DOCKER_REGISTRY_PW] [SQL_DUMP_NAME] [ES_VERSION] [CAMPBM_VERSION], $# provided"
 
 NAMESPACE=$1
 REGISTRY_USR=$2
 REGISTRY_PSW=$3
 SQL_DUMP=$4
+ES_VERSION=$5
+CAMPBM_VERSION=$6
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/ns.yml | kubectl apply -f -
 kubectl create secret docker-registry registry-camunda-cloud-secret \
@@ -19,7 +21,7 @@ kubectl create secret docker-registry registry-camunda-cloud-secret \
     --docker-password="$REGISTRY_PSW" \
     --docker-email=ci@camunda.com
 
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/rbac.yml | kubectl apply -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/rbac.yml | kubectl apply -f -
 
 # Spawning postgres
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/postgresql-cfg.yml | kubectl apply -f -
@@ -38,7 +40,7 @@ kubectl exec -n "$NAMESPACE" "$POD_NAME" -c postgresql -it -- pg_restore --clean
 
 #Spawning elasticsearch
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/elasticsearch-cfg.yml | kubectl apply -f -
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/elasticsearch.yml | kubectl apply -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${ES_VERSION}/$ES_VERSION/g" < .ci/podSpecs/performanceTests/elasticsearch.yml | kubectl apply -f -
 # The following command does not work due to https://github.com/kubernetes/kubernetes/issues/52653
 # Can be removed when we migrate to kubernetes version > 1.12.0
 #sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/elasticsearch.yml | kubectl rollout status -f - --watch=true
@@ -48,7 +50,7 @@ done
 
 #Spawning cambpm
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/cambpm-cfg.yml | kubectl apply -f -
-sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/cambpm.yml | kubectl apply -f -
+sed -e "s/\${NAMESPACE}/$NAMESPACE/g" -e "s/\${CAMBPM_VERSION}/$CAMBPM_VERSION/g" < .ci/podSpecs/performanceTests/cambpm.yml | kubectl apply -f -
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/cambpm.yml | kubectl rollout status -f - --watch=true
 

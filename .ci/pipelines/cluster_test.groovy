@@ -3,7 +3,10 @@
 def static NODE_POOL() { return "slaves-stable" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
 
-static String gcloudAgent() {
+ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
+
+static String gCloudAndMavenAgent() {
   return """
 metadata:
   labels:
@@ -73,7 +76,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml gcloudAgent()
+      yaml gCloudAndMavenAgent()
     }
   }
 
@@ -89,20 +92,28 @@ pipeline {
   }
 
   stages {
+    stage('Retrieve CamBPM and Elasticsearch version') {
+      steps {
+        container('maven') {
+          cloneGitRepo()
+          script {
+            def mavenProps = readMavenPom().getProperties()
+            env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty(ES_TEST_VERSION_POM_PROPERTY)
+            env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
+          }
+        }
+      }
+    }
     stage('Prepare') {
       steps {
         container('gcloud') {
-          git url: 'git@github.com:camunda/camunda-optimize',
-                  branch: "${params.BRANCH}",
-                  credentialsId: 'camunda-jenkins-github-ssh',
-                  poll: false
           sh ("""
                 # install jq
                 apk add --no-cache jq gettext
                 # kubectl
                 gcloud components install kubectl --quiet
 
-                bash .ci/podSpecs/clusterTests/deploy.sh "${NAMESPACE}"
+                bash .ci/podSpecs/clusterTests/deploy.sh "${NAMESPACE}" "${ES_VERSION}" "${CAMBPM_VERSION}"
             """)
         }
         container('maven') {
@@ -134,4 +145,11 @@ pipeline {
       }
     }
   }
+}
+
+private void cloneGitRepo() {
+  git url: 'git@github.com:camunda/camunda-optimize',
+          branch: "${params.BRANCH}",
+          credentialsId: 'camunda-jenkins-github-ssh',
+          poll: false
 }

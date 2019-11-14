@@ -27,7 +27,7 @@ spec:
         - name: registry-camunda-cloud-secret
       containers:
         - name: cambpm
-          image: registry.camunda.cloud/camunda-bpm-platform-ee:7.11.0
+          image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION}
           env:
             - name: JAVA_OPTS
               value: "-Xms4g -Xmx4g -XX:MaxMetaspaceSize=256m"
