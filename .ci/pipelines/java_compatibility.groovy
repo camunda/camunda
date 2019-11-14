@@ -101,7 +101,7 @@ spec:
 """
 }
 
-static String mavenAgent() {
+static String mavenAgent(javaVersion) {
   return """
 metadata:
   labels:
@@ -115,7 +115,7 @@ spec:
       effect: "NoSchedule"
   containers:
   - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
+    image: ${MAVEN_DOCKER_IMAGE(javaVersion)}
     command: ["cat"]
     tty: true
     env:
@@ -189,7 +189,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml mavenAgent()
+          yaml mavenAgent("8-slim")
         }
       }
       steps {
