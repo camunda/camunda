@@ -72,6 +72,8 @@ export default class TargetValueComparison extends React.Component {
     this.closeModal();
   };
 
+  isResultAvailable = () => typeof this.props.report.result !== 'undefined';
+
   render() {
     return (
       <div className="TargetValueComparison">
@@ -81,12 +83,14 @@ export default class TargetValueComparison extends React.Component {
         <Button className="editButton" onClick={this.openModal}>
           <Icon type="settings" />
         </Button>
-        <DurationHeatmapModal
-          open={this.state.modalOpen}
-          onClose={this.closeModal}
-          onConfirm={this.confirmModal}
-          report={this.props.report}
-        />
+        {this.isResultAvailable() && (
+          <DurationHeatmapModal
+            open={this.state.modalOpen}
+            onClose={this.closeModal}
+            onConfirm={this.confirmModal}
+            report={this.props.report}
+          />
+        )}
       </div>
     );
   }

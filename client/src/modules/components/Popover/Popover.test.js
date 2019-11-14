@@ -35,6 +35,18 @@ it('should display child content when the popover is open', async () => {
   expect(node).toIncludeText('Child content');
 });
 
+it('should not display child content if popover is disabled', async () => {
+  const node = mount(
+    <Popover disabled={true} title="a">
+      Child content
+    </Popover>
+  );
+
+  node.setState({open: true});
+
+  expect(node).not.toIncludeText('Child content');
+});
+
 it('should close the popover when clicking the button again', () => {
   const node = mount(<Popover title="a">Child content</Popover>);
 

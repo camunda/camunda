@@ -87,6 +87,14 @@ it('should display a double button', () => {
   expect(node.find('.editButton')).toExist();
 });
 
+it('should not render the modal if result is not yet available', () => {
+  const node = shallow(
+    <TargetValueComparison report={{...validProps.report, result: undefined}} />
+  );
+
+  expect(node.find('DurationHeatmapModal')).not.toExist();
+});
+
 it('should toggle the mode with the left button', () => {
   const spy = jest.fn();
   const node = shallow(<TargetValueComparison {...validProps} onChange={spy} />);

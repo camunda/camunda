@@ -156,9 +156,11 @@ export default withRouter(
       };
 
       loadReport = async query => {
-        this.setState({
-          loadingReportData: true
-        });
+        this.setState(({report}) => ({
+          loadingReportData: true,
+          // reset the result during the evaluation
+          report: update(report, {$unset: ['result']})
+        }));
         await this.props.mightFail(
           evaluateReport(query),
           response => {
