@@ -126,7 +126,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr:'50', artifactNumToKeepStr: '3'))
     timestamps()
-    timeout(time: 30, unit: 'MINUTES')
+    timeout(time: 45, unit: 'MINUTES')
     withCredentials([
       usernamePassword(passwordVariable: 'NEXUS_PSW', usernameVariable: 'NEXUS_USR', credentialsId: 'camunda-nexus'),
       usernamePassword(passwordVariable: 'GITHUB_TOKEN', usernameVariable: 'GITHUB_USERNAME', credentialsId: 'camunda-jenkins-github'),
