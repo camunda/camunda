@@ -384,6 +384,12 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 		_ = gatewayLis.Close()
 	}()
 
+	authServerCalled := false
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authServerCalled = true
+	}))
+	defer ts.Close()
+
 	// setup cache with correct token
 	truncateDefaultOAuthYamlCacheFile()
 	cache, err := NewOAuthYamlCredentialsCache(DefaultOauthYamlCachePath)
@@ -401,7 +407,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 		ClientID:               clientID,
 		ClientSecret:           clientSecret,
 		Audience:               audience,
-		AuthorizationServerURL: "http://foo.bar",
+		AuthorizationServerURL: ts.URL,
 	})
 
 	s.NoError(err)
@@ -421,6 +427,19 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	if errorStatus, ok := status.FromError(err); ok {
 		s.Equal(codes.OK, errorStatus.Code())
 	}
+
+	s.False(authServerCalled)
+
+	// when we do it again
+	_, err = client.NewTopologyCommand().Send()
+
+	// then
+	s.NoError(err)
+	if errorStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.OK, errorStatus.Code())
+	}
+
+	s.False(authServerCalled)
 }
 
 func mockAuthorizationServer(t *testing.T, token *mutableToken) *httptest.Server {
