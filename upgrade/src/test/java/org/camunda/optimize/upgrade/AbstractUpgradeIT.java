@@ -44,8 +44,6 @@ import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.settings.Settings;
@@ -158,13 +156,11 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
   }
 
-  protected void createAndPopulateOptimizeIndexWithTypeAndVersion(StrictIndexMappingCreator indexMapping,
-                                                                  String type,
-                                                                  int version) throws IOException {
+  protected void createOptimizeIndexWithTypeAndVersion(StrictIndexMappingCreator indexMapping,
+                                                       String type,
+                                                       int version) throws IOException {
     final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(indexMapping.getIndexName());
-    final String indexName =
-      indexNameService.getOptimizeIndexNameForAliasAndVersion(indexNameService.getOptimizeIndexAliasForIndex(
-        indexMapping.getIndexName()), String.valueOf(version));
+    final String indexName = getVersionedIndexName(indexMapping.getIndexName(), version);
     final Settings indexSettings = createIndexSettings();
 
     CreateIndexRequest request = new CreateIndexRequest(indexName);
@@ -173,11 +169,13 @@ public abstract class AbstractUpgradeIT {
     indexMapping.setDynamicMappingsValue("false");
     request.mapping(type, indexMapping.getSource());
     prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+  }
 
-    final IndexRequest indexRequest = new IndexRequest(indexName, type);
-    indexRequest.source(indexMapping.getSource());
-    indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-    prefixAwareClient.getHighLevelClient().index(indexRequest, RequestOptions.DEFAULT);
+  protected String getVersionedIndexName(final String indexName, final int version) {
+    return indexNameService.getOptimizeIndexNameForAliasAndVersion(
+      indexNameService.getOptimizeIndexAliasForIndex(indexName),
+      String.valueOf(version)
+    );
   }
 
   private Settings createIndexSettings() {

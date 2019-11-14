@@ -1,2 +1,7 @@
-{"index":{"_index":"optimize-collection_v3","_type":"_doc","_id":"89f9000b-1ab6-42b0-aa49-8f02bbd95309"}}
+{"index":{"_index":"optimize-collection_v2","_type":"collection","_id":"89f9000b-1ab6-42b0-aa49-8f02bbd95309"}}
 {"id":"89f9000b-1ab6-42b0-aa49-8f02bbd95309","name":"New Collection","lastModified":"2019-11-05T11:16:29.534+0100","created":"2019-11-05T11:16:29.534+0100","owner":"demo","lastModifier":"demo","data":{"configuration": {},"roles":[{"id":"USER:demo","identity":{"id":"demo","firstName":null,"lastName":null,"email":null,"type":"user","name":null},"role":"manager"}],"scope":[]}}
+{"index":{"_index":"optimize-collection_v2","_type":"collection","_id":"a0b860f2-d07e-4779-97b3-320b4e0f20ee"}}
+{"id":"a0b860f2-d07e-4779-97b3-320b4e0f20ee","name":"Existing Multi Report Collection","lastModified":"2019-11-05T11:16:29.534+0100","created":"2019-11-05T11:16:29.534+0100","owner":"demo","lastModifier":"demo","data":{"configuration": {},"roles":[{"id":"USER:demo","identity":{"id":"demo","firstName":null,"lastName":null,"email":null,"type":"user","name":null},"role":"manager"}],"scope":[]}}
+{"index":{"_index":"optimize-collection_v2","_type":"collection","_id":"596d9679-894f-4fb9-a646-2220af776d34"}}
+{"id":"596d9679-894f-4fb9-a646-2220af776d34","name":"Existing Empty Collection","lastModified":"2019-11-05T11:16:29.534+0100","created":"2019-11-05T11:16:29.534+0100","owner":"demo","lastModifier":"demo","data":{"configuration": {},"roles":[{"id":"USER:demo","identity":{"id":"demo","firstName":null,"lastName":null,"email":null,"type":"user","name":null},"role":"manager"}],"scope":[]}}
+

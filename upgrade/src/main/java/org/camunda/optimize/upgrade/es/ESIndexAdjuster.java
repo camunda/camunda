@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.upgrade.es;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import org.apache.http.client.methods.HttpGet;
@@ -248,6 +249,7 @@ public class ESIndexAdjuster {
     }
   }
 
+  @SuppressWarnings("unchecked")
   public void updateDataByIndexName(final String indexName,
                                     final QueryBuilder query,
                                     final String updateScript,
@@ -265,7 +267,12 @@ public class ESIndexAdjuster {
         ScriptType.INLINE,
         Script.DEFAULT_SCRIPT_LANG,
         updateScript,
-        Optional.ofNullable(parameters).orElse(Collections.emptyMap())
+        Optional.ofNullable(parameters)
+          // this conversion seems redundant but it's not
+          // in case the values are specific dto objects this ensures they get converted to generic objects
+          // that the elasticsearch client is happy to serialize while it complains on specific DTO's
+          .map(value -> (Map<String, Object>) objectMapper.convertValue(value, new TypeReference<Map<String, Object>>() {}))
+          .orElse(Collections.emptyMap())
       ));
       restClient.updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {

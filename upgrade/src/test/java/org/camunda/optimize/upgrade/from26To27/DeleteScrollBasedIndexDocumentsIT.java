@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.From26To27;
+package org.camunda.optimize.upgrade.from26To27;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
@@ -37,7 +37,7 @@ public class DeleteScrollBasedIndexDocumentsIT extends AbstractUpgradeIT {
     super.setUp();
 
     for (StrictIndexMappingCreator index : ALL_INDICES) {
-      createAndPopulateOptimizeIndexWithTypeAndVersion(
+      createOptimizeIndexWithTypeAndVersion(
         index,
         index.getIndexName(),
         index.getVersion() - 1

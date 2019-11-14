@@ -24,6 +24,10 @@ public class CollectionIndex extends StrictIndexMappingCreator {
 
   public static final int VERSION = 3;
 
+  public static final String ID = BaseCollectionDefinitionDto.Fields.id.name();
+  public static final String DATA = BaseCollectionDefinitionDto.Fields.data.name();
+  public static final String SCOPE = CollectionDataDto.Fields.scope.name();
+
   @Override
   public String getIndexName() {
     return COLLECTION_INDEX_NAME;
@@ -38,7 +42,7 @@ public class CollectionIndex extends StrictIndexMappingCreator {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     XContentBuilder newBuilder = xContentBuilder
-    .startObject(BaseCollectionDefinitionDto.Fields.id.name())
+    .startObject(ID)
       .field("type", "keyword")
     .endObject()
     .startObject(BaseCollectionDefinitionDto.Fields.name.name())
@@ -66,7 +70,7 @@ public class CollectionIndex extends StrictIndexMappingCreator {
   private XContentBuilder addDataField(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     final XContentBuilder contentBuilder = xContentBuilder.
-      startObject(BaseCollectionDefinitionDto.Fields.data.name())
+      startObject(DATA)
         .field("type", "nested")
         .startObject("properties")
           .startObject(CollectionDataDto.Fields.configuration.name())
@@ -83,7 +87,7 @@ public class CollectionIndex extends StrictIndexMappingCreator {
   private XContentBuilder addScopeField(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(CollectionDataDto.Fields.scope.name())
+      .startObject(SCOPE)
         .field("type", "nested")
         .startObject("properties")
           .startObject(CollectionScopeEntryDto.Fields.definitionKey.name())

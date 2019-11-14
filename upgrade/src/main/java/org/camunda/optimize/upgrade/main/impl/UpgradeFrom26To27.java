@@ -6,11 +6,18 @@
 package org.camunda.optimize.upgrade.main.impl;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
+import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
@@ -46,18 +53,23 @@ import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.index.query.QueryBuilders;
 
+import java.util.AbstractMap;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -67,23 +79,17 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
   private static final String FROM_VERSION = "2.6.0";
   private static final String TO_VERSION = "2.7.0";
   private static final String ALERT_ARCHIVE_MAP_PARAMETER_NAME = "alertArchiveMap";
+  private static final String SCOPE_PER_COLLECTION_MAP_PARAMETER_NAME = "scopePerCollection";
 
-  OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory();
-  final CollectionWriter collectionWriter = new CollectionWriter(
-    prefixAwareClient,
-    objectMapper,
-    optimizeDateTimeFormatterFactory.getObject()
+  private OptimizeDateTimeFormatterFactory optimizeDateTimeFormatterFactory = new OptimizeDateTimeFormatterFactory();
+  private final CollectionReader collectionReader = new CollectionReader(
+    prefixAwareClient, configurationService, objectMapper
   );
-  final AlertReader alertReader = new AlertReader(
-    prefixAwareClient,
-    configurationService,
-    objectMapper
+  private final CollectionWriter collectionWriter = new CollectionWriter(
+    prefixAwareClient, objectMapper, optimizeDateTimeFormatterFactory.getObject()
   );
-  final ReportReader reportReader = new ReportReader(
-    prefixAwareClient,
-    configurationService,
-    objectMapper
-  );
+  private final AlertReader alertReader = new AlertReader(prefixAwareClient, configurationService, objectMapper);
+  private final ReportReader reportReader = new ReportReader(prefixAwareClient, configurationService, objectMapper);
 
   private Map<String, String> alertArchiveMap = new HashMap<>();
 
@@ -103,6 +109,7 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
       .addUpgradeStep(new CreateIndexStep(new EventIndex()))
+      .addUpgradeStep(new CreateIndexStep(new EventBasedProcessIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new DecisionInstanceIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new CollectionIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new TimestampBasedImportIndex()))
@@ -127,8 +134,77 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeStep(removeDocumentsForImportIndexWithId("processDefinitionXmlImportIndex"))
       .addUpgradeStep(movePrivateProcessReportsWithAlertsToAlertArchiveCollection())
       .addUpgradeStep(movePrivateDecisionReportsWithAlertsToAlertArchiveCollection())
-      .addUpgradeStep(new CreateIndexStep(new EventBasedProcessIndex()))
+      .addUpgradeStep(addScopeToExistingCollections())
+
       .build();
+  }
+
+  private UpgradeStep addScopeToExistingCollections() {
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("collectionIdField", CollectionIndex.ID)
+        .put("collectionScopeField", CollectionIndex.DATA + "." + CollectionIndex.SCOPE)
+        .put("scopePerCollectionParam", SCOPE_PER_COLLECTION_MAP_PARAMETER_NAME)
+        .build()
+    );
+
+    // @formatter:off
+    String script = substitutor.replace(
+      "if (params.${scopePerCollectionParam}.containsKey(ctx._source.${collectionIdField})) {\n" +
+        "ctx._source.${collectionScopeField} = " +
+          "params.${scopePerCollectionParam}.get(ctx._source.${collectionIdField});" +
+      "}\n"
+    );
+    // @formatter:on
+
+    return new UpdateDataStep(
+      COLLECTION_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
+      script,
+      () -> ImmutableMap.of(SCOPE_PER_COLLECTION_MAP_PARAMETER_NAME, createScopePerCollection())
+    );
+  }
+
+  private Map<String, Collection<CollectionScopeEntryDto>> createScopePerCollection() {
+    return collectionReader.getAllCollections()
+      .stream()
+      .map(collectionDefinition -> {
+        final Collection<CollectionScopeEntryDto> collectionScope = reportReader
+          .findReportsForCollectionOmitXml(collectionDefinition.getId())
+          .stream()
+          // scope is only relevant from single reports, combined reports are just a collection of those
+          .filter(reportDefinitionDto -> !reportDefinitionDto.getCombined())
+          .map(reportDefinitionDto -> (SingleReportDataDto) reportDefinitionDto.getData())
+          // scope entries can only derived if the a definition is selected
+          .filter(reportData -> reportData.getDefinitionKey() != null)
+          .map(reportData -> new CollectionScopeEntryDto(
+            resolveDefinitionTypeFromReportData(reportData), reportData.getDefinitionKey(), reportData.getTenantIds()
+          ))
+          .collect(toMap(
+            CollectionScopeEntryDto::getId,
+            Function.identity(),
+            (scopeEntryDto, scopeEntryDto2) -> {
+              // merge tenants of any duplicate definition type/key entries as there can only be one entry per type/key
+              scopeEntryDto.setTenants(Lists.newArrayList(Sets.union(
+                Sets.newHashSet(scopeEntryDto.getTenants()), Sets.newHashSet(scopeEntryDto2.getTenants())
+              )));
+              return scopeEntryDto;
+            }
+          ))
+          .values();
+        return new AbstractMap.SimpleEntry<>(collectionDefinition.getId(), collectionScope);
+      })
+      // no point in caring about empty scopes
+      .filter(entry -> entry.getValue().size() > 0)
+      .collect(toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
+  }
+
+  private DefinitionType resolveDefinitionTypeFromReportData(final SingleReportDataDto reportData) {
+    if (reportData instanceof ProcessReportDataDto) {
+      return DefinitionType.PROCESS;
+    } else {
+      return DefinitionType.DECISION;
+    }
   }
 
   private UpgradeStep moveParameterFieldsForDecisionReport() {

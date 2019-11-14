@@ -37,7 +37,6 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -227,9 +226,11 @@ public class ReportReader {
     QueryBuilder qb = QueryBuilders.termQuery(COLLECTION_ID, collectionId);
     SearchRequest searchRequest = getSearchRequestOmitXml(
       qb,
-      new String[]{COMBINED_REPORT_INDEX_NAME,
+      new String[]{
+        COMBINED_REPORT_INDEX_NAME,
         SINGLE_PROCESS_REPORT_INDEX_NAME,
-        SINGLE_DECISION_REPORT_INDEX_NAME}
+        SINGLE_DECISION_REPORT_INDEX_NAME
+      }
     );
 
     SearchResponse searchResponse;

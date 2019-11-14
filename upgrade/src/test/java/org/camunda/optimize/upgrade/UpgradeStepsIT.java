@@ -25,11 +25,14 @@ import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
+import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -249,9 +252,10 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
 
   @ParameterizedTest(name = "indexMapper is updated from type {1}")
   @MethodSource("getIndexMapperAndType")
-  public void indexTypeIsUpdatedToOrRetainsDefaultValue(StrictIndexMappingCreator indexMapper, String type) throws IOException {
+  public void indexTypeIsUpdatedToOrRetainsDefaultValue(StrictIndexMappingCreator indexMapper, String type)
+    throws IOException {
     //given index exists with previous version
-    createAndPopulateOptimizeIndexWithTypeAndVersion(indexMapper, type, indexMapper.getVersion() - 1);
+    createOptimizeIndexWithTypeAndVersion(indexMapper, type, indexMapper.getVersion() - 1);
 
     UpgradePlan upgradePlan =
       UpgradePlanBuilder.createUpgradePlan()
@@ -264,13 +268,17 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     // when
     upgradePlan.execute();
 
-    // then the type and index name are as expected and the data is reindexed
-    final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(indexMapper.getIndexName()),
-      RequestOptions.DEFAULT
-    );
-    assertThat(searchResponse.getHits().getHits().length, is(1));
-    assertThat(searchResponse.getHits().getHits()[0].getType(), is(DEFAULT_INDEX_TYPE));
+    // then the type and index name are as expected
+    final GetIndexResponse getIndexResponse = prefixAwareClient.getHighLevelClient()
+      .indices()
+      .get(
+        new GetIndexRequest().indices(getVersionedIndexName(indexMapper.getIndexName(), indexMapper.getVersion())),
+        RequestOptions.DEFAULT
+      );
+    assertThat(getIndexResponse.getMappings().size(), is(1));
+    final ImmutableOpenMap<String, MappingMetaData> mappingsEntry = getIndexResponse.getMappings().valuesIt().next();
+    assertThat(mappingsEntry.keys().size(), is(1));
+    assertThat(mappingsEntry.keys().iterator().next().value, is(DEFAULT_INDEX_TYPE));
   }
 
   private InsertDataStep buildInsertDataStep() {

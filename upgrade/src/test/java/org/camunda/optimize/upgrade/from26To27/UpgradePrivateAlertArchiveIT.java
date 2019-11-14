@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.From26To27;
+package org.camunda.optimize.upgrade.from26To27;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
@@ -20,8 +20,8 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,13 +46,13 @@ public class UpgradePrivateAlertArchiveIT extends AbstractUpgradeIT {
   private static final int EXPECTED_NUMBER_OF_REPORTS = 5;
   private static final int EXPECTED_NUMBER_OF_PRIVATE_REPORTS_WITH_ALERTS = 2;
 
-  @Before
+  @BeforeEach
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
     for (StrictIndexMappingCreator index : ALL_INDICES) {
-      createAndPopulateOptimizeIndexWithTypeAndVersion(
+      createOptimizeIndexWithTypeAndVersion(
         index,
         index.getIndexName(),
         index.getVersion() - 1
