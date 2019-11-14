@@ -33,18 +33,18 @@ class FlowNodeInstanceLog extends React.Component {
     super(props);
 
     this.state = {
-      loadingState: LOADING_STATE.LOADING,
-      loadingStateTwo: LOADING_STATE.LOADING
+      loadingStateInstanceTree: LOADING_STATE.LOADING,
+      loadingStateDefinitions: LOADING_STATE.LOADING
     };
     this.subscriptions = {
       LOAD_INSTANCE_TREE: ({state}) => {
         this.storeLoadingState(state, loadedOrFailed =>
-          this.setState({loadingState: loadedOrFailed})
+          this.setState({loadingStateInstanceTree: loadedOrFailed})
         );
       },
       LOAD_STATE_DEFINITIONS: ({state}) => {
         this.storeLoadingState(state, loadedOrFailed =>
-          this.setState({loadingState: loadedOrFailed})
+          this.setState({loadingStateDefinitions: loadedOrFailed})
         );
       }
     };
@@ -81,14 +81,20 @@ class FlowNodeInstanceLog extends React.Component {
   }
 
   combineLoadingState() {
-    const {loadingState, loadingStateTwo} = this.state;
+    const {loadingStateInstanceTree, loadingStateDefinitions} = this.state;
     const {LOADING, LOAD_FAILED} = LOADING_STATE;
 
-    if (loadingState === LOAD_FAILED || loadingStateTwo === LOAD_FAILED) {
+    if (
+      loadingStateInstanceTree === LOAD_FAILED ||
+      loadingStateDefinitions === LOAD_FAILED
+    ) {
       return LOADING_STATE.LOAD_FAILED;
     }
 
-    if (loadingState === LOADING || loadingStateTwo === LOADING) {
+    if (
+      loadingStateInstanceTree === LOADING ||
+      loadingStateDefinitions === LOADING
+    ) {
       return LOADING_STATE.LOADING;
     }
   }
