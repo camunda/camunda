@@ -32,6 +32,7 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.EnumSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -39,6 +40,9 @@ import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
 public class BrokerRequestManager extends Actor {
+
+  private static final EnumSet<ErrorCode> RETRY_ERROR_CODES =
+      EnumSet.of(ErrorCode.PARTITION_LEADER_MISMATCH, ErrorCode.RESOURCE_EXHAUSTED);
 
   private final ClientOutput clientOutput;
   private final RequestDispatchStrategy dispatchStrategy;
@@ -69,7 +73,7 @@ public class BrokerRequestManager extends Actor {
           headerDecoder.version());
 
       final ErrorCode errorCode = errorHandler.getErrorCode();
-      return errorCode == ErrorCode.PARTITION_LEADER_MISMATCH;
+      return RETRY_ERROR_CODES.contains(errorCode);
     } else {
       return false;
     }

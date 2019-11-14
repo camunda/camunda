@@ -54,6 +54,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.junit.After;
@@ -128,6 +129,41 @@ public class BrokerClientTest {
     // then
     final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
     assertThat(receivedCommandRequests).hasSize(1);
+
+    receivedCommandRequests.forEach(
+        request -> {
+          assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
+          assertThat(request.intent()).isEqualTo(WorkflowInstanceCreationIntent.CREATE);
+        });
+  }
+
+  @Test
+  public void shouldRetryOnResourcesExhaustedRequest() {
+    final int retries = 3;
+    final AtomicInteger remainingRejects = new AtomicInteger(retries - 1);
+
+    // given
+    registerCreateWfCommand();
+
+    broker
+        .onExecuteCommandRequest(
+            r ->
+                r.valueType() == ValueType.WORKFLOW_INSTANCE_CREATION
+                    && r.intent() == WorkflowInstanceCreationIntent.CREATE
+                    && remainingRejects.getAndDecrement() > 0)
+        .respondWithError()
+        .errorCode(ErrorCode.RESOURCE_EXHAUSTED)
+        .errorData("test")
+        .register();
+
+    final BrokerResponse<WorkflowInstanceCreationRecord> response =
+        client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
+
+    assertThat(response.isResponse()).isTrue();
+
+    // then
+    final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
+    assertThat(receivedCommandRequests).hasSize(retries);
 
     receivedCommandRequests.forEach(
         request -> {
