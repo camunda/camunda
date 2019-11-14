@@ -289,26 +289,6 @@ pipeline {
     stage('Elasticsearch Integration Tests') {
       failFast false
       parallel {
-        stage("Elasticsearch 6.3.1 Integration") {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build_es-6.3.1_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml mavenElasticsearchIntegrationTestAgent("6.3.1", "${env.CAMBPM_VERSION}")
-            }
-          }
-          steps {
-            retry(2) {
-              integrationTestSteps()
-            }
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage("Elasticsearch 6.4.0 Integration") {
           agent {
             kubernetes {

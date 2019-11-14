@@ -19,7 +19,7 @@ services:
       retries: 3
 
   elasticsearch-ssl-basic-auth:
-    image: docker.elastic.co/elasticsearch/elasticsearch-platinum:${ES_VERSION:-6.2.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch-platinum:${ES_VERSION:-6.4.0}
     container_name: elasticsearch-ssl-basic-auth
     environment:
       - cluster.name=elasticsearch
@@ -51,7 +51,7 @@ services:
       retries: 6
 
   elasticsearch-ssl:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-6.2.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-6.4.0}
     container_name: elasticsearch-ssl
     environment:
       - cluster.name=elasticsearch
@@ -83,7 +83,7 @@ services:
       retries: 6
 
   elasticsearch-basic-auth:
-    image: docker.elastic.co/elasticsearch/elasticsearch-platinum:${ES_VERSION:-6.2.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch-platinum:${ES_VERSION:-6.4.0}
     container_name: elasticsearch-nossl-basic-auth
     environment:
       - cluster.name=elasticsearch
@@ -109,7 +109,7 @@ services:
       retries: 6
 
   wait_until_ready:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-6.2.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ES_VERSION:-6.4.0}
     command: /usr/bin/true
     depends_on: {
       "elasticsearch-ssl-basic-auth": {"condition": "service_healthy"},

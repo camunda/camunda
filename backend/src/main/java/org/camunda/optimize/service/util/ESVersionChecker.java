@@ -7,12 +7,12 @@ package org.camunda.optimize.service.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,14 +23,13 @@ import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
+@UtilityClass
+@Slf4j
 public class ESVersionChecker {
   private static List<String> supportedES = new ArrayList<>();
   private static List<String> warningES = new ArrayList<>();
-  private static final Logger logger = LoggerFactory.getLogger(ESVersionChecker.class);
 
   static {
-    supportedES.add("6.2.0");
-    supportedES.add("6.3.1");
     supportedES.add("6.4.0");
     supportedES.add("6.5.0");
     supportedES.add("6.6.0");
@@ -38,7 +37,6 @@ public class ESVersionChecker {
     supportedES.add("6.8.0");
     warningES.add("6.9.0");
   }
-
 
   public static void checkESVersionSupport(RestHighLevelClient esClient) throws IOException {
     String responseJson = EntityUtils.toString(esClient.getLowLevelClient()
@@ -53,15 +51,14 @@ public class ESVersionChecker {
     if (!matchedVersion.isPresent()) {
       Optional<String> unsupportedVersion = findMatchedVersion(currentVersion, warningES);
       if (unsupportedVersion.isPresent()) {
-        logger.warn("The version of Elasticsearch you're using is not officially supported by Camunda Optimize." +
-                      "\nWe can not guarantee full functionality." +
-                      "\nPlease check the technical guide for the list of supported Elasticsearch versions");
+        log.warn("The version of Elasticsearch you're using is not officially supported by Camunda Optimize." +
+                   "\nWe can not guarantee full functionality." +
+                   "\nPlease check the technical guide for the list of supported Elasticsearch versions");
       } else {
         throw new OptimizeRuntimeException(buildUnsupportedESErrorMessage(currentVersion));
       }
     }
   }
-
 
   private static Optional<String> findMatchedVersion(String currentVersion, List<String> supportedVersions) {
     String currentMajorAndMinor = getMajorAndMinor(currentVersion);

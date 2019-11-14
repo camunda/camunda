@@ -2,13 +2,12 @@ version: '2.4'
 
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ES_VERSION:-6.2.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${ES_VERSION:-6.4.0}
     container_name: elasticsearch
     environment:
       - cluster.name=elasticsearch
       - bootstrap.memory_lock=true
       - discovery.type=single-node
-      - path.logs=/usr/share/elasticsearch/logs
       - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
     ulimits:
       memlock:
@@ -17,8 +16,6 @@ services:
     ports:
       - 9200:9200
       - 9300:9300
-    volumes:
-      - "./backend/target/es_logs:/usr/share/elasticsearch/logs"
     restart: always
     cpu_count: 4
     mem_limit: 2g
