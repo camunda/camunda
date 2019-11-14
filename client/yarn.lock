@@ -13150,10 +13150,10 @@ test-exclude@^5.2.3:
     read-pkg-up "^4.0.0"
     require-main-filename "^2.0.0"
 
-testcafe-browser-provider-browserstack@^1.8.0:
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.9.0.tgz#bfc65b2de18ca8ed76c9f313f92bc7eb18620c2d"
-  integrity sha512-nUaJwbcsO88T/HblunqlJh7zZQyrXC+asqyhJ23d79IhvD4qRIosdiO+vTxb+ZCG3LWiCUswRFZ8o8/9j1W23A==
+testcafe-browser-provider-browserstack@^1.9.1:
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.9.1.tgz#1c67e55dc63a3eb251f6373f28ea82b70607ca6b"
+  integrity sha512-wqT22y9nLneYNAmiSpfBaGXO7PTMUlsb5hMiWqNFczuFEYliw/BSC8sh/pGjOYnvAotRNn18Gz5K9M9bZ8VQzQ==
   dependencies:
     babel-runtime "^6.11.6"
     browserstack-local "^1.3.6"

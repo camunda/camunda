@@ -99,7 +99,7 @@
     "shelljs": "^0.8.3",
     "tarball-extract": "^0.0.6",
     "testcafe": "^1.6.1",
-    "testcafe-browser-provider-browserstack": "^1.8.0",
+    "testcafe-browser-provider-browserstack": "^1.9.1",
     "tree-kill": "^1.2.1",
     "ws": "^7.2.0",
     "xml2js": "^0.4.22"
