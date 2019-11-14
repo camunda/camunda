@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.camunda.optimize</groupId>
@@ -47,6 +48,8 @@
     <junit.platform.version>1.5.2</junit.platform.version>
     <quartz.version>2.3.2</quartz.version>
 
+    <lombok.version>1.18.10</lombok.version>
+    <lombok.maven.plugin.version>${lombok.version}.0</lombok.maven.plugin.version>
     <logback.version>1.2.3</logback.version>
     <slf4j.version>1.7.29</slf4j.version>
 
@@ -57,6 +60,8 @@
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
+
+    <delombok.output>${project.build.directory}/generated-sources/delombok</delombok.output>
   </properties>
 
   <dependencyManagement>
@@ -147,7 +152,6 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-javadoc-plugin</artifactId>
-            <version>3.1.1</version>
             <configuration>
               <quiet>true</quiet>
             </configuration>
@@ -180,8 +184,7 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>1.18.10</version>
-      <scope>compile</scope>
+      <version>${lombok.version}</version>
     </dependency>
   </dependencies>
 
@@ -191,6 +194,11 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
+          <version>3.1.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
           <version>3.1.1</version>
         </plugin>
         <plugin>
@@ -336,6 +344,34 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok-maven-plugin</artifactId>
+        <version>${lombok.maven.plugin.version}</version>
+        <configuration>
+          <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
+          <!-- delomboked sources are intended for the maven-javadoc-plugin only, see explanation there -->
+          <outputDirectory>${delombok.output}</outputDirectory>
+          <addOutputDirectory>false</addOutputDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>delombok</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <configuration>
+          <!-- read delomboked sources, as lombok sources can cause trouble for the plugin -->
+          <!-- see https://stackoverflow.com/a/51947792 -->
+          <sourcepath>${delombok.output}</sourcepath>
+        </configuration>
       </plugin>
     </plugins>
 
