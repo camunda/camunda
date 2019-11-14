@@ -28,6 +28,7 @@ export function MetricPanel({countStore}) {
   return (
     <Styled.Panel>
       <Styled.Title
+        data-test="total-instances-link"
         to={getUrl({
           filter: {active: true, incidents: true},
           hasFinishedInstances: running === 0
@@ -49,6 +50,7 @@ export function MetricPanel({countStore}) {
 
       <Styled.LabelContainer>
         <Styled.Label
+          data-test="incident-instances-link"
           to={getUrl({
             filter: {incidents: true}
           })}
@@ -56,6 +58,7 @@ export function MetricPanel({countStore}) {
           Instances with Incident
         </Styled.Label>
         <Styled.Label
+          data-test="active-instances-link"
           to={getUrl({
             filter: {active: true}
           })}

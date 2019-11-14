@@ -89,7 +89,12 @@ class Login extends React.Component {
             placeholder="Password"
             aria-label="Password"
           />
-          <Button type="submit" size="large" title="Log in">
+          <Button
+            data-test="login-button"
+            type="submit"
+            size="large"
+            title="Log in"
+          >
             Log in
           </Button>
         </Styled.LoginForm>
