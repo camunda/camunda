@@ -1,0 +1,9 @@
+{
+  "source": {
+    "index": ["backup-operate-workflow_"]
+  },
+  "dest": {
+    "index": "operate-workflow_",
+    "pipeline": "operate-workflow-v1.0.0-to-v1.2.0"
+  }
+}

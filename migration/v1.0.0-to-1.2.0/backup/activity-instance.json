@@ -1,0 +1,8 @@
+{
+  "source": {
+    "index": ["operate-activity-instance_"]
+  },
+  "dest": {
+    "index": "backup-operate-activity-instance_"
+  }
+}

@@ -1,0 +1,47 @@
+ {
+    "description" : "Migrate list-view from version v1.0.0 to v1.2.0",
+    "processors" : [
+      {
+        "rename" : {
+          "field" : "scopeId",
+          "target_field" : "scopeKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "scopeKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      },
+      {
+        "rename" : {
+          "field" : "workflowId",
+          "target_field" : "workflowKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "workflowKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      },
+      {
+        "rename" : {
+          "field" : "workflowInstanceId",
+          "target_field" : "workflowInstanceKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "workflowInstanceKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      }
+    ]
+  }

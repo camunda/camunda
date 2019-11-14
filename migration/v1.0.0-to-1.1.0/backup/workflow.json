@@ -1,8 +1,0 @@
-{
-  "source": {
-    "index": ["operate-workflow_"]
-  },
-  "dest": {
-    "index": "v1.0.0-operate-workflow_"
-  }
-}

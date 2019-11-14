@@ -1,9 +1,0 @@
-{
-  "source": {
-    "index": ["v1.0.0-operate-list-view_"]
-  },
-  "dest": {
-    "index": "operate-list-view_",
-    "pipeline": "operate-list-view-v1.0.0-to-v1.1.0"
-  }
-}

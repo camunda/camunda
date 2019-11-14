@@ -1,8 +1,0 @@
-{
-  "source": {
-    "index": ["operate-variable_"]
-  },
-  "dest": {
-    "index": "v1.0.0-operate-variable_"
-  }
-}

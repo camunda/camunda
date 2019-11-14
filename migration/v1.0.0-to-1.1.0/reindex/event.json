@@ -1,9 +1,0 @@
-{
-  "source": {
-    "index": ["v1.0.0-operate-event_"]
-  },
-  "dest": {
-    "index": "operate-event_",
-    "pipeline": "operate-event-v1.0.0-to-v1.1.0"
-  }
-}

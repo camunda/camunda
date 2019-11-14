@@ -14,19 +14,19 @@ The migration is organized in several steps:
  5. Reindex from current/old index into new index with usage of pipelines
  6. Delete backup of current/old index (only until version 1.2.0 needed)
 
-For each step exists a directory. These directories contains for every index/template a json request payload file.
-In migrate.sh are functions defined, that use 'curl' as http client. These functions reads json request payload files and execute the requests to elasticsearch. 
+For each step exists a directory and a shell script. These directories contains for every index/template a json request payload file.
+Every shell script execute one step. The scripts use 'curl' as http client. They read json request payload files and execute the requests to elasticsearch. 
 So it is possible to customize definitions, settings and so on. Please refer Elasticsearch documentation for details.
-The shell script migration.sh shows also the order of steps, that will be executed in migration.
-It is also possible to execute steps separately. The migration.sh just shows an example for how to make a migration.
-The schema/format of the json files is according to [elasticsearch REST API](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/index.html)  description.
+The shell script migration.sh executes all steps in right order.
+It is also possible to execute steps separately. 
+The schema/format of the json files is according to [Elasticsearch REST API](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/index.html)  description.
 
 ## The steps in detail
 
 ### Create backup of current indices
 
 * Add for each index that should be backup a reindex request payload as json file in backup folder 
-* The function backupOldindices takes every file in the folder and execute it as reindex.
+* The script *create-backup.sh* takes every file in the folder and execute it as reindex.
 
 ### Delete old templates/indices 
 
@@ -34,8 +34,8 @@ The schema/format of the json files is according to [elasticsearch REST API](htt
   
   For example: operate-*_
 
-* Use this pattern in the DELETE request in deleteOldTemplate function for templates
-* Use this pattern in the DELETE request in deleteOldIndex function for indices
+* Use this pattern in the DELETE request in the script.
+* The script *delete.sh* executes the delete request.
 
 ### Create new templates and indices 
 
@@ -44,12 +44,13 @@ The schema/format of the json files is according to [elasticsearch REST API](htt
 * The names of the json files MUST be the same as the index/template names.
 * The function createNewTemplates takes every file in folder create/template to execute a PUT template request.
 * The function createNewIndex takes every file in folder create/index to execute a PUT index request.
+* The script *create.sh* executes the put template and put index request.
 
 ### Create pipelines for migration 
 
 * Add for each index that should be migrated a create pipeline request as payload in json file in pipelines folder 
 * The names of the json files MUST be the same as the pipeline names.
-* The function createPipelines takes every file in folder pipelines to execute a PUT pipeline request.
+* The script *pipeline.sh* takes every file in folder pipelines to execute a PUT pipeline request.
 
 ### Reindex from old to new schema 
 
@@ -57,7 +58,7 @@ The schema/format of the json files is according to [elasticsearch REST API](htt
   
   Make sure you give the appropriate pipeline name in reindex request
 
-* The function reindexOldToNew takes every file in folder reindex and execute it as reindex request.
+* The script *reindex.sh* takes every file in folder reindex and execute it as reindex request.
 
 ### Delete backup
 
@@ -65,10 +66,14 @@ The schema/format of the json files is according to [elasticsearch REST API](htt
  
   For example: operate-*-v.1.0.0
   
+* The script *remove-backup.sh* executes the delete request.
+  
 ## Check results of migration
 
-After the execution of the steps in the appropriate order, should exists the new templates and indices with data converted 
-from old schema. Additionally the pipelines are accessible in elasticsearch.
+The scripts output what they request and the responses from Elasticsearch.
+
+After the execution of the steps in the appropriate order, there should exists new templates and indices with data converted 
+from old schema. Additionally the pipelines are accessible in Elasticsearch.
 
 You can check with:
 

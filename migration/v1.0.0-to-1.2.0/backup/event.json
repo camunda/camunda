@@ -1,0 +1,8 @@
+{
+  "source": {
+    "index": ["operate-event_"]
+  },
+  "dest": {
+    "index": "backup-operate-event_"
+  }
+}
