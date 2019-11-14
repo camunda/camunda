@@ -16,17 +16,6 @@ String getGitCommitHash() {
   return sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
 }
 
-void buildNotification(String buildStatus) {
-  // build status of null means successful
-  buildStatus = buildStatus ?: 'SUCCESS'
-
-  def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-  def body = "See: ${env.BUILD_URL}consoleFull"
-  def recipients = [[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]
-
-  emailext subject: subject, body: body, recipientProviders: recipients
-}
-
 void runRelease(params) {
   def pushChanges = 'true'
   def skipDeploy = 'false'
@@ -201,8 +190,9 @@ pipeline {
   }
 
   post {
-    changed {
-      buildNotification(currentBuild.result)
+    failure {
+      def notification = load "build_notification.groovy"
+      notification.buildNotification(currentBuild.result)
     }
   }
 }
