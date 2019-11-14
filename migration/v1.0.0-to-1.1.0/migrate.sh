@@ -51,11 +51,12 @@ reindexOldToNew(){
  }
 ### Run functions  ###
 backupOldIndexes
-#deleteOldTemplates
-#deleteOldIndexes
-#createNewTemplates
-#createNewIndexes
-#createPipelines
-#sleep 5
-#reindexOldToNew
-#deleteOldBackup
+deleteOldTemplates
+deleteOldIndexes
+createNewTemplates
+createNewIndexes
+createPipelines
+# Why is this needed ?
+sleep 5
+reindexOldToNew
+deleteOldBackup
