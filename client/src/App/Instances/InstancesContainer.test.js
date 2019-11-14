@@ -558,7 +558,7 @@ describe('InstancesContainer', () => {
         node.update();
 
         // expect invalid activityId to have been removed
-        expect(pushMock).toHaveBeenCalledTimes(1);
+        expect(pushMock).toHaveBeenCalled();
         const search = pushMock.mock.calls[0][0].search;
         const {activityId, ...rest} = mockFullFilterWithWorkflow;
         expect(parseQueryString(search).filter).toEqual(rest);

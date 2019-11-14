@@ -146,8 +146,7 @@ class InstancesContainer extends Component {
 
     const hasURLChanged = !isEqual(filterFromURL, prevFilterFromURL);
 
-    const hasFilterChanged =
-      !isEmpty(prevState.filter) && !isEqual(prevState.filter, filter);
+    const hasFilterChanged = !isEqual(prevState.filter, filter);
 
     // caused by browser backwards/forward btn or manual URL manipulation
     if (hasURLChanged) {
