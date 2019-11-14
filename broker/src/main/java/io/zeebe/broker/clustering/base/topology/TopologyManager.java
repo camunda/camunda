@@ -17,11 +17,6 @@ package io.zeebe.broker.clustering.base.topology;
  * </ul>
  */
 public interface TopologyManager {
-
-  void removeTopologyMemberListener(TopologyMemberListener listener);
-
-  void addTopologyMemberListener(TopologyMemberListener listener);
-
   void removeTopologyPartitionListener(TopologyPartitionListener listener);
 
   void addTopologyPartitionListener(TopologyPartitionListener listener);

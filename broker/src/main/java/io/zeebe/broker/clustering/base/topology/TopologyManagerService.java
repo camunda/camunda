@@ -10,6 +10,7 @@ package io.zeebe.broker.clustering.base.topology;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -17,7 +18,7 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class TopologyManagerService implements Service<TopologyManager> {
-  private final NodeInfo localMember;
+  private final BrokerInfo localMember;
   private final ClusterCfg clusterCfg;
   private final Injector<Atomix> atomixInjector = new Injector<>();
   private TopologyManagerImpl topologyManager;
@@ -25,16 +26,14 @@ public class TopologyManagerService implements Service<TopologyManager> {
       ServiceGroupReference.<Partition>create()
           .onAdd(
               (name, partition) ->
-                  topologyManager.updateRole(partition.getState(), partition.getPartitionId()))
+                  topologyManager.setLeader(partition.getTerm(), partition.getPartitionId()))
           .build();
   private final ServiceGroupReference<Partition> followerInstallReference =
       ServiceGroupReference.<Partition>create()
-          .onAdd(
-              (name, partition) ->
-                  topologyManager.updateRole(partition.getState(), partition.getPartitionId()))
+          .onAdd((name, partition) -> topologyManager.setFollower(partition.getPartitionId()))
           .build();
 
-  public TopologyManagerService(NodeInfo localMember, ClusterCfg clusterCfg) {
+  public TopologyManagerService(BrokerInfo localMember, ClusterCfg clusterCfg) {
     this.localMember = localMember;
     this.clusterCfg = clusterCfg;
   }

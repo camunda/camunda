@@ -7,12 +7,14 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.zeebe.protocol.record.PartitionRole;
 import io.zeebe.util.sched.ActorControl;
-import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Int2IntHashMap;
 
 public class TopologyPartitionListenerImpl implements TopologyPartitionListener {
 
-  private final Int2ObjectHashMap<NodeInfo> partitionLeaders = new Int2ObjectHashMap<>();
+  private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(-1);
   private final ActorControl actor;
 
   public TopologyPartitionListenerImpl(final ActorControl actor) {
@@ -20,21 +22,21 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
   }
 
   @Override
-  public void onPartitionUpdated(final int partitionId, final NodeInfo member) {
-    if (member.getLeaders().contains(partitionId)) {
+  public void onPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
+    if (member.getPartitionRoles().get(partitionId) == PartitionRole.LEADER) {
       actor.submit(() -> updatePartitionLeader(partitionId, member));
     }
   }
 
-  private void updatePartitionLeader(final int partitionId, final NodeInfo member) {
-    final NodeInfo currentLeader = partitionLeaders.get(partitionId);
+  private void updatePartitionLeader(final int partitionId, final BrokerInfo member) {
+    final int currentLeader = partitionLeaders.get(partitionId);
 
-    if (currentLeader == null || !currentLeader.equals(member)) {
-      partitionLeaders.put(partitionId, member);
+    if (currentLeader != member.getNodeId()) {
+      partitionLeaders.put(partitionId, member.getNodeId());
     }
   }
 
-  public Int2ObjectHashMap<NodeInfo> getPartitionLeaders() {
+  public Int2IntHashMap getPartitionLeaders() {
     return partitionLeaders;
   }
 }

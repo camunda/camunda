@@ -45,6 +45,7 @@ public class Partition implements Service<Partition> {
   private final ClusterEventService clusterEventService;
   private final int partitionId;
   private final RaftState state;
+  private final long term; // term, if the state = LEADER
   private final StorageConfiguration configuration;
   private final BrokerCfg brokerCfg;
   private final BrokerRestoreServer restoreServer;
@@ -56,16 +57,18 @@ public class Partition implements Service<Partition> {
 
   public Partition(
       final StorageConfiguration configuration,
-      final BrokerCfg brokerCfg,
-      final ClusterEventService clusterEventService,
-      final int partitionId,
-      final RaftState state,
-      final BrokerRestoreServer restoreServer) {
+      BrokerCfg brokerCfg,
+      ClusterEventService clusterEventService,
+      int partitionId,
+      RaftState state,
+      long term,
+      BrokerRestoreServer restoreServer) {
     this.configuration = configuration;
     this.brokerCfg = brokerCfg;
     this.clusterEventService = clusterEventService;
     this.partitionId = partitionId;
     this.state = state;
+    this.term = term;
     this.restoreServer = restoreServer;
   }
 
@@ -201,6 +204,15 @@ public class Partition implements Service<Partition> {
 
   public RaftState getState() {
     return state;
+  }
+
+  /**
+   * Return the current raft term of this partition
+   *
+   * @return current raft term
+   */
+  public long getTerm() {
+    return term;
   }
 
   public LogStream getLogStream() {

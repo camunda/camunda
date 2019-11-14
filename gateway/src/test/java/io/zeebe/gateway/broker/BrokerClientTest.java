@@ -94,7 +94,7 @@ public class BrokerClientTest {
 
     final BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
     topology.addPartitionIfAbsent(START_PARTITION_ID);
-    topology.setPartitionLeader(START_PARTITION_ID, 0);
+    topology.setPartitionLeader(START_PARTITION_ID, 0, 1);
 
     ((BrokerTopologyManagerImpl) client.getTopologyManager()).setTopology(topology);
   }
