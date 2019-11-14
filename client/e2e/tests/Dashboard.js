@@ -8,9 +8,8 @@ import * as Instances from './Instances.Elements.js';
 fixture('Dashboard')
   .page(config.endpoint)
 
-test('Select Active Instances', async t => {  
+test('Instances Statistics', async t => {  
   await login(t);
-
 
   await t    
     .click(Dashboard.activeInstancesLink)
@@ -20,7 +19,7 @@ test('Select Active Instances', async t => {
   await t
     .click(Header.dashboardLink);
 
-    await t    
+  await t    
     .click(Dashboard.incidentInstancesLink)
     .expect(Instances.filtersRunningActiveChk.checked).notOk()
     .expect(Instances.filtersRunningIncidentsChk.checked).ok();        
