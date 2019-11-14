@@ -69,7 +69,7 @@
     <version.prometheus>0.8.0</version.prometheus>
     <version.protobuf>3.10.0</version.protobuf>
     <version.rocksdbjni>6.3.6</version.rocksdbjni>
-    <version.sbe>1.14.0</version.sbe>
+    <version.sbe>1.14.1</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
     <version.scala>2.13.0</version.scala>
     <version.slf4j>1.7.29</version.slf4j>
