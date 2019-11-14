@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.writer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -43,6 +44,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -208,6 +210,59 @@ public class CollectionWriter {
       return entryDto;
     } catch (IOException e) {
       String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+  public void addScopeEntriesToCollection(final String userId,
+                                          final String collectionId,
+                                          final List<CollectionScopeEntryDto> scopeUpdates) {
+    try {
+      final Map<String, Object> params = new HashMap<>();
+      params.put(
+        "scopeEntriesToUpdate",
+        objectMapper.convertValue(scopeUpdates, new TypeReference<List<Map>>() {})
+      );
+      params.put("lastModifier", userId);
+      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+        "Map newScopes = ctx._source.data.scope.stream()" +
+          "  .collect(Collectors.toMap(s -> s.id, Function.identity()));\n" +
+          "params.scopeEntriesToUpdate" +
+          "  .forEach(newScope -> {" +
+          "     newScopes.computeIfPresent(newScope.id, (key, oldScope) -> {" +
+          "       newScope.tenants = Stream.concat(oldScope.tenants.stream(), newScope.tenants.stream())" +
+          "        .distinct()" +
+          "        .collect(Collectors.toList());\n" +
+          "       return newScope;\n" +
+          "     });" +
+          "     newScopes.putIfAbsent(newScope.id, newScope);\n" +
+          "  });\n" +
+          "ctx._source.data.scope = newScopes.values();" +
+          "ctx._source.lastModifier = params.lastModifier;" +
+          "ctx._source.lastModified = params.lastModified;",
+        params
+      );
+
+      final UpdateResponse updateResponse;
+      updateResponse = executeUpdateRequest(
+        collectionId,
+        updateEntityScript,
+        "Was not able to update collection with id [%s]."
+      );
+
+
+      if (updateResponse.getResult().equals(DocWriteResponse.Result.NOT_FOUND)) {
+        final String message = String.format(
+          "Was not able to add scope entries to collection with id [%s]. Collection does not exist!",
+          collectionId
+        );
+        log.error(message);
+        throw new NotFoundException(message);
+      }
+    } catch (IOException e) {
+      String errorMessage = String.format("Wasn't able to add scope entries to collection with id [%s].", collectionId);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }

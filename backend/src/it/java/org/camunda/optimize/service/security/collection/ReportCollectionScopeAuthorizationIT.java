@@ -413,8 +413,8 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
   private void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
-      .execute(IdDto.class, 200);
+      .buildAddScopeEntriesToCollectionRequest(collectionId, Collections.singletonList(entry))
+      .execute(IdDto.class, 204);
   }
 
   private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,

@@ -106,6 +106,13 @@ public class CollectionScopeService {
     return collectionWriter.addScopeEntryToCollection(collectionId, entryDto, userId);
   }
 
+  public void addScopeEntriesToCollection(final String userId,
+                                          final String collectionId,
+                                          final List<CollectionScopeEntryDto> scopeUpdates) {
+    authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+    collectionWriter.addScopeEntriesToCollection(userId, collectionId, scopeUpdates);
+  }
+
   public void removeScopeEntry(String userId, String collectionId, String scopeEntryId)
     throws NotFoundException, OptimizeConflictException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);

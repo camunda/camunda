@@ -8,6 +8,8 @@ package org.camunda.optimize.rest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Lists;
 import org.apache.http.HttpStatus;
+import org.assertj.core.api.Condition;
+import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -136,6 +138,146 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     assertThat(scopeEntryId).isEqualTo("process:_KEY_");
     assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
     assertThat(collectionDefinitionDto.getData().getScope().get(0).getId()).isEqualTo(scopeEntryId);
+  }
+
+  @Test
+  public void addScopeEntries() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+
+    // when
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+
+    // then
+    assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(1)
+      .extracting(CollectionScopeEntryDto::getId)
+      .containsExactly("process:_KEY_");
+  }
+
+  @Test
+  public void addScopeEntries_addsToExistingScopes() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry("_ANOTHER_KEY_");
+
+    // when
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+
+    // then
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(2)
+      .extracting(CollectionScopeEntryDto::getId)
+      .containsExactlyInAnyOrder("process:_KEY_", "process:_ANOTHER_KEY_");
+  }
+
+  @Test
+  public void addScopeEntries_addsTenantsToExistingScopes() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    addTenantToElasticsearch("newTenant");
+    entry.getTenants().add("newTenant");
+
+    // when
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+
+    // then
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(1)
+      .have(new Condition<>(c -> c.getId().equals("process:_KEY_"), "Scope id should match process:_KEY_"))
+      .flatExtracting(CollectionScopeEntryDto::getTenants)
+      .containsExactlyInAnyOrder(null, "newTenant");
+  }
+
+  @Test
+  public void addScopeEntries_addsTenantsAndScopeToExistingScopes() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry("_ANOTHER_KEY_");
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
+    addTenantToElasticsearch("newTenant");
+    entry.getTenants().add("newTenant");
+
+
+    // when
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+
+    // then
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(2)
+      .extracting(CollectionScopeEntryDto::getId, CollectionScopeEntryDto::getTenants)
+      .containsExactlyInAnyOrder(
+        new Tuple("process:_KEY_", Lists.newArrayList(null, "newTenant")),
+        new Tuple("process:_ANOTHER_KEY_", Lists.newArrayList((Object) null))
+      );
+  }
+
+  @Test
+  public void addScopeEntries_doesNotRemoveTenants() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    addTenantToElasticsearch("newTenant");
+    entry.setTenants(Collections.singletonList("newTenant"));
+
+    // when
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+
+    // then
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(1)
+      .extracting(CollectionScopeEntryDto::getId, CollectionScopeEntryDto::getTenants)
+      .containsExactlyInAnyOrder(
+        new Tuple("process:_KEY_", Lists.newArrayList(null, "newTenant"))
+      );
+  }
+
+  @Test
+  public void addScopeEntries_sameScopeIsNotAddedTwice() {
+    // given
+    final String collectionId = createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+
+    // when
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+
+    // then
+    assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
+    assertThat(collectionDefinitionDto.getData().getScope())
+      .hasSize(1)
+      .extracting(CollectionScopeEntryDto::getId)
+      .containsExactly("process:_KEY_");
+  }
+
+  @Test
+  public void addScopeEntries_unknownCollectionResultsInNotFound() {
+    // given
+    createNewCollection();
+    final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildAddScopeEntriesToCollectionRequest("unknownId", Collections.singletonList(entry))
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NOT_FOUND);
   }
 
   @Test
@@ -391,6 +533,12 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
       .buildAddScopeEntryToCollectionRequest(collectionId, entry)
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  private void addScopeEntriesToCollection(final String collectionId, final List<CollectionScopeEntryDto> enties) {
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildAddScopeEntriesToCollectionRequest(collectionId, enties)
+      .execute(204);
   }
 
   private String createNewSingleProcessReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {

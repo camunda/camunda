@@ -954,6 +954,14 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildAddScopeEntriesToCollectionRequest(String collectionId,
+                                                                         List<CollectionScopeEntryDto> entryDto) {
+    this.path = "collection/" + collectionId + "/scope";
+    this.requestType = PUT;
+    this.body = getBody(entryDto);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildRemoveScopeEntryFromCollectionRequest(String collectionId,
                                                                             String entryId) {
     this.path = "collection/" + collectionId + "/scope/" + entryId;

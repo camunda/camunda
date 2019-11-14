@@ -38,7 +38,7 @@ public class CountProcessInstanceFrequencyGroupByVariableCmd implements Command<
   }
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public SingleProcessMapReportResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
   }

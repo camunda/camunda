@@ -141,6 +141,17 @@ public class CollectionRestService {
     return new IdDto(scopeEntryDto.getId());
   }
 
+  @PUT
+  @Path("/{id}/scope")
+  @Consumes(MediaType.APPLICATION_JSON)
+  @Produces(MediaType.APPLICATION_JSON)
+  public void addScopeEntries(@Context ContainerRequestContext requestContext,
+                              @PathParam("id") String collectionId,
+                              @NotNull List<CollectionScopeEntryDto> scopeUpdates) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    collectionScopeService.addScopeEntriesToCollection(userId, collectionId, scopeUpdates);
+  }
+
   @DELETE
   @Path("/{id}/scope/{scopeEntryId}")
   public void removeScopeEntry(@Context ContainerRequestContext requestContext,
