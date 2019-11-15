@@ -55,17 +55,17 @@ it('should disable the confirm button on invalid state', () => {
   expect(props.onConfirm).not.toHaveBeenCalled();
 });
 
-it('should call the onConfirm prop', () => {
+it('should invoke the onConfirm prop', () => {
   const node = shallow(<AddSourceModal {...props} />);
 
-  const source = {defintionKey: 'testKey'};
+  const sources = [{defintionKey: 'testKey'}];
 
   node
     .find('DefinitionSource')
     .props()
-    .onChange(source);
+    .onChange(sources);
 
   node.find('.confirm').simulate('click');
 
-  expect(props.onConfirm).toHaveBeenCalledWith(source);
+  expect(props.onConfirm).toHaveBeenCalledWith(sources);
 });

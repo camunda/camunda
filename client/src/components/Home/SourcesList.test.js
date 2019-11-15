@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {ConfirmationModal, Dropdown} from 'components';
 
-import {removeSource, editSource, addSource} from './service';
+import {removeSource, editSource, addSources} from './service';
 
 import SourcesListWithErrorHandling from './SourcesList';
 import EditSourceModal from './modals/EditSourceModal';
@@ -22,19 +22,25 @@ jest.mock('./service', () => ({
       definitionType: 'process',
       definitionKey: 'defKey',
       definitionName: 'definition name',
-      tenants: [{id: null, name: 'Not defined'}, {id: 'tenant1', name: 'Sales'}]
+      tenants: [
+        {id: null, name: 'Not defined'},
+        {id: 'tenant1', name: 'Sales'}
+      ]
     },
     {
       id: 'decision:defKey2',
       definitionType: 'decision',
       definitionKey: 'defKey2',
       definitionName: 'decision report',
-      tenants: [{id: null, name: 'Not defined'}, {id: 'tenant1', name: 'Marketing'}]
+      tenants: [
+        {id: null, name: 'Not defined'},
+        {id: 'tenant1', name: 'Marketing'}
+      ]
     }
   ]),
   removeSource: jest.fn(),
   editSource: jest.fn(),
-  addSource: jest.fn()
+  addSources: jest.fn()
 }));
 
 const SourcesList = SourcesListWithErrorHandling.WrappedComponent;
@@ -99,17 +105,19 @@ it('should modify the tenants in source', () => {
   expect(editSource).toHaveBeenCalledWith('collectionId', 'sourceId', updatedTenants);
 });
 
-it('should add a new Source when addSourceModal is confirmed', () => {
+it('should add sources when addSourceModal is confirmed', () => {
   const node = shallow(<SourcesList {...props} />);
 
   node.setState({addingSource: true});
-  const newSource = {
-    id: 'sourceId',
-    definitionType: 'process',
-    definitionKey: 'defKey',
-    tenants: ['tenantId']
-  };
-  node.find(AddSourceModal).prop('onConfirm')(newSource);
+  const sources = [
+    {
+      id: 'sourceId',
+      definitionType: 'process',
+      definitionKey: 'defKey',
+      tenants: ['tenantId']
+    }
+  ];
+  node.find(AddSourceModal).prop('onConfirm')(sources);
 
-  expect(addSource).toHaveBeenCalledWith('collectionId', newSource);
+  expect(addSources).toHaveBeenCalledWith('collectionId', sources);
 });

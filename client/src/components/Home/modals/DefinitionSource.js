@@ -24,11 +24,13 @@ export default class DefinitionSource extends React.Component {
       !equal(prevState.selectedTenants, selectedTenants)
     ) {
       if (selectedDefinition && selectedTenants.length) {
-        this.props.onChange({
-          definitionType: selectedDefinition.type,
-          definitionKey: selectedDefinition.key,
-          tenants: selectedTenants.map(({id}) => id)
-        });
+        this.props.onChange([
+          {
+            definitionType: selectedDefinition.type,
+            definitionKey: selectedDefinition.key,
+            tenants: selectedTenants.map(({id}) => id)
+          }
+        ]);
       } else {
         this.props.setInvalid();
       }

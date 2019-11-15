@@ -18,7 +18,7 @@ export default withErrorHandling(
   class AddSourceModal extends React.Component {
     state = {
       addBy: 'definition',
-      source: {},
+      sources: [],
       tenantsWithDefinitions: null,
       definitionsWithTenants: null,
       valid: false
@@ -48,16 +48,16 @@ export default withErrorHandling(
       this.reset();
     };
 
-    reset = () => this.setState({addBy: 'definition', source: {}, valid: false});
+    reset = () => this.setState({addBy: 'definition', sources: [], valid: false});
 
     onConfirm = () => {
       if (this.state.valid) {
-        this.props.onConfirm(this.state.source);
+        this.props.onConfirm(this.state.sources);
       }
     };
 
     changeAddBy = addBy => this.setState({addBy, valid: false});
-    onChange = source => this.setState({source, valid: true});
+    onChange = sources => this.setState({sources, valid: true});
     setInvalid = () => this.setState({valid: false});
 
     render() {

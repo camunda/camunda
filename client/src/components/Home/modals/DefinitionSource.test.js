@@ -16,7 +16,10 @@ const props = {
       key: 'hiring-demo',
       name: 'Hiring Demo',
       type: 'process',
-      tenants: [{id: 'csm', name: 'csm'}, {id: 'engineering', name: 'engineering'}]
+      tenants: [
+        {id: 'csm', name: 'csm'},
+        {id: 'engineering', name: 'engineering'}
+      ]
     },
     {
       key: 'invoiceClassification',
@@ -51,11 +54,13 @@ it('should invoke onChange with the selected source', () => {
     .props()
     .onChange([{id: 'csm', name: 'csm'}]);
 
-  expect(props.onChange).toHaveBeenCalledWith({
-    definitionKey: 'hiring-demo',
-    definitionType: 'process',
-    tenants: ['csm']
-  });
+  expect(props.onChange).toHaveBeenCalledWith([
+    {
+      definitionKey: 'hiring-demo',
+      definitionType: 'process',
+      tenants: ['csm']
+    }
+  ]);
 });
 
 it('should preselect the only tenant and invoke onChange', () => {
@@ -66,9 +71,11 @@ it('should preselect the only tenant and invoke onChange', () => {
     .props()
     .onSelect(props.definitionsWithTenants[1]);
 
-  expect(props.onChange).toHaveBeenCalledWith({
-    definitionKey: 'invoiceClassification',
-    definitionType: 'decision',
-    tenants: [null]
-  });
+  expect(props.onChange).toHaveBeenCalledWith([
+    {
+      definitionKey: 'invoiceClassification',
+      definitionType: 'decision',
+      tenants: [null]
+    }
+  ]);
 });

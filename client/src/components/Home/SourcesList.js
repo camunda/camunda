@@ -13,7 +13,7 @@ import {withErrorHandling} from 'HOC';
 
 import ListItem from './ListItem';
 
-import {getSources, addSource, editSource, removeSource} from './service';
+import {getSources, addSources, editSource, removeSource} from './service';
 
 import {ReactComponent as ProcessIcon} from './icons/process.svg';
 import {ReactComponent as DecisionIcon} from './icons/decision.svg';
@@ -68,9 +68,9 @@ export default withErrorHandling(
     };
 
     openAddSourceModal = () => this.setState({addingSource: true});
-    addSource = source => {
+    addSource = sources => {
       this.closeAddSourceModal();
-      this.props.mightFail(addSource(this.props.collection, source), this.getSources, showError);
+      this.props.mightFail(addSources(this.props.collection, sources), this.getSources, showError);
     };
     closeAddSourceModal = () => this.setState({addingSource: false});
 
