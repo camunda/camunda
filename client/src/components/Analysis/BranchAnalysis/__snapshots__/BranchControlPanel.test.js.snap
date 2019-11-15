@@ -19,7 +19,7 @@ exports[`should display a sentence to describe what the user can do on this page
         versions={Array []}
         xml={null}
       />
-      analyse how the branches of
+      analyze how the branches of
       <div
         className="config"
         name="gateway"

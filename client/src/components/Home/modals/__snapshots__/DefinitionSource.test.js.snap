@@ -9,7 +9,7 @@ exports[`should match snapshot 1`] = `
       <Typeahead
         disabled={false}
         formatter={[Function]}
-        noValuesMessage="No defintions found"
+        noValuesMessage="No definitions found"
         onSelect={[Function]}
         placeholder="Select..."
         values={

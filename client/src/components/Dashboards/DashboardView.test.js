@@ -139,7 +139,7 @@ it('should disable the share button if not authorized', () => {
   expect(shareButton).toBeDisabled();
   expect(shareButton.props()).toHaveProperty(
     'tooltip',
-    "You are not authorized to share the dashboard, because you don't have access to all reports on the dashboard!"
+    "You are not authorized to share the dashboard because you don't have access to all reports on the dashboard!"
   );
 });
 
