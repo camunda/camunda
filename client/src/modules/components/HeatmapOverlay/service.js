@@ -38,7 +38,10 @@ function generateHeatmap(viewer, data, noSequenceHighlight) {
   let heatmapData = generateData(data, viewer, dimensions, noSequenceHighlight);
 
   const map = createMap(dimensions);
-  const heatmapDataValueMax = Math.max.apply(this, heatmapData.map(el => el.value));
+  const heatmapDataValueMax = Math.max.apply(
+    this,
+    heatmapData.map(el => el.value)
+  );
 
   heatmapData = heatmapData.map(({x, y, value, radius}) => {
     const shiftValue = noSequenceHighlight ? 0 : VALUE_SHIFT;
@@ -191,7 +194,8 @@ function drawSequenceFlow(data, waypoints, value, {xOffset, yOffset}) {
 
 export function addDiagramTooltip(viewer, element, tooltipContent, theme) {
   const elementGraphics = viewer.get('elementRegistry').getGraphics(element);
-  if (!elementGraphics || !tooltipContent) {
+  const overlaysContainer = document.body.querySelector('.djs-overlay-container');
+  if (!elementGraphics || !tooltipContent || !overlaysContainer) {
     return;
   }
 
@@ -208,7 +212,6 @@ export function addDiagramTooltip(viewer, element, tooltipContent, theme) {
 
   // render tooltip react markup into the html tooltip container
   ReactDOM.render(tooltipContent, tooltipContainer, () => {
-    const overlaysContainer = document.body.querySelector('.djs-overlay-container');
     overlaysContainer.appendChild(overlayHtml);
     const overlayWidth = overlayHtml.clientWidth;
     const overlayHeight = overlayHtml.clientHeight;
