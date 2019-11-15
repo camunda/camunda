@@ -7,5 +7,5 @@ ORG_DIR=${GOPATH}/src/github.com/zeebe-io
 mkdir -p ${ORG_DIR}
 ln -s ${PWD} ${ORG_DIR}/zeebe
 
-cd ${ORG_DIR}/zeebe/clients/zbctl
+cd ${ORG_DIR}/zeebe/clients/go/cmd/zbctl
 ./build.sh
