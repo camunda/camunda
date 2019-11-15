@@ -164,6 +164,7 @@ test('add, edit and delete sources', async t => {
   await t.typeText(e.typeaheadInput, definitionName, {replace: true});
   await t.click(e.typeaheadOption(definitionName));
   await t.click(e.checkbox('Select All'));
+  await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByDefinition.png');
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.visible).ok();
   await t.expect(e.processItem.textContent).contains(definitionName);
@@ -178,6 +179,7 @@ test('add, edit and delete sources', async t => {
   await t.click(e.typeaheadOption(tenantName));
   await t.click(e.checkbox('Beverages'));
   await t.click(e.checkbox('Book Request'));
+  await t.takeElementScreenshot(e.addSourceModal, 'homepage/sourceByTenant.png');
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.visible).ok();
   await t.expect(e.decisionItem.visible).ok();
@@ -192,6 +194,11 @@ test('add, edit and delete sources', async t => {
   await t.click(e.checkbox('engineering'));
   await t.click(e.confirmModalButton);
   await t.expect(e.processItem.nth(1).textContent).notContains('engineering');
+
+  await t
+    .resizeWindow(1150, 600)
+    .takeElementScreenshot(e.sourcesList, 'homepage/sources.png')
+    .maximizeWindow();
 
   //delete source
   await t.hover(e.decisionItem);

@@ -43,5 +43,7 @@ export const decisionItem = Selector('.ListItem.decision');
 export const tenantSource = Selector('.ButtonGroup .Button').withText('Tenant');
 export const roleOption = text => Selector('.Modal .LabeledInput .label.after').withText(text);
 export const userList = Selector('.UserList');
+export const sourcesList = Selector('.SourcesList');
 export const addUserModal = Selector('.AddUserModal');
+export const addSourceModal = Selector('.AddSourceModal');
 export const logoutButton = Selector('.LogoutButton');
