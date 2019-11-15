@@ -21,11 +21,7 @@ import {formatDate} from 'modules/utils/date';
 import {SORT_ORDER} from 'modules/constants';
 
 import {DataManagerProvider} from 'modules/DataManager';
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-import {DataManager} from 'modules/DataManager/core';
-
-jest.mock('modules/DataManager/core');
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 
 jest.mock('modules/utils/bpmn');
 
@@ -68,9 +64,11 @@ describe('IncidentsTable', () => {
     mockProps.onIncidentOperation.mockClear();
     mockProps.onIncidentSelection.mockClear();
 
+    createMockDataManager();
+
     node = mount(
       <ThemeProvider>
-        <DataManagerProvider dataManager={new DataManager()}>
+        <DataManagerProvider>
           <IncidentsTable {...mockProps} />
         </DataManagerProvider>
       </ThemeProvider>
@@ -308,7 +306,7 @@ describe('IncidentsTable', () => {
       mockProps.selectedFlowNodeInstanceIds = [id, 'flowNodeInstanceIdA'];
       const node = mount(
         <ThemeProvider>
-          <DataManagerProvider dataManager={new DataManager()}>
+          <DataManagerProvider>
             <IncidentsTable {...mockProps} />
           </DataManagerProvider>
         </ThemeProvider>
@@ -363,7 +361,7 @@ describe('IncidentsTable', () => {
       ];
       const node = mount(
         <ThemeProvider>
-          <DataManagerProvider dataManager={new DataManager()}>
+          <DataManagerProvider>
             <IncidentsTable {...mockProps} />
           </DataManagerProvider>
         </ThemeProvider>

@@ -4,15 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {DataManager} from 'modules/DataManager/core';
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-
-jest.mock('modules/DataManager/core');
-
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
-
-export {DataManager};
-
 export const mockLocalStorageProps = {
   getStateLocally: jest.fn(),
   storeStateLocally: jest.fn()

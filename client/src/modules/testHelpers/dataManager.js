@@ -4,9 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {DataManager} from 'modules/DataManager/core';
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
-export const mockDataManager = () => {
+jest.mock('modules/DataManager/core');
+
+const mockDataManager = () => {
   return {
     publish: jest.fn(
       ({subscription, state = LOADING_STATE.LOADED, response, staticContent}) =>
@@ -31,9 +34,10 @@ export const mockDataManager = () => {
   };
 };
 
-export const mockModule = dataManagerInstance => {
-  jest.mock('modules/DataManager/core');
-  dataManagerInstance.mockImplementation(mockDataManager);
+export const createMockDataManager = () => {
+  DataManager.mockImplementation(mockDataManager);
+
+  return new DataManager();
 };
 
 export const constants = {SUBSCRIPTION_TOPIC, LOADING_STATE};

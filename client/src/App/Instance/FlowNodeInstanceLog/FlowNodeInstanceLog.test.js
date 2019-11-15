@@ -7,6 +7,8 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+
 import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
 
 // Conponents
@@ -23,13 +25,6 @@ import {mockProps, dataLoaded} from './FlowNodeInstanceLog.setup';
 import {ThemeProvider} from 'modules/theme';
 import {DataManagerProvider} from 'modules/DataManager';
 
-// DataManager mock
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-import {DataManager} from 'modules/DataManager/core';
-
-jest.mock('modules/DataManager/core');
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
-
 // mock modules
 jest.mock('modules/utils/bpmn');
 jest.mock('../FlowNodeInstancesTree', () => {
@@ -39,6 +34,7 @@ jest.mock('../FlowNodeInstancesTree', () => {
 });
 
 const mountComponent = props => {
+  createMockDataManager();
   return mount(
     <ThemeProvider>
       <DataManagerProvider>

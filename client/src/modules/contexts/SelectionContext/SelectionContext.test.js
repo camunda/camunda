@@ -6,11 +6,11 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
+
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
-import {DataManager} from 'modules/DataManager/core';
 
 import {mockResolvedAsyncFn, groupedWorkflowsMock} from 'modules/testUtils';
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
 
 import {
   DEFAULT_SELECTED_INSTANCES,
@@ -31,9 +31,6 @@ const mockProps = {
 };
 
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/DataManager/core');
-
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
 
 describe('SelectionContext', () => {
   beforeEach(() => {
@@ -55,7 +52,7 @@ describe('SelectionContext', () => {
   }
 
   it('should add properties to the wrapped component', async () => {
-    const dataManager = new DataManager();
+    const dataManager = createMockDataManager();
     // given
     const localStorageData = {
       instancesInSelectionsCount: 3,
@@ -135,7 +132,7 @@ describe('SelectionContext', () => {
 
   it('should reset selected instances when filter changes', () => {
     // given
-    const dataManager = new DataManager();
+    const dataManager = createMockDataManager();
 
     const node = mount(
       <SelectionProvider

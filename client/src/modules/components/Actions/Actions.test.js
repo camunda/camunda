@@ -7,12 +7,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {
-  mockResolvedAsyncFn,
-  createInstance,
-  createOperation,
-  flushPromises
-} from 'modules/testUtils';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+
+import {createInstance, createOperation} from 'modules/testUtils';
 
 import {STATE, OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
 
@@ -20,13 +17,6 @@ import Actions from './Actions';
 import ActionStatus from 'modules/components/ActionStatus';
 import ActionItems from './ActionItems';
 
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-
-import {DataManager} from 'modules/DataManager/core';
-
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
-
-jest.mock('modules/DataManager/core');
 jest.mock('modules/utils/bpmn');
 
 describe('Actions', () => {
@@ -133,7 +123,7 @@ describe('Actions', () => {
         const node = shallow(
           <Actions.WrappedComponent
             instance={mockInstance}
-            dataManager={new DataManager()}
+            dataManager={createMockDataManager()}
             onButtonClick={onButtonClick}
           />
         );
@@ -172,7 +162,7 @@ describe('Actions', () => {
         const node = shallow(
           <Actions.WrappedComponent
             instance={mockInstance}
-            dataManager={new DataManager()}
+            dataManager={createMockDataManager()}
             onButtonClick={onButtonClick}
           />
         );

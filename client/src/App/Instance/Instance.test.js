@@ -25,6 +25,11 @@ import * as activityInstanceApi from 'modules/api/activityInstances/activityInst
 import {getWorkflowName} from 'modules/utils/instance';
 import * as diagramUtils from 'modules/utils/bpmn';
 import {ThemeProvider} from 'modules/theme';
+
+import {
+  createMockDataManager,
+  constants as dataManagerConstants
+} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 
 import TopPanel from './TopPanel';
@@ -44,15 +49,7 @@ import {
   isRunningInstance
 } from './service';
 
-// DataManager mock
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-import {DataManager} from 'modules/DataManager/core';
-
-jest.mock('modules/DataManager/core');
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
-
 // mock modules
-
 jest.mock('modules/utils/bpmn');
 
 jest.mock('../Header', () => {
@@ -138,7 +135,7 @@ const shallowRenderComponent = (customProps = {}) => {
 };
 
 describe('Instance', () => {
-  const {SUBSCRIPTION_TOPIC} = dataManagerHelper.constants;
+  const {SUBSCRIPTION_TOPIC} = dataManagerConstants;
 
   describe('subscriptions', () => {
     let root;
@@ -146,12 +143,12 @@ describe('Instance', () => {
     let subscriptions;
 
     beforeEach(() => {
+      createMockDataManager();
       root = mountWrappedComponent(
         [
           ThemeProvider,
           {
-            Wrapper: DataManagerProvider,
-            props: {dataManager: new DataManager()}
+            Wrapper: DataManagerProvider
           },
           MemoryRouter
         ],
@@ -398,7 +395,7 @@ describe('Instance', () => {
     let dataManager;
 
     beforeEach(() => {
-      dataManager = new DataManager();
+      dataManager = createMockDataManager();
 
       // directly mounted as wrapped components can not be updated.
       node = mount(
@@ -568,7 +565,7 @@ describe('Instance', () => {
     let dataManager;
 
     beforeEach(() => {
-      dataManager = new DataManager();
+      dataManager = createMockDataManager();
 
       // directly mounted as wrapped components can not be updated.
       node = mount(

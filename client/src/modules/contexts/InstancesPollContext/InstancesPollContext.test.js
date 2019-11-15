@@ -7,20 +7,19 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+import {DataManagerProvider} from 'modules/DataManager';
+
 import {
   mockResolvedAsyncFn,
   createInstance,
   createOperation
 } from 'modules/testUtils';
 
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-
 import {SUBSCRIPTION_TOPIC} from 'modules/constants';
 
 import * as api from 'modules/api/instances/instances';
 
-import {DataManager} from 'modules/DataManager/core';
-import {DataManagerProvider} from 'modules/DataManager';
 import {InstancesPollProvider, withPoll} from './InstancesPollContext';
 
 jest.mock('modules/utils/bpmn');
@@ -48,14 +47,11 @@ api.fetchWorkflowInstancesByIds = mockResolvedAsyncFn({
   workflowInstances: [INSTANCE, ACTIVE_INSTANCE]
 });
 
-jest.mock('modules/DataManager/core');
-
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
-
 describe('InstancesPollContext', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
+    createMockDataManager();
   });
 
   afterEach(() => {

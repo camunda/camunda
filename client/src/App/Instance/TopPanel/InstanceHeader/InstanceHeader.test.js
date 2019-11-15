@@ -7,11 +7,13 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+import {DataManagerProvider} from 'modules/DataManager';
+
 import {createInstance} from 'modules/testUtils';
 
 import Pane from 'modules/components/SplitPane/Pane';
 import SplitPane from 'modules/components/SplitPane';
-import ActionStatus from 'modules/components/ActionStatus';
 
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
@@ -24,23 +26,17 @@ import {ThemeProvider} from 'modules/theme';
 import InstanceHeader from './InstanceHeader';
 import Actions from 'modules/components/Actions';
 
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-
-import {DataManager} from 'modules/DataManager/core';
-import {DataManagerProvider} from 'modules/DataManager';
 import Spinner from 'modules/components/Spinner';
-
-jest.mock('modules/DataManager/core');
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
 
 jest.mock('modules/utils/bpmn');
 
 const mockInstance = createInstance();
 
+createMockDataManager();
 const mountInstanceHeader = props => {
   return mount(
     <ThemeProvider>
-      <DataManagerProvider dataManager={new DataManager()}>
+      <DataManagerProvider>
         <SplitPane>
           <Pane>
             <InstanceHeader {...props} />

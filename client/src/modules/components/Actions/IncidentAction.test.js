@@ -7,6 +7,9 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+import {DataManagerProvider} from 'modules/DataManager';
+
 import {createIncident, flushPromises} from 'modules/testUtils';
 
 import {OPERATION_TYPE, LOADING_STATE} from 'modules/constants';
@@ -15,12 +18,6 @@ import IncidentAction from './IncidentAction';
 import ActionStatus from 'modules/components/ActionStatus';
 import ActionItems from './ActionItems';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-
-import {DataManager} from 'modules/DataManager/core';
-import {DataManagerProvider} from 'modules/DataManager';
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
 
 jest.mock('modules/DataManager/core');
 jest.mock('modules/utils/bpmn');
@@ -35,9 +32,10 @@ const mockProps = {
 };
 
 const mountIncidentAction = props => {
+  createMockDataManager();
   return mount(
     <ThemeProvider>
-      <DataManagerProvider dataManager={new DataManager()}>
+      <DataManagerProvider>
         <IncidentAction {...props} />
       </DataManagerProvider>
     </ThemeProvider>

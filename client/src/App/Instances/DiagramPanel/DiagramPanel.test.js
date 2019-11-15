@@ -6,9 +6,11 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
+
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+
 import {LOADING_STATE} from 'modules/constants';
 
-import {DataManager} from 'modules/DataManager/core';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
@@ -18,8 +20,6 @@ import {
   mockPropsNoVersionSelected,
   mockPropsNoDefinitions
 } from './DiagramPanel.setup';
-
-import {mockDataManager} from 'modules/testUtils';
 
 import SplitPane from 'modules/components/SplitPane';
 
@@ -38,17 +38,13 @@ jest.mock(
     }
 );
 
-jest.mock('modules/DataManager/core');
-
-DataManager.mockImplementation(mockDataManager);
-
 describe('DiagramPanel', () => {
   let dataManager;
   let node;
   let diagramPanel;
   beforeEach(() => {
     jest.clearAllMocks();
-    dataManager = new DataManager();
+    dataManager = createMockDataManager();
   });
   describe('DiagramPanel', () => {
     it('should render a spit pane', () => {

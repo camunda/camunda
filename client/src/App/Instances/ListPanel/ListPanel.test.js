@@ -7,12 +7,13 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 
-import {ThemeProvider} from 'modules/theme';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
+
+import {ThemeProvider} from 'modules/theme';
 import {SelectionProvider} from 'modules/contexts/SelectionContext';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-import {DataManager} from 'modules/DataManager/core';
 
 import {HashRouter as Router} from 'react-router-dom';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
@@ -22,8 +23,6 @@ import {
   mockResolvedAsyncFn,
   groupedWorkflowsMock
 } from 'modules/testUtils';
-
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
 
 import {
   emptyList,
@@ -42,9 +41,6 @@ import ListFooter from './ListFooter';
 import * as api from 'modules/api/instances/instances';
 
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/DataManager/core');
-
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
 
 // api mocks
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
@@ -54,7 +50,7 @@ describe('ListPanel', () => {
   let dataManager;
   beforeEach(() => {
     jest.clearAllMocks();
-    dataManager = new DataManager();
+    dataManager = createMockDataManager();
 
     Component = (
       <ListPanel.WrappedComponent {...mockProps} {...{dataManager}} />

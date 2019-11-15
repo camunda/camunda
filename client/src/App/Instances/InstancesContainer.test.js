@@ -36,9 +36,10 @@ import {parsedDiagram} from 'modules/utils/bpmn';
 import {
   mockFullFilterWithoutWorkflow,
   mockFullFilterWithWorkflow,
-  mockLocalStorageProps,
-  DataManager
+  mockLocalStorageProps
 } from './InstancesContainer.setup';
+
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
@@ -75,12 +76,12 @@ function getRouterProps(filter = DEFAULT_FILTER) {
 }
 
 describe('InstancesContainer', () => {
-  beforeAll(() => {});
-
   let dataManager;
+
   beforeEach(() => {
     jest.clearAllMocks();
-    dataManager = new DataManager();
+
+    dataManager = createMockDataManager();
   });
 
   describe('mounting', () => {

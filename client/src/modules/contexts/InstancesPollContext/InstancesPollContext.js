@@ -8,6 +8,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
+
 // Creates a context for polling for updates on instances with active operations
 const InstancesPollContext = React.createContext();
 const InstancesPollConsumer = InstancesPollContext.Consumer;

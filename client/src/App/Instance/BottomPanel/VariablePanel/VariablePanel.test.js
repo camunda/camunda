@@ -13,35 +13,24 @@ import {
   noVariableScopes
 } from './VariablePanel.setup';
 
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
+
 import VariablePanel from './VariablePanel';
 import {LOADING_STATE} from 'modules/constants';
 import {SUBSCRIPTION_TOPIC} from 'modules/constants';
 
-import {
-  FAILED_PLACEHOLDER,
-  MULTI_SCOPE_PLACEHOLDER,
-  EMPTY_PLACEHOLDER
-} from './constants';
+import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';
 
-import EmptyPanel from 'modules/components/EmptyPanel';
-import Skeleton from './Skeleton';
 import SpinnerSkeleton from 'modules/components/Skeletons';
-
-// DataManager mock
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-import {DataManager} from 'modules/DataManager/core';
-// import {EmptyPanel} from './styled';
-
-jest.mock('modules/DataManager/core');
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
 
 jest.mock('modules/utils/bpmn');
 
 const mountRenderComponent = (customProps = {}) => {
+  createMockDataManager();
   return mount(
     <ThemeProvider>
-      <DataManagerProvider dataManager={new DataManager()}>
+      <DataManagerProvider>
         <VariablePanel {...customProps} />
       </DataManagerProvider>
     </ThemeProvider>

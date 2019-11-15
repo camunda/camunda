@@ -7,7 +7,9 @@
 import React from 'react';
 import {mount} from 'enzyme';
 import {HashRouter as Router} from 'react-router-dom';
-import {DataManager} from 'modules/DataManager/core';
+
+import {createMockDataManager} from '../../modules/testHelpers/dataManager';
+import {DataManagerProvider} from 'modules/DataManager';
 
 import Dropdown from 'modules/components/Dropdown';
 import Header from './Header';
@@ -19,11 +21,7 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import * as api from 'modules/api/header/header';
 import * as instancesApi from 'modules/api/instances/instances';
 
-import {
-  flushPromises,
-  mockResolvedAsyncFn,
-  mockDataManager
-} from 'modules/testUtils';
+import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
 import {DEFAULT_FILTER, FILTER_SELECTION} from 'modules/constants';
 import {getFilterQueryString} from 'modules/utils/filter';
 
@@ -33,7 +31,6 @@ import {LOADING_STATE} from 'modules/constants';
 
 jest.mock('bpmn-js', () => ({}));
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/DataManager/core');
 
 const USER = {
   user: {
@@ -66,8 +63,6 @@ const mockCollapsablePanelProps = {
   expandSelections: jest.fn()
 };
 
-DataManager.mockImplementation(mockDataManager);
-
 // api mocks
 api.fetchUser = mockResolvedAsyncFn(USER);
 api.logout = mockResolvedAsyncFn();
@@ -84,7 +79,9 @@ const mountComponent = props => {
     <Router>
       <ThemeProvider>
         <CollapsablePanelProvider>
-          <Header.WrappedComponent {...props} />
+          <DataManagerProvider>
+            <Header.WrappedComponent {...props} />
+          </DataManagerProvider>
         </CollapsablePanelProvider>
       </ThemeProvider>
     </Router>
@@ -101,25 +98,23 @@ const mockValues = {
 
 describe('Header', () => {
   let dataManager;
-
   beforeEach(() => {
-    dataManager = new DataManager();
+    dataManager = createMockDataManager();
     api.fetchUser.mockClear();
     instancesApi.fetchWorkflowCoreStatistics.mockClear();
   });
 
   describe('localState values', () => {
     it('should render the correct links', async () => {
-      dataManager.getWorkflowCoreStatistics.mockClear();
-
       const mockProps = {
         ...mockValues,
         ...mockCollapsablePanelProps,
-        dataManager,
         getStateLocally: () => ({})
       };
 
       const node = mountComponent(mockProps);
+      const dataManager = node.props.dataManager;
+      dataManager.getWorkflowCoreStatistics.mockClear();
       const subscriptions = node.find(Header.WrappedComponent).instance()
         .subscriptions;
 

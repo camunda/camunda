@@ -12,6 +12,10 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
+
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+import {DataManagerProvider} from 'modules/DataManager';
+
 import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
 import {mockProps, instanceWithIncident} from './TopPanel.setup';
 
@@ -21,15 +25,8 @@ import Diagram from 'modules/components/Diagram';
 import SpinnerSkeleton from 'modules/components/Skeletons';
 import SplitPane from 'modules/components/SplitPane';
 import {ThemeProvider} from 'modules/theme';
-import {DataManagerProvider} from 'modules/DataManager';
 
 import TopPanel from './TopPanel';
-
-import * as dataManagerHelper from 'modules/testHelpers/dataManager';
-import {DataManager} from 'modules/DataManager/core';
-
-jest.mock('modules/DataManager/core');
-DataManager.mockImplementation(dataManagerHelper.mockDataManager);
 
 jest.mock('modules/utils/bpmn');
 
@@ -47,10 +44,11 @@ jest.mock('./InstanceHeader', () => {
   };
 });
 
+createMockDataManager();
 const mountTopPanel = props => {
   return mount(
     <ThemeProvider>
-      <DataManagerProvider dataManager={new DataManager()}>
+      <DataManagerProvider>
         <SplitPane>
           <TopPanel {...props} />
           <SplitPane.Pane />
