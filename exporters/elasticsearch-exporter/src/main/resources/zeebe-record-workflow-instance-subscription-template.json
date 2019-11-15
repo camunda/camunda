@@ -23,6 +23,12 @@
             },
             "variables": {
               "enabled": false
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "messageKey": {
+              "type": "long"
             }
           }
         }

@@ -16,7 +16,6 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.DeployedWorkflow;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.EventTrigger;
-import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -29,7 +28,6 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
 
   private final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
   private final WorkflowState state;
-  private final MessageState messageState;
   private final KeyGenerator keyGenerator;
 
   public StartEventEventOccurredHandler(final ZeebeState zeebeState) {
@@ -39,8 +37,7 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
   public StartEventEventOccurredHandler(
       final WorkflowInstanceIntent nextState, final ZeebeState zeebeState) {
     super(nextState);
-    this.state = zeebeState.getWorkflowState();
-    this.messageState = zeebeState.getMessageState();
+    state = zeebeState.getWorkflowState();
     keyGenerator = zeebeState.getKeyGenerator();
   }
 
@@ -74,12 +71,6 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
             .setFlowScopeKey(workflowInstanceKey);
 
     deferEvent(context, workflowKey, workflowInstanceKey, record, triggeredEvent);
-
-    // should mark particular message as already correlated for this instance
-    if (context.getElement().isMessage()) {
-      final long messageKey = triggeredEvent.getEventKey();
-      messageState.putMessageCorrelation(messageKey, workflowInstanceKey);
-    }
 
     return true;
   }

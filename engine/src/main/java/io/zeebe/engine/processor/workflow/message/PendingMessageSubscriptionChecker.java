@@ -19,9 +19,9 @@ public class PendingMessageSubscriptionChecker implements Runnable {
   private final long subscriptionTimeout;
 
   public PendingMessageSubscriptionChecker(
-      SubscriptionCommandSender commandSender,
-      MessageSubscriptionState subscriptionState,
-      long subscriptionTimeout) {
+      final SubscriptionCommandSender commandSender,
+      final MessageSubscriptionState subscriptionState,
+      final long subscriptionTimeout) {
     this.commandSender = commandSender;
     this.subscriptionState = subscriptionState;
     this.subscriptionTimeout = subscriptionTimeout;
@@ -33,11 +33,12 @@ public class PendingMessageSubscriptionChecker implements Runnable {
         ActorClock.currentTimeMillis() - subscriptionTimeout, this::sendCommand);
   }
 
-  private boolean sendCommand(MessageSubscription subscription) {
+  private boolean sendCommand(final MessageSubscription subscription) {
     final boolean success =
         commandSender.correlateWorkflowInstanceSubscription(
             subscription.getWorkflowInstanceKey(),
             subscription.getElementInstanceKey(),
+            subscription.getBpmnProcessId(),
             subscription.getMessageName(),
             subscription.getMessageKey(),
             subscription.getMessageVariables());

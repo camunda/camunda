@@ -19,6 +19,7 @@ public class OpenMessageSubscriptionCommand
   private final OpenMessageSubscriptionDecoder decoder = new OpenMessageSubscriptionDecoder();
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
   private long elementInstanceKey;
@@ -41,6 +42,7 @@ public class OpenMessageSubscriptionCommand
     elementInstanceKey = OpenMessageSubscriptionDecoder.elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
     correlationKey.wrap(0, 0);
+    bpmnProcessId.wrap(0, 0);
   }
 
   @Override
@@ -49,7 +51,9 @@ public class OpenMessageSubscriptionCommand
         + OpenMessageSubscriptionDecoder.messageNameHeaderLength()
         + messageName.capacity()
         + OpenMessageSubscriptionDecoder.correlationKeyHeaderLength()
-        + correlationKey.capacity();
+        + correlationKey.capacity()
+        + OpenMessageSubscriptionDecoder.bpmnProcessIdHeaderLength()
+        + bpmnProcessId.capacity();
   }
 
   @Override
@@ -62,7 +66,8 @@ public class OpenMessageSubscriptionCommand
         .elementInstanceKey(elementInstanceKey)
         .closeOnCorrelate(closeOnCorrelate ? BooleanType.TRUE : BooleanType.FALSE)
         .putMessageName(messageName, 0, messageName.capacity())
-        .putCorrelationKey(correlationKey, 0, correlationKey.capacity());
+        .putCorrelationKey(correlationKey, 0, correlationKey.capacity())
+        .putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
   }
 
   @Override
@@ -86,6 +91,12 @@ public class OpenMessageSubscriptionCommand
     final int correlationKeyLength = decoder.correlationKeyLength();
     correlationKey.wrap(buffer, offset, correlationKeyLength);
     offset += correlationKeyLength;
+    decoder.limit(offset);
+
+    offset += OpenMessageSubscriptionDecoder.bpmnProcessIdHeaderLength();
+    final int bpmnProcessIdLength = decoder.bpmnProcessIdLength();
+    bpmnProcessId.wrap(buffer, offset, bpmnProcessIdLength);
+    offset += bpmnProcessIdLength;
     decoder.limit(offset);
   }
 
@@ -127,5 +138,9 @@ public class OpenMessageSubscriptionCommand
 
   public void setCloseOnCorrelate(boolean closeOnCorrelate) {
     this.closeOnCorrelate = closeOnCorrelate;
+  }
+
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessId;
   }
 }

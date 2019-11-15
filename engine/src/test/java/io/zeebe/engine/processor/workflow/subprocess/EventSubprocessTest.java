@@ -25,12 +25,13 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.deployment.DeployedWorkflow;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,9 +42,9 @@ import org.junit.runners.Parameterized;
 public class EventSubprocessTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
+  private static String messageName;
+
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Parameterized.Parameter public String testName;
 
@@ -74,31 +75,31 @@ public class EventSubprocessTest {
       },
       {
         "message",
-        eventSubprocess(s -> s.message(b -> b.name("msg").zeebeCorrelationKey("key"))),
+        eventSubprocess(s -> s.message(b -> b.name(messageName).zeebeCorrelationKey("key"))),
         eventTrigger(
             key -> {
               RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
                   .withWorkflowInstanceKey(key)
-                  .withMessageName("msg")
+                  .withMessageName(messageName)
                   .await();
-              ENGINE
-                  .message()
-                  .withName("msg")
-                  .withCorrelationKey("123")
-                  .withTimeToLive(0L)
-                  .publish();
+              ENGINE.message().withName(messageName).withCorrelationKey("123").publish();
             })
       },
     };
   }
 
   private static Function<StartEventBuilder, StartEventBuilder> eventSubprocess(
-      Function<StartEventBuilder, StartEventBuilder> consumer) {
+      final Function<StartEventBuilder, StartEventBuilder> consumer) {
     return consumer;
   }
 
-  private static Consumer<Long> eventTrigger(Consumer<Long> eventTrigger) {
+  private static Consumer<Long> eventTrigger(final Consumer<Long> eventTrigger) {
     return eventTrigger;
+  }
+
+  @Before
+  public void init() {
+    messageName = helper.getMessageName();
   }
 
   @Test
@@ -197,7 +198,7 @@ public class EventSubprocessTest {
         .isNotNull();
   }
 
-  private static void assertEventSubprocessLifecycle(long workflowInstanceKey) {
+  private static void assertEventSubprocessLifecycle(final long workflowInstanceKey) {
     final List<Record<WorkflowInstanceRecordValue>> events =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
@@ -223,7 +224,7 @@ public class EventSubprocessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "event_sub_proc"));
   }
 
-  private long createInstanceAndTriggerEvent(BpmnModelInstance model) {
+  private long createInstanceAndTriggerEvent(final BpmnModelInstance model) {
     currentWorkflow =
         ENGINE
             .deployment()
@@ -266,7 +267,7 @@ public class EventSubprocessTest {
   }
 
   private static BpmnModelInstance nestedInterruptingEventSubprocess(
-      Function<StartEventBuilder, StartEventBuilder> builder) {
+      final Function<StartEventBuilder, StartEventBuilder> builder) {
     final EmbeddedSubProcessBuilder embeddedBuilder =
         Bpmn.createExecutableProcess("proc")
             .startEvent("proc_start")

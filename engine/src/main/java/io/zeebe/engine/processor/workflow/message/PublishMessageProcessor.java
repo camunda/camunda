@@ -23,7 +23,6 @@ import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
-import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
@@ -32,7 +31,6 @@ import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.LongArrayList;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
@@ -40,14 +38,18 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       "Expected to trigger event for workflow with key '%d', but could not (either does not exist or is not accepting)";
   private static final String ALREADY_PUBLISHED_MESSAGE =
       "Expected to publish a new message with id '%s', but a message with that id was already published";
+
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
   private final MessageStartEventSubscriptionState startEventSubscriptionState;
   private final SubscriptionCommandSender commandSender;
   private final KeyGenerator keyGenerator;
   private final EventScopeInstanceState scopeEventInstanceState;
-  private final LongArrayList correlatedWorkflowInstances = new LongArrayList();
-  private final LongArrayList correlatedElementInstances = new LongArrayList();
+
+  private final Subscriptions correlatingSubscriptions = new Subscriptions();
+  private final WorkflowInstanceRecord startEventRecord =
+      new WorkflowInstanceRecord().setBpmnElementType(BpmnElementType.START_EVENT);
+
   private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
   private long messageKey;
@@ -75,6 +77,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final Consumer<SideEffectProducer> sideEffect) {
     this.responseWriter = responseWriter;
     messageRecord = command.getValue();
+
+    correlatingSubscriptions.clear();
 
     if (messageRecord.hasMessageId()
         && messageState.exist(
@@ -104,109 +108,103 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     responseWriter.writeEventOnCommand(
         messageKey, MessageIntent.PUBLISHED, command.getValue(), command);
 
-    correlatedWorkflowInstances.clear();
-    correlatedElementInstances.clear();
+    correlateToSubscriptions(messageKey, messageRecord);
+    correlateToMessageStartEvents(messageRecord, streamWriter);
 
-    subscriptionState.visitSubscriptions(
-        messageRecord.getNameBuffer(),
-        messageRecord.getCorrelationKeyBuffer(),
-        subscription -> {
-          final long workflowInstanceKey = subscription.getWorkflowInstanceKey();
-          final long elementInstanceKey = subscription.getElementInstanceKey();
-
-          // correlate the message only once per workflow instance
-          if (!subscription.isCorrelating()
-              && !correlatedWorkflowInstances.containsLong(workflowInstanceKey)) {
-
-            subscriptionState.updateToCorrelatingState(
-                subscription,
-                messageRecord.getVariablesBuffer(),
-                ActorClock.currentTimeMillis(),
-                messageKey);
-
-            correlatedWorkflowInstances.addLong(workflowInstanceKey);
-            correlatedElementInstances.addLong(elementInstanceKey);
-          }
-
-          return true;
-        });
-
-    sideEffect.accept(this::correlateMessage);
-
-    correlateMessageStartEvents(command, streamWriter);
+    sideEffect.accept(this::sendCorrelateCommand);
 
     if (messageRecord.getTimeToLive() > 0L) {
-      final Message message =
-          new Message(
-              messageKey,
-              messageRecord.getNameBuffer(),
-              messageRecord.getCorrelationKeyBuffer(),
-              messageRecord.getVariablesBuffer(),
-              messageRecord.getMessageIdBuffer(),
-              messageRecord.getTimeToLive(),
-              messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
+      final Message message = newMessage(messageKey, messageRecord);
       messageState.put(message);
 
-      correlatedWorkflowInstances.forEachOrderedLong(
-          workflowInstanceKey ->
-              messageState.putMessageCorrelation(message.getKey(), workflowInstanceKey));
+      // avoid correlating this message to the workflow again
+      correlatingSubscriptions.visitBpmnProcessIds(
+          bpmnProcessId -> messageState.putMessageCorrelation(messageKey, bpmnProcessId));
 
     } else {
-      // don't add the message to the store to avoid that it can be correlated afterwards
+      // don't need to add the message to the store - it can not be correlated afterwards
       streamWriter.appendFollowUpEvent(messageKey, MessageIntent.DELETED, messageRecord);
     }
   }
 
-  private boolean correlateMessage() {
-    for (int i = 0; i < correlatedWorkflowInstances.size(); i++) {
-      final long workflowInstanceKey = correlatedWorkflowInstances.getLong(i);
-      final long elementInstanceKey = correlatedElementInstances.getLong(i);
+  private void correlateToSubscriptions(final long messageKey, final MessageRecord message) {
+    subscriptionState.visitSubscriptions(
+        message.getNameBuffer(),
+        message.getCorrelationKeyBuffer(),
+        subscription -> {
 
-      final boolean success =
-          commandSender.correlateWorkflowInstanceSubscription(
-              workflowInstanceKey,
-              elementInstanceKey,
-              messageRecord.getNameBuffer(),
-              messageKey,
-              messageRecord.getVariablesBuffer());
+          // correlate the message only once per workflow
+          if (!subscription.isCorrelating()
+              && !correlatingSubscriptions.contains(subscription.getBpmnProcessId())) {
 
-      if (!success) {
-        return false;
-      }
-    }
+            correlatingSubscriptions.add(subscription);
 
-    return responseWriter.flush();
+            subscriptionState.updateToCorrelatingState(
+                subscription,
+                message.getVariablesBuffer(),
+                ActorClock.currentTimeMillis(),
+                messageKey);
+          }
+
+          return true;
+        });
   }
 
-  private void correlateMessageStartEvents(
-      final TypedRecord<MessageRecord> command, final TypedStreamWriter streamWriter) {
-    final DirectBuffer messageName = command.getValue().getNameBuffer();
+  private void correlateToMessageStartEvents(
+      final MessageRecord messageRecord, final TypedStreamWriter streamWriter) {
     startEventSubscriptionState.visitSubscriptionsByMessageName(
-        messageName,
-        subscription -> visitStartEventSubscription(command, streamWriter, subscription));
+        messageRecord.getNameBuffer(),
+        subscription -> {
+          if (!correlatingSubscriptions.contains(subscription.getBpmnProcessIdBuffer())) {
+
+            final DirectBuffer startEventId = subscription.getStartEventIdBuffer();
+            final long workflowKey = subscription.getWorkflowKey();
+
+            final boolean wasTriggered =
+                scopeEventInstanceState.triggerEvent(
+                    workflowKey, messageKey, startEventId, messageRecord.getVariablesBuffer());
+
+            if (wasTriggered) {
+              // create the workflow instance directly on the same partition
+              streamWriter.appendNewEvent(
+                  messageKey,
+                  WorkflowInstanceIntent.EVENT_OCCURRED,
+                  startEventRecord.setWorkflowKey(workflowKey).setElementId(startEventId));
+
+              correlatingSubscriptions.add(subscription);
+
+            } else {
+              Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
+                  String.format(ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE, workflowKey));
+            }
+          }
+        });
   }
 
-  private void visitStartEventSubscription(
-      TypedRecord<MessageRecord> command,
-      TypedStreamWriter streamWriter,
-      MessageStartEventSubscriptionRecord subscription) {
-    final DirectBuffer startEventId = subscription.getStartEventIdBuffer();
-    final long workflowKey = subscription.getWorkflowKey();
-    final WorkflowInstanceRecord record =
-        new WorkflowInstanceRecord()
-            .setWorkflowKey(workflowKey)
-            .setElementId(startEventId)
-            .setBpmnElementType(BpmnElementType.START_EVENT);
+  private boolean sendCorrelateCommand() {
 
-    final boolean wasTriggered =
-        scopeEventInstanceState.triggerEvent(
-            workflowKey, messageKey, startEventId, command.getValue().getVariablesBuffer());
+    final var success =
+        correlatingSubscriptions.visitSubscriptions(
+            subscription ->
+                commandSender.correlateWorkflowInstanceSubscription(
+                    subscription.getWorkflowInstanceKey(),
+                    subscription.getElementInstanceKey(),
+                    subscription.getBpmnProcessId(),
+                    messageRecord.getNameBuffer(),
+                    messageKey,
+                    messageRecord.getVariablesBuffer()));
 
-    if (wasTriggered) {
-      streamWriter.appendNewEvent(messageKey, WorkflowInstanceIntent.EVENT_OCCURRED, record);
-    } else {
-      Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
-          String.format(ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE, workflowKey));
-    }
+    return success ? responseWriter.flush() : false;
+  }
+
+  private Message newMessage(final long messageKey, final MessageRecord messageRecord) {
+    return new Message(
+        messageKey,
+        messageRecord.getNameBuffer(),
+        messageRecord.getCorrelationKeyBuffer(),
+        messageRecord.getVariablesBuffer(),
+        messageRecord.getMessageIdBuffer(),
+        messageRecord.getTimeToLive(),
+        messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
   }
 }

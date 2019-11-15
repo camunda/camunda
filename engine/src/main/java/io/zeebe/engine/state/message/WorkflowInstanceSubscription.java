@@ -26,6 +26,7 @@ public class WorkflowInstanceSubscription implements DbValue {
   private final DirectBuffer messageName = new UnsafeBuffer();
   private final DirectBuffer correlationKey = new UnsafeBuffer();
   private final DirectBuffer targetElementId = new UnsafeBuffer();
+  private final DirectBuffer bpmnProcessId = new UnsafeBuffer();
 
   private long workflowInstanceKey;
   private long elementInstanceKey;
@@ -37,20 +38,23 @@ public class WorkflowInstanceSubscription implements DbValue {
 
   public WorkflowInstanceSubscription() {}
 
-  public WorkflowInstanceSubscription(long workflowInstanceKey, long elementInstanceKey) {
+  public WorkflowInstanceSubscription(
+      long workflowInstanceKey, long elementInstanceKey, DirectBuffer bpmnProcessId) {
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
+    this.bpmnProcessId.wrap(bpmnProcessId);
   }
 
   public WorkflowInstanceSubscription(
       long workflowInstanceKey,
       long elementInstanceKey,
       DirectBuffer targetElementId,
+      DirectBuffer bpmnProcessId,
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       long commandSentTime,
       boolean closeOnCorrelate) {
-    this(workflowInstanceKey, elementInstanceKey);
+    this(workflowInstanceKey, elementInstanceKey, bpmnProcessId);
 
     this.targetElementId.wrap(targetElementId);
     this.commandSentTime = commandSentTime;
@@ -99,6 +103,14 @@ public class WorkflowInstanceSubscription implements DbValue {
     this.elementInstanceKey = elementInstanceKey;
   }
 
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public void setBpmnProcessId(DirectBuffer bpmnProcessId) {
+    this.bpmnProcessId.wrap(bpmnProcessId);
+  }
+
   public long getCommandSentTime() {
     return commandSentTime;
   }
@@ -142,27 +154,28 @@ public class WorkflowInstanceSubscription implements DbValue {
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
     final int startOffset = offset;
-    this.workflowInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
+    workflowInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
+    elementInstanceKey = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.subscriptionPartitionId = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
+    subscriptionPartitionId = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    this.commandSentTime = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
+    commandSentTime = buffer.getLong(offset, ZB_DB_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.state = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
+    state = buffer.getInt(offset, ZB_DB_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    this.closeOnCorrelate = buffer.getByte(offset) == 1;
+    closeOnCorrelate = buffer.getByte(offset) == 1;
     offset += 1;
 
     offset = readIntoBuffer(buffer, offset, messageName);
     offset = readIntoBuffer(buffer, offset, correlationKey);
     offset = readIntoBuffer(buffer, offset, targetElementId);
+    offset = readIntoBuffer(buffer, offset, bpmnProcessId);
 
     assert (offset - startOffset) == length : "End offset differs from length";
   }
@@ -171,10 +184,11 @@ public class WorkflowInstanceSubscription implements DbValue {
   public int getLength() {
     return 1
         + Long.BYTES * 3
-        + Integer.BYTES * 5
+        + Integer.BYTES * 6
         + messageName.capacity()
         + correlationKey.capacity()
-        + targetElementId.capacity();
+        + targetElementId.capacity()
+        + bpmnProcessId.capacity();
   }
 
   @Override
@@ -200,6 +214,8 @@ public class WorkflowInstanceSubscription implements DbValue {
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
     offset = writeIntoBuffer(buffer, offset, targetElementId);
+    offset = writeIntoBuffer(buffer, offset, bpmnProcessId);
+
     assert offset == getLength() : "End offset differs with getLength()";
   }
 

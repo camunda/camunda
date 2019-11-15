@@ -55,7 +55,7 @@ public final class CorrelateWorkflowInstanceSubscription
   private final WorkflowState workflowState;
   private final KeyGenerator keyGenerator;
 
-  private WorkflowInstanceRecord eventSubprocessRecord = new WorkflowInstanceRecord();
+  private final WorkflowInstanceRecord eventSubprocessRecord = new WorkflowInstanceRecord();
   private WorkflowInstanceSubscriptionRecord subscriptionRecord;
   private DirectBuffer correlationKey;
 
@@ -65,8 +65,8 @@ public final class CorrelateWorkflowInstanceSubscription
       final ZeebeState zeebeState) {
     this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.workflowState = zeebeState.getWorkflowState();
-    this.keyGenerator = zeebeState.getKeyGenerator();
+    workflowState = zeebeState.getWorkflowState();
+    keyGenerator = zeebeState.getKeyGenerator();
   }
 
   @Override
@@ -196,13 +196,14 @@ public final class CorrelateWorkflowInstanceSubscription
         subscriptionRecord.getSubscriptionPartitionId(),
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
+        subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer());
   }
 
   private boolean sendRejectionCommand() {
     return subscriptionCommandSender.rejectCorrelateMessageSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
-        subscriptionRecord.getElementInstanceKey(),
+        subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageKey(),
         subscriptionRecord.getMessageNameBuffer(),
         correlationKey);
