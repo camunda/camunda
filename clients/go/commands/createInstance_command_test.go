@@ -17,7 +17,7 @@ package commands
 import (
 	"fmt"
 	"github.com/golang/mock/gomock"
-	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
+	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
