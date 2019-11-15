@@ -28,4 +28,4 @@ You can create an issue in the Zeebe GitHub project to let us know.
 
 We cover community contributions in a dedicated section of the docs.
 
-[Read the Zeebe docs entry about community contributions](introduction/community-contributions.html)
+[Read the Zeebe docs entry about community contributions](/introduction/community-contributions.html)

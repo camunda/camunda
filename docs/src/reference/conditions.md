@@ -4,7 +4,7 @@ Conditions can be used for conditional flows to determine the following task.
 
 A condition is a Boolean expression with a JavaScript-like syntax. It allows to compare variables of a workflow instance with other variables or literals (e.g., numbers, strings, etc.).
 
-Variables of a workflow instance are accessed by its name. If a variable has a document value then the nested properties can be accessed via dot notation. See the [Variables](reference/variables.html#access-variables) section for details.
+Variables of a workflow instance are accessed by its name. If a variable has a document value then the nested properties can be accessed via dot notation. See the [Variables](/reference/variables.html#access-variables) section for details.
 
 Examples:
 

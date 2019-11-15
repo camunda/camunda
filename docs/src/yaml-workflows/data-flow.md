@@ -24,9 +24,9 @@ tasks:
       type: shipment-service
 ```
 
-Every mapping element has a `source` and a `target` element which must be a [variable expression](reference/variables.html#access-variables).
+Every mapping element has a `source` and a `target` element which must be a [variable expression](/reference/variables.html#access-variables).
 
 ## Additional Resources
 
-* [Data Flow](bpmn-workflows/data-flow.html)
-* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)
+* [Data Flow](/bpmn-workflows/data-flow.html)
+* [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)

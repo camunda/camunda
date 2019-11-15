@@ -64,7 +64,7 @@ And we’ll publish a message that will be correlated with the instance so we ca
 ./bin/zbctl.exe --insecure publish message "payment-received" --correlationKey="1234"
 ```
 
-In the Operate interface, you should now see that the workflow instance has an [“Incident”](https://docs.zeebe.io/reference/incidents.html), which means there’s a problem with workflow execution that needs to be fixed before the workflow instance can progress to the next step. 
+In the Operate interface, you should now see that the workflow instance has an [“Incident”](/reference/incidents.html), which means there’s a problem with workflow execution that needs to be fixed before the workflow instance can progress to the next step. 
 
 ![operate-incident-workflow-view](/operate-user-guide/img/Operate-Workflow-View-Incident.png)
 

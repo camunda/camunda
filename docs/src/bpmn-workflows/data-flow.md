@@ -26,7 +26,7 @@ The visibility of variables is defined by the *variable scopes* of the workflow.
 
 ## Additional Resources
 
-* [Job Handling](basics/job-workers.html)
-* [Variables](reference/variables.html)
-* [Input/Output Variable Mappings](reference/variables.html#inputoutput-variable-mappings)
-* [Variable Scopes](reference/variables.html#variable-scopes)
+* [Job Handling](/basics/job-workers.html)
+* [Variables](/reference/variables.html)
+* [Input/Output Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)
+* [Variable Scopes](/reference/variables.html#variable-scopes)

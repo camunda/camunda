@@ -98,5 +98,5 @@ orderCount > 15 || totalPrice > 50
 </details>
 
 References:
-* [Conditions](reference/conditions.html)
+* [Conditions](/reference/conditions.html)
 * [Incidents](/reference/incidents.html)

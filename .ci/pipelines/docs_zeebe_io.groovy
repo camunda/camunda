@@ -16,8 +16,8 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   containers:
-    - name: alpine
-      image: alpine:3.9.2
+    - name: debian
+      image: debian:10
       command: ["cat"]
       tty: true
       resources:
@@ -47,7 +47,7 @@ spec:
         stage('Prepare') {
             steps {
                 git url: 'git@github.com:zeebe-io/zeebe', branch: "${params.BRANCH}", credentialsId: 'camunda-jenkins-github-ssh', poll: false
-                container('alpine') {
+                container('debian') {
                     sh '.ci/scripts/docs/prepare.sh'
                 }
             }
@@ -55,7 +55,7 @@ spec:
 
         stage('Build') {
             steps {
-                container('alpine') {
+                container('debian') {
                     sh '.ci/scripts/docs/build.sh'
                 }
             }
@@ -63,7 +63,7 @@ spec:
 
         stage('Upload') {
             steps {
-                container('alpine') {
+                container('debian') {
                     sshagent(['docs-zeebe-io-ssh']) {
                         sh '.ci/scripts/docs/upload.sh'
                     }

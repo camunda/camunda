@@ -91,4 +91,4 @@ By default, the local variables of the subprocess are not propagated (i.e. they 
 </details>
 
 References:
-* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)
+* [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)

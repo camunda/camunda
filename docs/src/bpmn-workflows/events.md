@@ -2,9 +2,9 @@
 
 Currently supported events:
 
-* [None Events](bpmn-workflows/none-events/none-events.html)
-* [Message Events](bpmn-workflows/message-events/message-events.html)
-* [Timer Events](bpmn-workflows/timer-events/timer-events.html)
+* [None Events](/bpmn-workflows/none-events/none-events.html)
+* [Message Events](/bpmn-workflows/message-events/message-events.html)
+* [Timer Events](/bpmn-workflows/timer-events/timer-events.html)
 
 ## Events in General
 

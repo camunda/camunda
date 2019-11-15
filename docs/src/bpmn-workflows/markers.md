@@ -2,4 +2,4 @@
 
 Currently supported markers:
 
-* [Multi-Instance](bpmn-workflows/multi-instance/multi-instance.html)
+* [Multi-Instance](/bpmn-workflows/multi-instance/multi-instance.html)

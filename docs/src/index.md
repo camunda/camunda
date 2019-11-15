@@ -12,6 +12,6 @@
 * Engage with an active community
 
 **First Steps**
-* [Read up on Zeebe's core concepts](/basics/README.html)
+* [Read up on Zeebe's core concepts](/basics/)
 * [Run Zeebe with Docker or download a distribution](/introduction/install.html)
-* [Try the Getting Started tutorial](/getting-started/README.html)
+* [Try the Getting Started tutorial](/getting-started/)

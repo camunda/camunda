@@ -99,6 +99,6 @@ Adding variable mappings:
 </details>
 
 References:
-* [Job Handling](basics/job-workers.html)
-* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)
+* [Job Handling](/basics/job-workers.html)
+* [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)
 * [Incidents](/reference/incidents.html)

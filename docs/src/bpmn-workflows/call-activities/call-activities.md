@@ -1,6 +1,6 @@
 # Call Activities
 
-A call activity (aka reusable subprocess) allows to call/invoke another workflow as part of this workflow. It is similar to an [embedded subprocess](bpmn-workflows/embedded-subprocesses/embedded-subprocesses.html) but the workflow is externalized (i.e. stored as separated BPMN) and can be invoked by different workflows.
+A call activity (aka reusable subprocess) allows to call/invoke another workflow as part of this workflow. It is similar to an [embedded subprocess](/bpmn-workflows/embedded-subprocesses/embedded-subprocesses.html) but the workflow is externalized (i.e. stored as separated BPMN) and can be invoked by different workflows.
 
 ![call-activity](/bpmn-workflows/call-activities/call-activities-example.png) 
 
@@ -118,5 +118,5 @@ The workflow instance records of the created workflow instance have a reference 
 </details>
 
 References:
-* [Variable Scopes](reference/variables.html#variable-scopes)
-* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)
+* [Variable Scopes](/reference/variables.html#variable-scopes)
+* [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)
