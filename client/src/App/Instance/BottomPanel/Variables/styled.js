@@ -93,6 +93,7 @@ export const TD = themed(styled.td`
   &:not(:nth-child(2)) {
     white-space: nowrap;
   }
+  vertical-align: top;
 `);
 
 export const SkeletonTD = styled.td`
@@ -261,6 +262,8 @@ export const EditInputTD = styled.td`
   &:nth-child(2) {
     width: 100%;
   }
+
+  vertical-align: top;
 `;
 
 export const EditButton = styled.button`
