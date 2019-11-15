@@ -133,10 +133,10 @@ func (provider *OAuthCredentialsProvider) getCredentials() *OAuthCredentials {
 		if credentials != nil {
 			provider.credentials = credentials
 			return credentials
+		} else {
+			provider.updateCredentials()
 		}
 	}
-
-	provider.updateCredentials()
 	return provider.credentials
 }
 
