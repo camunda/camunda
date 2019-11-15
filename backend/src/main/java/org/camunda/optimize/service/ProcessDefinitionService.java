@@ -7,6 +7,7 @@
 package org.camunda.optimize.service;
 
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
@@ -98,7 +99,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     return definitionsResult;
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(final String userId) {
+  public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(@NonNull final String userId) {
     List<ProcessDefinitionOptimizeDto> definitions = processDefinitionReader
       .getFullyImportedProcessDefinitions(false);
 
@@ -107,13 +108,13 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     return createDefinitionsWithAvailableVersionsAndTenants(userId, definitions);
   }
 
-  public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(final String userId,
-                                                                                              final String collectionId) {
+  public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(@NonNull final String userId,
+                                                                                              @NonNull final String collectionId) {
     final Map<String, List<String>> keysAndTenants = collectionScopeService
       .getAvailableKeysAndTenantsFromCollectionScope(userId, collectionId);
 
     List<ProcessDefinitionOptimizeDto> definitions = processDefinitionReader
-      .getFullyImportedProcessDefinitionsForScope(false, keysAndTenants);
+      .getFullyImportedProcessDefinitionsForKeys(false, keysAndTenants.keySet());
 
     definitions = filterAuthorizedProcessDefinitions(userId, definitions);
 

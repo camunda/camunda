@@ -88,7 +88,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
       .getAvailableKeysAndTenantsFromCollectionScope(userId, collectionId);
 
     List<DecisionDefinitionOptimizeDto> definitions = decisionDefinitionReader
-      .getFullyImportedDecisionDefinitionsForScope(false, keysAndTenants);
+      .getFullyImportedDecisionDefinitionsForKeys(false, keysAndTenants.keySet());
 
     definitions = filterAuthorizedDecisionDefinitions(userId, definitions);
 

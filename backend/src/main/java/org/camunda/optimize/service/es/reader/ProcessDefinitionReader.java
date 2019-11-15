@@ -30,8 +30,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex.ENGINE;
@@ -160,31 +160,15 @@ public class ProcessDefinitionReader {
     return Optional.ofNullable(processDefinitionOptimizeDto);
   }
 
-  public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitionsForScope(
-    final boolean withXml,
-    final Map<String, List<String>> keysAndTenants) {
+  public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitionsForKeys(final boolean withXml,
+                                                                                      final Set<String> keys) {
 
-    if (keysAndTenants.isEmpty()) {
+    if (keys.isEmpty()) {
       return Collections.emptyList();
     }
 
-    final BoolQueryBuilder scopeQuery = boolQuery().minimumShouldMatch(1);
-    keysAndTenants.forEach((key, tenants) -> {
-      final Object[] nonNullTenants = tenants.stream().filter(Objects::nonNull).toArray();
-      final BoolQueryBuilder tenantsQuery = boolQuery().minimumShouldMatch(1);
-      if (nonNullTenants.length > 0) {
-        tenantsQuery.should(termsQuery(TENANT_ID, nonNullTenants));
-      }
-      if (nonNullTenants.length < tenants.size()) {
-        tenantsQuery.should(boolQuery().mustNot(existsQuery(TENANT_ID)));
-      }
-      final BoolQueryBuilder definitionAndTenantsQuery = boolQuery()
-        .must(termQuery(PROCESS_DEFINITION_KEY, key))
-        .must(tenantsQuery);
-      scopeQuery.should(definitionAndTenantsQuery);
-    });
-
-    return fetchProcessDefinitions(true, withXml, scopeQuery);
+    final BoolQueryBuilder Query = boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, keys));
+    return fetchProcessDefinitions(true, withXml, Query);
   }
 
   public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitions(final boolean withXml) {

@@ -174,6 +174,43 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
+  public void testGetDefinitionVersionsWithTenants_sharedDefinitionOnlySpecificTenantInScope(final DefinitionType type) {
+    //given
+    final String tenant1 = "tenant1";
+    createTenant(tenant1);
+    final String tenant2 = "tenant2";
+    createTenant(tenant2);
+
+    final String definitionKey = "definitionKey1";
+    createDefinition(type, definitionKey, "1", null, "the name");
+
+    final List<String> scopeTenantIds = Lists.newArrayList(tenant2);
+    final String collectionId = addEmptyCollectionToOptimize();
+    addScopeEntryToCollection(
+      collectionId,
+      new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
+    );
+
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<DefinitionVersionsWithTenantsRestDto> definitions = getDefinitionVersionsWithTenants(type, collectionId);
+
+    // then
+    assertThat(definitions)
+      .hasOnlyOneElementSatisfying(definitionEntry -> {
+        assertThat(definitionEntry.getAllTenants().stream().map(TenantRestDto::getId))
+          .containsExactlyElementsOf(scopeTenantIds);
+        assertThat(definitionEntry.getVersions())
+          .hasOnlyOneElementSatisfying(versionEntry -> {
+            assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
+              .containsExactlyElementsOf(scopeTenantIds);
+          });
+      });
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
   public void testGetDefinitionVersionsWithTenants_sharedDefinitionNoneAndTenantInScope(final DefinitionType type) {
     //given
     final String tenant1 = "tenant1";
