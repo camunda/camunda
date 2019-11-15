@@ -169,4 +169,8 @@ public class OperateProperties {
   public void setClusterNode(ClusterNodeProperties clusterNode) {
     this.clusterNode = clusterNode;
   }
+  
+  public String getSchemaVersion() {
+	  return "1.2.0";
+  }
 }

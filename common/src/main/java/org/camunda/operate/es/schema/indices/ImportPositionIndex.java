@@ -6,9 +6,7 @@
 package org.camunda.operate.es.schema.indices;
 
 import java.io.IOException;
-import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -20,14 +18,6 @@ public class ImportPositionIndex extends AbstractIndexCreator {
   public static final String ID = "id";
   public static final String POSITION = "position";
   public static final String FIELD_INDEX_NAME = "indexName";
-
-  @Autowired
-  private OperateProperties operateProperties;
-
-  @Override
-  public String getIndexName() {
-    return String.format("%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), INDEX_NAME);
-  }
 
   @Override
   protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
@@ -49,6 +39,11 @@ public class ImportPositionIndex extends AbstractIndexCreator {
       .endObject();
 
     return newBuilder;
+  }
+
+  @Override
+  protected String getMainIndexName() {
+	return INDEX_NAME;
   }
 
 }

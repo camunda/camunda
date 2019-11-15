@@ -20,11 +20,6 @@ public class UserIndex extends AbstractIndexCreator {
   public static final String ROLE = "role";
 
   @Override
-  public String getIndexName() {
-    return String.format("%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), INDEX_NAME);
-  }
-
-  @Override
   protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     XContentBuilder newBuilder =  builder
         .startObject(ID)
@@ -45,6 +40,11 @@ public class UserIndex extends AbstractIndexCreator {
   @Override
   public boolean needsSeveralShards() {
     return false;
+  }
+
+  @Override
+  protected String getMainIndexName() {
+	return INDEX_NAME;
   }
 
 }

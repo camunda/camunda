@@ -24,11 +24,7 @@ public class WorkflowIndex extends AbstractIndexCreator {
   public static final String ACTIVITY_NAME = "name";
   public static final String ACTIVITY_TYPE = "type";
 
-  @Override
-  public String getIndexName() {
-    return String.format("%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), INDEX_NAME);
-  }
-
+  
   @Override
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     XContentBuilder newBuilder = xContentBuilder
@@ -79,6 +75,11 @@ public class WorkflowIndex extends AbstractIndexCreator {
         .field("type", "keyword")
       .endObject();
     return builder;
+  }
+
+  @Override
+  protected String getMainIndexName() {
+	return INDEX_NAME;
   }
 
 }

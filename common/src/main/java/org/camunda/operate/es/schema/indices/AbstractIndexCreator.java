@@ -9,16 +9,12 @@ import java.io.IOException;
 
 import org.camunda.operate.property.OperateProperties;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Component
 public abstract class AbstractIndexCreator implements IndexCreator {
-
-  private static final Logger logger = LoggerFactory.getLogger(AbstractIndexCreator.class);
 
   public static final String EAGER_GLOBAL_ORDINALS = "eager_global_ordinals";
   public static final String PARTITION_ID = "partitionId";
@@ -54,8 +50,14 @@ public abstract class AbstractIndexCreator implements IndexCreator {
   }
 
   protected abstract XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException;
+  
+  public String getIndexName() {
+	    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getMainIndexName(),operateProperties.getSchemaVersion());
+  }
 
-  @Override
+  protected abstract String getMainIndexName();
+
+@Override
   public String getAlias() {
     return  getIndexName() + "alias";
   }

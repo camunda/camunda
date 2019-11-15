@@ -55,7 +55,7 @@ public abstract class AbstractTemplateCreator implements TemplateCreator {
 
   @Override
   public String getMainIndexName() {
-    return String.format("%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexNameFormat());
+    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getIndexNameFormat(),operateProperties.getSchemaVersion());
   }
 
   @Override
