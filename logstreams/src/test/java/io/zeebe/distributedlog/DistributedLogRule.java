@@ -19,6 +19,7 @@ import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.utils.net.Address;
 import io.zeebe.distributedlog.impl.DistributedLogstreamConfig;
 import io.zeebe.distributedlog.impl.DistributedLogstreamName;
+import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
@@ -208,6 +209,10 @@ public class DistributedLogRule extends ExternalResource {
     partitions.get(partitionId).becomeLeader();
   }
 
+  public DistributedLogstreamPartition getSpy(int partition) {
+    return partitions.get(partition).getCurrentLogSpy();
+  }
+
   public void becomeFollower(final int partitionId) {
     partitions.get(partitionId).becomeFollower();
   }
@@ -230,5 +235,9 @@ public class DistributedLogRule extends ExternalResource {
 
   public int getCommittedEventsCount(final int partitionId) {
     return partitions.get(partitionId).getCommittedEventsCount();
+  }
+
+  public boolean eventsInOrderAppended(int partitionId, Event[] events) {
+    return partitions.get(partitionId).eventsInOrder(events);
   }
 }

@@ -48,21 +48,23 @@ public class DefaultDistributedLogstreamService
     implements DistributedLogstreamService, LogReplicationAppender {
 
   private static final Logger LOG =
-      LoggerFactory.getLogger(DefaultDistributedLogstreamService.class);
-
+      LoggerFactory.getLogger(DefaultDistributedLogstreamService.class);;
   private LogStream logStream;
   private String logName;
   private int partitionId;
   private String currentLeader;
   private long currentLeaderTerm = -1;
   private long lastPosition;
+  private long lastAppendIndex;
   private ServiceContainer serviceContainer;
   private String localMemberId;
   private Logger logger;
+  private long currentAppendIndex;
 
   public DefaultDistributedLogstreamService() {
     super(DistributedLogstreamType.instance(), DistributedLogstreamClient.class);
     lastPosition = -1;
+    lastAppendIndex = 0;
   }
 
   @Override
@@ -165,7 +167,8 @@ public class DefaultDistributedLogstreamService
   }
 
   @Override
-  public long append(String nodeId, long commitPosition, byte[] blockBuffer) {
+  /** append from the primitive */
+  public long append(String nodeId, long appendIndex, long commitPosition, byte[] blockBuffer) {
     // Assumption: first append is always called after claim leadership. So currentLeader is not
     // null. Assumption is also valid during restart.
     if (!currentLeader.equals(nodeId)) {
@@ -175,7 +178,22 @@ public class DefaultDistributedLogstreamService
       // error code;
     }
 
+    // if the lastAppendIndex + 1 is less then the appendIndex, we missed some events
+    if (lastAppendIndex + 1 < appendIndex) {
+      logger.trace(
+          "We received an event out of order. Last append index {} and try to append index {}, will reject this event.",
+          lastAppendIndex,
+          appendIndex);
+      return -lastAppendIndex;
+    }
+
+    currentAppendIndex = appendIndex;
     return append(commitPosition, blockBuffer);
+  }
+
+  @Override
+  public long lastAppendIndex() {
+    return lastAppendIndex;
   }
 
   @Override
@@ -194,12 +212,20 @@ public class DefaultDistributedLogstreamService
     return false;
   }
 
+  // this is called by log replication and primitive append
   @Override
   public long append(long commitPosition, byte[] blockBuffer) {
     if (commitPosition <= lastPosition) {
       // This case can happen due to raft-replay or when appender retries due to timeout or other
       // exceptions.
-      logger.trace("Rejecting append request at position {}", commitPosition);
+      logger.trace(
+          "Rejecting append request at position {} last position was {}",
+          commitPosition,
+          lastPosition);
+
+      if (lastAppendIndex <= currentAppendIndex) {
+        lastAppendIndex = currentAppendIndex;
+      }
       return 1; // Assume the append was successful because event was previously appended.
     }
 
@@ -209,6 +235,12 @@ public class DefaultDistributedLogstreamService
       return -1;
     }
 
+    final long lastAppendResult = appendToLogstorage(commitPosition, blockBuffer);
+    lastAppendIndex = currentAppendIndex;
+    return lastAppendResult;
+  }
+
+  private long appendToLogstorage(long commitPosition, byte[] blockBuffer) {
     try {
       final ByteBuffer buffer = ByteBuffer.wrap(blockBuffer);
       final long appendResult = logStream.append(commitPosition, buffer);
@@ -236,17 +268,25 @@ public class DefaultDistributedLogstreamService
     // backup snapshot, but not appended to logStorage may be lost. So, if this node is away for a
     // while and tries to recover with backup received from other nodes, there will be missing
     // entries in the logStorage.
-    logger.info("Backup log {} at position {}", logName, lastPosition);
+    logger.info(
+        "Backup log {} at position {}, last append index {}",
+        logName,
+        lastPosition,
+        lastAppendIndex);
 
     // Backup in-memory states
     backupOutput.writeLong(lastPosition);
+    backupOutput.writeLong(lastAppendIndex);
     backupOutput.writeString(currentLeader);
     backupOutput.writeLong(currentLeaderTerm);
   }
 
   @Override
   public void restore(BackupInput backupInput) {
+    LOG.debug("Restoring primitive of partition {}", partitionId);
     final long backupPosition = backupInput.readLong();
+    lastAppendIndex = backupInput.readLong();
+    currentAppendIndex = lastAppendIndex;
 
     if (lastPosition < backupPosition) {
       LogstreamConfig.startRestore(localMemberId, partitionId);
@@ -273,7 +313,10 @@ public class DefaultDistributedLogstreamService
       LogstreamConfig.completeRestore(localMemberId, partitionId);
     }
 
-    logger.debug("Restored local log to position {}", lastPosition);
+    logger.debug(
+        "Restored local log to position {} and last append index {}",
+        lastPosition,
+        lastAppendIndex);
     currentLeader = backupInput.readString();
     currentLeaderTerm = backupInput.readLong();
   }

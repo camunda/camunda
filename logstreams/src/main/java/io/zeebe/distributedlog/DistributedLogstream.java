@@ -13,7 +13,11 @@ import java.util.concurrent.TimeoutException;
 
 public interface DistributedLogstream extends SyncPrimitive {
 
-  long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer)
+  long append(
+      String partition, String nodeId, long appendIndex, long commitPosition, byte[] blockBuffer)
+      throws InterruptedException, ExecutionException, TimeoutException;
+
+  long lastAppendIndex(String partition)
       throws InterruptedException, ExecutionException, TimeoutException;
 
   @Override

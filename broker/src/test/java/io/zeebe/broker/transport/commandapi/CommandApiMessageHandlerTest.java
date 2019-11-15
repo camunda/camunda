@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
 import com.netflix.concurrency.limits.limit.SettableLimit;
@@ -89,7 +90,7 @@ public class CommandApiMessageHandlerTest {
   private LogStream logStream;
   private CommandApiMessageHandler messageHandler;
   private DistributedLogstreamService distributedLogImpl;
-  private RequestLimiter noneLimiter = new NoopRequestLimiter();
+  private final RequestLimiter noneLimiter = new NoopRequestLimiter();
 
   @Before
   public void setup() {
@@ -133,15 +134,18 @@ public class CommandApiMessageHandlerTest {
                       && arguments.length > 1
                       && arguments[0] != null
                       && arguments[1] != null) {
-                    final byte[] bytes = (byte[]) arguments[0];
-                    final long pos = (long) arguments[1];
+                    final long appendIndex = (long) arguments[0];
+                    final byte[] bytes = (byte[]) arguments[1];
+                    final long pos = (long) arguments[2];
                     return CompletableFuture.completedFuture(
-                        distributedLogImpl.append(nodeId, pos, bytes));
+                        distributedLogImpl.append(nodeId, appendIndex, pos, bytes));
                   }
                   return null;
                 })
         .when(mockDistLog)
-        .asyncAppend(any(byte[].class), anyLong());
+        .asyncAppend(anyLong(), any(byte[].class), anyLong());
+
+    doReturn(CompletableFuture.completedFuture(0L)).when(mockDistLog).getLastAppendIndex();
 
     serviceContainerRule
         .get()

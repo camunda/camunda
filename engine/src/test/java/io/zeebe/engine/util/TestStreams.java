@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -175,15 +176,17 @@ public class TestStreams {
                       && arguments.length > 1
                       && arguments[0] != null
                       && arguments[1] != null) {
-                    final byte[] bytes = (byte[]) arguments[0];
-                    final long pos = (long) arguments[1];
+                    final long appendIndex = (long) arguments[0];
+                    final byte[] bytes = (byte[]) arguments[1];
+                    final long pos = (long) arguments[2];
                     return CompletableFuture.completedFuture(
-                        distributedLogImpl.append(nodeId, pos, bytes));
+                        distributedLogImpl.append(nodeId, appendIndex, pos, bytes));
                   }
                   return null;
                 })
         .when(mockDistLog)
-        .asyncAppend(any(byte[].class), anyLong());
+        .asyncAppend(anyLong(), any(byte[].class), anyLong());
+    doReturn(CompletableFuture.completedFuture(0L)).when(mockDistLog).getLastAppendIndex();
 
     serviceContainer
         .createService(distributedLogPartitionServiceName(name), () -> mockDistLog)

@@ -12,6 +12,7 @@ import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamSe
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.spy;
 
 import io.zeebe.distributedlog.impl.DistributedLogstreamPartition;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -44,6 +45,7 @@ public class DistributedLogPartitionRule {
   private final String logName;
   private LogStream logStream;
   private BufferedLogStreamReader reader;
+  private DistributedLogstreamPartition currentLogSpy;
 
   public DistributedLogPartitionRule(
       ServiceContainer serviceContainer, int nodeId, int partition, Path rootDirectory)
@@ -80,12 +82,11 @@ public class DistributedLogPartitionRule {
   }
 
   private void createDistributedLog() {
-    final DistributedLogstreamPartition log =
-        new DistributedLogstreamPartition(partition, leaderTerm++);
+    currentLogSpy = spy(new DistributedLogstreamPartition(partition, leaderTerm++));
     final ActorFuture<DistributedLogstreamPartition> installFuture =
         serviceContainer
-            .createService(distributedLogPartitionServiceName(logName), log)
-            .dependency(DistributedLogRule.ATOMIX_SERVICE_NAME, log.getAtomixInjector())
+            .createService(distributedLogPartitionServiceName(logName), currentLogSpy)
+            .dependency(DistributedLogRule.ATOMIX_SERVICE_NAME, currentLogSpy.getAtomixInjector())
             .install();
     installFuture.join();
   }
@@ -96,6 +97,10 @@ public class DistributedLogPartitionRule {
     }
 
     logStream.openAppender().join();
+  }
+
+  public DistributedLogstreamPartition getCurrentLogSpy() {
+    return currentLogSpy;
   }
 
   public void becomeFollower() {
@@ -145,5 +150,30 @@ public class DistributedLogPartitionRule {
       numEvents++;
     }
     return numEvents;
+  }
+
+  public boolean eventsInOrder(Event[] events) {
+    if (events == null || events.length == 0) {
+      return true;
+    }
+
+    reader.seek(events[0].position);
+    for (Event event : events) {
+      if (reader.hasNext()) {
+        final LoggedEvent loggedEvent = reader.next();
+        final String messageRead =
+            bufferAsString(
+                loggedEvent.getValueBuffer(),
+                loggedEvent.getValueOffset(),
+                loggedEvent.getValueLength());
+        final long eventPosition = loggedEvent.getPosition();
+        if (!event.message.equals(messageRead) || eventPosition != event.position) {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    }
+    return true;
   }
 }
