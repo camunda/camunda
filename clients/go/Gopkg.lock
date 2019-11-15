@@ -78,7 +78,7 @@
   version = "v2.7.1"
 
 [[projects]]
-  digest = "1:72097364ac85438aa671a3cb2ea106d8b4e353fc22ebbee3ff4fd208639940c3"
+  digest = "1:fc0599f51eafe9bc9f3106a21f8acd8ecf3c6389e425ddb313f2f3bc5a776525"
   name = "github.com/docker/docker"
   packages = [
     "api",
@@ -109,9 +109,9 @@
     "pkg/system",
   ]
   pruneopts = "UT"
-  revision = "adfac697dc5b74998c6a5229f1e4e9b2e0406af4"
+  revision = "ea84732a77251e0d7af278e2b7df1d6a59fca46b"
   source = "github.com/docker/engine"
-  version = "v19.03.4"
+  version = "v19.03.5"
 
 [[projects]]
   digest = "1:811c86996b1ca46729bad2724d4499014c4b9effd05ef8c71b852aad90deb0ce"
