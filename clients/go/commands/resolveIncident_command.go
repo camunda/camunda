@@ -19,7 +19,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
 	"github.com/zeebe-io/zeebe/clients/go/utils"
 )
 

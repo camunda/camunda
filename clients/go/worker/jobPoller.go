@@ -18,7 +18,7 @@ package worker
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
-	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
 	"io"
 	"log"
 	"sync"

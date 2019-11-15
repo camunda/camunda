@@ -17,7 +17,7 @@ package commands
 
 import (
 	"context"
-	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
 	"time"
 )
 

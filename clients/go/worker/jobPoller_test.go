@@ -20,7 +20,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
 	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"io"
 	"math"
