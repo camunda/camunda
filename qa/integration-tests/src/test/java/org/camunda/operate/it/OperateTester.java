@@ -50,8 +50,9 @@ import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 public class OperateTester extends ElasticsearchTestRule{
 
-  @Autowired
   private ZeebeClient zeebeClient;
+  private MockMvcTestRule mockMvcTestRule;
+  private ElasticsearchTestRule elasticsearchTestRule;
   
   private Long workflowKey;
   private Long workflowInstanceKey;
@@ -83,29 +84,26 @@ public class OperateTester extends ElasticsearchTestRule{
   @Autowired
   private Archiver archiver;
 
-  private MockMvcTestRule mockMvcTestRule;
-  
+  @Autowired
+  private ZeebeImporter zeebeImporter;
+
   @Autowired
   protected OperationExecutor operationExecutor;
 
   private Map<Object,Long> countImported = new HashMap<>();
 
   private boolean operationExecutorEnabled = true;
-  
+
+  public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, ElasticsearchTestRule elasticsearchTestRule) {
+    this.zeebeClient = zeebeClient;
+    this.mockMvcTestRule = mockMvcTestRule;
+    this.elasticsearchTestRule = elasticsearchTestRule;
+  }
+
   public Long getWorkflowInstanceKey() {
     return workflowInstanceKey;
   }
 
-  public OperateTester setMockMvcTestRule(MockMvcTestRule mockMvcTestRule) {
-    this.mockMvcTestRule = mockMvcTestRule;
-    return this;
-  }
-
-  public OperateTester setZeebeClient(ZeebeClient zeebeClient) {
-    this.zeebeClient = zeebeClient;
-    return this;
-  }
-  
   public OperateTester createAndDeploySimpleWorkflow(String processId,String activityId) {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
         .startEvent("start")
@@ -128,7 +126,7 @@ public class OperateTester extends ElasticsearchTestRule{
   }
   
   public OperateTester workflowIsDeployed() {
-    processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowKey);
     return this;
   }
 
@@ -142,17 +140,17 @@ public class OperateTester extends ElasticsearchTestRule{
   }
   
   public OperateTester workflowInstanceIsStarted() {
-    processAllRecordsAndWait(workflowInstancesAreStartedCheck, Arrays.asList(workflowInstanceKey));
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreStartedCheck, Arrays.asList(workflowInstanceKey));
     return this;
   }
   
   public OperateTester workflowInstanceIsFinished() {
-    processAllRecordsAndWait(workflowInstancesAreFinishedCheck,Arrays.asList(workflowInstanceKey));
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck,Arrays.asList(workflowInstanceKey));
     return this;
   }
   
   public OperateTester workflowInstanceIsCompleted() {
-    processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceKey);
     return this;
   }
   
@@ -162,7 +160,7 @@ public class OperateTester extends ElasticsearchTestRule{
   }
  
   public OperateTester incidentIsActive() {
-    processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, workflowInstanceKey);
     return this;
   }
   
@@ -180,7 +178,7 @@ public class OperateTester extends ElasticsearchTestRule{
     op.setValue(varValue);
     op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
     postOperation(op);
-    refreshIndexesInElasticsearch();
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     return this;
   }
   
@@ -193,13 +191,13 @@ public class OperateTester extends ElasticsearchTestRule{
     batchOperationDto.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
     
     postOperation(batchOperationDto);
-    refreshIndexesInElasticsearch();
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     return this;
   }
   
   public OperateTester operationIsCompleted() throws Exception {
     executeOneBatch();
-    processAllRecordsAndWait(operationsByWorkflowInstanceAreCompletedCheck, workflowInstanceKey);
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompletedCheck, workflowInstanceKey);
     return this;
   }
   
@@ -261,7 +259,7 @@ public class OperateTester extends ElasticsearchTestRule{
   }
   
   public int importOneType(ImportValueType importValueType) throws IOException {
-    List<RecordsReader> readers = getRecordsReaders(importValueType);
+    List<RecordsReader> readers = elasticsearchTestRule.getRecordsReaders(importValueType);
     int count = 0;
     for (RecordsReader reader: readers) {
       count += zeebeImporter.importOneBatch(reader);
@@ -303,7 +301,7 @@ public class OperateTester extends ElasticsearchTestRule{
   }
 
   public OperateTester archiveIsDone() {
-    refreshOperateESIndices();
+    elasticsearchTestRule.refreshOperateESIndices();
     return this;
   }
 }

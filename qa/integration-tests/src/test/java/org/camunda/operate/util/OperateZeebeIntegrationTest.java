@@ -154,6 +154,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     zeebeClient = getClient();
     workerName = TestUtil.createRandomString(10);
 
+    tester = beanFactory.getBean(OperateTester.class, zeebeClient, mockMvcTestRule, elasticsearchTestRule);
+
     workflowCache.clearCache();
     importPositionHolder.clearCache();
     try {

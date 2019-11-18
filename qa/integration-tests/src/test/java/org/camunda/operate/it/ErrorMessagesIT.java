@@ -22,7 +22,6 @@ import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,14 +43,10 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
   @Autowired
   private ListViewReader listViewReader;
 
-  @Rule
-  public OperateTester operateTester = new OperateTester();
-  
   @Before
   public void before() {
     super.before();
     injectZeebeClientIntoOperationHandler();
-    operateTester.setZeebeClient(getClient()).setMockMvcTestRule(mockMvcTestRule);
   }
 
   private void injectZeebeClientIntoOperationHandler() {
@@ -73,7 +68,7 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
   
     // when
     Long workflowInstanceKey = setupIncidentWith(errorMessageWithWhitespaces);
-    operateTester.updateVariableOperation("a", "b").waitUntil().operationIsCompleted();
+    tester.updateVariableOperation("a", "b").waitUntil().operationIsCompleted();
     
     // then
     assertThat(incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey).get(0).getErrorMessage()).isEqualTo(errorMessageWithoutWhiteSpaces);
@@ -132,7 +127,7 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
   }
  
   protected Long setupIncidentWith(String errorMessage) {
-    return operateTester
+    return tester
         .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
         .startWorkflowInstance("demoProcess","{\"a\": \"b\"}").failTask("taskA", errorMessage)
         .waitUntil().workflowInstanceIsFinished()

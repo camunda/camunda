@@ -12,12 +12,10 @@ import java.util.Random;
 
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

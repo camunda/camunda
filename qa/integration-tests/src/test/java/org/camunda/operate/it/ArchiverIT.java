@@ -55,7 +55,6 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -303,9 +302,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   @Test
   public void testArchivedOperationsWillNotBeLocked() throws Exception {
       // given (set up) : disabled OperationExecutor
-      tester.setMockMvcTestRule(mockMvcTestRule)
-            .setZeebeClient(getClient())
-            .disableOperationExecutor();
+      tester.disableOperationExecutor();
       // and given workflowInstance
       final String bpmnProcessId = "startEndProcess";
       final BpmnModelInstance startEndProcess =

@@ -5,27 +5,24 @@
  */
 package org.camunda.operate.metric;
 
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
-
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
 
-public class MetricIT extends OperateZeebeIntegrationTest{
+public class MetricIT extends OperateZeebeIntegrationTest {
   
   @Autowired
   private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
@@ -36,14 +33,10 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   @Autowired
   private UpdateVariableHandler updateVariableHandler;
 
-  @Rule
-  public OperateTester operateTester = new OperateTester();
-
   @Before
   public void before() {
     super.before();
     injectZeebeClientIntoOperationHandler();
-    operateTester.setZeebeClient(getClient()).setMockMvcTestRule(mockMvcTestRule);
     clearMetrics();
   }
 
@@ -61,7 +54,7 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   public void testProcessedEventsDuringImport() {
     // Given metrics are enabled
     // When
-    operateTester
+    tester
       .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
       .startWorkflowInstance("demoProcess","{\"a\": \"b\"}").waitUntil().workflowInstanceIsFinished();
     // Then
@@ -77,7 +70,7 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   public void testProcessedEventsDuringImportWithIncidents() {
     // Given metrics are enabled
     // When
-    operateTester
+    tester
       .deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
       .startWorkflowInstance("demoProcess","{\"a\": \"b\"}")
       .and()
@@ -94,7 +87,7 @@ public class MetricIT extends OperateZeebeIntegrationTest{
   public void testOperationThatSucceeded() throws Exception {
     // Given metrics are enabled
     // When
-    operateTester
+    tester
       .deployWorkflow("demoProcess_v_2.bpmn").waitUntil().workflowIsDeployed()
       .and()
       .startWorkflowInstance("demoProcess").waitUntil().workflowInstanceIsStarted()
@@ -115,7 +108,7 @@ public class MetricIT extends OperateZeebeIntegrationTest{
         .endEvent()
         .done();
     
-    operateTester
+    tester
       .deployWorkflow(startEndProcess, "startEndProcess.bpmn")
       .and()
       .startWorkflowInstance(bpmnProcessId).waitUntil().workflowInstanceIsCompleted()
