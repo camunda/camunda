@@ -46,7 +46,7 @@ def replace_commit_hash(book):
         sys.exit(0)
 
     eprint(
-        f'Replacing commit template {COMMIT_TEMPLATE} with hash {commit_hash}')
+        'Replacing commit template {} with hash {}'.format(COMMIT_TEMPLATE, commit_hash))
 
     for section in book['sections']:
         process_item(section, commit_hash)
