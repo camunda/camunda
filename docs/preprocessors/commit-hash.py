@@ -38,7 +38,7 @@ def process_item(item, commit_hash):
 def replace_commit_hash(book):
     try:
         commit_hash = subprocess.run(
-            ['git', 'rev-parse', 'HEAD'], check=True, capture_output=True).stdout.decode('utf-8').strip()
+            ['git', 'rev-parse', 'HEAD'], check=True, stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
     except:
         eprint('Skipping commit preprocessing as "git rev-parse HEAD" failed')
         # dump unprocessed book to continue pipeline
