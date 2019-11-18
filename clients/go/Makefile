@@ -8,5 +8,5 @@ test:
 	go test -v ./pkg/commands/
 	go test -v ./pkg/entities/
 	go test -v ./pkg/worker/
-	go test -v ./tests/
+	go test -v ./test/
 	go test -v ./zbc/

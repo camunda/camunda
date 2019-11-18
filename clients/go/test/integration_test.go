@@ -11,7 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package zbc
+package test
 
 import (
 	"github.com/stretchr/testify/suite"
@@ -47,7 +47,7 @@ func (s *integrationTestSuite) TestTopology() {
 
 func (s *integrationTestSuite) TestDeployWorkflow() {
 	// when
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../testdata/service_task.bpmn").Send()
+	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("testdata/service_task.bpmn").Send()
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -64,7 +64,7 @@ func (s *integrationTestSuite) TestDeployWorkflow() {
 
 func (s *integrationTestSuite) TestCreateInstance() {
 	// given
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../testdata/service_task.bpmn").Send()
+	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("testdata/service_task.bpmn").Send()
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -85,7 +85,7 @@ func (s *integrationTestSuite) TestCreateInstance() {
 
 func (s *integrationTestSuite) TestActivateJobs() {
 	// given
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../testdata/service_task.bpmn").Send()
+	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("testdata/service_task.bpmn").Send()
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -122,7 +122,7 @@ func (s *integrationTestSuite) TestActivateJobs() {
 
 func (s *integrationTestSuite) TestFailJob() {
 	// given
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../testdata/service_task.bpmn").Send()
+	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("testdata/service_task.bpmn").Send()
 	if err != nil {
 		s.T().Fatal(err)
 	}
