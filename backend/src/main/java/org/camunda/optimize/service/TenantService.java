@@ -80,6 +80,10 @@ public class TenantService implements ConfigurationReloadable {
     return tenantsCache.get("getTenants");
   }
 
+  public boolean isMultiTenantEnvironment() {
+    return getTenants().size() > 1;
+  }
+
   private List<TenantDto> fetchTenants() {
     final List<TenantDto> tenants = new ArrayList<>(configuredDefaultTenants);
     tenants.addAll(tenantReader.getTenants());

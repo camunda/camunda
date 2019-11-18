@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
@@ -18,6 +19,7 @@ import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -145,6 +147,29 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     assertThat(response.getOptimizeVersion(), is(Version.RAW_VERSION));
   }
 
+  @Test
+  public void tenantsAvailable_oneTenant() {
+    // given
+    createTenant("tenant1");
+
+    // when
+    final UIConfigurationDto response = getUIConfiguration();
+
+    // then
+    assertThat(response.isTenantsAvailable(), is(true));
+  }
+
+  @Test
+  public void tenantsAvailable_noTenants() {
+    // given
+
+    // when
+    final UIConfigurationDto response = getUIConfiguration();
+
+    // then
+    assertThat(response.isTenantsAvailable(), is(false));
+  }
+
   private UIConfigurationDto getUIConfiguration() {
     return embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
@@ -168,5 +193,10 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
       .get(DEFAULT_ENGINE_ALIAS)
       .getWebapps()
       .setEnabled(enabled);
+  }
+
+  protected void createTenant(final String tenantId) {
+    final TenantDto tenantDto = new TenantDto(tenantId, tenantId, DEFAULT_ENGINE_ALIAS);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 }

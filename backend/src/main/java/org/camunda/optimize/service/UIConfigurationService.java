@@ -7,16 +7,15 @@ package org.camunda.optimize.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.OptimizeVersionService;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.HeaderCustomization;
 import org.camunda.optimize.service.util.configuration.ui.UIConfiguration;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +32,8 @@ public class UIConfigurationService implements ConfigurationReloadable {
 
   private final ConfigurationService configurationService;
   private final OptimizeVersionService versionService;
+  private final TenantService tenantService;
+
   // cached version
   private String logoAsBase64;
 
@@ -41,6 +42,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setHeader(getHeaderCustomization());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
     uiConfigurationDto.setSharingEnabled(configurationService.getSharingEnabled());
+    uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     return uiConfigurationDto;
