@@ -160,8 +160,8 @@ public class DecisionDefinitionReader {
       return Collections.emptyList();
     }
 
-    final BoolQueryBuilder Query = boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, keys));
-    return fetchDecisionDefinitions(true, withXml, Query);
+    final BoolQueryBuilder query = boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, keys));
+    return fetchDecisionDefinitions(true, withXml, query);
   }
 
   public List<DecisionDefinitionOptimizeDto> getFullyImportedDecisionDefinitions(final boolean withXml) {

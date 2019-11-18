@@ -167,8 +167,8 @@ public class ProcessDefinitionReader {
       return Collections.emptyList();
     }
 
-    final BoolQueryBuilder Query = boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, keys));
-    return fetchProcessDefinitions(true, withXml, Query);
+    final BoolQueryBuilder query = boolQuery().must(termsQuery(PROCESS_DEFINITION_KEY, keys));
+    return fetchProcessDefinitions(true, withXml, query);
   }
 
   public List<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinitions(final boolean withXml) {
