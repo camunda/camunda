@@ -21,7 +21,7 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
-	"github.com/zeebe-io/zeebe/clients/go/zbc"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"io"
 	"log"
 	"os/exec"

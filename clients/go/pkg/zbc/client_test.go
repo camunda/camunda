@@ -49,7 +49,7 @@ func (s *clientTestSuite) TestNewZBClientWithTls() {
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../test/testdata/ca.cert.pem",
+		CaCertificatePath: "../../test/testdata/ca.cert.pem",
 	})
 
 	s.NoError(err)
@@ -78,7 +78,7 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 	// when
 	config := &ZBClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../test/testdata/ca.cert.pem",
+		CaCertificatePath: "../../test/testdata/ca.cert.pem",
 	}
 	env.set(ZbInsecureEnvVar, "true")
 
@@ -103,15 +103,15 @@ func (s *clientTestSuite) TestCaCertificateEnvVar() {
 	// when
 	config := &ZBClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "../test/testdata/wrong.cert",
+		CaCertificatePath: "../../test/testdata/wrong.cert",
 	}
-	env.set(ZbCaCertificatePath, "../test/testdata/ca.cert.pem")
+	env.set(ZbCaCertificatePath, "../../test/testdata/ca.cert.pem")
 
 	_, err := NewZBClientWithConfig(config)
 
 	// then
 	s.NoError(err)
-	s.EqualValues("../test/testdata/ca.cert.pem", config.CaCertificatePath)
+	s.EqualValues("../../test/testdata/ca.cert.pem", config.CaCertificatePath)
 }
 
 func (s *clientTestSuite) TestNewZBClientWithoutTls() {
@@ -128,7 +128,7 @@ func (s *clientTestSuite) TestNewZBClientWithoutTls() {
 	client, err := NewZBClientWithConfig(&ZBClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
-		CaCertificatePath:      "../test/testdata/ca.cert.pem",
+		CaCertificatePath:      "../../test/testdata/ca.cert.pem",
 	})
 
 	s.NoError(err)
@@ -182,7 +182,7 @@ func (s *clientTestSuite) TestNewZBClientWithPathToNonExistingFile() {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	wrongPath := "../test/testdata/non.existing"
+	wrongPath := "non.existing"
 
 	//when
 	_, err := NewZBClientWithConfig(&ZBClientConfig{
@@ -231,7 +231,7 @@ func (s *clientTestSuite) TestNewZBClientWithDefaultCredentialsProvider() {
 }
 
 func createSecureServer() (net.Listener, *grpc.Server) {
-	creds, _ := credentials.NewServerTLSFromFile("../test/testdata/chain.cert.pem", "../test/testdata/private.key.pem")
+	creds, _ := credentials.NewServerTLSFromFile("../../test/testdata/chain.cert.pem", "../../test/testdata/private.key.pem")
 	return createServer(grpc.Creds(creds))
 }
 

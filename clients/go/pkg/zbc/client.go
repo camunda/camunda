@@ -15,19 +15,19 @@
 package zbc
 
 import (
-    "crypto/tls"
-    "fmt"
-    "github.com/pkg/errors"
-    "google.golang.org/grpc/credentials"
-    "log"
-    "os"
-    "strings"
-    "time"
+	"crypto/tls"
+	"fmt"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc/credentials"
+	"log"
+	"os"
+	"strings"
+	"time"
 
-    "github.com/zeebe-io/zeebe/clients/go/internal/pb"
-    "github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-    "github.com/zeebe-io/zeebe/clients/go/pkg/worker"
-    "google.golang.org/grpc"
+	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
+	"google.golang.org/grpc"
 )
 
 const DefaultRequestTimeout = 15 * time.Second
