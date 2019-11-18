@@ -253,7 +253,7 @@ export const AddButtonsTD = styled(EditButtonsTD)`
 `;
 
 export const EditInputTD = styled.td`
-  padding: 3px 9px;
+  padding: 3px 9px 4px 9px;
   position: relative;
 
   &:not(:nth-child(2)) {
