@@ -15,11 +15,11 @@
 package commands
 
 import (
-    "context"
-    "github.com/zeebe-io/zeebe/clients/go/internal/pb"
-    "github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-    "io"
-    "time"
+	"context"
+	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+	"io"
+	"time"
 )
 
 const (

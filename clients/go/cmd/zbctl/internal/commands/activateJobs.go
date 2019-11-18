@@ -16,7 +16,7 @@ package commands
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go/commands"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
 	"log"
 	"time"
 )

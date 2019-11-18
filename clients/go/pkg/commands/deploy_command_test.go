@@ -29,11 +29,11 @@ func TestDeployCommand_AddResourceFile(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../java/src/test/resources/workflows/demo-process.bpmn"
+	demoName := "../../../java/src/test/resources/workflows/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
-	anotherName := "../../java/src/test/resources/workflows/another-demo-process.bpmn"
+	anotherName := "../../../java/src/test/resources/workflows/another-demo-process.bpmn"
 	anotherBytes := readBytes(t, anotherName)
-	yamlName := "../../java/src/test/resources/workflows/simple-workflow.yaml"
+	yamlName := "../../../java/src/test/resources/workflows/simple-workflow.yaml"
 	yamlBytes := readBytes(t, yamlName)
 
 	request := &pb.DeployWorkflowRequest{
@@ -82,7 +82,7 @@ func TestDeployCommand_AddResource(t *testing.T) {
 
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
-	demoName := "../../java/src/test/resources/workflows/demo-process.bpmn"
+	demoName := "../../../java/src/test/resources/workflows/demo-process.bpmn"
 	demoBytes := readBytes(t, demoName)
 
 	request := &pb.DeployWorkflowRequest{
