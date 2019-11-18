@@ -84,39 +84,34 @@ public class EngineImportScheduler extends Thread {
     scheduleCurrentImportRound(currentImportRound);
   }
 
-
   public void scheduleNextRound() {
     List<EngineImportMediator> currentImportRound = obtainActiveMediators();
     if (nothingToBeImported(currentImportRound)) {
-      if (hasNoActiveImportJobs()) {
+      this.isImporting = false;
+      if (!hasActiveImportJobs()) {
         notifyThatImportIsIdle();
       }
       doBackoff();
     } else {
+      this.isImporting = true;
       notifyThatImportIsInProgress();
       scheduleCurrentImportRound(currentImportRound);
     }
   }
 
-  private boolean hasNoActiveImportJobs() {
+  private boolean hasActiveImportJobs() {
     return importMediators
       .stream()
       .map(EngineImportMediator::getImportJobExecutor)
-      .noneMatch(ImportJobExecutor::isActive);
+      .anyMatch(ImportJobExecutor::isActive);
   }
 
   private void notifyThatImportIsInProgress() {
-    if (!this.isImporting) {
-      this.isImporting = true;
-      importObservers.forEach(o -> o.importInProgress(engineAlias));
-    }
+    importObservers.forEach(o -> o.importInProgress(engineAlias));
   }
 
   private void notifyThatImportIsIdle() {
-    if (this.isImporting) {
-      this.isImporting = false;
-      importObservers.forEach(o -> o.importIsIdle(engineAlias));
-    }
+    importObservers.forEach(o -> o.importIsIdle(engineAlias));
   }
 
   private boolean nothingToBeImported(List currentImportRound) {
@@ -164,7 +159,7 @@ public class EngineImportScheduler extends Thread {
   }
 
   public boolean isImporting() {
-    return isImporting;
+    return isImporting || hasActiveImportJobs();
   }
 
   public List<EngineImportMediator> getImportMediators() {
