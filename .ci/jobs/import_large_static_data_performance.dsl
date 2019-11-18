@@ -14,11 +14,11 @@ pipelineJob('import-performance-large-static-dataset') {
     stringParam('BRANCH', 'master', 'Branch to use for performance tests.')
 
     choiceParam('SQL_DUMP', ['optimize_large_data-performance.sqlc', 'optimize_large_data-stage.sqlc'])
-    stringParam('EXPECTED_NUMBER_OF_PROCESS_INSTANCES', '10000003', '')
-    stringParam('EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES', '86804688', '')
-    stringParam('EXPECTED_NUMBER_OF_USER_TASKS', '8718336', '')
-    stringParam('EXPECTED_NUMBER_OF_VARIABLES', '82921230', '')
-    stringParam('EXPECTED_NUMBER_OF_DECISION_INSTANCES', '3043480', '')
+    stringParam('EXPECTED_NUMBER_OF_PROCESS_INSTANCES', '10000000', '')
+    stringParam('EXPECTED_NUMBER_OF_ACTIVITY_INSTANCES', '119091240', '')
+    stringParam('EXPECTED_NUMBER_OF_USER_TASKS', '9422960', '')
+    stringParam('EXPECTED_NUMBER_OF_VARIABLES', '110733240', '')
+    stringParam('EXPECTED_NUMBER_OF_DECISION_INSTANCES', '3043474', '')
   }
 
   triggers {
