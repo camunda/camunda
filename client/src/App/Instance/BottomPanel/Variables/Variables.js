@@ -157,7 +157,9 @@ export default function Variables({
                   hasActiveOperation={hasActiveOperation}
                 >
                   <Styled.TD isBold={true}>
-                    <Styled.VariableName>{name}</Styled.VariableName>
+                    <Styled.VariableName title={name}>
+                      {name}
+                    </Styled.VariableName>
                   </Styled.TD>
                   {key === name && editMode === MODE.EDIT && isRunning ? (
                     renderInlineEdit(propValue, name)

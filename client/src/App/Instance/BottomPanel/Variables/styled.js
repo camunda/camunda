@@ -137,10 +137,9 @@ export const TR = themed(styled.tr`
   }
 
   > td:first-child {
-    overflow-x: auto;
-    max-width: 200px;
-    min-width: 200px;
-    width: 200px;
+    max-width: 226px;
+    min-width: 226px;
+    width: 226px;
   }
 
   ${({hasActiveOperation}) =>
@@ -170,16 +169,18 @@ export const THead = themed(styled.thead`
       padding-top: 21px;
     }
     > th:first-child {
-      min-width: 200px;
+      min-width: 226px;
     }
   }
 `);
 
 export const VariableName = styled.span`
   height: 100%;
-  display: flex;
-  overflow-x: auto;
   padding-top: 5px;
+
+  display: block;
+  text-overflow: ellipsis;
+  overflow: hidden;
 `;
 
 export const VariablesFooter = styled(Panel.Footer)`
