@@ -30,7 +30,7 @@
     <camunda.engine.version>7.11.0</camunda.engine.version>
     <camunda.model.version>7.11.0</camunda.model.version>
 
-    <surefire-plugin.version>3.0.0-M3</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0-M4</surefire-plugin.version>
 
     <jackson.version>2.9.10.20191020</jackson.version>
     <jsonpath.version>2.4.0</jsonpath.version>
