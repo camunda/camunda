@@ -48,6 +48,8 @@ public class OutgoingRequest {
 
   private boolean isTimedout;
 
+  private IncomingResponse lastResponse;
+
   public OutgoingRequest(
       Supplier<RemoteAddress> remoteAddressSupplier,
       Predicate<DirectBuffer> retryPredicate,
@@ -73,24 +75,34 @@ public class OutgoingRequest {
     if (responseFuture.isDone()) {
       return true;
     } else if (!retryPredicate.test(data)) {
-      try {
-        final RemoteAddress remoteAddress = remotesTried.peekFirst();
-        final ClientResponseImpl response = new ClientResponseImpl(incomingResponse, remoteAddress);
-        responseFuture.complete(response);
-      } catch (Exception e) {
-        LOG.debug("Could not complete request future", e);
-      }
+      completeFuture(incomingResponse);
 
       return true;
     } else {
       // should retry
+      lastResponse = incomingResponse;
       return false;
+    }
+  }
+
+  private void completeFuture(IncomingResponse incomingResponse) {
+    try {
+      final RemoteAddress remoteAddress = remotesTried.peekFirst();
+      final ClientResponseImpl response = new ClientResponseImpl(incomingResponse, remoteAddress);
+      responseFuture.complete(response);
+    } catch (Exception e) {
+      LOG.debug("Could not complete request future", e);
     }
   }
 
   public void fail(Throwable throwable) {
     try {
-      responseFuture.completeExceptionally(throwable);
+      if (lastResponse != null) {
+        LOG.warn("Suppressing throwable", throwable);
+        completeFuture(lastResponse);
+      } else {
+        responseFuture.completeExceptionally(throwable);
+      }
     } catch (Exception e) {
       LOG.debug("Could not complete request future exceptionally", e);
     }

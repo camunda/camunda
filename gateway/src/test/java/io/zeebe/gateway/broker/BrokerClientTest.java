@@ -49,6 +49,7 @@ import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.TransportListener;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -170,6 +171,30 @@ public class BrokerClientTest {
           assertThat(request.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_CREATION);
           assertThat(request.intent()).isEqualTo(WorkflowInstanceCreationIntent.CREATE);
         });
+  }
+
+  @Test
+  public void shouldReturnResourceExhaustedAfterRetryTimeout() {
+    // given
+    broker
+        .onExecuteCommandRequest(
+            ValueType.WORKFLOW_INSTANCE_CREATION, WorkflowInstanceCreationIntent.CREATE)
+        .respondWithError()
+        .errorCode(ErrorCode.RESOURCE_EXHAUSTED)
+        .errorData("test")
+        .register();
+
+    final BrokerResponse<WorkflowInstanceCreationRecord> response =
+        client.sendRequest(new BrokerCreateWorkflowInstanceRequest(), Duration.ofMillis(1)).join();
+
+    // then
+    final List<ExecuteCommandRequest> receivedCommandRequests = broker.getReceivedCommandRequests();
+    assertThat(receivedCommandRequests).hasSizeGreaterThan(1);
+
+    assertThat(response.isError()).isTrue();
+    final BrokerError error = response.getError();
+    assertThat(error.getCode()).isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
+    assertThat(error.getMessage()).isEqualTo("test");
   }
 
   @Test
