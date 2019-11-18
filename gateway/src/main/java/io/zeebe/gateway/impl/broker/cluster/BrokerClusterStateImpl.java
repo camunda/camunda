@@ -19,6 +19,7 @@ import org.agrona.collections.IntArrayList;
 public class BrokerClusterStateImpl implements BrokerClusterState {
 
   private final Int2IntHashMap partitionLeaders;
+  private final Int2ObjectHashMap<Long> partitionLeaderTerms;
   private final Int2ObjectHashMap<List<Integer>> partitionFollowers;
   private final Int2ObjectHashMap<String> brokerAddresses;
   private final IntArrayList brokers;
@@ -32,6 +33,7 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
     this();
     if (topology != null) {
       partitionLeaders.putAll(topology.partitionLeaders);
+      partitionLeaderTerms.putAll(topology.partitionLeaderTerms);
       partitionFollowers.putAll(topology.partitionFollowers);
       brokerAddresses.putAll(topology.brokerAddresses);
 
@@ -46,6 +48,7 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
 
   public BrokerClusterStateImpl() {
     partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
+    partitionLeaderTerms = new Int2ObjectHashMap<>();
     partitionFollowers = new Int2ObjectHashMap<>();
     brokerAddresses = new Int2ObjectHashMap<>();
     brokers = new IntArrayList(5, NODE_ID_NULL);
@@ -53,11 +56,14 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
     randomBroker = new Random();
   }
 
-  public void setPartitionLeader(int partitionId, int leaderId) {
-    partitionLeaders.put(partitionId, leaderId);
-    final List<Integer> followers = partitionFollowers.get(partitionId);
-    if (followers != null) {
-      followers.removeIf(follower -> follower == leaderId);
+  public void setPartitionLeader(int partitionId, int leaderId, long term) {
+    if (partitionLeaderTerms.getOrDefault(partitionId, -1L) < term) {
+      partitionLeaders.put(partitionId, leaderId);
+      partitionLeaderTerms.put(partitionId, Long.valueOf(term));
+      final List<Integer> followers = partitionFollowers.get(partitionId);
+      if (followers != null) {
+        followers.removeIf(follower -> follower == leaderId);
+      }
     }
   }
 

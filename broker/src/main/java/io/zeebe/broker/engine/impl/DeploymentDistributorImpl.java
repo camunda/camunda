@@ -10,7 +10,6 @@ package io.zeebe.broker.engine.impl;
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequest;
@@ -32,7 +31,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Int2IntHashMap;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -161,16 +160,15 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
 
   private IntArrayList distributeDeploymentToPartitions(
       final IntArrayList remainingPartitions, final PushDeploymentRequest pushRequest) {
-    final Int2ObjectHashMap<NodeInfo> currentPartitionLeaders =
-        partitionListener.getPartitionLeaders();
+    final Int2IntHashMap currentPartitionLeaders = partitionListener.getPartitionLeaders();
 
     final Iterator<Integer> iterator = remainingPartitions.iterator();
     while (iterator.hasNext()) {
       final Integer partitionId = iterator.next();
-      final NodeInfo leader = currentPartitionLeaders.get(partitionId);
-      if (leader != null) {
+      if (currentPartitionLeaders.containsKey(partitionId)) {
+        final int leader = currentPartitionLeaders.get(partitionId);
         iterator.remove();
-        pushDeploymentToPartition(leader.getNodeId(), partitionId, pushRequest);
+        pushDeploymentToPartition(leader, partitionId, pushRequest);
       }
     }
     return remainingPartitions;
@@ -276,11 +274,9 @@ public class DeploymentDistributorImpl implements DeploymentDistributor {
     actor.runDelayed(
         RETRY_DELAY,
         () -> {
-          final Int2ObjectHashMap<NodeInfo> partitionLeaders =
-              partitionListener.getPartitionLeaders();
-          final NodeInfo currentLeader = partitionLeaders.get(partition);
-          if (currentLeader != null) {
-            pushDeploymentToPartition(currentLeader.getNodeId(), partition, pushRequest);
+          final Int2IntHashMap partitionLeaders = partitionListener.getPartitionLeaders();
+          if (partitionLeaders.containsKey(partition)) {
+            pushDeploymentToPartition(partitionLeaders.get(partition), partition, pushRequest);
           } else {
             pushDeploymentToPartition(partitionLeaderId, partition, pushRequest);
           }

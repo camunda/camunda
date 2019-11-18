@@ -182,17 +182,17 @@ public class PartitionInstallService extends Actor
   }
 
   @Override
-  public void onTransitionToFollower(int partitionId) {
+  public void onTransitionToFollower(int partitionId, long term) {
     actor.call(
         () -> {
           final CompletableActorFuture<Void> nextTransitionFuture = new CompletableActorFuture<>();
           if (transitionFuture != null && !transitionFuture.isDone()) {
             // wait until previous transition is complete
             actor.runOnCompletion(
-                transitionFuture, (r, e) -> transitionToFollower(nextTransitionFuture));
+                transitionFuture, (r, e) -> transitionToFollower(nextTransitionFuture, term));
 
           } else {
-            transitionToFollower(nextTransitionFuture);
+            transitionToFollower(nextTransitionFuture, term);
           }
           transitionFuture = nextTransitionFuture;
         });
@@ -215,12 +215,13 @@ public class PartitionInstallService extends Actor
         });
   }
 
-  private void transitionToFollower(CompletableActorFuture<Void> transitionComplete) {
+  private void transitionToFollower(CompletableActorFuture<Void> transitionComplete, long term) {
     actor.runOnCompletion(
         removeLeaderPartitionService(),
         (nothing, error) ->
             actor.runOnCompletion(
-                installFollowerPartition(), (partition, err) -> transitionComplete.complete(null)));
+                installFollowerPartition(term),
+                (partition, err) -> transitionComplete.complete(null)));
   }
 
   private ActorFuture<Void> removeLeaderPartitionService() {
@@ -239,6 +240,7 @@ public class PartitionInstallService extends Actor
             clusterEventService,
             partitionId,
             RaftState.LEADER,
+            leaderTerm,
             restoreServer);
 
     final CompositeServiceBuilder leaderInstallService =
@@ -327,7 +329,7 @@ public class PartitionInstallService extends Actor
         .install();
   }
 
-  private ActorFuture<Partition> installFollowerPartition() {
+  private ActorFuture<Partition> installFollowerPartition(long term) {
     LOG.debug("Installing follower partition service for partition {}", partitionId);
     final BrokerRestoreServer restoreServer =
         new BrokerRestoreServer(communicationService, partitionId);
@@ -338,6 +340,7 @@ public class PartitionInstallService extends Actor
             clusterEventService,
             partitionId,
             RaftState.FOLLOWER,
+            term,
             restoreServer);
 
     return startContext

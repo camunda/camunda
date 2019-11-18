@@ -24,13 +24,13 @@ import io.zeebe.broker.clustering.base.gossip.AtomixService;
 import io.zeebe.broker.clustering.base.gossip.DistributedLogService;
 import io.zeebe.broker.clustering.base.partitions.BootstrapPartitions;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.distributedlog.impl.LogstreamConfig;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 
@@ -51,10 +51,10 @@ public class ClusterComponent implements Component {
     final CompositeServiceBuilder baseLayerInstall =
         serviceContainer.createComposite(CLUSTERING_BASE_LAYER);
 
-    final NodeInfo localMember =
-        new NodeInfo(
+    final BrokerInfo localMember =
+        new BrokerInfo(
             brokerConfig.getCluster().getNodeId(),
-            networkCfg.getCommandApi().getAdvertisedAddress());
+            networkCfg.getCommandApi().getAdvertisedAddress().toString());
 
     /* A hack so that DistributedLogstream primitive can create logstream services using this serviceContainer */
     LogstreamConfig.putServiceContainer(

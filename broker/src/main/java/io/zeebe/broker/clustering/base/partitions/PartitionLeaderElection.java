@@ -56,11 +56,6 @@ public class PartitionLeaderElection extends Actor
   }
 
   @Override
-  public String getName() {
-    return "partition-" + partitionId + "-leader-election";
-  }
-
-  @Override
   public void stop(ServiceStopContext stopContext) {
     partition.removeRoleChangeListener(this);
     actor.close();
@@ -69,6 +64,11 @@ public class PartitionLeaderElection extends Actor
   @Override
   public PartitionLeaderElection get() {
     return this;
+  }
+
+  @Override
+  public String getName() {
+    return "partition-" + partitionId + "-leader-election";
   }
 
   @Override
@@ -97,7 +97,7 @@ public class PartitionLeaderElection extends Actor
       case FOLLOWER:
       default:
         if (raftRole == null || raftRole == Role.LEADER) {
-          transitionToFollower();
+          transitionToFollower(partition.term());
         }
         break;
     }
@@ -106,8 +106,8 @@ public class PartitionLeaderElection extends Actor
     raftRole = newRole;
   }
 
-  private void transitionToFollower() {
-    leaderElectionListeners.forEach(l -> l.onTransitionToFollower(partitionId));
+  private void transitionToFollower(long term) {
+    leaderElectionListeners.forEach(l -> l.onTransitionToFollower(partitionId, term));
   }
 
   private void transitionToLeader(long term) {
@@ -134,7 +134,7 @@ public class PartitionLeaderElection extends Actor
           if (raftRole == Role.LEADER) {
             listener.onTransitionToLeader(partitionId, leaderTerm);
           } else {
-            listener.onTransitionToFollower(partitionId);
+            listener.onTransitionToFollower(partitionId, partition.term());
           }
         });
   }

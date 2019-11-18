@@ -9,7 +9,7 @@ package io.zeebe.broker.clustering.base.partitions;
 
 public interface PartitionRoleChangeListener {
   /* when this node becomes a follower for partition partitionId*/
-  void onTransitionToFollower(int partitionId);
+  void onTransitionToFollower(int partitionId, long term);
 
   /* when this node becomes the leader for partition partitionId in term leaderTerm */
   void onTransitionToLeader(int partitionId, long leaderTerm);

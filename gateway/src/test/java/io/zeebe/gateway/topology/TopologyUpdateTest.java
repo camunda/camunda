@@ -71,6 +71,48 @@ public class TopologyUpdateTest {
     assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isFalse();
   }
 
+  @Test
+  public void shouldUpdateLeaderWithNewTerm() {
+    // given
+    final int oldLeaderId = 0;
+    final BrokerInfo oldLeader = createBroker(oldLeaderId);
+    oldLeader.setLeaderForPartition(1, 1);
+    topologyManager.event(createMemberAddedEvent(oldLeader));
+    waitUntil(() -> topologyManager.getTopology() != null);
+    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(oldLeaderId);
+
+    // when
+    final int newLeaderId = 1;
+    final BrokerInfo newLeader = createBroker(newLeaderId);
+    newLeader.setLeaderForPartition(1, 2);
+    topologyManager.event(createMemberAddedEvent(newLeader));
+
+    // then
+    waitUntil(() -> topologyManager.getTopology().getBrokers().contains(newLeaderId));
+    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(newLeaderId);
+  }
+
+  @Test
+  public void shouldNotUpdateLeaderWhenPreviousTerm() {
+    // given
+    final int newLeaderId = 1;
+    final BrokerInfo newLeader = createBroker(newLeaderId);
+    newLeader.setLeaderForPartition(1, 2);
+    topologyManager.event(createMemberAddedEvent(newLeader));
+    waitUntil(() -> topologyManager.getTopology() != null);
+    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(newLeaderId);
+
+    // when
+    final int oldLeaderId = 0;
+    final BrokerInfo oldLeader = createBroker(oldLeaderId);
+    oldLeader.setLeaderForPartition(1, 1);
+    topologyManager.event(createMemberAddedEvent(oldLeader));
+
+    // then
+    waitUntil(() -> topologyManager.getTopology().getBrokers().contains(oldLeaderId));
+    assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(newLeaderId);
+  }
+
   private BrokerInfo createBroker(int brokerId) {
     final BrokerInfo broker =
         new BrokerInfo()

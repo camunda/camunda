@@ -26,7 +26,7 @@ public class StubbedTopologyManager implements BrokerTopologyManager {
     clusterState.addBrokerIfAbsent(0);
     clusterState.setBrokerAddressIfPresent(0, "localhost:26501");
     for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
-      clusterState.setPartitionLeader(START_PARTITION_ID + partitionOffset, 0);
+      clusterState.setPartitionLeader(START_PARTITION_ID + partitionOffset, 0, 1);
       clusterState.addPartitionIfAbsent(START_PARTITION_ID + partitionOffset);
     }
     clusterState.setPartitionsCount(partitionsCount);
