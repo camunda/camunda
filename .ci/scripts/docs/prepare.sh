@@ -1,7 +1,7 @@
 #!/bin/sh -eux
 
 apt-get update
-apt-get install -y curl rsync openssh-client python3
+apt-get install -y curl rsync openssh-client python3 git
 
 MDBOOK_VERSION="v0.3.4"
 LINKCHECK_VERSION="v0.5.0"
