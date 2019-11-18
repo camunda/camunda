@@ -27,16 +27,12 @@ public class WorkflowInstanceReaderIT extends OperateZeebeIntegrationTest {
   @Autowired
   ActivityInstanceReader activityInstanceReader;
 
-  @Rule
-  public OperateTester tester = new OperateTester();
-
   private Long workflowInstanceKey;
 
   private Random random = new Random();
 
   @Before
   public void setUp() {
-    tester.setZeebeClient(getClient());
     // Given
     workflowInstanceKey = tester.deployWorkflow("demoProcess_v_1.bpmn").waitUntil().workflowIsDeployed()
         .startWorkflowInstance("demoProcess", "{\"a\": \"b\"}")

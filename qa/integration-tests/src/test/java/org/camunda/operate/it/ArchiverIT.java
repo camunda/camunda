@@ -96,9 +96,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
   private DateTimeFormatter dateTimeFormatter;
 
-  @Rule
-  public OperateTester tester = new OperateTester();
-  
   @Before
   public void before() {
     super.before();

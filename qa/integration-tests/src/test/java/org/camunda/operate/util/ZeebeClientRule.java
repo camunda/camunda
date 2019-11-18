@@ -6,11 +6,8 @@
 package org.camunda.operate.util;
 
 import io.zeebe.client.api.command.ClientException;
-import io.zeebe.client.api.response.PartitionInfo;
 import io.zeebe.client.api.response.Topology;
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
@@ -65,18 +62,6 @@ public class ZeebeClientRule extends ExternalResource {
 
   public ZeebeClient getClient() {
     return client;
-  }
-
-  public List<Integer> getPartitions() {
-    final Topology topology = client.newTopologyRequest().send().join();
-
-    return topology
-      .getBrokers()
-      .stream()
-      .flatMap(i -> i.getPartitions().stream())
-      .filter(PartitionInfo::isLeader)
-      .map(PartitionInfo::getPartitionId)
-      .collect(Collectors.toList());
   }
 
 }

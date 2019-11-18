@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
@@ -29,6 +30,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.internal.util.reflection.FieldSetter;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -52,6 +54,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
   
   protected ZeebeClient zeebeClient;
+
+  @Autowired
+  public BeanFactory beanFactory;
 
   @Rule
   public final OperateZeebeRule zeebeRule;
@@ -142,6 +147,8 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected OperationExecutor operationExecutor;
   @Autowired
   private MeterRegistry meterRegistry;
+
+  protected OperateTester tester;
 
   @Before
   public void before() {

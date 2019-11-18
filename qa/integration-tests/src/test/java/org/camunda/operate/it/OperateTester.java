@@ -5,9 +5,6 @@
  */
 package org.camunda.operate.it;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -17,38 +14,45 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
-
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.archiver.Archiver;
 import org.camunda.operate.archiver.ArchiverJob;
-import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.archiver.ArchiverJob.ArchiveBatch;
+import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.exceptions.ReindexException;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
-
+import org.camunda.operate.zeebeimport.ZeebeImporter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-
 import static org.camunda.operate.util.ThreadUtil.sleepFor;
+import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@Component
+@Scope(SCOPE_PROTOTYPE)
+public class OperateTester {
 
-public class OperateTester extends ElasticsearchTestRule{
+  protected static final Logger logger = LoggerFactory.getLogger(OperateTester.class);
 
   private ZeebeClient zeebeClient;
   private MockMvcTestRule mockMvcTestRule;
