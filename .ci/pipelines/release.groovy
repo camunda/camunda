@@ -33,15 +33,18 @@ void runRelease(params) {
 
   if (!params.PUSH_CHANGES) {
     pushChanges = 'false'
-    skipDeploy='true'
+    skipDeploy = 'true'
   }
-
-  sh ("""
+  configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+    sh("""
     mvn release:prepare release:perform -P -docker -DpushChanges=${pushChanges} -DlocalCheckout=true -DskipTests=true -B -T\$LIMITS_CPU --fail-at-end \
-      -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --settings=settings.xml \
-      -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${params.DEVELOPMENT_VERSION} \
-      '-Darguments=--settings=settings.xml -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=${skipDeploy} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
+      -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn --settings=\$MAVEN_SETTINGS_XML \
+      -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${
+      params.DEVELOPMENT_VERSION
+    } \
+      '-Darguments=--settings=\$MAVEN_SETTINGS_XML -P -docker -DskipTests=true -DskipNexusStagingDeployMojo=${skipDeploy} -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn'
   """)
+  }
 }
 
 def githubRelease = '''\

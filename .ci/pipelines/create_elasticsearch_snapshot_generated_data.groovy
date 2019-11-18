@@ -184,17 +184,21 @@ pipeline {
             poll: false
         container('maven') {
             // Compile Operate and skip tests
-            sh ("mvn -B -s settings.xml -DskipTests -P skipFrontendBuild clean install")
+          configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+            sh ('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -P skipFrontendBuild clean install')
+          }
         }
       }
     }
     stage('Data Generation') {
       steps {
         container('maven') {
+          configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
             // Compile QA
-            sh ("mvn -B -s settings.xml -f qa -DskipTests clean install")
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
             // Generate Data
-            sh ("mvn -B -s settings.xml -f qa/data-generator spring-boot:run")
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/data-generator spring-boot:run')
+          }
         }
       }
     }

@@ -190,9 +190,11 @@ pipeline {
                 poll: false
             container('maven') {
               // Compile Operate and skip tests
-              sh ("mvn -B -s settings.xml -DskipTests -P skipFrontendBuild clean install")
-              // Compile QA
-              sh ("mvn -B -s settings.xml -f qa -DskipTests clean install")
+              configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -P skipFrontendBuild clean install')
+                // Compile QA
+                sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
+              }
             }
           }
         }
@@ -219,7 +221,9 @@ pipeline {
     stage('Run performance tests') {
       steps {
         container('maven') {
-          sh ("mvn -B -s settings.xml -f qa/query-performance-tests -P -docker verify")
+          configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+            sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa/query-performance-tests -P -docker verify')
+          }
         }
       }
       post {
