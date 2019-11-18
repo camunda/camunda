@@ -214,7 +214,7 @@ export const TextInput = styled(BasicInput)`
 export const DisplayText = styled.div`
   padding: 4px 0px;
   max-height: 80px;
-  max-width: 27vw;
+  word-break: break-word;
 
   overflow-y: auto;
   overflow-wrap: break-word;
