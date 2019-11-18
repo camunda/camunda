@@ -107,6 +107,7 @@ export default function Variables({
     const variableAlreadyExists =
       !!variables.map(variable => variable.name).filter(name => name === key)
         .length > 0;
+    const isVariableEmpty = key.trim() === '';
     return (
       <Styled.TR data-test="add-key-row">
         <Styled.EditInputTD>
@@ -129,7 +130,7 @@ export default function Variables({
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
           {renderEditButtons({
-            isDisabled: variableAlreadyExists
+            isDisabled: variableAlreadyExists || isVariableEmpty
           })}
         </Styled.AddButtonsTD>
       </Styled.TR>
