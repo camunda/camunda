@@ -7,27 +7,23 @@
  */
 package io.zeebe.engine.processor.workflow.handlers.container;
 
-import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.workflow.BpmnStepContext;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletedHandler;
-import io.zeebe.engine.state.instance.AwaitWorkflowInstanceResultMetadata;
-import io.zeebe.engine.state.instance.VariablesState;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceResultRecord;
-import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceResultIntent;
-import java.util.HashSet;
-import java.util.Set;
-import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import java.util.List;
 
 public class ProcessCompletedHandler
     extends ElementCompletedHandler<ExecutableFlowElementContainer> {
 
+  private final List<WorkflowPostProcessor> postProcessors;
+
+  public ProcessCompletedHandler(final List<WorkflowPostProcessor> postProcessors) {
+    this.postProcessors = postProcessors;
+  }
+
   @Override
-  protected boolean handleState(BpmnStepContext<ExecutableFlowElementContainer> context) {
+  protected boolean handleState(final BpmnStepContext<ExecutableFlowElementContainer> context) {
 
     final var record = context.getValue();
     final var parentWorkflowInstanceKey = record.getParentWorkflowInstanceKey();
@@ -55,66 +51,10 @@ public class ProcessCompletedHandler
         final var variables = variablesState.getVariablesAsDocument(context.getKey());
         variablesState.setTemporaryVariables(parentElementInstanceKey, variables);
       }
-    } else {
-      sendProcessCompletedResult(context);
     }
+
+    postProcessors.forEach(p -> p.accept(context));
 
     return super.handleState(context);
-  }
-
-  private void sendProcessCompletedResult(BpmnStepContext context) {
-
-    final long elementInstanceKey = context.getElementInstance().getKey();
-    final AwaitWorkflowInstanceResultMetadata requestMetadata =
-        context.getElementInstanceState().getAwaitResultRequestMetadata(elementInstanceKey);
-    if (requestMetadata != null) {
-      final DirectBuffer variablesAsDocument =
-          collectVariables(
-              context.getElementInstanceState().getVariablesState(),
-              requestMetadata,
-              elementInstanceKey);
-
-      final WorkflowInstanceResultRecord resultRecord = new WorkflowInstanceResultRecord();
-      resultRecord
-          .setWorkflowInstanceKey(context.getValue().getWorkflowInstanceKey())
-          .setWorkflowKey(context.getValue().getWorkflowKey())
-          .setVariables(variablesAsDocument)
-          .setBpmnProcessId(context.getValue().getBpmnProcessId())
-          .setVersion(context.getValue().getVersion());
-
-      final TypedResponseWriter responseWriter = context.getOutput().getResponseWriter();
-      responseWriter.writeResponse(
-          context.getKey(),
-          WorkflowInstanceResultIntent.COMPLETED,
-          resultRecord,
-          ValueType.WORKFLOW_INSTANCE_RESULT,
-          requestMetadata.getRequestId(),
-          requestMetadata.getRequestStreamId());
-
-      context.getSideEffect().add(responseWriter::flush);
-    }
-  }
-
-  private DirectBuffer collectVariables(
-      VariablesState variablesState,
-      AwaitWorkflowInstanceResultMetadata requestMetadata,
-      long elementInstanceKey) {
-
-    final Set<DirectBuffer> variablesToCollect = new HashSet<>();
-    if (requestMetadata.fetchVariables().iterator().hasNext()) {
-      requestMetadata
-          .fetchVariables()
-          .forEach(
-              variable -> {
-                final MutableDirectBuffer nameCopy =
-                    new UnsafeBuffer(new byte[variable.getValue().capacity()]);
-                nameCopy.putBytes(0, variable.getValue(), 0, variable.getValue().capacity());
-                variablesToCollect.add(nameCopy);
-              });
-
-      return variablesState.getVariablesAsDocument(elementInstanceKey, variablesToCollect);
-    } else {
-      return variablesState.getVariablesAsDocument(elementInstanceKey);
-    }
   }
 }

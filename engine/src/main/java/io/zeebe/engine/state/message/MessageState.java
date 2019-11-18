@@ -73,7 +73,24 @@ public class MessageState {
   private final DbString bpmnProcessIdKey;
   private final ColumnFamily<DbCompositeKey<DbLong, DbString>, DbNil> correlatedMessageColumnFamily;
 
-  public MessageState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  /**
+   * <pre> bpmn process id | correlation key -> []
+   *
+   * check if a workflow instance is created by this correlation key */
+  private final DbCompositeKey<DbString, DbString> bpmnProcessIdCorrelationKey;
+
+  private final ColumnFamily<DbCompositeKey<DbString, DbString>, DbNil>
+      activeWorkflowInstancesByCorrelationKeyColumnFamiliy;
+
+  /**
+   * <pre> workflow instance key -> correlation key
+   *
+   * get correlation key by workflow instance key */
+  private final DbLong workflowInstanceKey;
+
+  private final ColumnFamily<DbLong, DbString> workflowInstanceCorrelationKeyColumnFamiliy;
+
+  public MessageState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     messageKey = new DbLong();
     message = new Message();
     messageColumnFamily =
@@ -107,6 +124,22 @@ public class MessageState {
             dbContext,
             messageBpmnProcessIdKey,
             DbNil.INSTANCE);
+
+    bpmnProcessIdCorrelationKey = new DbCompositeKey<>(bpmnProcessIdKey, correlationKey);
+    activeWorkflowInstancesByCorrelationKeyColumnFamiliy =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_WORKFLOWS_ACTIVE_BY_CORRELATION_KEY,
+            dbContext,
+            bpmnProcessIdCorrelationKey,
+            DbNil.INSTANCE);
+
+    workflowInstanceKey = new DbLong();
+    workflowInstanceCorrelationKeyColumnFamiliy =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.MESSAGE_WORKFLOW_INSTANCE_CORRELATION_KEYS,
+            dbContext,
+            workflowInstanceKey,
+            correlationKey);
   }
 
   public void put(final Message message) {
@@ -127,7 +160,7 @@ public class MessageState {
     }
   }
 
-  public void putMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId) {
+  public void putMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
 
@@ -136,7 +169,7 @@ public class MessageState {
     correlatedMessageColumnFamily.put(messageBpmnProcessIdKey, DbNil.INSTANCE);
   }
 
-  public boolean existMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId) {
+  public boolean existMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
 
@@ -146,7 +179,7 @@ public class MessageState {
     return correlatedMessageColumnFamily.exists(messageBpmnProcessIdKey);
   }
 
-  public void removeMessageCorrelation(long messageKey, DirectBuffer bpmnProcessId) {
+  public void removeMessageCorrelation(final long messageKey, final DirectBuffer bpmnProcessId) {
     ensureGreaterThan("message key", messageKey, 0);
     ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
 
@@ -154,6 +187,64 @@ public class MessageState {
     bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
 
     correlatedMessageColumnFamily.delete(messageBpmnProcessIdKey);
+  }
+
+  public boolean existActiveWorkflowInstance(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    return activeWorkflowInstancesByCorrelationKeyColumnFamiliy.exists(bpmnProcessIdCorrelationKey);
+  }
+
+  public void putActiveWorkflowInstance(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    activeWorkflowInstancesByCorrelationKeyColumnFamiliy.put(
+        bpmnProcessIdCorrelationKey, DbNil.INSTANCE);
+  }
+
+  public void removeActiveWorkflowInstance(
+      final DirectBuffer bpmnProcessId, final DirectBuffer correlationKey) {
+    ensureNotNullOrEmpty("BPMN process id", bpmnProcessId);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    bpmnProcessIdKey.wrapBuffer(bpmnProcessId);
+    this.correlationKey.wrapBuffer(correlationKey);
+    activeWorkflowInstancesByCorrelationKeyColumnFamiliy.delete(bpmnProcessIdCorrelationKey);
+  }
+
+  public void putWorkflowInstanceCorrelationKey(
+      final long workflowInstanceKey, final DirectBuffer correlationKey) {
+    ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
+    ensureNotNullOrEmpty("correlation key", correlationKey);
+
+    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
+    this.correlationKey.wrapBuffer(correlationKey);
+    workflowInstanceCorrelationKeyColumnFamiliy.put(this.workflowInstanceKey, this.correlationKey);
+  }
+
+  public DirectBuffer getWorkflowInstanceCorrelationKey(final long workflowInstanceKey) {
+    ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
+
+    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
+    final var correlationKey =
+        workflowInstanceCorrelationKeyColumnFamiliy.get(this.workflowInstanceKey);
+
+    return correlationKey != null ? correlationKey.getBuffer() : null;
+  }
+
+  public void removeWorkflowInstanceCorrelationKey(final long workflowInstanceKey) {
+    ensureGreaterThan("workflow instance key", workflowInstanceKey, 0);
+
+    this.workflowInstanceKey.wrapLong(workflowInstanceKey);
+    workflowInstanceCorrelationKeyColumnFamiliy.delete(this.workflowInstanceKey);
   }
 
   public void visitMessages(
@@ -171,12 +262,12 @@ public class MessageState {
         });
   }
 
-  public Message getMessage(long messageKey) {
+  public Message getMessage(final long messageKey) {
     this.messageKey.wrapLong(messageKey);
     return messageColumnFamily.get(this.messageKey);
   }
 
-  public void visitMessagesWithDeadlineBefore(final long timestamp, MessageVisitor visitor) {
+  public void visitMessagesWithDeadlineBefore(final long timestamp, final MessageVisitor visitor) {
     deadlineColumnFamily.whileTrue(
         ((compositeKey, zbNil) -> {
           final long deadline = compositeKey.getFirst().getValue();

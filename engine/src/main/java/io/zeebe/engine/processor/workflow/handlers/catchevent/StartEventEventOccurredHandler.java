@@ -46,7 +46,7 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
     final WorkflowInstanceRecord event = context.getValue();
     final long workflowKey = event.getWorkflowKey();
     final DeployedWorkflow workflow = state.getWorkflowByKey(workflowKey);
-    final long workflowInstanceKey = keyGenerator.nextKey();
+    final long workflowInstanceKey = event.getWorkflowInstanceKey();
 
     // this should never happen because workflows are never deleted.
     if (workflow == null) {
@@ -73,6 +73,12 @@ public class StartEventEventOccurredHandler<T extends ExecutableCatchEventElemen
     deferEvent(context, workflowKey, workflowInstanceKey, record, triggeredEvent);
 
     return true;
+  }
+
+  @Override
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
+    // workflow instance key is set before but the instance is not activated yet (i.e. not in state)
+    return context.getValue().getWorkflowInstanceKey() > 0 && context.getElementInstance() == null;
   }
 
   private void createWorkflowInstance(

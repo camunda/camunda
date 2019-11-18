@@ -37,8 +37,7 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
 
   @Override
   protected boolean shouldHandleState(final BpmnStepContext<T> context) {
-    return super.shouldHandleState(context)
-        && (!hasWorkflowInstance(context) || isElementActive(context.getElementInstance()));
+    return super.shouldHandleState(context) && isElementActive(context.getElementInstance());
   }
 
   /**
@@ -137,13 +136,5 @@ public class EventOccurredHandler<T extends ExecutableFlowElement> extends Abstr
     eventRecord.setBpmnElementType(elementType);
 
     return eventRecord;
-  }
-
-  /**
-   * Timer/Message start events publish an EVENT_OCCURRED event to their respective flow elements,
-   * but these are not initially part of a workflow instance.
-   */
-  private boolean hasWorkflowInstance(final BpmnStepContext<T> context) {
-    return context.getValue().getWorkflowInstanceKey() >= 0;
   }
 }
