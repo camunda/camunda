@@ -4,12 +4,12 @@
 package mock_pb
 
 import (
-	context "context"
-	gomock "github.com/golang/mock/gomock"
-	pb "github.com/zeebe-io/zeebe/clients/go/internal/pb"
-	grpc "google.golang.org/grpc"
-	metadata "google.golang.org/grpc/metadata"
-	reflect "reflect"
+    context "context"
+    gomock "github.com/golang/mock/gomock"
+    "github.com/zeebe-io/zeebe/clients/go/internal/pb"
+    grpc "google.golang.org/grpc"
+    metadata "google.golang.org/grpc/metadata"
+    reflect "reflect"
 )
 
 // MockGatewayClient is a mock of GatewayClient interface

@@ -16,16 +16,16 @@
 package worker
 
 import (
-	"fmt"
-	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
-	"github.com/zeebe-io/zeebe/clients/go/commands"
-	"github.com/zeebe-io/zeebe/clients/go/entities"
-	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
-	"testing"
-	"time"
+    "fmt"
+    "github.com/golang/mock/gomock"
+    "github.com/golang/protobuf/proto"
+    "github.com/zeebe-io/zeebe/clients/go/commands"
+    "github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
+    "github.com/zeebe-io/zeebe/clients/go/internal/pb"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+    "github.com/zeebe-io/zeebe/clients/go/utils"
+    "testing"
+    "time"
 )
 
 // rpcMsg implements the gomock.Matcher interface

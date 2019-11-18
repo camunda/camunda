@@ -16,13 +16,13 @@
 package worker
 
 import (
-	"github.com/zeebe-io/zeebe/clients/go/commands"
-	"github.com/zeebe-io/zeebe/clients/go/entities"
-	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
-	"log"
-	"math"
-	"sync"
-	"time"
+    "github.com/zeebe-io/zeebe/clients/go/commands"
+    "github.com/zeebe-io/zeebe/clients/go/internal/pb"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+    "log"
+    "math"
+    "sync"
+    "time"
 )
 
 const (

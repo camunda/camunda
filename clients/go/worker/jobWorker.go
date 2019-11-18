@@ -17,7 +17,7 @@ package worker
 
 import (
 	"github.com/zeebe-io/zeebe/clients/go/commands"
-	"github.com/zeebe-io/zeebe/clients/go/entities"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"sync"
 )
 

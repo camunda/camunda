@@ -17,7 +17,7 @@ package worker
 
 import (
 	"github.com/stretchr/testify/assert"
-	"github.com/zeebe-io/zeebe/clients/go/entities"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"testing"
 	"time"
 )
