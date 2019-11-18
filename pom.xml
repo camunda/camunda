@@ -61,7 +61,7 @@
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
 
-    <delombok.output>${project.build.directory}/generated-sources/delombok</delombok.output>
+    <delombok.output>${project.build.directory}/delombok</delombok.output>
     <assertj.version>3.14.0</assertj.version>
   </properties>
 
