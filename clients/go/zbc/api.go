@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-	"github.com/zeebe-io/zeebe/clients/go/worker"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
 )
 
 type ZBClient interface {

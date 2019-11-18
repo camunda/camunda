@@ -16,13 +16,13 @@
 package worker
 
 import (
-    "context"
-    "github.com/zeebe-io/zeebe/clients/go/internal/pb"
-    "github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-    "io"
-    "log"
-    "sync"
-    "time"
+	"context"
+	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+	"io"
+	"log"
+	"sync"
+	"time"
 )
 
 type jobPoller struct {

@@ -26,7 +26,7 @@ import (
 
     "github.com/zeebe-io/zeebe/clients/go/internal/pb"
     "github.com/zeebe-io/zeebe/clients/go/pkg/commands"
-    "github.com/zeebe-io/zeebe/clients/go/worker"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/worker"
     "google.golang.org/grpc"
 )
 
