@@ -256,11 +256,18 @@ it('should show a note if more than one version is selected', async () => {
     <DefinitionSelection {...props} definitionKey="foo" versions={['all']} />
   );
 
-  expect(node.find('InfoMessage')).toExist();
+  expect(node.find('InfoMessage')).toMatchSnapshot();
   node.setProps({versions: ['1', '2']});
   expect(node.find('InfoMessage')).toExist();
   node.setProps({versions: ['1']});
   expect(node.find('InfoMessage')).not.toExist();
+});
+
+it('should show an info message to add sources', async () => {
+  loadDefinitions.mockReturnValueOnce([]);
+  const node = await shallow(<DefinitionSelection {...props} />);
+
+  expect(node.find('.info')).toMatchSnapshot();
 });
 
 it('should show an info message if specified by props', async () => {

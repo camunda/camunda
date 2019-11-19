@@ -624,7 +624,8 @@
       "tenant": {
         "includeData": "Daten einschließen von"
       },
-      "versionWarning": "Hinweis: Daten aus älteren Versionen können abweichen, daher können die Berichtsdaten inkonsistent sein."
+      "versionWarning": "Hinweis: Daten aus älteren Versionen können abweichen, daher können die Berichtsdaten inkonsistent sein.",
+      "noSourcesWarning": "Um die Auswahl zu aktivieren, müssen der Sammlung Datenquellen hinzugefügt werden."
     },
     "confirmationModal": {
       "title": {

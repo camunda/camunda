@@ -53,7 +53,11 @@ export default withRouter(
       const tenants = this.getAvailableTenants(key, latestVersion);
 
       this.setState({selectedSpecificVersions: latestVersion});
-      this.props.onChange(key, latestVersion, tenants.map(({id}) => id));
+      this.props.onChange(
+        key,
+        latestVersion,
+        tenants.map(({id}) => id)
+      );
     };
 
     getDefinitionObject = key => this.state.availableDefinitions.find(def => def.key === key);
@@ -173,6 +177,7 @@ export default withRouter(
 
     render() {
       const {loaded, availableDefinitions, selectedSpecificVersions} = this.state;
+      const collectionId = getCollection(this.props.location.pathname);
       const noDefinitions = !availableDefinitions || availableDefinitions.length === 0;
       const selectedKey = this.props.definitionKey;
       const versions = this.getSelectedVersions();
@@ -230,6 +235,9 @@ export default withRouter(
               <div className="info">
                 {displayVersionWarning && (
                   <InfoMessage>{t('common.definitionSelection.versionWarning')}</InfoMessage>
+                )}
+                {collectionId && noDefinitions && (
+                  <InfoMessage>{t('common.definitionSelection.noSourcesWarning')}</InfoMessage>
                 )}
                 {this.props.infoMessage && <InfoMessage>{this.props.infoMessage}</InfoMessage>}
               </div>

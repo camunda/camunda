@@ -1,0 +1,17 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show a note if more than one version is selected 1`] = `
+<InfoMessage>
+  Note: data from the older versions can deviate, therefore the report data can be inconsistent
+</InfoMessage>
+`;
+
+exports[`should show an info message to add sources 1`] = `
+<div
+  className="info"
+>
+  <InfoMessage>
+    To enable selection, Data Sources must be added to the Collection.
+  </InfoMessage>
+</div>
+`;
