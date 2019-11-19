@@ -8,10 +8,10 @@
 package io.zeebe.logstreams.state;
 
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.spi.ValidSnapshotListener;
 import java.io.File;
 import java.io.IOException;
-import org.agrona.collections.Long2LongHashMap;
+import java.util.Map;
+import org.agrona.collections.Object2LongHashMap;
 import org.slf4j.Logger;
 
 public final class ReplicationController {
@@ -21,37 +21,27 @@ public final class ReplicationController {
   private static final long START_VALUE = 0L;
   private static final long INVALID_SNAPSHOT = -1;
   private static final long MISSING_SNAPSHOT = Long.MIN_VALUE;
-  private static final ValidSnapshotListener NOOP_VALID_SNAPSHOT_LISTENER = () -> {};
 
   private final SnapshotReplication replication;
-  private final Long2LongHashMap receivedSnapshots = new Long2LongHashMap(MISSING_SNAPSHOT);
-  private final StateStorage storage;
+  private final Map<String, Long> receivedSnapshots = new Object2LongHashMap<>(MISSING_SNAPSHOT);
+  private final SnapshotStorage storage;
 
   private final SnapshotConsumer snapshotConsumer;
 
-  private final ValidSnapshotListener validSnapshotListener;
-
-  public ReplicationController(SnapshotReplication replication, StateStorage storage) {
-    this(replication, storage, NOOP_VALID_SNAPSHOT_LISTENER);
-  }
-
   public ReplicationController(
-      SnapshotReplication replication,
-      StateStorage storage,
-      ValidSnapshotListener validSnapshotListener) {
+      final SnapshotReplication replication, final SnapshotStorage storage) {
     this.replication = replication;
     this.storage = storage;
-    this.validSnapshotListener = validSnapshotListener;
     this.snapshotConsumer = new FileSnapshotConsumer(storage, LOG);
   }
 
-  public void replicate(long snapshotPosition, int totalCount, File snapshotChunkFile) {
+  public void replicate(
+      final String snapshotId, final int totalCount, final File snapshotChunkFile) {
     try {
       final SnapshotChunk chunkToReplicate =
-          SnapshotChunkUtil.createSnapshotChunkFromFile(
-              snapshotChunkFile, snapshotPosition, totalCount);
+          SnapshotChunkUtil.createSnapshotChunkFromFile(snapshotChunkFile, snapshotId, totalCount);
       replication.replicate(chunkToReplicate);
-    } catch (IOException ioe) {
+    } catch (final IOException ioe) {
       LOG.error(
           "Unexpected error on reading snapshot chunk from file '{}'.", snapshotChunkFile, ioe);
     }
@@ -67,18 +57,16 @@ public final class ReplicationController {
    *
    * @param snapshotChunk the chunk to consume
    */
-  private void consumeSnapshotChunk(SnapshotChunk snapshotChunk) {
-    final long snapshotPosition = snapshotChunk.getSnapshotPosition();
-    final String snapshotName = Long.toString(snapshotPosition);
+  private void consumeSnapshotChunk(final SnapshotChunk snapshotChunk) {
+    final String snapshotId = snapshotChunk.getSnapshotId();
     final String chunkName = snapshotChunk.getChunkName();
 
-    final long snapshotCounter =
-        receivedSnapshots.computeIfAbsent(snapshotPosition, k -> START_VALUE);
+    final long snapshotCounter = receivedSnapshots.computeIfAbsent(snapshotId, k -> START_VALUE);
     if (snapshotCounter == INVALID_SNAPSHOT) {
       LOG.trace(
           "Ignore snapshot chunk {}, because snapshot {} is marked as invalid.",
           chunkName,
-          snapshotName);
+          snapshotId);
       return;
     }
 
@@ -89,48 +77,42 @@ public final class ReplicationController {
     }
   }
 
-  private void markSnapshotAsInvalid(SnapshotChunk chunk) {
-    final long snapshotPosition = chunk.getSnapshotPosition();
-    receivedSnapshots.put(snapshotPosition, INVALID_SNAPSHOT);
+  private void markSnapshotAsInvalid(final SnapshotChunk chunk) {
+    receivedSnapshots.put(chunk.getSnapshotId(), INVALID_SNAPSHOT);
   }
 
-  private void validateWhenReceivedAllChunks(SnapshotChunk snapshotChunk) {
+  private void validateWhenReceivedAllChunks(final SnapshotChunk snapshotChunk) {
     final int totalChunkCount = snapshotChunk.getTotalCount();
     final long currentChunks = incrementAndGetChunkCount(snapshotChunk);
 
     if (currentChunks == totalChunkCount) {
-      final File validSnapshotDirectory =
-          storage.getSnapshotDirectoryFor(snapshotChunk.getSnapshotPosition());
       LOG.debug(
-          "Received all snapshot chunks ({}/{}), snapshot is valid. Move to {}",
+          "Received all snapshot chunks ({}/{}), snapshot is valid",
           currentChunks,
-          totalChunkCount,
-          validSnapshotDirectory.toPath());
+          totalChunkCount);
 
       final boolean valid = tryToMarkSnapshotAsValid(snapshotChunk);
 
       if (valid) {
-        validSnapshotListener.onNewValidSnapshot();
+        storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotChunk.getSnapshotId()));
       }
     } else {
       LOG.trace(
-          "Waiting for more snapshot chunks, currently have {}/{}.",
-          currentChunks,
-          totalChunkCount);
+          "Waiting for more snapshot chunks, currently have {}/{}", currentChunks, totalChunkCount);
     }
   }
 
-  private long incrementAndGetChunkCount(SnapshotChunk snapshotChunk) {
-    final long snapshotPosition = snapshotChunk.getSnapshotPosition();
-    final long oldCount = receivedSnapshots.get(snapshotPosition);
+  private long incrementAndGetChunkCount(final SnapshotChunk snapshotChunk) {
+    final String snapshotId = snapshotChunk.getSnapshotId();
+    final long oldCount = receivedSnapshots.get(snapshotId);
     final long newCount = oldCount + 1;
-    receivedSnapshots.put(snapshotPosition, newCount);
+    receivedSnapshots.put(snapshotId, newCount);
     return newCount;
   }
 
-  private boolean tryToMarkSnapshotAsValid(SnapshotChunk snapshotChunk) {
-    if (snapshotConsumer.completeSnapshot(snapshotChunk.getSnapshotPosition())) {
-      receivedSnapshots.remove(snapshotChunk.getSnapshotPosition());
+  private boolean tryToMarkSnapshotAsValid(final SnapshotChunk snapshotChunk) {
+    if (snapshotConsumer.completeSnapshot(snapshotChunk.getSnapshotId())) {
+      receivedSnapshots.remove(snapshotChunk.getSnapshotId());
       return true;
 
     } else {

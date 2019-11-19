@@ -61,19 +61,16 @@ public class StateStorage {
     return new File(snapshotsDirectory, path);
   }
 
-  public boolean existSnapshot(long snapshotPosition) {
+  public boolean existSnapshot(String snapshotId) {
     final File[] files = snapshotsDirectory.listFiles();
     if (files != null && files.length > 0) {
-      final String snapshotDirName = Long.toString(snapshotPosition);
-      return Arrays.stream(files).anyMatch(f -> f.getName().equalsIgnoreCase(snapshotDirName));
+      return Arrays.stream(files).anyMatch(f -> f.getName().equalsIgnoreCase(snapshotId));
     }
     return false;
   }
 
-  public File getSnapshotDirectoryFor(long position) {
-    final String path = String.format("%d", position);
-
-    return new File(snapshotsDirectory, path);
+  public File getSnapshotDirectoryFor(String snapshotId) {
+    return new File(snapshotsDirectory, snapshotId);
   }
 
   public File getTempSnapshotDirectory() {

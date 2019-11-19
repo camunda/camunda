@@ -23,7 +23,7 @@ public class AtomixLogStorageReader implements LogStorageReader {
 
   private final RaftLogReader reader;
 
-  AtomixLogStorageReader(final RaftLogReader reader) {
+  public AtomixLogStorageReader(final RaftLogReader reader) {
     this.reader = reader;
   }
 
@@ -136,7 +136,7 @@ public class AtomixLogStorageReader implements LogStorageReader {
    *
    * @param index index to seek to
    */
-  private Optional<Indexed<ZeebeEntry>> findEntry(final long index) {
+  public Optional<Indexed<ZeebeEntry>> findEntry(final long index) {
     if (reader.getCurrentIndex() == index) {
       final var entry = reader.getCurrentEntry();
       if (entry != null && entry.type().equals(ZeebeEntry.class)) {

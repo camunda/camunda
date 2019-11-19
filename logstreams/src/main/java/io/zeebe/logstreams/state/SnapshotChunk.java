@@ -8,9 +8,8 @@
 package io.zeebe.logstreams.state;
 
 public interface SnapshotChunk {
-
-  /** @return the lower bound snapshot position, identifies the corresponding snapshot */
-  long getSnapshotPosition();
+  /** @return a unique snapshot identifier **/
+  String getSnapshotId();
 
   /** @return the total count of snapshot chunks, which correspond to the same snapshot */
   int getTotalCount();

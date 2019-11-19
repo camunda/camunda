@@ -14,15 +14,19 @@ import java.util.function.Consumer;
 
 public interface SnapshotController extends AutoCloseable {
   /**
-   * Takes a snapshot based on the given position. The position is a last processed lower bound
-   * event position.
+   * Takes a snapshot based on the given position and immediately commits it.
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
    */
   void takeSnapshot(long lowerBoundSnapshotPosition);
 
-  /** Takes a snapshot into a temporary folder, will overwrite an existing snapshot. */
-  void takeTempSnapshot();
+  /**
+   * Takes a snapshot based on the given position. The position is a last processed lower bound
+   * event position.
+   *
+   * @param lowerBoundSnapshotPosition the lower bound snapshot position
+   */
+  void takeTempSnapshot(long lowerBoundSnapshotPosition);
 
   /**
    * A temporary snapshot is moved into a new snapshot directory and in that way marked as valid.
@@ -31,7 +35,7 @@ public interface SnapshotController extends AutoCloseable {
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
    * @throws IOException thrown if moving the snapshot fails
    */
-  void moveValidSnapshot(long lowerBoundSnapshotPosition) throws IOException;
+  void commitSnapshot(long lowerBoundSnapshotPosition) throws IOException;
 
   /**
    * Replicates the latest valid snapshot. The given executor is called for each snapshot chunk in
@@ -79,12 +83,4 @@ public interface SnapshotController extends AutoCloseable {
   long getLastValidSnapshotPosition();
 
   File getLastValidSnapshotDirectory();
-
-  File getSnapshotDirectoryFor(long snapshotId);
-
-  /**
-   * Returns a {@link io.zeebe.distributedlog.restore.RestoreInfoResponse RestoreInfoResponse} for
-   * the latest valid snapshot
-   */
-  SnapshotInfo getLatestSnapshotInfo();
 }
