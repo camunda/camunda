@@ -112,8 +112,8 @@ export default withErrorHandling(
                   name,
                   meta1: email,
                   meta2: this.formatDescription(reportId, thresholdOperator, threshold),
-                  action: () => this.openEditAlertModal(alert),
-                  actions: !this.props.readOnly && [
+                  action: !readOnly && (() => this.openEditAlertModal(alert)),
+                  actions: !readOnly && [
                     {
                       icon: 'edit',
                       text: t('common.edit'),

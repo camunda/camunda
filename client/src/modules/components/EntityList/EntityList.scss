@@ -32,7 +32,7 @@
       margin: 0;
     }
 
-    > .action {
+    > .action:not(:empty) {
       margin-left: 20px;
     }
 
