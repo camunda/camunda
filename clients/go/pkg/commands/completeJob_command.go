@@ -18,7 +18,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
+	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"time"
 )
 

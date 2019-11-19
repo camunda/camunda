@@ -18,7 +18,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
+	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"testing"
 )
 

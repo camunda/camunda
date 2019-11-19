@@ -9,4 +9,5 @@ test:
 	go test -v ./pkg/entities/
 	go test -v ./pkg/worker/
 	go test -v ./pkg/zbc/
+	go test -v ./internal/utils/
 	go test -v ./test/
