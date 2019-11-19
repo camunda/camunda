@@ -21,11 +21,18 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   open: true,
   onClose: jest.fn(),
-  onConfirm: jest.fn()
+  onConfirm: jest.fn(),
+  tenantsAvailable: true
 };
 
 it('should match snapshot', () => {
   const node = shallow(<AddSourceModal {...props} />);
+
+  expect(node).toMatchSnapshot();
+});
+
+it('should only show MultiDefinitionSource if tenants are not available', () => {
+  const node = shallow(<AddSourceModal {...props} tenantsAvailable={false} />);
 
   expect(node).toMatchSnapshot();
 });

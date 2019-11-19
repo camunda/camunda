@@ -9,9 +9,10 @@ import {ButtonGroup, Button, Modal, Form} from 'components';
 
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
-import DefinitionSource from './DefinitionSource';
 import {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service';
 import TenantSource from './TenantSource';
+import DefinitionSource from './DefinitionSource';
+import MultiDefinitionSource from './MultiDefinitionSource';
 import {showError} from 'notifications';
 
 export default withErrorHandling(
@@ -19,27 +20,35 @@ export default withErrorHandling(
     state = {
       addBy: 'definition',
       sources: [],
-      tenantsWithDefinitions: null,
-      definitionsWithTenants: null,
+      tenants: null,
+      definitions: null,
       valid: false
     };
 
-    componentDidMount() {
+    async componentDidMount() {
       this.loadDefinitionsWithTenants();
-      this.loadTenantsWithDefinitions();
+      if (this.props.tenantsAvailable) {
+        this.loadTenantsWithDefinitions();
+      }
+    }
+
+    componentDidUpdate(prevProps) {
+      if (!prevProps.tenantsAvailable && this.props.tenantsAvailable) {
+        this.loadTenantsWithDefinitions();
+      }
     }
 
     loadDefinitionsWithTenants = () =>
       this.props.mightFail(
         getDefinitionsWithTenants(),
-        definitionsWithTenants => this.setState({definitionsWithTenants}),
+        definitions => this.setState({definitions}),
         showError
       );
 
     loadTenantsWithDefinitions = () =>
       this.props.mightFail(
         getTenantsWithDefinitions(),
-        tenantsWithDefinitions => this.setState({tenantsWithDefinitions}),
+        tenants => this.setState({tenants}),
         showError
       );
 
@@ -61,7 +70,8 @@ export default withErrorHandling(
     setInvalid = () => this.setState({valid: false});
 
     render() {
-      const {addBy, definitionsWithTenants, tenantsWithDefinitions, valid} = this.state;
+      const {addBy, definitions, tenants, valid} = this.state;
+      const {tenantsAvailable} = this.props;
 
       return (
         <Modal
@@ -72,29 +82,40 @@ export default withErrorHandling(
         >
           <Modal.Header>{t('home.sources.add')}</Modal.Header>
           <Modal.Content>
-            <ButtonGroup>
-              <Button
-                active={addBy === 'definition'}
-                onClick={() => this.changeAddBy('definition')}
-              >
-                {t('home.sources.definition.label')}
-              </Button>
-              <Button active={addBy === 'tenant'} onClick={() => this.changeAddBy('tenant')}>
-                {t('common.tenant.label')}
-              </Button>
-            </ButtonGroup>
+            {tenantsAvailable && (
+              <ButtonGroup>
+                <Button
+                  active={addBy === 'definition'}
+                  onClick={() => this.changeAddBy('definition')}
+                >
+                  {t('home.sources.definition.label')}
+                </Button>
+                <Button active={addBy === 'tenant'} onClick={() => this.changeAddBy('tenant')}>
+                  {t('common.tenant.label')}
+                </Button>
+              </ButtonGroup>
+            )}
             <Form>
-              {addBy === 'definition' && (
+              {addBy === 'definition' && tenantsAvailable && (
                 <DefinitionSource
-                  definitionsWithTenants={definitionsWithTenants}
+                  definitionsWithTenants={definitions}
                   onChange={this.onChange}
                   setInvalid={this.setInvalid}
                 />
               )}
 
-              {addBy === 'tenant' && (
+              {addBy === 'tenant' && tenantsAvailable && (
                 <TenantSource
-                  tenantsWithDefinitions={tenantsWithDefinitions}
+                  tenantsWithDefinitions={tenants}
+                  onChange={this.onChange}
+                  setInvalid={this.setInvalid}
+                  preSelectTenant={!tenantsAvailable}
+                />
+              )}
+
+              {!tenantsAvailable && (
+                <MultiDefinitionSource
+                  definitions={definitions}
                   onChange={this.onChange}
                   setInvalid={this.setInvalid}
                 />

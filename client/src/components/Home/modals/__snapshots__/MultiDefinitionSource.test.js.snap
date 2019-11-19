@@ -1,0 +1,41 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<FormGroup>
+  <Labeled
+    label="Definitions"
+  >
+    <ItemsList
+      allItems={
+        Array [
+          Object {
+            "key": "hiring-demo",
+            "name": "Hiring Demo",
+            "tenants": Array [
+              Object {
+                "id": null,
+                "name": "Not defined",
+              },
+            ],
+            "type": "process",
+          },
+          Object {
+            "key": "invoiceClassification",
+            "name": "Invoice Classification",
+            "tenants": Array [
+              Object {
+                "id": null,
+                "name": "Not defined",
+              },
+            ],
+            "type": "decision",
+          },
+        ]
+      }
+      formatter={[Function]}
+      onChange={[Function]}
+      selectedItems={Array []}
+    />
+  </Labeled>
+</FormGroup>
+`;

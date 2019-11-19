@@ -9,7 +9,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     data={
       Array [
         Object {
-          "actions": false,
+          "actions": Array [],
           "className": "process",
           "icon": <ForwardRef(SvgProcess) />,
           "meta1": "Not defined, Sales",
@@ -17,7 +17,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           "type": "Process",
         },
         Object {
-          "actions": false,
+          "actions": Array [],
           "className": "decision",
           "icon": <ForwardRef(SvgDecision) />,
           "meta1": "Not defined, Marketing",
@@ -41,8 +41,26 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     onClose={[Function]}
     onConfirm={[Function]}
     open={false}
+    tenantsAvailable={true}
   />
 </div>
+`;
+
+exports[`should hide edit and tenants in source items if there are not tenants available 1`] = `
+Object {
+  "actions": Array [
+    Object {
+      "action": [Function],
+      "icon": "delete",
+      "text": "Delete",
+    },
+  ],
+  "className": "process",
+  "icon": <ForwardRef(SvgProcess) />,
+  "meta1": false,
+  "name": "definition name",
+  "type": "Process",
+}
 `;
 
 exports[`should match snapshot 1`] = `
@@ -114,6 +132,7 @@ exports[`should match snapshot 1`] = `
     onClose={[Function]}
     onConfirm={[Function]}
     open={false}
+    tenantsAvailable={true}
   />
 </div>
 `;

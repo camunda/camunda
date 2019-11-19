@@ -70,7 +70,7 @@ export default function EntityList({name, children, action, isLoading, data, emp
                 return (
                   <ListItem key={idx} className={className} onClick={action}>
                     {link ? <Link to={link}>{content}</Link> : content}
-                    {actions && actions.length && (
+                    {actions && actions.length > 0 && (
                       <div className="contextMenu" onClick={evt => evt.stopPropagation()}>
                         <Dropdown label={<Icon type="overflow-menu-vertical" size="24px" />}>
                           {actions.map(({action, icon, text}, idx) => (

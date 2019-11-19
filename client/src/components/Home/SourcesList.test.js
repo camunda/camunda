@@ -14,6 +14,9 @@ import {removeSource, editSource, addSources} from './service';
 import SourcesListWithErrorHandling from './SourcesList';
 import EditSourceModal from './modals/EditSourceModal';
 import AddSourceModal from './modals/AddSourceModal';
+import {areTenantsAvailable} from 'config';
+
+jest.mock('config', () => ({areTenantsAvailable: jest.fn().mockReturnValue(true)}));
 
 jest.mock('./service', () => ({
   getSources: jest.fn().mockReturnValue([
@@ -51,20 +54,23 @@ const props = {
   readOnly: false
 };
 
-it('should match snapshot', () => {
+it('should match snapshot', async () => {
   const node = shallow(<SourcesList {...props} />);
+  await node.update();
 
   expect(node).toMatchSnapshot();
 });
 
-it('should hide add button and edit menu when in readOnly mode', () => {
+it('should hide add button and edit menu when in readOnly mode', async () => {
   const node = shallow(<SourcesList {...props} readOnly />);
+  await node.update();
 
   expect(node).toMatchSnapshot();
 });
 
-it('should pass entity to Deleter', () => {
+it('should pass entity to Deleter', async () => {
   const node = shallow(<SourcesList {...props} />);
+  await node.update();
 
   node
     .find(EntityList)
@@ -84,8 +90,9 @@ it('should delete source', () => {
   expect(removeSource).toHaveBeenCalledWith('collectionId', 'sourceId');
 });
 
-it('should show an edit modal when clicking the edit button', () => {
+it('should show an edit modal when clicking the edit button', async () => {
   const node = shallow(<SourcesList {...props} />);
+  await node.update();
 
   node
     .find(EntityList)
@@ -120,4 +127,11 @@ it('should add sources when addSourceModal is confirmed', () => {
   node.find(AddSourceModal).prop('onConfirm')(sources);
 
   expect(addSources).toHaveBeenCalledWith('collectionId', sources);
+});
+
+it('should hide edit and tenants in source items if there are not tenants available', async () => {
+  areTenantsAvailable.mockReturnValueOnce(false);
+  const node = shallow(<SourcesList {...props} />);
+  await node.update();
+  expect(node.find('EntityList').props().data[0]).toMatchSnapshot();
 });

@@ -52,3 +52,42 @@ exports[`should match snapshot 1`] = `
   </Component>
 </Modal>
 `;
+
+exports[`should only show MultiDefinitionSource if tenants are not available 1`] = `
+<Modal
+  className="AddSourceModal"
+  onClose={[Function]}
+  onConfirm={[Function]}
+  open={true}
+>
+  <Component>
+    Add Source
+  </Component>
+  <Component>
+    <Form>
+      <MultiDefinitionSource
+        definitions={Array []}
+        onChange={[Function]}
+        setInvalid={[Function]}
+      />
+    </Form>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="cancel"
+      onClick={[Function]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={true}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Add
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;

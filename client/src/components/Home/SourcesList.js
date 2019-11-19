@@ -17,6 +17,7 @@ import {ReactComponent as ProcessIcon} from './icons/process.svg';
 import {ReactComponent as DecisionIcon} from './icons/decision.svg';
 import AddSourceModal from './modals/AddSourceModal';
 import EditSourceModal from './modals/EditSourceModal';
+import {areTenantsAvailable} from 'config';
 
 import './SourcesList.scss';
 
@@ -26,10 +27,12 @@ export default withErrorHandling(
       sources: null,
       deleting: null,
       editing: null,
-      addingSource: false
+      addingSource: false,
+      tenantsAvailable: false
     };
 
-    componentDidMount() {
+    async componentDidMount() {
+      this.setState({tenantsAvailable: await areTenantsAvailable()});
       this.getSources();
     }
 
@@ -60,7 +63,7 @@ export default withErrorHandling(
     closeEditSourceModal = () => this.setState({editing: null});
 
     render() {
-      const {deleting, editing, addingSource, sources} = this.state;
+      const {deleting, editing, addingSource, sources, tenantsAvailable} = this.state;
       const {readOnly, collection} = this.props;
 
       return (
@@ -80,25 +83,30 @@ export default withErrorHandling(
               sources &&
               sources.map(source => {
                 const {definitionKey, definitionName, definitionType, tenants} = source;
+                const actions = [];
+                if (!readOnly) {
+                  actions.push({
+                    icon: 'delete',
+                    text: t('common.delete'),
+                    action: () => this.setState({deleting: source})
+                  });
+
+                  if (tenantsAvailable) {
+                    actions.unshift({
+                      icon: 'edit',
+                      text: t('common.edit'),
+                      action: () => this.openEditSourceModal(source)
+                    });
+                  }
+                }
 
                 return {
                   className: definitionType,
                   icon: getSourceIcon(definitionType),
                   type: formatType(definitionType),
                   name: definitionName || definitionKey,
-                  meta1: formatTenants(tenants),
-                  actions: !readOnly && [
-                    {
-                      icon: 'edit',
-                      text: t('common.edit'),
-                      action: () => this.openEditSourceModal(source)
-                    },
-                    {
-                      icon: 'delete',
-                      text: t('common.delete'),
-                      action: () => this.setState({deleting: source})
-                    }
-                  ]
+                  meta1: tenantsAvailable && formatTenants(tenants),
+                  actions
                 };
               })
             }
@@ -114,6 +122,7 @@ export default withErrorHandling(
             open={addingSource}
             onClose={this.closeAddSourceModal}
             onConfirm={this.addSource}
+            tenantsAvailable={tenantsAvailable}
           />
           {editing && (
             <EditSourceModal
@@ -151,5 +160,8 @@ function formatType(type) {
 }
 
 function formatTenants(tenants) {
+  if (tenants.length === 1 && tenants[0].id === null) {
+    return '';
+  }
   return tenants.map(({name}) => name).join(', ');
 }
