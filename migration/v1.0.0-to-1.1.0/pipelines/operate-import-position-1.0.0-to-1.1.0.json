@@ -1,0 +1,11 @@
+ {
+    "processors" : [
+      {
+        "convert" : {
+          "field" : "position",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      }
+    ]
+  }

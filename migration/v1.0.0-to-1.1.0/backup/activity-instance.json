@@ -1,0 +1,8 @@
+{
+  "source": {
+    "index": ["operate-activity-instance_"]
+  },
+  "dest": {
+    "index": "operate-activity-instance_1.0.0"
+  }
+}

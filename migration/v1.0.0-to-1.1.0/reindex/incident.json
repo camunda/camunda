@@ -1,0 +1,9 @@
+{
+  "source": {
+    "index": ["operate-incident_1.0.0"]
+  },
+  "dest": {
+    "index": "operate-incident_",
+    "pipeline": "operate-incident-1.0.0-to-1.1.0"
+  }
+}

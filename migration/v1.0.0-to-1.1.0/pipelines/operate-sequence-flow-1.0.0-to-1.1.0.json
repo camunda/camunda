@@ -1,0 +1,18 @@
+{
+    "processors" : [
+      {
+        "rename" : {
+          "field" : "workflowInstanceId",
+          "target_field" : "workflowInstanceKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "workflowInstanceKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      }
+    ]
+  }

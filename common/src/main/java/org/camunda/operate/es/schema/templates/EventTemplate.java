@@ -92,10 +92,9 @@ public class EventTemplate extends AbstractTemplateCreator implements WorkflowIn
         .field("type", "keyword")   // TODO may be we should use Text data type here?
       .endObject()
       .startObject(METADATA)
-        .field("type", "nested")
-          .startObject("properties");
-            addNestedMetadataField(newBuilder)
-          .endObject()
+        .startObject("properties");
+          addNestedMetadataField(newBuilder)
+        .endObject()
       .endObject();
 
     return newBuilder;

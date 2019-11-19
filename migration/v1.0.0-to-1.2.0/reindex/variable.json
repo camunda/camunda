@@ -1,9 +1,0 @@
-{
-  "source": {
-    "index": ["backup-operate-variable_"]
-  },
-  "dest": {
-    "index": "operate-variable_",
-    "pipeline": "operate-variable-v1.0.0-to-v1.2.0"
-  }
-}

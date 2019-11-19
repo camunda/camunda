@@ -1,0 +1,32 @@
+{
+    "processors" : [
+      {
+        "rename" : {
+          "field" : "scopeId",
+          "target_field" : "scopeKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "scopeKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      },
+      {
+        "rename" : {
+          "field" : "workflowInstanceId",
+          "target_field" : "workflowInstanceKey",
+          "ignore_missing" : true
+        }
+      },
+      {
+        "convert" : {
+          "field" : "workflowInstanceKey",
+          "ignore_missing" : true,
+          "type" : "long"
+        }
+      }
+    ]
+}

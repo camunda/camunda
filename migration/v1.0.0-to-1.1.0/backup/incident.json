@@ -1,0 +1,8 @@
+{
+  "source": {
+    "index": ["operate-incident_"]
+  },
+  "dest": {
+    "index": "operate-incident_1.0.0"
+  }
+}

@@ -1,8 +1,0 @@
-{
-  "source": {
-    "index": ["operate-incident_"]
-  },
-  "dest": {
-    "index": "backup-operate-incident_"
-  }
-}

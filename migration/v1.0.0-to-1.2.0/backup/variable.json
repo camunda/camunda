@@ -1,8 +1,0 @@
-{
-  "source": {
-    "index": ["operate-variable_"]
-  },
-  "dest": {
-    "index": "backup-operate-variable_"
-  }
-}

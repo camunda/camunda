@@ -1,0 +1,8 @@
+{
+  "source": {
+    "index": ["operate-event_"]
+  },
+  "dest": {
+    "index": "operate-event_1.2.0"
+  }
+}
