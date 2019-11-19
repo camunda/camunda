@@ -10,9 +10,6 @@ ln -s ${PWD} ${ORG_DIR}/zeebe
 
 go get -u github.com/jstemmer/go-junit-report
 
-cd ${ORG_DIR}/zeebe/clients/go
-make install-deps
-
 cd ${ORG_DIR}/zeebe/clients/go/cmd/zbctl
 
 ./build.sh
