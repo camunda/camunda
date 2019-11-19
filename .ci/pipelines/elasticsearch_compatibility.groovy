@@ -16,7 +16,15 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 
-static String mavenElasticsearchIntegrationTestAgent(esVersion, cambpmVersion) {
+static String mavenElasticsearchIntegrationTestAgent(esVersion, camBpmVersion) {
+  return itStageBasePod() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
+}
+
+static String mavenElasticsearchAWSIntegrationTestAgent(camBpmVersion) {
+  return itStageBasePod() + camBpmContainerSpec(camBpmVersion);
+}
+
+static String itStageBasePod() {
   return """
 metadata:
   labels:
@@ -49,11 +57,9 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 1
+        value: 2
       - name: TZ
         value: Europe/Berlin
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
     resources:
       limits:
         cpu: 4
@@ -61,8 +67,13 @@ spec:
       requests:
         cpu: 4
         memory: 4Gi
+"""
+}
+
+static String camBpmContainerSpec(String camBpmVersion) {
+  return """
   - name: cambpm
-    image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
+    image: ${CAMBPM_DOCKER_IMAGE(camBpmVersion)}
     env:
       - name: JAVA_OPTS
         value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
@@ -82,6 +93,11 @@ spec:
     - name: cambpm-config
       mountPath: /camunda/webapps/manager/META-INF/context.xml
       subPath: context.xml
+    """
+}
+
+static String elasticSearchContainerSpec(esVersion) {
+  return """
   - name: elasticsearch
     image: ${ELASTICSEARCH_DOCKER_IMAGE(esVersion)}
     env:
@@ -101,10 +117,10 @@ spec:
       requests:
         cpu: 2
         memory: 2Gi
-"""
+  """
 }
 
-static String mavenElasticsearchAWSIntegrationTestAgent(cambpmVersion) {
+static String mavenAgent() {
   return """
 metadata:
   labels:
@@ -116,20 +132,6 @@ spec:
     - key: "${NODE_POOL()}"
       operator: "Exists"
       effect: "NoSchedule"
-  imagePullSecrets:
-    - name: registry-camunda-cloud-secret
-  volumes:
-  - name: cambpm-config
-    configMap:
-      # Defined in: https://github.com/camunda-ci/k8s-infrastructure/tree/master/infrastructure/ci-30-162810/deployments/optimize
-      name: ci-optimize-cambpm-config
-  initContainers:
-    - name: init-sysctl
-      image: busybox
-      imagePullPolicy: Always
-      command: ["sysctl", "-w", "vm.max_map_count=262144"]
-      securityContext:
-        privileged: true
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
@@ -142,36 +144,13 @@ spec:
             resource: limits.cpu
       - name: TZ
         value: Europe/Berlin
-      - name: DOCKER_HOST
-        value: tcp://localhost:2375
-    resources:
-      limits:
-        cpu: 4
-        memory: 4Gi
-      requests:
-        cpu: 4
-        memory: 4Gi
-  - name: cambpm
-    image: ${CAMBPM_DOCKER_IMAGE(cambpmVersion)}
-    env:
-      - name: JAVA_OPTS
-        value: "-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m"
-      - name: TZ
-        value: Europe/Berlin
     resources:
       limits:
         cpu: 1
-        memory: 2Gi
+        memory: 512Mi
       requests:
         cpu: 1
-        memory: 2Gi
-    volumeMounts:
-    - name: cambpm-config
-      mountPath: /camunda/conf/tomcat-users.xml
-      subPath: tomcat-users.xml
-    - name: cambpm-config
-      mountPath: /camunda/webapps/manager/META-INF/context.xml
-      subPath: context.xml
+        memory: 512Mi
 """
 }
 
@@ -221,40 +200,6 @@ void integrationTestStepsAWS() {
       """)
     runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU -DhttpTestTimeout=30000")
   }
-}
-
-static String mavenAgent() {
-  return """
-metadata:
-  labels:
-    agent: optimize-ci-build
-spec:
-  nodeSelector:
-    cloud.google.com/gke-nodepool: ${NODE_POOL()}
-  tolerations:
-    - key: "${NODE_POOL()}"
-      operator: "Exists"
-      effect: "NoSchedule"
-  containers:
-  - name: maven
-    image: ${MAVEN_DOCKER_IMAGE()}
-    command: ["cat"]
-    tty: true
-    env:
-      - name: LIMITS_CPU
-        valueFrom:
-          resourceFieldRef:
-            resource: limits.cpu
-      - name: TZ
-        value: Europe/Berlin
-    resources:
-      limits:
-        cpu: 1
-        memory: 512Mi
-      requests:
-        cpu: 1
-        memory: 512Mi
-"""
 }
 
 pipeline {
