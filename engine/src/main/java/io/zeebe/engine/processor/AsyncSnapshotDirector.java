@@ -117,7 +117,6 @@ public class AsyncSnapshotDirector extends Actor {
 
   private void takeSnapshot() {
     pendingSnapshot = true;
-    createSnapshot(snapshotController::takeTempSnapshot);
 
     final ActorFuture<Long> lastWrittenPosition = streamProcessor.getLastWrittenPositionAsync();
     actor.runOnCompletion(
@@ -126,6 +125,7 @@ public class AsyncSnapshotDirector extends Actor {
           if (error == null) {
             final long commitPosition = logStream.getCommitPosition();
             lastWrittenEventPosition = endPosition;
+            createSnapshot(() -> snapshotController.takeTempSnapshot(endPosition));
 
             LOG.debug(LOG_MSG_WAIT_UNTIL_COMMITTED, endPosition, commitPosition);
             onCommitCheck();
@@ -154,7 +154,7 @@ public class AsyncSnapshotDirector extends Actor {
       try {
 
         lastValidSnapshotPosition = lowerBoundSnapshotPosition;
-        snapshotController.moveValidSnapshot(lowerBoundSnapshotPosition);
+        snapshotController.commitSnapshot(lowerBoundSnapshotPosition);
         snapshotController.replicateLatestSnapshot(actor::submit);
 
       } catch (Exception ex) {

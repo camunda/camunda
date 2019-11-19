@@ -147,7 +147,7 @@ public class AsyncSnapshotingTest {
     // then
     final InOrder inOrder = Mockito.inOrder(snapshotController);
     inOrder.verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
-    inOrder.verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
+    inOrder.verify(snapshotController, TIMEOUT.times(1)).commitSnapshot(25);
 
     inOrder.verify(snapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount();
     inOrder.verify(snapshotController, TIMEOUT.times(1)).getValidSnapshotsCount();
@@ -165,7 +165,7 @@ public class AsyncSnapshotingTest {
 
     verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     setCommitPosition(99L);
-    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
+    verify(snapshotController, TIMEOUT.times(1)).commitSnapshot(25);
     verify(snapshotController, TIMEOUT.times(1)).replicateLatestSnapshot(any());
 
     // when
@@ -174,7 +174,7 @@ public class AsyncSnapshotingTest {
     setCommitPosition(100L);
 
     // then
-    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(32);
+    verify(snapshotController, TIMEOUT.times(1)).commitSnapshot(32);
     verify(snapshotController, TIMEOUT.times(2)).replicateLatestSnapshot(any());
   }
 
@@ -201,7 +201,7 @@ public class AsyncSnapshotingTest {
     clock.addTime(Duration.ofMinutes(1));
     verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     setCommitPosition(99L);
-    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
+    verify(snapshotController, TIMEOUT.times(1)).commitSnapshot(25);
 
     // when
     clock.addTime(Duration.ofMinutes(1));
@@ -209,7 +209,7 @@ public class AsyncSnapshotingTest {
     setCommitPosition(100L);
 
     // then
-    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(32);
+    verify(snapshotController, TIMEOUT.times(1)).commitSnapshot(32);
   }
 
   @Test
@@ -218,12 +218,12 @@ public class AsyncSnapshotingTest {
     clock.addTime(Duration.ofMinutes(1));
     verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     setCommitPosition(99L);
-    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(25);
+    verify(snapshotController, TIMEOUT.times(1)).commitSnapshot(25);
 
     clock.addTime(Duration.ofMinutes(1));
     verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot();
     setCommitPosition(100L);
-    verify(snapshotController, TIMEOUT.times(1)).moveValidSnapshot(32);
+    verify(snapshotController, TIMEOUT.times(1)).commitSnapshot(32);
 
     // then
     verify(noopDeletionService, TIMEOUT).delete(eq(25L));
@@ -247,7 +247,7 @@ public class AsyncSnapshotingTest {
     final InOrder inOrder = Mockito.inOrder(snapshotController, mockStreamProcessor);
     inOrder.verify(mockStreamProcessor, TIMEOUT).getLastProcessedPositionAsync();
     inOrder.verify(snapshotController, TIMEOUT).takeTempSnapshot();
-    inOrder.verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
+    inOrder.verify(snapshotController, TIMEOUT).commitSnapshot(lastProcessedPosition);
     inOrder.verify(snapshotController, TIMEOUT).ensureMaxSnapshotCount();
     inOrder.verify(snapshotController, TIMEOUT).replicateLatestSnapshot(any());
 
@@ -296,7 +296,7 @@ public class AsyncSnapshotingTest {
     setCommitPosition(commitPosition);
 
     clock.addTime(Duration.ofMinutes(1));
-    verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
+    verify(snapshotController, TIMEOUT).commitSnapshot(lastProcessedPosition);
 
     // when
     asyncSnapshotDirector.enforceSnapshotCreation(lastWrittenPosition, lastProcessedPosition);
@@ -345,7 +345,7 @@ public class AsyncSnapshotingTest {
     inOrder.verify(snapshotController, TIMEOUT).getLastValidSnapshotPosition();
     inOrder.verify(mockStreamProcessor, TIMEOUT).getLastProcessedPositionAsync();
     inOrder.verify(snapshotController, TIMEOUT).takeTempSnapshot();
-    inOrder.verify(snapshotController, TIMEOUT).moveValidSnapshot(lastProcessedPosition);
+    inOrder.verify(snapshotController, TIMEOUT).commitSnapshot(lastProcessedPosition);
     inOrder.verify(snapshotController, TIMEOUT).ensureMaxSnapshotCount();
     inOrder.verify(snapshotController, TIMEOUT).replicateLatestSnapshot(any());
 

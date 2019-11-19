@@ -508,7 +508,7 @@ public class StreamProcessorTest {
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).takeTempSnapshot();
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).moveValidSnapshot(position);
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).commitSnapshot(position);
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount();
   }
 
@@ -597,7 +597,7 @@ public class StreamProcessorTest {
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
     inOrder.verify(stateSnapshotController, never()).takeTempSnapshot();
-    inOrder.verify(stateSnapshotController, never()).moveValidSnapshot(position);
+    inOrder.verify(stateSnapshotController, never()).commitSnapshot(position);
     inOrder.verify(stateSnapshotController, never()).ensureMaxSnapshotCount();
   }
 
@@ -624,7 +624,7 @@ public class StreamProcessorTest {
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
     inOrder.verify(stateSnapshotController, never()).takeTempSnapshot();
-    inOrder.verify(stateSnapshotController, never()).moveValidSnapshot(anyLong());
+    inOrder.verify(stateSnapshotController, never()).commitSnapshot(anyLong());
     inOrder.verify(stateSnapshotController, never()).ensureMaxSnapshotCount();
   }
 
