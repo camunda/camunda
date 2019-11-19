@@ -947,10 +947,10 @@
   dependencies:
     "@hapi/hoek" "8.x.x"
 
-"@ibm/plex@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-3.0.0.tgz#f80701e53e3f5653201005d669852004c5897e63"
-  integrity sha512-LIzh4hJ2HMUk6PqkH3eZHAQU/nm4pYe87b2PPA5LxNoDUkuR5U8UAUZl+XIXq1XH+cSpeZwKnIi7l3h+gQSfcg==
+"@ibm/plex@^4.0.1":
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/@ibm/plex/-/plex-4.0.1.tgz#46e7064118b1eca5ce9e14ea13a3ec23fd0b94e6"
+  integrity sha512-+GsciSLDgDEZ6IDisQkUdZWpOrHVRzv1Ph8IjMYhOU/aVGfm+GMt0qwBoSvVh/SeHqi6DgFU6OAufeq8aFFONA==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"
