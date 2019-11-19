@@ -193,4 +193,30 @@ public class LogStorageAppenderTest {
     // then
     verify(primitiveMock, timeout(1000).times(3)).asyncAppend(eq(1L), any(byte[].class), anyLong());
   }
+
+  @Test
+  public void shouldAppendNextEventsAfterRetrySuccess() {
+    // given
+    final CompletableFuture firstAttempt = new CompletableFuture();
+    final CompletableFuture secondAttempt = new CompletableFuture();
+    final CompletableFuture thirdAttempt = new CompletableFuture();
+
+    when(primitiveMock.asyncAppend(anyLong(), any(byte[].class), anyLong()))
+        .thenReturn(firstAttempt)
+        .thenReturn(secondAttempt)
+        .thenReturn(thirdAttempt);
+    schedulerRule.submitActor(appender).join();
+
+    // when
+    writeEvent("retried-msg");
+    firstAttempt.complete(-1L);
+    verify(primitiveMock, timeout(1000).times(2)).asyncAppend(eq(1L), any(byte[].class), anyLong());
+    writeEvent("blocked-msg");
+    secondAttempt.complete(-1L);
+    verify(primitiveMock, timeout(1000).times(3)).asyncAppend(eq(1L), any(byte[].class), anyLong());
+    thirdAttempt.complete(1L);
+
+    // then
+    verify(primitiveMock, timeout(1000).times(1)).asyncAppend(eq(2L), any(byte[].class), anyLong());
+  }
 }

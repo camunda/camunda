@@ -49,10 +49,9 @@ public class LogStorageAppender extends Actor {
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
   private long currentInFlightBytes;
-  private final Runnable peekedBlockHandler = this::appendBlock;
-
   private long appendIndex = -1;
   private final int partitionId;
+  private Runnable peekedBlockHandler = this::appendBlock;
 
   public LogStorageAppender(
       String name,
@@ -139,25 +138,30 @@ public class LogStorageAppender extends Actor {
               actor.run(
                   () -> {
                     if (error != null) {
-                      LOG.trace(
+                      LOG.debug(
                           "Append on partition {} failed with exception. Append index {} and event position {}. Retry...",
                           partitionId,
                           appendIndex,
                           lastEventPosition,
                           error);
+                      // do not append more until success
+                      this.peekedBlockHandler = () -> {};
                       appendToPrimitive(appendIndex, bytesToAppend, lastEventPosition);
                     } else if (appendPosition < 0) {
-                      LOG.trace(
+                      LOG.debug(
                           "Append on partition {} failed with negative result {}. Append index {} and event position {}. This normally occurs when an previous append failed and events have been received out of order. This is the recovery strategy to get events in order again. Retry...",
                           partitionId,
                           appendPosition,
                           appendIndex,
                           lastEventPosition);
+                      // do not append more until success;
+                      this.peekedBlockHandler = () -> {};
                       appendToPrimitive(appendIndex, bytesToAppend, lastEventPosition);
                     } else {
                       // happy path
                       appendEntryLimiter.onCommit(lastEventPosition);
                       currentInFlightBytes -= bytesToAppend.length;
+                      this.peekedBlockHandler = this::appendBlock;
                       actor.run(this::peekBlock);
                     }
                   });
