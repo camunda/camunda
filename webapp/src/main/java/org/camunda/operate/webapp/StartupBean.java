@@ -9,7 +9,6 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchConnector;
-import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.webapp.user.ElasticSearchUserDetailsService;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -17,10 +16,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
 @DependsOn("schemaManager")
+@Profile("!test")
 public class StartupBean {
 
   private static final Logger logger = LoggerFactory.getLogger(StartupBean.class);
@@ -31,9 +32,6 @@ public class StartupBean {
   @Autowired
   private RestHighLevelClient zeebeEsClient; 
   
-  @Autowired
-  private ElasticsearchSchemaManager elasticsearchSchemaManager;
-
   @Autowired
   private ElasticSearchUserDetailsService elasticsearchUserDetailsService;
 
