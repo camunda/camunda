@@ -17,6 +17,7 @@ import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotStoreFactory;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
@@ -123,6 +124,7 @@ public class AtomixService implements Service<Atomix> {
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
             .withStateMachineFactory(ZeebeRaftStateMachine::new)
+            .withSnapshotStoreFactory(new DbSnapshotStoreFactory(configuration.getData().getMaxSnapshots()))
             .withFlushOnCommit();
 
     // by default, the Atomix max entry size is 1 MB

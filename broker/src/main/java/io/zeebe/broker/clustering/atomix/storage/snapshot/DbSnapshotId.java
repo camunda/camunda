@@ -7,6 +7,8 @@
  */
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
+import java.util.Comparator;
+
 /** A {@link DbSnapshot}'s ID is simply a combination of its index and its position. */
 public interface DbSnapshotId extends Comparable<DbSnapshotId> {
 
@@ -25,11 +27,8 @@ public interface DbSnapshotId extends Comparable<DbSnapshotId> {
    */
   @Override
   default int compareTo(final DbSnapshotId other) {
-    var difference = Long.compare(getIndex(), other.getIndex());
-    if (difference == 0) {
-      difference = Long.compare(getPosition(), other.getPosition());
-    }
-
-    return difference;
+    return Comparator.comparingLong(DbSnapshotId::getIndex)
+        .thenComparingLong(DbSnapshotId::getPosition)
+        .compare(this, other);
   }
 }

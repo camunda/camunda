@@ -39,11 +39,11 @@
   </sbe:message>
 
   <sbe:message name="SnapshotChunk" id="4">
-    <field name="snapshotPosition" id="0" type="uint64"/>
     <field name="totalCount" id="1" type="int32"/>
     <field name="checksum" id="2" type="uint64"/>
     <data name="chunkName" id="3" type="varDataEncoding"/>
     <data name="content" id="4" type="blob"/>
+    <data name="snapshotId" id="5" type="varDataEncoding" />
   </sbe:message>
 
   <sbe:message name="LogReplicationRequest" id="5">

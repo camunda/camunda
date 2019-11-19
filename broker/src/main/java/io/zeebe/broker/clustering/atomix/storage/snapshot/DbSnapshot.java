@@ -12,6 +12,7 @@ import io.atomix.protocols.raft.storage.snapshot.SnapshotChunkReader;
 import io.atomix.protocols.raft.storage.snapshot.impl.SnapshotReader;
 import io.atomix.protocols.raft.storage.snapshot.impl.SnapshotWriter;
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -81,11 +82,29 @@ public class DbSnapshot implements Snapshot {
 
   @Override
   public void delete() {
+    if (!Files.exists(directory)) {
+      return;
+    }
+
     try {
-      Files.deleteIfExists(directory);
+      FileUtil.deleteFolder(directory);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete snapshot {}", this, e);
     }
+  }
+
+  @Override
+  public Path getPath() {
+    return directory;
+  }
+
+  @Override
+  public int compareTo(final Snapshot other) {
+    if (other instanceof DbSnapshot) {
+      return getMetadata().compareTo(((DbSnapshot) other).getMetadata());
+    }
+
+    return Snapshot.super.compareTo(other);
   }
 
   @Override

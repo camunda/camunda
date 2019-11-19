@@ -21,8 +21,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
 /**
- * Represents a pending snapshot, that is a snapshot in the process of being written. It is not in a
- * usable state as it may be mutated at any moment; primarily used for replication.
+ * Represents a pending snapshot, that is a snapshot in the process of being written and has not yet
+ * been committed to the store.
  */
 public class DbPendingSnapshot implements PendingSnapshot {
   private static final Logger LOGGER = new ZbLogger(DbPendingSnapshot.class);
@@ -117,6 +117,11 @@ public class DbPendingSnapshot implements PendingSnapshot {
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete pending snapshot {}", this, e);
     }
+  }
+
+  @Override
+  public Path getPath() {
+    return directory;
   }
 
   @Override

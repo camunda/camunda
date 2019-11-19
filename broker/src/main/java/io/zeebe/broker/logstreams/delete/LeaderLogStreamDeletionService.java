@@ -9,20 +9,21 @@ package io.zeebe.broker.logstreams.delete;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.exporter.ExporterDirectorService;
-import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.state.Snapshot;
+import io.zeebe.logstreams.state.SnapshotDeletionListener;
+import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class LeaderLogStreamDeletionService implements DeletionService, Service<DeletionService> {
+public class LeaderLogStreamDeletionService implements SnapshotDeletionListener, Service<Void> {
   private final Injector<ExporterDirectorService> exporterDirectorInjector = new Injector<>();
   private final LogStream logStream;
   private ExporterDirectorService exporterDirector;
 
-  public LeaderLogStreamDeletionService(LogStream logStream) {
+  public LeaderLogStreamDeletionService(final LogStream logStream) {
     this.logStream = logStream;
   }
 
@@ -32,20 +33,17 @@ public class LeaderLogStreamDeletionService implements DeletionService, Service<
   }
 
   @Override
-  public void stop(final ServiceStopContext stopContext) {}
-
-  @Override
-  public LeaderLogStreamDeletionService get() {
-    return this;
+  public Void get() {
+    return null;
   }
 
   @Override
-  public void delete(final long position) {
+  public void onSnapshotDeleted(final SnapshotStorage storage, final Snapshot snapshot) {
     final ActorFuture<Long> lowestExporterPosition = exporterDirector.getLowestExporterPosition();
     lowestExporterPosition.onComplete(
         (value, exception) -> {
           if (exception == null) {
-            final long minPosition = Math.min(position, value);
+            final long minPosition = Math.min(snapshot.getPosition(), value);
             logStream.delete(minPosition);
           } else {
             Loggers.DELETION_SERVICE.warn(

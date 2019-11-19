@@ -8,9 +8,15 @@
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.util.ZbLogger;
+import java.nio.file.Path;
 import java.util.Objects;
+import java.util.Optional;
+import org.slf4j.Logger;
 
 public class DbSnapshotMetadata implements DbSnapshotId {
+  private static final Logger LOGGER = new ZbLogger(DbSnapshotMetadata.class);
+
   private final long index;
   private final long term;
   private final WallClockTimestamp timestamp;
@@ -22,6 +28,32 @@ public class DbSnapshotMetadata implements DbSnapshotId {
     this.term = term;
     this.timestamp = timestamp;
     this.position = position;
+  }
+
+  public static Optional<DbSnapshotMetadata> ofPath(final Path path) {
+    return ofFileName(path.getFileName().toString());
+  }
+
+  public static Optional<DbSnapshotMetadata> ofFileName(final String name) {
+    final var parts = name.split("-", 4);
+    Optional<DbSnapshotMetadata> metadata = Optional.empty();
+
+    if (parts.length == 4) {
+      try {
+        final var index = Long.parseLong(parts[0]);
+        final var term = Long.parseLong(parts[1]);
+        final var timestamp = Long.parseLong(parts[2]);
+        final var position = Long.parseLong(parts[3]);
+
+        metadata =
+            Optional.of(
+                new DbSnapshotMetadata(index, term, WallClockTimestamp.from(timestamp), position));
+      } catch (final NumberFormatException e) {
+        LOGGER.debug("Failed to parse part of snapshot metadata", e);
+      }
+    }
+
+    return metadata;
   }
 
   @Override
