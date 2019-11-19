@@ -51,8 +51,10 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.junit.After;
 import org.junit.Before;
@@ -178,12 +180,23 @@ public class BrokerClientTest {
   }
 
   @Test
-  public void shouldEstablishNewConnectionsAfterDisconnect() {
+  public void shouldEstablishNewConnectionsAfterDisconnect() throws Exception {
     // given
     final ClientTransport clientTransport = ((BrokerClientImpl) client).getTransport();
-    final LoggingChannelListener channelListener = new LoggingChannelListener();
-    clientTransport.registerChannelListener(channelListener).join();
-    awaitConnectedChannels(channelListener, 1);
+    final AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(1));
+    clientTransport
+        .registerChannelListener(
+            new TransportListener() {
+              @Override
+              public void onConnectionEstablished(RemoteAddress remoteAddress) {
+                latchRef.get().countDown();
+              }
+
+              @Override
+              public void onConnectionClosed(RemoteAddress remoteAddress) {}
+            })
+        .join();
+    latchRef.get().await(10, TimeUnit.SECONDS);
 
     // ensuring an open connection
     broker.onExecuteCommandRequest(ValueType.DEPLOYMENT, DeploymentIntent.CREATE).doNotRespond();
@@ -191,11 +204,11 @@ public class BrokerClientTest {
 
     // when
     broker.closeTransport();
+    latchRef.set(new CountDownLatch(1));
     broker.bindTransport();
 
     // then
-    awaitConnectedChannels(channelListener, 2); // listener invocation is asynchronous
-    assertThat(channelListener.connectionState).last().isSameAs(ConnectionState.CONNECTED);
+    latchRef.get().await(10, TimeUnit.SECONDS);
   }
 
   @Test
@@ -383,34 +396,5 @@ public class BrokerClientTest {
             .done();
 
     builder.register();
-  }
-
-  private void awaitConnectedChannels(final LoggingChannelListener listener, final int count) {
-    waitUntil(
-        () ->
-            listener.connectionState.stream()
-                    .filter(state -> state == ConnectionState.CONNECTED)
-                    .count()
-                == count);
-  }
-
-  protected static class LoggingChannelListener implements TransportListener {
-
-    List<ConnectionState> connectionState = new CopyOnWriteArrayList<>();
-
-    @Override
-    public void onConnectionEstablished(final RemoteAddress remoteAddress) {
-      connectionState.add(ConnectionState.CONNECTED);
-    }
-
-    @Override
-    public void onConnectionClosed(final RemoteAddress remoteAddress) {
-      connectionState.add(ConnectionState.CLOSED);
-    }
-  }
-
-  protected enum ConnectionState {
-    CONNECTED,
-    CLOSED
   }
 }
