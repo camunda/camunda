@@ -36,7 +36,6 @@ import org.camunda.operate.zeebe.ImportValueType;
 import org.camunda.operate.zeebeimport.RecordsReader;
 import org.camunda.operate.zeebeimport.RecordsReaderHolder;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
@@ -55,7 +54,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.property.OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX;
-import static org.camunda.operate.util.CollectionUtil.*;
 import static org.camunda.operate.util.ThreadUtil.*;
 
 public class ElasticsearchTestRule extends TestWatcher {
@@ -130,20 +128,9 @@ public class ElasticsearchTestRule extends TestWatcher {
     if (!failed) {
       String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
       TestUtil.removeAllIndices(esClient,indexPrefix);
-      assertThat(areIndicesNotExistsAfterChecks(indexPrefix,10 * 60 /*sec*/))
-        .describedAs("Elasticsearch '%s' indexes are deleted.",indexPrefix)
-        .isTrue();
     }
     operateProperties.getElasticsearch().setIndexPrefix(DEFAULT_INDEX_PREFIX);
   }
-
-//  public void assertZeebeESIsRunning() {
-//    assertThat(esConnector.checkHealth(zeebeEsClient, true)).describedAs("Zeebe Elasticsearch is running").isTrue();
-//  }
-
-//  public void assertOperateESIsRunning() {
-//    assertThat(esConnector.checkHealth(esClient, true)).describedAs("Operator Elasticsearch is running").isTrue();
-//  }
 
   public void refreshIndexesInElasticsearch() {
     refreshZeebeESIndices();
@@ -247,33 +234,8 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices) throws IOException {
     GetIndexResponse response = esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
-    List<String> indices = List.of(response.getIndices());
-    return filter(indices,index -> index.contains(indexPrefix)).size() > minCountOfIndices;
-  }
-
-  public boolean areIndicesNotExistsAfterChecks(String indexPrefix,int maxChecks) {
-    boolean isEmpty = false;
-    int checks = 0;
-    while (!isEmpty && checks <= maxChecks) {
-      checks++;
-      isEmpty = areIndicesNotExists(indexPrefix);
-      logger.error("Elasticsearch indices are not empty yet. Waiting {}/{}", checks, maxChecks);
-      sleepFor(100);
-    }
-    logger.debug("Elasticsearch indices are empty after {} checks", checks);
-    return isEmpty;
-  }
-
-  private boolean areIndicesNotExists(String indexPrefix) {
-    boolean isEmpty = false;
-    try {
-      esClient.indices().get(new GetIndexRequest(indexPrefix + "*"), RequestOptions.DEFAULT);
-    } catch (ElasticsearchStatusException e) {
-      isEmpty = true;
-    } catch (Throwable t) {
-      logger.error(t.getMessage(),t);
-    }
-    return isEmpty;
+    String[] indices = response.getIndices();
+    return indices != null && indices.length >= minCountOfIndices; 
   }
 
   public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
