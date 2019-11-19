@@ -2,6 +2,7 @@
   "navigation": {
     "homepage": "Home",
     "analysis": "Analysis",
+    "events": "Event Based Processes",
     "logout": "Logout",
     "logoutFailed": "Logout failed.",
     "configLoadingError": "An error occurred while loading the UI configurations"
@@ -93,6 +94,10 @@
     },
     "data-hint": "Missing data? The last update introduced user permissions. Ask your administrator for access rights.",
     "empty": "There are no items created yet"
+  },
+  "events": {
+    "empty": "There are no Event Based Processes created yet",
+    "label": "Event Based Process"
   },
   "report": {
     "label": "Report",

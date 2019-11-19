@@ -1,0 +1,77 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="Events"
+>
+  <EntityList
+    data={
+      Array [
+        Object {
+          "actions": Array [
+            Object {
+              "action": [Function],
+              "icon": "edit",
+              "text": "Edit",
+            },
+            Object {
+              "action": [Function],
+              "icon": "delete",
+              "text": "Delete",
+            },
+          ],
+          "icon": <ForwardRef(SvgProcess) />,
+          "link": "/events/process1/",
+          "name": "First Process",
+          "type": "Event Based Process",
+        },
+        Object {
+          "actions": Array [
+            Object {
+              "action": [Function],
+              "icon": "edit",
+              "text": "Edit",
+            },
+            Object {
+              "action": [Function],
+              "icon": "delete",
+              "text": "Delete",
+            },
+          ],
+          "icon": <ForwardRef(SvgProcess) />,
+          "link": "/events/process2/",
+          "name": "Second Process",
+          "type": "Event Based Process",
+        },
+        Object {
+          "actions": Array [
+            Object {
+              "action": [Function],
+              "icon": "edit",
+              "text": "Edit",
+            },
+            Object {
+              "action": [Function],
+              "icon": "delete",
+              "text": "Delete",
+            },
+          ],
+          "icon": <ForwardRef(SvgProcess) />,
+          "link": "/events/process3/",
+          "name": "Third Process",
+          "type": "Event Based Process",
+        },
+      ]
+    }
+    empty="There are no Event Based Processes created yet"
+    isLoading={false}
+    name="Event Based Processes"
+  />
+  <DeleterErrorHandler
+    deleteEntity={[Function]}
+    entity={null}
+    onClose={[Function]}
+    onDelete={[Function]}
+  />
+</div>
+`;

@@ -57,6 +57,11 @@ class Header extends React.Component {
             linksTo="/analysis"
             active={['/analysis/', '/analysis/*']}
           />
+          <HeaderNav.Item
+            name={t('navigation.events')}
+            linksTo="/events"
+            active={['/events/', '/events/*']}
+          />
         </HeaderNav>
         <LogoutButton />
       </header>

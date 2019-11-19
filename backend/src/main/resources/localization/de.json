@@ -2,6 +2,7 @@
   "navigation": {
     "homepage": "Home",
     "analysis": "Analyse",
+    "events": "Eventbasierte Prozesse",
     "logout": "Abmelden",
     "logoutFailed": "Abmeldung fehlgeschlagen",
     "configLoadingError": "Beim Laden der UI-Konfigurationen ist ein Fehler aufgetreten"
@@ -93,6 +94,10 @@
     },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
     "empty": "Es wurde noch nichts erstellt"
+  },
+  "events": {
+    "empty": "Es wurden noch keine Eventbasierten Prozesse erstellt",
+    "label": "Eventbasierter Prozess"
   },
   "report": {
     "label": "Bericht",
