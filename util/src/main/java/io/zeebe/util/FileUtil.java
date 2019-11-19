@@ -134,10 +134,8 @@ public class FileUtil {
     }
   }
 
-  public static void copySnapshot(File runtimeDirectory, File snapshotDirectory) throws Exception {
-    final Path targetPath = runtimeDirectory.toPath();
-    final Path sourcePath = snapshotDirectory.toPath();
-    Files.walkFileTree(sourcePath, new SnapshotCopier(sourcePath, targetPath));
+  public static void copySnapshot(Path runtimeDirectory, Path snapshotDirectory) throws Exception {
+    Files.walkFileTree(snapshotDirectory, new SnapshotCopier(snapshotDirectory, runtimeDirectory));
   }
 
   public static final class SnapshotCopier extends SimpleFileVisitor<Path> {
