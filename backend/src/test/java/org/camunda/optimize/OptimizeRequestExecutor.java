@@ -38,6 +38,7 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueReq
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
+import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.security.AuthCookieService;
 
@@ -1009,6 +1010,19 @@ public class OptimizeRequestExecutor {
     this.requestType = PUT;
     addSingleHeader(OPTIMIZE_API_SECRET_HEADER, secret);
     this.body = getBody(eventDtos);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetOnboardingStateForKey(final String key) {
+    this.path = "onboarding/" + key;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSetOnboardingStateForKey(final String key, final boolean seen) {
+    this.path = "onboarding/" + key;
+    this.requestType = PUT;
+    this.body = getBody(new OnboardingStateRestDto(seen));
     return this;
   }
 

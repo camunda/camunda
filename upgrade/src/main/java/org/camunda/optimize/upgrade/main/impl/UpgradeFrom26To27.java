@@ -30,6 +30,7 @@ import org.camunda.optimize.service.es.schema.index.EventBasedProcessIndex;
 import org.camunda.optimize.service.es.schema.index.EventIndex;
 import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
@@ -108,6 +109,7 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
+      .addUpgradeStep(new CreateIndexStep(new OnboardingStateIndex()))
       .addUpgradeStep(new CreateIndexStep(new EventIndex()))
       .addUpgradeStep(new CreateIndexStep(new EventBasedProcessIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new DecisionInstanceIndex()))

@@ -41,6 +41,7 @@ public class ElasticsearchConstants {
   public static final String TENANT_INDEX_NAME = "tenant";
   public static final String EVENT_INDEX_NAME = "event";
   public static final String EVENT_BASED_PROCESS_INDEX_NAME = "event-based-process";
+  public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
 }
