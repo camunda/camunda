@@ -7,10 +7,12 @@ package org.camunda.optimize.rest.providers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.service.LocalizationService;
 import org.glassfish.jersey.server.ParamException;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
@@ -21,11 +23,20 @@ import javax.ws.rs.ext.Provider;
 @Slf4j
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
-  private static Response buildGenericErrorResponse(Throwable e) {
+  private final LocalizationService localizationService;
+  private static final String GENERIC_ERROR_CODE = "serverError";
+  private static final String NOT_FOUND_ERROR_CODE = "notFoundError";
+  private static final String BAD_REQUEST_ERROR_CODE = "badRequestError";
+
+  public GenericExceptionMapper(@Context final LocalizationService localizationService) {
+    this.localizationService = localizationService;
+  }
+
+  private Response buildGenericErrorResponse(Throwable e) {
     return Response
       .status(getStatusForError(e))
       .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(new ErrorResponseDto(e.getMessage()))
+      .entity(getErrorResponseDto(e))
       .build();
   }
 
@@ -41,6 +52,28 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
     }
 
     return Response.Status.INTERNAL_SERVER_ERROR;
+  }
+
+  private ErrorResponseDto getErrorResponseDto(Throwable e) {
+    final Class<?> errorClass = e.getClass();
+    final String errorCode;
+
+    if (NotFoundException.class.equals(errorClass)) {
+      errorCode = NOT_FOUND_ERROR_CODE;
+    } else if (BadRequestException.class.equals(errorClass)
+      || ParamException.PathParamException.class.equals(errorClass)) {
+      errorCode = BAD_REQUEST_ERROR_CODE;
+    } else {
+      errorCode = GENERIC_ERROR_CODE;
+    }
+
+    String localisedMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+
+    return new ErrorResponseDto(
+      errorCode,
+      localisedMessage,
+      e.getMessage()
+    );
   }
 
   @Override

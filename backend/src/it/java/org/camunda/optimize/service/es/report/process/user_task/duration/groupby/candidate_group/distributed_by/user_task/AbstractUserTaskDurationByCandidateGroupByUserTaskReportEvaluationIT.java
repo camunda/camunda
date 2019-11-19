@@ -1010,7 +1010,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -1023,7 +1023,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     final Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test

@@ -62,7 +62,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @ParameterizedTest(name = "missing variable type query param throws error for type {0}")
@@ -77,7 +77,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @ParameterizedTest(name = "missing decision definition key query param throws error for type {0}")
@@ -92,7 +92,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @ParameterizedTest(name = "missing decision definition version query param throws error for type {0}")
@@ -107,7 +107,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   private static Stream<String> getInputOutputArgs() {

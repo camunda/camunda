@@ -88,7 +88,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(share);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test

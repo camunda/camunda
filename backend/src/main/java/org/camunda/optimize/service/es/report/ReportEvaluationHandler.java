@@ -113,8 +113,8 @@ public abstract class ReportEvaluationHandler {
       ));
     final CombinedProcessReportResultDto combinedSingleReportResultDto =
       new CombinedProcessReportResultDto(
-      reportIdToMapResult
-    );
+        reportIdToMapResult
+      );
     return new CombinedProcessReportResult(combinedSingleReportResultDto, combinedReportDefinition);
   }
 

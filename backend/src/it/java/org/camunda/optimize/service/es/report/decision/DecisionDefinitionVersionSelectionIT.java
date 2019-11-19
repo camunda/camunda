@@ -117,7 +117,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
   }
 
   @Test
-  public void missingDefinitionVersionResultsIn500() {
+  public void missingDefinitionVersionResultsIn400() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(1);
 
@@ -133,7 +133,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
       Response response = evaluateReportWithResponse(report);
 
       // then
-      assertThat(response.getStatus(), is(500));
+      assertThat(response.getStatus(), is(400));
     }
   }
 

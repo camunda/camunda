@@ -731,7 +731,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -742,7 +742,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -753,7 +753,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -764,7 +764,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {

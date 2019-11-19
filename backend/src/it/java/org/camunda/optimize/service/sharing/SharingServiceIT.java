@@ -681,7 +681,7 @@ public class SharingServiceIT extends AbstractSharingIT {
                     dashboardShareId,
                     dashboardShareDto.getReports().get(0).getId()
             )
-            .execute(ReportEvaluationException.class, 500);
+            .execute(ReportEvaluationException.class, 400);
 
     //then
     AbstractSharingIT.assertErrorFields(errorResponse);

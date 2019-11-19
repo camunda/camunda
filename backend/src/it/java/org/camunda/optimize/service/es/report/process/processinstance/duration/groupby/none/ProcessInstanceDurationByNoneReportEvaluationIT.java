@@ -500,7 +500,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test

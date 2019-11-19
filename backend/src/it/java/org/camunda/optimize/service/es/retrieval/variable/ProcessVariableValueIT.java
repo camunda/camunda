@@ -675,7 +675,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -690,7 +690,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -705,7 +705,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -720,7 +720,7 @@ public class ProcessVariableValueIT extends AbstractIT {
     Response response = getVariableValueResponse(requestDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition() {

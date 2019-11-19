@@ -430,7 +430,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportAndReturnResponse(filterDtos);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test

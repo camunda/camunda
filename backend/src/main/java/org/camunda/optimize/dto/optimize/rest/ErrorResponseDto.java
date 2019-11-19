@@ -19,8 +19,11 @@ public class ErrorResponseDto {
   public ErrorResponseDto() {
   }
 
-  public ErrorResponseDto(String errorMessage, AuthorizedReportDefinitionDto reportDefinition) {
+  public ErrorResponseDto(String errorCode, String errorMessage, String detailedMessage,
+                          AuthorizedReportDefinitionDto reportDefinition) {
+    this.errorCode = errorCode;
     this.errorMessage = errorMessage;
+    this.detailedMessage = detailedMessage;
     this.reportDefinition = reportDefinition;
   }
 

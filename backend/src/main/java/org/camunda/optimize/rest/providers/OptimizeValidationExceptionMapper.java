@@ -8,7 +8,7 @@ package org.camunda.optimize.rest.providers;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -18,34 +18,30 @@ import javax.ws.rs.ext.Provider;
 
 @Provider
 @Slf4j
-public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEvaluationException> {
+public class OptimizeValidationExceptionMapper implements ExceptionMapper<OptimizeValidationException> {
+
   private final LocalizationService localizationService;
 
-  public ReportEvaluationExceptionMapper(@Context final LocalizationService localizationService) {
+  public OptimizeValidationExceptionMapper(@Context final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
   @Override
-  public Response toResponse(ReportEvaluationException reportEvaluationException) {
-    log.debug("Mapping ReportEvaluationException: {}", reportEvaluationException.getMessage());
+  public Response toResponse(final OptimizeValidationException validationException) {
+    log.warn("Mapping OptimizeValidationException");
+
     return Response
       .status(Response.Status.BAD_REQUEST)
       .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(mapToEvaluationErrorResponseDto(reportEvaluationException))
+      .entity(getErrorResponseDto(validationException))
       .build();
   }
 
-  private ErrorResponseDto mapToEvaluationErrorResponseDto(ReportEvaluationException evaluationException) {
-    String errorCode = evaluationException.getErrorCode();
+  private ErrorResponseDto getErrorResponseDto(OptimizeValidationException exception) {
+    String errorCode = exception.getErrorCode();
     String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
-    String detailedErrorMessage = evaluationException.getMessage();
+    String detailedErrorMessage = exception.getMessage();
 
-    return new ErrorResponseDto(
-      errorCode,
-      errorMessage,
-      detailedErrorMessage,
-      evaluationException.getReportDefinition()
-    );
+    return new ErrorResponseDto(errorCode, errorMessage, detailedErrorMessage);
   }
-
 }

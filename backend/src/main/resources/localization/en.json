@@ -684,6 +684,12 @@
   "apiErrors": {
     "serverError": "An internal server error occurred.",
     "reportConflict": "Could not apply the report changes due to conflicts.",
-    "collectionConflict": "Could not apply the collection changes due to conflicts."
+    "collectionConflict": "Could not apply the collection changes due to conflicts.",
+    "sharingNotAllowed": "Could not share as this functionality is currently disabled.",
+    "reportEvaluationError": "Could not evaluate the report.",
+    "forbiddenError": "You are not authorized to perform the requested action.",
+    "notAuthorizedError": "Could not authenticate you, please check your credentials.",
+    "notFoundError": "The server could not find the requested resource.",
+    "badRequestError": "The server was unable to process the request."
   }
 }

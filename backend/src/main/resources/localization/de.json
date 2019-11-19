@@ -684,6 +684,12 @@
   "apiErrors": {
     "serverError": "Es ist ein interner Server Fehler aufgetreten.",
     "reportConflict": "Die Änderung am Bericht konnte aufgrund von Konflikten nicht ausgeführt werden.",
-    "collectionConflict": "Die Änderung an der Sammlung konnte aufgrund von Konflikten nicht ausgeführt werden."
+    "collectionConflict": "Die Änderung an der Sammlung konnte aufgrund von Konflikten nicht ausgeführt werden.",
+    "sharingNotAllowed": "Teilen nicht möglich, da diese Funktion momentan gesperrt ist.",
+    "reportEvaluationError": "Der Bericht konnte nicht evaluiert werden.",
+    "forbiddenError": "Ihnen fehlt die Befugnis, diese Aktion auszuführen.",
+    "notAuthorizedError": "Sie konnten nicht authentifiziert werden, bitte überprüfen Sie Ihren Benutzernamen und Passwort.",
+    "notFoundError": "Der Server konnte die angeforderte Seite oder Datei nicht finden.",
+    "badRequestError": "Der Server konnte Ihre Anfrage nicht verarbeiten."
   }
 }

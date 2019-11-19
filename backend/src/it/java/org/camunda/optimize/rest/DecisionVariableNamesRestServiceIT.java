@@ -67,7 +67,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @ParameterizedTest
@@ -82,7 +82,7 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   private DecisionVariableNameRequestDto generateDefaultVariableRequest() {

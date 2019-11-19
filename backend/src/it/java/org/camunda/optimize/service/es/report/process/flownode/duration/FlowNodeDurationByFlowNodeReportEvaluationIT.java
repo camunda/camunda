@@ -856,7 +856,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -870,7 +870,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test

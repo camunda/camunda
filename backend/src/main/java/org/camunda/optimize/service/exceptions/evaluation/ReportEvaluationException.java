@@ -36,4 +36,9 @@ public class ReportEvaluationException extends OptimizeRuntimeException {
   public AuthorizedReportDefinitionDto getReportDefinition() {
     return reportDefinition;
   }
+
+  @Override
+  public String getErrorCode() {
+    return "reportEvaluationError";
+  }
 }

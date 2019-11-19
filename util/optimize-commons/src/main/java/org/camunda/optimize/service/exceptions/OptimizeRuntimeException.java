@@ -18,4 +18,8 @@ public class OptimizeRuntimeException extends RuntimeException {
   public OptimizeRuntimeException(String message, Exception e) {
     super(message, e);
   }
+
+  public String getErrorCode() {
+    return "serverError";
+  }
 }

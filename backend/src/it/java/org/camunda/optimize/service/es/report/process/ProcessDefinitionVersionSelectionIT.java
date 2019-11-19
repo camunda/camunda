@@ -129,7 +129,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   }
 
   @Test
-  public void missingDefinitionVersionResultsIn500() {
+  public void missingDefinitionVersionResultsIn400() {
     // given
     ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(1);
 
@@ -145,7 +145,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
       Response response = evaluateReportWithResponse(report);
 
       // then
-      assertThat(response.getStatus(), is(500));
+      assertThat(response.getStatus(), is(400));
     }
   }
 

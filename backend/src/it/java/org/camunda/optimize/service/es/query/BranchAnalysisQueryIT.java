@@ -835,7 +835,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     //when
     Response response = getResponse(new BranchAnalysisQueryDto());
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -846,7 +846,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     //when
     Response response = getResponse(new BranchAnalysisQueryDto());
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -858,7 +858,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     Response response = getResponse(request);
 
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -871,7 +871,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     Response response = getResponse(request);
 
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   private void startBypassProcessAndTakeLongWayWithoutTask(ProcessDefinitionEngineDto processDefinition) {

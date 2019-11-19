@@ -838,7 +838,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       definition,
       Collections.singletonMap("testVar", new EngineVariableValue(null, "String")),
       missingTestStartDate,
-      missingTestStartDate.plus(500, MILLIS)
+      missingTestStartDate.plus(400, MILLIS)
     );
 
     startProcessWithDates(
@@ -884,7 +884,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       result.getEntryForKey("missing").get().getValue(),
       is(calculateExpectedValueGivenDurationsDefaultAggr(
         missingTestStartDate.until(missingTestStartDate.plus(200, MILLIS), MILLIS),
-        missingTestStartDate.until(missingTestStartDate.plus(500, MILLIS), MILLIS),
+        missingTestStartDate.until(missingTestStartDate.plus(400, MILLIS), MILLIS),
         missingTestStartDate.until(missingTestStartDate.plus(3000, MILLIS), MILLIS),
         missingTestStartDate.until(missingTestStartDate.plus(10000, MILLIS), MILLIS)
       ))
@@ -999,7 +999,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -1020,7 +1020,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test

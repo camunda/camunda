@@ -431,7 +431,7 @@ public class ReportRestServiceIT extends AbstractIT {
     ReportEvaluationException response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
-      .execute(ReportEvaluationException.class, 500);
+      .execute(ReportEvaluationException.class, 400);
 
     // then
     AbstractSharingIT.assertErrorFields(response);
@@ -793,7 +793,7 @@ public class ReportRestServiceIT extends AbstractIT {
     ReportEvaluationException response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSavedReportRequest(id)
-      .execute(ReportEvaluationException.class, 500);
+      .execute(ReportEvaluationException.class, 400);
 
     // then
     AbstractSharingIT.assertErrorFields(response);

@@ -5,8 +5,13 @@
  */
 package org.camunda.optimize.service.exceptions;
 
-public class SharingNotAllowedException extends OptimizeException {
+public class SharingNotAllowedException extends OptimizeValidationException {
   public SharingNotAllowedException(String message) {
     super(message);
+  }
+
+  @Override
+  public String getErrorCode() {
+    return "sharingNotAllowed";
   }
 }

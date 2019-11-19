@@ -1071,7 +1071,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -1090,7 +1090,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -1110,7 +1110,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
   @Test
@@ -1127,7 +1127,7 @@ public class VariableQueryFilterIT extends AbstractFilterIT {
     Response response = evaluateReportWithFilterAndGetResponse(variableFilterDto);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
   }
 
 

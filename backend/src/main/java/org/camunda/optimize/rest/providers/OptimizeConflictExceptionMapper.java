@@ -18,11 +18,11 @@ import javax.ws.rs.ext.Provider;
 
 @Provider
 @Slf4j
-public class OptimizeConflictExceptionExceptionMapper implements ExceptionMapper<OptimizeConflictException> {
+public class OptimizeConflictExceptionMapper implements ExceptionMapper<OptimizeConflictException> {
 
   private final LocalizationService localizationService;
 
-  public OptimizeConflictExceptionExceptionMapper(@Context final LocalizationService localizationService) {
+  public OptimizeConflictExceptionMapper(@Context final LocalizationService localizationService) {
     this.localizationService = localizationService;
   }
 
@@ -30,25 +30,24 @@ public class OptimizeConflictExceptionExceptionMapper implements ExceptionMapper
   public Response toResponse(OptimizeConflictException conflictException) {
     log.warn("Mapping OptimizeConflictException");
 
-    String errorCode = conflictException.getErrorCode();
-    String errorMessage;
-    try {
-      errorMessage = localizationService.getDefaultLocaleMessageForBackendErrorCode(errorCode);
-    } catch (Exception e) {
-      errorMessage = String.format("Failed to localize error message for code [%s]", errorCode);
-    }
-    String detailedErrorMessage = conflictException.getMessage();
-
     return Response
       .status(Response.Status.CONFLICT)
       .type(MediaType.APPLICATION_JSON_TYPE)
-      .entity(new ConflictResponseDto(
-        errorCode,
-        errorMessage,
-        detailedErrorMessage,
-        conflictException.getConflictedItems()
-      ))
+      .entity(getConflictResponseDto(conflictException))
       .build();
+  }
+
+  private ConflictResponseDto getConflictResponseDto(OptimizeConflictException conflictException) {
+    String errorCode = conflictException.getErrorCode();
+    String errorMessage = localizationService.getDefaultLocaleMessageForApiErrorCode(errorCode);
+    String detailedErrorMessage = conflictException.getMessage();
+
+    return new ConflictResponseDto(
+      errorCode,
+      errorMessage,
+      detailedErrorMessage,
+      conflictException.getConflictedItems()
+    );
   }
 
 }

@@ -43,8 +43,12 @@ public class LocalizationService implements ConfigurationReloadable {
     return getFileBytes(resolveLocaleFilePath(resolvedLocaleCode));
   }
 
-  public String getDefaultLocaleMessageForBackendErrorCode(final String code) throws IOException {
-    return getMessageForCode(configurationService.getFallbackLocale(), API_ERRORS_FIELD, code);
+  public String getDefaultLocaleMessageForApiErrorCode(final String code) {
+    try {
+      return getMessageForCode(configurationService.getFallbackLocale(), API_ERRORS_FIELD, code);
+    } catch (Exception e) {
+      return String.format("Failed to localize error message for code [%s]", code);
+    }
   }
 
   @Override

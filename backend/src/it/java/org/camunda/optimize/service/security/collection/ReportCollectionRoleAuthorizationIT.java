@@ -514,7 +514,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     final Response response = evaluateReportByIdAsKermit(reportId);
 
     // then
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
     final ErrorResponseDto errorResponseDto = response.readEntity(ErrorResponseDto.class);
     assertThat(
       errorResponseDto.getReportDefinition().getCurrentUserRole(),
