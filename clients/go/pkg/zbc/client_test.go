@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
+	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"

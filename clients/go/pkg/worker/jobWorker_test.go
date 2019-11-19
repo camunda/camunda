@@ -20,10 +20,10 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
-	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
 	"testing"
 	"time"
 )

@@ -17,7 +17,7 @@ package entities
 import (
 	"encoding/json"
 
-	"github.com/zeebe-io/zeebe/clients/go/internal/pb"
+	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
 )
 
 // Job represents a single work item of a workflow.
