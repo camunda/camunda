@@ -8,9 +8,7 @@ package org.camunda.operate.it;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -43,7 +41,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -93,8 +90,6 @@ public class OperateTester {
 
   @Autowired
   protected OperationExecutor operationExecutor;
-
-  private Map<Object,Long> countImported = new HashMap<>();
 
   private boolean operationExecutorEnabled = true;
 
@@ -225,42 +220,6 @@ public class OperateTester {
       for(Future f: futures) { f.get();}
       return 0;//return futures.size()
   }
-
-  public Long getWorkflowKey() {
-    return workflowKey;
-  }
-  
-  protected Map<Object,Long> updateMap(Map<Object,Long> map,Object key,Long value){
-    if(!map.containsKey(key)) {
-      map.put(key, value);
-    }else {
-      map.put(key,map.get(key)+value);
-    }
-    return map;
-  }
-
-  public OperateTester process(ImportValueType importValueType) {
-    countImported.put(importValueType, 0L);
-    long entitiesCount = 0;
-    while (entitiesCount == 0) {
-      entitiesCount = importType(importValueType, entitiesCount);
-    }
-    while (entitiesCount > 0) {
-      entitiesCount = importType(importValueType, entitiesCount);
-    }
-    return this;
-  }
-
-  private long importType(ImportValueType importValueType, long entitiesCount) {
-    try {
-      entitiesCount = importOneType(importValueType);
-      updateMap(countImported, importValueType, entitiesCount);
-    } catch (Throwable t) {
-      logger.error(t.getMessage(),t);
-    }
-    sleepFor(500);
-    return entitiesCount;
-  }
   
   public int importOneType(ImportValueType importValueType) throws IOException {
     List<RecordsReader> readers = elasticsearchTestRule.getRecordsReaders(importValueType);
@@ -273,10 +232,6 @@ public class OperateTester {
 
   public OperateTester then() {
     return this;
-  }
- 
-  public long getCountImportedFor(Object key) {
-    return countImported.get(key);
   }
 
   public OperateTester disableOperationExecutor() {
