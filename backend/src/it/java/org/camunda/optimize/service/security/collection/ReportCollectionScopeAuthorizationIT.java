@@ -155,10 +155,15 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, authorizedTenant, RESOURCE_TYPE_TENANT);
     authorizationClient.grantAllResourceAuthorizationsForKermit(definitionType);
 
-    deployAndImportDefinition(definitionType, "KEY_1", authorizedTenant);
-    deployAndImportDefinition(definitionType, "KEY_2", authorizedTenant);
-    deployAndImportDefinition(definitionType, "KEY_3", authorizedTenant);
-    deployAndImportDefinition(definitionType, "KEY_4", authorizedTenant);
+    // shared definitions (any tenant is possible)
+    deployAndImportDefinition(definitionType, "KEY_1", null);
+    deployAndImportDefinition(definitionType, "KEY_2", null);
+    deployAndImportDefinition(definitionType, "KEY_3", null);
+    deployAndImportDefinition(definitionType, "KEY_3", null);
+    deployAndImportDefinition(definitionType, "KEY_4", null);
+    // tenant specific definitions
+    deployAndImportDefinition(definitionType, "KEY_5", unauthorizedTenant1);
+    deployAndImportDefinition(definitionType, "KEY_6", authorizedTenant);
 
     final String collectionId = collectionClient.createNewCollection();
     createScopeWithTenants(collectionId, "KEY_1", asList(authorizedTenant, unauthorizedTenant1), definitionType);
@@ -170,6 +175,8 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       asList(unauthorizedTenant1, unauthorizedTenant2, authorizedTenant),
       definitionType
     );
+    createScopeWithTenants(collectionId, "KEY_5", asList(unauthorizedTenant1), definitionType);
+    createScopeWithTenants(collectionId, "KEY_6", asList(authorizedTenant), definitionType);
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
 
     // when
@@ -178,7 +185,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     // then
     assertThat(scopeEntries)
       .extracting(CollectionScopeEntryRestDto::getDefinitionKey)
-      .containsExactlyInAnyOrder("KEY_1", "KEY_3", "KEY_4");
+      .containsExactlyInAnyOrder("KEY_1", "KEY_3", "KEY_4", "KEY_6");
   }
 
   @ParameterizedTest(name = "unauthorized tenants get masked for type {0}")

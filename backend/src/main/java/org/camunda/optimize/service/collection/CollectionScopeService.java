@@ -83,7 +83,6 @@ public class CollectionScopeService {
         return new CollectionScopeEntryRestDto()
           .setId(scope.getId())
           .setDefinitionKey(scope.getDefinitionKey())
-          .setDefinitionName(getDefinitionName(userId, scope))
           .setDefinitionType(scope.getDefinitionType())
           .setTenants(authorizedTenantDtos);
       })
@@ -91,6 +90,11 @@ public class CollectionScopeService {
       .filter(collectionScopeEntryRestDto -> collectionScopeEntryRestDto.getTenants()
         .stream()
         .anyMatch(t -> !UNAUTHORIZED_TENANT_MASK_ID.equals(t.getId())))
+      // for all visible entries we need to resolve the actual definition name
+      // we do it only after the filtering as only then it is ensured the user has access to that entry at all
+      .peek(collectionScopeEntryRestDto -> collectionScopeEntryRestDto.setDefinitionName(
+        getDefinitionName(userId, collectionScopeEntryRestDto)
+      ))
       .sorted(
         Comparator.comparing(CollectionScopeEntryRestDto::getDefinitionType)
           .thenComparing(CollectionScopeEntryRestDto::getDefinitionName)
@@ -209,7 +213,7 @@ public class CollectionScopeService {
       .collect(Collectors.toList());
   }
 
-  private String getDefinitionName(final String userId, final CollectionScopeEntryDto scope) {
+  private String getDefinitionName(final String userId, final CollectionScopeEntryRestDto scope) {
     return definitionService.getDefinition(scope.getDefinitionType(), scope.getDefinitionKey(), userId)
       .map(DefinitionWithTenantsDto::getName)
       .orElse(scope.getDefinitionKey());
