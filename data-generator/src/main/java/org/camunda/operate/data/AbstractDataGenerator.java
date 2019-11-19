@@ -20,8 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.client.ZeebeClient;
 import org.springframework.beans.factory.annotation.Qualifier;
-import static org.camunda.operate.util.ThreadUtil.sleepForAndShouldInterrupt;
-
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 public abstract class AbstractDataGenerator implements DataGenerator {
 
@@ -68,7 +67,7 @@ public abstract class AbstractDataGenerator implements DataGenerator {
           zeebeDataCreated = createZeebeData(manuallyCalled);
         } catch (Exception ex) {
           logger.error(String.format("Error occurred when creating demo data: %s. Retrying...", ex.getMessage()), ex);
-          sleepForAndShouldInterrupt(2000);
+          sleepFor(2000);
         }
       }
     });

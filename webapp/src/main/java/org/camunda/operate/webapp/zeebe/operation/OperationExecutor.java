@@ -74,7 +74,7 @@ public class OperationExecutor extends Thread {
         if (operations.size() == 0) {
 
           notifyExecutionFinishedListeners();
-          sleepForAndShouldInterrupt(2000,true);
+          sleepFor(2000);
         }
 
       } catch (Exception ex) {
@@ -83,7 +83,7 @@ public class OperationExecutor extends Thread {
 
         logger.error(ex.getMessage(), ex);
         
-        sleepForAndShouldInterrupt(2000,true);
+        sleepFor(2000);
       }
     }
   }

@@ -21,7 +21,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
-import static org.camunda.operate.util.ThreadUtil.sleepForAndShouldInterrupt;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component
 @Configuration
@@ -114,7 +114,7 @@ public class ZeebeImporter extends Thread {
   }
 
   private void doBackoff() {
-    sleepForAndShouldInterrupt(2000);
+    sleepFor(2000);
   }
 
 }
