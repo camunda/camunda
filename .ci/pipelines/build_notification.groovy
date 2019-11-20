@@ -10,7 +10,8 @@ void buildNotification(String buildStatus) {
     def subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
     def body = "See: ${buildResultUrl}"
 
-    def fallbackRecipients = ["svetlana.dorokhova@camunda.com", "ralf.puchert@camunda.com"]
+    def fallbackRecipients = "svetlana.dorokhova@camunda.com ralf.puchert@camunda.com"
+
     emailext subject: subject, body: body, to: emailextrecipients([[$class: 'CulpritsRecipientProvider'], [$class: 'RequesterRecipientProvider']]) ?: fallbackRecipients
 }
 
