@@ -42,6 +42,12 @@ exports[`should match snapshot 1`] = `
       onChange={[Function]}
       type="checkbox"
     />
+    <ForwardRef(LabeledInput)
+      disabled={true}
+      key="id3"
+      onChange={[Function]}
+      type="checkbox"
+    />
   </div>
 </div>
 `;

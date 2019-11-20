@@ -27,7 +27,8 @@ jest.mock('./service', () => ({
       definitionName: 'definition name',
       tenants: [
         {id: null, name: 'Not defined'},
-        {id: 'tenant1', name: 'Sales'}
+        {id: 'tenant1', name: 'Sales'},
+        {id: '__unauthorizedTenantId__', name: 'Unauthorized Tenant'}
       ]
     },
     {

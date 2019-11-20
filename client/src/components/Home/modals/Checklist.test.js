@@ -11,7 +11,11 @@ import Checklist from './Checklist';
 import {LabeledInput} from 'components';
 
 const props = {
-  data: [{id: 'id1', name: 'name 1', checked: true}, {id: 'id2', name: 'name 2', checked: false}],
+  data: [
+    {id: 'id1', name: 'name 1', checked: true},
+    {id: 'id2', name: 'name 2', checked: false},
+    {id: 'id3', name: 'unauthorized', disabled: true}
+  ],
   onChange: jest.fn(),
   selectAll: jest.fn(),
   deselectAll: jest.fn()

@@ -90,7 +90,8 @@
         "label": "Definition",
         "label-plural": "Definitions"
       },
-      "noTenantFound": "No Tenants found"
+      "noTenantFound": "No Tenants found",
+      "unauthorizedTenant": "(Unauthorized Tenant)"
     },
     "data-hint": "Missing data? The last update introduced user permissions. Ask your administrator for access rights.",
     "empty": "There are no items created yet"

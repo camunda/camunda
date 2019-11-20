@@ -29,8 +29,9 @@ export default function Checklist({data, onChange, selectAll, deselectAll}) {
         />
       )}
       <div className="itemsList">
-        {data.map(({id, label, checked}) => (
+        {data.map(({id, label, checked, disabled}) => (
           <LabeledInput
+            disabled={disabled}
             key={id}
             type="checkbox"
             checked={checked}

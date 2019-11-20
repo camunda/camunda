@@ -163,5 +163,13 @@ function formatTenants(tenants) {
   if (tenants.length === 1 && tenants[0].id === null) {
     return '';
   }
-  return tenants.map(({name}) => name).join(', ');
+
+  return tenants
+    .map(({id, name}) => {
+      if (id === '__unauthorizedTenantId__') {
+        return t('home.sources.unauthorizedTenant');
+      }
+      return name;
+    })
+    .join(', ');
 }

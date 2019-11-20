@@ -32,11 +32,22 @@ export async function getTenantsWithDefinitions() {
 }
 
 export function formatTenants(tenants, selectedTenants) {
-  return tenants.map(({id, name}) => ({
-    id,
-    label: name,
-    checked: selectedTenants.some(tenant => tenant.id === id)
-  }));
+  return tenants.map(({id, name}, index) => {
+    if (id === '__unauthorizedTenantId__') {
+      return {
+        id: index,
+        label: t('home.sources.unauthorizedTenant'),
+        checked: true,
+        disabled: true
+      };
+    }
+
+    return {
+      id,
+      label: name,
+      checked: selectedTenants.some(tenant => tenant.id === id)
+    };
+  });
 }
 
 export function formatDefinitions(definitions, selectedDefinitions) {

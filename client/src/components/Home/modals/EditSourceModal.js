@@ -23,11 +23,14 @@ export default withErrorHandling(
       };
     }
 
+    getUnauthorizedTenants = () =>
+      this.state.selectedTenants.filter(tenant => tenant.id === '__unauthorizedTenantId__');
+
     componentDidMount() {
       const {definitionKey, definitionType} = this.props.source;
       this.props.mightFail(getDefinitionTenants(definitionKey, definitionType), ({tenants}) => {
         this.setState({
-          definitionTenants: tenants
+          definitionTenants: [...tenants, ...this.getUnauthorizedTenants()]
         });
       });
     }
@@ -36,6 +39,14 @@ export default withErrorHandling(
       const {selectedTenants} = this.state;
       if (selectedTenants.length > 0) {
         this.props.onConfirm(selectedTenants.map(({id}) => id));
+      }
+    };
+
+    updateSelectedTenants = selectedTenants => {
+      if (!selectedTenants.length) {
+        this.setState({selectedTenants: this.getUnauthorizedTenants()});
+      } else {
+        this.setState({selectedTenants});
       }
     };
 
@@ -59,7 +70,7 @@ export default withErrorHandling(
                 <ItemsList
                   selectedItems={selectedTenants}
                   allItems={definitionTenants}
-                  onChange={selectedTenants => this.setState({selectedTenants})}
+                  onChange={this.updateSelectedTenants}
                   formatter={formatTenants}
                 />
               </Form.Group>
