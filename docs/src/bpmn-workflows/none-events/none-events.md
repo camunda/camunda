@@ -6,6 +6,8 @@ None events are unspecified events, also called ‘blank’ events.
 
 ## None Start Events
 
+A workflow can have at most one none start event (besides other types of start events).
+
 A none start event is where the workflow instance or a subprocess starts when the workflow or the subprocess is activated.
 
 ## None End Events

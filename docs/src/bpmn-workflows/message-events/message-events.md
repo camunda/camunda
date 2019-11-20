@@ -8,7 +8,7 @@ At the moment, messages can be published only externally by using one of the Zee
 
 ## Message Start Events
 
-A workflow can have one or more message start events. Each of the message events must have a unique message name. If the workflow has at least one message start event then it must not have a none start event. Other types of start events are allowed.
+A workflow can have one or more message start events (besides other types of start events). Each of the message events must have a unique message name.
 
 When a workflow is deployed then it creates a message subscription for each message start event. Message subscriptions of the previous version of the workflow (based on the BPMN process id) are closed.
 

@@ -5,8 +5,9 @@ install-deps:
 
 .PHONY: test
 test:
-	go test -v ./commands/
-	go test -v ./entities/
-	go test -v ./worker/
-	go test -v ./tests/
-	go test -v ./zbc/
+	go test -v ./pkg/commands/
+	go test -v ./pkg/entities/
+	go test -v ./pkg/worker/
+	go test -v ./pkg/zbc/
+	go test -v ./internal/utils/
+	go test -v ./test/
