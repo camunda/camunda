@@ -123,8 +123,7 @@ public class ClusteredDataDeletionTest {
         takeSnapshotAndWaitForReplication(Collections.singletonList(leader), clusteringRule);
 
     // then
-    TestUtil.waitUntil(
-        () -> getSegments(leader).size() < segmentCount.get(leaderNodeId));
+    TestUtil.waitUntil(() -> getSegments(leader).size() < segmentCount.get(leaderNodeId));
   }
 
   @Test
@@ -136,9 +135,7 @@ public class ClusteredDataDeletionTest {
             .filter(b -> b.getConfig().getCluster().getNodeId() != leaderNodeId)
             .collect(Collectors.toList());
 
-    while (followers.stream()
-        .map(this::getSegments)
-        .allMatch(segments -> segments.size() <= 2)) {
+    while (followers.stream().map(this::getSegments).allMatch(segments -> segments.size() <= 2)) {
       clusteringRule
           .getClient()
           .newPublishMessageCommand()
@@ -149,8 +146,7 @@ public class ClusteredDataDeletionTest {
     }
 
     // when
-    final var followerSegmentCounts =
-        takeSnapshotAndWaitForReplication(followers, clusteringRule);
+    final var followerSegmentCounts = takeSnapshotAndWaitForReplication(followers, clusteringRule);
 
     // then
     TestUtil.waitUntil(

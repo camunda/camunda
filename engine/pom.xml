@@ -159,12 +159,6 @@
       <scope>test</scope>
     </dependency>
 
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-storage</artifactId>
-      <scope>test</scope>
-    </dependency>
-
     <!-- TEMPORARY -->
 
     <dependency>

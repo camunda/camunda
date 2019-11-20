@@ -10,9 +10,7 @@ package io.zeebe.logstreams.state;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 import io.zeebe.util.FileUtil;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -47,8 +45,7 @@ public class FileSnapshotConsumer implements SnapshotConsumer {
         FileUtil.deleteFolder(pendingDirectory);
       }
     } catch (IOException e) {
-      logger.debug(
-          "Could not delete temporary snapshot directory {}", pendingDirectory, e);
+      logger.debug("Could not delete temporary snapshot directory {}", pendingDirectory, e);
     }
   }
 
@@ -90,8 +87,7 @@ public class FileSnapshotConsumer implements SnapshotConsumer {
 
   private boolean writeReceivedSnapshotChunk(SnapshotChunk snapshotChunk, Path snapshotFile) {
     try {
-      Files.write(
-          snapshotFile, snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
+      Files.write(snapshotFile, snapshotChunk.getContent(), CREATE_NEW, StandardOpenOption.WRITE);
       logger.trace("Wrote replicated snapshot chunk to file {}", snapshotFile);
       return true;
     } catch (IOException ioe) {

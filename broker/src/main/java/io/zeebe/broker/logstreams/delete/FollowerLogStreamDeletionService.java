@@ -11,7 +11,6 @@ import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
-import io.zeebe.logstreams.state.SnapshotStorage;
 
 public class FollowerLogStreamDeletionService implements SnapshotDeletionListener {
   private final LogStream logStream;

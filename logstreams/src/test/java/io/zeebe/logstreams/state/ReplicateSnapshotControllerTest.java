@@ -159,28 +159,28 @@ public class ReplicateSnapshotControllerTest {
     assertThat(valueFromSnapshot).isEqualTo(VALUE);
   }
 
-//  @Test
-//  public void shouldEnsureMaxSnapshotCount() throws Exception {
-//    // given
-//    receiverSnapshotController.consumeReplicatedSnapshots();
-//    replicateXSnapshots(3);
-//
-//    // when
-//    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
-//
-//    // then
-//    final RocksDBWrapper wrapper = new RocksDBWrapper();
-//    final long recoveredSnapshot = receiverSnapshotController.recover();
-//    assertThat(recoveredSnapshot).isEqualTo(3);
-//
-//    wrapper.wrap(receiverSnapshotController.openDb());
-//    final int valueFromSnapshot = wrapper.getInt(KEY);
-//    assertThat(valueFromSnapshot).isEqualTo(VALUE);
-//
-//    assertThat(receiverStorage.exists("1")).isFalse();
-//    assertThat(receiverStorage.exists("2")).isTrue();
-//    assertThat(receiverStorage.exists("3")).isTrue();
-//  }
+  //  @Test
+  //  public void shouldEnsureMaxSnapshotCount() throws Exception {
+  //    // given
+  //    receiverSnapshotController.consumeReplicatedSnapshots();
+  //    replicateXSnapshots(3);
+  //
+  //    // when
+  //    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
+  //
+  //    // then
+  //    final RocksDBWrapper wrapper = new RocksDBWrapper();
+  //    final long recoveredSnapshot = receiverSnapshotController.recover();
+  //    assertThat(recoveredSnapshot).isEqualTo(3);
+  //
+  //    wrapper.wrap(receiverSnapshotController.openDb());
+  //    final int valueFromSnapshot = wrapper.getInt(KEY);
+  //    assertThat(valueFromSnapshot).isEqualTo(VALUE);
+  //
+  //    assertThat(receiverStorage.exists("1")).isFalse();
+  //    assertThat(receiverStorage.exists("2")).isTrue();
+  //    assertThat(receiverStorage.exists("3")).isTrue();
+  //  }
 
   protected static final class Replicator implements SnapshotReplication {
 

@@ -12,7 +12,6 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.LangUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -102,7 +101,8 @@ public class StateSnapshotController implements SnapshotController {
       FileUtil.deleteFolder(runtimeDirectory);
     }
 
-    final var snapshots = storage.getSnapshots().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
+    final var snapshots =
+        storage.getSnapshots().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
     LOG.debug("Available snapshots: {}", snapshots);
 
     long lowerBoundSnapshotPosition = -1;

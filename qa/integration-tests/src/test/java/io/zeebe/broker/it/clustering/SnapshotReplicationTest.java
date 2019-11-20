@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 

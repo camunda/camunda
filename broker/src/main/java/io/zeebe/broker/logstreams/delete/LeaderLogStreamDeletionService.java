@@ -12,7 +12,6 @@ import io.zeebe.broker.exporter.ExporterDirectorService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
-import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;

@@ -83,16 +83,6 @@
     </dependency>
 
     <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-raft</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>atomix-primitive</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>io.grpc</groupId>
       <artifactId>grpc-api</artifactId>
     </dependency>
