@@ -5,9 +5,9 @@
  */
 package org.camunda.operate.zeebeimport;
 
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -98,11 +98,7 @@ public class ImportJob implements Callable<Boolean> {
       if (refresh.getFailedShards() > 0) {
         logger.warn("Unable to refresh the index: {}", previousPosition.getIndexName());
       }
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+      sleepFor(1000);
     } catch (Exception ex) {
       logger.warn(String.format("Unable to refresh the index: %s", previousPosition.getIndexName()), ex);
     }

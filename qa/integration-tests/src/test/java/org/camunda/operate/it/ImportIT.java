@@ -6,6 +6,7 @@
 package org.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -562,12 +563,7 @@ public class ImportIT extends OperateZeebeIntegrationTest {
     deployWorkflow("messageEventProcess_v_1.bpmn");
 //    final long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     final Long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"clientId\": \"5\"}");
-
-        try {
-          Thread.sleep(1000L);
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-        }
+    sleepFor(1000);
 
     //when
     cancelWorkflowInstance(workflowInstanceKey);

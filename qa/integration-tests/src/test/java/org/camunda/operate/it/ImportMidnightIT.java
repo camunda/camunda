@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 public class ImportMidnightIT extends OperateZeebeIntegrationTest {
 
@@ -77,19 +78,13 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     completeTask(workflowInstanceKey, "task1", null, false);
     //let Zeebe export data
-    try {
-      Thread.sleep(2000L);
-    } catch (InterruptedException e) {
-    }
+    sleepFor(2000);
     //complete instances next day
     Instant secondDate = firstDate.plus(1, ChronoUnit.DAYS);
     brokerRule.getClock().setCurrentTime(secondDate);
     completeTask(workflowInstanceKey, "task2", null, false);
     //let Zeebe export data
-    try {
-      Thread.sleep(2000L);
-    } catch (InterruptedException e) {
-    }
+    sleepFor(2000);
 
     //refresh 2nd date index and load all data
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCompletedCheck, () -> {
@@ -128,18 +123,12 @@ public class ImportMidnightIT extends OperateZeebeIntegrationTest {
     //two instances for two partitions
     long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     cancelWorkflowInstance(workflowInstanceKey, false);
-    try {
-      Thread.sleep(2000L);
-    } catch (InterruptedException e) {
-    }
+    sleepFor(2000);
     zeebeRule.refreshIndices(firstDate);
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
     workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     cancelWorkflowInstance(workflowInstanceKey, false);
-    try {
-      Thread.sleep(2000L);
-    } catch (InterruptedException e) {
-    }
+    sleepFor(2000);
     zeebeRule.refreshIndices(firstDate);
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey);
   }

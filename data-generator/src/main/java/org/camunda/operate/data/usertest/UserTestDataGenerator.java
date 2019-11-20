@@ -242,12 +242,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .open();
     int attempts = 0;
     while (!failJobHandler.isTaskFailed() && attempts < 10) {
-      try {
-        Thread.sleep(200);
-        attempts++;
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+      sleepFor(200);
+      attempts++;
     }
     if (attempts == 10) {
       logger.debug("Could not fail the task {} for workflow instance id {}", jobType, workflowInstanceKey);

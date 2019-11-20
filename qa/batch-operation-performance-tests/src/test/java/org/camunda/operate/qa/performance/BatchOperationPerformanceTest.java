@@ -32,6 +32,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import io.zeebe.client.ZeebeClient;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
@@ -59,7 +60,7 @@ public class BatchOperationPerformanceTest {
   @Before
   public void setup() {
     Answer answerWithDelay = invocation -> {
-      Thread.sleep(ZEEBE_RESPONSE_TIME);
+      sleepFor(ZEEBE_RESPONSE_TIME);
       return null;
     };
     when(zeebeClient.newCancelInstanceCommand(anyLong()).send().join()).thenAnswer(answerWithDelay);
@@ -109,11 +110,7 @@ public class BatchOperationPerformanceTest {
     operationExecutor.start();
 
     while (!listener.isFinished()) {
-      try {
-        Thread.sleep(2000L);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+      sleepFor(2000);
     }
   }
 

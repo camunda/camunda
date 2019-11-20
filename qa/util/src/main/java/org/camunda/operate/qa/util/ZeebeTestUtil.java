@@ -17,6 +17,7 @@ import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 public abstract class ZeebeTestUtil {
 
@@ -73,10 +74,7 @@ public abstract class ZeebeTestUtil {
       .open();
     //wait till all requested tasks are completed
     while(countCompleted[0] < count) {
-      try {
-        Thread.sleep(1000L);
-      } catch (InterruptedException e) {
-      }
+      sleepFor(1000);
     }
     jobWorker.close();
   }
@@ -104,11 +102,7 @@ public abstract class ZeebeTestUtil {
       .open();
     //wait till all incidents are created
     while (countFailed[0] < incidentCount) {
-      try {
-        Thread.sleep(200L);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
+      sleepFor(200);
     }
     jobWorker.close();
   }

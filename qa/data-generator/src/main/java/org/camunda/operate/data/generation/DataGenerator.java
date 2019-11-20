@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 /**
  * It is considered that Zeebe and Elasticsearch are running.
@@ -93,11 +94,7 @@ public class DataGenerator {
   private void stopWaitingForResponses(ResponseChecker responseChecker) {
     //wait till all instances started
     while (responseChecker.getResponseCount() < dataGeneratorProperties.getWorkflowInstanceCount()) {
-      try {
-        Thread.sleep(2000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+      sleepFor(2000);
     }
     responseChecker.close();
     logger.info("{} workflow instances started", responseChecker.getResponseCount());

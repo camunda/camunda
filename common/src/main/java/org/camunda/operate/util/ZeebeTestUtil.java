@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 public abstract class ZeebeTestUtil {
 
@@ -90,11 +91,7 @@ public abstract class ZeebeTestUtil {
       logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
     } catch (ClientException ex) {
       //retry once
-      try {
-        Thread.sleep(300L);
-      } catch (InterruptedException e) {
-        logger.error(String.format("Error occurred when starting workflow instance for bpmnProcessId [%s]: [%s]. Retrying...", bpmnProcessId, ex.getMessage()), ex);
-      }
+      sleepFor(300L);
       workflowInstanceEvent =
         createWorkflowInstanceCommandStep3
           .send().join();

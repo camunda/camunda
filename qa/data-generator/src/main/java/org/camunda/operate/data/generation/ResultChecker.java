@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import static java.lang.Math.abs;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 @Component
 public class ResultChecker {
@@ -32,7 +33,7 @@ public class ResultChecker {
   private RestHighLevelClient esClient;
 
   public void assertResults() throws IOException {
-    sleep(1000L);
+    sleepFor(1000L);
     esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
     assertWorkflowCount();
     assertWorkflowInstanceCount();
@@ -52,19 +53,11 @@ public class ResultChecker {
       } catch (IOException e) {
         //
       }
-      sleep(2000L);
+      sleepFor(2000L);
       return assertDocsCountWithRetry(newCount, expectedCount, cardinalityCounter);
     } else {
       logger.info("Not enough. Will fail");
       return false;
-    }
-  }
-
-  private void sleep(long time) {
-    try {
-      Thread.sleep(time);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
     }
   }
 
