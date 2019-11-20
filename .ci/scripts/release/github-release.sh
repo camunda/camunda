@@ -25,6 +25,6 @@ function upload {
 
 upload dist/target zeebe-distribution-${RELEASE_VERSION}.tar.gz
 upload dist/target zeebe-distribution-${RELEASE_VERSION}.zip
-upload clients/zbctl/dist zbctl
-upload clients/zbctl/dist zbctl.exe
-upload clients/zbctl/dist zbctl.darwin
+upload clients/go/cmd/zbctl/dist zbctl
+upload clients/go/cmd/zbctl/dist zbctl.exe
+upload clients/go/cmd/zbctl/dist zbctl.darwin

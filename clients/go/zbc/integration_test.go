@@ -47,7 +47,7 @@ func (s *integrationTestSuite) TestTopology() {
 
 func (s *integrationTestSuite) TestDeployWorkflow() {
 	// when
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../resources/service_task.bpmn").Send()
+	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../testdata/service_task.bpmn").Send()
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -64,7 +64,7 @@ func (s *integrationTestSuite) TestDeployWorkflow() {
 
 func (s *integrationTestSuite) TestCreateInstance() {
 	// given
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../resources/service_task.bpmn").Send()
+	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../testdata/service_task.bpmn").Send()
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -85,7 +85,7 @@ func (s *integrationTestSuite) TestCreateInstance() {
 
 func (s *integrationTestSuite) TestActivateJobs() {
 	// given
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../resources/service_task.bpmn").Send()
+	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../testdata/service_task.bpmn").Send()
 	if err != nil {
 		s.T().Fatal(err)
 	}
@@ -122,7 +122,7 @@ func (s *integrationTestSuite) TestActivateJobs() {
 
 func (s *integrationTestSuite) TestFailJob() {
 	// given
-	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../resources/service_task.bpmn").Send()
+	deployment, err := s.client.NewDeployWorkflowCommand().AddResourceFile("../testdata/service_task.bpmn").Send()
 	if err != nil {
 		s.T().Fatal(err)
 	}
