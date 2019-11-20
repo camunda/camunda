@@ -55,8 +55,8 @@ spec:
             resource: limits.cpu
     resources:
       limits:
-        cpu: 2
-        memory: 1Gi
+        cpu: 3
+        memory: 2Gi
       requests:
         cpu: 1
-        memory: 512Mi
+        memory: 1Gi
