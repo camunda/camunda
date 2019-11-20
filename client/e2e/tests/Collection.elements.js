@@ -11,7 +11,7 @@ export const createNewMenu = Selector('.CreateNewButton');
 export const option = text => Selector('.DropdownOption').withText(text);
 export const collectionBreadcrumb = Selector('.HeaderNav .breadcrumb');
 export const dashboardItem = Selector('.ListItem.dashboard');
-export const collectionContextMenu = Selector('.Collection .header .Dropdown button');
+export const collectionContextMenu = Selector('.Collection > .header .Dropdown button');
 export const editCollectionNameButton = Selector(
   '.Collection .header .Dropdown .DropdownOption'
 ).withText('Edit');

@@ -45,7 +45,9 @@ export default function EntityList({name, children, action, isLoading, data, emp
       <div className="content">
         {isLoading && <LoadingIndicator />}
         {isEmpty && <div className="empty">{empty}</div>}
-        {!isEmpty && !hasResults && <div className="empty">{t('common.notFound')}</div>}
+        {!isLoading && !isEmpty && !hasResults && (
+          <div className="empty">{t('common.notFound')}</div>
+        )}
         {hasResults && (
           <ul>
             {searchFilteredData.map(
