@@ -271,6 +271,21 @@ export const EditButton = styled(IconButton)`
     margin-left: 4px;
     margin-top: 4px;
   }
+
+  &:disabled,
+  &:disabled :hover {
+    svg {
+      color: ${themeStyle({
+        dark: Colors.uiLight02,
+        light: Colors.uiDark05
+      })};
+      opacity: 0.5;
+    }
+
+    &:before {
+      background-color: transparent;
+    }
+  }
 `;
 
 const iconStyle = css`
