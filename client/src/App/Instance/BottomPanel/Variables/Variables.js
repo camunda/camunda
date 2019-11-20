@@ -65,17 +65,20 @@ export default function Variables({
           title="Exit edit mode"
           data-test="exit-edit-inline-btn"
           onClick={closeEdit}
-        >
-          <Styled.CloseIcon />
-        </Styled.EditButton>
+          size="large"
+          iconButtonTheme="default"
+          icon={<Styled.CloseIcon />}
+        />
+
         <Styled.EditButton
           data-test="save-var-inline-btn"
           title="Save variable"
           disabled={!value || !isValidJSON(value) || isDisabled}
           onClick={saveVariable}
-        >
-          <Styled.CheckIcon />
-        </Styled.EditButton>
+          size="large"
+          iconButtonTheme="default"
+          icon={<Styled.CheckIcon />}
+        />
       </>
     );
   }
@@ -184,9 +187,10 @@ export default function Variables({
                               onClick={() =>
                                 handleOpenEditVariable(name, propValue)
                               }
-                            >
-                              <Styled.EditIcon />
-                            </Styled.EditButton>
+                              size="large"
+                              iconButtonTheme="default"
+                              icon={<Styled.EditIcon />}
+                            />
                           )}
                         </Styled.EditButtonsTD>
                       )}

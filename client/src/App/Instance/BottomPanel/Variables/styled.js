@@ -10,6 +10,7 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import Panel from 'modules/components/Panel';
 import ActionStatus from 'modules/components/ActionStatus/ActionStatus.js';
 import DefaultButton from 'modules/components/Button';
+import IconButton from 'modules/components/IconButton';
 import BasicInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
 import Modal from 'modules/components/Modal';
@@ -239,7 +240,6 @@ export const AddTextarea = styled(BasicTextarea)`
 `;
 
 export const EditButtonsTD = styled.td`
-  height: 32px;
   padding-right: 21px;
   padding-top: 6px;
   display: flex;
@@ -265,17 +265,11 @@ export const EditInputTD = styled.td`
   vertical-align: top;
 `;
 
-export const EditButton = styled.button`
-  margin: 0;
-  padding: 0;
-  height: 16px;
-  width: 16px;
-  margin-left: 15px;
-  background: transparent;
-  border: none;
-
-  &:disabled svg {
-    opacity: 0.5;
+export const EditButton = styled(IconButton)`
+  margin-left: 10px;
+  svg {
+    margin-left: 4px;
+    margin-top: 4px;
   }
 `;
 
