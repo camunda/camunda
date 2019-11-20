@@ -235,8 +235,10 @@ pipeline {
       steps {
         cloneGitRepo()
         container('maven') {
-          sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
-          sh 'mvn -f qa/query-performance-tests/pom.xml -s settings.xml clean verify -Pquery-performance-tests -B'
+          configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+            sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s $MAVEN_SETTINGS_XML clean install -B'
+            sh 'mvn -f qa/query-performance-tests/pom.xml -s $MAVEN_SETTINGS_XML clean verify -Pquery-performance-tests -B'
+          }
         }
       }
       post {

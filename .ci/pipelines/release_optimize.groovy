@@ -99,14 +99,16 @@ void runRelease(params) {
     pushChanges = 'false'
     skipDeploy='true'
   }
-
-  sh ("""
+  configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+    sh("""
     mvn -DpushChanges=${pushChanges} -DskipTests -Prelease,engine-latest release:prepare release:perform \
-    -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${params.DEVELOPMENT_VERSION} \
-    --settings=settings.xml '-Darguments=--settings=settings.xml -DskipTests -DskipNexusStagingDeployMojo=${skipDeploy} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
+    -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${
+      params.DEVELOPMENT_VERSION
+    } \
+    --settings=\$MAVEN_SETTINGS_XML '-Darguments=--settings=\$MAVEN_SETTINGS_XML -DskipTests -DskipNexusStagingDeployMojo=${skipDeploy} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
     -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
   """)
-
+  }
 
   sh ("""
     # This is needed to not abort the job in case 'git diff' returns a status different from 0

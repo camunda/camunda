@@ -124,12 +124,14 @@ pipeline {
     stage('Test') {
       steps {
         container('maven') {
-          sh ("""
-                mvn -B -Pclustering-tests verify -pl qa/clustering-tests -s settings.xml \
+          configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+            sh("""
+                mvn -B -Pclustering-tests verify -pl qa/clustering-tests -s \$MAVEN_SETTINGS_XML \
                   -Doptimize.importing.host=optimize-import.${NAMESPACE} -Doptimize.importing.port=8090 \
                   -Doptimize.notImporting.host=optimize-no-import.${NAMESPACE} -Doptimize.notImporting.port=8090 \
                   -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn 
             """)
+          }
         }
       }
     }
