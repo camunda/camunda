@@ -28,11 +28,18 @@ public class BlockingDistributedLogstream extends Synchronous<AsyncDistributedLo
   }
 
   @Override
-  public long append(String partition, String nodeId, long commitPosition, byte[] blockBuffer)
+  public long append(
+      String partition, String nodeId, long appendIndex, long commitPosition, byte[] blockBuffer)
       throws InterruptedException, ExecutionException, TimeoutException {
     return distributedLogstreamProxy
-        .append(partition, nodeId, commitPosition, blockBuffer)
+        .append(partition, nodeId, appendIndex, commitPosition, blockBuffer)
         .get(timeout, TimeUnit.MILLISECONDS);
+  }
+
+  @Override
+  public long lastAppendIndex(String partition)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    return distributedLogstreamProxy.lastAppendIndex(partition).get(timeout, TimeUnit.MILLISECONDS);
   }
 
   @Override

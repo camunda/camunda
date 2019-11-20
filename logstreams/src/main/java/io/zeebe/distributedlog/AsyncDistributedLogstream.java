@@ -13,9 +13,11 @@ import java.util.concurrent.CompletableFuture;
 public interface AsyncDistributedLogstream extends AsyncPrimitive {
 
   CompletableFuture<Long> append(
-      String partition, String nodeId, long commitPosition, byte[] blockBuffer);
+      String partition, String nodeId, long appendIndex, long commitPosition, byte[] blockBuffer);
 
   CompletableFuture<Boolean> claimLeaderShip(String partition, String nodeId, long leaderTerm);
+
+  CompletableFuture<Long> lastAppendIndex(String partition);
 
   @Override
   DistributedLogstream sync();

@@ -19,8 +19,6 @@ import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.ZbLogger;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 
 public class DistributedLogstreamPartition implements Service<DistributedLogstreamPartition> {
@@ -46,13 +44,15 @@ public class DistributedLogstreamPartition implements Service<DistributedLogstre
     partitionName = DistributedLogstreamName.getPartitionKey(partitionId);
   }
 
-  public long append(byte[] blockBuffer, long commitPosition)
-      throws InterruptedException, ExecutionException, TimeoutException {
-    return distributedLog.append(partitionName, memberId, commitPosition, blockBuffer);
+  public CompletableFuture<Long> asyncAppend(
+      long appendIndex, byte[] blockBuffer, long commitPosition) {
+    return distributedLog
+        .async()
+        .append(partitionName, memberId, appendIndex, commitPosition, blockBuffer);
   }
 
-  public CompletableFuture<Long> asyncAppend(byte[] blockBuffer, long commitPosition) {
-    return distributedLog.async().append(partitionName, memberId, commitPosition, blockBuffer);
+  public CompletableFuture<Long> getLastAppendIndex() {
+    return distributedLog.async().lastAppendIndex(partitionName);
   }
 
   public CompletableFuture<Boolean> claimLeaderShip() {

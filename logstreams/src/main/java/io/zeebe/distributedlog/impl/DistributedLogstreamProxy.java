@@ -35,9 +35,14 @@ public class DistributedLogstreamProxy
 
   @Override
   public CompletableFuture<Long> append(
-      String partition, String nodeId, long commitPosition, byte[] buffer) {
+      String partition, String nodeId, long appendIndex, long commitPosition, byte[] buffer) {
     return getProxyClient()
-        .applyBy(partition, service -> service.append(nodeId, commitPosition, buffer));
+        .applyBy(partition, service -> service.append(nodeId, appendIndex, commitPosition, buffer));
+  }
+
+  @Override
+  public CompletableFuture<Long> lastAppendIndex(String partition) {
+    return getProxyClient().applyBy(partition, DistributedLogstreamService::lastAppendIndex);
   }
 
   @Override

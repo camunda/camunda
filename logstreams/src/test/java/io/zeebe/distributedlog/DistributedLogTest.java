@@ -9,6 +9,11 @@ package io.zeebe.distributedlog;
 
 import static io.zeebe.distributedlog.DistributedLogRule.LOG;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
@@ -18,6 +23,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import org.junit.Rule;
@@ -103,6 +110,52 @@ public class DistributedLogTest {
     assertEventsCount(node1, 3);
     assertEventsCount(node2, 3);
     assertEventsCount(node3, 3);
+  }
+
+  @Test
+  public void shouldReplicateMultipleEventsWithFailure()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    // given
+    final CountDownLatch latch = new CountDownLatch(1);
+    final var failingFuture = new CompletableFuture<Long>();
+    node1.waitUntilNodesJoined();
+    node2.waitUntilNodesJoined();
+    node3.waitUntilNodesJoined();
+
+    node1.becomeLeader(PARTITION_ID);
+
+    doReturn(failingFuture)
+        .doCallRealMethod()
+        .when(node1.getSpy(PARTITION_ID))
+        .asyncAppend(eq(2L), any(byte[].class), anyLong());
+
+    doAnswer(
+            i -> {
+              latch.countDown();
+              return i.callRealMethod();
+            })
+        .doCallRealMethod()
+        .when(node1.getSpy(PARTITION_ID))
+        .asyncAppend(eq(3L), any(byte[].class), anyLong());
+
+    // when
+    final Event event1 = writeEvent("record1");
+    Thread.sleep(100L); // to get events in different chunks
+    final Event event2 = writeEvent("record2");
+    Thread.sleep(100L); // to get events in different chunks
+    final Event event3 = writeEvent("record3");
+    final Event event4 = writeEvent("record4");
+    latch.countDown();
+    failingFuture.completeExceptionally(new RuntimeException("Second event failed!"));
+
+    // then
+    assertEventsInOrderOnNode(node1, event1, event2, event3, event4);
+    assertEventsInOrderOnNode(node2, event1, event2, event3, event4);
+    assertEventsInOrderOnNode(node3, event1, event2, event3, event4);
+
+    assertEventsCount(node1, 4);
+    assertEventsCount(node2, 4);
+    assertEventsCount(node3, 4);
   }
 
   @Test
@@ -225,8 +278,7 @@ public class DistributedLogTest {
     assertThat(node.getCommittedEventsCount(PARTITION_ID)).isEqualTo(expectedCount);
   }
 
-  private class Event {
-    String message;
-    long position;
+  private void assertEventsInOrderOnNode(DistributedLogRule node, Event... events) {
+    TestUtil.waitUntil(() -> node.eventsInOrderAppended(PARTITION_ID, events), 10);
   }
 }
