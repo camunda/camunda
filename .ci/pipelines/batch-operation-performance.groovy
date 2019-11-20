@@ -198,8 +198,10 @@ pipeline {
 
   post {
     failure {
-      def notification = load "build_notification.groovy"
-      notification.buildNotification(currentBuild.result)
+      script{
+        def notification = load "build_notification.groovy"
+        notification.buildNotification(currentBuild.result)
+      }
     }
   }
 }
