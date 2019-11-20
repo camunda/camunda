@@ -22,8 +22,8 @@ export const Icon = themed(styled.div`
   z-index: 1;
 
   svg {
-    // default arrow color/opacity
-    ${props => getTheme(props.iconButtonTheme).default.arrow[props.theme]}};
+    // default icon color/opacity
+    ${props => getTheme(props.iconButtonTheme).default.icon[props.theme]}};
   }
 
   &:before {
@@ -56,8 +56,8 @@ export const Button = themed(styled.button`
 
     ${Icon.WrappedComponent} {
       svg {
-        // hover arrow color/opacity
-        ${props => getTheme(props.iconButtonTheme).hover.arrow[props.theme]};
+        // hover icon color/opacity
+        ${props => getTheme(props.iconButtonTheme).hover.icon[props.theme]};
       }
     }
   }
@@ -70,8 +70,8 @@ export const Button = themed(styled.button`
 
     ${Icon.WrappedComponent} {
       svg {
-        // active arrow color/opacity
-        ${props => getTheme(props.iconButtonTheme).active.arrow[props.theme]};
+        // active icon color/opacity
+        ${props => getTheme(props.iconButtonTheme).active.icon[props.theme]};
       }
     }
   }

@@ -22,7 +22,7 @@ const IconButtonThemes = {
         dark: '',
         light: ''
       },
-      arrow: {
+      icon: {
         dark: css`
           color: #ffffff;
         `,
@@ -43,7 +43,7 @@ const IconButtonThemes = {
           opacity: 0.5;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -64,7 +64,7 @@ const IconButtonThemes = {
           opacity: 0.8;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -79,7 +79,7 @@ const IconButtonThemes = {
     default: {
       // transparent background
       background: {dark: '', light: ''},
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -99,7 +99,7 @@ const IconButtonThemes = {
           opacity: 0.25;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -119,7 +119,7 @@ const IconButtonThemes = {
           opacity: 0.4;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -134,7 +134,7 @@ const IconButtonThemes = {
     default: {
       // transparent background
       background: {dark: '', light: ''},
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -155,7 +155,7 @@ const IconButtonThemes = {
           opacity: 0.5;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -176,7 +176,7 @@ const IconButtonThemes = {
           opacity: 0.8;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -191,7 +191,7 @@ const IconButtonThemes = {
     default: {
       // transparent background
       background: {dark: '', light: ''},
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -212,7 +212,7 @@ const IconButtonThemes = {
           opacity: 0.5;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -233,7 +233,7 @@ const IconButtonThemes = {
           opacity: 0.8;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -248,7 +248,7 @@ const IconButtonThemes = {
     default: {
       // transparent background
       background: {dark: '', light: ''},
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -268,7 +268,7 @@ const IconButtonThemes = {
           opacity: 0.25;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
@@ -288,7 +288,7 @@ const IconButtonThemes = {
           opacity: 0.4;
         `
       },
-      arrow: {
+      icon: {
         dark: css`
           color: ${Colors.uiLight02};
         `,
