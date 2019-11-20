@@ -138,7 +138,7 @@ public class LogStorageAppender extends Actor {
               actor.run(
                   () -> {
                     if (error != null) {
-                      LOG.debug(
+                      LOG.trace(
                           "Append on partition {} failed with exception. Append index {} and event position {}. Retry...",
                           partitionId,
                           appendIndex,
@@ -148,7 +148,7 @@ public class LogStorageAppender extends Actor {
                       this.peekedBlockHandler = () -> {};
                       appendToPrimitive(appendIndex, bytesToAppend, lastEventPosition);
                     } else if (appendPosition < 0) {
-                      LOG.debug(
+                      LOG.trace(
                           "Append on partition {} failed with negative result {}. Append index {} and event position {}. This normally occurs when an previous append failed and events have been received out of order. This is the recovery strategy to get events in order again. Retry...",
                           partitionId,
                           appendPosition,
