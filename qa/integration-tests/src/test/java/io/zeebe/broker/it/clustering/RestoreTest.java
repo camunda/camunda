@@ -7,13 +7,10 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.core.Atomix;
-import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -73,7 +70,8 @@ public class RestoreTest {
     final long secondWorkflowKey = clientRule.deployWorkflow(secondWorkflow);
 
     writeManyEventsUntilAtomixLogIsCompactable();
-    waitUntilAtomixBackup(clusteringRule.getLeaderForPartition(1).getNodeId());
+    waitForValidSnapshotAtBroker(
+        clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(2);
     waitForValidSnapshotAtBroker(clusteringRule.getBroker(2));
@@ -83,7 +81,8 @@ public class RestoreTest {
     final long thirdWorkflowKey = clientRule.deployWorkflow(thirdWorkflow);
 
     writeManyEventsUntilAtomixLogIsCompactable();
-    waitUntilAtomixBackup(clusteringRule.getLeaderForPartition(1).getNodeId());
+    waitForValidSnapshotAtBroker(
+        clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(1);
     clusteringRule.stopBroker(0);
@@ -116,27 +115,9 @@ public class RestoreTest {
     return Base64.getEncoder().encodeToString(bytes);
   }
 
-  private void waitUntilAtomixBackup(final int nodeId) {
-    final Atomix atomix = clusteringRule.getService(ATOMIX_SERVICE, nodeId);
-    atomix.getPartitionService().getPartitionGroup("raft-atomix").getPartitions().stream()
-        .map(RaftPartition.class::cast)
-        .forEach(p -> p.snapshot().join());
-
-    final File atomixBackupDirectory = getAtomixBackupDirectory(clusteringRule.getBroker(nodeId));
-    waitUntil(
-        () ->
-            Arrays.stream(atomixBackupDirectory.listFiles())
-                .anyMatch(f -> f.getName().contains(".snapshot")));
-  }
-
-  private File getAtomixBackupDirectory(final Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "raft-atomix/partitions/1/");
-  }
-
   private File getSnapshotsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/snapshots");
+    return new File(dataDir, "raft-atomix/partitions/1/snapshots");
   }
 
   private void waitForValidSnapshotAtBroker(final Broker broker) {

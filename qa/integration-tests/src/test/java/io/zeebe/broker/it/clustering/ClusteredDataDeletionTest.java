@@ -19,11 +19,17 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.test.util.TestUtil;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -102,7 +108,7 @@ public class ClusteredDataDeletionTest {
     final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final Broker leader = clusteringRule.getBroker(leaderNodeId);
 
-    while (getSegmentsDirectory(leader).listFiles().length <= 2) {
+    while (getSegments(leader).size() <= 2) {
       clusteringRule
           .getClient()
           .newPublishMessageCommand()
@@ -113,12 +119,12 @@ public class ClusteredDataDeletionTest {
     }
 
     // when
-    final HashMap<Integer, Integer> segmentCount =
+    final var segmentCount =
         takeSnapshotAndWaitForReplication(Collections.singletonList(leader), clusteringRule);
 
     // then
     TestUtil.waitUntil(
-        () -> getSegmentsDirectory(leader).listFiles().length < segmentCount.get(leaderNodeId));
+        () -> getSegments(leader).size() < segmentCount.get(leaderNodeId));
   }
 
   @Test
@@ -131,8 +137,8 @@ public class ClusteredDataDeletionTest {
             .collect(Collectors.toList());
 
     while (followers.stream()
-        .map(this::getSegmentsDirectory)
-        .allMatch(dir -> dir.listFiles().length <= 2)) {
+        .map(this::getSegments)
+        .allMatch(segments -> segments.size() <= 2)) {
       clusteringRule
           .getClient()
           .newPublishMessageCommand()
@@ -143,7 +149,7 @@ public class ClusteredDataDeletionTest {
     }
 
     // when
-    final HashMap<Integer, Integer> followerSegmentCounts =
+    final var followerSegmentCounts =
         takeSnapshotAndWaitForReplication(followers, clusteringRule);
 
     // then
@@ -152,17 +158,17 @@ public class ClusteredDataDeletionTest {
             followers.stream()
                 .allMatch(
                     b ->
-                        getSegmentsDirectory(b).listFiles().length
+                        getSegments(b).size()
                             < followerSegmentCounts.get(b.getConfig().getCluster().getNodeId())));
   }
 
-  private HashMap<Integer, Integer> takeSnapshotAndWaitForReplication(
+  private Map<Integer, Integer> takeSnapshotAndWaitForReplication(
       final List<Broker> brokers, ClusteringRule clusteringRule) {
-    final HashMap<Integer, Integer> segmentCounts = new HashMap();
+    final Map<Integer, Integer> segmentCounts = new HashMap<>();
     brokers.forEach(
         b -> {
           final int nodeId = b.getConfig().getCluster().getNodeId();
-          segmentCounts.put(nodeId, getSegmentsDirectory(b).list().length);
+          segmentCounts.put(nodeId, getSegments(b).size());
         });
 
     clusteringRule.getClock().addTime(Duration.ofSeconds(SNAPSHOT_PERIOD_SECONDS));
@@ -172,12 +178,22 @@ public class ClusteredDataDeletionTest {
 
   private File getSnapshotsDirectory(Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/snapshots");
+    return new File(dataDir, "raft-atomix/partitions/1/snapshots");
   }
 
-  private File getSegmentsDirectory(Broker broker) {
+  private Collection<Path> getSegments(Broker broker) {
+    try {
+      return Files.list(getSegmentsDirectory(broker))
+          .filter(path -> path.toString().endsWith(".segment"))
+          .collect(Collectors.toList());
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  private Path getSegmentsDirectory(Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "/partition-1/segments");
+    return Paths.get(dataDir).resolve("raft-atomix/partitions/1");
   }
 
   private void waitForValidSnapshotAtBroker(Broker broker) {

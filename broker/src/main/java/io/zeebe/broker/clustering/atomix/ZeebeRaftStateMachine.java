@@ -82,7 +82,6 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
 
   @Override
   public void applyAll(final long index) {
-    logger.debug("applyAll: {}", index);
     threadContext.execute(() -> safeApplyAll(index, null));
   }
 

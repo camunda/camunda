@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -133,7 +134,7 @@ public class SnapshotReplicationTest {
 
   private File getSnapshotsDirectory(Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/snapshots");
+    return new File(dataDir, "raft-atomix/partitions/1/snapshots");
   }
 
   protected void waitForValidSnapshotAtBroker(Broker broker) {
