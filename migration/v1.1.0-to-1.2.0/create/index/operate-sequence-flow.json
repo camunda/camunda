@@ -1,6 +1,6 @@
 {
     "aliases" : {
-      "operate-variable_alias" : {
+      "operate-sequence-flow-1.2.0_alias" : {
         "is_write_index" : true
       }
     },
@@ -23,23 +23,17 @@
           }
         ],
         "properties" : {
+          "activityId" : {
+            "type" : "keyword"
+          },
           "id" : {
             "type" : "keyword"
           },
           "key" : {
             "type" : "long"
           },
-          "name" : {
-            "type" : "keyword"
-          },
           "partitionId" : {
             "type" : "integer"
-          },
-          "scopeKey" : {
-            "type" : "long"
-          },
-          "value" : {
-            "type" : "keyword"
           },
           "workflowInstanceKey" : {
             "type" : "long"

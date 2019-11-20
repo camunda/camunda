@@ -1,8 +1,8 @@
 {
   "source": {
-    "index": ["operate-incident_"]
+    "index": ["operate-incident-1.1.0_"]
   },
   "dest": {
-    "index": "operate-incident_1.2.0"
+    "index": "operate-incident-1.2.0_"
   }
 }

@@ -1,8 +1,8 @@
 {
   "source": {
-    "index": ["operate-list-view_"]
+    "index": ["operate-list-view-1.1.0_"]
   },
   "dest": {
-    "index": "operate-list-view_1.2.0"
+    "index": "operate-list-view-1.2.0_"
   }
 }

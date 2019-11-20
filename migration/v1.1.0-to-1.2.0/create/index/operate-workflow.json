@@ -1,8 +1,6 @@
 {
     "aliases" : {
-      "operate-activity-instance_1.2.0_alias" : {
-        "is_write_index" : true
-      }
+      "operate-workflow-1.2.0_alias" : { }
     },
     "mappings" : {
       "_doc" : {
@@ -23,42 +21,44 @@
           }
         ],
         "properties" : {
-          "activityId" : {
-            "type" : "keyword"
+          "activities" : {
+            "type" : "nested",
+            "properties" : {
+              "id" : {
+                "type" : "keyword"
+              },
+              "name" : {
+                "type" : "keyword"
+              },
+              "type" : {
+                "type" : "keyword"
+              }
+            }
           },
-          "endDate" : {
-            "type" : "date",
-            "format" : "date_time"
+          "bpmnProcessId" : {
+            "type" : "keyword",
+            "eager_global_ordinals" : true
+          },
+          "bpmnXml" : {
+            "type" : "text",
+            "index" : false
           },
           "id" : {
             "type" : "keyword"
           },
-          "incidentKey" : {
-            "type" : "long"
-          },
           "key" : {
-            "type" : "long"
+            "type" : "keyword"
+          },
+          "name" : {
+            "type" : "keyword"
           },
           "partitionId" : {
             "type" : "integer"
           },
-          "position" : {
-            "type" : "long"
-          },
-          "scopeKey" : {
-            "type" : "long"
-          },
-          "startDate" : {
-            "type" : "date",
-            "format" : "date_time"
-          },
-          "state" : {
+          "resourceName" : {
             "type" : "keyword"
           },
-          "type" : {
-            "type" : "keyword"
-          },
-          "workflowInstanceKey" : {
+          "version" : {
             "type" : "long"
           }
         }

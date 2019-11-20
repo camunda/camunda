@@ -1,6 +1,6 @@
 {
     "aliases" : {
-      "operate-list-view_alias" : {
+      "operate-activity-instance-1.2.0_alias" : {
         "is_write_index" : true
       }
     },
@@ -24,49 +24,26 @@
         ],
         "properties" : {
           "activityId" : {
-            "type" : "keyword",
-            "eager_global_ordinals" : true
-          },
-          "activityState" : {
-            "type" : "keyword"
-          },
-          "activityType" : {
-            "type" : "keyword"
-          },
-          "bpmnProcessId" : {
             "type" : "keyword"
           },
           "endDate" : {
             "type" : "date",
             "format" : "date_time"
           },
-          "errorMessage" : {
-            "type" : "text"
-          },
           "id" : {
-            "type" : "keyword"
-          },
-          "incidentJobKey" : {
             "type" : "keyword"
           },
           "incidentKey" : {
             "type" : "long"
-          },
-          "joinRelation" : {
-            "type" : "join",
-            "eager_global_ordinals" : true,
-            "relations" : {
-              "workflowInstance" : [
-                "activity",
-                "variable"
-              ]
-            }
           },
           "key" : {
             "type" : "long"
           },
           "partitionId" : {
             "type" : "integer"
+          },
+          "position" : {
+            "type" : "long"
           },
           "scopeKey" : {
             "type" : "long"
@@ -78,23 +55,10 @@
           "state" : {
             "type" : "keyword"
           },
-          "varName" : {
-            "type" : "keyword"
-          },
-          "varValue" : {
+          "type" : {
             "type" : "keyword"
           },
           "workflowInstanceKey" : {
-            "type" : "long"
-          },
-          "workflowKey" : {
-            "type" : "long"
-          },
-          "workflowName" : {
-            "type" : "keyword",
-            "normalizer" : "case_insensitive"
-          },
-          "workflowVersion" : {
             "type" : "long"
           }
         }

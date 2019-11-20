@@ -1,8 +1,8 @@
 {
   "source": {
-    "index": ["operate-variable_"]
+    "index": ["operate-variable-1.1.0_"]
   },
   "dest": {
-    "index": "operate-variable_1.2.0"
+    "index": "operate-variable-1.2.0_"
   }
 }

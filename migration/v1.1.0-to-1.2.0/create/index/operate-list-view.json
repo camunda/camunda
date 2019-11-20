@@ -1,6 +1,6 @@
 {
     "aliases" : {
-      "operate-event_alias" : {
+      "operate-list-view-1.2.0_alias" : {
         "is_write_index" : true
       }
     },
@@ -24,70 +24,77 @@
         ],
         "properties" : {
           "activityId" : {
+            "type" : "keyword",
+            "eager_global_ordinals" : true
+          },
+          "activityState" : {
+            "type" : "keyword"
+          },
+          "activityType" : {
             "type" : "keyword"
           },
           "bpmnProcessId" : {
             "type" : "keyword"
           },
-          "dateTime" : {
+          "endDate" : {
             "type" : "date",
             "format" : "date_time"
           },
-          "eventSourceType" : {
-            "type" : "keyword"
-          },
-          "eventType" : {
-            "type" : "keyword"
-          },
-          "flowNodeInstanceKey" : {
-            "type" : "long"
+          "errorMessage" : {
+            "type" : "text"
           },
           "id" : {
             "type" : "keyword"
           },
-          "key" : {
+          "incidentJobKey" : {
+            "type" : "keyword"
+          },
+          "incidentKey" : {
             "type" : "long"
           },
-          "metadata" : {
-            "properties" : {
-              "incidentErrorMessage" : {
-                "type" : "keyword"
-              },
-              "incidentErrorType" : {
-                "type" : "keyword"
-              },
-              "jobCustomHeaders" : {
-                "type" : "object",
-                "enabled" : false
-              },
-              "jobDeadline" : {
-                "type" : "date",
-                "format" : "date_time"
-              },
-              "jobKey" : {
-                "type" : "long"
-              },
-              "jobRetries" : {
-                "type" : "integer"
-              },
-              "jobType" : {
-                "type" : "keyword"
-              },
-              "jobWorker" : {
-                "type" : "keyword"
-              }
+          "joinRelation" : {
+            "type" : "join",
+            "eager_global_ordinals" : true,
+            "relations" : {
+              "workflowInstance" : [
+                "activity",
+                "variable"
+              ]
             }
+          },
+          "key" : {
+            "type" : "long"
           },
           "partitionId" : {
             "type" : "integer"
           },
-          "payload" : {
+          "scopeKey" : {
+            "type" : "long"
+          },
+          "startDate" : {
+            "type" : "date",
+            "format" : "date_time"
+          },
+          "state" : {
+            "type" : "keyword"
+          },
+          "varName" : {
+            "type" : "keyword"
+          },
+          "varValue" : {
             "type" : "keyword"
           },
           "workflowInstanceKey" : {
             "type" : "long"
           },
           "workflowKey" : {
+            "type" : "long"
+          },
+          "workflowName" : {
+            "type" : "keyword",
+            "normalizer" : "case_insensitive"
+          },
+          "workflowVersion" : {
             "type" : "long"
           }
         }

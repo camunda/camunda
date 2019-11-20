@@ -1,7 +1,7 @@
 {
     "order" : 30,
     "index_patterns" : [
-      "operate-variable_*"
+      "operate-sequence-flow-1.2.0_*"
     ],
     "settings" : {
       "index" : {
@@ -36,22 +36,16 @@
           }
         ],
         "properties" : {
-          "partitionId" : {
-            "type" : "integer"
-          },
-          "name" : {
+          "activityId" : {
             "type" : "keyword"
           },
-          "scopeKey" : {
-            "type" : "long"
+          "partitionId" : {
+            "type" : "integer"
           },
           "workflowInstanceKey" : {
             "type" : "long"
           },
           "id" : {
-            "type" : "keyword"
-          },
-          "value" : {
             "type" : "keyword"
           },
           "key" : {
@@ -61,6 +55,6 @@
       }
     },
     "aliases" : {
-      "operate-variable_alias" : { }
+      "operate-sequence-flow_alias" : { }
     }
   }

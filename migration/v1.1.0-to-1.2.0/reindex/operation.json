@@ -1,8 +1,8 @@
 {
   "source": {
-    "index": ["operate-operation_"]
+    "index": ["operate-operation-1.1.0_"]
   },
   "dest": {
-    "index": "operate-operation_1.2.0"
+    "index": "operate-operation-1.2.0_"
   }
 }

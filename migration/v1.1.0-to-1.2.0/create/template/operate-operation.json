@@ -1,7 +1,7 @@
 {
     "order" : 30,
     "index_patterns" : [
-      "operate-activity-instance_*"
+      "operate-operation-1.2.0_*"
     ],
     "settings" : {
       "index" : {
@@ -36,15 +36,25 @@
           }
         ],
         "properties" : {
-          "activityId" : {
+          "variableName" : {
             "type" : "keyword"
           },
-          "partitionId" : {
-            "type" : "integer"
+          "variableValue" : {
+            "type" : "keyword"
           },
           "endDate" : {
             "format" : "date_time",
             "type" : "date"
+          },
+          "lockExpirationTime" : {
+            "format" : "date_time",
+            "type" : "date"
+          },
+          "errorMessage" : {
+            "type" : "keyword"
+          },
+          "type" : {
+            "type" : "keyword"
           },
           "incidentKey" : {
             "type" : "long"
@@ -52,23 +62,17 @@
           "scopeKey" : {
             "type" : "long"
           },
+          "lockOwner" : {
+            "type" : "keyword"
+          },
           "workflowInstanceKey" : {
             "type" : "long"
           },
           "id" : {
             "type" : "keyword"
           },
-          "position" : {
-            "type" : "long"
-          },
           "state" : {
             "type" : "keyword"
-          },
-          "type" : {
-            "type" : "keyword"
-          },
-          "key" : {
-            "type" : "long"
           },
           "startDate" : {
             "format" : "date_time",
@@ -78,6 +82,6 @@
       }
     },
     "aliases" : {
-      "operate-activity-instance_alias" : { }
+      "operate-operation_alias" : { }
     }
   }

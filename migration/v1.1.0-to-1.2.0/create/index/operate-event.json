@@ -1,6 +1,6 @@
 {
     "aliases" : {
-      "operate-incident_alias" : {
+      "operate-event-1.2.0_alias" : {
         "is_write_index" : true
       }
     },
@@ -23,18 +23,20 @@
           }
         ],
         "properties" : {
-          "creationTime" : {
+          "activityId" : {
+            "type" : "keyword"
+          },
+          "bpmnProcessId" : {
+            "type" : "keyword"
+          },
+          "dateTime" : {
             "type" : "date",
             "format" : "date_time"
           },
-          "errorMessage" : {
-            "type" : "keyword",
-            "eager_global_ordinals" : true
-          },
-          "errorType" : {
+          "eventSourceType" : {
             "type" : "keyword"
           },
-          "flowNodeId" : {
+          "eventType" : {
             "type" : "keyword"
           },
           "flowNodeInstanceKey" : {
@@ -43,22 +45,49 @@
           "id" : {
             "type" : "keyword"
           },
-          "jobKey" : {
-            "type" : "long"
-          },
           "key" : {
             "type" : "long"
+          },
+          "metadata" : {
+            "properties" : {
+              "incidentErrorMessage" : {
+                "type" : "keyword"
+              },
+              "incidentErrorType" : {
+                "type" : "keyword"
+              },
+              "jobCustomHeaders" : {
+                "type" : "object",
+                "enabled" : false
+              },
+              "jobDeadline" : {
+                "type" : "date",
+                "format" : "date_time"
+              },
+              "jobKey" : {
+                "type" : "long"
+              },
+              "jobRetries" : {
+                "type" : "integer"
+              },
+              "jobType" : {
+                "type" : "keyword"
+              },
+              "jobWorker" : {
+                "type" : "keyword"
+              }
+            }
           },
           "partitionId" : {
             "type" : "integer"
           },
-          "state" : {
+          "payload" : {
             "type" : "keyword"
           },
-          "workflowKey": {
-          	"type" : "long"
-          },
           "workflowInstanceKey" : {
+            "type" : "long"
+          },
+          "workflowKey" : {
             "type" : "long"
           }
         }

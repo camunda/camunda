@@ -9,7 +9,7 @@ createNewTemplates(){
      templatename=`basename $template .json`
      echo "Create template $templatename"
      echo "-------------------------------"
- $RESTCLIENT --request PUT --url $ES/_template/${templatename}1.2.0 --data @$template
+ 	 $RESTCLIENT --request PUT --url $ES/_template/${templatename}-1.2.0 --data @$template
      echo
      echo "-------------------------------"
    done
@@ -20,7 +20,7 @@ createNewIndexes(){
      indexname=`basename $index .json`
      echo "Create index $indexname"
      echo "-------------------------------"
-     $RESTCLIENT --request PUT --url $ES/${indexname}1.2.0 --data @$index
+     $RESTCLIENT --request PUT --url $ES/${indexname}-1.2.0_ --data @$index
      echo
      echo "-------------------------------"
    done

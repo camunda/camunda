@@ -1,7 +1,7 @@
 {
     "order" : 30,
     "index_patterns" : [
-      "operate-list-view_*"
+      "operate-event-1.2.0_*"
     ],
     "settings" : {
       "index" : {
@@ -36,52 +36,58 @@
           }
         ],
         "properties" : {
-          "varName" : {
-            "type" : "keyword"
-          },
-          "endDate" : {
+          "dateTime" : {
             "format" : "date_time",
             "type" : "date"
+          },
+          "metadata" : {
+            "properties" : {
+              "jobRetries" : {
+                "type" : "integer"
+              },
+              "incidentErrorType" : {
+                "type" : "keyword"
+              },
+              "jobCustomHeaders" : {
+                "enabled" : false
+              },
+              "incidentErrorMessage" : {
+                "type" : "keyword"
+              },
+              "jobWorker" : {
+                "type" : "keyword"
+              },
+              "jobKey" : {
+                "type" : "long"
+              },
+              "jobType" : {
+                "type" : "keyword"
+              },
+              "jobDeadline" : {
+                "format" : "date_time",
+                "type" : "date"
+              }
+            }
           },
           "partitionId" : {
             "type" : "integer"
           },
-          "errorMessage" : {
-            "type" : "text"
-          },
-          "workflowName" : {
-            "normalizer" : "case_insensitive",
+          "eventSourceType" : {
             "type" : "keyword"
           },
-          "joinRelation" : {
-            "type" : "join",
-            "relations" : {
-              "workflowInstance" : [
-                "activity",
-                "variable"
-              ]
-            }
-          },
-          "incidentJobKey" : {
+          "eventType" : {
             "type" : "keyword"
           },
           "activityId" : {
-            "eager_global_ordinals" : true,
             "type" : "keyword"
           },
-          "varValue" : {
+          "payload" : {
             "type" : "keyword"
           },
-          "activityState" : {
-            "type" : "keyword"
-          },
-          "incidentKey" : {
+          "flowNodeInstanceKey" : {
             "type" : "long"
           },
           "workflowKey" : {
-            "type" : "long"
-          },
-          "scopeKey" : {
             "type" : "long"
           },
           "workflowInstanceKey" : {
@@ -90,21 +96,8 @@
           "id" : {
             "type" : "keyword"
           },
-          "workflowVersion" : {
-            "type" : "long"
-          },
           "bpmnProcessId" : {
             "type" : "keyword"
-          },
-          "state" : {
-            "type" : "keyword"
-          },
-          "activityType" : {
-            "type" : "keyword"
-          },
-          "startDate" : {
-            "format" : "date_time",
-            "type" : "date"
           },
           "key" : {
             "type" : "long"
@@ -113,6 +106,6 @@
       }
     },
     "aliases" : {
-      "operate-list-view_alias" : { }
+      "operate-event_alias" : { }
     }
   }

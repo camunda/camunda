@@ -1,8 +1,6 @@
 {
-    "aliases" : {
-      "operate-operation_alias" : {
-        "is_write_index" : true
-      }
+"aliases" : {
+      "operate-import-position-1.2.0_alias" : { }
     },
     "mappings" : {
       "_doc" : {
@@ -23,46 +21,19 @@
           }
         ],
         "properties" : {
-          "endDate" : {
-            "type" : "date",
-            "format" : "date_time"
-          },
-          "errorMessage" : {
+          "aliasName" : {
             "type" : "keyword"
           },
           "id" : {
             "type" : "keyword"
           },
-          "incidentKey" : {
-            "type" : "long"
-          },
-          "lockExpirationTime" : {
-            "type" : "date",
-            "format" : "date_time"
-          },
-          "lockOwner" : {
+          "indexName" : {
             "type" : "keyword"
           },
-          "scopeKey" : {
-            "type" : "long"
+          "partitionId" : {
+            "type" : "integer"
           },
-          "startDate" : {
-            "type" : "date",
-            "format" : "date_time"
-          },
-          "state" : {
-            "type" : "keyword"
-          },
-          "type" : {
-            "type" : "keyword"
-          },
-          "variableName" : {
-            "type" : "keyword"
-          },
-          "variableValue" : {
-            "type" : "keyword"
-          },
-          "workflowInstanceKey" : {
+          "position" : {
             "type" : "long"
           }
         }

@@ -137,7 +137,8 @@ public class ElasticsearchSchemaManager {
    */
   protected boolean schemaAlreadyExists() {
     try {
-     return esClient.indices().exists(new GetIndexRequest(indexCreators.get(0).getAlias()), RequestOptions.DEFAULT);
+     String indexName =	indexCreators.get(0).getAlias();
+     return esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while checking schema existence: %s", e.getMessage());
       logger.error(message, e);

@@ -1,7 +1,7 @@
 {
     "order" : 30,
     "index_patterns" : [
-      "operate-incident_*"
+      "operate-incident-1.2.0_*"
     ],
     "settings" : {
       "index" : {

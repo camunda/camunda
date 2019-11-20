@@ -59,6 +59,9 @@
           "jobKey" : {
             "type" : "long"
           },
+          "workflowKey": {
+          	"type" : "long"
+          },
           "workflowInstanceKey" : {
             "type" : "long"
           },

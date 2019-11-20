@@ -8,7 +8,7 @@ for index in create/index/*.json; do
      indexname=`basename $index .json`
      echo "Delete index $indexname"
      echo "-------------------------------"
-     $RESTCLIENT --request DELETE --url $ES/$indexname
+ 	 $RESTCLIENT --request DELETE --url $ES/${indexname}_
      echo
      echo "-------------------------------"
 done

@@ -1,8 +1,8 @@
 {
   "source": {
-    "index": ["operate-sequence-flow_"]
+    "index": ["operate-sequence-flow-1.1.0_"]
   },
   "dest": {
-    "index": "operate-sequence-flow_1.2.0"
+    "index": "operate-sequence-flow-1.2.0_"
   }
 }

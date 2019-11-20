@@ -1,6 +1,8 @@
 {
     "aliases" : {
-      "operate-workflow_alias" : { }
+      "operate-operation-1.2.0_alias" : {
+        "is_write_index" : true
+      }
     },
     "mappings" : {
       "_doc" : {
@@ -21,44 +23,46 @@
           }
         ],
         "properties" : {
-          "activities" : {
-            "type" : "nested",
-            "properties" : {
-              "id" : {
-                "type" : "keyword"
-              },
-              "name" : {
-                "type" : "keyword"
-              },
-              "type" : {
-                "type" : "keyword"
-              }
-            }
+          "endDate" : {
+            "type" : "date",
+            "format" : "date_time"
           },
-          "bpmnProcessId" : {
-            "type" : "keyword",
-            "eager_global_ordinals" : true
-          },
-          "bpmnXml" : {
-            "type" : "text",
-            "index" : false
+          "errorMessage" : {
+            "type" : "keyword"
           },
           "id" : {
             "type" : "keyword"
           },
-          "key" : {
+          "incidentKey" : {
+            "type" : "long"
+          },
+          "lockExpirationTime" : {
+            "type" : "date",
+            "format" : "date_time"
+          },
+          "lockOwner" : {
             "type" : "keyword"
           },
-          "name" : {
+          "scopeKey" : {
+            "type" : "long"
+          },
+          "startDate" : {
+            "type" : "date",
+            "format" : "date_time"
+          },
+          "state" : {
             "type" : "keyword"
           },
-          "partitionId" : {
-            "type" : "integer"
-          },
-          "resourceName" : {
+          "type" : {
             "type" : "keyword"
           },
-          "version" : {
+          "variableName" : {
+            "type" : "keyword"
+          },
+          "variableValue" : {
+            "type" : "keyword"
+          },
+          "workflowInstanceKey" : {
             "type" : "long"
           }
         }

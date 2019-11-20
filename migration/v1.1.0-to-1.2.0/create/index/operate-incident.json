@@ -1,6 +1,8 @@
 {
     "aliases" : {
-      "operate-user_alias" : { }
+      "operate-incident-1.2.0_alias" : {
+        "is_write_index" : true
+      }
     },
     "mappings" : {
       "_doc" : {
@@ -21,17 +23,43 @@
           }
         ],
         "properties" : {
+          "creationTime" : {
+            "type" : "date",
+            "format" : "date_time"
+          },
+          "errorMessage" : {
+            "type" : "keyword",
+            "eager_global_ordinals" : true
+          },
+          "errorType" : {
+            "type" : "keyword"
+          },
+          "flowNodeId" : {
+            "type" : "keyword"
+          },
+          "flowNodeInstanceKey" : {
+            "type" : "long"
+          },
           "id" : {
             "type" : "keyword"
           },
-          "password" : {
+          "jobKey" : {
+            "type" : "long"
+          },
+          "key" : {
+            "type" : "long"
+          },
+          "partitionId" : {
+            "type" : "integer"
+          },
+          "state" : {
             "type" : "keyword"
           },
-          "role" : {
-            "type" : "keyword"
+          "workflowInstanceKey" : {
+            "type" : "long"
           },
-          "username" : {
-            "type" : "keyword"
+          "workflowKey" : {
+            "type" : "long"
           }
         }
       }

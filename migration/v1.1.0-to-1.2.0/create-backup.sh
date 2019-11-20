@@ -7,7 +7,8 @@ ES=${1:-http://localhost:9200}
 RESTCLIENT="curl -K curl.config"
 
 for index in backup/*.json; do
-   echo "Save index $index to ${index}_1.0.0_"
+   indexname=`basename $index .json`
+   echo "Save index ${indexname}_ to ${indexname}-1.1.0_"
    echo "-------------------------------"
    $RESTCLIENT --request POST --url ${ES}/_reindex?wait_for_completion=true --data @${index}
    echo
