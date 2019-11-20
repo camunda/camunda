@@ -176,7 +176,7 @@ pipeline {
 	stage('Stop previous operate version') {
 		steps {
 		   container('maven') {
-			 sh("""echo 'Stop previous operate version""")
+			 sh("""echo 'Stop previous operate version'""")
 		 }
 	  }
 	}
