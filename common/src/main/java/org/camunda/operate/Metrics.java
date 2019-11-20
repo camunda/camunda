@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 
 @Component
 public class Metrics {
@@ -21,7 +22,12 @@ public class Metrics {
   public static final String OPERATE_NAMESPACE = "operate.";
 
   // Timers:
-  public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE+"query";
+  public static final String TIMER_NAME_QUERY = OPERATE_NAMESPACE + "query";
+  public static final String TIMER_NAME_IMPORT_QUERY = OPERATE_NAMESPACE + "import.query";
+  public static final String TIMER_NAME_IMPORT_INDEX_QUERY = OPERATE_NAMESPACE + "import.index.query";
+  public static final String TIMER_NAME_ARCHIVER_QUERY = OPERATE_NAMESPACE + "archiver.query";
+  public static final String TIMER_NAME_ARCHIVER_REINDEX_QUERY = OPERATE_NAMESPACE + "archiver.reindex.query";
+  public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY = OPERATE_NAMESPACE + "archiver.delete.query";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI = "events.processed.finished.workflow.instances";
@@ -51,8 +57,12 @@ public class Metrics {
    * @param count - Number to count 
    * @param tags - key value pairs of tags as Strings - The size of tags varargs must be even.
    */
-  public void recordCounts(String name, int count, String ... tags) {
+  public void recordCounts(String name, long count, String ... tags) {
     registry.counter(OPERATE_NAMESPACE + name, tags).increment(count);
   }
- 
+
+  public Timer getTimer(String name) {
+    return registry.timer(name);
+  }
+
 }

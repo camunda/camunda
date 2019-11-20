@@ -13,6 +13,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.schema.indices.ImportPositionIndex;
 import org.camunda.operate.exceptions.NoSuchIndexException;
@@ -106,7 +107,10 @@ public class RecordsReader {
   private ObjectMapper objectMapper;
 
   @Autowired
-  private BeanFactory beanFactory;  
+  private BeanFactory beanFactory;
+
+  @Autowired
+  private Metrics metrics;
   
   public RecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
@@ -159,10 +163,11 @@ public class RecordsReader {
       }
       final SearchRequest searchRequest = new SearchRequest(aliasName)
           .source(searchSourceBuilder)
-          .routing(String.valueOf(partitionId));
+          .routing(String.valueOf(partitionId))
+          .requestCache(false);
 
       final SearchResponse searchResponse =
-          zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
+          withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
 
       JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
       SearchHit[] hits = searchResponse.getHits().getHits();
@@ -185,7 +190,15 @@ public class RecordsReader {
         logger.error(message, ex);
         throw new OperateRuntimeException(message, ex);
       }
+    } catch (Exception e) {
+      final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
     }
+  }
+
+  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
+    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
   }
 
   public boolean isActive() {

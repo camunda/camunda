@@ -7,7 +7,9 @@ package org.camunda.operate.zeebeimport;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
+import org.camunda.operate.Metrics;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.zeebe.ImportValueType;
@@ -57,6 +59,9 @@ public class ElasticsearchBulkProcessor {
 
   @Autowired
   private SequenceFlowZeebeRecordProcessor sequenceFlowZeebeRecordProcessor;
+
+  @Autowired
+  private Metrics metrics;
 
   public void persistZeebeRecords(ImportBatch importBatch) throws PersistenceException {
     List<Record> zeebeRecords = importBatch.getRecords();
@@ -112,7 +117,18 @@ public class ElasticsearchBulkProcessor {
       break;
     }
 
-    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+    try {
+      withTimer(() -> {
+            ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+            return null;
+          });
+    } catch (Exception e) {
+      throw new PersistenceException(e);
+    }
+  }
+
+  private void withTimer(Callable<Void> callable) throws Exception {
+    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_INDEX_QUERY).recordCallable(callable);
   }
 
 }

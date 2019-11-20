@@ -6,8 +6,8 @@
 package org.camunda.operate.archiver;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.Callable;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
@@ -19,6 +19,7 @@ import org.camunda.operate.zeebe.PartitionHolder;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -31,7 +32,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
+import static org.camunda.operate.util.ElasticsearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
 
 @Component
 @DependsOn("schemaManager")
@@ -133,44 +136,66 @@ public class Archiver {
 
   }
 
+  private BulkByScrollResponse deleteWithTimer(Callable<BulkByScrollResponse> callable) throws Exception {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY)
+        .recordCallable(callable);
+  }
+
+  private BulkByScrollResponse reindexWithTimer(Callable<BulkByScrollResponse> callable) throws Exception {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY)
+        .recordCallable(callable);
+  }
+
   public String getDestinationIndexName(String sourceIndexName, String finishDate) {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 
-  private void deleteDocuments(String sourceIndexName, String idFieldName, List<Long> workflowInstanceKeys) throws ReindexException {
-    final DeleteByQueryRequest request = new DeleteByQueryRequest(sourceIndexName)
-        .setQuery(termsQuery(idFieldName, workflowInstanceKeys))
-        .setRefresh(true);
+  private long deleteDocuments(String sourceIndexName, String idFieldName, List<Long> workflowInstanceKeys) throws ReindexException {
+    final DeleteByQueryRequest request =
+        new DeleteByQueryRequest(sourceIndexName)
+            .setBatchSize(workflowInstanceKeys.size())
+            .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
+            .setQuery(termsQuery(idFieldName, workflowInstanceKeys))
+            .setAbortOnVersionConflict(false)
+            .setSlices(AUTO_SLICES);
     try {
-      final BulkByScrollResponse response = esClient.deleteByQuery(request, RequestOptions.DEFAULT);
-      checkResponse(response, sourceIndexName, "delete");
-    } catch (IOException e) {
+      final BulkByScrollResponse response = deleteWithTimer(()->esClient.deleteByQuery(request, RequestOptions.DEFAULT));
+      return checkResponse(response, sourceIndexName, "delete");
+    } catch (ReindexException ex) {
+      throw ex;
+    } catch (Exception e) {
       final String message = String.format("Exception occurred, while deleting the documents: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
 
-  private void reindexDocuments(String sourceIndexName, String destinationIndexName, String idFieldName, List<Long> workflowInstanceKeys)
+  private long reindexDocuments(String sourceIndexName, String destinationIndexName, String idFieldName, List<Long> workflowInstanceKeys)
       throws ReindexException {
 
     final ReindexRequest reindexRequest = new ReindexRequest()
         .setSourceIndices(sourceIndexName)
+        .setSourceBatchSize(workflowInstanceKeys.size())
+        .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
+        .setAbortOnVersionConflict(false)
+        .setSlices(AUTO_SLICES)
         .setDestIndex(destinationIndexName)
         .setSourceQuery(termsQuery(idFieldName, workflowInstanceKeys));
 
     try {
-      BulkByScrollResponse response = esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
+      BulkByScrollResponse response = reindexWithTimer(() -> esClient.reindex(reindexRequest, RequestOptions.DEFAULT));
 
-      checkResponse(response, sourceIndexName, "reindex");
-    } catch (IOException e) {
+      return checkResponse(response, sourceIndexName, "reindex");
+    } catch (ReindexException ex) {
+      throw ex;
+    } catch (Exception e) {
       final String message = String.format("Exception occurred, while reindexing the documents: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
 
-  private void checkResponse(BulkByScrollResponse response, String sourceIndexName, String operation) throws ReindexException {
+  private long checkResponse(BulkByScrollResponse response, String sourceIndexName, String operation) throws ReindexException {
     final List<BulkItemResponse.Failure> bulkFailures = response.getBulkFailures();
     if (bulkFailures.size() > 0) {
       logger.error("Failures occurred when performing operation: {} on source index {}. See details below.", operation, sourceIndexName);
@@ -178,6 +203,7 @@ public class Archiver {
       throw new ReindexException(String.format("Operation %s failed", operation));
     } else {
       logger.debug("Operation {} succeded on source index {}. Response: {}", operation, sourceIndexName, response.toString());
+      return response.getTotal();
     }
   }
 

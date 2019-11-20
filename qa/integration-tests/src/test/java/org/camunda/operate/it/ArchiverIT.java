@@ -14,7 +14,6 @@ import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.hamcrest.CoreMatchers.containsString;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -38,6 +37,7 @@ import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.exceptions.ReindexException;
+import org.camunda.operate.util.MetricAssert;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
@@ -135,7 +135,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     elasticsearchTestRule.processAllRecordsAndWait(workflowInstancesAreFinishedCheck, ids2);
 
     //assert metrics for finished workflow instances
-    assertThatMetricsFrom(mockMvc, containsString("operate_events_processed_finished_workflow_instances_total " + (count1 + count2)));
+    assertThatMetricsFrom(mockMvc, new MetricAssert.MetricsMatcher("operate_events_processed_finished_workflow_instances_total", d -> d.doubleValue() == count1 + count2));
 
     //start instances 1 day ago
     int count3 = random.nextInt(6) + 5;
@@ -145,7 +145,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
     //when
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(count2);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(0);     //3rd run should not move anything, as the rest of the instances are not completed
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
@@ -158,7 +160,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertAllInstancesInAlias(count1 + count2 + count3);
 
     //assert metrics for archived workflow instances
-    assertThatMetricsFrom(mockMvc, containsString("operate_archived_workflow_instances_total " + (count1 + count2)));
+    assertThatMetricsFrom(mockMvc, new MetricAssert.MetricsMatcher("operate_archived_workflow_instances_total", d -> d.doubleValue() == count1 + count2));
   }
 
   protected void createOperations(List<Long> ids1) throws PersistenceException {
@@ -208,6 +210,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
     //when
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(count1);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     //2rd run should not move anything, as the rest of the instances are somcpleted less then 1 hour ago
     assertThat(archiverJob.archiveNextBatch()).isEqualTo(0);
 

@@ -51,6 +51,7 @@ public abstract class ElasticsearchUtil {
 
   public static final String ES_INDEX_TYPE = "_doc";
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
+  public static final int INTERNAL_SCROLL_KEEP_ALIVE_MS = 30000;    //this scroll timeout value is used for reindex and delete queries
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;

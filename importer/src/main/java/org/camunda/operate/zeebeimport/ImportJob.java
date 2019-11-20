@@ -91,16 +91,20 @@ public class ImportJob implements Callable<Boolean> {
     previousPosition.setIndexName(null);
   }
 
-  public void refreshPreviousIndex() throws IOException {
+  public void refreshPreviousIndex() {
     RefreshRequest refreshRequest = new RefreshRequest(previousPosition.getIndexName());
-    RefreshResponse refresh = zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    if (refresh.getFailedShards() > 0) {
-      logger.warn("Unable to refresh the index: {}", previousPosition.getIndexName());
-    }
     try {
-      Thread.sleep(1000);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      RefreshResponse refresh = zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      if (refresh.getFailedShards() > 0) {
+        logger.warn("Unable to refresh the index: {}", previousPosition.getIndexName());
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    } catch (Exception ex) {
+      logger.warn(String.format("Unable to refresh the index: %s", previousPosition.getIndexName()), ex);
     }
   }
 
@@ -111,8 +115,8 @@ public class ImportJob implements Callable<Boolean> {
 
   public ImportPositionEntity getLastProcessedPosition() {
     if (lastProcessedPosition == null) {
-      Long lastRecordPosition = importBatch.getLastProcessedPosition();
-      if (lastRecordPosition != null) {
+      long lastRecordPosition = importBatch.getLastProcessedPosition();
+      if (lastRecordPosition != 0) {
         lastProcessedPosition = ImportPositionEntity.createFrom(previousPosition, lastRecordPosition, importBatch.getLastRecordIndexName());
       } else {
         lastProcessedPosition = previousPosition;

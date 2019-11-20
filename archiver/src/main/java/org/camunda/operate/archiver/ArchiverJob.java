@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
+import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.ReindexException;
@@ -73,6 +75,9 @@ public class ArchiverJob implements Runnable {
   private RestHighLevelClient esClient;
 
   @Autowired
+  private Metrics metrics;
+
+  @Autowired
   @Qualifier("archiverThreadPoolExecutor")
   private TaskScheduler archiverExecutor;
 
@@ -85,6 +90,7 @@ public class ArchiverJob implements Runnable {
     long delay = 1;
     try {
       int entitiesCount = archiveNextBatch();
+      delay = 1000;    //to wait till refresh
 
       if (entitiesCount == 0) {
         //TODO we can implement backoff strategy, if there is not enough data
@@ -142,12 +148,13 @@ public class ArchiverJob implements Runnable {
             .aggregation(agg)
             .fetchSource(false)
             .size(0)
-            .sort(ListViewTemplate.END_DATE, SortOrder.ASC));
+            .sort(ListViewTemplate.END_DATE, SortOrder.ASC))
+        .requestCache(false);  //we don't need to cache this, as each time we need new data
 
     logger.debug("Finished workflow instances for archiving request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
     try {
-      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      final SearchResponse searchResponse = withTimer(() -> esClient.search(searchRequest, RequestOptions.DEFAULT));
       final List<? extends Histogram.Bucket> buckets =
           ((Histogram) searchResponse.getAggregations().get(datesAgg))
               .getBuckets();
@@ -162,11 +169,16 @@ public class ArchiverJob implements Runnable {
       } else {
         return null;
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       final String message = String.format("Exception occurred, while obtaining finished workflow instances: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
+    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY)
+        .recordCallable(callable);
   }
 
   @PreDestroy
