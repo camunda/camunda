@@ -49,7 +49,9 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
               indexed.index(),
               indexed.entry().term(),
               WallClockTimestamp.from(indexed.entry().timestamp()));
-      return pending.getPath();
+      final var pendingPath = pending.getPath();
+      return pendingPath.resolveSibling(
+          String.format("%s-%d", pendingPath.getFileName(), snapshotPosition));
     }
 
     return null;
