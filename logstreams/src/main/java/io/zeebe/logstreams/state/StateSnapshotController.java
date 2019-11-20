@@ -102,7 +102,7 @@ public class StateSnapshotController implements SnapshotController {
       FileUtil.deleteFolder(runtimeDirectory);
     }
 
-    final var snapshots = storage.getSnapshots();
+    final var snapshots = storage.getSnapshots().sorted(Comparator.reverseOrder()).collect(Collectors.toList());
     LOG.debug("Available snapshots: {}", snapshots);
 
     long lowerBoundSnapshotPosition = -1;
@@ -127,13 +127,12 @@ public class StateSnapshotController implements SnapshotController {
               snapshot,
               e);
           FileUtil.deleteFolder(snapshot.getPath());
-
         } else {
           LOG.error(
               "Failed to open snapshot '{}'. No snapshots available to recover from. Manual action is required.",
               snapshot,
               e);
-          LangUtil.rethrowUnchecked(e);
+          throw new RuntimeException("Failed to recover from snapshots", e);
         }
       }
     }

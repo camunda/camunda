@@ -7,8 +7,7 @@ public interface SnapshotDeletionListener {
   /**
    * Called by a {@link SnapshotStorage} whenever snapshots are removed.
    *
-   * @param storage the underlying snapshot storage
    * @param snapshot the oldest remaining snapshot
    */
-  void onSnapshotDeleted(SnapshotStorage storage, Snapshot snapshot);
+  void onSnapshotDeleted(Snapshot snapshot);
 }
