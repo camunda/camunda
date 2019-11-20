@@ -138,9 +138,9 @@ func (s *ContainerSuite) TearDownSuite() {
 }
 
 func validateImageExists(ctx context.Context, image string) error {
-	dockerClient, err := client.NewClientWithOpts(client.FromEnv)
+	dockerClient, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
-		return err
+		return fmt.Errorf("failed creating docker client: %w", err)
 	}
 
 	_, _, err = dockerClient.ImageInspectWithRaw(ctx, image)

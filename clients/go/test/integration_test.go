@@ -29,7 +29,7 @@ type integrationTestSuite struct {
 func TestIntegration(t *testing.T) {
 	suite.Run(t, &integrationTestSuite{
 		ContainerSuite: &containerSuite.ContainerSuite{
-			Timeout:        time.Second,
+			WaitTime:       time.Second,
 			ContainerImage: "camunda/zeebe:current-test",
 		},
 	})
