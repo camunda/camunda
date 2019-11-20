@@ -126,7 +126,9 @@ export default class Selection extends React.Component {
             data-test="selection-toggle"
             onClick={this.handleOnHeaderClick}
             isExpanded={isOpen}
-            expandTheme={isOpen ? 'selectionExpanded' : 'selectionCollapsed'}
+            iconButtonTheme={
+              isOpen ? 'selectionExpanded' : 'selectionCollapsed'
+            }
             id={`${idString}-toggle`}
             aria-expanded={isOpen}
             aria-controls={idString}

@@ -7,27 +7,27 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
-import {ExpandButtonThemes} from 'modules/theme';
+import IconButton from 'modules/components/IconButton';
 
 const ExpandButton = React.forwardRef(function ExpandButton(
-  {children, isExpanded, expandTheme, ...props},
+  {children, isExpanded, ...props},
   ref
 ) {
+  const renderIcon = () => (
+    <Styled.Transition timeout={400} in={isExpanded} appear>
+      <Styled.ArrowIcon />
+    </Styled.Transition>
+  );
+
   return (
-    <Styled.Button {...props} expandTheme={expandTheme} ref={ref}>
-      <Styled.Transition timeout={400} in={isExpanded} appear>
-        <Styled.Icon expandTheme={expandTheme}>
-          <Styled.ArrowIcon />
-        </Styled.Icon>
-      </Styled.Transition>
+    <IconButton {...props} icon={renderIcon()}>
       {children}
-    </Styled.Button>
+    </IconButton>
   );
 });
 
 ExpandButton.propTypes = {
-  isExpanded: PropTypes.bool,
-  expandTheme: PropTypes.oneOf(Object.keys(ExpandButtonThemes)).isRequired
+  isExpanded: PropTypes.bool
 };
 
 ExpandButton.defaultProps = {

@@ -23,7 +23,7 @@ export default function IncidentsBanner({id, count, onClick, isOpen}) {
       onClick={onClick}
       title={title}
       isExpanded={isOpen}
-      expandTheme="incidentsBanner"
+      iconButtonTheme="incidentsBanner"
     >
       {errorMessage}
     </Styled.IncidentsBanner>

@@ -6,9 +6,9 @@
 
 export {default as Colors} from './colors.js';
 export {
-  default as ExpandButtonThemes,
-  getExpandButtonTheme
-} from './expandButtonThemes';
+  default as IconButtonThemes,
+  getIconButtonTheme
+} from './iconButtonThemes';
 export {default as Animations} from './animations.js';
 export {
   themed,

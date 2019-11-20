@@ -7,15 +7,15 @@
 import {css} from 'styled-components';
 import {Colors} from '.';
 
-const DEFAULT_THEME = 'collapse';
+const DEFAULT_THEME = 'default';
 
-export function getExpandButtonTheme(themeName) {
-  return ExpandButtonThemes[themeName] || ExpandButtonThemes[DEFAULT_THEME];
+export function getIconButtonTheme(themeName) {
+  return IconButtonThemes[themeName] || IconButtonThemes[DEFAULT_THEME];
 }
 
-const ExpandButtonThemes = {
-  // collapse is used for the incidents panels on dashbord
-  collapse: {
+const IconButtonThemes = {
+  // default is used for the incidents panels on dashbord and for variable edit buttons
+  default: {
     default: {
       background: {
         // transparent background
@@ -300,4 +300,4 @@ const ExpandButtonThemes = {
   }
 };
 
-export default ExpandButtonThemes;
+export default IconButtonThemes;

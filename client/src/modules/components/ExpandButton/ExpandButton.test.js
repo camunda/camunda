@@ -5,15 +5,15 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
 import ExpandButton from './ExpandButton';
 import * as Styled from './styled';
 
 describe('ExpandButton', () => {
   it('should render arrow icon', () => {
     // given
-    const node = shallow(
-      <ExpandButton isExpanded={false} expandTheme="collapse" />
+    const node = mount(
+      <ExpandButton isExpanded={false} iconButtonTheme="default" />
     );
 
     // when
@@ -25,8 +25,8 @@ describe('ExpandButton', () => {
 
   it('should render provided children inside the button', () => {
     // given
-    const node = shallow(
-      <ExpandButton expandTheme="collapse">
+    const node = mount(
+      <ExpandButton iconButtonTheme="default">
         <div id="child1">child node 1</div>
         <div id="child2">child node 2</div>
       </ExpandButton>
@@ -41,6 +41,5 @@ describe('ExpandButton', () => {
     expect(ArrowIconNode).toExist();
     expect(ChildNode1).toExist();
     expect(ChildNode2).toExist();
-    expect(node.children()).toHaveLength(3);
   });
 });

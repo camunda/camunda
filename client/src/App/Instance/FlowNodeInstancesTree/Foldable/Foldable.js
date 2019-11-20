@@ -62,7 +62,7 @@ Foldable.Summary = function Summary({
         <Styled.ExpandButton
           onClick={toggleFold}
           isExpanded={!isFolded}
-          expandTheme="foldable"
+          iconButtonTheme="foldable"
         />
       ) : null}
       <Styled.FocusButton showHoverState={!isSelected} onClick={onSelection} />

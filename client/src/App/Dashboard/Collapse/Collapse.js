@@ -33,7 +33,7 @@ export default class Collapse extends React.Component {
           onClick={this.handleToggle}
           title={this.props.buttonTitle}
           isExpanded={!this.state.isCollapsed}
-          expandTheme="collapse"
+          iconButtonTheme="default"
         />
         {this.props.header}
         {!this.state.isCollapsed && this.props.content}
