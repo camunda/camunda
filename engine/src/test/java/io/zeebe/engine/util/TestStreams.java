@@ -26,7 +26,6 @@ import io.zeebe.engine.processor.TypedEventRegistry;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
-import io.zeebe.engine.state.StateStorageFactory;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
@@ -35,8 +34,10 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
+import io.zeebe.logstreams.util.AtomixLogStorageRule;
+import io.zeebe.logstreams.util.TestSnapshotStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.CopiedRecord;
@@ -46,7 +47,6 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.FileUtil;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -54,6 +54,9 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -64,7 +67,6 @@ import org.junit.rules.TemporaryFolder;
 
 public class TestStreams {
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
-  private static final int MAX_SNAPSHOTS = 1;
 
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
@@ -129,7 +131,11 @@ public class TestStreams {
 
     final AtomixLogStorageRule logStorageRule =
         new AtomixLogStorageRule(dataDirectory, partitionId);
-    logStorageRule.open(b -> b.withDirectory(segments));
+    logStorageRule.open(
+        b ->
+            b.withDirectory(segments)
+                .withMaxEntrySize(4 * 1024 * 1024)
+                .withMaxSegmentSize(128 * 1024 * 1024));
     final var logStream =
         spy(
             LogStreams.createLogStream()
@@ -170,18 +176,19 @@ public class TestStreams {
     return new FluentLogWriter(logStream);
   }
 
-  public StateStorageFactory getStateStorageFactory(final LogStream stream) {
-    File rocksDBDirectory;
+  public SnapshotStorage createSnapshotStorage(final LogStream stream) {
+    final Path rootDirectory =
+        dataDirectory.getRoot().toPath().resolve(stream.getLogName()).resolve("state");
+
     try {
-      rocksDBDirectory = dataDirectory.newFolder(stream.getLogName(), "state");
+      Files.createDirectories(rootDirectory);
+    } catch (final FileAlreadyExistsException ignored) {
+      // totally fine if it already exists
     } catch (final IOException e) {
-      if (!e.getMessage().contains("exists")) {
-        throw new RuntimeException(e);
-      }
-      rocksDBDirectory = new File(new File(dataDirectory.getRoot(), stream.getLogName()), "state");
+      throw new UncheckedIOException(e);
     }
 
-    return new StateStorageFactory(rocksDBDirectory);
+    return new TestSnapshotStorage(rootDirectory);
   }
 
   public StreamProcessor startStreamProcessor(
@@ -190,30 +197,17 @@ public class TestStreams {
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final LogStream stream = getLogStream(log);
     return buildStreamProcessor(
-        stream, zeebeDbFactory, typedRecordProcessorFactory, MAX_SNAPSHOTS, SNAPSHOT_INTERVAL);
+        stream, zeebeDbFactory, typedRecordProcessorFactory, SNAPSHOT_INTERVAL);
   }
 
   private StreamProcessor buildStreamProcessor(
       final LogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
-      final int maxSnapshot,
       final Duration snapshotInterval) {
-
-    final StateStorage stateStorage = getStateStorageFactory(stream).create();
+    final SnapshotStorage storage = createSnapshotStorage(stream);
     final StateSnapshotController currentSnapshotController =
-        spy(new StateSnapshotController(zeebeDbFactory, stateStorage, maxSnapshot));
-    currentSnapshotController.setDeletionService(
-        (position) -> {
-          if (stateStorage.existSnapshot(position)) {
-            final File snapshotDirectory = stateStorage.getSnapshotDirectoryFor(position);
-            try {
-              FileUtil.deleteFolder(snapshotDirectory.getPath());
-            } catch (final IOException e) {
-              Loggers.IO_LOGGER.error("Failed to delete snapshot {}.", snapshotDirectory, e);
-            }
-          }
-        });
+        spy(new StateSnapshotController(zeebeDbFactory, storage));
     final String logName = stream.getLogName();
 
     final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
@@ -258,6 +252,7 @@ public class TestStreams {
             context, streamProcessor, currentSnapshotController, asyncSnapshotDirector, zeebeDb);
     streamContextMap.put(logName, processorContext);
     closeables.manage(processorContext);
+    closeables.manage(storage);
 
     return streamProcessor;
   }
