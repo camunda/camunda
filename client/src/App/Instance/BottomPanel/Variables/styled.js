@@ -214,7 +214,7 @@ export const TextInput = styled(BasicInput)`
 
 export const DisplayText = styled.div`
   padding: 4px 0px;
-  max-height: 80px;
+  max-height: 64px;
   word-break: break-word;
 
   overflow-y: auto;
@@ -223,14 +223,12 @@ export const DisplayText = styled.div`
 
 const textAreaStyles = css`
   min-height: 26px;
-  max-height: 80px;
   resize: vertical;
   font-size: 14px;
 `;
 
 export const EditTextarea = styled(BasicTextarea)`
   padding: 4px 11px 2px 7px;
-  height: auto;
   ${textAreaStyles};
 `;
 

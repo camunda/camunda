@@ -11,6 +11,7 @@
     "react-contenteditable": "^3.3.2",
     "react-dom": "^16.9.0",
     "react-router-dom": "^5.0.1",
+    "react-textarea-autosize": "^7.1.2",
     "react-transition-group": "^4.3.0",
     "styled-components": "^4.4.1"
   },

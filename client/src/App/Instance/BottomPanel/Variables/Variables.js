@@ -86,8 +86,10 @@ export default function Variables({
       <>
         <Styled.EditInputTD>
           <Styled.EditTextarea
-            rows="1"
             autoFocus
+            hasAutoSize
+            minRows={1}
+            maxRows={4}
             data-test="edit-value"
             placeholder="Value"
             value={value}
@@ -124,6 +126,9 @@ export default function Variables({
           <Styled.AddTextarea
             data-test="add-value"
             placeholder="Value"
+            hasAutoSize
+            minRows={1}
+            maxRows={4}
             value={value}
             onChange={e => setValue(e.target.value)}
           />

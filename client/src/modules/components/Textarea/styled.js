@@ -6,6 +6,8 @@
 
 import styled, {css} from 'styled-components';
 
+import BasicTextareaAutosize from 'react-textarea-autosize';
+
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 const placeholderStyle = css`
@@ -18,7 +20,7 @@ const placeholderStyle = css`
   }
 `;
 
-export const Textarea = themed(styled.textarea`
+const TextareaStyles = css`
   display: block;
 
   width: 100%;
@@ -45,4 +47,12 @@ export const Textarea = themed(styled.textarea`
   font-size: 13px;
 
   ${placeholderStyle};
+`;
+
+export const Textarea = themed(styled.textarea`
+  ${TextareaStyles}
+`);
+
+export const TextareaAutosize = themed(styled(BasicTextareaAutosize)`
+  ${TextareaStyles}
 `);
