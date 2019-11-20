@@ -34,12 +34,6 @@ public class DbSnapshotStoreFactory implements SnapshotStoreFactory {
   static final String PENDING_DIRECTORY = "pending";
   private static final Logger LOGGER = new ZbLogger(DbSnapshotStoreFactory.class);
 
-  private final int maxSnapshotCount;
-
-  public DbSnapshotStoreFactory(final int maxSnapshotCount) {
-    this.maxSnapshotCount = maxSnapshotCount;
-  }
-
   @Override
   public SnapshotStore createSnapshotStore(final Path root, final String prefix) {
     final var snapshots = new ConcurrentSkipListMap<DbSnapshotId, DbSnapshot>();
@@ -51,7 +45,7 @@ public class DbSnapshotStoreFactory implements SnapshotStoreFactory {
 
     loadSnapshots(snapshotDirectory, snapshots);
 
-    return new DbSnapshotStore(snapshotDirectory, pendingDirectory, maxSnapshotCount, snapshots);
+    return new DbSnapshotStore(snapshotDirectory, pendingDirectory, snapshots);
   }
 
   private void loadSnapshots(

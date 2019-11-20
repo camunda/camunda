@@ -139,7 +139,7 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
       store.purgeSnapshots(oldest);
 
       final var converted = toSnapshot(oldest.getPath()).get();
-      deletionListeners.forEach(listener -> listener.onSnapshotDeleted(this, converted));
+      deletionListeners.forEach(listener -> listener.onSnapshotDeleted(converted));
     }
   }
 

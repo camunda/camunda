@@ -38,7 +38,7 @@ public class LeaderLogStreamDeletionService implements SnapshotDeletionListener,
   }
 
   @Override
-  public void onSnapshotDeleted(final SnapshotStorage storage, final Snapshot snapshot) {
+  public void onSnapshotDeleted(final Snapshot snapshot) {
     final ActorFuture<Long> lowestExporterPosition = exporterDirector.getLowestExporterPosition();
     lowestExporterPosition.onComplete(
         (value, exception) -> {

@@ -41,7 +41,6 @@ public class DbSnapshotStore implements SnapshotStore {
   private final Path pendingDirectory;
   // necessary to extract the lowest position from the snapshots
   private final StatePositionSupplier positionSupplier;
-  private final int maxSnapshotCount;
   // keeps track of all snapshot modification listeners
   private final Set<SnapshotListener> listeners;
   // a pair of mutable snapshot ID for index-only lookups
@@ -51,12 +50,10 @@ public class DbSnapshotStore implements SnapshotStore {
   public DbSnapshotStore(
       final Path snapshotsDirectory,
       final Path pendingDirectory,
-      final int maxSnapshotCount,
       final ConcurrentNavigableMap<DbSnapshotId, DbSnapshot> snapshots) {
     this.snapshotsDirectory = snapshotsDirectory;
     this.pendingDirectory = pendingDirectory;
     this.snapshots = snapshots;
-    this.maxSnapshotCount = maxSnapshotCount;
 
     // slightly dangerous but since we're doing this read only should be safe-ish
     this.positionSupplier = new StatePositionSupplier(-1, LOGGER);
@@ -161,7 +158,7 @@ public class DbSnapshotStore implements SnapshotStore {
   @Override
   public PendingSnapshot newPendingSnapshot(
       final long index, final long term, final WallClockTimestamp timestamp) {
-    final var directory = createPendingSnapshotDirectory(index, term, timestamp);
+    final var directory = buildPendingSnapshotDirectory(index, term, timestamp);
     return new DbPendingSnapshot(index, term, timestamp, directory, this);
   }
 
@@ -180,6 +177,25 @@ public class DbSnapshotStore implements SnapshotStore {
   }
 
   @Override
+  public void purgeSnapshots(final Snapshot snapshot) {
+    if (!(snapshot instanceof DbSnapshot)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected purge request with known DbSnapshot, but receive '%s'",
+              snapshot.getClass()));
+    }
+
+    final DbSnapshot dbSnapshot = (DbSnapshot) snapshot;
+    snapshots.headMap(dbSnapshot.getMetadata(), false).values().forEach(this::remove);
+
+    try {
+      cleanUpTemporarySnapshots(dbSnapshot.getMetadata());
+    } catch (final IOException e) {
+      LOGGER.error("Failed to remove orphaned temporary snapshot older than {}", dbSnapshot, e);
+    }
+  }
+
+  @Override
   public Path getPath() {
     return snapshotsDirectory;
   }
@@ -190,11 +206,6 @@ public class DbSnapshotStore implements SnapshotStore {
   }
 
   @Override
-  public void purgeSnapshots(final Snapshot snapshot) {
-
-  }
-
-  @Override
   public void addListener(final SnapshotListener listener) {
     listeners.add(listener);
   }
@@ -202,6 +213,11 @@ public class DbSnapshotStore implements SnapshotStore {
   @Override
   public void removeListener(final SnapshotListener listener) {
     listeners.remove(listener);
+  }
+
+  private void remove(final DbSnapshot snapshot) {
+    snapshot.delete();
+    snapshots.remove(snapshot.getMetadata());
   }
 
   private void cleanUpTemporarySnapshots(final DbSnapshotId cutoffId) throws IOException {
@@ -220,14 +236,10 @@ public class DbSnapshotStore implements SnapshotStore {
     }
   }
 
-  private Path createPendingSnapshotDirectory(
+  private Path buildPendingSnapshotDirectory(
       final long index, final long term, final WallClockTimestamp timestamp) {
-    try {
-      return Files.createTempDirectory(
-          pendingDirectory, String.format("%d-%d-%d", index, term, timestamp.unixTimestamp()));
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    final var name = String.format("%d-%d-%d", index, term, timestamp.unixTimestamp());
+    return pendingDirectory.resolve(name);
   }
 
   private Path buildSnapshotDirectory(final DbSnapshotMetadata metadata) {

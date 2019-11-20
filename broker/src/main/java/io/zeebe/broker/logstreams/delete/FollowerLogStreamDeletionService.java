@@ -24,7 +24,7 @@ public class FollowerLogStreamDeletionService implements SnapshotDeletionListene
   }
 
   @Override
-  public void onSnapshotDeleted(final SnapshotStorage storage, final Snapshot snapshot) {
+  public void onSnapshotDeleted(final Snapshot snapshot) {
     final long minPosition = Math.min(snapshot.getPosition(), getMinimumExportedPosition(snapshot));
     logStream.delete(minPosition);
   }

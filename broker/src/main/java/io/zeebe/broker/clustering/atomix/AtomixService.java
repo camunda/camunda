@@ -124,7 +124,7 @@ public class AtomixService implements Service<Atomix> {
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
             .withStateMachineFactory(ZeebeRaftStateMachine::new)
-            .withSnapshotStoreFactory(new DbSnapshotStoreFactory(configuration.getData().getMaxSnapshots()))
+            .withSnapshotStoreFactory(new DbSnapshotStoreFactory())
             .withFlushOnCommit();
 
     // by default, the Atomix max entry size is 1 MB

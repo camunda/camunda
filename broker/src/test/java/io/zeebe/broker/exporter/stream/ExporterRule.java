@@ -17,9 +17,7 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
@@ -58,11 +56,11 @@ public class ExporterRule implements TestRule {
   private TestStreams streams;
   private ExporterDirector director;
 
-  public ExporterRule(int partitionId) {
+  public ExporterRule(final int partitionId) {
     this(partitionId, DefaultZeebeDbFactory.defaultFactory(ZbColumnFamilies.class));
   }
 
-  public ExporterRule(int partitionId, ZeebeDbFactory dbFactory) {
+  public ExporterRule(final int partitionId, final ZeebeDbFactory dbFactory) {
     final SetupRule rule = new SetupRule(partitionId);
 
     zeebeDbFactory = dbFactory;
@@ -75,17 +73,17 @@ public class ExporterRule implements TestRule {
   }
 
   @Override
-  public Statement apply(Statement base, Description description) {
+  public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);
   }
 
   @SuppressWarnings("unchecked")
-  public void startExporterDirector(List<ExporterDescriptor> exporterDescriptors) {
-    final LogStream stream = streams.getLogStream(STREAM_NAME);
+  public void startExporterDirector(final List<ExporterDescriptor> exporterDescriptors) {
+    final var stream = streams.getLogStream(STREAM_NAME);
 
-    final StateStorage stateStorage = streams.getStateStorageFactory(stream).create();
-    final StateSnapshotController snapshotController =
-        spy(new StateSnapshotController(zeebeDbFactory, stateStorage));
+    final var snapshotStorage = streams.createSnapshotStorage(stream);
+    final var snapshotController =
+        spy(new StateSnapshotController(zeebeDbFactory, snapshotStorage));
     capturedZeebeDb = spy(snapshotController.openDb());
 
     doAnswer(invocationOnMock -> capturedZeebeDb).when(snapshotController).openDb();
@@ -103,6 +101,7 @@ public class ExporterRule implements TestRule {
 
     director = new ExporterDirector(context);
     director.startAsync(actorSchedulerRule.get()).join();
+    closeables.manage(snapshotStorage);
   }
 
   public ControlledActorClock getClock() {
@@ -117,15 +116,16 @@ public class ExporterRule implements TestRule {
     return new ExportersState(capturedZeebeDb, capturedZeebeDb.createContext());
   }
 
-  public long writeEvent(Intent intent, UnpackedObject value) {
+  public long writeEvent(final Intent intent, final UnpackedObject value) {
     return writeRecord(RecordType.EVENT, intent, value);
   }
 
-  public long writeCommand(Intent intent, UnpackedObject value) {
+  public long writeCommand(final Intent intent, final UnpackedObject value) {
     return writeRecord(RecordType.COMMAND, intent, value);
   }
 
-  public long writeRecord(RecordType recordType, Intent intent, UnpackedObject value) {
+  public long writeRecord(
+      final RecordType recordType, final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(STREAM_NAME)
         .recordType(recordType)
@@ -144,7 +144,7 @@ public class ExporterRule implements TestRule {
 
     private final int partitionId;
 
-    SetupRule(int partitionId) {
+    SetupRule(final int partitionId) {
       this.partitionId = partitionId;
     }
 
