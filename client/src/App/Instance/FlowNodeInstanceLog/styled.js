@@ -50,3 +50,7 @@ export const FlowNodeInstanceLog = themed(styled.div`
     light: 'rgba(98, 98, 110, 0.9)'
   })};
 `);
+
+export const FlowNodeInstanceSkeleton = themed(styled(FlowNodeInstanceLog)`
+  overflow: hidden;
+`);

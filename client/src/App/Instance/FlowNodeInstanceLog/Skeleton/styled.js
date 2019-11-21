@@ -20,7 +20,6 @@ const colors = css`
 
 export const Skeleton = themed(styled.div`
   width: 100%;
-  overflow: hidden;
 `);
 
 export const Row = themed(styled.div`

@@ -45,7 +45,7 @@ export const FlowNodeInstanceLog = themed(styled.div`
   width: auto;
   display: flex;
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   border: solid 1px
     ${themeStyle({
       dark: Colors.uiDark04,

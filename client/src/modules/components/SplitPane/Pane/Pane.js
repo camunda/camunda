@@ -135,17 +135,17 @@ export default class Pane extends React.Component {
 }
 
 Pane.Header = function PaneHeader(props) {
-  const {expandState} = useContext(paneContext);
+  const {expandState} = useContext(paneContext) || {expandState: 'DEFAULT'};
   return <Panel.Header {...props} expandState={expandState} />;
 };
 
 Pane.Body = function PaneBody(props) {
-  const {expandState} = useContext(paneContext);
+  const {expandState} = useContext(paneContext) || {expandState: 'DEFAULT'};
 
   return <Styled.Body {...props} expandState={expandState} />;
 };
 
 Pane.Footer = function PaneFooter(props) {
-  const {expandState} = useContext(paneContext);
+  const {expandState} = useContext(paneContext) || {expandState: 'DEFAULT'};
   return <Styled.Footer {...props} expandState={expandState} />;
 };

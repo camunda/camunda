@@ -10,8 +10,6 @@ import * as Styled from './styled';
 export function VariableRow() {
   return (
     <Styled.Row>
-      {/* TODO: Fix length  */}
-      {/* add row borders */}
       <Styled.VariableBlock />
       <Styled.ValueBlock />
     </Styled.Row>

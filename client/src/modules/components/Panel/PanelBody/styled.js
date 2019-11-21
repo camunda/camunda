@@ -7,6 +7,7 @@
 import styled from 'styled-components';
 
 export const Body = styled.div`
+  overflow: hidden;
   flex-grow: 1;
   display: flex;
   flex-direction: column;

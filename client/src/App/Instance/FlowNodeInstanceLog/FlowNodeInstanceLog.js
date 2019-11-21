@@ -112,9 +112,8 @@ class FlowNodeInstanceLog extends React.Component {
 
     return (
       <Styled.Panel>
-        <Styled.FlowNodeInstanceLog>
-          {diagramDefinitions &&
-          Object.keys(activityInstancesTree).length > 0 ? (
+        {diagramDefinitions && Object.keys(activityInstancesTree).length > 0 ? (
+          <Styled.FlowNodeInstanceLog>
             <Styled.NodeContainer>
               <FlowNodeInstancesTree
                 node={activityInstancesTree}
@@ -124,15 +123,17 @@ class FlowNodeInstanceLog extends React.Component {
                 onTreeRowSelection={onTreeRowSelection}
               />
             </Styled.NodeContainer>
-          ) : (
+          </Styled.FlowNodeInstanceLog>
+        ) : (
+          <Styled.FlowNodeInstanceSkeleton>
             <EmptyPanel
               label={label}
               type={type}
               Skeleton={Skeleton}
               rowHeight={28}
             />
-          )}
-        </Styled.FlowNodeInstanceLog>
+          </Styled.FlowNodeInstanceSkeleton>
+        )}
       </Styled.Panel>
     );
   }

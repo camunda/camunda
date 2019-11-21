@@ -16,6 +16,7 @@ export default function EmptyPanel({
   ...props
 }) {
   const containerRef = createRef(null);
+
   return (
     <Styled.EmptyPanel {...props} ref={containerRef}>
       {type === 'skeleton' ? (
@@ -44,17 +45,9 @@ EmptyPanel.propTypes = {
  * @param {obj} containerRef ref of the parent component
  */
 export const WithRowCount = function({rowHeight, containerRef, ...props}) {
-  const [rows, setRows] = useState(null);
-
-  useEffect(() => {
-    recalculateHeight();
-  }, []);
-
   function recalculateHeight() {
-    if (containerRef.current) {
-      const rows = ~~(containerRef.current.clientHeight / rowHeight) - 1;
-      setRows(rows);
-    }
+    const rows = Math.floor(window.innerHeight / 3 / rowHeight);
+    return rows;
   }
 
   function renderChildren() {
@@ -63,7 +56,7 @@ export const WithRowCount = function({rowHeight, containerRef, ...props}) {
       child =>
         child &&
         React.cloneElement(child, {
-          rowsToDisplay: rows
+          rowsToDisplay: recalculateHeight()
         })
     );
   }

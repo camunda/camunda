@@ -31,7 +31,7 @@ class TopPanel extends React.PureComponent {
       state: PropTypes.string.isRequired,
       errorMessage: PropTypes.string,
       workflowVersion: PropTypes.number
-    }).isRequired,
+    }),
     children: PropTypes.node,
     forceInstanceSpinner: PropTypes.bool,
     onInstanceOperation: PropTypes.func,
@@ -139,7 +139,6 @@ class TopPanel extends React.PureComponent {
       onTreeRowSelection,
       onFlowNodeSelection,
       getCurrentMetadata,
-
       ...props
     } = this.props;
 

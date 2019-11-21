@@ -13,6 +13,8 @@ import {
   MULTI_SCOPE_PLACEHOLDER,
   EMPTY_PLACEHOLDER
 } from './constants';
+import {isRunning} from 'modules/utils/instance';
+
 import {withData} from 'modules/DataManager';
 import Skeleton from './Skeleton';
 import SpinnerSkeleton from 'modules/components/Skeletons';
@@ -23,7 +25,7 @@ import * as Styled from './styled';
 class VariablePanel extends React.Component {
   static propTypes = {
     dataManager: PropTypes.object,
-    isRunning: PropTypes.bool,
+    instance: PropTypes.object,
     variables: PropTypes.array,
     editMode: PropTypes.string.isRequired,
     isEditable: PropTypes.bool.isRequired,
@@ -40,7 +42,13 @@ class VariablePanel extends React.Component {
 
     this.subscriptions = {
       LOAD_VARIABLES: ({state}) => {
-        this.setState({loadingState: state, initialLoad: true});
+        const stateUpdate = {};
+
+        if (!this.state.initialLoad && state === 'LOADED') {
+          stateUpdate.initialLoad = true;
+        }
+
+        this.setState({...stateUpdate, loadingState: state});
       }
     };
   }
@@ -110,7 +118,7 @@ class VariablePanel extends React.Component {
 
     if (loadingState === LOADING && initialLoad) {
       return () => (
-        <Styled.EmptyPanel type={'skeleton'} Skeleton={SpinnerSkeleton} />
+        <Styled.EmptyPanel type="skeleton" Skeleton={SpinnerSkeleton} />
       );
     } else {
       return;
@@ -119,12 +127,12 @@ class VariablePanel extends React.Component {
 
   render() {
     const {
-      isRunning,
       isEditable,
       variables,
       editMode,
       onVariableUpdate,
-      setEditMode
+      setEditMode,
+      instance
     } = this.props;
 
     const TableReplacement = this.constructTableReplacement();
@@ -137,7 +145,7 @@ class VariablePanel extends React.Component {
           <Variables
             Placeholder={this.constructPlaceHolder()}
             Overlay={this.constructOverlay()}
-            isRunning={isRunning}
+            isRunning={instance && isRunning({state: instance.state})}
             variables={variables}
             editMode={editMode}
             isEditable={isEditable}

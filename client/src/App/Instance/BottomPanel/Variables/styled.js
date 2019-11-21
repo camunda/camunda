@@ -105,8 +105,6 @@ export const SkeletonTR = styled.tr``;
 
 export const SkeletonTable = styled(Table)`
   height: 100%;
-  /* overflow: hidden; */
-  /* padding-bottom: 44px; */
 `;
 
 const rowWithActiveOperationStyle = css`

@@ -54,7 +54,6 @@ class Actions extends React.Component {
     if (!isEqual(operations, prevProps.instance.operations)) {
       // change operation state & failed operation icons when new page is loaded;
       const {state, type} = getLatestOperation(operations);
-
       this.setState({
         operationState: state,
         operationType: type

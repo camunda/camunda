@@ -22,11 +22,8 @@ import {
 import {compactObject, immutableArraySet} from 'modules/utils';
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
-import {isRunning} from 'modules/utils/instance';
-import * as api from 'modules/api/instances';
 import {withData} from 'modules/DataManager';
 
-// import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 import FlowNodeInstanceLog from './FlowNodeInstanceLog';
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
@@ -65,7 +62,6 @@ class Instance extends Component {
       },
       nodeMetaDataMap: null,
       diagramDefinitions: null,
-      loaded: false,
       activityInstancesTree: {},
       activityIdToActivityInstanceMap: null,
       events: [],
@@ -103,8 +99,7 @@ class Instance extends Component {
           }
 
           this.setState({
-            instance: response,
-            loaded: true
+            instance: response
           });
         }
       },
@@ -453,7 +448,7 @@ class Instance extends Component {
       )
     });
 
-    return await api.applyOperation(id, {
+    return this.props.dataManager.applyOperation(id, {
       operationType: 'UPDATE_VARIABLE',
       scopeId: treeRowIds[0],
       name: key,
@@ -492,7 +487,6 @@ class Instance extends Component {
 
   render() {
     const {
-      loaded,
       diagramDefinitions,
       instance,
       incidents,
@@ -504,16 +498,12 @@ class Instance extends Component {
       editMode
     } = this.state;
 
-    if (!loaded) {
-      return 'Loading';
-    }
-
     return (
       <Fragment>
-        <Header detail={<InstanceDetail instance={instance} />} />
+        <Header detail={instance && <InstanceDetail instance={instance} />} />
         <Styled.Instance>
           <VisuallyHiddenH1>
-            {`Camunda Operate Instance ${this.state.instance.id}`}
+            {instance && `Camunda Operate Instance ${instance.id}`}
           </VisuallyHiddenH1>
           <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
             <TopPanel
@@ -536,9 +526,8 @@ class Instance extends Component {
                 selectedTreeRowIds={this.state.selection.treeRowIds}
                 onTreeRowSelection={this.handleTreeRowSelection}
               />
-
               <VariablePanel
-                isRunning={isRunning({state: this.state.instance.state})}
+                instance={instance}
                 variables={variables}
                 editMode={editMode}
                 isEditable={this.areVariablesEditable()}

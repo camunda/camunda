@@ -8,7 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {createVariables} from 'modules/testUtils';
+import {createVariables, setProps} from 'modules/testUtils';
 
 // import Skeleton from '../VariablePanel/Skeleton';
 import Variables from './Variables';
@@ -35,13 +35,6 @@ function mountNode(props = {}) {
     </ThemeProvider>
   );
 }
-
-/* Helper function as node.setProps() changes only props of the rootNode, here: <ThemeProvider>*/
-const setProps = (node, WrappedComponent, updatedProps) => {
-  return node.setProps({
-    children: <WrappedComponent {...updatedProps} />
-  });
-};
 
 describe('Variables', () => {
   afterEach(() => {
