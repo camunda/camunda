@@ -79,7 +79,7 @@ public class TestSnapshotStorage implements SnapshotStorage {
       throw new UncheckedIOException(e);
     }
 
-    snapshots.add(new SnapshotImpl(snapshotPath));
+    snapshots.add(new SnapshotImpl(destination));
     return true;
   }
 

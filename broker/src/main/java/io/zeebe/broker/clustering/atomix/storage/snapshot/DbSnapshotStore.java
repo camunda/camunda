@@ -76,7 +76,7 @@ public class DbSnapshotStore implements SnapshotStore {
       return snapshots.get(metadata);
     }
 
-    final var destination = directory.resolve(buildSnapshotDirectory(metadata));
+    final var destination = buildSnapshotDirectory(metadata);
     try {
       Files.move(directory, destination);
     } catch (final FileAlreadyExistsException e) {
