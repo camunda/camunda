@@ -181,7 +181,7 @@ pipeline {
             ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
             # git config
-            git config --global user.email "ci@camunda.com"
+            git config --global user.email "ci_automation@camunda.com"
             git config --global user.name "camunda-jenkins"
           ''')
         }

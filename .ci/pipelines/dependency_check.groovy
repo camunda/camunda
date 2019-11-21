@@ -123,7 +123,7 @@ pipeline {
                         mkdir -p ~/.ssh
                         ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts
 
-                        git config --global user.email "ci@camunda.com"
+                        git config --global user.email "ci_automation@camunda.com"
                         git config --global user.name "camunda-jenkins"
 
                         git checkout `git log -1 --before=\\"\$(date -d "yesterday" +%d.%m.%Y)\\" --pretty=format:"%h"`
