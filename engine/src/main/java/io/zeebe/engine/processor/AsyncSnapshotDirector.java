@@ -119,20 +119,19 @@ public class AsyncSnapshotDirector extends Actor {
 
   private void takeSnapshot() {
     final var tempSnapshotPosition = lowerBoundSnapshotPosition;
+    final var commitPosition = logStream.getCommitPosition();
 
     pendingSnapshot =
         createSnapshot(() -> snapshotController.takeTempSnapshot(tempSnapshotPosition));
+    LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, tempSnapshotPosition, commitPosition);
+
     final ActorFuture<Long> lastWrittenPosition = streamProcessor.getLastWrittenPositionAsync();
     actor.runOnCompletion(
         lastWrittenPosition,
         (endPosition, error) -> {
           if (error == null) {
-            final long commitPosition = logStream.getCommitPosition();
             lastWrittenEventPosition = endPosition;
-
-            LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, tempSnapshotPosition, commitPosition);
             onCommitCheck();
-
           } else {
             pendingSnapshot = null;
             LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);

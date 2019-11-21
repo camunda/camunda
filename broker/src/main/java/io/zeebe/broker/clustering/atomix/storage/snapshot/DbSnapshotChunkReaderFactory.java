@@ -9,11 +9,9 @@ package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.util.NavigableSet;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -39,32 +37,18 @@ final class DbSnapshotChunkReaderFactory {
     final var directory = snapshot.getDirectory();
 
     try {
-      return new DbSnapshotChunkReader(directory, visitChunks(directory));
+      return new DbSnapshotChunkReader(directory, collectChunks(directory));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  private SortedSet<CharSequence> visitChunks(final Path directory) throws IOException {
+  private NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {
     final var set = new TreeSet<>(CharSequence::compare);
-    Files.walkFileTree(directory, new ChunkVisitor(directory, set));
+    try (var stream = Files.list(directory)) {
+      stream.map(directory::relativize).map(Path::toString).forEach(set::add);
+    }
     return set;
-  }
-
-  private static final class ChunkVisitor extends SimpleFileVisitor<Path> {
-    private final Path root;
-    private final SortedSet<CharSequence> collector;
-
-    ChunkVisitor(final Path root, final SortedSet<CharSequence> collector) {
-      this.root = root;
-      this.collector = collector;
-    }
-
-    @Override
-    public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) {
-      collector.add(file.relativize(root).toString());
-      return FileVisitResult.CONTINUE;
-    }
   }
 
   private static final class Singleton {

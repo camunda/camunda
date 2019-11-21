@@ -12,6 +12,7 @@ import io.atomix.protocols.raft.storage.snapshot.Snapshot;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotListener;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
@@ -21,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
@@ -40,6 +40,8 @@ public class DbSnapshotStore implements SnapshotStore {
   private final Path pendingDirectory;
   // keeps track of all snapshot modification listeners
   private final Set<SnapshotListener> listeners;
+  // used to fetch the position for snapshots replicated by Atomix
+  private final StatePositionSupplier positionSupplier;
   // a pair of mutable snapshot ID for index-only lookups
   private final ReusableSnapshotId lowerBoundId;
   private final ReusableSnapshotId upperBoundId;
@@ -52,6 +54,7 @@ public class DbSnapshotStore implements SnapshotStore {
     this.pendingDirectory = pendingDirectory;
     this.snapshots = snapshots;
 
+    this.positionSupplier = new StatePositionSupplier(-1, LOGGER);
     this.lowerBoundId = new ReusableSnapshotId(Long.MIN_VALUE);
     this.upperBoundId = new ReusableSnapshotId(Long.MAX_VALUE);
     this.listeners = new CopyOnWriteArraySet<>();
@@ -104,8 +107,12 @@ public class DbSnapshotStore implements SnapshotStore {
   public Snapshot getSnapshot(final long index) {
     // compute a map of all snapshots with index equal to the given index, and pick the one with the
     // highest position
-    final NavigableMap<DbSnapshotId, DbSnapshot> indexBoundedSet =
+    final var indexBoundedSet =
         snapshots.subMap(lowerBoundId.setIndex(index), false, upperBoundId.setIndex(index), false);
+    if (indexBoundedSet.isEmpty()) {
+      return null;
+    }
+
     return indexBoundedSet.lastEntry().getValue();
   }
 
@@ -151,7 +158,15 @@ public class DbSnapshotStore implements SnapshotStore {
   @Override
   public Snapshot newSnapshot(
       final long index, final long term, final WallClockTimestamp timestamp, final Path directory) {
-    return DbSnapshotMetadata.ofPath(directory).map(meta -> put(directory, meta)).orElse(null);
+    final var metadata = DbSnapshotMetadata.ofPath(directory);
+    if (metadata.isPresent()) {
+      return put(directory, metadata.get());
+    }
+
+    // as a fallback, read the position from the DB; Atomix does not propagate position information
+    // when replicating, so this is necessary
+    final var position = positionSupplier.getLowestPosition(directory);
+    return put(directory, new DbSnapshotMetadata(index, term, timestamp, position));
   }
 
   @Override

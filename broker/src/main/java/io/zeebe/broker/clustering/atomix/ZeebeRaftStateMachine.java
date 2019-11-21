@@ -46,6 +46,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     this.threadContextFactory = threadContextFactory;
 
     this.compactionContext = this.threadContextFactory.createContext();
+
     this.reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
 
     this.lastEnqueued = reader.getFirstIndex() - 1;
@@ -138,6 +139,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
   private void safeApplyAll(final long index, CompletableFuture<?> future) {
     threadContext.checkThread();
 
+    lastEnqueued = Math.max(lastEnqueued, raft.getSnapshotStore().getCurrentSnapshotIndex());
     while (lastEnqueued < index) {
       final long nextIndex = ++lastEnqueued;
       threadContext.execute(() -> safeApplyIndex(nextIndex, future));
@@ -146,6 +148,20 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
 
   private void safeApplyIndex(final long index, final CompletableFuture<?> future) {
     threadContext.checkThread();
+
+    // skip if we have a newer snapshot
+    if (raft.getSnapshotStore().getCurrentSnapshotIndex() >= index
+        || reader.getNextIndex() > index) {
+      if (future != null) {
+        future.complete(null);
+      }
+
+      return;
+    }
+
+    if (index > reader.getNextIndex()) {
+      reader.reset(index);
+    }
 
     // Apply entries prior to this entry.
     if (reader.hasNext() && reader.getNextIndex() == index) {
@@ -157,6 +173,8 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
           future.completeExceptionally(e);
         }
       }
+    } else if (reader.getNextIndex() < raft.getSnapshotStore().getCurrentSnapshotIndex()) {
+      reader.reset(raft.getSnapshotStore().getCurrentSnapshotIndex());
     } else {
       logger.error("Cannot apply index {}", index);
       logger.debug(
@@ -173,13 +191,6 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
       final Indexed<? extends RaftLogEntry> indexed, final CompletableFuture<T> future) {
     threadContext.checkThread();
     logger.trace("Applying {}", indexed);
-
-    // skip if we have a newer snapshot
-    // if we skip, then we'll probably want to notify once we reach the snapshot
-    if (raft.getSnapshotStore().getCurrentSnapshotIndex() > indexed.index()) {
-      future.complete(null);
-      return;
-    }
 
     if (RaftLogEntry.class.isAssignableFrom(indexed.type())) {
       raft.notifyCommitListeners(indexed);

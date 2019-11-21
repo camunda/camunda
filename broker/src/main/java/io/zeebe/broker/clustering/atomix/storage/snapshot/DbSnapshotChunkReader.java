@@ -17,11 +17,14 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.NavigableSet;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import org.agrona.AsciiSequenceView;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.LoggerFactory;
 
 /**
  * Implements a chunk reader where each chunk is a single file in a root directory. Chunks are then
@@ -31,12 +34,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class DbSnapshotChunkReader implements SnapshotChunkReader {
   private static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
   private final Path directory;
-  private final SortedSet<CharSequence> chunks;
+  private final NavigableSet<CharSequence> chunks;
   private final CharSequenceView chunkIdView;
 
-  private SortedSet<CharSequence> chunksView;
+  private NavigableSet<CharSequence> chunksView;
 
-  public DbSnapshotChunkReader(final Path directory, final SortedSet<CharSequence> chunks) {
+  public DbSnapshotChunkReader(final Path directory, final NavigableSet<CharSequence> chunks) {
     this.directory = directory;
     this.chunks = chunks;
     this.chunksView = this.chunks;
@@ -45,18 +48,21 @@ public class DbSnapshotChunkReader implements SnapshotChunkReader {
 
   @Override
   public void seek(final ByteBuffer id) {
+    if (id == null) {
+      return;
+    }
+
     final var path = decodeChunkId(id);
-    chunksView = chunks.tailSet(path);
+    chunksView = chunks.tailSet(path, true);
   }
 
   @Override
   public ByteBuffer nextId() {
-    final var path = chunksView.first();
-    if (path == null) {
+    if (chunksView.isEmpty()) {
       return null;
     }
 
-    return encodeChunkId(path);
+    return encodeChunkId(chunksView.first());
   }
 
   @Override
@@ -71,17 +77,15 @@ public class DbSnapshotChunkReader implements SnapshotChunkReader {
 
   @Override
   public SnapshotChunk next() {
-    if (!hasNext()) {
+    final var id = chunksView.pollFirst();
+    if (id == null) {
       throw new NoSuchElementException();
     }
 
-    final var id = chunksView.first().toString();
-    final var path = directory.resolve(id);
+    final var path = directory.resolve(id.toString());
 
     try {
-
       final var data = ByteBuffer.wrap(Files.readAllBytes(path)).order(Protocol.ENDIANNESS);
-      chunksView = chunksView.tailSet(id);
       return new DbSnapshotChunk(encodeChunkId(id), data);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);

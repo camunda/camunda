@@ -9,6 +9,7 @@ package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import io.atomix.protocols.raft.storage.snapshot.PendingSnapshot;
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -17,6 +18,7 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import org.agrona.IoUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -90,6 +92,8 @@ public class DbPendingSnapshot implements PendingSnapshot {
     final var filename = getFile(chunkId);
     final var path = directory.resolve(filename);
 
+    IoUtil.ensureDirectoryExists(directory.toFile(), "Pending snapshot directory");
+
     try (var channel =
         Files.newByteChannel(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
       channel.write(chunkData);
@@ -107,15 +111,13 @@ public class DbPendingSnapshot implements PendingSnapshot {
 
   @Override
   public void commit() {
-    try (var ignored = snapshotStore.newSnapshot(index, term, timestamp, directory)) {
-      // simply ensure it's closed once we're done
-    }
+    snapshotStore.newSnapshot(index, term, timestamp, directory).close();
   }
 
   @Override
   public void abort() {
     try {
-      Files.delete(directory);
+      FileUtil.deleteFolder(directory);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete pending snapshot {}", this, e);
     }
