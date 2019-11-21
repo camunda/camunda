@@ -10,10 +10,9 @@ import {mount} from 'enzyme';
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 
-import {createInstance} from 'modules/testUtils';
+import {createInstance, setProps} from 'modules/testUtils';
 
 import Pane from 'modules/components/SplitPane/Pane';
-import SplitPane from 'modules/components/SplitPane';
 
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
@@ -21,73 +20,67 @@ import {
   getWorkflowName,
   getInstancesWithActiveOperations
 } from 'modules/utils/instance';
-import {ThemeProvider} from 'modules/theme';
+
+import Actions from 'modules/components/Actions';
+import Spinner from 'modules/components/Spinner';
 
 import InstanceHeader from './InstanceHeader';
-import Actions from 'modules/components/Actions';
-
-import Spinner from 'modules/components/Spinner';
+import Skeleton from './Skeleton';
 
 jest.mock('modules/utils/bpmn');
 
 const mockInstance = createInstance();
 
 createMockDataManager();
+
 const mountInstanceHeader = props => {
   return mount(
-    <ThemeProvider>
-      <DataManagerProvider>
-        <SplitPane>
-          <Pane>
-            <InstanceHeader {...props} />
-          </Pane>
-          <SplitPane.Pane />
-        </SplitPane>
-      </DataManagerProvider>
-    </ThemeProvider>
+    <DataManagerProvider>
+      <InstanceHeader {...props} />
+    </DataManagerProvider>
   );
 };
 
 describe('InstanceHeader', () => {
-  let node;
-  beforeEach(() => {
-    node = mountInstanceHeader({instance: mockInstance});
+  let root, node;
+
+  it('should subscribe when instance data is available', () => {
+    root = mountInstanceHeader();
+
+    node = root.find(InstanceHeader.WrappedComponent);
+
+    expect(Object.keys(node.instance().subscriptions)).toEqual([]);
+
+    setProps(root, InstanceHeader, {instance: mockInstance});
+
+    root.update();
+
+    node = root.find(InstanceHeader.WrappedComponent);
+    const {subscriptions} = node.instance();
+    expect(Object.keys(subscriptions)).toEqual([
+      'OPERATION_APPLIED_INCIDENT_id_1',
+      'OPERATION_APPLIED_VARIABLE_id_1'
+    ]);
   });
 
-  it('should show spinner based on instance data', () => {
-    node = mountInstanceHeader({
-      instance: {...mockInstance, hasActiveOperation: true}
-    });
+  it('should show skeleton before instance data is available', () => {
+    root = mountInstanceHeader();
 
-    expect(node.find(Spinner)).toHaveLength(1);
-  });
+    node = root.find(InstanceHeader.WrappedComponent);
 
-  it('should show spinner when operation is published', () => {
-    node = mountInstanceHeader({
-      instance: {...mockInstance, hasActiveOperation: false, operations: []}
-    });
-    const componentNode = node.find(InstanceHeader.WrappedComponent);
+    expect(node.find(Skeleton)).toExist();
 
-    // given
-    const {dataManager} = componentNode.instance().props;
-    const {subscriptions} = componentNode.instance();
+    setProps(root, InstanceHeader, {instance: mockInstance});
 
-    expect(node.find(Spinner)).not.toHaveLength(1);
-    // when
+    root.update();
 
-    dataManager.publish({
-      subscription: subscriptions['OPERATION_APPLIED_INCIDENT_id_1'],
-      state: 'LOADING'
-    });
+    node = root.find(InstanceHeader.WrappedComponent);
 
-    node.update();
-
-    //then
-    expect(node.find(Spinner)).toHaveLength(1);
+    expect(node.find(Skeleton)).not.toExist();
   });
 
   it('should render', () => {
-    node = mountInstanceHeader({
+    root = mountInstanceHeader({
       instance: mockInstance
     });
     // given
@@ -97,10 +90,10 @@ describe('InstanceHeader', () => {
     const formattedEndDate = formatDate(mockInstance.endDate);
 
     // then
-    expect(node.find(Pane.Header)).toHaveLength(1);
+    expect(root.find(Pane.Header)).toHaveLength(1);
 
     // Pane.Header
-    const PaneHeaderNode = node.find(Pane.Header);
+    const PaneHeaderNode = root.find(Pane.Header);
 
     const TableNode = PaneHeaderNode.find('table');
     expect(TableNode.text()).toContain(workflowName);
@@ -122,5 +115,76 @@ describe('InstanceHeader', () => {
     expect(ActionsNode.props().forceSpinner).toEqual(
       !!getInstancesWithActiveOperations([mockInstance]).length
     );
+  });
+
+  describe('operation feedback', () => {
+    it('should show spinner based on instance data', () => {
+      root = mountInstanceHeader({
+        instance: {...mockInstance, hasActiveOperation: false, operations: []}
+      });
+
+      let node = root.find(InstanceHeader.WrappedComponent);
+
+      expect(node.find('Spinner')).not.toExist();
+      setProps(root, InstanceHeader, {
+        instance: {...mockInstance, hasActiveOperation: true}
+      });
+
+      root.update();
+
+      node = root.find(InstanceHeader.WrappedComponent);
+
+      expect(node.find('Spinner')).toExist();
+    });
+
+    it('should show spinner when operation is published', () => {
+      root = mountInstanceHeader();
+      node = root.find(InstanceHeader.WrappedComponent);
+
+      expect(root.find(Spinner)).not.toHaveLength(1);
+
+      setProps(root, InstanceHeader, {
+        instance: {...mockInstance, hasActiveOperation: false, operations: []}
+      });
+
+      root.update();
+
+      const {subscriptions} = node.instance();
+
+      node.instance().props.dataManager.publish({
+        subscription: subscriptions['OPERATION_APPLIED_INCIDENT_id_1'],
+        state: 'LOADING'
+      });
+
+      root.update();
+
+      //then
+      expect(root.find(Spinner)).toHaveLength(1);
+    });
+
+    it('should show spinner when variable is edited/created', () => {
+      root = mountInstanceHeader();
+      node = root.find(InstanceHeader.WrappedComponent);
+
+      expect(root.find(Spinner)).not.toHaveLength(1);
+
+      setProps(root, InstanceHeader, {
+        instance: {...mockInstance, hasActiveOperation: false, operations: []}
+      });
+
+      root.update();
+
+      const {subscriptions} = node.instance();
+
+      node.instance().props.dataManager.publish({
+        subscription: subscriptions['OPERATION_APPLIED_VARIABLE_id_1'],
+        state: 'LOADING'
+      });
+
+      root.update();
+
+      //then
+      expect(root.find(Spinner)).toHaveLength(1);
+    });
   });
 });

@@ -52,15 +52,17 @@ export class DataManager {
   }
 
   /** Wrapped API calls */
-
-  applyOperation(instanceId, payload) {
-    const operationLevel = payload.incidentId ? 'INCIDENT' : 'INSTANCE';
+  applyOperation(id, payload) {
+    const typeStrings = payload.operationType.split('_');
+    const operationType = typeStrings[typeStrings.length - 1];
 
     this.publisher.pubLoadingStates(
-      `OPERATION_APPLIED_${operationLevel}_${instanceId}`,
-      () => applyOperation(instanceId, payload)
+      `OPERATION_APPLIED_${operationType}_${id}`,
+      () => applyOperation(id, payload)
     );
   }
+
+  //
 
   fetchAndPublish(topic, apiCall, params, staticContent) {
     const cachedParams = this.cache.update(topic, apiCall, params);

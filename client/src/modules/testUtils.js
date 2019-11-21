@@ -4,6 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import React from 'react';
 import {STATE} from 'modules/constants';
 
 /**
@@ -27,6 +28,18 @@ export const mockResolvedAsyncFn = value => {
  */
 export const mockRejectedAsyncFn = value => {
   return jest.fn(() => Promise.reject(value));
+};
+
+/**
+ * @returns a jest mock function that rejects with given value
+ * @param {*} RootComponent which props can be updated
+ * @param {*} ChildComponent which props need to be updated
+ * @param {*} updateProps new props
+ */
+export const setProps = (RootComponent, ChildComponent, updatedProps) => {
+  return RootComponent.setProps({
+    children: <ChildComponent {...updatedProps} />
+  });
 };
 
 /**

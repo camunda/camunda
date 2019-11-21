@@ -12,6 +12,7 @@ import {withData} from 'modules/DataManager';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import Actions from 'modules/components/Actions';
+import Skeleton from './Skeleton';
 
 import * as Styled from './styled';
 
@@ -26,7 +27,7 @@ class InstanceHeader extends React.PureComponent {
       errorMessage: PropTypes.string,
       workflowVersion: PropTypes.number,
       hasActiveOperation: PropTypes.bool
-    }).isRequired
+    })
   };
 
   constructor(props) {
@@ -34,25 +35,22 @@ class InstanceHeader extends React.PureComponent {
     this.state = {
       hasActiveOperation: false
     };
-    this.subscriptions = {
-      [`OPERATION_APPLIED_INCIDENT_${props.instance.id}`]: ({state}) => {
-        if (state === LOADING_STATE.LOADING) {
-          this.setState({hasActiveOperation: true});
-        }
-      }
-    };
-  }
-
-  componentDidMount() {
-    this.props.dataManager.subscribe(this.subscriptions);
+    this.subscriptions = {};
   }
 
   componentDidUpdate(prevProps) {
-    const {hasActiveOperation: prevHasActiveOperation} = prevProps.instance;
-    const {hasActiveOperation} = this.props.instance;
+    // when instance data is available
+    if (!prevProps.instance && this.props.instance) {
+      this.addSubscriptions();
+    }
 
-    if (hasActiveOperation !== prevHasActiveOperation) {
-      this.setState({hasActiveOperation});
+    if (!!prevProps.instance) {
+      const {hasActiveOperation: prevHasActiveOperation} = prevProps.instance;
+      const {hasActiveOperation} = this.props.instance;
+
+      if (hasActiveOperation !== prevHasActiveOperation) {
+        this.setState({hasActiveOperation});
+      }
     }
   }
 
@@ -60,33 +58,56 @@ class InstanceHeader extends React.PureComponent {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
 
+  addSubscriptions() {
+    const {instance, dataManager} = this.props;
+
+    this.subscriptions = {
+      [`OPERATION_APPLIED_INCIDENT_${instance.id}`]: ({state}) => {
+        if (state === LOADING_STATE.LOADING) {
+          this.setState({hasActiveOperation: true});
+        }
+      },
+      [`OPERATION_APPLIED_VARIABLE_${instance.id}`]: ({state}) => {
+        if (state === LOADING_STATE.LOADING) {
+          this.setState({hasActiveOperation: true});
+        }
+      }
+    };
+
+    dataManager.subscribe(this.subscriptions);
+  }
+
   render() {
     const {instance} = this.props;
 
     return (
       <Styled.SplitPaneHeader>
-        <Styled.Table>
-          <tbody>
-            <Styled.Tr>
-              <Styled.Td>
-                <Styled.StateIcon state={instance.state} />
-                {getWorkflowName(instance)}
-              </Styled.Td>
-              <Styled.Td>{instance.id}</Styled.Td>
-              <Styled.Td>{`Version ${instance.workflowVersion}`}</Styled.Td>
-              <Styled.Td>{formatDate(instance.startDate)}</Styled.Td>
-              <Styled.Td>{formatDate(instance.endDate)}</Styled.Td>
-              <Styled.Td>
-                <Styled.ActionsWrapper>
-                  <Actions
-                    instance={instance}
-                    forceSpinner={this.state.hasActiveOperation}
-                  />
-                </Styled.ActionsWrapper>
-              </Styled.Td>
-            </Styled.Tr>
-          </tbody>
-        </Styled.Table>
+        {!instance ? (
+          <Skeleton />
+        ) : (
+          <Styled.Table>
+            <tbody>
+              <Styled.Tr>
+                <Styled.Td>
+                  <Styled.StateIcon state={instance.state} />
+                  {getWorkflowName(instance)}
+                </Styled.Td>
+                <Styled.Td>{instance.id}</Styled.Td>
+                <Styled.Td>{`Version ${instance.workflowVersion}`}</Styled.Td>
+                <Styled.Td>{formatDate(instance.startDate)}</Styled.Td>
+                <Styled.Td>{formatDate(instance.endDate)}</Styled.Td>
+                <Styled.Td>
+                  <Styled.ActionsWrapper>
+                    <Actions
+                      instance={instance}
+                      forceSpinner={this.state.hasActiveOperation}
+                    />
+                  </Styled.ActionsWrapper>
+                </Styled.Td>
+              </Styled.Tr>
+            </tbody>
+          </Styled.Table>
+        )}
       </Styled.SplitPaneHeader>
     );
   }
