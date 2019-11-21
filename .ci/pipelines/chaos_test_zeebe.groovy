@@ -3,17 +3,7 @@ final CHAOS_TEST_NAMESPACE = "zeebe-chaos-test"
 final NOTIFY_EMAIL = "christopher.zell@camunda.com"
 
 pipeline {
-    triggers {
-        cron('H 1 * * *')
-    }
-
     options {
-        buildDiscarder(
-                logRotator(
-                        numToKeepStr: '10',
-                        daysToKeepStr: '-1',
-                        artifactDaysToKeepStr: '-1',
-                        artifactNumToKeepStr: '10'))
         timeout(time: 1, unit: 'HOURS')
         skipDefaultCheckout()
         timestamps()

@@ -8,4 +8,15 @@ pipelineJob('chaos-test') {
             sandbox()
         }
     }
+
+    triggers {
+        cron('H 1 * * *')
+    }
+
+    logRotator {
+        numToKeep(10)
+        daysToKeep(-1)
+        artifactDaysToKeep(-1)
+        artifactNumToKeep(10)
+    }
 }
