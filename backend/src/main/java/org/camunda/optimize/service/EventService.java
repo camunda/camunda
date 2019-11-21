@@ -6,7 +6,10 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.EventCountDto;
 import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
+import org.camunda.optimize.service.es.reader.EventReader;
 import org.camunda.optimize.service.es.writer.EventWriter;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +18,8 @@ import java.util.List;
 @AllArgsConstructor
 @Component
 public class EventService {
+
+  private final EventReader eventReader;
   private final EventWriter eventWriter;
 
   public void saveEvent(final EventDto eventDto) {
@@ -23,6 +28,10 @@ public class EventService {
 
   public void saveEventBatch(final List<EventDto> eventDtos) {
     eventWriter.upsertEvents(eventDtos);
+  }
+
+  public List<EventCountDto> getEventCounts(EventCountRequestDto eventCountRequestDto) {
+    return eventReader.getEventCounts(eventCountRequestDto);
   }
 
 }

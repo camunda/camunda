@@ -97,7 +97,7 @@ public class IngestionRestIT extends AbstractIT {
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
         .collect(toList()),
       containsInAnyOrder(
-        id.name(), eventName.name(), timestamp.name(), traceId.name()
+        id, eventName, timestamp, traceId
       )
     );
     assertThat(
@@ -135,7 +135,7 @@ public class IngestionRestIT extends AbstractIT {
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
         .collect(toList()),
       containsInAnyOrder(
-        id.name(), eventName.name(), timestamp.name(), traceId.name(), duration.name()
+        id, eventName, timestamp, traceId, duration
       )
     );
     assertThat(
@@ -296,7 +296,7 @@ public class IngestionRestIT extends AbstractIT {
         .stream()
         .map(ValidationErrorResponseDto.ValidationError::getProperty)
         .collect(toList()),
-      containsInAnyOrder("element[2]." + id.name(), "element[3]." + duration.name())
+      containsInAnyOrder("element[2]." + id, "element[3]." + duration)
     );
     assertThat(
       ingestErrorResponse.getValidationErrors()

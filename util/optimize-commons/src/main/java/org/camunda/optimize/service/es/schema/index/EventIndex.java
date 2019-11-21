@@ -15,6 +15,9 @@ import java.io.IOException;
 
 @Component
 public class EventIndex extends StrictIndexMappingCreator {
+
+  public static final String N_GRAM_FIELD = "nGramField";
+  public static final String LOWERCASE_FIELD = "lowercase";
   public static final int VERSION = 1;
 
   @Override
@@ -31,28 +34,58 @@ public class EventIndex extends StrictIndexMappingCreator {
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(EventDto.Fields.id.name())
+      .startObject(EventDto.Fields.id)
         .field("type", "keyword")
       .endObject()
-      .startObject(EventDto.Fields.eventName.name())
+      .startObject(EventDto.Fields.eventName)
+        .field("type", "keyword")
+        .startObject("fields")
+          .startObject(N_GRAM_FIELD)
+            .field("type", "text")
+            .field("analyzer", "lowercase_ngram")
+          .endObject()
+          .startObject(LOWERCASE_FIELD)
+            .field("type", "keyword")
+            .field("normalizer", "lowercase_normalizer")
+          .endObject()
+        .endObject()
+      .endObject()
+      .startObject(EventDto.Fields.traceId)
         .field("type", "keyword")
       .endObject()
-      .startObject(EventDto.Fields.traceId.name())
-        .field("type", "keyword")
-      .endObject()
-      .startObject(EventDto.Fields.timestamp.name())
+      .startObject(EventDto.Fields.timestamp)
         .field("type", "date")
       .endObject()
-      .startObject(EventDto.Fields.duration.name())
+      .startObject(EventDto.Fields.duration)
         .field("type", "long")
       .endObject()
-      .startObject(EventDto.Fields.group.name())
+      .startObject(EventDto.Fields.group)
         .field("type", "keyword")
+        .startObject("fields")
+          .startObject(N_GRAM_FIELD)
+            .field("type", "text")
+            .field("analyzer", "lowercase_ngram")
+          .endObject()
+          .startObject(LOWERCASE_FIELD)
+            .field("type", "keyword")
+            .field("normalizer", "lowercase_normalizer")
+          .endObject()
+        .endObject()
       .endObject()
-      .startObject(EventDto.Fields.source.name())
+      .startObject(EventDto.Fields.source)
         .field("type", "keyword")
+        .startObject("fields")
+          .startObject(N_GRAM_FIELD)
+            .field("type", "text")
+            .field("analyzer", "lowercase_ngram")
+          .endObject()
+          .startObject(LOWERCASE_FIELD)
+            .field("type", "keyword")
+            .field("normalizer", "lowercase_normalizer")
+          .endObject()
+        .endObject()
       .endObject()
-      .startObject(EventDto.Fields.data.name())
+      .startObject(EventDto.Fields.data)
         .field("enabled", false)
       .endObject()
       ;

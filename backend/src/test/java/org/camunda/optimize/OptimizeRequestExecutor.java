@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUp
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -1023,6 +1024,15 @@ public class OptimizeRequestExecutor {
     this.path = "onboarding/" + key;
     this.requestType = PUT;
     this.body = getBody(new OnboardingStateRestDto(seen));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetEventRequest(EventCountRequestDto eventCountRequestDto) {
+    this.path = "event/count";
+    this.requestType = GET;
+    Optional.ofNullable(eventCountRequestDto.getSearchTerm()).ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    Optional.ofNullable(eventCountRequestDto.getOrderBy()).ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
+    Optional.ofNullable(eventCountRequestDto.getSortOrder()).ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
     return this;
   }
 

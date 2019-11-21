@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting;
+package org.camunda.optimize.dto.optimize.query.sorting;
 
 import java.util.Optional;
 

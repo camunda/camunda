@@ -6,11 +6,10 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result.raw;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
-import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.List;
 

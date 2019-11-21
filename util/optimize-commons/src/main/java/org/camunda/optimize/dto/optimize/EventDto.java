@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,11 +21,12 @@ import javax.validation.constraints.NotNull;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Builder
 @Getter
 @Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @ToString(onlyExplicitlyIncluded = true)
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants()
 public class EventDto {
   @NotBlank
   @EqualsAndHashCode.Include
