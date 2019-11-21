@@ -11,7 +11,7 @@ require (
 	github.com/docker/docker v0.7.3-0.20190506211059-b20a14b54661
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.3.3 // indirect
-	github.com/go-redis/redis v6.15.2+incompatible
+	github.com/go-redis/redis v6.15.6+incompatible
 	github.com/go-sql-driver/mysql v1.4.1
 	github.com/gogo/protobuf v1.2.0 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
@@ -32,3 +32,5 @@ require (
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gotest.tools v0.0.0-20181223230014-1083505acf35 // indirect
 )
+
+go 1.13
