@@ -45,8 +45,9 @@ export default class Login extends React.Component {
     if (authResult.token) {
       this.props.onLogin(authResult.token);
     } else {
-      const error = authResult.errorMessage || t('login.error');
-      this.setState({error});
+      const {errorCode, errorMessage} = authResult;
+      const error = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
+      this.setState({error: error || t('login.error')});
       this.passwordField.focus();
       this.passwordField.select();
     }

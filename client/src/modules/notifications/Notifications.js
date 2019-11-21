@@ -11,6 +11,7 @@ import {getRandomId} from 'services';
 import Notification from './Notification';
 
 import './Notifications.scss';
+import {t} from 'translation';
 
 let notificationsInstance;
 
@@ -63,7 +64,8 @@ export async function showError(error) {
   let text = error;
 
   if (typeof error.json === 'function') {
-    text = (await error.json()).errorMessage;
+    const {errorCode, errorMessage} = await error.json();
+    text = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
   } else if (error.message) {
     text = error.message;
   }

@@ -25,7 +25,8 @@ function validateAndStoreLicense(event) {
 
       if (response.errorMessage) {
         alertBox.setAttribute('class', 'alert alert-danger');
-        alertBox.textContent = response.errorMessage;
+        alertBox.textContent =
+          translationObject.apiErrors[response.errorCode] || response.errorMessage;
       } else {
         var message = translationObject.license.licensedFor + ' ' + response.customerId + '.';
 
@@ -62,7 +63,8 @@ function validateLicense() {
 
       if (response.errorMessage) {
         alertBox.setAttribute('class', 'alert alert-danger');
-        alertBox.textContent = response.errorMessage;
+        alertBox.textContent =
+          translationObject.apiErrors[response.errorCode] || response.errorMessage;
       } else {
         var message = translationObject.license.licensedFor + ' ' + response.customerId + '.';
 

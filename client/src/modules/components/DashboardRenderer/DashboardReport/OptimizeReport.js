@@ -15,6 +15,7 @@ import {withErrorHandling} from 'HOC';
 import {themed} from 'theme';
 
 import './OptimizeReport.scss';
+import {t} from 'translation';
 
 export default themed(
   withErrorHandling(
@@ -44,11 +45,12 @@ export default themed(
               });
             },
             async e => {
-              const {errorMessage, reportDefinition} = await e.json();
+              const {errorCode, errorMessage, reportDefinition} = await e.json();
+              const message = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
               this.setState({
                 loading: false,
                 data: reportDefinition,
-                error: !reportDefinition && errorMessage
+                error: !reportDefinition && message
               });
             }
           );
