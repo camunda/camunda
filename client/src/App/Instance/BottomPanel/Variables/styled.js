@@ -267,8 +267,8 @@ export const EditInputTD = styled.td`
 
 export const EditButton = styled(IconButton)`
   margin-left: 10px;
+
   svg {
-    margin-left: 4px;
     margin-top: 4px;
   }
 

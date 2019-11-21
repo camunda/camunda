@@ -19,6 +19,7 @@ export const Icon = themed(styled.div`
   border-color: none;
   ${setSize};
 
+  position: relative;
   z-index: 1;
 
   svg {
@@ -29,6 +30,7 @@ export const Icon = themed(styled.div`
   &:before {
     border-radius: 50%;
     position: absolute;
+    left: 0;
     content: '';
     ${setSize}
 
