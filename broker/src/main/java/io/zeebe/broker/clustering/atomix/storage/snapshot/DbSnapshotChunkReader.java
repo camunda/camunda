@@ -19,12 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NavigableSet;
 import java.util.NoSuchElementException;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import org.agrona.AsciiSequenceView;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.LoggerFactory;
 
 /**
  * Implements a chunk reader where each chunk is a single file in a root directory. Chunks are then

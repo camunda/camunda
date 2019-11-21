@@ -62,7 +62,8 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
               String.format("%s-%d", pendingPath.getFileName(), snapshotPosition));
       return new SnapshotImpl(snapshotPosition, realPath);
     } else {
-      LOGGER.debug("No previous entry found for position {}, cannot take snapshot", snapshotPosition);
+      LOGGER.debug(
+          "No previous entry found for position {}, cannot take snapshot", snapshotPosition);
     }
 
     return null;
