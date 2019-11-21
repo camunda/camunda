@@ -47,7 +47,7 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
   }
 
   @Override
-  public Path getPendingDirectoryFor(final long snapshotPosition) {
+  public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
     final var maybeIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
     if (maybeIndexed.isPresent()) {
       final var indexed = maybeIndexed.get();
@@ -55,10 +55,12 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
           store.newPendingSnapshot(
               indexed.index(),
               indexed.entry().term(),
-              WallClockTimestamp.from(indexed.entry().timestamp()));
+              WallClockTimestamp.from(System.currentTimeMillis()));
       final var pendingPath = pending.getPath();
-      return pendingPath.resolveSibling(
-          String.format("%s-%d", pendingPath.getFileName(), snapshotPosition));
+      final var realPath =
+          pendingPath.resolveSibling(
+              String.format("%s-%d", pendingPath.getFileName(), snapshotPosition));
+      return new SnapshotImpl(snapshotPosition, realPath);
     }
 
     return null;
@@ -69,10 +71,8 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
     final var maybeMeta = DbSnapshotMetadata.ofFileName(id);
     if (maybeMeta.isPresent()) {
       final var metadata = maybeMeta.get();
-      final var pending =
-          store.newPendingSnapshot(
-              metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp());
-      return pending.getPath();
+      return getPendingDirectoryFor(
+          metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp(), metadata.getPosition());
     }
 
     return null;
@@ -80,17 +80,10 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
 
   @Override
   public boolean commitSnapshot(final Path snapshotPath) {
-    final var maybeMeta = DbSnapshotMetadata.ofPath(snapshotPath);
-    if (maybeMeta.isPresent()) {
-      final var metadata = maybeMeta.get();
-      store.newSnapshot(
-          metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp(), snapshotPath);
-      return true;
-    } else {
-      LOGGER.warn("Failed to commit temporary snapshot {}, could not parse metadata", snapshotPath);
+    // in the case of DbSnapshot instances, we expect the path to always contain all the metadata
+    try (var created = store.newSnapshot(-1, -1, null, snapshotPath)) {
+      return created != null;
     }
-
-    return false;
   }
 
   @Override
@@ -138,7 +131,9 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
       final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
       final SnapshotStore store) {
     final var snapshots = store.getSnapshots();
-    if (snapshots.size() > maxSnapshotCount) {
+    if (snapshots.size() >= maxSnapshotCount) {
+      // by the condition it's guaranteed there be a snapshot after skipping maxSnapshotCount - 1
+      @SuppressWarnings("squid:S3655")
       final var oldest = snapshots.stream().skip(maxSnapshotCount - 1L).findFirst().get();
 
       LOGGER.info(
@@ -147,9 +142,19 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
           oldest);
       store.purgeSnapshots(oldest);
 
-      final var converted = toSnapshot(oldest.getPath()).get();
-      deletionListeners.forEach(listener -> listener.onSnapshotDeleted(converted));
+      final var maybeConverted = toSnapshot(oldest.getPath());
+      if (maybeConverted.isPresent()) {
+        final var converted = maybeConverted.get();
+        deletionListeners.forEach(listener -> listener.onSnapshotDeleted(converted));
+      }
     }
+  }
+
+  private Path getPendingDirectoryFor(
+      final long index, final long term, final WallClockTimestamp timestamp, final long position) {
+    final var pending = store.newPendingSnapshot(index, term, timestamp);
+    final var pendingPath = pending.getPath();
+    return pendingPath.resolveSibling(String.format("%s-%d", pendingPath.getFileName(), position));
   }
 
   private Optional<Snapshot> toSnapshot(final Path path) {

@@ -78,6 +78,7 @@ public final class ReplicationController {
   }
 
   private void markSnapshotAsInvalid(final SnapshotChunk chunk) {
+    snapshotConsumer.invalidateSnapshot(chunk.getSnapshotId());
     receivedSnapshots.put(chunk.getSnapshotId(), INVALID_SNAPSHOT);
   }
 
@@ -90,11 +91,8 @@ public final class ReplicationController {
           "Received all snapshot chunks ({}/{}), snapshot is valid",
           currentChunks,
           totalChunkCount);
-
-      final boolean valid = tryToMarkSnapshotAsValid(snapshotChunk);
-
-      if (valid) {
-        storage.commitSnapshot(storage.getPendingDirectoryFor(snapshotChunk.getSnapshotId()));
+      if (!tryToMarkSnapshotAsValid(snapshotChunk)) {
+        LOG.debug("Failed to mark snapshot {} as valid", snapshotChunk.getSnapshotId());
       }
     } else {
       LOG.trace(

@@ -19,12 +19,14 @@ import java.util.stream.Stream;
 public interface SnapshotStorage extends AutoCloseable {
 
   /**
-   * Returns an existing, temporary working directory for a snapshot using the position as ID.
+   * Returns an existing, temporary working directory for a snapshot using the position as ID. This
+   * method is non-deterministic, as it returns a directory with the current timestamp as part of
+   * the name, and therefore should be cached if it needs to be reused.
    *
    * @param snapshotPosition the position to use
    * @return a path to an existing directory
    */
-  Path getPendingDirectoryFor(long snapshotPosition);
+  Snapshot getPendingSnapshotFor(long snapshotPosition);
 
   /**
    * Returns an existing, temporary working directory for a snapshot with the given ID; primarily
@@ -34,6 +36,17 @@ public interface SnapshotStorage extends AutoCloseable {
    * @return an existing path
    */
   Path getPendingDirectoryFor(String id);
+
+  /**
+   * Commits to the snapshot to the underlying store, making it permanently accessible. This may
+   * trigger further side effects, such as deleting old snapshots, compacting, etc.
+   *
+   * @param snapshot the snapshot to commit
+   * @return true if committed, false otherwise
+   */
+  default boolean commitSnapshot(Snapshot snapshot) {
+    return commitSnapshot(snapshot.getPath());
+  }
 
   /**
    * Commits to the snapshot to the underlying store, making it permanently accessible. This may

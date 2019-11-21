@@ -12,7 +12,6 @@ import io.atomix.protocols.raft.storage.snapshot.Snapshot;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotListener;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
 import io.atomix.utils.time.WallClockTimestamp;
-import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
@@ -39,8 +38,6 @@ public class DbSnapshotStore implements SnapshotStore {
   private final Path snapshotsDirectory;
   // the root snapshotsDirectory when pending snapshots should be stored
   private final Path pendingDirectory;
-  // necessary to extract the lowest position from the snapshots
-  private final StatePositionSupplier positionSupplier;
   // keeps track of all snapshot modification listeners
   private final Set<SnapshotListener> listeners;
   // a pair of mutable snapshot ID for index-only lookups
@@ -55,8 +52,6 @@ public class DbSnapshotStore implements SnapshotStore {
     this.pendingDirectory = pendingDirectory;
     this.snapshots = snapshots;
 
-    // slightly dangerous but since we're doing this read only should be safe-ish
-    this.positionSupplier = new StatePositionSupplier(-1, LOGGER);
     this.lowerBoundId = new ReusableSnapshotId(Long.MIN_VALUE);
     this.upperBoundId = new ReusableSnapshotId(Long.MAX_VALUE);
     this.listeners = new CopyOnWriteArraySet<>();
@@ -70,15 +65,6 @@ public class DbSnapshotStore implements SnapshotStore {
     }
 
     return snapshot;
-  }
-
-  public DbSnapshot put(final DbPendingSnapshot snapshot) {
-    final var path = snapshot.getPath();
-    final var position = positionSupplier.getLowestPosition(path);
-    final var metadata =
-        new DbSnapshotMetadata(snapshot.index(), snapshot.term(), snapshot.timestamp(), position);
-
-    return put(path, metadata);
   }
 
   public DbSnapshot put(final Path directory, final DbSnapshotMetadata metadata) {
@@ -165,8 +151,7 @@ public class DbSnapshotStore implements SnapshotStore {
   @Override
   public Snapshot newSnapshot(
       final long index, final long term, final WallClockTimestamp timestamp, final Path directory) {
-    final var pending = new DbPendingSnapshot(index, term, timestamp, directory, this);
-    return put(pending);
+    return DbSnapshotMetadata.ofPath(directory).map(meta -> put(directory, meta)).orElse(null);
   }
 
   @Override
@@ -216,8 +201,10 @@ public class DbSnapshotStore implements SnapshotStore {
   }
 
   private void remove(final DbSnapshot snapshot) {
+    LOGGER.debug("Deleting snapshot {}", snapshot);
     snapshot.delete();
     snapshots.remove(snapshot.getMetadata());
+    LOGGER.debug("Snapshots count: {}", snapshots.size());
   }
 
   private void cleanUpTemporarySnapshots(final DbSnapshotId cutoffId) throws IOException {

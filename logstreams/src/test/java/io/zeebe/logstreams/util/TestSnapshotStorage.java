@@ -47,15 +47,15 @@ public class TestSnapshotStorage implements SnapshotStorage {
     IoUtil.ensureDirectoryExists(pendingDirectory.toFile(), "pending snapshots directory");
 
     try {
-      Files.list(snapshotsDirectory).forEach(this::commitSnapshot);
+      Files.list(snapshotsDirectory).map(SnapshotImpl::new).forEach(this::commitSnapshot);
     } catch (IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
   @Override
-  public Path getPendingDirectoryFor(final long snapshotPosition) {
-    return getPendingDirectoryFor(String.valueOf(snapshotPosition));
+  public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
+    return new SnapshotImpl(getPendingDirectoryFor(String.valueOf(snapshotPosition)));
   }
 
   @Override
@@ -71,7 +71,6 @@ public class TestSnapshotStorage implements SnapshotStorage {
     }
 
     final var destination = snapshotsDirectory.resolve(snapshotPath.getFileName());
-    final var snapshot = new SnapshotImpl(destination);
     try {
       Files.move(snapshotPath, destination);
     } catch (FileAlreadyExistsException ignored) {
@@ -80,7 +79,7 @@ public class TestSnapshotStorage implements SnapshotStorage {
       throw new UncheckedIOException(e);
     }
 
-    snapshots.add(snapshot);
+    snapshots.add(new SnapshotImpl(snapshotPath));
     return true;
   }
 

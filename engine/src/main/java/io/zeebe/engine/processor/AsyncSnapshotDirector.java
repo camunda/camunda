@@ -10,12 +10,14 @@ package io.zeebe.engine.processor;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public class AsyncSnapshotDirector extends Actor {
@@ -43,7 +45,7 @@ public class AsyncSnapshotDirector extends Actor {
   private final StreamProcessor streamProcessor;
   private ActorCondition commitCondition;
   private long lastWrittenEventPosition = INITIAL_POSITION;
-  private boolean pendingSnapshot;
+  private Snapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private long lastValidSnapshotPosition;
   private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
@@ -90,7 +92,7 @@ public class AsyncSnapshotDirector extends Actor {
   }
 
   private void prepareTakingSnapshot() {
-    if (pendingSnapshot) {
+    if (pendingSnapshot != null) {
       return;
     }
 
@@ -117,9 +119,9 @@ public class AsyncSnapshotDirector extends Actor {
 
   private void takeSnapshot() {
     final var tempSnapshotPosition = lowerBoundSnapshotPosition;
-    pendingSnapshot = true;
 
-    createSnapshot(() -> snapshotController.takeTempSnapshot(tempSnapshotPosition));
+    pendingSnapshot =
+        createSnapshot(() -> snapshotController.takeTempSnapshot(tempSnapshotPosition));
     final ActorFuture<Long> lastWrittenPosition = streamProcessor.getLastWrittenPositionAsync();
     actor.runOnCompletion(
         lastWrittenPosition,
@@ -132,36 +134,36 @@ public class AsyncSnapshotDirector extends Actor {
             onCommitCheck();
 
           } else {
-            pendingSnapshot = false;
+            pendingSnapshot = null;
             LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
           }
         });
   }
 
-  private void createSnapshot(final Runnable snapshotCreation) {
-    final long start = System.currentTimeMillis();
-    snapshotCreation.run();
+  private Snapshot createSnapshot(final Supplier<Snapshot> snapshotCreation) {
+    final var start = System.currentTimeMillis();
+    final var snapshot = snapshotCreation.get();
 
     final long end = System.currentTimeMillis();
     final long snapshotCreationTime = end - start;
 
     LOG.debug("Creation of snapshot for {} took {} ms.", processorName, snapshotCreationTime);
+    return snapshot;
   }
 
   private void onCommitCheck() {
     final long currentCommitPosition = logStream.getCommitPosition();
 
-    if (pendingSnapshot && currentCommitPosition >= lastWrittenEventPosition) {
+    if (pendingSnapshot != null && currentCommitPosition >= lastWrittenEventPosition) {
       try {
-
         lastValidSnapshotPosition = lowerBoundSnapshotPosition;
-        snapshotController.commitSnapshot(lowerBoundSnapshotPosition);
+        snapshotController.commitSnapshot(pendingSnapshot);
         snapshotController.replicateLatestSnapshot(actor::submit);
 
       } catch (final Exception ex) {
         LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
       } finally {
-        pendingSnapshot = false;
+        pendingSnapshot = null;
       }
     }
   }

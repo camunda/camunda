@@ -47,22 +47,26 @@ public class StateSnapshotController implements SnapshotController {
   }
 
   @Override
-  public void takeSnapshot(final long lowerBoundSnapshotPosition) {
-    final var snapshotDir = storage.getPendingDirectoryFor(lowerBoundSnapshotPosition);
-    createSnapshot(snapshotDir);
-    storage.commitSnapshot(snapshotDir);
+  public Snapshot takeSnapshot(final long lowerBoundSnapshotPosition) {
+    final var snapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
+    createSnapshot(snapshot.getPath());
+    storage.commitSnapshot(snapshot);
+
+    return snapshot;
   }
 
   @Override
-  public void takeTempSnapshot(final long lowerBoundSnapshotPosition) {
-    final var snapshotDir = storage.getPendingDirectoryFor(lowerBoundSnapshotPosition);
-    createSnapshot(snapshotDir);
+  public Snapshot takeTempSnapshot(final long lowerBoundSnapshotPosition) {
+    final var snapshot = storage.getPendingSnapshotFor(lowerBoundSnapshotPosition);
+    createSnapshot(snapshot.getPath());
+    return snapshot;
   }
 
   @Override
-  public void commitSnapshot(final long lowerBoundSnapshotPosition) throws IOException {
+  public void commitSnapshot(final Snapshot snapshot) throws IOException {
+    // TODO: why this check? it was previously here
     Objects.requireNonNull(db, "Cannot commit snapshot for a closed database");
-    storage.commitSnapshot(storage.getPendingDirectoryFor(lowerBoundSnapshotPosition));
+    storage.commitSnapshot(snapshot);
   }
 
   @Override
@@ -73,11 +77,14 @@ public class StateSnapshotController implements SnapshotController {
       LOG.debug("Start replicating latest snapshot {}", latestSnapshotDirectory);
 
       try {
-        final var files = Files.list(latestSnapshotDirectory).collect(Collectors.toList());
+        final var files =
+            Files.list(latestSnapshotDirectory)
+                .filter(path -> path.toFile().length() > 0)
+                .collect(Collectors.toList());
         for (final var file : files) {
           executor.accept(
               () -> {
-                LOG.trace("Replicate snapshot chunk {}", file);
+                LOG.debug("Replicate snapshot chunk {}", file);
                 replicationController.replicate(
                     latestSnapshotDirectory.getFileName().toString(), files.size(), file.toFile());
               });
@@ -149,17 +156,6 @@ public class StateSnapshotController implements SnapshotController {
     }
 
     return db;
-  }
-
-  @Override
-  public long getPositionToDelete(final int maxSnapshotCount) {
-    return storage
-        .getSnapshots()
-        .map(Snapshot::getPosition)
-        .sorted(Comparator.reverseOrder())
-        .skip(maxSnapshotCount - 1L)
-        .findFirst()
-        .orElse(-1L);
   }
 
   @Override

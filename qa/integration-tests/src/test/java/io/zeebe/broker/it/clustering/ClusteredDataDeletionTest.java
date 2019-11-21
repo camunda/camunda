@@ -43,7 +43,7 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class ClusteredDataDeletionTest {
-  private static final int SNAPSHOT_PERIOD_SECONDS = 30;
+  private static final int SNAPSHOT_PERIOD_SECONDS = 300;
   private static final int MAX_SNAPSHOTS = 1;
   @Parameter public Consumer<BrokerCfg> configurator;
 
@@ -108,7 +108,7 @@ public class ClusteredDataDeletionTest {
     final int leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final Broker leader = clusteringRule.getBroker(leaderNodeId);
 
-    while (getSegments(leader).size() <= 2) {
+    while (getSegmentsCount(leader) <= 2) {
       clusteringRule
           .getClient()
           .newPublishMessageCommand()
@@ -135,7 +135,7 @@ public class ClusteredDataDeletionTest {
             .filter(b -> b.getConfig().getCluster().getNodeId() != leaderNodeId)
             .collect(Collectors.toList());
 
-    while (followers.stream().map(this::getSegments).allMatch(segments -> segments.size() <= 2)) {
+    while (followers.stream().map(this::getSegmentsCount).allMatch(count -> count <= 2)) {
       clusteringRule
           .getClient()
           .newPublishMessageCommand()
@@ -177,10 +177,14 @@ public class ClusteredDataDeletionTest {
     return new File(dataDir, "raft-atomix/partitions/1/snapshots");
   }
 
+  private int getSegmentsCount(Broker broker) {
+    return getSegments(broker).size();
+  }
+
   private Collection<Path> getSegments(Broker broker) {
     try {
       return Files.list(getSegmentsDirectory(broker))
-          .filter(path -> path.toString().endsWith(".segment"))
+          .filter(path -> path.toString().endsWith(".log"))
           .collect(Collectors.toList());
     } catch (IOException e) {
       throw new UncheckedIOException(e);
@@ -195,8 +199,7 @@ public class ClusteredDataDeletionTest {
   private void waitForValidSnapshotAtBroker(Broker broker) {
     final File snapshotsDir = getSnapshotsDirectory(broker);
 
-    waitUntil(
-        () -> Arrays.stream(snapshotsDir.listFiles()).anyMatch(f -> !f.getName().contains("tmp")));
+    waitUntil(() -> Arrays.stream(snapshotsDir.listFiles()).count() > 0);
   }
 
   public static class TestExporter implements Exporter {

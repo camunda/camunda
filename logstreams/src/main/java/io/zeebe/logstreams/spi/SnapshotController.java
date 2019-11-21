@@ -8,6 +8,7 @@
 package io.zeebe.logstreams.spi;
 
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.logstreams.state.Snapshot;
 import java.io.File;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -18,7 +19,7 @@ public interface SnapshotController extends AutoCloseable {
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
    */
-  void takeSnapshot(long lowerBoundSnapshotPosition);
+  Snapshot takeSnapshot(long lowerBoundSnapshotPosition);
 
   /**
    * Takes a snapshot based on the given position. The position is a last processed lower bound
@@ -26,16 +27,15 @@ public interface SnapshotController extends AutoCloseable {
    *
    * @param lowerBoundSnapshotPosition the lower bound snapshot position
    */
-  void takeTempSnapshot(long lowerBoundSnapshotPosition);
+  Snapshot takeTempSnapshot(long lowerBoundSnapshotPosition);
 
   /**
-   * A temporary snapshot is moved into a new snapshot directory and in that way marked as valid.
-   * The given position is a last processed lower bound event position.
+   * Commits the given temporary snapshot to the underlying storage.
    *
-   * @param lowerBoundSnapshotPosition the lower bound snapshot position
+   * @param snapshot the snapshot to commit
    * @throws IOException thrown if moving the snapshot fails
    */
-  void commitSnapshot(long lowerBoundSnapshotPosition) throws IOException;
+  void commitSnapshot(Snapshot snapshot) throws IOException;
 
   /**
    * Replicates the latest valid snapshot. The given executor is called for each snapshot chunk in
@@ -56,17 +56,12 @@ public interface SnapshotController extends AutoCloseable {
    */
   long recover() throws Exception;
 
-  ZeebeDb openDb();
-
   /**
-   * Returns the highest position that is considered to be safe to delete, which is the position of
-   * the oldest of the required snapshots. If maxSnapshotCount hasn't been reached, returns -1,
-   * since it's not safe to delete data.
+   * Opens the database from the latest snapshot.
    *
-   * @param maxSnapshotCount the required number of snapshots
-   * @return the position to delete
+   * @return an opened database
    */
-  long getPositionToDelete(int maxSnapshotCount);
+  ZeebeDb openDb();
 
   /**
    * Returns the current number of valid snapshots.
@@ -82,5 +77,10 @@ public interface SnapshotController extends AutoCloseable {
    */
   long getLastValidSnapshotPosition();
 
+  /**
+   * Returns the latest valid snapshot's directory.
+   *
+   * @return the latest valid snapshot's directory
+   */
   File getLastValidSnapshotDirectory();
 }

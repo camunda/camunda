@@ -20,7 +20,7 @@ import org.agrona.concurrent.status.AtomicLongPosition;
 
 @SuppressWarnings("unchecked")
 public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
-  private static final int MINIMUM_FRAGMENT_SIZE = 32 * 1024;
+  private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
   protected int maxFragmentSize = 1024 * 1024 * 4;
   protected int partitionId = -1;
   protected ServiceContainer serviceContainer;

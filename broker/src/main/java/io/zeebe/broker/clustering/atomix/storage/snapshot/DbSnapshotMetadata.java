@@ -49,7 +49,7 @@ public class DbSnapshotMetadata implements DbSnapshotId {
             Optional.of(
                 new DbSnapshotMetadata(index, term, WallClockTimestamp.from(timestamp), position));
       } catch (final NumberFormatException e) {
-        LOGGER.debug("Failed to parse part of snapshot metadata", e);
+        LOGGER.warn("Failed to parse part of snapshot metadata", e);
       }
     }
 

@@ -131,4 +131,9 @@ public class DbSnapshot implements Snapshot {
   public void closeWriter(final SnapshotWriter writer) {
     throw new UnsupportedOperationException("Deprecated operation, use DbPendingSnapshot");
   }
+
+  @Override
+  public String toString() {
+    return "DbSnapshot{" + "directory=" + directory + ", metadata=" + metadata + '}';
+  }
 }

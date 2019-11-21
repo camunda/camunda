@@ -107,7 +107,9 @@ public class DbPendingSnapshot implements PendingSnapshot {
 
   @Override
   public void commit() {
-    snapshotStore.put(this);
+    try (var ignored = snapshotStore.newSnapshot(index, term, timestamp, directory)) {
+      // simply ensure it's closed once we're done
+    }
   }
 
   @Override

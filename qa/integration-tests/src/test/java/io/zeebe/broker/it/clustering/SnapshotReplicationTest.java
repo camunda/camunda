@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import org.junit.Before;
@@ -138,8 +139,6 @@ public class SnapshotReplicationTest {
 
   protected void waitForValidSnapshotAtBroker(Broker broker) {
     final File snapshotsDir = getSnapshotsDirectory(broker);
-
-    waitUntil(
-        () -> Arrays.stream(snapshotsDir.listFiles()).anyMatch(f -> !f.getName().contains("tmp")));
+    waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
   }
 }
