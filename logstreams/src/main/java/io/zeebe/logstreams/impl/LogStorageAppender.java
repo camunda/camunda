@@ -49,10 +49,9 @@ public class LogStorageAppender extends Actor {
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
   private long currentInFlightBytes;
-  private final Runnable peekedBlockHandler = this::appendBlock;
-
   private long appendIndex = -1;
   private final int partitionId;
+  private Runnable peekedBlockHandler = this::appendBlock;
 
   public LogStorageAppender(
       String name,
@@ -145,6 +144,8 @@ public class LogStorageAppender extends Actor {
                           appendIndex,
                           lastEventPosition,
                           error);
+                      // do not append more until success
+                      this.peekedBlockHandler = () -> {};
                       appendToPrimitive(appendIndex, bytesToAppend, lastEventPosition);
                     } else if (appendPosition < 0) {
                       LOG.trace(
@@ -153,11 +154,14 @@ public class LogStorageAppender extends Actor {
                           appendPosition,
                           appendIndex,
                           lastEventPosition);
+                      // do not append more until success;
+                      this.peekedBlockHandler = () -> {};
                       appendToPrimitive(appendIndex, bytesToAppend, lastEventPosition);
                     } else {
                       // happy path
                       appendEntryLimiter.onCommit(lastEventPosition);
                       currentInFlightBytes -= bytesToAppend.length;
+                      this.peekedBlockHandler = this::appendBlock;
                       actor.run(this::peekBlock);
                     }
                   });
