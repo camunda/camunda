@@ -27,7 +27,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   public void creatorCanAccessCollection() {
     // given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
     AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtension
@@ -47,7 +47,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     createSimpleProcessReportInCollectionAsDefaultUser(collectionId);
     createDashboardInCollectionAsDefaultUser(collectionId);
     addRoleToCollectionAsDefaultUser(
@@ -83,7 +83,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
     Response response = embeddedOptimizeExtension
@@ -102,7 +102,7 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
     Response response = embeddedOptimizeExtension

@@ -6,9 +6,9 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process;
 
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 
-public class SingleProcessReportDefinitionDto extends ReportDefinitionDto<ProcessReportDataDto> {
+public class SingleProcessReportDefinitionDto extends SingleReportDefinitionDto<ProcessReportDataDto> {
 
   public SingleProcessReportDefinitionDto() {
     super(new ProcessReportDataDto(), false, ReportType.PROCESS);

@@ -5,9 +5,11 @@
  */
 package org.camunda.optimize.dto.optimize.query.report;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
@@ -57,4 +59,10 @@ public class ReportDefinitionDto<RD extends ReportDataDto> implements Collection
       RoleType.EDITOR
     );
   }
+
+  @JsonIgnore
+  public DefinitionType getDefinitionType() {
+    return this.reportType.toDefinitionType();
+  }
+
 }

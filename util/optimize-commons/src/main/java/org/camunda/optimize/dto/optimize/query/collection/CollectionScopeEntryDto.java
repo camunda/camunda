@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.collection;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
@@ -19,9 +20,11 @@ import java.util.Optional;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class CollectionScopeEntryDto {
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
+  @EqualsAndHashCode.Include
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
   private DefinitionType definitionType;
@@ -54,6 +57,16 @@ public class CollectionScopeEntryDto {
 
   public String getId() {
     return Optional.ofNullable(id).orElse(convertTypeAndKeyToScopeEntryId(definitionType, definitionKey));
+  }
+
+  public boolean isInScope(final DefinitionType definitionType,
+                           final String definitionKey,
+                           final List<String> tenants) {
+    return this.definitionType.equals(definitionType) &&
+      this.definitionKey.equals(definitionKey) &&
+      Optional.ofNullable(tenants)
+      .map(tenantList -> this.tenants.containsAll(tenantList))
+      .orElse(false);
   }
 
   private String convertTypeAndKeyToScopeEntryId(final DefinitionType definitionType, final String definitionKey) {

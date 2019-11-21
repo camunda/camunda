@@ -6,9 +6,9 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision;
 
 import org.camunda.optimize.dto.optimize.ReportType;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 
-public class SingleDecisionReportDefinitionDto extends ReportDefinitionDto<DecisionReportDataDto> {
+public class SingleDecisionReportDefinitionDto extends SingleReportDefinitionDto<DecisionReportDataDto> {
 
   public SingleDecisionReportDefinitionDto() {
     super(new DecisionReportDataDto(), false, ReportType.DECISION);

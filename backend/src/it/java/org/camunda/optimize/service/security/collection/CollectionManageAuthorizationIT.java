@@ -33,7 +33,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateNameByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
@@ -53,7 +53,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityIsRejectedToUpdateNameByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -72,7 +72,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   public void superUserIdentityCanUpdateNameByCollectionRole() {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
@@ -92,7 +92,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
 
     // when
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
@@ -108,7 +108,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanCreateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -130,7 +130,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToCreateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -151,7 +151,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   public void superUserIdentityCanCreateRoleByCollectionRole() {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -173,7 +173,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
 
@@ -194,7 +194,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToUpdateRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final CollectionRoleDto johnEditorRoleDto = createJohnEditorRoleDto();
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, johnEditorRoleDto);
@@ -214,7 +214,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   public void superUserIdentityCanUpdateRoleByCollectionRole() {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
 
@@ -235,7 +235,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
 
@@ -256,7 +256,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToDeleteRoleByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
 
@@ -276,7 +276,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   public void superUserIdentityCanDeleteRoleByCollectionRole() {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addUserAndGrantOptimizeAccess(USER_ID_JOHN);
     final String roleId = addRoleToCollectionAsDefaultUser(collectionId, createJohnEditorRoleDto());
 
@@ -297,7 +297,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanCreateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -316,7 +316,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToCreateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -334,7 +334,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   public void superUserIdentityCanCreateScopeByCollectionRole() {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -353,7 +353,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -373,7 +373,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -391,7 +391,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   public void superUserIdentityCanUpdateScopeByCollectionRole() {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -411,7 +411,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(MANAGER_IDENTITY_ROLES)
   public void managerIdentityCanDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -431,7 +431,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @MethodSource(NON_MANAGER_IDENTITY_ROLES)
   public void nonManagerIdentityRejectedToDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -450,7 +450,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   @Test
   public void superUserIdentityCanDeleteScopeByCollectionRole() {
     //given
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -468,7 +468,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   @Test
   public void onlyManagerCanCopyACollection() {
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new UserDto("kermit"), RoleType.VIEWER));
 

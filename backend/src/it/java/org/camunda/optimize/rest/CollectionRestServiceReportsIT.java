@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
@@ -14,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -27,30 +29,34 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CollectionRestServiceReportsIT extends AbstractIT {
 
-  private static Stream<Integer> definitionTypes() {
-    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
+  private static Stream<DefinitionType> definitionTypes() {
+    return Stream.of(PROCESS, DECISION);
   }
+
+  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @ParameterizedTest
   @MethodSource("definitionTypes")
-  public void getStoredReports(final Integer definitionResourceType) {
+  public void getStoredReports(final DefinitionType definitionType) {
     // given
     List<String> expectedReportIds = new ArrayList<>();
-    String collectionId1 = createNewCollection();
-    expectedReportIds.add(createReportForCollection(collectionId1, definitionResourceType));
-    expectedReportIds.add(createReportForCollection(collectionId1, definitionResourceType));
+    String collectionId1 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    expectedReportIds.add(createReportForCollection(collectionId1, definitionType));
+    expectedReportIds.add(createReportForCollection(collectionId1, definitionType));
 
-    String collectionId2 = createNewCollection();
-    createReportForCollection(collectionId2, definitionResourceType);
+    String collectionId2 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    createReportForCollection(collectionId2, definitionType);
 
     // when
     List<AuthorizedReportDefinitionDto> reports = getReportsForCollectionRequest(collectionId1).executeAndReturnList(
@@ -67,7 +73,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   @Test
   public void getNoneStoredReports() {
     // given
-    String collectionId1 = createNewCollection();
+    String collectionId1 = collectionClient.createNewCollection();
 
     // when
     List<AuthorizedReportDefinitionDto> reports = getReportsForCollectionRequest(collectionId1).executeAndReturnList(
@@ -88,21 +94,13 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     assertTrue(response.contains("Collection does not exist!"));
   }
 
-  private String createNewCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private String createReportForCollection(final String collectionId, final int resourceType) {
-    switch (resourceType) {
-      case RESOURCE_TYPE_PROCESS_DEFINITION:
+  private String createReportForCollection(final String collectionId, final DefinitionType definitionType) {
+    switch (definitionType) {
+      case PROCESS:
         SingleProcessReportDefinitionDto procReport = getProcessReportDefinitionDto(collectionId);
         return createNewProcessReportAsUser(procReport);
 
-      case RESOURCE_TYPE_DECISION_DEFINITION:
+      case DECISION:
         SingleDecisionReportDefinitionDto decReport = getDecisionReportDefinitionDto(collectionId);
         return createNewDecisionReportAsUser(decReport);
 
@@ -121,8 +119,9 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   private SingleProcessReportDefinitionDto getProcessReportDefinitionDto(final String collectionId) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey("someKey")
+      .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setProcessDefinitionVersion("someVersion")
+      .setTenantIds(DEFAULT_TENANTS)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
@@ -134,8 +133,9 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
 
   private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDto(final String collectionId) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("someKey")
+      .setDecisionDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setDecisionDefinitionVersion("someVersion")
+      .setTenantIds(DEFAULT_TENANTS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
 

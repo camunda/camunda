@@ -47,7 +47,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     addRoleToCollectionAsDefaultUser(
       accessIdentityRolePairs.roleType, accessIdentityRolePairs.identityDto, collectionId
     );
@@ -77,7 +77,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
 
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     final String combinedReportId = createCombinedReportAsDefaultUser();
     final String processReportId = createSingleProcessReportAsDefaultUser();
     final String decisionReportId = createSingleDecisionReportAsDefaultUser();
@@ -130,7 +130,7 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    createNewCollectionAsDefaultUser();
+    collectionClient.createNewCollectionForAllDefinitionTypes();
     createCombinedReportAsDefaultUser();
     createSingleProcessReportAsDefaultUser();
     createSingleDecisionReportAsDefaultUser();

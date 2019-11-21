@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -36,6 +37,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -60,13 +62,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -78,9 +82,11 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionHandlingIT extends AbstractIT {
 
-  private static Stream<Integer> definitionTypes() {
-    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
+  private static Stream<DefinitionType> definitionTypes() {
+    return Stream.of(PROCESS, DECISION);
   }
+
+  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @Test
   public void collectionIsWrittenToElasticsearch() throws IOException {
@@ -477,7 +483,7 @@ public class CollectionHandlingIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    deleteCollection(collectionId);
+    collectionClient.deleteCollection(collectionId);
 
     // then
     final Response getCollectionByIdResponse = embeddedOptimizeExtension
@@ -690,16 +696,13 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @ParameterizedTest(name = "Copy collection and all alerts within the collection for report definition type {0}")
   @MethodSource("definitionTypes")
-  public void copyCollectionAndAllContainingAlerts(final int definitionType) {
+  public void copyCollectionAndAllContainingAlerts(final DefinitionType definitionType) {
     // given
-    IdDto originalId = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200);
+    String originalId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
 
     List<String> reportsToCopy = new ArrayList<>();
-    reportsToCopy.add(createReportForCollection(originalId.getId(), definitionType));
-    reportsToCopy.add(createReportForCollection(originalId.getId(), definitionType));
+    reportsToCopy.add(createReportForCollection(originalId, definitionType));
+    reportsToCopy.add(createReportForCollection(originalId, definitionType));
 
     List<String> alertsToCopy = new ArrayList<>();
     reportsToCopy.stream()
@@ -708,11 +711,11 @@ public class CollectionHandlingIT extends AbstractIT {
     // when
     ResolvedCollectionDefinitionDto copy = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildCopyCollectionRequest(originalId.getId())
+      .buildCopyCollectionRequest(originalId)
       .execute(ResolvedCollectionDefinitionDto.class, 200);
 
     // then
-    List<AuthorizedReportDefinitionDto> copiedReports = getReportsForCollection(copy.getId());
+    List<AuthorizedReportDefinitionDto> copiedReports = collectionClient.getReportsForCollection(copy.getId());
     List<AlertDefinitionDto> copiedAlerts = getAlertsForCollection(copy.getId());
     Set<String> copiedReportIdsWithAlert = copiedAlerts.stream().map(alert -> alert.getReportId()).collect(toSet());
 
@@ -820,12 +823,6 @@ public class CollectionHandlingIT extends AbstractIT {
       .getId();
   }
 
-  private Response deleteCollection(String id) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildDeleteCollectionRequest(id, true)
-      .execute();
-  }
-
   private void deleteReport(String reportId) {
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -900,17 +897,6 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute(String.class, 200);
   }
 
-  private List<AuthorizedReportDefinitionDto> getReportsForCollection(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportsForCollectionRequest(collectionId)
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .executeAndReturnList(
-        AuthorizedReportDefinitionDto.class,
-        200
-      );
-  }
-
   private List<AlertDefinitionDto> getAlertsForCollection(final String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -922,26 +908,27 @@ public class CollectionHandlingIT extends AbstractIT {
       );
   }
 
-  private String createReportForCollection(final String collectionId, final int resourceType) {
+  private String createReportForCollection(final String collectionId, final DefinitionType resourceType) {
     switch (resourceType) {
-      case RESOURCE_TYPE_PROCESS_DEFINITION:
+      case PROCESS:
         SingleProcessReportDefinitionDto procReport = getProcessReportDefinitionDto(collectionId);
         return createNewProcessReportAsUser(procReport);
 
-      case RESOURCE_TYPE_DECISION_DEFINITION:
+      case DECISION:
         SingleDecisionReportDefinitionDto decReport = getDecisionReportDefinitionDto(collectionId);
         return createNewDecisionReportAsUser(decReport);
 
       default:
-        throw new OptimizeRuntimeException("Unknown resource type provided.");
+        throw new OptimizeRuntimeException("Unknown definition type provided.");
     }
   }
 
   private SingleProcessReportDefinitionDto getProcessReportDefinitionDto(final String collectionId) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey("someKey")
+      .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setProcessDefinitionVersion("someVersion")
+      .setTenantIds(DEFAULT_TENANTS)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
@@ -953,8 +940,9 @@ public class CollectionHandlingIT extends AbstractIT {
 
   private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDto(final String collectionId) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("someKey")
+      .setDecisionDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setDecisionDefinitionVersion("someVersion")
+      .setTenantIds(DEFAULT_TENANTS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
 

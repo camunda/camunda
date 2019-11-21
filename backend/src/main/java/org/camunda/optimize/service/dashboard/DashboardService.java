@@ -112,11 +112,11 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return copyAndMoveDashboard(dashboardId, userId, collectionId, name, new ConcurrentHashMap<>());
   }
 
-  public IdDto copyAndMoveDashboard(final String dashboardId,
-                                    final String userId,
-                                    final String collectionId,
-                                    final String name,
-                                    final Map<String, String> uniqueReportCopies) {
+  private IdDto copyAndMoveDashboard(final String dashboardId,
+                                     final String userId,
+                                     final String collectionId,
+                                     final String name,
+                                     final Map<String, String> uniqueReportCopies) {
     return copyAndMoveDashboard(dashboardId, userId, collectionId, name, uniqueReportCopies, false);
   }
 
@@ -135,6 +135,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
       newDashboardReports.clear();
+      containingReportsComplyWithNewCollectionScope(userId, collectionId, dashboardDefinition);
       dashboardDefinition.getReports().stream().sequential().forEach(reportLocationDto -> {
         if (IdGenerator.isValidId(reportLocationDto.getId())) {
           final String reportCopyId = uniqueReportCopies.computeIfAbsent(
@@ -168,6 +169,16 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     newDashboardDefinitionDto.setName(newDashboardName);
     newDashboardDefinitionDto.setReports(newDashboardReports);
     return dashboardWriter.createNewDashboard(userId, newDashboardDefinitionDto);
+  }
+
+  private void containingReportsComplyWithNewCollectionScope(final String userId, final String collectionId,
+                                                             final DashboardDefinitionDto dashboardDefinition) {
+    dashboardDefinition
+      .getReports()
+      .stream()
+      .map(ReportLocationDto::getId)
+      .filter(IdGenerator::isValidId)
+      .forEach(reportId -> reportService.compliesWithCollectionScope(userId, collectionId, reportId));
   }
 
   public AuthorizedDashboardDefinitionDto getDashboardDefinition(final String dashboardId,

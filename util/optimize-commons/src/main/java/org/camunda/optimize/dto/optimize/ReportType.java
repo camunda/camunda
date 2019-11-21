@@ -21,4 +21,8 @@ public enum ReportType {
   public String toString() {
     return getId();
   }
+
+  public DefinitionType toDefinitionType() {
+    return DefinitionType.fromString(this.name());
+  }
 }

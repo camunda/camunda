@@ -7,16 +7,17 @@ package org.camunda.optimize.service.exceptions;
 
 
 public class OptimizeRuntimeException extends RuntimeException {
+
   public OptimizeRuntimeException () {
     super();
   }
 
-  public OptimizeRuntimeException(String message) {
-    super(message);
+  public OptimizeRuntimeException(String detailedErrorMessage) {
+    super(detailedErrorMessage);
   }
 
-  public OptimizeRuntimeException(String message, Exception e) {
-    super(message, e);
+  public OptimizeRuntimeException(String detailedErrorMessage, Exception e) {
+    super(detailedErrorMessage, e);
   }
 
   public String getErrorCode() {

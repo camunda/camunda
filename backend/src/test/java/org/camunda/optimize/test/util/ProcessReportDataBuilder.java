@@ -49,6 +49,7 @@ public class ProcessReportDataBuilder {
 
   private String processDefinitionKey;
   private List<String> processDefinitionVersions;
+  private List<String> tenantIds = Collections.singletonList(null);
   private String variableName;
   private VariableType variableType;
   private GroupByDateUnit dateInterval;
@@ -239,6 +240,7 @@ public class ProcessReportDataBuilder {
         setUserTaskDurationTimeIfConfigured(reportData);
         break;
     }
+    reportData.setTenantIds(tenantIds);
     reportData.setFilter(this.filter);
     reportData.setVisualization(visualization == null? reportData.getVisualization() : visualization);
     return reportData;
@@ -267,6 +269,11 @@ public class ProcessReportDataBuilder {
 
   public ProcessReportDataBuilder setProcessDefinitionVersions(List<String> processDefinitionVersions) {
     this.processDefinitionVersions = processDefinitionVersions;
+    return this;
+  }
+
+  public ProcessReportDataBuilder setTenantIds(List<String> tenantIds) {
+    this.tenantIds = tenantIds;
     return this;
   }
 

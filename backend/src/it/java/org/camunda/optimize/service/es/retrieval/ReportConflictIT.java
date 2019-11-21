@@ -26,6 +26,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -43,12 +44,15 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 
 public class ReportConflictIT extends AbstractIT {
 
-  private static final String RANDOM_KEY = "someRandomKey";
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
+
+  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @ParameterizedTest(name = "update single report fails with conflict if used in combined report and not combinable " +
     "anymore when force set to {0}")
@@ -57,7 +61,9 @@ public class ReportConflictIT extends AbstractIT {
     // given
     String firstSingleReportId = createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
     String secondSingleReportId = createAndStoreProcessReportWithDefinition(createRandomRawDataReport());
-    String combinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
+    final CombinedReportDefinitionDto combinedReportDefinition =
+      createCombinedReportDefinition(firstSingleReportId, secondSingleReportId);
+    String combinedReportId = creatCombinedReport(combinedReportDefinition);
     String[] expectedReportIds = new String[]{firstSingleReportId, secondSingleReportId, combinedReportId};
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
@@ -90,9 +96,11 @@ public class ReportConflictIT extends AbstractIT {
   @MethodSource("provideForceParameterAsBoolean")
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndConfigurationNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     String singleReportId = createAndStoreProcessReportWithDefinition(collectionId, createRandomRawDataReport());
-    String combinedReportId = createNewCombinedReportWithDefinition(singleReportId);
+    final CombinedReportDefinitionDto combinedReportDefinition = createCombinedReportDefinition(singleReportId);
+    combinedReportDefinition.setCollectionId(collectionId);
+    String combinedReportId = creatCombinedReport(combinedReportDefinition);
     String[] expectedConflictedItemIds = new String[]{combinedReportId};
 
     // when
@@ -112,7 +120,7 @@ public class ReportConflictIT extends AbstractIT {
     // then
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
     checkReportStillExistsInCollection(singleReportId, collectionId);
-    checkPrivateReportsStillExist(expectedConflictedItemIds);
+    checkReportStillExistsInCollection(combinedReportId, collectionId);
     checkCombinedReportContainsSingleReports(combinedReportId, singleReportId);
   }
 
@@ -123,11 +131,12 @@ public class ReportConflictIT extends AbstractIT {
     // given
     ProcessReportDataDto numberReport = ProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(RANDOM_KEY)
+      .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setProcessDefinitionVersion(RANDOM_VERSION)
+      .setTenantIds(DEFAULT_TENANTS)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     String reportId = createAndStoreProcessReportWithDefinition(collectionId, numberReport);
     String alertForReport = createNewAlertForReport(reportId);
     String[] expectedConflictedItemIds = new String[]{alertForReport};
@@ -184,8 +193,10 @@ public class ReportConflictIT extends AbstractIT {
     // given
     String firstSingleReportId = createProcessReport();
     String secondSingleReportId = createProcessReport();
-    String firstCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
-    String secondCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
+    final CombinedReportDefinitionDto combinedReportDefinition =
+      createCombinedReportDefinition(firstSingleReportId, secondSingleReportId);
+    String firstCombinedReportId = creatCombinedReport(combinedReportDefinition);
+    String secondCombinedReportId = creatCombinedReport(combinedReportDefinition);
     String[] expectedConflictedItemIds = {firstCombinedReportId, secondCombinedReportId};
 
     // when
@@ -201,8 +212,10 @@ public class ReportConflictIT extends AbstractIT {
     // given
     String firstSingleReportId = createProcessReport();
     String secondSingleReportId = createProcessReport();
-    String firstCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
-    String secondCombinedReportId = createNewCombinedReportWithDefinition(firstSingleReportId, secondSingleReportId);
+    final CombinedReportDefinitionDto combinedReportDefinition =
+      createCombinedReportDefinition(firstSingleReportId, secondSingleReportId);
+    String firstCombinedReportId = creatCombinedReport(combinedReportDefinition);
+    String secondCombinedReportId = creatCombinedReport(combinedReportDefinition);
     String[] expectedReportIds = {
       firstSingleReportId, secondSingleReportId, firstCombinedReportId, secondCombinedReportId
     };
@@ -222,7 +235,7 @@ public class ReportConflictIT extends AbstractIT {
   @MethodSource("provideForceParameterAsBoolean")
   public void deleteSingleReportsFailsWithConflictIfUsedByAlertWhenForceSet(Boolean force) {
     // given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
     String reportId = createAndStoreProcessReportWithDefinition(collectionId, createRandomRawDataReport());
     String firstAlertForReport = createNewAlertForReport(reportId);
     String secondAlertForReport = createNewAlertForReport(reportId);
@@ -364,10 +377,10 @@ public class ReportConflictIT extends AbstractIT {
       .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
-  private String createNewCombinedReportWithDefinition(String... reportIds) {
+  private String creatCombinedReport(CombinedReportDefinitionDto definitionDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildCreateCombinedReportRequest(createCombinedReportDefinition(reportIds))
+      .buildCreateCombinedReportRequest(definitionDto)
       .execute(IdDto.class, 200)
       .getId();
   }
@@ -502,8 +515,9 @@ public class ReportConflictIT extends AbstractIT {
   private ProcessReportDataDto createRandomRawDataReport() {
     return ProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey(ReportConflictIT.RANDOM_KEY)
-      .setProcessDefinitionVersion(ReportConflictIT.RANDOM_VERSION)
+      .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
+      .setProcessDefinitionVersion(RANDOM_VERSION)
+      .setTenantIds(DEFAULT_TENANTS)
       .setReportDataType(ProcessReportDataType.RAW_DATA)
       .build();
   }

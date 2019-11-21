@@ -6,6 +6,10 @@
 package org.camunda.optimize.service.security.collection;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableMap;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -16,16 +20,13 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -47,6 +48,12 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
+
+  private ImmutableMap<Integer, DefinitionType> resourceTypeToDefinitionType =
+    ImmutableMap.of(RESOURCE_TYPE_PROCESS_DEFINITION, PROCESS,
+                    RESOURCE_TYPE_DECISION_DEFINITION, DECISION
+    );
 
   private static Stream<Integer> definitionTypes() {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
@@ -63,7 +70,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   @MethodSource("definitionTypes")
   public void getScopesForAuthorizedCollection_keySpecific(final int definitionType) {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, "KEY_1", definitionType);
     createScopeForCollection(collectionId, "KEY_2", definitionType);
 
@@ -88,7 +95,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   @MethodSource("definitionTypePairs")
   public void getScopesForAuthorizedCollection_typeSpecific(final List<Integer> typePair) {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, "KEY_1", typePair.get(0));
     createScopeForCollection(collectionId, "KEY_2", typePair.get(1));
 
@@ -112,7 +119,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   @Test
   public void getScopesForAuthorizedCollection_groupSpecific() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, "KEY_1", RESOURCE_TYPE_PROCESS_DEFINITION);
     createScopeForCollection(collectionId, "KEY_2", RESOURCE_TYPE_PROCESS_DEFINITION);
 
@@ -124,7 +131,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
 
     // then
     assertThat(scopeEntries)
@@ -153,7 +160,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     deployAndImportDefinition(definitionType, "KEY_3", authorizedTenant);
     deployAndImportDefinition(definitionType, "KEY_4", authorizedTenant);
 
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     createScopeWithTenants(collectionId, "KEY_1", asList(authorizedTenant, unauthorizedTenant1), definitionType);
     createScopeWithTenants(collectionId, "KEY_2", asList(unauthorizedTenant1, unauthorizedTenant2), definitionType);
     createScopeWithTenants(collectionId, "KEY_3", asList(unauthorizedTenant1, null), definitionType);
@@ -166,7 +173,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
 
     // then
     assertThat(scopeEntries)
@@ -192,7 +199,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
     deployAndImportDefinition(definitionType, "KEY_1", authorizedTenant);
 
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     createScopeWithTenants(
       collectionId,
       "KEY_1",
@@ -202,7 +209,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
 
     // then
     assertThat(scopeEntries)
@@ -234,7 +241,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
     deployAndImportDefinition(definitionType, "KEY_1", authorizedTenant);
 
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     createScopeWithTenants(
       collectionId,
       "KEY_1",
@@ -243,7 +250,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     );
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
 
-    List<CollectionScopeEntryRestDto> scopeEntries = getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)
       .flatExtracting(CollectionScopeEntryRestDto::getTenants)
       .contains(UNAUTHORIZED_TENANT_MASK);
@@ -256,8 +263,8 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .collect(toList());
 
     // when update the result with masked tenants
-    updateCollectionScope(collectionId, scopeEntry, oneTenantRemoved);
-    scopeEntries = getCollectionScopeForDefaultUser(collectionId);
+    collectionClient.updateCollectionScope(collectionId, scopeEntry, oneTenantRemoved);
+    scopeEntries = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scopeEntries)
@@ -285,11 +292,16 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
     deployAndImportDefinition(definitionType, "KEY_1", authorizedTenant);
 
-    final String collectionId = createNewCollection();
-    createScopeWithTenants(collectionId, "KEY_1", asList(unauthorizedTenant1, null, unauthorizedTenant2), definitionType);
+    final String collectionId = collectionClient.createNewCollection();
+    createScopeWithTenants(
+      collectionId,
+      "KEY_1",
+      asList(unauthorizedTenant1, null, unauthorizedTenant2),
+      definitionType
+    );
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
 
-    List<CollectionScopeEntryRestDto> scopeEntries = getCollectionScopeForKermit(collectionId);
+    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)
       .flatExtracting(CollectionScopeEntryRestDto::getTenants)
       .contains(UNAUTHORIZED_TENANT_MASK);
@@ -302,8 +314,8 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     oneTenantAdded.add(authorizedTenant);
 
     // when update the result with masked tenants
-    updateCollectionScope(collectionId, scopeEntry, oneTenantAdded);
-    scopeEntries = getCollectionScopeForDefaultUser(collectionId);
+    collectionClient.updateCollectionScope(collectionId, scopeEntry, oneTenantAdded);
+    scopeEntries = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scopeEntries)
@@ -311,32 +323,6 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .flatExtracting(CollectionScopeEntryRestDto::getTenants)
       .extracting(TenantDto::getId)
       .containsExactlyInAnyOrder(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2);
-  }
-
-  private void updateCollectionScope(final String collectionId, final CollectionScopeEntryRestDto scopeEntry, final List<String> tenants) {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(
-        collectionId,
-        scopeEntry.getId(),
-        new CollectionScopeEntryUpdateDto(tenants)
-      )
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(204);
-  }
-
-  private List<CollectionScopeEntryRestDto> getCollectionScopeForDefaultUser(final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
-      });
-  }
-
-  private List<CollectionScopeEntryRestDto> getCollectionScopeForKermit(final String collectionId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetScopeForCollectionRequest(collectionId)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
-      });
   }
 
   private void deployAndImportDefinition(int definitionResourceType, final String definitionKey,
@@ -369,52 +355,22 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     engineIntegrationExtension.deployDecisionDefinition(modelInstance, tenantId);
   }
 
-  private String createNewCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
   private void createScopeForCollection(final String collectionId, final String definitionKey, final int resourceType) {
-    switch (resourceType) {
-      case RESOURCE_TYPE_PROCESS_DEFINITION:
-        addScopeEntryToCollection(collectionId, createSimpleScopeEntry(definitionKey, PROCESS));
-        break;
-      case RESOURCE_TYPE_DECISION_DEFINITION:
-        addScopeEntryToCollection(collectionId, createSimpleScopeEntry(definitionKey, DECISION));
-        break;
-      default:
-        throw new OptimizeRuntimeException("Unknown resource type provided.");
-    }
+    collectionClient.createScopeForCollection(
+      collectionId,
+      definitionKey,
+      resourceTypeToDefinitionType.get(resourceType)
+    );
   }
 
   private void createScopeWithTenants(final String collectionId, String definitionKey,
                                       List<String> tenants, final int resourceType) {
-    switch (resourceType) {
-      case RESOURCE_TYPE_PROCESS_DEFINITION:
-        final CollectionScopeEntryDto processScope = new CollectionScopeEntryDto(PROCESS, definitionKey, tenants);
-        addScopeEntryToCollection(collectionId, processScope);
-        break;
-      case RESOURCE_TYPE_DECISION_DEFINITION:
-        final CollectionScopeEntryDto decisionScope = new CollectionScopeEntryDto(DECISION, definitionKey, tenants);
-        addScopeEntryToCollection(collectionId, decisionScope);
-        break;
-      default:
-        throw new OptimizeRuntimeException("Unknown resource type provided.");
-    }
-
-  }
-
-  private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
-    return new CollectionScopeEntryDto(definitionType, definitionKey, Collections.singletonList(null));
-  }
-
-  private void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntriesToCollectionRequest(collectionId, Collections.singletonList(entry))
-      .execute(IdDto.class, 204);
+    collectionClient.createScopeWithTenants(
+      collectionId,
+      definitionKey,
+      tenants,
+      resourceTypeToDefinitionType.get(resourceType)
+    );
   }
 
   private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
@@ -424,4 +380,15 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200);
   }
+
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  protected static class ScopeScenario {
+
+    String collectionIdToAddReportTo;
+    String definitionKey;
+    List<String> tenants;
+  }
+
 }

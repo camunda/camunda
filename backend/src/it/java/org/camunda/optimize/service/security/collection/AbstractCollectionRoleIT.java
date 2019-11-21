@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.optimize.CollectionClient;
 
 import java.util.Arrays;
 
@@ -26,6 +27,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 public abstract class AbstractCollectionRoleIT extends AbstractIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  protected CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   protected static RoleType[] accessOnlyRoles() {
     return new RoleType[]{RoleType.VIEWER};
@@ -137,14 +139,6 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  protected String createNewCollectionAsDefaultUser() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
   }

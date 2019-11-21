@@ -161,7 +161,7 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
   }
 
   private String createAlertInCollectionAsDefaultUser(final ProcessDefinitionEngineDto processDefinition) {
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = getProcessNumberReportDefinitionDto(
       collectionId,
       processDefinition
@@ -181,14 +181,6 @@ public class AlertAuthorizationIT extends AbstractAlertIT {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private String createNewCollectionAsDefaultUser() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
   }

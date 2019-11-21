@@ -8,6 +8,7 @@ package org.camunda.optimize.service.security.collection;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -44,7 +45,8 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
-    final String collectionId = createNewCollectionAsDefaultUser();
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(authorizedProcessDefinition);
+    collectionClient.createScopeForCollection(collectionId, "unauthorized", DefinitionType.PROCESS);
     addRoleToCollectionAsDefaultUser(RoleType.VIEWER, new UserDto(KERMIT_USER), collectionId);
 
     String expectedReport = createSingleProcessReportForDefinitionAsDefaultUser(

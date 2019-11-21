@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportEvaluationResultMapper;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -194,8 +193,7 @@ public class ReportRestService {
   public void updateSingleProcessReport(@Context ContainerRequestContext requestContext,
                                         @PathParam("id") String reportId,
                                         @QueryParam("force") boolean force,
-                                        @NotNull SingleProcessReportDefinitionDto updatedReport) throws
-                                                                                                 OptimizeException {
+                                        @NotNull SingleProcessReportDefinitionDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
@@ -213,8 +211,7 @@ public class ReportRestService {
   public void updateSingleDecisionReport(@Context ContainerRequestContext requestContext,
                                          @PathParam("id") String reportId,
                                          @QueryParam("force") boolean force,
-                                         @NotNull SingleDecisionReportDefinitionDto updatedReport) throws
-                                                                                                   OptimizeException {
+                                         @NotNull SingleDecisionReportDefinitionDto updatedReport) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     updatedReport.setId(reportId);
     updatedReport.setLastModifier(userId);
@@ -260,7 +257,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public void deleteReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
-                           @QueryParam("force") boolean force) throws OptimizeException {
+                           @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     reportService.deleteReport(userId, reportId, force);
   }

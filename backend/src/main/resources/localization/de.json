@@ -696,6 +696,7 @@
     "forbiddenError": "Ihnen fehlt die Befugnis, diese Aktion auszuführen.",
     "notAuthorizedError": "Sie konnten nicht authentifiziert werden, bitte überprüfen Sie Ihren Benutzernamen und Passwort.",
     "notFoundError": "Der Server konnte die angeforderte Seite oder Datei nicht finden.",
-    "badRequestError": "Der Server konnte Ihre Anfrage nicht verarbeiten."
+    "badRequestError": "Der Server konnte Ihre Anfrage nicht verarbeiten.",
+    "nonCompliantConflict": "Die Aktion konnte auf Grund von Konflikten mit der Datenquelle der zugehörigen Sammlung nicht durchgeführt werden."
   }
 }

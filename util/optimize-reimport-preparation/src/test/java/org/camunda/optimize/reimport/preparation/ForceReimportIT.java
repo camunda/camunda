@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.util.FileReaderUtil;
@@ -48,11 +49,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ForceReimportIT extends AbstractIT {
 
+  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
+
   @Test
   public void forceReimport() throws IOException {
     //given
-    String collectionId = createNewCollection();
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
+    String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinitionEngineDto);
     String reportId = createAndStoreNumberReport(collectionId, processDefinitionEngineDto);
     AlertCreationDto alert = setupBasicAlert(reportId);
     embeddedOptimizeExtension
@@ -238,13 +241,5 @@ public class ForceReimportIT extends AbstractIT {
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
     engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId(), variables);
     return processDefinitionEngineDto;
-  }
-
-  private String createNewCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
   }
 }

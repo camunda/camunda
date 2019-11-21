@@ -99,7 +99,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
     AlertCreationDto simpleAlert = createSimpleAlert(reportId);
 

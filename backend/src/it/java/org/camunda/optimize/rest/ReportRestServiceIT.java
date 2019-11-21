@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -22,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -38,7 +40,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
-import static org.camunda.optimize.dto.optimize.ReportType.PROCESS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -57,6 +60,8 @@ public class ReportRestServiceIT extends AbstractIT {
   private static final String RANDOM_KEY = "someRandomKey";
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
+  
+  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @Test
   public void createNewReportWithoutAuthentication() {
@@ -180,7 +185,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void getStoredPrivateReportsExcludesNonPrivateReports() {
     //given
-    String collectionId = addEmptyCollectionToOptimize();
+    String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     String privateDecisionReportId = addEmptyDecisionReport();
     String privateProcessReportId = addEmptyProcessReport();
     addEmptyProcessReport(collectionId);
@@ -212,7 +217,7 @@ public class ReportRestServiceIT extends AbstractIT {
   public void getStoredReportsWithNameFromXml() {
     //given
     String idProcessReport = addEmptyProcessReport();
-    updateReportWithValidXml(idProcessReport, PROCESS);
+    updateReportWithValidXml(idProcessReport, ReportType.PROCESS);
     String idDecisionReport = addEmptyDecisionReport();
     updateReportWithValidXml(idDecisionReport, DECISION);
 
@@ -560,7 +565,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void copyReportWithNameParameter() {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
 
     SingleProcessReportDefinitionDto single = constructProcessReportWithFakePD();
     String id = addSingleProcessReportWithDefinition(single.getData());
@@ -585,7 +590,7 @@ public class ReportRestServiceIT extends AbstractIT {
   public void copyPrivateSingleReportAndMoveToCollection(ReportType reportType) {
     // given
     String id = createSingleReport(reportType);
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(reportType.toDefinitionType());
 
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
@@ -608,7 +613,7 @@ public class ReportRestServiceIT extends AbstractIT {
     final String report2 = addEmptyProcessReport();
     CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
 
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     IdDto id = createAndUpdateCombinedReport(combined, null);
 
     // when
@@ -642,7 +647,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @EnumSource(ReportType.class)
   public void copySingleReportFromCollectionToPrivateEntities(ReportType reportType) {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(reportType.toDefinitionType());
     String id = createSingleReport(reportType, collectionId);
 
     // when
@@ -662,7 +667,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void copyCombinedReportFromCollectionToPrivateEntities() {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     final String report1 = addEmptyProcessReport(collectionId);
     final String report2 = addEmptyProcessReport(collectionId);
@@ -701,9 +706,9 @@ public class ReportRestServiceIT extends AbstractIT {
   @EnumSource(ReportType.class)
   public void copySingleReportFromCollectionToDifferentCollection(ReportType reportType) {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(reportType.toDefinitionType());
     String id = createSingleReport(reportType, collectionId);
-    final String newCollectionId = addEmptyCollectionToOptimize();
+    final String newCollectionId = collectionClient.createNewCollectionWithDefaultScope(reportType.toDefinitionType());
 
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
@@ -722,7 +727,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void copyCombinedReportFromCollectionToDifferentCollection() {
     // given
-    final String collectionId = addEmptyCollectionToOptimize();
+    final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     final String report1 = addEmptyProcessReport(collectionId);
     final String report2 = addEmptyProcessReport(collectionId);
@@ -730,7 +735,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     IdDto id = createAndUpdateCombinedReport(combined, collectionId);
 
-    final String newCollectionId = addEmptyCollectionToOptimize();
+    final String newCollectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
@@ -800,7 +805,7 @@ public class ReportRestServiceIT extends AbstractIT {
   }
 
   private Response updateReportRequest(final String id, final ReportType reportType) {
-    if (PROCESS.equals(reportType)) {
+    if (ReportType.PROCESS.equals(reportType)) {
       return embeddedOptimizeExtension
         .getRequestExecutor()
         .buildUpdateSingleProcessReportRequest(id, constructProcessReportWithFakePD())
@@ -813,16 +818,8 @@ public class ReportRestServiceIT extends AbstractIT {
     }
   }
 
-  private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
   private String addEmptyReportToOptimize(final ReportType reportType) {
-    return PROCESS.equals(reportType)
+    return ReportType.PROCESS.equals(reportType)
       ? addEmptyProcessReport()
       : addEmptyDecisionReport();
   }
@@ -964,7 +961,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @SneakyThrows
   private Response updateReportWithValidXml(final String id, final ReportType reportType) {
     final Response response;
-    if (PROCESS.equals(reportType)) {
+    if (ReportType.PROCESS.equals(reportType)) {
       SingleProcessReportDefinitionDto reportDefinitionDto = getProcessReportDefinitionDtoWithXml(
         PROCESS_DEFINITION_XML_WITH_NAME
       );
@@ -1014,7 +1011,8 @@ public class ReportRestServiceIT extends AbstractIT {
     SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
-    data.setProcessDefinitionKey("FAKE");
+    data.setProcessDefinitionKey(DEFAULT_DEFINITION_KEY);
+    data.setTenantIds(DEFAULT_TENANTS);
     data.getConfiguration().setXml("FAKE");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
@@ -1024,7 +1022,8 @@ public class ReportRestServiceIT extends AbstractIT {
     SingleDecisionReportDefinitionDto reportDefinitionDto = new SingleDecisionReportDefinitionDto();
     DecisionReportDataDto data = new DecisionReportDataDto();
     data.setDecisionDefinitionVersion("FAKE");
-    data.setDecisionDefinitionKey("FAKE");
+    data.setDecisionDefinitionKey(DEFAULT_DEFINITION_KEY);
+    data.setTenantIds(DEFAULT_TENANTS);
     data.getConfiguration().setXml("FAKE");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;

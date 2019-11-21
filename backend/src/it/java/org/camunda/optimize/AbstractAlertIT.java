@@ -13,9 +13,11 @@ import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -26,6 +28,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -44,13 +47,16 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,6 +66,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
   @RegisterExtension
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+
+  protected CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   protected String createAlert(AlertCreationDto simpleAlert) {
     return embeddedOptimizeExtension
@@ -161,8 +169,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
   }
 
   protected AlertCreationDto setupBasicDecisionAlert() {
-    String collectionId = createNewCollection();
-    String id = createNumberReportForCollection(collectionId, RESOURCE_TYPE_DECISION_DEFINITION);
+    String collectionId = collectionClient.createNewCollectionWithDefaultDecisionScope();
+    String id = createNumberReportForCollection(collectionId, DECISION);
     return createSimpleAlert(id);
   }
 
@@ -173,11 +181,13 @@ public abstract class AbstractAlertIT extends AbstractIT {
   protected AlertCreationDto setupBasicProcessAlertAsUser(final String definitionKey,
                                                           final String user,
                                                           final String password) {
-    String collectionId = createNewCollection(user, password);
+    String collectionId = collectionClient.createNewCollection(user, password);
+    final CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(PROCESS, definitionKey, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollectionWithUser(collectionId, scopeEntry, user, password);
     String reportId = createNumberReportForCollection(
       definitionKey,
       collectionId,
-      RESOURCE_TYPE_PROCESS_DEFINITION,
+      PROCESS,
       user,
       password
     );
@@ -247,7 +257,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
   }
 
   protected String createAndStoreDurationNumberReportInNewCollection(final ProcessInstanceEngineDto instanceEngineDto) {
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithProcessScope(instanceEngineDto);
     return createAndStoreDurationNumberReport(
       collectionId,
       instanceEngineDto.getProcessDefinitionKey(),
@@ -272,22 +282,28 @@ public abstract class AbstractAlertIT extends AbstractIT {
     return createNewProcessReportAsUser(user, password, singleProcessReportDefinitionDto);
   }
 
-  protected String createNumberReportForCollection(final String collectionId, final int resourceType) {
-    return createNumberReportForCollection("aProcess", collectionId, resourceType, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  protected String createNumberReportForCollection(final String collectionId, final DefinitionType definitionType) {
+    return createNumberReportForCollection(
+      DEFAULT_DEFINITION_KEY,
+      collectionId,
+      definitionType,
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD
+    );
   }
 
-  protected String createNumberReportForCollection(final String definitionKey, final String collectionId,
-                                                   final int resourceType,
-                                                   final String user, final String password) {
-    switch (resourceType) {
-      case RESOURCE_TYPE_PROCESS_DEFINITION:
+  private String createNumberReportForCollection(final String definitionKey, final String collectionId,
+                                                 final DefinitionType definitionType,
+                                                 final String user, final String password) {
+    switch (definitionType) {
+      case PROCESS:
         ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(definitionKey);
         embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
         elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
         return createNewProcessReportAsUser(user, password, collectionId, processDefinition);
 
-      case RESOURCE_TYPE_DECISION_DEFINITION:
-        DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition();
+      case DECISION:
+        DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition(definitionKey);
         embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
         elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
         return createNewDecisionReportAsUser(user, password, collectionId, decisionDefinitionDto);
@@ -295,19 +311,6 @@ public abstract class AbstractAlertIT extends AbstractIT {
       default:
         throw new OptimizeRuntimeException("Unknown resource type provided.");
     }
-  }
-
-  protected String createNewCollection() {
-    return createNewCollection(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  protected String createNewCollection(final String user, final String password) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(user, password)
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
   }
 
   private SingleDecisionReportDefinitionDto getDecisionNumberReportDefinitionDto(String collectionId,
@@ -343,9 +346,9 @@ public abstract class AbstractAlertIT extends AbstractIT {
   }
 
 
-  protected SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String collectionId,
-                                                                                 String processDefinitionKey,
-                                                                                 String processDefinitionVersion) {
+  private SingleProcessReportDefinitionDto getProcessNumberReportDefinitionDto(String collectionId,
+                                                                               String processDefinitionKey,
+                                                                               String processDefinitionVersion) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
@@ -441,8 +444,8 @@ public abstract class AbstractAlertIT extends AbstractIT {
     engineIntegrationExtension.createAuthorization(authorizationDto);
   }
 
-  private DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition() {
-    final DmnModelInstance modelInstance = createSimpleDmnModel("key");
+  private DecisionDefinitionEngineDto deployAndStartSimpleDecisionDefinition(String definitionKey) {
+    final DmnModelInstance modelInstance = createSimpleDmnModel(definitionKey);
     return engineIntegrationExtension.deployAndStartDecisionDefinition(modelInstance);
   }
 }

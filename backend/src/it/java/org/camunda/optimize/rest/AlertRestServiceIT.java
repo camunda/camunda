@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractAlertIT;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -17,8 +18,6 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -29,8 +28,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   private static final String TEST = "test";
 
-  private static final Stream<Integer> definitionType() {
-    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
+  private static Stream<DefinitionType> definitionType() {
+    return Stream.of(DefinitionType.PROCESS, DefinitionType.DECISION);
   }
 
   @Test
@@ -60,9 +59,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest(name = "cannot update alert without report with definition type {0}")
   @MethodSource("definitionType")
-  public void cantUpdateWithoutReport(final int definitionType) {
+  public void cantUpdateWithoutReport(final DefinitionType definitionType) {
     //given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
@@ -80,7 +79,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest(name = "cannot create for private reports with definition type {0}")
   @MethodSource("definitionType")
-  public void cantCreateAlertForPrivateReports(final int definitionType) {
+  public void cantCreateAlertForPrivateReports(final DefinitionType definitionType) {
     //given
     String reportId = createNumberReportForCollection(null, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
@@ -97,9 +96,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest(name = "create new report with report definition type {0}")
   @MethodSource("definitionType")
-  public void createNewAlert(final int definitionType) {
+  public void createNewAlert(final DefinitionType definitionType) {
     //given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
 
@@ -115,9 +114,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest(name = "create new alert with max threshold and report definition type {0}")
   @MethodSource("definitionType")
-  public void createNewAlertAllowsMaxInt(final int definitionType) {
+  public void createNewAlertAllowsMaxInt(final DefinitionType definitionType) {
     //given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     alert.setThreshold(Integer.MAX_VALUE);
@@ -147,9 +146,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest(name = "update existing alert for report with definition type {0}")
   @MethodSource("definitionType")
-  public void updateNonExistingAlert(final int definitionType) {
+  public void updateNonExistingAlert(final DefinitionType definitionType) {
     // given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
 
     // when
@@ -164,9 +163,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest(name = "update alert for report with definition type {0}")
   @MethodSource("definitionType")
-  public void updateAlert(final int definitionType) {
+  public void updateAlert(final DefinitionType definitionType) {
     //given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
@@ -198,9 +197,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void getStoredAlerts(final int definitionType) {
+  public void getStoredAlerts(final DefinitionType definitionType) {
     //given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);
@@ -228,9 +227,9 @@ public class AlertRestServiceIT extends AbstractAlertIT {
 
   @ParameterizedTest
   @MethodSource("definitionType")
-  public void deleteNewAlert(final int definitionType) {
+  public void deleteNewAlert(final DefinitionType definitionType) {
     //given
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = createSimpleAlert(reportId);
     String id = addAlertToOptimize(alert);

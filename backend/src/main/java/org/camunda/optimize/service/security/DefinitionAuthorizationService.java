@@ -19,6 +19,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -123,9 +124,10 @@ public class DefinitionAuthorizationService
       return true;
     }
 
-    // empty tenant list should be replaced with the actual not defined tenant singleton list
+    // empty tenant list or null should be replaced with the actual not defined tenant singleton list
     // as a lacking tenant entry defaults to the not defined tenant
-    final List<String> expectedTenants = tenantIds.size() == 0 ? SINGLETON_LIST_NOT_DEFINED_TENANT : tenantIds;
+    final List<String> nullSafeTenants = Optional.ofNullable(tenantIds).orElse(new ArrayList<>());
+    final List<String> expectedTenants = nullSafeTenants.size() == 0 ? SINGLETON_LIST_NOT_DEFINED_TENANT : tenantIds;
     // user needs to be authorized for all considered tenants get access
     return filterAuthorizedTenantsForDefinition(
       userId, definitionKey, definitionType, expectedTenants

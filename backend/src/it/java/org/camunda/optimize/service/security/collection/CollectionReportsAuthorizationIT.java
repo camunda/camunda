@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -37,6 +38,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -44,27 +47,29 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
-  private static final Stream<Integer> definitionTypes() {
+  private static Stream<Integer> definitionTypes() {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
-  private static final Stream<List<Integer>> definitionTypePairs() {
+  private static Stream<List<Integer>> definitionTypePairs() {
     return Stream.of(
       Arrays.asList(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION),
       Arrays.asList(RESOURCE_TYPE_DECISION_DEFINITION, RESOURCE_TYPE_PROCESS_DEFINITION)
     );
   }
 
+  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
+
   @ParameterizedTest
   @MethodSource("definitionTypes")
   public void getReportsForAuthorizedCollection(final int definitionType) {
     // given
-    final String collectionId1 = createNewCollection();
+    final String collectionId1 = collectionClient.createNewCollectionForAllDefinitionTypes();
     List<String> expectedReportIds = new ArrayList<>();
     expectedReportIds.add(createReportForCollection(collectionId1, definitionType));
     expectedReportIds.add(createReportForCollection(collectionId1, definitionType));
 
-    final String collectionId2 = createNewCollection();
+    final String collectionId2 = collectionClient.createNewCollectionForAllDefinitionTypes();
     createReportForCollection(collectionId2, definitionType);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -88,7 +93,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
   @MethodSource("definitionTypePairs")
   public void getReportsForPartiallyAuthorizedCollection(final List<Integer> typePair) {
     // given
-    final String collectionId1 = createNewCollection();
+    final String collectionId1 = collectionClient.createNewCollectionForAllDefinitionTypes();
     List<String> expectedReportIds = new ArrayList<>();
     expectedReportIds.add(createReportForCollection(collectionId1, typePair.get(0)));
     expectedReportIds.add(createReportForCollection(collectionId1, typePair.get(0)));
@@ -115,7 +120,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
   @MethodSource("definitionTypes")
   public void getReportsForUnauthorizedCollection(final int definitionResourceType) {
     // given
-    final String collectionId1 = createNewCollection();
+    final String collectionId1 = collectionClient.createNewCollectionForAllDefinitionTypes();
     List<String> expectedReportIds = new ArrayList<>();
     expectedReportIds.add(createReportForCollection(collectionId1, definitionResourceType));
     expectedReportIds.add(createReportForCollection(collectionId1, definitionResourceType));
@@ -156,8 +161,9 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
   private SingleProcessReportDefinitionDto getProcessReportDefinitionDto(final String collectionId) {
     ProcessReportDataDto reportData = ProcessReportDataBuilder
       .createReportData()
-      .setProcessDefinitionKey("someKey")
+      .setProcessDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setProcessDefinitionVersion("someVersion")
+      .setTenantIds(DEFAULT_TENANTS)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
       .build();
     SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
@@ -169,8 +175,9 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
   private SingleDecisionReportDefinitionDto getDecisionReportDefinitionDto(final String collectionId) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("someKey")
+      .setDecisionDefinitionKey(DEFAULT_DEFINITION_KEY)
       .setDecisionDefinitionVersion("someVersion")
+      .setTenantIds(DEFAULT_TENANTS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .build();
 

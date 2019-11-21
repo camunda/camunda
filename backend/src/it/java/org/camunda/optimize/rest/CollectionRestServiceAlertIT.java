@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractAlertIT;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -14,8 +15,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.is;
@@ -24,23 +23,23 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
-  private static Stream<Integer> definitionType() {
-    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
+  private static Stream<DefinitionType> definitionType() {
+    return Stream.of(DefinitionType.PROCESS, DefinitionType.DECISION);
   }
 
   @ParameterizedTest(name = "get stored alerts for collection with different reports for definition type {0}")
   @MethodSource("definitionType")
-  public void getStoredAlerts(final int definitionResourceType) {
+  public void getStoredAlerts(final DefinitionType definitionType) {
     // given
-    final String collectionId1 = createNewCollection();
-    final String reportId1 = createNumberReportForCollection(collectionId1, definitionResourceType);
-    final String reportId2 = createNumberReportForCollection(collectionId1, definitionResourceType);
+    final String collectionId1 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    final String reportId1 = createNumberReportForCollection(collectionId1, definitionType);
+    final String reportId2 = createNumberReportForCollection(collectionId1, definitionType);
     final String alertId1 = createAlertForReport(reportId1);
     final String alertId2 = createAlertForReport(reportId1);
     final String alertId3 = createAlertForReport(reportId2);
 
-    final String collectionId2 = createNewCollection();
-    final String reportId3 = createNumberReportForCollection(collectionId2, definitionResourceType);
+    final String collectionId2 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    final String reportId3 = createNumberReportForCollection(collectionId2, definitionType);
     createAlertForReport(reportId3);
 
     // when
@@ -54,12 +53,12 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
   @ParameterizedTest(name = "only alerts in given collection should be retrieved for definition type {0}")
   @MethodSource("definitionType")
-  public void getNoneStoredAlerts(final int definitionResourceType) {
+  public void getNoneStoredAlerts(final DefinitionType definitionType) {
     // given
-    final String collectionId1 = createNewCollection();
-    final String collectionId2 = createNewCollection();
-    final String reportId1 = createNumberReportForCollection(collectionId1, definitionResourceType);
-    createNumberReportForCollection(collectionId2, definitionResourceType);
+    final String collectionId1 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    final String collectionId2 = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    final String reportId1 = createNumberReportForCollection(collectionId1, definitionType);
+    createNumberReportForCollection(collectionId2, definitionType);
     createAlertForReport(reportId1);
 
     // when
