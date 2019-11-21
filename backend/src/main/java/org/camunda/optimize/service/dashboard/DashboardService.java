@@ -33,11 +33,11 @@ import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -109,7 +109,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                                     final String userId,
                                     final String collectionId,
                                     final String name) {
-    return copyAndMoveDashboard(dashboardId, userId, collectionId, name, new ConcurrentHashMap<>());
+    return copyAndMoveDashboard(dashboardId, userId, collectionId, name, new HashMap<>());
   }
 
   private IdDto copyAndMoveDashboard(final String dashboardId,
@@ -137,22 +137,16 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       newDashboardReports.clear();
       containingReportsComplyWithNewCollectionScope(userId, collectionId, dashboardDefinition);
       dashboardDefinition.getReports().stream().sequential().forEach(reportLocationDto -> {
-        if (IdGenerator.isValidId(reportLocationDto.getId())) {
-          final String reportCopyId = uniqueReportCopies.computeIfAbsent(
-            reportLocationDto.getId(),
-            reportId -> {
-              String newReportName = keepReportNames ? reportReader.getReport(reportId).getName() : null;
-
-              return reportService.copyAndMoveReport(
-                reportLocationDto.getId(),
-                userId,
-                collectionId,
-                newReportName,
-                uniqueReportCopies,
-                keepReportNames
-              ).getId();
-            }
-          );
+        final String originalReportId = reportLocationDto.getId();
+        if (IdGenerator.isValidId(originalReportId)) {
+          String reportCopyId = uniqueReportCopies.get(originalReportId);
+          if (reportCopyId == null) {
+            final String newReportName = keepReportNames ? reportReader.getReport(originalReportId).getName() : null;
+            reportCopyId = reportService.copyAndMoveReport(
+              originalReportId, userId, collectionId, newReportName, uniqueReportCopies, keepReportNames
+            ).getId();
+            uniqueReportCopies.put(originalReportId, reportCopyId);
+          }
 
           newDashboardReports.add(
             reportLocationDto.toBuilder().id(reportCopyId).configuration(reportLocationDto.getConfiguration()).build()

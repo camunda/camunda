@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.report;
 
 import com.google.common.collect.ImmutableSet;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -151,12 +152,17 @@ public class ReportService implements CollectionReferencingService {
     return copyAndMoveReport(reportId, userId, collectionId, newReportName, existingReportCopies, false);
   }
 
-  public IdDto copyAndMoveReport(final String reportId,
-                                 final String userId,
+  /**
+   * Note: The {@code existingReportCopies} {@code Map} might get modified in the context of this method, thus you
+   * should not call this method from a context where this map is being modified already.
+   * E.g. Don't call it inside a {@link Map#computeIfAbsent} block on that same map instance.
+   */
+  public IdDto copyAndMoveReport(@NonNull final String reportId,
+                                 @NonNull final String userId,
                                  final String collectionId,
                                  final String newReportName,
-                                 final Map<String, String> existingReportCopies,
-                                 final boolean keepReportNames) {
+                                 @NonNull final Map<String, String> existingReportCopies,
+                                 final boolean keepSubReportNames) {
     final AuthorizedReportDefinitionDto authorizedReportDefinition = getReportDefinition(reportId, userId);
     final ReportDefinitionDto originalReportDefinition = authorizedReportDefinition.getDefinitionDto();
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
@@ -165,12 +171,7 @@ public class ReportService implements CollectionReferencingService {
     final String newCollectionId = Objects.equals(oldCollectionId, collectionId) ? oldCollectionId : collectionId;
 
     return copyAndMoveReport(
-      originalReportDefinition,
-      userId,
-      newReportName,
-      newCollectionId,
-      existingReportCopies,
-      keepReportNames
+      originalReportDefinition, userId, newReportName, newCollectionId, existingReportCopies, keepSubReportNames
     );
   }
 
@@ -384,7 +385,7 @@ public class ReportService implements CollectionReferencingService {
                                   final String newReportName,
                                   final String newCollectionId,
                                   final Map<String, String> existingReportCopies,
-                                  final boolean keepReportNames) {
+                                  final boolean keepSubReportNames) {
     final String newName = newReportName != null ? newReportName : originalReportDefinition.getName() + " – Copy";
     final String oldCollectionId = originalReportDefinition.getCollectionId();
 
@@ -424,7 +425,7 @@ public class ReportService implements CollectionReferencingService {
         oldCollectionId,
         combinedReportDefinition.getData(),
         existingReportCopies,
-        keepReportNames
+        keepSubReportNames
       );
     }
   }
@@ -435,7 +436,7 @@ public class ReportService implements CollectionReferencingService {
                                           final String oldCollectionId,
                                           final CombinedReportDataDto oldCombinedReportData,
                                           final Map<String, String> existingReportCopies,
-                                          final boolean keepReportNames) {
+                                          final boolean keepSubReportNames) {
     final CombinedReportDataDto newCombinedReportData = new CombinedReportDataDto(
       oldCombinedReportData.getConfiguration(),
       oldCombinedReportData.getVisualization(),
@@ -448,15 +449,19 @@ public class ReportService implements CollectionReferencingService {
         .getReports()
         .stream()
         .sequential()
-        .peek(report ->  compliesWithCollectionScope(userId, newCollectionId, report.getId()))
+        .peek(report -> compliesWithCollectionScope(userId, newCollectionId, report.getId()))
         .forEach(combinedReportItemDto -> {
-          String reportName = keepReportNames ? reportReader.getReport(combinedReportItemDto.getId()).getName() : null;
-          final String reportCopyId = existingReportCopies.computeIfAbsent(
-            combinedReportItemDto.getId(),
-            reportId -> copyAndMoveReport(reportId, userId, newCollectionId, reportName).getId()
-          );
+          final String originalSubReportId = combinedReportItemDto.getId();
+          final String reportName = keepSubReportNames ? reportReader.getReport(originalSubReportId).getName() : null;
+          String subReportCopyId = existingReportCopies.get(originalSubReportId);
+          if (subReportCopyId == null) {
+            subReportCopyId = copyAndMoveReport(
+              originalSubReportId, userId, newCollectionId, reportName, existingReportCopies
+            ).getId();
+            existingReportCopies.put(originalSubReportId, subReportCopyId);
+          }
           newReports.add(
-            combinedReportItemDto.toBuilder().id(reportCopyId).color(combinedReportItemDto.getColor()).build()
+            combinedReportItemDto.toBuilder().id(subReportCopyId).color(combinedReportItemDto.getColor()).build()
           );
         });
       newCombinedReportData.setReports(newReports);
@@ -481,9 +486,9 @@ public class ReportService implements CollectionReferencingService {
     final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
     if (!reportDefinition.getCombined()) {
       SingleReportDefinitionDto singleProcessReportDefinitionDto =
-            (SingleReportDefinitionDto) reportDefinition;
-          compliesWithCollectionScope(userId, collectionId, singleProcessReportDefinitionDto);
-      }
+        (SingleReportDefinitionDto) reportDefinition;
+      compliesWithCollectionScope(userId, collectionId, singleProcessReportDefinitionDto);
+    }
   }
 
   private void compliesWithCollectionScope(final String userId, final String collectionId,

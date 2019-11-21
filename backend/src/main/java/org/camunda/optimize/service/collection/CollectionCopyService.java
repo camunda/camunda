@@ -16,16 +16,15 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefini
 import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.dashboard.DashboardService;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @AllArgsConstructor
 @Component
@@ -72,39 +71,30 @@ public class CollectionCopyService {
 
   private void copyCollectionEntities(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
                                       IdDto newCollectionId) {
-    final Map<String, String> uniqueReportCopies = new ConcurrentHashMap<>();
+    final Map<String, String> uniqueReportCopies = new HashMap<>();
 
     collectionDefinitionDto.getData().getEntities().forEach(e -> {
+      final String originalEntityId = e.getId();
       switch (e.getEntityType()) {
         case REPORT:
-          uniqueReportCopies.computeIfAbsent(
-            e.getId(),
-            id -> reportService.copyAndMoveReport(
-              id,
-              userId,
-              newCollectionId.getId(),
-              e.getName(),
-              uniqueReportCopies,
-              true
-            )
-              .getId()
-          );
-          alertService.copyAndMoveAlerts(e.getId(), uniqueReportCopies.get(e.getId()));
+          String entityCopyId = uniqueReportCopies.get(originalEntityId);
+          if (entityCopyId == null) {
+            entityCopyId = reportService.copyAndMoveReport(
+              originalEntityId, userId, newCollectionId.getId(), e.getName(), uniqueReportCopies, true
+            ).getId();
+            uniqueReportCopies.put(originalEntityId, entityCopyId);
+          }
+          alertService.copyAndMoveAlerts(originalEntityId, entityCopyId);
           break;
         case DASHBOARD:
           dashboardService.copyAndMoveDashboard(
-            e.getId(),
-            userId,
-            newCollectionId.getId(),
-            e.getName(),
-            uniqueReportCopies,
-            true
+            originalEntityId, userId, newCollectionId.getId(), e.getName(), uniqueReportCopies, true
           );
           break;
         default:
-          throw new OptimizeRuntimeException("You can't copy a " + e.getEntityType()
-            .toString()
-            .toLowerCase() + " to a collection");
+          throw new OptimizeRuntimeException(
+            "You can't copy a " + e.getEntityType().toString().toLowerCase() + " to a collection"
+          );
       }
     });
   }
@@ -126,7 +116,11 @@ public class CollectionCopyService {
                                    IdDto newCollectionId) {
     collectionDefinitionDto.getData().getScope().forEach(e -> {
       try {
-        collectionScopeService.addScopeEntryToCollection(userId, newCollectionId.getId(), new CollectionScopeEntryDto(e));
+        collectionScopeService.addScopeEntryToCollection(
+          userId,
+          newCollectionId.getId(),
+          new CollectionScopeEntryDto(e)
+        );
       } catch (OptimizeCollectionConflictException ex) {
         log.error(ex.getMessage());
       }
