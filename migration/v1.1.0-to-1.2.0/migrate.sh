@@ -10,5 +10,5 @@ echo "Start migration."
 # Fill new index with data from old index + pipeline   
 ./reindex.sh
 # Remove backup of current index
-./remove-backup.sh
+#./remove-backup.sh
 echo "Finished migration."

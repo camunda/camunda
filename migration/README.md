@@ -41,7 +41,7 @@ The schema/format of the json files is according to [Elasticsearch REST API](htt
 
 * Add for each index/template that should be added a create index/template request payload as json file in create/index 
   and create/template folder.
-* The names of the json files MUST be the same as the index/template names.
+* The index/template names are derived from the json files. From version 1.2.0 on the schema version will be added as suffix by the script.
 * The function createNewTemplates takes every file in folder create/template to execute a PUT template request.
 * The function createNewIndex takes every file in folder create/index to execute a PUT index request.
 * The script *create.sh* executes the put template and put index request.
