@@ -17,7 +17,6 @@ package zbc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"golang.org/x/net/context"
@@ -69,7 +68,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProvider() {
 
 	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
@@ -122,7 +121,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthProviderRetry() {
 
 	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
@@ -169,7 +168,7 @@ func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 
 	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
@@ -188,10 +187,8 @@ func (s *oauthCredsProviderTestSuite) TestNotRetryWithSameCredentials() {
 }
 
 var configErrorTests = []struct {
-	name       string
-	config     *OAuthProviderConfig
-	err        ZBError
-	errMessage string
+	name   string
+	config *OAuthProviderConfig
 }{
 	{
 		"malformed authorization server URL",
@@ -201,8 +198,6 @@ var configErrorTests = []struct {
 			Audience:               audience,
 			AuthorizationServerURL: "foo",
 		},
-		InvalidArgumentError,
-		invalidArgumentError("authorization server URL", "must be a valid URL").Error(),
 	},
 	{
 		"missing client id",
@@ -212,8 +207,6 @@ var configErrorTests = []struct {
 			Audience:               audience,
 			AuthorizationServerURL: "http://foo",
 		},
-		InvalidArgumentError,
-		invalidArgumentError("client ID", "cannot be blank").Error(),
 	},
 	{
 		"missing client secret",
@@ -222,8 +215,6 @@ var configErrorTests = []struct {
 			Audience:               audience,
 			AuthorizationServerURL: "http://foo",
 		},
-		InvalidArgumentError,
-		invalidArgumentError("client secret", "cannot be blank").Error(),
 	},
 	{
 		"missing audience",
@@ -232,8 +223,6 @@ var configErrorTests = []struct {
 			ClientSecret:           clientSecret,
 			AuthorizationServerURL: "http://foo",
 		},
-		InvalidArgumentError,
-		invalidArgumentError("audience", "cannot be blank").Error(),
 	},
 }
 
@@ -247,8 +236,7 @@ func TestInvalidOAuthProviderConfigurations(t *testing.T) {
 			_, err := NewOAuthCredentialsProvider(test.config)
 
 			//then
-			require.EqualValues(t, test.err, errors.Cause(err))
-			require.EqualValues(t, test.errMessage, err.Error())
+			require.Error(t, err)
 		})
 	}
 }
@@ -354,7 +342,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderCachesCredenti
 
 	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
@@ -412,7 +400,7 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 
 	s.NoError(err)
 	parts := strings.Split(gatewayLis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,

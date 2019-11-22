@@ -17,7 +17,7 @@ You will be guided through the following steps:
 
 ## Prerequisites
 
-* Go v1.11+ environment installed
+* Go v1.13+ environment installed
 * [Zeebe distribution](/introduction/install.html)
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
@@ -51,14 +51,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/zbc"
-	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
 const BrokerAddr = "0.0.0.0:26500"
 
 func main() {
-	zbClient, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
+	zbClient, err := zbc.NewClient(&zbc.ClientConfig{
       GatewayAddress:         BrokerAddr,
       UsePlaintextConnection: true,
 	})
@@ -128,13 +128,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/zbc"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
 
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-	zbClient, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
+	zbClient, err := zbc.NewClient(&zbc.ClientConfig{
       GatewayAddress:         brokerAddr,
       UsePlaintextConnection: true,
 	})
@@ -171,13 +171,13 @@ package main
 import (
 	"fmt"
 
-	"github.com/zeebe-io/zeebe/clients/go/zbc"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
 
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
+	client, err := zbc.NewClient(&zbc.ClientConfig{
       GatewayAddress:         brokerAddr,
       UsePlaintextConnection: true,
 	})
@@ -245,15 +245,15 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/zeebe-io/zeebe/clients/go/entities"
-	"github.com/zeebe-io/zeebe/clients/go/worker"
-	"github.com/zeebe-io/zeebe/clients/go/zbc"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
 
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
+	client, err := zbc.NewClient(&zbc.ClientConfig{
       GatewayAddress:          brokerAddr,
       UsePlaintextConnection: true,
 	})

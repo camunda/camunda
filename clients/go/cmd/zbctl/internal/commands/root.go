@@ -31,7 +31,7 @@ const (
 	AddressEnvVar      = "ZEEBE_ADDRESS"
 )
 
-var client zbc.ZBClient
+var client zbc.Client
 
 var addressFlag string
 var caCertPathFlag string
@@ -64,12 +64,12 @@ func Execute() {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address. If omitted, will read from the environment variable '"+AddressEnvVar+"' (default '"+fmt.Sprintf("%s:%s", DefaultAddressHost, DefaultAddressPort)+"')")
-	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests. If omitted, will read from the environment variable '"+zbc.ZbCaCertificatePath+"'")
+	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests. If omitted, will read from the environment variable '"+zbc.CaCertificatePath+"'")
 	rootCmd.PersistentFlags().StringVar(&clientIDFlag, "clientId", "", "Specify a client identifier to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthClientIdEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthClientSecretEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&audienceFlag, "audience", "", "Specify the resource that the access token should be valid for. If omitted, will read from the environment variable '"+zbc.OAuthTokenAudienceEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&authzURLFlag, "authzUrl", zbc.OAuthDefaultAuthzURL, "Specify an authorization server URL from which to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthAuthorizationUrlEnvVar+"'")
-	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection. If omitted, will read from the environment variable '"+zbc.ZbInsecureEnvVar+"'")
+	rootCmd.PersistentFlags().BoolVar(&insecureFlag, "insecure", false, "Specify if zbctl should use an unsecured connection. If omitted, will read from the environment variable '"+zbc.InsecureEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&clientCacheFlag, "clientCache", zbc.DefaultOauthYamlCachePath, "Specify the path to use for the OAuth credentials cache. If omitted, will read from the environment variable '"+zbc.OAuthCachePathEnvVar+"'")
 }
 
@@ -106,7 +106,7 @@ var initClient = func(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	client, err = zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
+	client, err = zbc.NewClient(&zbc.ClientConfig{
 		GatewayAddress:      fmt.Sprintf("%s:%s", host, port),
 		CredentialsProvider: credsProvider,
 	})
@@ -121,10 +121,10 @@ func setSecurityParamsAsEnv() (err error) {
 	}
 
 	if insecureFlag {
-		setEnv(zbc.ZbInsecureEnvVar, "true")
+		setEnv(zbc.InsecureEnvVar, "true")
 	}
 	if caCertPathFlag != "" {
-		setEnv(zbc.ZbCaCertificatePath, caCertPathFlag)
+		setEnv(zbc.CaCertificatePath, caCertPathFlag)
 	}
 	if clientIDFlag != "" {
 		setEnv(zbc.OAuthClientIdEnvVar, clientIDFlag)

@@ -15,10 +15,10 @@
 package zbc
 
 import (
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/suite"
-	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -36,7 +36,7 @@ func TestClientSuite(t *testing.T) {
 	suite.Run(t, &clientTestSuite{envSuite: new(envSuite)})
 }
 
-func (s *clientTestSuite) TestNewZBClientWithTls() {
+func (s *clientTestSuite) TestClientWithTls() {
 	// given
 	lis, grpcServer := createSecureServer()
 
@@ -47,7 +47,7 @@ func (s *clientTestSuite) TestNewZBClientWithTls() {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "../../test/testdata/ca.cert.pem",
 	})
@@ -76,13 +76,13 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 	parts := strings.Split(lis.Addr().String(), ":")
 
 	// when
-	config := &ZBClientConfig{
+	config := &ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "../../test/testdata/ca.cert.pem",
 	}
-	env.set(ZbInsecureEnvVar, "true")
+	env.set(InsecureEnvVar, "true")
 
-	_, err := NewZBClientWithConfig(config)
+	_, err := NewClient(config)
 
 	// then
 	s.NoError(err)
@@ -101,20 +101,20 @@ func (s *clientTestSuite) TestCaCertificateEnvVar() {
 	parts := strings.Split(lis.Addr().String(), ":")
 
 	// when
-	config := &ZBClientConfig{
+	config := &ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "../../test/testdata/wrong.cert",
 	}
-	env.set(ZbCaCertificatePath, "../../test/testdata/ca.cert.pem")
+	env.set(CaCertificatePath, "../../test/testdata/ca.cert.pem")
 
-	_, err := NewZBClientWithConfig(config)
+	_, err := NewClient(config)
 
 	// then
 	s.NoError(err)
 	s.EqualValues("../../test/testdata/ca.cert.pem", config.CaCertificatePath)
 }
 
-func (s *clientTestSuite) TestNewZBClientWithoutTls() {
+func (s *clientTestSuite) TestClientWithoutTls() {
 	// given
 	lis, grpcServer := createServer()
 
@@ -125,7 +125,7 @@ func (s *clientTestSuite) TestNewZBClientWithoutTls() {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CaCertificatePath:      "../../test/testdata/ca.cert.pem",
@@ -143,7 +143,7 @@ func (s *clientTestSuite) TestNewZBClientWithoutTls() {
 	}
 }
 
-func (s *clientTestSuite) TestNewZBClientWithDefaultRootCa() {
+func (s *clientTestSuite) TestClientWithDefaultRootCa() {
 	// given
 	lis, grpcServer := createSecureServer()
 
@@ -154,7 +154,7 @@ func (s *clientTestSuite) TestNewZBClientWithDefaultRootCa() {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress: fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 	})
 
@@ -171,7 +171,7 @@ func (s *clientTestSuite) TestNewZBClientWithDefaultRootCa() {
 	}
 }
 
-func (s *clientTestSuite) TestNewZBClientWithPathToNonExistingFile() {
+func (s *clientTestSuite) TestClientWithPathToNonExistingFile() {
 	// given
 	lis, grpcServer := createSecureServer()
 
@@ -185,16 +185,17 @@ func (s *clientTestSuite) TestNewZBClientWithPathToNonExistingFile() {
 	wrongPath := "non.existing"
 
 	//when
-	_, err := NewZBClientWithConfig(&ZBClientConfig{
+	_, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: wrongPath,
 	})
 
 	// then
-	s.EqualValues(FileNotFoundError, errors.Cause(err))
+	s.Error(err)
+	s.True(errors.Is(err, ErrFileNotFound), "expected error to be of type 'FileNotFound'")
 }
 
-func (s *clientTestSuite) TestNewZBClientWithDefaultCredentialsProvider() {
+func (s *clientTestSuite) TestClientWithDefaultCredentialsProvider() {
 	// given
 	lis, grpcServer := createServer()
 
@@ -212,12 +213,11 @@ func (s *clientTestSuite) TestNewZBClientWithDefaultCredentialsProvider() {
 	env.set(OAuthAuthorizationUrlEnvVar, authzServer.URL)
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	config := &ZBClientConfig{
+	config := &ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 	}
-	client, err := NewZBClientWithConfig(config)
-
+	client, err := NewClient(config)
 	s.NoError(err)
 
 	// when

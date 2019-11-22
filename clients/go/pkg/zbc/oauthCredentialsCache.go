@@ -14,8 +14,8 @@
 package zbc
 
 import (
+	"fmt"
 	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -30,8 +30,9 @@ const DefaultOAuthCacheFileDir = ".camunda"
 const DefaultOAuthCacheFile = "credentials"
 const oauthYamlCredentialsCachePerm = 0660
 
-var ErrOAuthCredentialsCacheFolderIsNotDir = errors.New("OAuth credentials cache folder is not a directory, cannot create cache file under it")
-var ErrOAuthCredentialsCacheIsDir = errors.New("OAuth credentials cache must be a file, not a directory")
+const ErrOAuthCredentialsCacheFolderIsNotDir = Error("OAuth credentials cache folder is not a directory, cannot create cache file under it")
+const ErrOAuthCredentialsCacheIsDir = Error("OAuth credentials cache must be a file, not a directory")
+
 var DefaultOauthYamlCachePath = getDefaultOAuthYamlCredentialsCachePath()
 
 // OAuthCredentialsCache is used to cache results of fetching OAuth credentials
@@ -172,7 +173,7 @@ func ensureOAuthCacheFileExists(path string) (err error) {
 			}
 		}
 	} else if info.IsDir() {
-		err = errors.Wrapf(ErrOAuthCredentialsCacheIsDir, "%s (%s)", ErrOAuthCredentialsCacheIsDir.Error(), path)
+		err = fmt.Errorf("%s: %w", path, ErrOAuthCredentialsCacheIsDir)
 	}
 
 	return
@@ -189,7 +190,7 @@ func ensureOAuthCachePathSegmentsExist(directory string) error {
 			return err
 		}
 	} else if !dirInfo.IsDir() {
-		return errors.Wrapf(ErrOAuthCredentialsCacheFolderIsNotDir, "%s (%s)", ErrOAuthCredentialsCacheFolderIsNotDir.Error(), directory)
+		return fmt.Errorf("%s: %w", directory, ErrOAuthCredentialsCacheFolderIsNotDir)
 	}
 
 	return err
