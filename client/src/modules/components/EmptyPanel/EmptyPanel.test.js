@@ -43,7 +43,7 @@ describe('EmptyPanel', () => {
         </WithRowCount>
       );
 
-      expect(node.find(SkeletonMock).props().rowsToDisplay).toBe(22);
+      expect(node.find(SkeletonMock).props().rowsToDisplay).toBe(21);
     });
   });
 });
