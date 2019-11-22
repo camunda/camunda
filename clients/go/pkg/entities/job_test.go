@@ -18,7 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
 type testType struct {

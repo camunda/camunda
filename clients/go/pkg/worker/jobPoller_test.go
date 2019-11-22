@@ -21,7 +21,7 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
-	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"io"
 	"math"
 	"sync"
