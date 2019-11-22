@@ -29,7 +29,9 @@ pipeline {
             steps {
                 checkout scm
                 container('maven') {
-                    sh '.ci/scripts/distribution/prepare.sh'
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                      sh '.ci/scripts/distribution/prepare.sh'
+                    }
                 }
             }
         }
@@ -51,7 +53,9 @@ pipeline {
         stage('Build (Java)') {
             steps {
                 container('maven') {
-                    sh '.ci/scripts/distribution/build-java.sh'
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                      sh '.ci/scripts/distribution/build-java.sh'
+                    }
                 }
             }
         }
@@ -61,7 +65,9 @@ pipeline {
                 stage('Unit (Java)') {
                     steps {
                         container('maven') {
-                            sh '.ci/scripts/distribution/test-java.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                              sh '.ci/scripts/distribution/test-java.sh'
+                            }
                         }
                     }
                 }
@@ -69,7 +75,9 @@ pipeline {
                 stage('IT (Java)') {
                     steps {
                         container('maven') {
-                            sh '.ci/scripts/distribution/it-java.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                              sh '.ci/scripts/distribution/it-java.sh'
+                            }
                         }
                     }
                 }
@@ -86,7 +94,9 @@ pipeline {
             when { branch 'develop' }
             steps {
                 container('maven') {
-                    sh '.ci/scripts/distribution/upload.sh'
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                      sh '.ci/scripts/distribution/upload.sh'
+                    }
                 }
             }
         }

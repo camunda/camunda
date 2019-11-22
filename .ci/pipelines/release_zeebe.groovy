@@ -100,7 +100,9 @@ spec:
                     sh '.ci/scripts/release/build-go.sh'
                 }
                 container('maven') {
-                    sh '.ci/scripts/release/build-java.sh'
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh '.ci/scripts/release/build-java.sh'
+                    }
                 }
             }
         }
@@ -109,7 +111,9 @@ spec:
             steps {
                 container('maven') {
                     sshagent(['camunda-jenkins-github-ssh']) {
-                        sh '.ci/scripts/release/maven-release.sh'
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/release/maven-release.sh'
+                        }
                     }
                 }
             }
