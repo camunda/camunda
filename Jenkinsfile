@@ -39,7 +39,9 @@ pipeline {
         stage('Build (Java)') {
             steps {
                 container('maven') {
-                    sh '.ci/scripts/distribution/build-java.sh'
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh '.ci/scripts/distribution/build-java.sh'
+                    }
                 }
             }
         }
@@ -79,7 +81,9 @@ pipeline {
                 stage('Analyse (Java)') {
                       steps {
                           container('maven') {
-                              sh '.ci/scripts/distribution/analyse-java.sh'
+                               configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                    sh '.ci/scripts/distribution/analyse-java.sh'
+                               }
                           }
                       }
                 }
@@ -87,14 +91,18 @@ pipeline {
                 stage('Unit (Java)') {
                     steps {
                         container('maven') {
-                            sh '.ci/scripts/distribution/test-java.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/test-java.sh'
+                            }
                         }
                     }
                 }
                 stage('Unit 8 (Java 8)') {
                     steps {
                         container('maven-jdk8') {
-                            sh '.ci/scripts/distribution/test-java8.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/test-java8.sh'
+                            }
                         }
                     }
                 }
@@ -102,7 +110,9 @@ pipeline {
                 stage('IT (Java)') {
                     steps {
                         container('maven') {
-                            sh '.ci/scripts/distribution/it-java.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/it-java.sh'
+                            }
                         }
                     }
                 }
@@ -128,7 +138,9 @@ pipeline {
             when { branch 'develop' }
             steps {
                 container('maven') {
-                    sh '.ci/scripts/distribution/upload.sh'
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh '.ci/scripts/distribution/upload.sh'
+                    }
                 }
             }
         }
