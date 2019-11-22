@@ -4,7 +4,7 @@
   font-size: 0.875em;
 
   .itemsList {
-    max-height: 50vh;
+    max-height: calc(100vh - 415px);
 
     &:not(:only-child) {
       margin-top: 8px;
