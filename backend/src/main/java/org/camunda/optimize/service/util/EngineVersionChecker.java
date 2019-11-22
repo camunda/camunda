@@ -48,8 +48,18 @@ public class EngineVersionChecker {
     }
 
 
-    if (response.getStatus() != 200) {
-      throw new OptimizeRuntimeException(buildUnsupportedEngineErrorMessage(null));
+    int status = response.getStatus();
+    if (status != 200) {
+      String errorMessageTemplate = "While checking the Engine version, following error occurred:";
+      if (status == 404) {
+        String errorMessage = "While checking the Engine version, following error occurred: Status code: 404,\n this " +
+          "means you either configured a wrong endpoint or you have an unsupported engine version < " + supportedEngines.get(0);
+        throw new OptimizeRuntimeException(errorMessage);
+      } else {
+        throw new OptimizeRuntimeException(errorMessageTemplate +
+                                             "\nStatus code:" + response.getStatus() +
+                                             "\nResponse body:" + response.readEntity(String.class));
+      }
     }
 
     String currentVersion = stripToPlainVersion(response.readEntity(EngineVersionDto.class).getVersion());
@@ -88,16 +98,12 @@ public class EngineVersionChecker {
   private static String buildUnsupportedEngineErrorMessage(String engineVersion) {
     StringBuilder message = new StringBuilder("Engine version is not supported by Optimize.\n");
 
-    String currentEngineVersion = engineVersion == null ? "can't be determined. Either the engine is outdated, " +
-      "or you configured a wrong engine REST path." :
-      "is: " + engineVersion;
-
     message.append("Current version of Optimize supports following engine versions:\n");
     for (String version : supportedEngines) {
       message.append(version).append("+\n");
     }
 
-    message.append("Your current engine version ").append(currentEngineVersion);
+    message.append("Your current engine version is: ").append(engineVersion);
     return message.toString();
   }
 

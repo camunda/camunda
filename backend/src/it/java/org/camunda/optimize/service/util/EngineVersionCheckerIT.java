@@ -31,7 +31,13 @@ public class EngineVersionCheckerIT extends AbstractIT {
       embeddedOptimizeExtension2.startOptimize();
     } catch (Exception e) {
       //expected
-      assertThat(e.getCause().getMessage().contains("Engine version is not supported"), is(true));
+      assertThat(
+        e.getCause()
+          .getMessage()
+          .contains("While checking the Engine version, following error occurred: Status code: 404,\n this " +
+                      "means you either configured a wrong endpoint or you have an unsupported engine version < "),
+        is(true)
+      );
       return;
     }
 
@@ -41,7 +47,8 @@ public class EngineVersionCheckerIT extends AbstractIT {
   @AfterEach
   public void setContextBack() throws Exception {
     embeddedOptimizeExtension2.stopOptimize();
-    EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension("classpath:embeddedOptimizeContext.xml");
+    EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(
+      "classpath:embeddedOptimizeContext.xml");
     embeddedOptimizeExtension.startOptimize();
   }
 }
