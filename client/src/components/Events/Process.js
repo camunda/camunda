@@ -23,6 +23,7 @@ export default withErrorHandling(
     state = {
       name: null,
       xml: null,
+      mappings: null,
       redirect: null
     };
 
@@ -59,14 +60,15 @@ export default withErrorHandling(
           </bpmndi:BPMNPlane>
         </bpmndi:BPMNDiagram>
       </bpmn:definitions>
-      `
+      `,
+        mappings: {}
       });
     };
 
     loadProcess = () => {
       this.props.mightFail(
         loadProcess(this.getId()),
-        ({name, xml}) => this.setState({name, xml}),
+        ({name, xml, mappings}) => this.setState({name, xml, mappings}),
         showError
       );
     };
@@ -79,7 +81,7 @@ export default withErrorHandling(
 
     render() {
       const {viewMode} = this.props.match.params;
-      const {name, xml, redirect} = this.state;
+      const {name, xml, mappings, redirect} = this.state;
 
       if (redirect) {
         return <Redirect to={redirect} />;
@@ -97,13 +99,17 @@ export default withErrorHandling(
               id={this.getId()}
               initialName={name}
               initialXml={xml}
-              onSave={({id, name, xml}) => this.setState({name, xml, redirect: `../${id}/`})}
+              initialMappings={mappings}
+              onSave={({id, name, xml, mappings}) =>
+                this.setState({name, xml, mappings, redirect: `../${id}/`})
+              }
             />
           ) : (
             <ProcessView
               id={this.getId()}
               name={name}
               xml={xml}
+              mappings={mappings}
               onDelete={() => this.setState({redirect: '../'})}
             />
           )}

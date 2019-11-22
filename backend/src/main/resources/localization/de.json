@@ -107,7 +107,21 @@
     "upload": ".bpmn hochladen",
     "empty": "Es wurden noch keine Eventbasierten Prozesse erstellt",
     "label": "Eventbasierter Prozess",
-    "parseError": "Konnte Datei nicht verarbeiten. Bitte wählen Sie eine valide BPMN-Datei aus."
+    "parseError": "Konnte Datei nicht verarbeiten. Bitte wählen Sie eine valide BPMN-Datei aus.",
+    "list": "Event Liste",
+    "table": {
+      "group": "Gruppe",
+      "mapping": "Zugeordnet als…",
+      "source": "Quelle",
+      "name": "Event Name",
+      "count": "Anzahl",
+      "end": "Ende",
+      "start": "Start",
+      "noResults": "Keine Ergebnisse gefunden",
+      "allMapped": "Keine Events verfügbar.",
+      "seeDocs": "Keine Events verfügbar. Informationen zum Hinzufügen von Events finden Sie in der ",
+      "documentation": "Dokumentation"
+    }
   },
   "report": {
     "label": "Bericht",
@@ -440,6 +454,7 @@
     "below": "unter",
     "viewDetails": "Details anzeigen",
     "notFound": "keine Ergebnisse gefunden",
+    "noData": "Keine Daten verfügbar",
     "searchForMore": "Es werden nur {count} Einträge angezeigt. Suche verfeinern.",
     "goToHome": "zur Homepage",
     "errors": {

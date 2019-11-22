@@ -25,7 +25,15 @@ export default class Table extends React.Component {
   }
 
   render() {
-    const {className, head, body, disableReportScrolling, disablePagination} = this.props;
+    const {
+      className,
+      head,
+      body,
+      disableReportScrolling,
+      disablePagination,
+      noHighlight,
+      noData = t('common.noData')
+    } = this.props;
 
     const columns = Table.formatColumns(head);
     const data = Table.formatData(head, body);
@@ -34,7 +42,10 @@ export default class Table extends React.Component {
     const pageSize = disablePagination ? Number.MAX_VALUE : defaultPageSize;
 
     return (
-      <div className={classnames('Table', className)} ref={ref => (this.tableRef = ref)}>
+      <div
+        className={classnames('Table', className, {empty: !body || !body.length})}
+        ref={ref => (this.tableRef = ref)}
+      >
         <ReactTable
           data={data}
           columns={columns}
@@ -47,14 +58,16 @@ export default class Table extends React.Component {
           minRows={0}
           sortable={false}
           multiSort={false}
-          className={classnames('-striped', '-highlight', 'ReactTable', {
-            'unscrollable-mode': disableReportScrolling
+          className={classnames('-striped', 'ReactTable', {
+            'unscrollable-mode': disableReportScrolling,
+            '-highlight': !noHighlight
           })}
-          noDataText="No data available"
+          noDataText={noData}
           onResizedChange={this.updateResizedState}
           PreviousComponent={props => <Button {...props} />}
           NextComponent={props => <Button {...props} />}
           getTheadThProps={this.applySortingBehavior}
+          getTrProps={(state, {original}) => original.__props || {}}
         />
       </div>
     );
@@ -155,12 +168,22 @@ export default class Table extends React.Component {
   };
 
   static formatData = (head, body) => {
-    const flatHead = head.reduce(flatten('', entry => entry.id || entry), []);
+    const flatHead = head.reduce(
+      flatten('', entry => entry.id || entry),
+      []
+    );
     return body.map(row => {
       const newRow = {};
-      row.forEach((cell, columnIdx) => {
+
+      const content = row.content || row;
+      content.forEach((cell, columnIdx) => {
         newRow[convertHeaderNameToAccessor(flatHead[columnIdx])] = cell;
       });
+
+      if (row.props) {
+        newRow.__props = row.props;
+      }
+
       return newRow;
     });
   };

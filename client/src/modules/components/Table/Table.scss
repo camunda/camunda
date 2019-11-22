@@ -4,6 +4,12 @@
   display: flex;
   flex-direction: column;
 
+  &.empty {
+    .ReactTable {
+      height: 100%;
+    }
+  }
+
   .ReactTable {
     min-height: 0;
     font-size: 14px;

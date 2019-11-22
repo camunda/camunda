@@ -1,39 +1,51 @@
 .Process {
   height: 100%;
 
-  .header {
-    margin-bottom: 1em;
+  > .ProcessView,
+  > .ProcessEdit {
+    > .header {
+      margin-bottom: 1em;
 
-    .head {
-      display: flex;
+      .head {
+        display: flex;
 
-      .name-container {
-        flex-grow: 1;
-        padding-right: 48px;
-        width: 100%;
-
-        .name {
-          overflow: hidden;
-          text-overflow: ellipsis;
+        .name-container {
+          flex-grow: 1;
+          padding-right: 48px;
           width: 100%;
+
+          .name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            width: 100%;
+          }
+        }
+      }
+
+      .tools {
+        flex-wrap: nowrap;
+        align-items: baseline;
+        display: flex;
+        flex-shrink: 0;
+        margin-top: 8px;
+
+        .tool-button {
+          margin-right: 6px;
+        }
+
+        .tool-button:last-child {
+          margin-right: 0;
         }
       }
     }
+  }
 
-    .tools {
-      flex-wrap: nowrap;
-      align-items: baseline;
-      display: flex;
-      flex-shrink: 0;
-      margin-top: 8px;
+  .djs-overlay-MAPPED {
+    pointer-events: none;
 
-      .tool-button {
-        margin-right: 6px;
-      }
-
-      .tool-button:last-child {
-        margin-right: 0;
-      }
+    img {
+      width: 18px;
+      height: 18px;
     }
   }
 }

@@ -1,0 +1,109 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="EventTable"
+>
+  <div
+    className="header"
+  >
+    <b>
+      Events List
+    </b>
+    <div
+      className="searchContainer"
+    >
+      <Icon
+        className="searchIcon"
+        type="search"
+      />
+      <ForwardRef(Input)
+        className="searchInput"
+        onChange={[Function]}
+        onClear={[Function]}
+        placeholder="Filter for name..."
+        required={true}
+        type="text"
+        value=""
+      />
+    </div>
+  </div>
+  <Table
+    body={
+      Array [
+        Object {
+          "content": Array [
+            <ForwardRef(Input)
+              checked={true}
+              disabled={false}
+              onChange={[Function]}
+              type="checkbox"
+            />,
+            "eventGroup",
+            <Select
+              onChange={[Function]}
+              onOpen={[Function]}
+              value="end"
+            >
+              <Option
+                disabled={false}
+                value="end"
+              >
+                End
+              </Option>
+              <Option
+                disabled={false}
+                value="start"
+              >
+                Start
+              </Option>
+            </Select>,
+            "order-service",
+            "OrderProcessed",
+            10,
+          ],
+          "props": Object {
+            "className": "mapped",
+          },
+        },
+        Object {
+          "content": Array [
+            <ForwardRef(Input)
+              checked={false}
+              disabled={true}
+              onChange={[Function]}
+              type="checkbox"
+            />,
+            "eventGroup",
+            "--",
+            "order-service",
+            "OrderAccepted",
+            10,
+          ],
+          "props": Object {
+            "className": "disabled",
+          },
+        },
+      ]
+    }
+    disablePagination={true}
+    head={
+      Array [
+        "checked",
+        "Group",
+        "Mapped as…",
+        "Source",
+        "Event Name",
+        "Count",
+      ]
+    }
+    noData={
+      <React.Fragment>
+        
+        No Events available.
+      </React.Fragment>
+    }
+    noHighlight={true}
+  />
+</div>
+`;

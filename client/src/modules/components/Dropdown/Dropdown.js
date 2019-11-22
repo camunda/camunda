@@ -32,9 +32,15 @@ export default class Dropdown extends React.Component {
 
   toggleOpen = evt => {
     evt.preventDefault();
-    if (!this.props.disabled) {
+
+    const {disabled, onOpen} = this.props;
+
+    if (!disabled) {
       const newOpenState = !this.state.open;
-      this.setState({open: newOpenState, openSubmenu: null, fixedSubmenu: null});
+      this.setState(
+        {open: newOpenState, openSubmenu: null, fixedSubmenu: null},
+        () => onOpen && onOpen(newOpenState)
+      );
       this.calculateMenuStyle(newOpenState);
     }
   };

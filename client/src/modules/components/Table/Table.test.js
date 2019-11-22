@@ -63,6 +63,15 @@ it('shoud correctly format body', () => {
   expect(result).toEqual([{header1: 'a', header2: 'b', header3: 'c'}]);
 });
 
+it('should format structured body data', () => {
+  const result = Table.formatData(
+    ['Header 1', 'Header 2', 'Header 3'],
+    [{content: ['a', 'b', 'c'], props: {foo: 'bar'}}]
+  );
+
+  expect(result).toEqual([{header1: 'a', header2: 'b', header3: 'c', __props: {foo: 'bar'}}]);
+});
+
 it('should show pagination if data contains more than 20 rows', () => {
   const node = shallow(<Table {...{head: ['a'], body: generateData(21), foot: []}} />);
 
@@ -129,4 +138,10 @@ it('should call the updateSorting method to sort by Label if sortByLabel is true
     .onClick({target: 'header'});
 
   expect(spy).toHaveBeenCalledWith('label', 'asc');
+});
+
+it('should set empty classname', () => {
+  const node = shallow(<Table head={['a']} body={[]} />);
+
+  expect(node).toHaveClassName('empty');
 });

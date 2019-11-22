@@ -6,10 +6,53 @@
 
 import {useEffect} from 'react';
 
-export default function ProcessRenderer({viewer, name, getXml, onChange}) {
+import mappedIcon from './icons/mapped.svg';
+
+export default function ProcessRenderer({
+  viewer,
+  name = '',
+  mappings = {},
+  getXml = {},
+  onChange = () => {},
+  onElementDelete = () => {},
+  onSelectNode = () => {}
+}) {
   useEffect(() => {
-    viewer.get('eventBus').on('commandStack.changed', onChange);
-    return () => viewer.get('eventBus').off('commandStack.changed', onChange);
+    const eventBus = viewer.get('eventBus');
+
+    eventBus.on('commandStack.changed', onChange);
+    eventBus.on('selection.changed', onSelectNode);
+    eventBus.on('commandStack.elements.delete.preExecute', onElementDelete);
+
+    const overlays = viewer.get('overlays');
+
+    function createOverlay(id, type) {
+      const position = type === 'start' ? {top: -33, left: 9} : {top: -33, right: 27};
+      overlays.add(id, 'MAPPED', {
+        position,
+        show: {
+          minZoom: -Infinity,
+          maxZoom: +Infinity
+        },
+        html: `<img src="${mappedIcon}" />`
+      });
+    }
+
+    Object.entries(mappings).forEach(([id, {start, end}]) => {
+      if (start) {
+        createOverlay(id, 'start');
+      }
+      if (end) {
+        createOverlay(id, 'end');
+      }
+    });
+
+    return () => {
+      eventBus.off('commandStack.changed', onChange);
+      eventBus.off('selection.changed', onSelectNode);
+      eventBus.off('commandStack.elements.delete.preExecute', onElementDelete);
+      overlays.remove({type: 'MAPPED'});
+    };
   });
 
   viewer.get('elementRegistry').forEach(({businessObject}) => {

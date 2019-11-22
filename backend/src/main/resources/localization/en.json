@@ -107,7 +107,21 @@
     "upload": "Upload .bpmn",
     "empty": "There are no Event Based Processes created yet",
     "label": "Event Based Process",
-    "parseError": "Could not parse file. Please make sure to upload a valid bpmn file."
+    "parseError": "Could not parse file. Please make sure to upload a valid bpmn file.",
+    "list": "Events List",
+    "table": {
+      "group": "Group",
+      "mapping": "Mapped as…",
+      "source": "Source",
+      "name": "Event Name",
+      "count": "Count",
+      "end": "End",
+      "start": "Start",
+      "noResults": "No Results matching your search",
+      "allMapped": "No Events available.",
+      "seeDocs": "No Events available. To add events, see ",
+      "documentation": "Documentation"
+    }
   },
   "report": {
     "label": "Report",
@@ -440,6 +454,7 @@
     "below": "below",
     "viewDetails": "View Details",
     "notFound": "No results found",
+    "noData": "No data available",
     "searchForMore": "Displaying {count} results only. Search to refine.",
     "goToHome": "Go to Home",
     "errors": {

@@ -5,6 +5,8 @@
  */
 
 import React from 'react';
+import update from 'immutability-helper';
+import deepEqual from 'deep-equal';
 
 import {EntityNameForm, BPMNDiagram} from 'components';
 import {withErrorHandling} from 'HOC';
@@ -14,6 +16,7 @@ import {t} from 'translation';
 
 import {createProcess, updateProcess} from './service';
 import ProcessRenderer from './ProcessRenderer';
+import EventTable from './EventTable';
 
 import './ProcessEdit.scss';
 
@@ -25,26 +28,28 @@ export default withErrorHandling(
       super(props);
 
       this.state = {
-        name: props.initialName
+        name: props.initialName,
+        selectedNode: null,
+        mappings: props.initialMappings
       };
     }
 
     save = () => {
       return new Promise(async (resolve, reject) => {
         const {isNew, mightFail, id} = this.props;
-        const {name} = this.state;
+        const {name, mappings} = this.state;
         const xml = await this.getXml.action();
 
         if (isNew) {
           mightFail(
-            createProcess(name, xml),
-            id => resolve({id, name, xml}),
+            createProcess(name, xml, mappings),
+            id => resolve({id, name, xml, mappings}),
             error => reject(showError(error))
           );
         } else {
           mightFail(
-            updateProcess(id, name, xml),
-            () => resolve({id, name, xml}),
+            updateProcess(id, name, xml, mappings),
+            () => resolve({id, name, xml, mappings}),
             error => reject(showError(error))
           );
         }
@@ -63,8 +68,49 @@ export default withErrorHandling(
       nowDirty(t('events.label'), this.save);
     };
 
+    setMapping = (event, mapped, mapAs) => {
+      this.setState(({mappings, selectedNode}) => {
+        let change;
+        if (!mappings[selectedNode.id]) {
+          // first time this node is mapped, we set the end
+          change = {$set: {start: null, end: event}};
+        } else {
+          if (mapped) {
+            if (mapAs) {
+              // we change the mapping of a mapped event
+              change = {
+                [mapAs === 'end' ? 'start' : 'end']: {
+                  $set: null
+                },
+                [mapAs]: {$set: event}
+              };
+            } else {
+              // we map a new event
+              // if we already have an end event, we map as start event
+              change = {
+                [mappings[selectedNode.id].end ? 'start' : 'end']: {
+                  $set: event
+                }
+              };
+            }
+          } else {
+            // unset the mapping for the one that matches the provided event
+            change = {
+              [deepEqual(mappings[selectedNode.id].start, event) ? 'start' : 'end']: {
+                $set: null
+              }
+            };
+          }
+        }
+
+        return {
+          mappings: update(mappings, {[selectedNode.id]: change})
+        };
+      });
+    };
+
     render() {
-      const {name} = this.state;
+      const {name, mappings, selectedNode} = this.state;
       const {initialXml, isNew} = this.props;
 
       return (
@@ -83,8 +129,28 @@ export default withErrorHandling(
             />
           </div>
           <BPMNDiagram xml={initialXml} allowModeling>
-            <ProcessRenderer name={name} getXml={this.getXml} onChange={this.setDirty} />
+            <ProcessRenderer
+              name={name}
+              mappings={mappings}
+              getXml={this.getXml}
+              onChange={this.setDirty}
+              onSelectNode={({newSelection}) => {
+                if (newSelection.length !== 1) {
+                  this.setState({selectedNode: null});
+                } else {
+                  this.setState({selectedNode: newSelection[0].businessObject});
+                }
+              }}
+              onElementDelete={({context: {elements}}) =>
+                this.setState(({mappings}) => ({
+                  mappings: update(mappings, {
+                    $unset: elements.map(({businessObject: {id}}) => id)
+                  })
+                }))
+              }
+            />
           </BPMNDiagram>
+          <EventTable selection={selectedNode} mappings={mappings} onChange={this.setMapping} />
         </div>
       );
     }

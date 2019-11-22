@@ -1,0 +1,96 @@
+.EventTable {
+  border: solid 1px #dfdfdf;
+  border-bottom: none;
+
+  > .header {
+    height: 37px;
+    border-bottom: solid 1px #dfdfdf;
+    background-color: #f8f8f8;
+
+    b {
+      font-size: 14px;
+      color: #434343;
+      margin: 9px 20px;
+      display: inline-block;
+    }
+
+    .searchContainer {
+      margin-left: auto;
+      position: relative;
+      margin: 2px;
+      float: right;
+
+      .searchIcon {
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        margin: auto;
+        color: #6a727e;
+      }
+
+      .searchInput {
+        padding: 6px 35px;
+      }
+    }
+  }
+
+  .Table {
+    display: flex;
+    flex-direction: column;
+    height: 300px;
+    width: 100%;
+
+    .rt-noData {
+      pointer-events: all;
+      color: #aeaeae;
+      font-weight: normal;
+    }
+
+    .rt-tr {
+      height: 38px;
+
+      .rt-th:first-child {
+        visibility: hidden;
+      }
+    }
+    .rt-th,
+    .rt-td {
+      padding-top: 11px;
+    }
+
+    .rt-tr > :first-child {
+      width: 40px !important;
+      max-width: 40px !important;
+      border: 0;
+      padding-top: 9px;
+    }
+
+    .rt-tbody {
+      .Dropdown {
+        position: static;
+
+        .activateButton {
+          border: 0;
+          background: none;
+          padding: 0 30px 0 0;
+          font-size: 1em;
+        }
+
+        .menu {
+          left: auto !important;
+          width: 100px;
+        }
+      }
+
+      .rt-tr.disabled {
+        opacity: 0.36;
+      }
+
+      .rt-tr.mapped,
+      .rt-tr.mapped:hover {
+        background-color: #c5dbfe;
+      }
+    }
+  }
+}

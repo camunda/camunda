@@ -47,7 +47,11 @@ exports[`should match snapshot 1`] = `
   </div>
   <Themed(BPMNDiagramErrorHandler)
     xml="process XML"
-  />
+  >
+    <ProcessRenderer
+      mappings={Object {}}
+    />
+  </Themed(BPMNDiagramErrorHandler)>
   <DeleterErrorHandler
     deleteEntity={[Function]}
     entity={null}

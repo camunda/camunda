@@ -10,11 +10,12 @@ import {Link} from 'react-router-dom';
 import {Button, Icon, Deleter, BPMNDiagram} from 'components';
 import {t} from 'translation';
 
+import ProcessRenderer from './ProcessRenderer';
 import {removeProcess} from './service';
 
 import './ProcessView.scss';
 
-export default function ProcessView({id, name, xml, onDelete}) {
+export default function ProcessView({id, name, xml, mappings, onDelete}) {
   const [deleting, setDeleting] = useState(null);
 
   return (
@@ -38,7 +39,9 @@ export default function ProcessView({id, name, xml, onDelete}) {
           </div>
         </div>
       </div>
-      <BPMNDiagram xml={xml} />
+      <BPMNDiagram xml={xml}>
+        <ProcessRenderer mappings={mappings} />
+      </BPMNDiagram>
       <Deleter
         entity={deleting}
         onDelete={onDelete}

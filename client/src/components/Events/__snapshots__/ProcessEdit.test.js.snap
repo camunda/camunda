@@ -22,9 +22,17 @@ exports[`should match snapshot 1`] = `
   >
     <ProcessRenderer
       getXml={Object {}}
+      mappings={Object {}}
       name="initial Name"
       onChange={[Function]}
+      onElementDelete={[Function]}
+      onSelectNode={[Function]}
     />
   </Themed(BPMNDiagramErrorHandler)>
+  <EventTableErrorHandler
+    mappings={Object {}}
+    onChange={[Function]}
+    selection={null}
+  />
 </div>
 `;

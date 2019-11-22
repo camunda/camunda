@@ -93,6 +93,21 @@ it('should display the child elements when clicking the trigger', () => {
   expect(node.find('.Dropdown')).toMatchSelector('.is-open');
 });
 
+it('should call onOpen if provided', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <Dropdown label="Click me" onOpen={spy}>
+      <Dropdown.Option>foo</Dropdown.Option>
+    </Dropdown>
+  );
+
+  setupRefs(node);
+
+  node.find('button.activateButton').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith(true);
+});
+
 it('should close when clicking somewhere', () => {
   const node = mount(
     <Dropdown label="Click me">

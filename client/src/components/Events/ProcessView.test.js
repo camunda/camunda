@@ -21,6 +21,7 @@ const props = {
   id: 'processId',
   name: 'Process Name',
   xml: 'process XML',
+  mappings: {},
   onDelete: jest.fn()
 };
 
