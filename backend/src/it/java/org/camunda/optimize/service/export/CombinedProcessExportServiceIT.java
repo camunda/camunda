@@ -27,7 +27,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
@@ -322,7 +322,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
 
   private String createNewCombinedReport(String... singleReportIds) {
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport(singleReportIds));
+    report.setData(createCombinedReportData(singleReportIds));
     return createNewCombinedReport(report);
   }
 

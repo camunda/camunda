@@ -11,6 +11,7 @@ import lombok.Builder;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
@@ -108,9 +109,16 @@ public class CollectionClient {
       );
   }
 
-  public void updateCollectionScope(final String collectionId,
-                                    final CollectionScopeEntryRestDto scopeEntry,
-                                    final List<String> tenants) {
+  public List<AlertDefinitionDto> getAlertsForCollection(final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAlertsForCollectionRequest(collectionId)
+      .executeAndReturnList(AlertDefinitionDto.class,200);
+  }
+
+  public void updateCollectionScopeAsKermit(final String collectionId,
+                                            final CollectionScopeEntryRestDto scopeEntry,
+                                            final List<String> tenants) {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildUpdateCollectionScopeEntryRequest(
         collectionId,

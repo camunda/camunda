@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.CoreMatchers.hasItem;
@@ -565,7 +565,7 @@ public class DashboardHandlingIT extends AbstractIT {
 
   private String createNewCombinedReport(String... singleReportIds) {
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport(singleReportIds));
+    report.setData(createCombinedReportData(singleReportIds));
     return createNewCombinedReport(report);
   }
 

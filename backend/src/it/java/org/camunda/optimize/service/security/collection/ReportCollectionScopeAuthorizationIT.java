@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
@@ -268,7 +269,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .collect(toList());
 
     // when update the result with masked tenants
-    collectionClient.updateCollectionScope(collectionId, scopeEntry, oneTenantRemoved);
+    collectionClient.updateCollectionScopeAsKermit(collectionId, scopeEntry, oneTenantRemoved);
     scopeEntries = collectionClient.getCollectionScope(collectionId);
 
     // then
@@ -277,6 +278,62 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .flatExtracting(CollectionScopeEntryRestDto::getTenants)
       .extracting(TenantDto::getId)
       .containsExactlyInAnyOrder(null, unauthorizedTenant1, unauthorizedTenant2);
+  }
+
+  @Test
+  public void forceUpdateScopeWorksAlsoWithMaskedTenants() {
+    // given
+    final String authorizedTenant = "authorizedTenant";
+    engineIntegrationExtension.createTenant(authorizedTenant);
+
+    final String unauthorizedTenant1 = "unauthorizedTenant1";
+    engineIntegrationExtension.createTenant(unauthorizedTenant1);
+    final String unauthorizedTenant2 = "unauthorizedTenant2";
+    engineIntegrationExtension.createTenant(unauthorizedTenant2);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, authorizedTenant, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    deployAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION, "KEY_1", authorizedTenant);
+
+    final String collectionId = collectionClient.createNewCollection();
+    createScopeWithTenants(
+      collectionId,
+      "KEY_1",
+      asList(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2),
+      RESOURCE_TYPE_PROCESS_DEFINITION
+    );
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+    reportClient.createSingleReport(collectionId, PROCESS, "KEY_1", asList(authorizedTenant, null));
+
+    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
+    assertThat(scopeEntries).hasSize(1)
+      .flatExtracting(CollectionScopeEntryRestDto::getTenants)
+      .contains(UNAUTHORIZED_TENANT_MASK);
+    final CollectionScopeEntryRestDto scopeEntry = scopeEntries.get(0);
+    List<String> oneTenantRemoved = scopeEntry
+      .getTenants()
+      .stream()
+      .map(TenantDto::getId)
+      .filter(t -> !authorizedTenant.equals(t))
+      .collect(toList());
+    assertThat(collectionClient.getReportsForCollection(collectionId)).isNotEmpty();
+
+
+    // when update the result with masked tenants
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(
+        collectionId,
+        scopeEntry.getId(),
+        new CollectionScopeEntryUpdateDto(oneTenantRemoved),
+        true
+      )
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute(204);
+
+    // then
+    assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
   }
 
   @ParameterizedTest(name = "add tenant with masked tenants does not distort scope for type {0}")
@@ -319,7 +376,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     oneTenantAdded.add(authorizedTenant);
 
     // when update the result with masked tenants
-    collectionClient.updateCollectionScope(collectionId, scopeEntry, oneTenantAdded);
+    collectionClient.updateCollectionScopeAsKermit(collectionId, scopeEntry, oneTenantAdded);
     scopeEntries = collectionClient.getCollectionScope(collectionId);
 
     // then

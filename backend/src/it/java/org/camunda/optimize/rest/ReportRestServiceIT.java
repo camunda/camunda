@@ -119,7 +119,7 @@ public class ReportRestServiceIT extends AbstractIT {
   public void createNewCombinedReportFromDefinition() {
     // when
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
-    combinedReportDefinitionDto.setData(ProcessReportDataBuilderHelper.createCombinedReport());
+    combinedReportDefinitionDto.setData(ProcessReportDataBuilderHelper.createCombinedReportData());
     IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
@@ -504,7 +504,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void evaluateCombinedUnsavedReport() {
     // then
-    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReport();
+    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
@@ -517,7 +517,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @Test
   public void nullReportsAreHandledAsEmptyList() {
     // then
-    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReport();
+    CombinedReportDataDto combinedReport = ProcessReportDataBuilderHelper.createCombinedReportData();
     combinedReport.setReports(null);
 
     Response response = embeddedOptimizeExtension
@@ -546,7 +546,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
   @Test
   public void copyCombinedReport() {
-    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport();
+    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReportData();
     IdDto id = createAndUpdateCombinedReport(combined, null);
 
     IdDto copyId = embeddedOptimizeExtension.getRequestExecutor()
@@ -608,7 +608,7 @@ public class ReportRestServiceIT extends AbstractIT {
     // given
     final String report1 = addEmptyProcessReport();
     final String report2 = addEmptyProcessReport();
-    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
+    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReportData(report1, report2);
 
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
     IdDto id = createAndUpdateCombinedReport(combined, null);
@@ -668,7 +668,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     final String report1 = addEmptyProcessReport(collectionId);
     final String report2 = addEmptyProcessReport(collectionId);
-    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
+    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReportData(report1, report2);
     IdDto id = createAndUpdateCombinedReport(combined, collectionId);
 
     // when
@@ -728,7 +728,7 @@ public class ReportRestServiceIT extends AbstractIT {
 
     final String report1 = addEmptyProcessReport(collectionId);
     final String report2 = addEmptyProcessReport(collectionId);
-    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReport(report1, report2);
+    CombinedReportDataDto combined = ProcessReportDataBuilderHelper.createCombinedReportData(report1, report2);
 
     IdDto id = createAndUpdateCombinedReport(combined, collectionId);
 

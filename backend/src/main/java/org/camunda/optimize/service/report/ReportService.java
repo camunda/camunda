@@ -500,15 +500,7 @@ public class ReportService implements CollectionReferencingService {
     final SimpleCollectionDefinitionDto collection =
       collectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId).getDefinitionDto();
 
-    final boolean definitionKeyDefined = definition.getData().getDefinitionKey() != null;
-    boolean isAllowedForCollectionScope =
-      collection.getData()
-        .getScope()
-        .stream()
-        .anyMatch(scope -> {
-          final SingleReportDataDto data = definition.getData();
-          return scope.isInScope(definition.getDefinitionType(), data.getDefinitionKey(), data.getTenantIds());
-        }) || !definitionKeyDefined;
+    boolean isAllowedForCollectionScope = isReportAllowedForCollectionScope(definition, collection);
     if (!isAllowedForCollectionScope) {
       final ConflictedItemDto conflictedItemDto = new ConflictedItemDto(
         collection.getId(),
@@ -517,6 +509,18 @@ public class ReportService implements CollectionReferencingService {
       );
       throw new OptimizeScopeComplianceException(ImmutableSet.of(conflictedItemDto));
     }
+  }
+
+  public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> definition,
+                                                   final SimpleCollectionDefinitionDto collection) {
+    final boolean definitionKeyDefined = definition.getData().getDefinitionKey() != null;
+    return collection.getData()
+      .getScope()
+      .stream()
+      .anyMatch(scope -> {
+        final SingleReportDataDto data = definition.getData();
+        return scope.isInScope(definition.getDefinitionType(), data.getDefinitionKey(), data.getTenantIds());
+      }) || !definitionKeyDefined;
   }
 
   private void checkForUpdateConflictsOnSingleProcessDefinition(SingleProcessReportDefinitionDto currentReportVersion,

@@ -423,7 +423,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
       .execute();
 
     // then
@@ -444,7 +444,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
       .execute();
 
     // then
@@ -464,7 +464,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
       .execute();
 
     // then

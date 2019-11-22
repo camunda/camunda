@@ -288,7 +288,6 @@ public class CollectionWriter {
           "if (optionalEntry.isPresent()) {" +
           "  def entry = optionalEntry.get();" +
           "  entry.tenants = params.entryDto.tenants;" +
-          "  entry.versions = params.entryDto.versions;" +
           "  ctx._source.lastModifier = params.lastModifier;" +
           "  ctx._source.lastModified = params.lastModified;" +
           "} else { " +

@@ -5,31 +5,48 @@
  */
 package org.camunda.optimize.service.es.retrieval;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static java.util.Collections.singletonList;
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public class CollectionConflictIT extends AbstractIT {
 
   @Test
   public void getCollectionDeleteConflictsIfEntitiesAdded() {
     // given
-    String collectionId = addEmptyCollectionToOptimize();
-    String firstDashboardId = createNewDashboardAddedToCollection(collectionId);
-    String secondDashboardId = createNewDashboardAddedToCollection(collectionId);
-    String reportId = createNewReportAddedToCollection(collectionId);
+    String collectionId = collectionClient.createNewCollection();
+    String firstDashboardId = createNewDashboardAndAddItToCollection(collectionId);
+    String secondDashboardId = createNewDashboardAndAddItToCollection(collectionId);
+    String reportId = createNewReportAndAddItToCollection(collectionId);
     String[] expectedConflictedItemIds = {firstDashboardId, secondDashboardId, reportId};
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -38,24 +55,177 @@ public class CollectionConflictIT extends AbstractIT {
     ConflictResponseDto conflictResponseDto = getDeleteCollectionConflicts(collectionId);
 
     // then
-    checkConflictedItems(conflictResponseDto, expectedConflictedItemIds);
+    checkConflictedItems(conflictResponseDto, ConflictedItemType.COLLECTION, expectedConflictedItemIds);
   }
 
+  @ParameterizedTest
+  @MethodSource("scopeConflictScenarios")
+  public void deleteSingleScopeFailsWithConflictIfUsedByWhenForceNotSet(ScopeConflictScenario conflictScenario) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(conflictScenario.getDefinitionType(), DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(
+        collectionId,
+        conflictScenario.getDefinitionType(),
+        DEFAULT_DEFINITION_KEY,
+        DEFAULT_TENANTS
+      );
+    final String alertId = alertClient.createAlertForReport(singleReportId);
+    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
+
+    // when
+    ConflictResponseDto conflictResponse =
+      deleteScopeFailsWithConflict(collectionId, scopeEntry.getId(), conflictScenario.getForceSetToFalse());
+
+    // then
+    checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.ALERT, new String[]{alertId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.DASHBOARD, new String[]{dashboardId});
+  }
+
+  @Test
+  public void deleteSingleScopeConflictsContainCombinedReportIds() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(collectionId, PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
+
+    // when
+    ConflictResponseDto conflictResponse =
+      deleteScopeFailsWithConflict(collectionId, scopeEntry.getId(), false);
+
+    // then
+    checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.COMBINED_REPORT, new String[]{combinedReportId});
+  }
+
+  @ParameterizedTest
+  @MethodSource("scopeConflictScenarios")
+  public void updateSingleScopeFailsWithConflictIfUsedByWhenForceNotSet(ScopeConflictScenario conflictScenario) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    addTenantToElasticsearch("tenantToBeRemovedFromScope");
+    final ArrayList<String> tenants = new ArrayList<>(DEFAULT_TENANTS);
+    tenants.add("tenantToBeRemovedFromScope");
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(conflictScenario.getDefinitionType(), DEFAULT_DEFINITION_KEY, tenants);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(
+        collectionId,
+        conflictScenario.getDefinitionType(),
+        DEFAULT_DEFINITION_KEY,
+        singletonList("tenantToBeRemovedFromScope")
+      );
+    final String alertId = alertClient.createAlertForReport(singleReportId);
+    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
+
+    // when
+    tenants.remove("tenantToBeRemovedFromScope");
+    ConflictResponseDto conflictResponse =
+      updateScopeFailsWithConflict(collectionId, scopeEntry.getId(), tenants, conflictScenario.getForceSetToFalse());
+
+    // then
+    checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.ALERT, new String[]{alertId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.DASHBOARD, new String[]{dashboardId});
+  }
+
+  @Test
+  public void updateSingleScopeConflictsContainCombinedReportIds() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    addTenantToElasticsearch("tenantToBeRemovedFromScope");
+    final ArrayList<String> tenants = new ArrayList<>(DEFAULT_TENANTS);
+    tenants.add("tenantToBeRemovedFromScope");
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, tenants);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(
+        collectionId,
+        PROCESS,
+        DEFAULT_DEFINITION_KEY,
+        singletonList("tenantToBeRemovedFromScope")
+      );
+    final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
+
+    // when
+    tenants.remove("tenantToBeRemovedFromScope");
+    ConflictResponseDto conflictResponse =
+      updateScopeFailsWithConflict(collectionId, scopeEntry.getId(), tenants, false);
+
+    // then
+    checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.COMBINED_REPORT, new String[]{combinedReportId});
+  }
+
+  private void addTenantToElasticsearch(final String tenantId) {
+    TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
+  }
 
   private void checkConflictedItems(ConflictResponseDto conflictResponseDto,
+                                    ConflictedItemType itemType,
                                     String[] expectedConflictedItemIds) {
     final Set<ConflictedItemDto> conflictedItemDtos = conflictResponseDto.getConflictedItems().stream()
-      .filter(conflictedItemDto -> ConflictedItemType.COLLECTION.equals(conflictedItemDto.getType()))
+      .filter(conflictedItemDto -> itemType.equals(conflictedItemDto.getType()))
       .collect(Collectors.toSet());
 
-    assertThat(conflictedItemDtos.size(), is(expectedConflictedItemIds.length));
-    assertThat(
-      conflictedItemDtos.stream().map(ConflictedItemDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(expectedConflictedItemIds)
+    Assertions.assertThat(conflictedItemDtos)
+      .hasSize(expectedConflictedItemIds.length)
+      .extracting(ConflictedItemDto::getId)
+      .containsExactlyInAnyOrder(expectedConflictedItemIds);
+  }
+
+  private static Stream<ScopeConflictScenario> scopeConflictScenarios() {
+    return Stream.of(
+      new ScopeConflictScenario(PROCESS, false),
+      new ScopeConflictScenario(PROCESS, null),
+      new ScopeConflictScenario(DECISION, false),
+      new ScopeConflictScenario(DECISION, null)
     );
   }
 
-  private String createNewDashboardAddedToCollection(String collectionId) {
+  @Data
+  @AllArgsConstructor
+  @NoArgsConstructor
+  protected static class ScopeConflictScenario {
+
+    DefinitionType definitionType;
+    Boolean forceSetToFalse;
+  }
+
+  private ConflictResponseDto deleteScopeFailsWithConflict(final String collectionId,
+                                                           final String scopeId,
+                                                           final Boolean force) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeId, force)
+      .execute(ConflictResponseDto.class, 409);
+  }
+
+  private ConflictResponseDto updateScopeFailsWithConflict(final String collectionId,
+                                                           final String scopeId,
+                                                           final List<String> tenants,
+                                                           final Boolean force) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(
+        collectionId,
+        scopeId,
+        new CollectionScopeEntryUpdateDto(tenants),
+        force
+      )
+      .execute(ConflictResponseDto.class, 409);
+  }
+
+  private String createNewDashboardAndAddItToCollection(String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeExtension
@@ -65,7 +235,7 @@ public class CollectionConflictIT extends AbstractIT {
       .getId();
   }
 
-  private String createNewReportAddedToCollection(String collectionId) {
+  private String createNewReportAndAddItToCollection(String collectionId) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setCollectionId(collectionId);
     return embeddedOptimizeExtension
@@ -80,13 +250,5 @@ public class CollectionConflictIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetCollectionDeleteConflictsRequest(id)
       .execute(ConflictResponseDto.class, 200);
-  }
-
-  private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
   }
 }

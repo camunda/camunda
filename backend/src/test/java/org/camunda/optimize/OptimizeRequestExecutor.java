@@ -970,19 +970,34 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildRemoveScopeEntryFromCollectionRequest(String collectionId,
+  public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(String collectionId,
                                                                             String entryId) {
+    return buildDeleteScopeEntryFromCollectionRequest(collectionId, entryId, false);
+  }
+
+  public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(String collectionId,
+                                                                            String entryId,
+                                                                            Boolean force) {
     this.path = "collection/" + collectionId + "/scope/" + entryId;
     this.requestType = DELETE;
+    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
     return this;
   }
 
   public OptimizeRequestExecutor buildUpdateCollectionScopeEntryRequest(String collectionId,
                                                                         String entryId,
                                                                         CollectionScopeEntryUpdateDto entryDto) {
+    return buildUpdateCollectionScopeEntryRequest(collectionId, entryId, entryDto, false);
+  }
+
+  public OptimizeRequestExecutor buildUpdateCollectionScopeEntryRequest(String collectionId,
+                                                                        String entryId,
+                                                                        CollectionScopeEntryUpdateDto entryDto,
+                                                                        Boolean force) {
     this.path = "collection/" + collectionId + "/scope/" + entryId;
     this.requestType = PUT;
     this.body = getBody(entryDto);
+    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
     return this;
   }
 

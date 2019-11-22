@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -333,7 +333,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final String combinedReportId = addCombinedReport("D Combined");
 
     final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
-    combinedReportUpdate.setData(createCombinedReport(reportId1, reportId2));
+    combinedReportUpdate.setData(createCombinedReportData(reportId1, reportId2));
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate)

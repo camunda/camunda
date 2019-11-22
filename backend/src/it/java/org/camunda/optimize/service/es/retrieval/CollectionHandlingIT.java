@@ -12,12 +12,14 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDataDto;
@@ -28,6 +30,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -46,6 +49,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.servlet.http.HttpServletResponse;
@@ -60,22 +64,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toSet;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public class CollectionHandlingIT extends AbstractIT {
 
@@ -94,7 +96,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .get(getRequest, RequestOptions.DEFAULT);
 
     // then
-    assertThat(getResponse.isExists(), is(true));
+    assertThat(getResponse.isExists()).isTrue();
   }
 
   @Test
@@ -106,20 +108,20 @@ public class CollectionHandlingIT extends AbstractIT {
     ResolvedCollectionDefinitionDto collection = getCollectionById(id);
 
     // then
-    assertThat(collection.getId(), is(id));
-    assertThat(collection.getName(), is(DEFAULT_COLLECTION_NAME));
-    assertThat(collection.getData().getEntities(), notNullValue());
-    assertThat(collection.getData().getEntities().size(), is(0));
-    assertThat(collection.getData().getConfiguration(), notNullValue());
+    assertThat(collection.getId()).isEqualTo(id);
+    assertThat(collection.getName()).isEqualTo(DEFAULT_COLLECTION_NAME);
+    assertThat(collection.getData().getEntities()).isNotNull();
+    assertThat(collection.getData().getEntities().size()).isEqualTo(0);
+    assertThat(collection.getData().getConfiguration()).isNotNull();
     // author is automatically added as manager
-    assertThat(collection.getData().getRoles(), notNullValue());
-    assertThat(collection.getData().getRoles().size(), is(1));
+    assertThat(collection.getData().getRoles()).isNotNull();
+    assertThat(collection.getData().getRoles().size()).isEqualTo(1);
     final CollectionRoleDto roleDto = collection.getData().getRoles().get(0);
-    assertThat(roleDto.getId(), is(notNullValue()));
-    assertThat(roleDto.getIdentity(), is(notNullValue()));
-    assertThat(roleDto.getIdentity().getId(), is(DEFAULT_USERNAME));
-    assertThat(roleDto.getIdentity().getType(), is(IdentityType.USER));
-    assertThat(roleDto.getRole(), is(RoleType.MANAGER));
+    assertThat(roleDto.getId()).isNotNull();
+    assertThat(roleDto.getIdentity()).isNotNull();
+    assertThat(roleDto.getIdentity().getId()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(roleDto.getIdentity().getType()).isEqualTo(IdentityType.USER);
+    assertThat(roleDto.getRole()).isEqualTo(RoleType.MANAGER);
   }
 
   @Test
@@ -135,13 +137,11 @@ public class CollectionHandlingIT extends AbstractIT {
     ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collection, is(notNullValue()));
-    assertThat(collection.getId(), is(collectionId));
-    assertThat(collection.getData().getEntities().size(), is(2));
-    assertThat(
-      collection.getData().getEntities().stream().map(EntityDto::getId).collect(Collectors.toList()),
-      containsInAnyOrder(dashboardId, reportId)
-    );
+    assertThat(collection).isNotNull();
+    assertThat(collection.getId()).isEqualTo(collectionId);
+    assertThat(collection.getData().getEntities().size()).isEqualTo(2);
+    assertThat(collection.getData().getEntities().stream().map(EntityDto::getId).collect(Collectors.toList()))
+      .containsExactlyInAnyOrder(dashboardId, reportId);
   }
 
   @Test
@@ -154,7 +154,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
 
     final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
-    combinedReportUpdate.setData(createCombinedReport(reportId1, reportId2));
+    combinedReportUpdate.setData(createCombinedReportData(reportId1, reportId2));
     embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate)
@@ -164,15 +164,15 @@ public class CollectionHandlingIT extends AbstractIT {
     ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collection, is(notNullValue()));
-    assertThat(collection.getId(), is(collectionId));
-    assertThat(collection.getData().getEntities().size(), is(3));
+    assertThat(collection).isNotNull();
+    assertThat(collection.getId()).isEqualTo(collectionId);
+    assertThat(collection.getData().getEntities().size()).isEqualTo(3);
     final EntityDto combinedReportEntityDto = collection.getData().getEntities().stream()
       .filter(EntityDto::getCombined)
       .findFirst()
       .get();
-    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().size(), is(1));
-    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(2L));
+    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().size()).isEqualTo(1);
+    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT)).isEqualTo(2L);
   }
 
   @Test
@@ -194,13 +194,13 @@ public class CollectionHandlingIT extends AbstractIT {
     ResolvedCollectionDefinitionDto collection = getCollectionById(id);
 
     // then
-    assertThat(collection.getId(), is(id));
-    assertThat(collection.getName(), is("MyCollection"));
-    assertThat(collection.getLastModifier(), is("demo"));
-    assertThat(collection.getLastModified(), is(now));
+    assertThat(collection.getId()).isEqualTo(id);
+    assertThat(collection.getName()).isEqualTo("MyCollection");
+    assertThat(collection.getLastModifier()).isEqualTo("demo");
+    assertThat(collection.getLastModified()).isEqualTo(now);
     final ResolvedCollectionDataDto resultCollectionData = collection.getData();
-    assertThat(resultCollectionData.getConfiguration(), equalTo(configuration));
-    assertThat(resultCollectionData.getEntities().size(), is(0));
+    assertThat(resultCollectionData.getConfiguration()).isEqualTo(configuration);
+    assertThat(resultCollectionData.getEntities().size()).isEqualTo(0);
   }
 
   @Test
@@ -218,10 +218,10 @@ public class CollectionHandlingIT extends AbstractIT {
     ResolvedCollectionDefinitionDto collection = getCollectionById(id);
 
     // then
-    assertThat(collection.getId(), is(id));
-    assertThat(collection.getName(), is("MyCollection"));
-    assertThat(collection.getLastModifier(), is("demo"));
-    assertThat(collection.getLastModified(), is(now));
+    assertThat(collection.getId()).isEqualTo(id);
+    assertThat(collection.getName()).isEqualTo("MyCollection");
+    assertThat(collection.getLastModifier()).isEqualTo("demo");
+    assertThat(collection.getLastModified()).isEqualTo(now);
 
     // when (update only configuration)
     collectionUpdate = new PartialCollectionDefinitionDto();
@@ -234,12 +234,12 @@ public class CollectionHandlingIT extends AbstractIT {
     collection = getCollectionById(id);
 
     // then
-    assertThat(collection.getId(), is(id));
-    assertThat(collection.getName(), is("MyCollection"));
-    assertThat(collection.getLastModifier(), is("demo"));
-    assertThat(collection.getLastModified(), is(now));
+    assertThat(collection.getId()).isEqualTo(id);
+    assertThat(collection.getName()).isEqualTo("MyCollection");
+    assertThat(collection.getLastModifier()).isEqualTo("demo");
+    assertThat(collection.getLastModified()).isEqualTo(now);
     ResolvedCollectionDataDto resultCollectionData = collection.getData();
-    assertThat(resultCollectionData.getConfiguration(), is(configuration));
+    assertThat(resultCollectionData.getConfiguration()).isEqualTo(configuration);
 
 
     // when (again only update name)
@@ -250,12 +250,12 @@ public class CollectionHandlingIT extends AbstractIT {
     collection = getCollectionById(id);
 
     // then
-    assertThat(collection.getId(), is(id));
-    assertThat(collection.getName(), is("TestNewCollection"));
-    assertThat(collection.getLastModifier(), is("demo"));
-    assertThat(collection.getLastModified(), is(now));
+    assertThat(collection.getId()).isEqualTo(id);
+    assertThat(collection.getName()).isEqualTo("TestNewCollection");
+    assertThat(collection.getLastModifier()).isEqualTo("demo");
+    assertThat(collection.getLastModified()).isEqualTo(now);
     resultCollectionData = collection.getData();
-    assertThat(resultCollectionData.getConfiguration(), is(configuration));
+    assertThat(resultCollectionData.getConfiguration()).isEqualTo(configuration);
   }
 
   @Test
@@ -269,10 +269,10 @@ public class CollectionHandlingIT extends AbstractIT {
 
     // then
     EntityDto report = collection.getData().getEntities().get(0);
-    assertThat(report.getId(), is(reportId));
-    assertThat(report.getEntityType(), is(EntityType.REPORT));
-    assertThat(report.getReportType(), is(ReportType.PROCESS));
-    assertThat(report.getCombined(), is(false));
+    assertThat(report.getId()).isEqualTo(reportId);
+    assertThat(report.getEntityType()).isEqualTo(EntityType.REPORT);
+    assertThat(report.getReportType()).isEqualTo(ReportType.PROCESS);
+    assertThat(report.getCombined()).isEqualTo(false);
   }
 
   @Test
@@ -286,10 +286,10 @@ public class CollectionHandlingIT extends AbstractIT {
 
     // then
     EntityDto report = collection.getData().getEntities().get(0);
-    assertThat(report.getId(), is(reportId));
-    assertThat(report.getEntityType(), is(EntityType.REPORT));
-    assertThat(report.getReportType(), is(ReportType.DECISION));
-    assertThat(report.getCombined(), is(false));
+    assertThat(report.getId()).isEqualTo(reportId);
+    assertThat(report.getEntityType()).isEqualTo(EntityType.REPORT);
+    assertThat(report.getReportType()).isEqualTo(ReportType.DECISION);
+    assertThat(report.getCombined()).isEqualTo(false);
   }
 
   @Test
@@ -303,10 +303,10 @@ public class CollectionHandlingIT extends AbstractIT {
 
     // then
     EntityDto report = collection.getData().getEntities().get(0);
-    assertThat(report.getId(), is(reportId));
-    assertThat(report.getEntityType(), is(EntityType.REPORT));
-    assertThat(report.getReportType(), is(ReportType.PROCESS));
-    assertThat(report.getCombined(), is(true));
+    assertThat(report.getId()).isEqualTo(reportId);
+    assertThat(report.getEntityType()).isEqualTo(EntityType.REPORT);
+    assertThat(report.getReportType()).isEqualTo(ReportType.PROCESS);
+    assertThat(report.getCombined()).isEqualTo(true);
   }
 
   @Test
@@ -320,10 +320,10 @@ public class CollectionHandlingIT extends AbstractIT {
 
     // then
     EntityDto dashboard = collection.getData().getEntities().get(0);
-    assertThat(dashboard.getId(), is(dashboardId));
-    assertThat(dashboard.getEntityType(), is(EntityType.DASHBOARD));
-    assertThat(dashboard.getReportType(), is(nullValue()));
-    assertThat(dashboard.getCombined(), is(nullValue()));
+    assertThat(dashboard.getId()).isEqualTo(dashboardId);
+    assertThat(dashboard.getEntityType()).isEqualTo(EntityType.DASHBOARD);
+    assertThat(dashboard.getReportType()).isNull();
+    assertThat(dashboard.getCombined()).isNull();
   }
 
   @Test
@@ -339,7 +339,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(createResponse.getStatus(), is(HttpServletResponse.SC_NOT_FOUND));
+    assertThat(createResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
   }
 
   @Test
@@ -355,7 +355,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(createResponse.getStatus(), is(HttpServletResponse.SC_NOT_FOUND));
+    assertThat(createResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
   }
 
   @Test
@@ -371,7 +371,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(createResponse.getStatus(), is(HttpServletResponse.SC_NOT_FOUND));
+    assertThat(createResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
   }
 
   @Test
@@ -387,7 +387,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(createResponse.getStatus(), is(HttpServletResponse.SC_NOT_FOUND));
+    assertThat(createResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
   }
 
   @Test
@@ -407,10 +407,10 @@ public class CollectionHandlingIT extends AbstractIT {
     ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
 
     // then
-    assertThat(collection.getData().getEntities().get(0).getId(), is(dashboardId2));
-    assertThat(collection.getData().getEntities().get(1).getId(), is(dashboardId1));
-    assertThat(collection.getData().getEntities().get(2).getId(), is(reportId1));
-    assertThat(collection.getData().getEntities().get(3).getId(), is(reportId2));
+    assertThat(collection.getData().getEntities().get(0).getId()).isEqualTo(dashboardId2);
+    assertThat(collection.getData().getEntities().get(1).getId()).isEqualTo(dashboardId1);
+    assertThat(collection.getData().getEntities().get(2).getId()).isEqualTo(reportId1);
+    assertThat(collection.getData().getEntities().get(3).getId()).isEqualTo(reportId2);
   }
 
   @Test
@@ -424,12 +424,12 @@ public class CollectionHandlingIT extends AbstractIT {
     ResolvedCollectionDefinitionDto storedCollection = getCollectionById(id);
 
     // then
-    assertThat(storedCollection.getId(), is(id));
-    assertThat(storedCollection.getCreated(), is(notNullValue()));
-    assertThat(storedCollection.getLastModified(), is(notNullValue()));
-    assertThat(storedCollection.getLastModifier(), is(notNullValue()));
-    assertThat(storedCollection.getName(), is(notNullValue()));
-    assertThat(storedCollection.getOwner(), is(notNullValue()));
+    assertThat(storedCollection.getId()).isEqualTo(id);
+    assertThat(storedCollection.getCreated()).isNotNull();
+    assertThat(storedCollection.getLastModified()).isNotNull();
+    assertThat(storedCollection.getLastModifier()).isNotNull();
+    assertThat(storedCollection.getName()).isNotNull();
+    assertThat(storedCollection.getOwner()).isNotNull();
   }
 
   @Test
@@ -447,7 +447,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
     // then
     ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
-    assertThat(collection.getData().getEntities().size(), is(0));
+    assertThat(collection.getData().getEntities().size()).isEqualTo(0);
   }
 
   @Test
@@ -463,7 +463,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
     // then
     ResolvedCollectionDefinitionDto collection = getCollectionById(collectionId);
-    assertThat(collection.getData().getEntities().size(), is(0));
+    assertThat(collection.getData().getEntities().size()).isEqualTo(0);
   }
 
   @Test
@@ -484,7 +484,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
       .execute();
-    assertThat(getCollectionByIdResponse.getStatus(), is(404));
+    assertThat(getCollectionByIdResponse.getStatus()).isEqualTo(404);
 
     assertDashboardIsDeleted(dashboardId);
     assertReportIsDeleted(singleReportId);
@@ -513,11 +513,11 @@ public class CollectionHandlingIT extends AbstractIT {
     ResolvedCollectionDefinitionDto copyDefinition = getResolvedCollectionDefinitionDto(copyId);
 
     //then
-    assertThat(copyDefinition.getName().toLowerCase().contains("copy"), is(true));
+    assertThat(copyDefinition.getName().toLowerCase().contains("copy")).isEqualTo(true);
     assertThat(copyDefinition.getData()
                  .getRoles()
-                 .contains(new CollectionRoleDto(new UserDto("kermit"), RoleType.EDITOR)), is(true));
-    assertThat(copyDefinition.getData().getScope().contains(new CollectionScopeEntryDto("PROCESS:invoice")), is(true));
+                 .contains(new CollectionRoleDto(new UserDto("kermit"), RoleType.EDITOR))).isEqualTo(true);
+    assertThat(copyDefinition.getData().getScope().contains(new CollectionScopeEntryDto("PROCESS:invoice"))).isEqualTo(true);
   }
 
   @Test
@@ -538,8 +538,8 @@ public class CollectionHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionDto copiedReport = getSingleProcessReportDefinitionDto(reportCopyId);
 
     //then
-    assertThat(originalReport.getData(), is(copiedReport.getData()));
-    assertThat(copiedReport.getName(), is(originalReport.getName()));
+    assertThat(originalReport.getData()).isEqualTo(copiedReport.getData());
+    assertThat(copiedReport.getName()).isEqualTo(originalReport.getName());
   }
 
   @Test
@@ -584,20 +584,20 @@ public class CollectionHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionDto originalReportDefinition = getSingleProcessReportDefinitionDto(originalReportId);
     //then
     //the dashboard references the same report entity as the report itself
-    assertThat(copiedDashboard.getReports().get(0).getId(), is(copiedReportId));
+    assertThat(copiedDashboard.getReports().get(0).getId()).isEqualTo(copiedReportId);
 
-    assertThat(copiedDashboard.getName(), is(dashboardDefinition.getName()));
-    assertThat(copiedReportDefinition.getName(), is(originalReportDefinition.getName()));
+    assertThat(copiedDashboard.getName()).isEqualTo(dashboardDefinition.getName());
+    assertThat(copiedReportDefinition.getName()).isEqualTo(originalReportDefinition.getName());
 
-    assertThat(copiedCollectionDefinition.getData().getEntities().size(), is(2));
+    assertThat(copiedCollectionDefinition.getData().getEntities().size()).isEqualTo(2);
     assertThat(copiedCollectionDefinition.getData()
                  .getEntities()
                  .stream()
-                 .anyMatch(e -> e.getId().equals(copiedReportId)), is(true));
+                 .anyMatch(e -> e.getId().equals(copiedReportId))).isEqualTo(true);
     assertThat(copiedCollectionDefinition.getData()
                  .getEntities()
                  .stream()
-                 .anyMatch(e -> e.getId().equals(copiedDashboardId)), is(true));
+                 .anyMatch(e -> e.getId().equals(copiedDashboardId))).isEqualTo(true);
   }
 
   @Test
@@ -648,7 +648,7 @@ public class CollectionHandlingIT extends AbstractIT {
     SingleProcessReportDefinitionDto originalSingleReportDefinition = getSingleProcessReportDefinitionDto(
       originalReportId);
 
-    assertThat(copiedCollectionDefinition.getData().getEntities().size(), is(3));
+    assertThat(copiedCollectionDefinition.getData().getEntities().size()).isEqualTo(3);
 
     List<String> copiedCollectionEntityNames = copiedCollectionDefinition.getData()
       .getEntities()
@@ -656,13 +656,12 @@ public class CollectionHandlingIT extends AbstractIT {
       .map(EntityDto::getName)
       .collect(Collectors.toList());
 
-    assertThat(
-      copiedCollectionEntityNames,
-      containsInAnyOrder(
-        dashboardDefinition.getName(), combinedReportDefinition.getName(),
+    assertThat(copiedCollectionEntityNames)
+      .containsExactlyInAnyOrder(
+        dashboardDefinition.getName(),
+        combinedReportDefinition.getName(),
         originalSingleReportDefinition.getName()
-      )
-    );
+      );
   }
 
   @Test
@@ -677,9 +676,9 @@ public class CollectionHandlingIT extends AbstractIT {
 
     ResolvedCollectionDefinitionDto originalCollection = getCollectionById(collectionId);
 
-    assertThat(copiedCollectionWithNewName.getName(), is("newCoolName"));
-    assertThat(copiedCollectionWithoutNewName.getName().contains(originalCollection.getName()), is(true));
-    assertThat(copiedCollectionWithoutNewName.getName().toLowerCase().contains("copy"), is(true));
+    assertThat(copiedCollectionWithNewName.getName()).isEqualTo("newCoolName");
+    assertThat(copiedCollectionWithoutNewName.getName().contains(originalCollection.getName())).isEqualTo(true);
+    assertThat(copiedCollectionWithoutNewName.getName().toLowerCase().contains("copy")).isEqualTo(true);
   }
 
   @ParameterizedTest(name = "Copy collection and all alerts within the collection for report definition type {0}")
@@ -707,16 +706,156 @@ public class CollectionHandlingIT extends AbstractIT {
     List<AlertDefinitionDto> copiedAlerts = getAlertsForCollection(copy.getId());
     Set<String> copiedReportIdsWithAlert = copiedAlerts.stream().map(AlertCreationDto::getReportId).collect(toSet());
 
-    assertThat(copiedReports.size(), is(reportsToCopy.size()));
-    assertThat(copiedAlerts.size(), is(alertsToCopy.size()));
-    assertThat(
-      copiedReportIdsWithAlert.size(),
-      is(copiedReports.size())
+    assertThat(copiedReports.size()).isEqualTo(reportsToCopy.size());
+    assertThat(copiedAlerts.size()).isEqualTo(alertsToCopy.size());
+    assertThat(copiedReportIdsWithAlert.size()).isEqualTo(copiedReports.size());
+    assertThat(copiedReports.stream()
+                 .allMatch(report -> copiedReportIdsWithAlert.contains(report.getDefinitionDto().getId()))).isTrue();
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void deleteSingleScopeOverrulesConflictsOnForceSet(DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String reportId = reportClient.createSingleReport(
+      collectionId,
+      definitionType,
+      DEFAULT_DEFINITION_KEY,
+      DEFAULT_TENANTS
     );
-    assertThat(
-      copiedReports.stream().allMatch(report -> copiedReportIdsWithAlert.contains(report.getDefinitionDto().getId())),
-      is(true)
-    );
+    alertClient.createAlertForReport(reportId);
+    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(reportId));
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId(), true)
+      .execute();
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+
+    // then
+    assertThat(dashboardClient.getDashboard(dashboardId).getReports()).isEmpty();
+    assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
+    assertThat(collectionClient.getAlertsForCollection(collectionId)).isEmpty();
+    assertThat(collectionClient.getCollectionScope(collectionId)).isEmpty();
+  }
+
+  @Test
+  public void deleteSingleScopeOverrulesCombinedReportConflictsOnForceSet() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(collectionId, PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId(), true)
+      .execute();
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+
+    // then
+    assertThat(collectionClient.getReportsForCollection(collectionId))
+      .hasSize(1)
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(r -> (CombinedReportDefinitionDto) r)
+      .hasOnlyOneElementSatisfying(r -> assertThat(r.getId()).isEqualTo(combinedReportId))
+      .extracting(CombinedReportDefinitionDto::getData)
+      .flatExtracting(CombinedReportDataDto::getReportIds)
+      .isEmpty();
+    assertThat(collectionClient.getCollectionScope(collectionId)).isEmpty();
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void updateSingleScopeOverrulesConflictsOnForceSet(DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    addTenantToElasticsearch("tenantToBeRemovedFromScope");
+    final ArrayList<String> tenants = new ArrayList<>(DEFAULT_TENANTS);
+    tenants.add("tenantToBeRemovedFromScope");
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, tenants);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(
+        collectionId,
+        definitionType,
+        DEFAULT_DEFINITION_KEY,
+        singletonList("tenantToBeRemovedFromScope")
+      );
+    alertClient.createAlertForReport(singleReportId);
+    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
+
+    // when
+    tenants.remove("tenantToBeRemovedFromScope");
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(
+        collectionId,
+        scopeEntry.getId(),
+        new CollectionScopeEntryUpdateDto(tenants),
+        true
+      )
+      .execute();
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+
+    // then
+    assertThat(dashboardClient.getDashboard(dashboardId).getReports()).isEmpty();
+    assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
+    assertThat(collectionClient.getAlertsForCollection(collectionId)).isEmpty();
+  }
+
+  @Test
+  public void updateSingleScopeOverrulesCombinedReportConflictsOnForceSet() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    addTenantToElasticsearch("tenantToBeRemovedFromScope");
+    final ArrayList<String> tenants = new ArrayList<>(DEFAULT_TENANTS);
+    tenants.add("tenantToBeRemovedFromScope");
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, tenants);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(
+        collectionId,
+        PROCESS,
+        DEFAULT_DEFINITION_KEY,
+        singletonList("tenantToBeRemovedFromScope")
+      );
+    final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
+
+    // when
+    tenants.remove("tenantToBeRemovedFromScope");
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(
+        collectionId,
+        scopeEntry.getId(),
+        new CollectionScopeEntryUpdateDto(tenants),
+        true
+      )
+      .execute();
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+
+    // then
+    assertThat(collectionClient.getReportsForCollection(collectionId))
+      .hasSize(1)
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(r -> (CombinedReportDefinitionDto) r)
+      .hasOnlyOneElementSatisfying(r -> assertThat(r.getId()).isEqualTo(combinedReportId))
+      .extracting(CombinedReportDefinitionDto::getData)
+      .flatExtracting(CombinedReportDataDto::getReportIds)
+      .isEmpty();
+  }
+
+  private void addTenantToElasticsearch(final String tenantId) {
+    TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
   }
 
   private DashboardDefinitionDto getDashboardDefinitionDto(String dashboardId) {
@@ -761,14 +900,14 @@ public class CollectionHandlingIT extends AbstractIT {
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetReportRequest(singleReportIdToDelete)
       .execute();
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus()).isEqualTo(404);
   }
 
   private void assertDashboardIsDeleted(final String dashboardIdToDelete) {
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetDashboardRequest(dashboardIdToDelete)
       .execute();
-    assertThat(response.getStatus(), is(404));
+    assertThat(response.getStatus()).isEqualTo(404);
   }
 
   private String createNewSingleProcessReportInCollection(final String collectionId) {
@@ -818,7 +957,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus()).isEqualTo(204);
   }
 
   private void deleteDashboard(String dashboardId) {
@@ -828,7 +967,7 @@ public class CollectionHandlingIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus()).isEqualTo(204);
   }
 
   private String createNewCollection() {
@@ -844,12 +983,12 @@ public class CollectionHandlingIT extends AbstractIT {
       .getRequestExecutor()
       .buildUpdatePartialCollectionRequest(id, renameCollection)
       .execute();
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus()).isEqualTo(204);
   }
 
   private void updateReport(String id, SingleProcessReportDefinitionDto updatedReport) {
     Response response = getUpdateReportResponse(id, updatedReport);
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus()).isEqualTo(204);
   }
 
   private Response getUpdateReportResponse(String id, SingleProcessReportDefinitionDto updatedReport) {

@@ -140,13 +140,12 @@ public class CollectionRestService {
 
   @DELETE
   @Path("/{id}/scope/{scopeEntryId}")
-  public void removeScopeEntry(@Context ContainerRequestContext requestContext,
+  public void deleteScopeEntry(@Context ContainerRequestContext requestContext,
                                @PathParam("id") String collectionId,
-                               @PathParam("scopeEntryId") String scopeEntryId) throws OptimizeConflictException,
-                                                                                      NotFoundException {
+                               @PathParam("scopeEntryId") String scopeEntryId,
+                               @QueryParam("force") boolean force) throws NotFoundException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-
-    collectionScopeService.removeScopeEntry(userId, collectionId, scopeEntryId);
+    collectionScopeService.deleteScopeEntry(userId, collectionId, scopeEntryId, force);
   }
 
   @PUT
@@ -155,9 +154,10 @@ public class CollectionRestService {
   public void updateScopeEntry(@Context ContainerRequestContext requestContext,
                                @PathParam("id") String collectionId,
                                @NotNull CollectionScopeEntryUpdateDto entryDto,
-                               @PathParam("scopeEntryId") String scopeEntryId) {
+                               @PathParam("scopeEntryId") String scopeEntryId,
+                               @QueryParam("force") boolean force) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionScopeService.updateScopeEntry(userId, collectionId, entryDto, scopeEntryId);
+    collectionScopeService.updateScopeEntry(userId, collectionId, entryDto, scopeEntryId, force);
   }
 
   @GET

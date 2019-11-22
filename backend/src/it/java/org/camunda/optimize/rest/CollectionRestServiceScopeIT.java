@@ -435,7 +435,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
 
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, entry.getId())
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
       .execute(204);
 
     collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
@@ -458,7 +458,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     String reportId = createNewSingleProcessReport(singleProcessReportDefinitionDto);
 
     ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension.getRequestExecutor()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, entry.getId())
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, entry.getId())
       .execute(ConflictResponseDto.class, 409);
 
     assertThat(conflictResponseDto.getConflictedItems())
@@ -471,7 +471,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     String collectionId = collectionClient.createNewCollection();
 
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
+      .buildDeleteScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
       .execute(404);
   }
 

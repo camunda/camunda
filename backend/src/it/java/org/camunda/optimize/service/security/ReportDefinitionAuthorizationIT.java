@@ -46,7 +46,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -318,7 +318,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // when
-    CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
+    CombinedReportDataDto combinedReport = createCombinedReportData(authorizedReportId, notAuthorizedReportId);
 
     CombinedProcessReportResultDataDto<ReportMapResultDto> result = embeddedOptimizeExtension
       .getRequestExecutor()

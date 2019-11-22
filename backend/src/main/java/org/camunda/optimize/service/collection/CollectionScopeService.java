@@ -11,10 +11,10 @@ import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
@@ -23,6 +23,7 @@ import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
+import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -54,6 +56,7 @@ public class CollectionScopeService {
   private final CollectionRoleService collectionRoleService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
+  private final ReportService reportService;
 
   public List<CollectionScopeEntryRestDto> getCollectionScope(final String userId,
                                                               final String collectionId) {
@@ -108,37 +111,94 @@ public class CollectionScopeService {
     collectionWriter.addScopeEntriesToCollection(userId, collectionId, scopeUpdates);
   }
 
-  public void removeScopeEntry(String userId, String collectionId, String scopeEntryId)
-    throws NotFoundException, OptimizeConflictException {
+  public void deleteScopeEntry(String userId, String collectionId, String scopeEntryId, boolean force)
+    throws NotFoundException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
 
-    List<ReportDefinitionDto> entities = reportReader.findReportsForCollectionOmitXml(collectionId);
-    CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
+    final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
+      getAllReportsAffectedByScopeDeletion(collectionId, scopeEntryId);
+    if (!force) {
+      checkForConflictsOnScopeDeletion(userId, reportsAffectedByScopeDeletion);
+    }
 
-    List<ReportDefinitionDto> conflictedItems = entities.stream()
-      .filter(report -> report.getData() instanceof SingleReportDataDto)
-      .filter(report ->
-                ((SingleReportDataDto) report.getData()).getDefinitionKey().equals(scopeEntry.getDefinitionKey())
-                  && report.getReportType().toString().equalsIgnoreCase(scopeEntry.getDefinitionType().getId()))
-      .collect(Collectors.toList());
+    deleteReports(userId, reportsAffectedByScopeDeletion);
+    collectionWriter.removeScopeEntry(collectionId, scopeEntryId, userId);
+  }
 
-    if (conflictedItems.size() == 0) {
-      collectionWriter.removeScopeEntry(collectionId, scopeEntryId, userId);
-    } else {
-      throw new OptimizeConflictException(
-        conflictedItems.stream().map(this::reportToConflictedItem).collect(Collectors.toSet())
-      );
+  private void checkForConflictsOnScopeDeletion(final String userId,
+                                                final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion) {
+    Set<ConflictedItemDto> conflictedItems =
+      reportsAffectedByScopeDeletion
+      .stream()
+      .flatMap(report -> retrieveAllReportConflicts(userId, report))
+      .collect(Collectors.toSet());
+    if (!conflictedItems.isEmpty()) {
+      throw new OptimizeConflictException(conflictedItems);
     }
   }
 
-  public void updateScopeEntry(String userId,
-                               String collectionId,
-                               CollectionScopeEntryUpdateDto scopeUpdate,
-                               String scopeEntryId) {
-    final AuthorizedSimpleCollectionDefinitionDto authorizedCollection =
+  private List<SingleReportDefinitionDto<?>> getAllReportsAffectedByScopeDeletion(final String collectionId,
+                                                                                  final String scopeEntryId) {
+    CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
+    List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
+    return reportsInCollection.stream()
+      .filter(report -> !report.getCombined())
+      .map(report -> (SingleReportDefinitionDto<?>) report)
+      .filter(report -> reportInSameScopeAsGivenScope(scopeEntry, report))
+      .collect(Collectors.toList());
+  }
+
+  private boolean reportInSameScopeAsGivenScope(final CollectionScopeEntryDto scopeEntry, final SingleReportDefinitionDto<?> report) {
+    final CollectionScopeEntryDto scopeOfReport =
+      new CollectionScopeEntryDto(report.getDefinitionType(), report.getData().getDefinitionKey());
+    return scopeOfReport.equals(scopeEntry);
+  }
+
+  private Stream<? extends ConflictedItemDto> retrieveAllReportConflicts(final String userId,
+                                                                         final SingleReportDefinitionDto<?> report) {
+    Set<ConflictedItemDto> reportConflicts =
+      reportService.getReportDeleteConflictingItems(userId, report.getId()).getConflictedItems();
+    reportConflicts.add(this.reportToConflictedItem(report));
+    return reportConflicts.stream();
+  }
+
+  public void updateScopeEntry(final String userId,
+                               final String collectionId,
+                               final CollectionScopeEntryUpdateDto scopeUpdate,
+                               final String scopeEntryId,
+                               boolean force) {
+    final SimpleCollectionDefinitionDto collectionDefinition =
       authorizedCollectionService
-        .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    final CollectionScopeEntryDto currentScope = authorizedCollection.getDefinitionDto()
+        .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId)
+        .getDefinitionDto();
+    final CollectionScopeEntryDto currentScope = getScopeOfCollection(collectionId, scopeEntryId, collectionDefinition);
+    replaceMaskedTenantsInUpdateWithRealOnes(userId, scopeUpdate, currentScope);
+
+    // this will also adjust the current scope in the collectionDefinition from above
+    addScopeUpdateToCurrentScope(currentScope, scopeUpdate);
+    final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate =
+      getReportsAffectedByScopeUpdate(collectionId, collectionDefinition);
+
+    if (!force) {
+      checkForConflictOnUpdate(userId, reportsAffectedByScopeUpdate);
+    }
+
+    deleteReports(userId, reportsAffectedByScopeUpdate);
+    collectionWriter.updateScopeEntity(collectionId, scopeUpdate, userId, scopeEntryId);
+  }
+
+  private void deleteReports(final String userId,
+                             final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate) {
+    reportsAffectedByScopeUpdate
+      .stream()
+      .map(SingleReportDefinitionDto::getId)
+      .forEach(reportId -> reportService.deleteReport(userId, reportId, true));
+  }
+
+  private CollectionScopeEntryDto getScopeOfCollection(final String collectionId,
+                                                       final String scopeEntryId,
+                                                       final SimpleCollectionDefinitionDto collectionDefinition) {
+    return collectionDefinition
       .getData()
       .getScope()
       .stream()
@@ -149,14 +209,36 @@ public class CollectionScopeService {
         collectionId,
         scopeEntryId
       )));
-
-    replaceMaskedTenantsWithRealOnes(userId, scopeUpdate, currentScope);
-    collectionWriter.updateScopeEntity(collectionId, scopeUpdate, userId, scopeEntryId);
   }
 
-  private void replaceMaskedTenantsWithRealOnes(final String userId,
-                                                final CollectionScopeEntryUpdateDto scopeUpdate,
-                                                final CollectionScopeEntryDto currentScope) {
+  private void checkForConflictOnUpdate(final String userId,
+                                        final List<SingleReportDefinitionDto<?>> reportsAffectedByUpdate) {
+    Set<ConflictedItemDto> conflictedItems = reportsAffectedByUpdate.stream()
+      .flatMap(report -> retrieveAllReportConflicts(userId, report))
+      .collect(Collectors.toSet());
+    if (!conflictedItems.isEmpty()) {
+      throw new OptimizeConflictException(conflictedItems);
+    }
+  }
+
+  private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,
+                                                                             final SimpleCollectionDefinitionDto collectionDefinition) {
+    List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
+    return reportsInCollection.stream()
+      .filter(report -> !report.getCombined())
+      .map(report -> (SingleReportDefinitionDto<?>) report)
+      .filter(report -> !reportService.isReportAllowedForCollectionScope(report, collectionDefinition))
+      .collect(Collectors.toList());
+  }
+
+  private void addScopeUpdateToCurrentScope(final CollectionScopeEntryDto currentScope,
+                                            final CollectionScopeEntryUpdateDto scopeUpdate) {
+    currentScope.setTenants(scopeUpdate.getTenants());
+  }
+
+  private void replaceMaskedTenantsInUpdateWithRealOnes(final String userId,
+                                                        final CollectionScopeEntryUpdateDto scopeUpdate,
+                                                        final CollectionScopeEntryDto currentScope) {
     final List<String> unauthorizedTenantsOfCurrentScope = currentScope.getTenants()
       .stream()
       .filter(tenant -> !tenantService.isAuthorizedToSeeTenant(userId, tenant))

@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -182,7 +182,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
@@ -202,7 +202,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
@@ -224,7 +224,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
@@ -265,7 +265,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByDateReportEvaluat
 
     // when
     CombinedProcessReportResultDataDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();

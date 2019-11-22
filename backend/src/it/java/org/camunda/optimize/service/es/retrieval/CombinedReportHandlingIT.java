@@ -58,7 +58,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -133,7 +133,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     String id = createNewCombinedReport();
     String singleReportId = createNewSingleNumberReport(engineDto);
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport(singleReportId));
+    report.setData(createCombinedReportData(singleReportId));
     report.getData().getConfiguration().setXLabel("FooXLabel");
     report.setId(shouldNotBeUpdatedString);
     report.setLastModifier("shouldNotBeUpdatedManually");
@@ -251,7 +251,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // when
     String combinedReportId = createNewCombinedReport();
     CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
-    combinedReport.setData(createCombinedReport(numberReportId, rawReportId));
+    combinedReport.setData(createCombinedReportData(numberReportId, rawReportId));
     Response response = getUpdateCombinedProcessReportResponse(combinedReportId, combinedReport, true);
 
     // then
@@ -265,7 +265,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     String singleReportId = createNewSingleMapReport(engineDto);
     String reportId = createNewCombinedReport();
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport(singleReportId));
+    report.setData(createCombinedReportData(singleReportId));
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
     updateReport(reportId, report);
@@ -610,7 +610,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
@@ -632,7 +632,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId));
+      evaluateUnsavedCombined(createCombinedReportData(singleReportId));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
@@ -654,7 +654,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(singleReportId1, singleReportId2)
+      createCombinedReportData(singleReportId1, singleReportId2)
     );
 
     // then
@@ -675,7 +675,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(singleReportId1, singleReportId2)
+      createCombinedReportData(singleReportId1, singleReportId2)
     );
 
     // then
@@ -696,7 +696,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(singleReportId, singleReportId2)
+      createCombinedReportData(singleReportId, singleReportId2)
     );
 
     // then
@@ -717,7 +717,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(singleReportId, singleReportId2)
+      createCombinedReportData(singleReportId, singleReportId2)
     );
 
     // then
@@ -739,7 +739,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(totalDurationReportId, totalDurationReportId2)
+      createCombinedReportData(totalDurationReportId, totalDurationReportId2)
     );
 
     // then
@@ -761,7 +761,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(totalDurationReportId, idleDurationReportId)
+      createCombinedReportData(totalDurationReportId, idleDurationReportId)
     );
 
     // then
@@ -783,7 +783,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(totalDurationReportId, idleDurationReportId)
+      createCombinedReportData(totalDurationReportId, idleDurationReportId)
     );
 
     // then
@@ -811,7 +811,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     final AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(singleReportId1, singleReportId2));
+      createCombinedReportData(singleReportId1, singleReportId2));
 
     // then
     final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
@@ -843,7 +843,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<NumberResultDto> result = evaluateUnsavedCombined(
-      createCombinedReport(singleReportId, singleReportId2)
+      createCombinedReportData(singleReportId, singleReportId2)
     );
 
     // then
@@ -864,7 +864,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+      evaluateUnsavedCombined(createCombinedReportData(singleReportId, singleReportId2));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
@@ -884,7 +884,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     Response response =
-      evaluateUnsavedCombinedReportAndReturnResponse(createCombinedReport(combinedReportId, singleReportId2));
+      evaluateUnsavedCombinedReportAndReturnResponse(createCombinedReportData(combinedReportId, singleReportId2));
 
     // then
     assertThat(response.getStatus(), is(404));
@@ -907,7 +907,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId));
+      evaluateUnsavedCombined(createCombinedReportData(singleReportId));
 
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
@@ -1031,7 +1031,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   private String createNewCombinedReport(String... singleReportIds) {
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    report.setData(createCombinedReport(singleReportIds));
+    report.setData(createCombinedReportData(singleReportIds));
     return createNewCombinedReport(report);
   }
 
