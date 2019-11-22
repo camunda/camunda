@@ -166,9 +166,6 @@ pipeline {
 
   environment {
     NEXUS = credentials("camunda-nexus")
-    CAMUNDA_OPERATE_QA_DATA_WORKFLOW_COUNT=42
-    CAMUNDA_OPERATE_QA_DATA_WORKFLOW_INSTANCE_COUNT=101
-    CAMUNDA_OPERATE_QA_DATA_INCIDENT_COUNT=23
   }
 
   options {
@@ -190,8 +187,6 @@ pipeline {
             configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
                 sh ('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -P skipFrontendBuild clean install')
             }
-            // show existing indices
-            sh("curl http://localhost:9200/_cat/indices?v")
          }
       }
     }
@@ -202,9 +197,8 @@ pipeline {
             // Compile QA
             sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
             // Generate Data
-            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/data-generator spring-boot:run')
-            // show existing indices
-            sh("curl http://localhost:9200/_cat/indices?v")
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration spring-boot:run -Dmigration.app=DataGenerationApp')
+            sh('sleep 10')
           }
         }
 	  }
@@ -224,10 +218,12 @@ pipeline {
 	stage('Check migration results') {
 		steps {
 		  container('maven') {
-		   // Validate operate indices 
-		   sh("curl http://localhost:9200/_cat/indices/operate*?v")
-        }
-      }
+		      configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+		        // Validate operate indices 
+		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration spring-boot:run -Dmigration.app=ValidationApp')
+		      }
+          }
+       }
     }
   }
 

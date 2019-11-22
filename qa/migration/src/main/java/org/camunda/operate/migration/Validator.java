@@ -6,9 +6,6 @@
 package org.camunda.operate.migration;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -24,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class Validator {
 
-	private static final Logger logger = LoggerFactory.getLogger(DataGenerator.class);
+	private static final Logger logger = LoggerFactory.getLogger(Validator.class);
 
 	@Autowired
 	private MigrationProperties migrationProperties;
@@ -32,7 +29,6 @@ public class Validator {
 	@Autowired
 	private RestHighLevelClient esClient;
 	
-	final static List<String> VERSIONS = Arrays.asList("1.0.0","1.1.0","1.2.0");
 
 	public void validate() throws IOException {
 		esClient.indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
@@ -42,13 +38,13 @@ public class Validator {
 	}
 
 	private void assertIncidents() {
-		for(String version: VERSIONS) {
+		for(String version: migrationProperties.getVersions()) {
 			assertCount(IncidentTemplate.INDEX_NAME, version, migrationProperties.getIncidentCount());
 		}
 	}
 
 	private void assertWorkflows() {
-		for(String version: VERSIONS) {
+		for(String version: migrationProperties.getVersions()) {
 			assertCount(WorkflowIndex.INDEX_NAME, version, migrationProperties.getWorkflowCount());
 		}
 	}
