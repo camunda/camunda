@@ -1,0 +1,8 @@
+spring.main.web-application-type: NONE
+camunda.operate.migration:
+  workflowCount: 10
+  workflowInstanceCount: 100
+  incidentCount: 50
+  zeebeBrokerContactPoint: localhost:26500
+  elasticsearchHost: localhost
+  elasticsearchPort: 9200

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.camunda.operate</groupId>
+		<artifactId>qa</artifactId>
+		<version>1.2.0-SNAPSHOT</version>
+	</parent>
+
+	<name>Camunda Operate Migration</name>
+	<artifactId>migration</artifactId>
+
+	<properties>
+		<plugin.version.license>3.0</plugin.version.license>
+		<license.header>${project.baseUri}/../../license/license-header</license.header>
+	</properties>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>org.camunda.operate</groupId>
+			<artifactId>camunda-operate-common</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.camunda.operate</groupId>
+			<artifactId>camunda-operate-webapp</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.camunda.operate</groupId>
+			<artifactId>camunda-operate-importer</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.camunda.operate</groupId>
+			<artifactId>camunda-operate-qa-util</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.zeebe</groupId>
+			<artifactId>zeebe-client-java</artifactId>
+		</dependency>
+
+		<!-- ELASTICSEARCH -->
+		<dependency>
+			<groupId>org.elasticsearch.client</groupId>
+			<artifactId>elasticsearch-rest-high-level-client</artifactId>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
+		<dependency>
+			<groupId>org.glassfish</groupId>
+			<artifactId>javax.json</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
+		</dependency>
+	</dependencies>
+
+	<build>
+
+		<plugins>
+
+			<!-- LICENSE PLUGIN -->
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>${plugin.version.license}</version>
+				<configuration>
+					<header>${license.header}</header>
+					<includes>
+						<include>**/*.java</include>
+					</includes>
+					<mapping>
+						<java>SLASHSTAR_STYLE</java>
+					</mapping>
+				</configuration>
+				<executions>
+					<execution>
+						<id>add-license</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>format</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			 <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>org.camunda.operate.migration.${migration.app}</mainClass>
+                </configuration>
+            </plugin>
+		</plugins>
+	</build>
+
+</project>

@@ -1,5 +1,11 @@
 #!/usr/bin/env groovy
 
+// TODO: Use parameters for different migrations 
+// Defaults:
+//  elasticsearch-6.8.1
+//  zeebe-0.19.0
+//  operate-1.0.0 
+//  maven-3.6.1 - Used for migration, test and validation
 static String agent() {
   return """
 ---
@@ -119,6 +125,16 @@ spec:
         requests:
           cpu: 4
           memory: 8Gi
+    - name: operate
+      image: camunda/operate:1.0.0
+      env:
+      resources:
+        limits:
+          cpu: 1
+          memory: 2Gi
+        requests:
+          cpu: 1
+          memory: 2Gi            
   volumes:
   - name: configdir
     emptyDir: {}
@@ -150,54 +166,66 @@ pipeline {
 
   environment {
     NEXUS = credentials("camunda-nexus")
+    CAMUNDA_OPERATE_QA_DATA_WORKFLOW_COUNT=42
+    CAMUNDA_OPERATE_QA_DATA_WORKFLOW_INSTANCE_COUNT=101
+    CAMUNDA_OPERATE_QA_DATA_INCIDENT_COUNT=23
   }
 
   options {
     buildDiscarder(logRotator(numToKeepStr: '10'))
     timestamps()
-    timeout(time: 3, unit: 'HOURS')
+    timeout(time: 45, unit: 'MINUTES')
   }
 
   stages {
-    stage('Start previous operate version') {
+    stage('Prepare') {
       steps {
-        container('maven') {
-         sh("""echo 'Start previous operate version'""")
-        }
+         container('maven'){
+         	// checkout current operate
+            git url: 'git@github.com:camunda/camunda-operate',
+                branch: "master",
+                credentialsId: 'camunda-jenkins-github-ssh',
+                poll: false
+            // compile current operate
+            configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+                sh ('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -P skipFrontendBuild clean install')
+            }
+            // show existing indices
+            sh("curl http://localhost:9200/_cat/indices?v")
+         }
       }
     }
 	stage('Create testdata') {
 	  steps {
 		 container('maven') {
-		   sh("""echo 'Start previous operate version'""")
-		 }
-	  }
-	}
-	stage('Stop previous operate version') {
-		steps {
-		   container('maven') {
-			 sh("""echo 'Stop previous operate version'""")
-		 }
+          configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+            // Compile QA
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
+            // Generate Data
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/data-generator spring-boot:run')
+            // show existing indices
+            sh("curl http://localhost:9200/_cat/indices?v")
+          }
+        }
 	  }
 	}
 	stage('Migrate data') {
 		steps {
 		   container('maven') {
-			 sh("""echo 'Migrate data'""")
+		   	 // migrate from 1.0.0 to 1.1.0
+			 sh("cd ./migration/v1.0.0-to-1.1.0 && sh ./migrate.sh")
+			 // wait a few seconds
+			 sh("sleep 5")
+			 // migrate from 1.1.0 to 1.2.0
+			 sh("cd ./migration/v1.1.0-to-1.2.0 && sh ./migrate.sh")
 		 }
 	  }
 	}
-	stage('Start next operate version') {
-		steps {
-		  container('maven') {
-		   sh("""echo 'Start next operate version'""")
-        }
-      }
-    }
 	stage('Check migration results') {
 		steps {
 		  container('maven') {
-		   sh("""echo 'Check migration results'""")
+		   // Validate operate indices 
+		   sh("curl http://localhost:9200/_cat/indices/operate*?v")
         }
       }
     }
