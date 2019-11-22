@@ -20,14 +20,13 @@ export const Pane = styled(SplitPane.Pane)`
   ${({expandState}) => expandState === 'DEFAULT' && 'height: 50%'}
 `;
 
-export const PaneBody = styled(SplitPane.Pane.Body)`
+export const PaneBody = themed(styled(SplitPane.Pane.Body)`
   flex-direction: row;
-
   /* defines the space children take */
   > * {
     width: 50%;
   }
-`;
+`);
 
 export const Headline = themed(styled.span`
   padding-right: 15px;

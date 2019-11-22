@@ -32,7 +32,6 @@ export const MenuComponent = styled(Menu)`
 
 export const Dropdown = styled.div`
   position: relative;
-  height: 20px;
 `;
 
 export const Button = themed(styled.button`

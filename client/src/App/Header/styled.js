@@ -35,7 +35,7 @@ export const Brand = themed(styled(
   border-right: 1px solid ${separator};
 `);
 
-export const Dashboard = themed(styled(
+export const DashboardLink = themed(styled(
   withStrippedProps(['toggleTheme', 'isActive'])(Link)
 )`
   display: inline-block;
@@ -50,6 +50,7 @@ export const Dashboard = themed(styled(
 export const Header = themed(styled(
   withStrippedProps(['toggleTheme'])('header')
 )`
+  display: flex;
   height: ${HEADER_HEIGHT}px;
   background-color: ${themeStyle({
     dark: Colors.uiDark01,
@@ -63,14 +64,6 @@ export const Header = themed(styled(
     light: Colors.uiLight06
   })};
   line-height: 19px;
-  & > span {
-    display: inline-block;
-  }
-
-  /* prevents user dropdown for going under content */
-  /* each page content, with display: flex; should have a smaller z-index */
-  position: relative;
-  z-index: 6;
 `);
 
 export const ListLink = themed(styled(
@@ -93,19 +86,15 @@ export const SelectionBadgeLeft = themed(styled(ComboBadgeComponent.Left)`
 `);
 
 export const Detail = themed(styled.span`
+  display: flex;
+  align-items: center;
   padding-left: 20px;
   margin-left: 20px;
+  height: 50%;
   border-left: 1px solid ${separator};
 `);
 
-export const ProfileDropdown = styled.span`
-  margin-right: 20px;
-  float: right;
-`;
-
 export const Menu = styled.ul`
-  display: inline-block;
-  li {
-    display: inline-block;
-  }
+  display: flex;
+  flex-wrap: wrap;
 `;

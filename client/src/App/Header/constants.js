@@ -11,3 +11,24 @@ export const localStateKeys = [
   'selectionCount',
   'instancesInSelectionsCount'
 ];
+
+export const labels = {
+  instances: 'Running Instances',
+  filters: 'Filters',
+  dashboard: 'Dashboard',
+  incidents: 'Incidents',
+  selections: 'Selections',
+  brand: 'Camunda Operate'
+};
+
+export const createTitle = (type, count) => {
+  const titles = {
+    brand: 'View Dashboard',
+    dashboard: 'View Dashboard',
+    instances: `View ${count} Running Instances`,
+    filters: `View ${count} Instances in Filters`,
+    incidents: `View ${count} Incidents`,
+    selections: `View ${count} Selections`
+  };
+  return titles[type];
+};

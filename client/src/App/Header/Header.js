@@ -9,9 +9,6 @@ import {Redirect} from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
 
-import Dropdown from 'modules/components/Dropdown';
-import Badge from 'modules/components/Badge';
-import ComboBadge from 'modules/components/ComboBadge';
 import * as api from 'modules/api/header';
 import withSharedState from 'modules/components/withSharedState';
 import {getFilterQueryString} from 'modules/utils/filter';
@@ -25,11 +22,17 @@ import {
 } from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
-import {ThemeConsumer} from 'modules/theme';
 
 import {isEqual} from 'lodash';
 
-import {localStateKeys} from './constants';
+import {localStateKeys, labels, createTitle} from './constants';
+import User from './User';
+import {
+  DoubleBadgeNavElement,
+  NavElement,
+  BrandNavElement,
+  LinkElement
+} from './NavElements';
 import * as Styled from './styled.js';
 
 class Header extends React.Component {
@@ -38,9 +41,10 @@ class Header extends React.Component {
     active: PropTypes.oneOf(['dashboard', 'instances']),
     runningInstancesCount: PropTypes.number,
     filter: PropTypes.object,
-    filterCount: PropTypes.number,
-    selectionCount: PropTypes.number,
-    instancesInSelectionsCount: PropTypes.number,
+    // TODO: what happpend?
+    // filterCount: PropTypes.number,
+    // selectionCount: PropTypes.number,
+    // instancesInSelectionsCount: PropTypes.number,
     incidentsCount: PropTypes.number,
     detail: PropTypes.element,
     getStateLocally: PropTypes.func.isRequired,
@@ -50,7 +54,7 @@ class Header extends React.Component {
     expandSelections: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func
   };
-
+  static labels = labels;
   constructor(props) {
     super(props);
     this.subscriptions = {
@@ -88,9 +92,11 @@ class Header extends React.Component {
     localStateKeys.forEach(this.setValueFromPropsOrLocalState);
 
     this.setValuesFromPropsOrApi();
+
+    // set static labels.
   };
 
-  componentDidUpdate = prevProps => {
+  componentDidUpdate = (prevProps, prevState) => {
     localStateKeys.forEach(key => {
       if (this.props[key] !== prevProps[key]) {
         this.setValueFromPropsOrLocalState(key);
@@ -108,11 +114,28 @@ class Header extends React.Component {
     if (!this.state.filter) {
       this.setState({filter: DEFAULT_FILTER});
     }
+
+    // if (this.didCountUpdate(prevState)) {
+    //   console.log('asd');
+    // }
+    // recalc dynamic parts of labels
   };
 
   componentWillUnmount() {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
+
+  // didCountUpdate(prevState) {
+  //   const countTypes = [
+  //     'runningInstancesCount',
+  //     'filterCount',
+  //     'instancesInSelectionsCount',
+  //     'selectionCount',
+  //     'incidentsCount'
+  //   ];
+
+  //   return countTypes.find(count => this.state[count] !== prevState[count]);
+  // }
 
   updateCounts({running, withIncidents}) {
     const {runningInstancesCount, incidentsCount} = this.props;
@@ -164,22 +187,28 @@ class Header extends React.Component {
     this.setState({forceRedirect: true});
   };
 
-  getListLinksProps = key => {
+  getFilterResetProps = type => {
+    const filters = {
+      instances: DEFAULT_FILTER,
+      filters: this.state.filter || {},
+      incidents: {incidents: true}
+    };
+    return {
+      onClick: e => {
+        e.preventDefault();
+        this.props.expandFilters();
+        // TODO: empty default
+        this.props.onFilterReset(filters[type]);
+      },
+      to: ' '
+    };
+  };
+
+  getListLinksProps = type => {
     if (this.props.onFilterReset) {
-      const filters = {
-        instances: DEFAULT_FILTER,
-        filters: this.state.filter || {},
-        incidents: {incidents: true}
-      };
-      return {
-        onClick: e => {
-          e.preventDefault();
-          this.props.expandFilters();
-          this.props.onFilterReset(filters[key]);
-        },
-        to: ' '
-      };
+      return this.getFilterResetProps(type);
     }
+
     const queryStrings = {
       filters: this.state.filter ? getFilterQueryString(this.state.filter) : '',
       instances: getFilterQueryString(FILTER_SELECTION.running),
@@ -187,149 +216,163 @@ class Header extends React.Component {
     };
 
     return {
-      to: `/instances${queryStrings[key]}`,
+      to: `/instances${queryStrings[type]}`,
       onClick: this.props.expandFilters
     };
   };
 
+  selectTitle(type) {
+    const titles = {
+      brand: 'View Dashboard',
+      dashboard: 'View Dashboard',
+      instances: `View ${this.state.runningInstancesCount} Running Instances`,
+      filters: `View ${this.state.filterCount} Instances in Filters`,
+      incidents: `View ${this.state.incidentsCount} Incidents`,
+      selections: `View ${this.state.selectionCount} Selections`
+    };
+    return titles[type];
+  }
+
+  selectActiveCondition(type) {
+    const {active} = this.props;
+    const {filter} = this.state;
+
+    if (type === 'instances' || type === 'incidents') {
+      const isRunningInstanceFilter = isEqual(filter, FILTER_SELECTION.running);
+
+      const isIncidentsFilter =
+        !isRunningInstanceFilter && isEqual(filter, {incidents: true});
+
+      const conditions = {
+        instances: active === 'instances' && isRunningInstanceFilter,
+        incidents: active === 'instances' && isIncidentsFilter
+      };
+      return conditions[type];
+    }
+
+    const conditions = {
+      dashboard: active === 'dashboard',
+      filters: active === 'instances' && !this.props.isFiltersCollapsed,
+      selections: active === 'instances' && !this.props.isSelectionsCollapsed
+    };
+
+    return conditions[type];
+  }
+
+  selectCount(type) {
+    const {
+      runningInstancesCount,
+      filterCount,
+      filter,
+      instancesInSelectionsCount,
+      selectionCount,
+      incidentsCount
+    } = this.state;
+
+    const conditions = {
+      instances: runningInstancesCount,
+      filters: isEqual(filter, FILTER_SELECTION.running)
+        ? runningInstancesCount
+        : filterCount,
+      incidents: incidentsCount,
+      selections: {instancesInSelectionsCount, selectionCount}
+    };
+
+    return conditions[type];
+  }
+
+  getLinkProperties(type) {
+    const count = this.selectCount(type);
+    return {
+      count: count,
+      isActive: this.selectActiveCondition(type),
+      title: createTitle(type, count),
+      dataTest: 'header-link-' + type,
+      linkProps: this.getListLinksProps(type)
+    };
+  }
+
   render() {
-    const {active, detail} = this.props;
+    if (this.state.forceRedirect) {
+      return <Redirect to="/login" />;
+    }
+    const {detail} = this.props;
+    const {filter} = this.state;
     const {firstname, lastname, canLogout = true} = this.state.user || {};
 
-    const filterQuery = this.state.filter
-      ? getFilterQueryString(this.state.filter)
-      : '';
+    const brand = this.getLinkProperties('brand');
+    const dashboard = this.getLinkProperties('dashboard');
+    const instance = this.getLinkProperties('instances');
+    const incidents = this.getLinkProperties('incidents');
+    const filters = this.getLinkProperties('filters');
+    const selections = this.getLinkProperties('selections');
 
-    const isRunningInstanceFilter = isEqual(
-      this.state.filter,
-      FILTER_SELECTION.running
-    );
-
-    // P.S. checking isRunningInstanceFilter first is a small perf improvement because
-    // it checks for isRunningInstanceFilter before making an object equality check
-    const isIncidentsFilter =
-      !isRunningInstanceFilter && isEqual(this.state.filter, {incidents: true});
-
-    return this.state.forceRedirect ? (
-      <Redirect to="/login" />
-    ) : (
+    return (
       <Styled.Header role="banner">
         <Styled.Menu role="navigation">
-          <li data-test="header-link-brand">
-            <Styled.Brand to="/" title="View Dashboard">
-              <Styled.LogoIcon />
-              <span>Camunda Operate</span>
-            </Styled.Brand>
-          </li>
-          <li data-test="header-link-dashboard">
-            <Styled.Dashboard
-              to="/"
-              isActive={active === 'dashboard'}
-              title="View Dashboard"
-            >
-              <span>Dashboard</span>
-            </Styled.Dashboard>
-          </li>
-          <li data-test="header-link-instances">
-            <Styled.ListLink
-              isActive={active === 'instances' && isRunningInstanceFilter}
-              title={`View ${this.state.runningInstancesCount} Running Instances`}
-              {...this.getListLinksProps('instances')}
-            >
-              <span>Running Instances</span>
-              <Badge
-                isActive={active === 'instances' && isRunningInstanceFilter}
-                type={BADGE_TYPE.RUNNING_INSTANCES}
-              >
-                {this.state.runningInstancesCount}
-              </Badge>
-            </Styled.ListLink>
-          </li>
-          <li data-test="header-link-filters">
-            <Styled.ListLink
-              isActive={
-                active === 'instances' && !this.props.isFiltersCollapsed
-              }
-              title={`View ${this.state.filterCount} Instances in Filters`}
-              {...this.getListLinksProps('filters')}
-            >
-              <span>Filters</span>
-              <Badge
-                type={BADGE_TYPE.FILTERS}
-                isActive={
-                  active === 'instances' && !this.props.isFiltersCollapsed
-                }
-              >
-                {isRunningInstanceFilter
-                  ? this.state.runningInstancesCount
-                  : this.state.filterCount}
-              </Badge>
-            </Styled.ListLink>
-          </li>
-          <li data-test="header-link-incidents">
-            <Styled.ListLink
-              isActive={active === 'instances' && isIncidentsFilter}
-              title={`View ${this.state.incidentsCount} Incidents`}
-              {...this.getListLinksProps('incidents')}
-            >
-              <span>Incidents</span>
-              <Badge
-                type={BADGE_TYPE.INCIDENTS}
-                isActive={active === 'instances' && isIncidentsFilter}
-              >
-                {this.state.incidentsCount}
-              </Badge>
-            </Styled.ListLink>
-          </li>
-          <li data-test="header-link-selections">
-            <Styled.ListLink
-              to={`/instances${filterQuery}`}
-              title={`View ${this.state.selectionCount} Selections`}
-              isActive={
-                active === 'instances' && !this.props.isSelectionsCollapsed
-              }
-              onClick={this.props.expandSelections}
-            >
-              <span>Selections</span>
-              <ComboBadge
-                type={COMBO_BADGE_TYPE.SELECTIONS}
-                isActive={
-                  active === 'instances' && !this.props.isSelectionsCollapsed
-                }
-              >
-                <Styled.SelectionBadgeLeft>
-                  {this.state.selectionCount}
-                </Styled.SelectionBadgeLeft>
-                <ComboBadge.Right>
-                  {this.state.instancesInSelectionsCount}
-                </ComboBadge.Right>
-              </ComboBadge>
-            </Styled.ListLink>
-          </li>
+          <BrandNavElement
+            to="/"
+            dataTest={brand.dataTest}
+            title={brand.title}
+            label={Header.labels['brand']}
+          />
+          <LinkElement
+            data-test={dashboard.dataTest}
+            to="/"
+            isActive={dashboard.isActive}
+            title={dashboard.title}
+            label={Header.labels['dashboard']}
+          />
+
+          <NavElement
+            dataTest={instance.dataTest}
+            isActive={instance.isActive}
+            title={instance.title}
+            label={Header.labels['instances']}
+            count={instance.count}
+            linkProps={instance.linkProps}
+            type={BADGE_TYPE.RUNNING_INSTANCES}
+          />
+          <NavElement
+            dataTest={filters.dataTest}
+            isActive={filters.isActive}
+            title={filters.title}
+            label={Header.labels['filters']}
+            count={filters.count}
+            linkProps={filters.linkProps}
+            type={BADGE_TYPE.FILTERS}
+          />
+          <NavElement
+            dataTest={incidents.dataTest}
+            isActive={incidents.isActive}
+            title={incidents.title}
+            label={Header.labels['incidents']}
+            count={incidents.count}
+            linkProps={incidents.linkProps}
+            type={BADGE_TYPE.INCIDENTS}
+          />
+
+          <DoubleBadgeNavElement
+            to={`/instances${filter ? getFilterQueryString(filter) : ''}`}
+            dataTest={selections.dataTest}
+            title={selections.title}
+            label={Header.labels['selections']}
+            isActive={selections.isActive}
+            expandSelections={this.props.expandSelections}
+            selectionCount={selections.count.selectionCount}
+            instancesInSelectionsCount={
+              selections.count.instancesInSelectionsCount
+            }
+            type={COMBO_BADGE_TYPE.SELECTIONS}
+          />
         </Styled.Menu>
-
         <Styled.Detail>{detail}</Styled.Detail>
-        <Styled.ProfileDropdown>
-          <ThemeConsumer>
-            {({toggleTheme}) => (
-              <Dropdown label={`${firstname} ${lastname}`}>
-                <Dropdown.Option
-                  label="Toggle Theme"
-                  data-test="toggle-theme-button"
-                  onClick={toggleTheme}
-                />
-
-                {canLogout && (
-                  <Dropdown.Option
-                    label="Logout"
-                    data-test="logout-button"
-                    onClick={this.handleLogout}
-                  />
-                )}
-              </Dropdown>
-            )}
-          </ThemeConsumer>
-        </Styled.ProfileDropdown>
+        <User
+          handleLogout={this.handleLogout}
+          firstname={firstname}
+          lastname={lastname}
+          canLogout={canLogout}
+        />
       </Styled.Header>
     );
   }
