@@ -26,8 +26,8 @@ import org.msgpack.core.MessagePacker;
 
 public class MsgPackConverterTest {
 
-  protected static final String JSON = "{\"key1\":1,\"key2\":2}";
-  protected static final byte[] MSG_PACK = createMsgPack();
+  private static final String JSON = "{\"key1\":1,\"key2\":2}";
+  private static final byte[] MSG_PACK = createMsgPack();
   @Rule public ExpectedException exception = ExpectedException.none();
 
   @Test
@@ -139,17 +139,7 @@ public class MsgPackConverterTest {
     MsgPackConverter.convertToMsgPack("}");
   }
 
-  @Test
-  public void shouldThrowExceptionIfDocumentHasMoreThanOneObject() {
-    // then
-    exception.expect(RuntimeException.class);
-    exception.expectMessage("Failed to convert JSON to MessagePack");
-
-    // when
-    MsgPackConverter.convertToMsgPack("{}{}");
-  }
-
-  protected static byte[] createMsgPack() {
+  private static byte[] createMsgPack() {
     byte[] msgPack = null;
 
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -159,7 +149,7 @@ public class MsgPackConverterTest {
 
       variablesPacker.flush();
       msgPack = outputStream.toByteArray();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LangUtil.rethrowUnchecked(e);
     }
     return msgPack;
