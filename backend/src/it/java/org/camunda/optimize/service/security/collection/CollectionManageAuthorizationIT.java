@@ -8,7 +8,6 @@ package org.camunda.optimize.service.security.collection;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -309,7 +308,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(204));
   }
 
   @ParameterizedTest
@@ -346,7 +345,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(204));
   }
 
   @ParameterizedTest
@@ -354,7 +353,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void managerIdentityCanUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
+    final CollectionScopeEntryDto scopeEntry = createProcessScope();
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -362,7 +362,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, createScopeUpdate())
+      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntry.getId(), createScopeUpdate())
       .execute();
 
     // then
@@ -374,7 +374,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void nonManagerIdentityRejectedToUpdateScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
+    final CollectionScopeEntryDto scopeEntry = createProcessScope();
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -382,7 +383,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, createScopeUpdate())
+      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntry.getId(), createScopeUpdate())
       .execute();
     // then
     assertThat(response.getStatus(), is(403));
@@ -392,7 +393,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void superUserIdentityCanUpdateScopeByCollectionRole() {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
+    final CollectionScopeEntryDto scopeEntry = createProcessScope();
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -400,7 +402,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, createScopeUpdate())
+      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntry.getId(), createScopeUpdate())
       .execute();
 
     // then
@@ -412,7 +414,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void managerIdentityCanDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
+    final CollectionScopeEntryDto scopeEntry = createProcessScope();
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -420,7 +423,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
+      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
       .execute();
 
     // then
@@ -432,7 +435,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void nonManagerIdentityRejectedToDeleteScopeByCollectionRole(final IdentityAndRole identityAndRole) {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
+    final CollectionScopeEntryDto scopeEntry = createProcessScope();
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -440,7 +444,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
+      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
       .execute();
 
     // then
@@ -451,7 +455,8 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void superUserIdentityCanDeleteScopeByCollectionRole() {
     //given
     final String collectionId = collectionClient.createNewCollection();
-    final String scopeEntryId = addScopeToCollectionAsDefaultUser(collectionId, createProcessScope());
+    final CollectionScopeEntryDto scopeEntry = createProcessScope();
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -459,7 +464,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
     // when
     Response response = getOptimizeRequestExecutorWithKermitAuthentication()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
+      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntry.getId())
       .execute();
 
     // then
@@ -494,15 +499,6 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
 
   private CollectionScopeEntryDto createProcessScope() {
     return new CollectionScopeEntryDto(DefinitionType.PROCESS, "KEY");
-  }
-
-  private String addScopeToCollectionAsDefaultUser(final String collectionId,
-                                                   final CollectionScopeEntryDto scopeEntryDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildAddScopeEntryToCollectionRequest(collectionId, scopeEntryDto)
-      .execute(IdDto.class, 200)
-      .getId();
   }
 
   private CollectionRoleDto createJohnEditorRoleDto() {

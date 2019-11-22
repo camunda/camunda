@@ -37,7 +37,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -65,8 +64,6 @@ import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
@@ -85,8 +82,6 @@ public class CollectionHandlingIT extends AbstractIT {
   private static Stream<DefinitionType> definitionTypes() {
     return Stream.of(PROCESS, DECISION);
   }
-
-  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @Test
   public void collectionIsWrittenToElasticsearch() throws IOException {
@@ -699,7 +694,7 @@ public class CollectionHandlingIT extends AbstractIT {
     reportsToCopy.add(createReportForCollection(originalId, definitionType));
 
     List<String> alertsToCopy = new ArrayList<>();
-    reportsToCopy.stream()
+    reportsToCopy
       .forEach(reportId -> alertsToCopy.add(createAlertForReport(reportId)));
 
     // when
@@ -711,7 +706,7 @@ public class CollectionHandlingIT extends AbstractIT {
     // then
     List<AuthorizedReportDefinitionDto> copiedReports = collectionClient.getReportsForCollection(copy.getId());
     List<AlertDefinitionDto> copiedAlerts = getAlertsForCollection(copy.getId());
-    Set<String> copiedReportIdsWithAlert = copiedAlerts.stream().map(alert -> alert.getReportId()).collect(toSet());
+    Set<String> copiedReportIdsWithAlert = copiedAlerts.stream().map(AlertCreationDto::getReportId).collect(toSet());
 
     assertThat(copiedReports.size(), is(reportsToCopy.size()));
     assertThat(copiedAlerts.size(), is(alertsToCopy.size()));

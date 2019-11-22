@@ -5,12 +5,9 @@
  */
 package org.camunda.optimize.rest;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
@@ -29,7 +26,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -75,7 +71,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     createDefinition(type, definitionKey, "1", null, "the name");
     final String collectionId = addEmptyCollectionToOptimize();
     final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
-    addScopeEntryToCollection(
+    collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
     );
 
@@ -99,10 +95,10 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
 
     final String collectionId = addEmptyCollectionToOptimize();
     final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
-    addScopeEntryToCollection(
+    collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey1, scopeTenantIds)
     );
-    addScopeEntryToCollection(
+    collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(type, definitionKey2, scopeTenantIds)
     );
 
@@ -148,7 +144,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
 
     final List<String> scopeTenantIds = Collections.singletonList(tenant2);
     final String collectionId = addEmptyCollectionToOptimize();
-    addScopeEntryToCollection(
+    collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
     );
@@ -165,10 +161,10 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
           .containsExactlyElementsOf(scopeTenantIds);
 
         assertThat(definitionEntry.getVersions())
-          .hasOnlyOneElementSatisfying(versionEntry -> {
-            assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
-              .containsExactlyElementsOf(scopeTenantIds);
-          });
+          .hasOnlyOneElementSatisfying(
+            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
+              .containsExactlyElementsOf(scopeTenantIds)
+          );
       });
   }
 
@@ -186,7 +182,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
 
     final List<String> scopeTenantIds = Lists.newArrayList(tenant2);
     final String collectionId = addEmptyCollectionToOptimize();
-    addScopeEntryToCollection(
+    collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
     );
@@ -202,10 +198,10 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
         assertThat(definitionEntry.getAllTenants().stream().map(TenantRestDto::getId))
           .containsExactlyElementsOf(scopeTenantIds);
         assertThat(definitionEntry.getVersions())
-          .hasOnlyOneElementSatisfying(versionEntry -> {
-            assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
-              .containsExactlyElementsOf(scopeTenantIds);
-          });
+          .hasOnlyOneElementSatisfying(
+            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
+              .containsExactlyElementsOf(scopeTenantIds)
+          );
       });
   }
 
@@ -223,7 +219,7 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
 
     final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID, tenant2);
     final String collectionId = addEmptyCollectionToOptimize();
-    addScopeEntryToCollection(
+    collectionClient.addScopeEntryToCollection(
       collectionId,
       new CollectionScopeEntryDto(type, definitionKey, scopeTenantIds)
     );
@@ -239,18 +235,11 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
         assertThat(definitionEntry.getAllTenants().stream().map(TenantRestDto::getId))
           .containsExactlyElementsOf(scopeTenantIds);
         assertThat(definitionEntry.getVersions())
-          .hasOnlyOneElementSatisfying(versionEntry -> {
-            assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
-              .containsExactlyElementsOf(scopeTenantIds);
-          });
+          .hasOnlyOneElementSatisfying(
+            versionEntry -> assertThat(versionEntry.getTenants().stream().map(TenantRestDto::getId))
+              .containsExactlyElementsOf(scopeTenantIds)
+          );
       });
-  }
-
-  private String addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
-      .execute(IdDto.class, 200)
-      .getId();
   }
 
   private List<DefinitionVersionsWithTenantsRestDto> getDefinitionVersionsWithTenants(final DefinitionType type,
@@ -271,19 +260,6 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     }
   }
 
-  private void createTenantAuthorization(final String tenantUser,
-                                         final ImmutableList<String> permissions,
-                                         final String resourceId,
-                                         int type) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_TENANT);
-    authorizationDto.setPermissions(permissions);
-    authorizationDto.setResourceId(resourceId);
-    authorizationDto.setType(type);
-    authorizationDto.setUserId(tenantUser);
-    engineIntegrationExtension.createAuthorization(authorizationDto);
-  }
-
   private String addEmptyCollectionToOptimize() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -292,25 +268,27 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       .getId();
   }
 
-  private DefinitionOptimizeDto createDefinition(final DefinitionType definitionType,
-                                                 final String key,
-                                                 final String version,
-                                                 final String tenantId,
-                                                 final String name) {
+  private void createDefinition(final DefinitionType definitionType,
+                                final String key,
+                                final String version,
+                                final String tenantId,
+                                final String name) {
     switch (definitionType) {
       case PROCESS:
-        return addProcessDefinitionToElasticsearch(key, version, tenantId, name);
+        addProcessDefinitionToElasticsearch(key, version, tenantId, name);
+        return;
       case DECISION:
-        return addDecisionDefinitionToElasticsearch(key, version, tenantId, name);
+        addDecisionDefinitionToElasticsearch(key, version, tenantId, name);
+        return;
       default:
         throw new OptimizeIntegrationTestException("Unsupported definition type: " + definitionType);
     }
   }
 
-  private DecisionDefinitionOptimizeDto addDecisionDefinitionToElasticsearch(final String key,
-                                                                             final String version,
-                                                                             final String tenantId,
-                                                                             final String name) {
+  private void addDecisionDefinitionToElasticsearch(final String key,
+                                                    final String version,
+                                                    final String tenantId,
+                                                    final String name) {
     final DecisionDefinitionOptimizeDto decisionDefinitionDto = DecisionDefinitionOptimizeDto.builder()
       .id(key + "-" + version + "-" + tenantId)
       .key(key)
@@ -323,13 +301,12 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       DECISION_DEFINITION_INDEX_NAME, decisionDefinitionDto.getId(), decisionDefinitionDto
     );
-    return decisionDefinitionDto;
   }
 
-  private ProcessDefinitionOptimizeDto addProcessDefinitionToElasticsearch(final String key,
-                                                                           final String version,
-                                                                           final String tenantId,
-                                                                           final String name) {
+  private void addProcessDefinitionToElasticsearch(final String key,
+                                                   final String version,
+                                                   final String tenantId,
+                                                   final String name) {
     final ProcessDefinitionOptimizeDto expectedDto = ProcessDefinitionOptimizeDto.builder()
       .id(key + "-" + version + "-" + tenantId)
       .key(key)
@@ -344,7 +321,6 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
       expectedDto.getId(),
       expectedDto
     );
-    return expectedDto;
   }
 
   protected void createTenant(final String tenantId) {

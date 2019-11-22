@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -48,7 +47,6 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   private ImmutableMap<Integer, DefinitionType> resourceTypeToDefinitionType =
     ImmutableMap.of(RESOURCE_TYPE_PROCESS_DEFINITION, PROCESS,

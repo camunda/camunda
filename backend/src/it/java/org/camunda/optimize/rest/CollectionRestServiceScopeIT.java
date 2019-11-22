@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -42,13 +44,13 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEF
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public class CollectionRestServiceScopeIT extends AbstractIT {
-
+  
   @Test
   public void partialCollectionUpdateDoesNotAffectScopes() {
     //given
-    final String collectionId = createNewCollection();
-    addScopeEntryToCollection(collectionId, createSimpleScopeEntry("_KEY_"));
-    final SimpleCollectionDefinitionDto expectedCollection = getCollection(collectionId);
+    final String collectionId = collectionClient.createNewCollection();
+    collectionClient.addScopeEntryToCollection(collectionId, createSimpleScopeEntry("_KEY_"));
+    final SimpleCollectionDefinitionDto expectedCollection = collectionClient.getCollection(collectionId);
 
     // when
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
@@ -59,23 +61,20 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(204);
-    final SimpleCollectionDefinitionDto collection = getCollection(collectionId);
+    final SimpleCollectionDefinitionDto collection = collectionClient.getCollection(collectionId);
     assertThat(collection.getData().getScope()).isEqualTo(expectedCollection.getData().getScope());
   }
 
   @Test
   public void getScopeForCollection() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final String definitionKey = "_KEY_";
     final CollectionScopeEntryDto entry = createSimpleScopeEntry(definitionKey);
-    addScopeEntryToCollection(collectionId, entry);
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     // when
-    List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetScopeForCollectionRequest(collectionId)
-      .execute(new TypeReference<List<CollectionScopeEntryRestDto>>() {
-      });
+    List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScope(collectionId);
 
     // then
     assertThat(scopeEntries)
@@ -92,20 +91,19 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void scopesAreOrderByDefinitionTypeAndThenDefinitionName() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto decisionScope1 = createSimpleScopeEntry("DECISION_KEY_LAST", DECISION);
     final CollectionScopeEntryDto decisionScope2 = createSimpleScopeEntry("xdecKey2", DECISION);
     final CollectionScopeEntryDto processScope1 = createSimpleScopeEntry("PROCESS_KEY_LAST", PROCESS);
     final CollectionScopeEntryDto processScope2 = createSimpleScopeEntry("xprocKey2", PROCESS);
     // should fallback to key as name when name is null
     addDecisionDefinitionToElasticsearch(decisionScope1.getDefinitionKey(), null);
-    addScopeEntryToCollection(collectionId, decisionScope1);
     addProcessDefinitionToElasticsearch(processScope1.getDefinitionKey(), null);
-    addScopeEntryToCollection(collectionId, processScope1);
     addDecisionDefinitionToElasticsearch(decisionScope2.getDefinitionKey(), "DECISION_KEY_FIRST");
-    addScopeEntryToCollection(collectionId, decisionScope2);
     addProcessDefinitionToElasticsearch(processScope2.getDefinitionKey(), "PROCESS_KEY_FIRST");
-    addScopeEntryToCollection(collectionId, processScope2);
+    collectionClient.addScopeEntriesToCollection(
+      collectionId, asList(decisionScope1, processScope1, decisionScope2, processScope2)
+    );
 
     embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -125,30 +123,31 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addDefinitionScopeEntry() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
     // when
-    final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
-    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
+    AuthorizedResolvedCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
-      .execute(SimpleCollectionDefinitionDto.class, 200);
+      .execute(AuthorizedResolvedCollectionDefinitionDto.class, 200);
 
     // then
-    assertThat(scopeEntryId).isEqualTo("process:_KEY_");
-    assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
-    assertThat(collectionDefinitionDto.getData().getScope().get(0).getId()).isEqualTo(scopeEntryId);
+    assertThat(collectionDefinitionDto.getDefinitionDto().getData().getScope())
+      .hasSize(1)
+      .extracting(CollectionScopeEntryDto::getId)
+      .containsExactly("process:_KEY_");
   }
 
   @Test
   public void addScopeEntries() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
     // when
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = collectionClient.getCollection(collectionId);
 
     // then
     assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
@@ -161,14 +160,14 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_addsToExistingScopes() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
     final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry("_ANOTHER_KEY_");
 
     // when
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
-    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = collectionClient.getCollection(collectionId);
 
     // then
     assertThat(collectionDefinitionDto.getData().getScope())
@@ -180,15 +179,15 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_addsTenantsToExistingScopes() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
     addTenantToElasticsearch("newTenant");
     entry.getTenants().add("newTenant");
 
     // when
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = collectionClient.getCollection(collectionId);
 
     // then
     assertThat(collectionDefinitionDto.getData().getScope())
@@ -201,18 +200,18 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_addsTenantsAndScopeToExistingScopes() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
     final CollectionScopeEntryDto anotherEntry = createSimpleScopeEntry("_ANOTHER_KEY_");
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(anotherEntry));
     addTenantToElasticsearch("newTenant");
     entry.getTenants().add("newTenant");
 
 
     // when
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = collectionClient.getCollection(collectionId);
 
     // then
     assertThat(collectionDefinitionDto.getData().getScope())
@@ -227,15 +226,15 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_doesNotRemoveTenants() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
     addTenantToElasticsearch("newTenant");
     entry.setTenants(Collections.singletonList("newTenant"));
 
     // when
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = collectionClient.getCollection(collectionId);
 
     // then
     assertThat(collectionDefinitionDto.getData().getScope())
@@ -249,13 +248,13 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_sameScopeIsNotAddedTwice() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
     // when
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
-    SimpleCollectionDefinitionDto collectionDefinitionDto = getCollection(collectionId);
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    collectionClient.addScopeEntriesToCollection(collectionId, Collections.singletonList(entry));
+    SimpleCollectionDefinitionDto collectionDefinitionDto = collectionClient.getCollection(collectionId);
 
     // then
     assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
@@ -268,7 +267,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addScopeEntries_unknownCollectionResultsInNotFound() {
     // given
-    createNewCollection();
+    collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
     // when
@@ -283,50 +282,36 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void addMultipleDefinitionScopeEntries() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry1 = createSimpleScopeEntry("_KEY1_");
     final CollectionScopeEntryDto entry2 = createSimpleScopeEntry("_KEY2_");
 
     // when
-    final String scopeEntryId1 = addScopeEntryToCollection(collectionId, entry1);
-    final String scopeEntryId2 = addScopeEntryToCollection(collectionId, entry2);
-
-    SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
+    collectionClient.addScopeEntriesToCollection(collectionId, Lists.newArrayList(entry1, entry2));
+    AuthorizedResolvedCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
-      .execute(SimpleCollectionDefinitionDto.class, 200);
+      .execute(AuthorizedResolvedCollectionDefinitionDto.class, 200);
 
     // then
-    assertThat(scopeEntryId1).isEqualTo("process:_KEY1_");
-    assertThat(scopeEntryId2).isEqualTo("process:_KEY2_");
-    assertThat(collectionDefinitionDto.getData().getScope()).containsExactlyInAnyOrder(entry1, entry2);
-  }
-
-  @Test
-  public void addConflictingScopeDefinitionFails() {
-    // given
-    final String collectionId = createNewCollection();
-    addScopeEntryToCollection(collectionId, createSimpleScopeEntry("_KEY_"));
-
-    // when
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntryToCollectionRequest(collectionId, createSimpleScopeEntry("_KEY_"))
-      // then
-      .execute(409);
+    assertThat(collectionDefinitionDto.getDefinitionDto().getData().getScope())
+      .hasSize(2)
+      .extracting(CollectionScopeEntryDto::getId)
+      .containsExactlyInAnyOrder("process:_KEY1_", "process:_KEY2_");
   }
 
   @Test
   public void updateDefinitionScopeEntry_addTenant() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
-    final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     // when
     final String tenant1 = "tenant1";
     addTenantToElasticsearch(tenant1);
     entry.setTenants(Lists.newArrayList(null, tenant1));
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(entry))
+      .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
       .execute(204);
 
     // then
@@ -344,17 +329,17 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void updateDefinitionScopeEntry_removeTenant() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final String tenant = "tenant";
     addTenantToElasticsearch(tenant);
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
     entry.getTenants().add(tenant);
-    final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     // when
     entry.setTenants(Collections.singletonList(null));
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(entry))
+      .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
       .execute(204);
 
     // then
@@ -372,9 +357,9 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void updateUnknownScopeThrowsNotFound() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
-    addScopeEntryToCollection(collectionId, entry);
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -388,16 +373,16 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void updateUnknownTenantsAreFilteredOut() {
     // given
-    final String collectionId = createNewCollection();
+    final String collectionId = collectionClient.createNewCollection();
     final CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
-    final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     // when
     final String tenant1 = "tenant1";
     addTenantToElasticsearch(tenant1);
     entry.setTenants(Lists.newArrayList(null, tenant1, "fooTenant"));
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, new CollectionScopeEntryUpdateDto(entry))
+      .buildUpdateCollectionScopeEntryRequest(collectionId, entry.getId(), new CollectionScopeEntryUpdateDto(entry))
       .execute(204);
 
     // then
@@ -415,8 +400,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   @Test
   public void updatingNonExistingDefinitionScopeEntryFails() {
     // given
-    final String collectionId = createNewCollection();
-    final SimpleCollectionDefinitionDto expectedCollection = getCollection(collectionId);
+    final String collectionId = collectionClient.createNewCollection();
+    final SimpleCollectionDefinitionDto expectedCollection = collectionClient.getCollection(collectionId);
     final String notExistingScopeEntryId = "PROCESS:abc";
 
     // when
@@ -433,15 +418,15 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     // then
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NOT_FOUND);
 
-    assertThat(getCollection(collectionId)).isEqualTo(expectedCollection);
+    assertThat(collectionClient.getCollection(collectionId)).isEqualTo(expectedCollection);
   }
 
   @Test
   public void removeScopeEntry() {
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollection();
     CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
-    String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     SimpleCollectionDefinitionDto collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
@@ -450,7 +435,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     assertThat(collectionDefinitionDto.getData().getScope().size()).isEqualTo(1);
 
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
+      .buildRemoveScopeEntryFromCollectionRequest(collectionId, entry.getId())
       .execute(204);
 
     collectionDefinitionDto = embeddedOptimizeExtension.getRequestExecutor()
@@ -462,10 +447,10 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
   @Test
   public void removeScopeDefinitionFailsDueReportConflict() {
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollection();
     CollectionScopeEntryDto entry = createSimpleScopeEntry("_KEY_");
 
-    final String scopeEntryId = addScopeEntryToCollection(collectionId, entry);
+    collectionClient.addScopeEntryToCollection(collectionId, entry);
 
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.getData().setProcessDefinitionKey("_KEY_");
@@ -473,7 +458,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     String reportId = createNewSingleProcessReport(singleProcessReportDefinitionDto);
 
     ConflictResponseDto conflictResponseDto = embeddedOptimizeExtension.getRequestExecutor()
-      .buildRemoveScopeEntryFromCollectionRequest(collectionId, scopeEntryId)
+      .buildRemoveScopeEntryFromCollectionRequest(collectionId, entry.getId())
       .execute(ConflictResponseDto.class, 409);
 
     assertThat(conflictResponseDto.getConflictedItems())
@@ -483,7 +468,7 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
   @Test
   public void removeNotExistingScopeDefinitionFails() {
-    String collectionId = createNewCollection();
+    String collectionId = collectionClient.createNewCollection();
 
     embeddedOptimizeExtension.getRequestExecutor()
       .buildRemoveScopeEntryFromCollectionRequest(collectionId, "PROCESS:_KEY_")
@@ -528,38 +513,10 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
     return new CollectionScopeEntryDto(definitionType, definitionKey, tenants);
   }
 
-  private String addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntryToCollectionRequest(collectionId, entry)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private void addScopeEntriesToCollection(final String collectionId, final List<CollectionScopeEntryDto> enties) {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntriesToCollectionRequest(collectionId, enties)
-      .execute(204);
-  }
-
   private String createNewSingleProcessReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private SimpleCollectionDefinitionDto getCollection(final String id) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetCollectionRequest(id)
-      .execute(SimpleCollectionDefinitionDto.class, 200);
-  }
-
-  private String createNewCollection() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
       .execute(IdDto.class, 200)
       .getId();
   }

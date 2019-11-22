@@ -8,6 +8,7 @@ package org.camunda.optimize;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -24,4 +25,5 @@ public abstract class AbstractIT {
   @Order(3)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
+  protected CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 }

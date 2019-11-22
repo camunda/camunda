@@ -24,7 +24,9 @@ import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Component
@@ -114,16 +116,12 @@ public class CollectionCopyService {
 
   private void copyCollectionScope(String userId, ResolvedCollectionDefinitionDto collectionDefinitionDto,
                                    IdDto newCollectionId) {
-    collectionDefinitionDto.getData().getScope().forEach(e -> {
-      try {
-        collectionScopeService.addScopeEntryToCollection(
-          userId,
-          newCollectionId.getId(),
-          new CollectionScopeEntryDto(e)
-        );
-      } catch (OptimizeCollectionConflictException ex) {
-        log.error(ex.getMessage());
-      }
-    });
+    final List<CollectionScopeEntryDto> scopeCopy = collectionDefinitionDto
+      .getData()
+      .getScope()
+      .stream()
+      .map(CollectionScopeEntryDto::new)
+      .collect(Collectors.toList());
+    collectionScopeService.addScopeEntriesToCollection(userId, newCollectionId.getId(), scopeCopy);
   }
 }

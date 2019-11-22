@@ -28,7 +28,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -66,8 +65,6 @@ public abstract class AbstractAlertIT extends AbstractIT {
   @RegisterExtension
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
-
-  protected CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   protected String createAlert(AlertCreationDto simpleAlert) {
     return embeddedOptimizeExtension

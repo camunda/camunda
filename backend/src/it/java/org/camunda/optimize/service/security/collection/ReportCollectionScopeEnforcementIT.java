@@ -23,7 +23,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -49,7 +48,6 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT
 public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @SuppressWarnings("unused")
   @ParameterizedTest(name = "enforcing the scope with one tenant works for {2}")

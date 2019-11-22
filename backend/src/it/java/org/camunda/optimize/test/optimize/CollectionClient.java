@@ -8,12 +8,12 @@ package org.camunda.optimize.test.optimize;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -32,7 +32,7 @@ import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 public class CollectionClient {
 
   public static final String DEFAULT_DEFINITION_KEY = "defaultScopeDefinitionKey";
-  public static final List<String> DEFAULT_TENANTS = Lists.newArrayList((String) null);
+  public static final List<String> DEFAULT_TENANTS = singletonList(null);
   public static final String PRIVATE_COLLECTION_ID = null;
 
   private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
@@ -152,14 +152,25 @@ public class CollectionClient {
       .execute();
   }
 
+  public SimpleCollectionDefinitionDto getCollection(final String id) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetCollectionRequest(id)
+      .execute(SimpleCollectionDefinitionDto.class, 200);
+  }
+
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
     return new CollectionScopeEntryDto(definitionType, definitionKey, DEFAULT_TENANTS);
   }
 
-  private void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
+  public void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
+    addScopeEntriesToCollection(collectionId,  singletonList(entry));
+  }
+
+  public void addScopeEntriesToCollection(final String collectionId, final List<CollectionScopeEntryDto> entries) {
     embeddedOptimizeExtension.getRequestExecutor()
-      .buildAddScopeEntriesToCollectionRequest(collectionId, singletonList(entry))
-      .execute(IdDto.class, 204);
+      .buildAddScopeEntriesToCollectionRequest(collectionId, entries)
+      .execute(204);
   }
 
   public void addScopeEntryToCollectionWithUser(final String collectionId, final CollectionScopeEntryDto entry,

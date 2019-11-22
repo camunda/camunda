@@ -26,7 +26,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -51,8 +50,6 @@ public class ReportConflictIT extends AbstractIT {
 
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
-
-  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @ParameterizedTest(name = "update single report fails with conflict if used in combined report and not combinable " +
     "anymore when force set to {0}")

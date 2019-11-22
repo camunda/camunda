@@ -127,20 +127,6 @@ public class CollectionRestService {
     return collectionService.getDeleteConflictingItems(userId, collectionId);
   }
 
-  @POST
-  @Path("/{id}/scope")
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public IdDto addScopeEntry(@Context ContainerRequestContext requestContext,
-                             @PathParam("id") String collectionId,
-                             @NotNull CollectionScopeEntryDto entryDto) throws OptimizeConflictException {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final CollectionScopeEntryDto scopeEntryDto = collectionScopeService.addScopeEntryToCollection(
-      userId, collectionId, entryDto
-    );
-    return new IdDto(scopeEntryDto.getId());
-  }
-
   @PUT
   @Path("/{id}/scope")
   @Consumes(MediaType.APPLICATION_JSON)

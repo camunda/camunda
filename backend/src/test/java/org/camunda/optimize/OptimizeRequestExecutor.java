@@ -49,6 +49,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -950,10 +951,7 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildAddScopeEntryToCollectionRequest(String collectionId,
                                                                        CollectionScopeEntryDto entryDto) {
-    this.path = "collection/" + collectionId + "/scope";
-    this.requestType = POST;
-    this.body = getBody(entryDto);
-    return this;
+    return buildAddScopeEntriesToCollectionRequest(collectionId, Collections.singletonList(entryDto));
   }
 
   public OptimizeRequestExecutor buildAddScopeEntriesToCollectionRequest(String collectionId,

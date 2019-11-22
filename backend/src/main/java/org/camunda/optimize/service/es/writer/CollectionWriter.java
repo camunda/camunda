@@ -171,50 +171,6 @@ public class CollectionWriter {
     }
   }
 
-  public CollectionScopeEntryDto addScopeEntryToCollection(String collectionId,
-                                                           CollectionScopeEntryDto entryDto,
-                                                           String userId) throws OptimizeCollectionConflictException {
-    try {
-      final Map<String, Object> params = new HashMap<>();
-      params.put("entryDto", objectMapper.convertValue(entryDto, Object.class));
-      params.put("lastModifier", userId);
-      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
-      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScript(
-        "boolean exists = ctx._source.data.scope.stream()" +
-          "  .filter(s -> s.id.equals(params.entryDto.id))" +
-          "  .findFirst().isPresent();" +
-          "if (!exists) {" +
-          "  ctx._source.data.scope.add(params.entryDto);" +
-          "  ctx._source.lastModifier = params.lastModifier;" +
-          "  ctx._source.lastModified = params.lastModified;" +
-          "} else { " +
-          "  ctx.op = \"none\";" +
-          "}",
-        params
-      );
-
-      final UpdateResponse updateResponse;
-      updateResponse = executeUpdateRequest(
-        collectionId,
-        updateEntityScript,
-        "Was not able to update collection with id [%s]."
-      );
-
-
-      if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
-        final String message = String.format("Scope entity for id [%s] already exists.", entryDto.getId());
-        log.warn(message);
-        throw new OptimizeCollectionConflictException(message);
-      }
-
-      return entryDto;
-    } catch (IOException e) {
-      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
-      log.error(errorMessage, e);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
   public void addScopeEntriesToCollection(final String userId,
                                           final String collectionId,
                                           final List<CollectionScopeEntryDto> scopeUpdates) {

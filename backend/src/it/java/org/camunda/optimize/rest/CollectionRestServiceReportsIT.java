@@ -15,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -43,8 +42,6 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   private static Stream<DefinitionType> definitionTypes() {
     return Stream.of(PROCESS, DECISION);
   }
-
-  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @ParameterizedTest
   @MethodSource("definitionTypes")

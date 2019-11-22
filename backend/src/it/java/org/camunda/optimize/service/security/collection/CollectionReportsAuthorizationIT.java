@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -57,8 +56,6 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
       Arrays.asList(RESOURCE_TYPE_DECISION_DEFINITION, RESOURCE_TYPE_PROCESS_DEFINITION)
     );
   }
-
-  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @ParameterizedTest
   @MethodSource("definitionTypes")
@@ -206,13 +203,12 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
       .getId();
   }
 
-  private String addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
-                                                  final String collectionId) {
-    return embeddedOptimizeExtension
+  private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
+                                                final String collectionId) {
+    embeddedOptimizeExtension
       .getRequestExecutor()
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, 200)
-      .getId();
+      .execute(IdDto.class, 200);
   }
 
   private OptimizeRequestExecutor getReportsForCollectionRequestAsKermit(final String collectionId) {

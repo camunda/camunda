@@ -23,7 +23,6 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedEntityDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -109,8 +108,6 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     return POSSIBLE_REPORT_SCENARIOS.stream()
       .map(reportScenario -> new IdentityRoleAndReportScenario(identityAndRole, reportScenario));
   }
-
-  private CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
 
   @ParameterizedTest
   @MethodSource(EDIT_IDENTITY_ROLES_AND_REPORT_TYPES)
