@@ -5,14 +5,9 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 import * as Header from '../styled';
-
-// Row.propTypes = {
-//   parent: PropTypes.bool
-// };
 
 export default React.memo(function Skeleton(props) {
   return (

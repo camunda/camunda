@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, createRef, useState} from 'react';
+import React, {createRef} from 'react';
 import PropTypes from 'prop-types';
 import * as Styled from './styled';
 
