@@ -38,9 +38,9 @@ public final class MsgPackConverter {
   private static final JsonEncoding JSON_ENCODING = JsonEncoding.UTF8;
   private static final Charset JSON_CHARSET = StandardCharsets.UTF_8;
   private static final TypeReference<HashMap<String, Object>> OBJECT_MAP_TYPE_REFERENCE =
-      new TypeReference<HashMap<String, Object>>() {};
+      new TypeReference<>() {};
   private static final TypeReference<HashMap<String, String>> STRING_MAP_TYPE_REFERENCE =
-      new TypeReference<HashMap<String, String>>() {};
+      new TypeReference<>() {};
 
   /*
    * Extract from jackson doc:
@@ -65,7 +65,7 @@ public final class MsgPackConverter {
   ///////////////////////////////////// JSON to MSGPACK //////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public static byte[] convertToMsgPack(String json) {
+  public static byte[] convertToMsgPack(final String json) {
     final byte[] jsonBytes = getBytes(json, JSON_CHARSET);
     final ByteArrayInputStream inputStream = new ByteArrayInputStream(jsonBytes);
     return convertToMsgPack(inputStream);
@@ -76,7 +76,7 @@ public final class MsgPackConverter {
       convert(inputStream, outputStream, JSON_FACTORY, MESSAGE_PACK_FACTORY);
 
       return outputStream.toByteArray();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException("Failed to convert JSON to MessagePack", e);
     }
   }
@@ -85,41 +85,44 @@ public final class MsgPackConverter {
   ///////////////////////////////////// MSGPACK to JSON //////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public static String convertToJson(DirectBuffer buffer) {
+  public static String convertToJson(final DirectBuffer buffer) {
     return convertToJson(BufferUtil.bufferAsArray(buffer));
   }
 
-  public static String convertToJson(byte[] msgPack) {
+  public static String convertToJson(final byte[] msgPack) {
     return convertToJson(new ByteArrayInputStream(msgPack));
   }
 
-  public static String convertToJson(InputStream msgPackInputStream) {
+  private static String convertToJson(final InputStream msgPackInputStream) {
     final byte[] jsonBytes = convertToJsonBytes(msgPackInputStream);
     return new String(jsonBytes, JSON_CHARSET);
   }
 
-  public static InputStream convertToJsonInputStream(byte[] msgPack) {
+  public static InputStream convertToJsonInputStream(final byte[] msgPack) {
     final byte[] jsonBytes = convertToJsonBytes(msgPack);
     return new ByteArrayInputStream(jsonBytes);
   }
 
-  private static byte[] convertToJsonBytes(byte[] msgPack) {
+  private static byte[] convertToJsonBytes(final byte[] msgPack) {
     final InputStream inputStream = new ByteArrayInputStream(msgPack);
     return convertToJsonBytes(inputStream);
   }
 
-  private static byte[] convertToJsonBytes(InputStream msgPackInputStream) {
+  private static byte[] convertToJsonBytes(final InputStream msgPackInputStream) {
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
       convert(msgPackInputStream, outputStream, MESSAGE_PACK_FACTORY, JSON_FACTORY);
 
       return outputStream.toByteArray();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException("Failed to convert MessagePack to JSON", e);
     }
   }
 
   private static void convert(
-      InputStream in, OutputStream out, JsonFactory inFormat, JsonFactory outFormat)
+      final InputStream in,
+      final OutputStream out,
+      final JsonFactory inFormat,
+      final JsonFactory outFormat)
       throws Exception {
     try (JsonParser parser = inFormat.createParser(in);
         JsonGenerator generator = outFormat.createGenerator(out, JSON_ENCODING)) {
@@ -131,11 +134,6 @@ public final class MsgPackConverter {
       }
 
       generator.copyCurrentStructure(parser);
-
-      if (parser.nextToken() != null) {
-        throw new RuntimeException("Document has more content than a single object/array");
-      }
-
       generator.flush();
     }
   }
@@ -144,39 +142,39 @@ public final class MsgPackConverter {
   ///////////////////////////////////// MSGPACK to MAP ///////////////////////////////////////////
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
-  public static Map<String, Object> convertToMap(DirectBuffer buffer) {
+  public static Map<String, Object> convertToMap(final DirectBuffer buffer) {
     return convertToMap(OBJECT_MAP_TYPE_REFERENCE, buffer);
   }
 
-  public static Map<String, String> convertToStringMap(DirectBuffer buffer) {
+  public static Map<String, String> convertToStringMap(final DirectBuffer buffer) {
     return convertToMap(STRING_MAP_TYPE_REFERENCE, buffer);
   }
 
   private static <T extends Object> Map<String, T> convertToMap(
-      TypeReference<HashMap<String, T>> typeRef, DirectBuffer buffer) {
+      final TypeReference<HashMap<String, T>> typeRef, final DirectBuffer buffer) {
     final byte[] msgpackBytes = BufferUtil.bufferAsArray(buffer);
 
     try {
       return MESSSAGE_PACK_OBJECT_MAPPER.readValue(msgpackBytes, typeRef);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException("Failed to deserialize MessagePack to Map", e);
     }
   }
 
-  public static byte[] convertToMsgPack(Object value) {
+  public static byte[] convertToMsgPack(final Object value) {
     try {
       return MESSSAGE_PACK_OBJECT_MAPPER.writeValueAsBytes(value);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(
           String.format("Failed to serialize object '%s' to MessagePack", value), e);
     }
   }
 
-  public static String convertJsonSerializableObjectToJson(JsonSerializable recordValue) {
+  public static String convertJsonSerializableObjectToJson(final JsonSerializable recordValue) {
     try {
 
       return JSON_OBJECT_MAPPER.writeValueAsString(recordValue);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
