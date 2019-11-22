@@ -105,7 +105,7 @@ void runRelease(params) {
     -Dtag=${params.RELEASE_VERSION} -DreleaseVersion=${params.RELEASE_VERSION} -DdevelopmentVersion=${
       params.DEVELOPMENT_VERSION
     } \
-    --settings=\$MAVEN_SETTINGS_XML '-Darguments=--settings=$MAVEN_SETTINGS_XML -DskipTests -DskipNexusStagingDeployMojo=${skipDeploy} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
+    --settings=\$MAVEN_SETTINGS_XML '-Darguments=--settings=${MAVEN_SETTINGS_XML} -DskipTests -DskipNexusStagingDeployMojo=${skipDeploy} -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn' \
     -B --fail-at-end -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
   """)
   }
