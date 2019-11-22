@@ -33,9 +33,6 @@ services:
     ports:
       - 8080:8080
       - 9092:9092
-#    volumes:
-#      - "./backend/target/cambpm_logs:/camunda/logs"
-
     restart: always
     cpu_count: 1
     mem_limit: 2g

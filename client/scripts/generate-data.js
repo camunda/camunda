@@ -36,5 +36,20 @@ const generateDataProcess = spawn(
 process.on('SIGINT', () => generateDataProcess.kill('SIGINT'));
 process.on('SIGTERM', () => generateDataProcess.kill('SIGTERM'));
 
-generateDataProcess.on('error', () => process.exit(1));
-generateDataProcess.on('close', code => process.exit(code));
+generateDataProcess.on(
+  'error',
+  () => {
+    process.exit(1);
+  }
+);
+generateDataProcess.on(
+  'close',
+  code => {
+    if (code == 0) {
+      console.debug("generate-data script execution finished successfully");
+    } else {
+      console.error("generate-data script execution failed");
+    }
+    process.exit(code);
+  }
+);

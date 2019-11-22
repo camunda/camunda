@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -60,7 +61,6 @@
   </build>
 
   <profiles>
-
     <profile>
       <id>client.e2etests-browserstack</id>
       <build>
@@ -101,30 +101,6 @@
                 <phase>test</phase>
                 <configuration>
                   <arguments>run e2e:ci-chromeheadless</arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-
-    <profile>
-      <id>client.generate-data</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.github.eirslett</groupId>
-            <artifactId>frontend-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>yarn-start-generate-data-ci</id>
-                <goals>
-                  <goal>yarn</goal>
-                </goals>
-                <phase>generate-test-resources</phase>
-                <configuration>
-                  <arguments>run generate-data ci</arguments>
                 </configuration>
               </execution>
             </executions>

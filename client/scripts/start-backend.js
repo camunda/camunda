@@ -18,7 +18,8 @@ const xml2js = require('xml2js');
 const ciMode = process.argv.indexOf('ci') > -1;
 
 // if we are in ci mode we assume data generation is already complete
-let dataGenerationComplete = ciMode;
+let engineDataGenerationComplete = ciMode;
+let eventIngestionComplete = false;
 
 fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
   xml2js.parseString(data, {explicitArray: false}, (err, data) => {
@@ -34,11 +35,11 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     startManagementServer();
 
     if (ciMode) {
-      startBackend();
+      startBackend().then(ingestEventData);
     } else {
       buildBackend().then(() => {
-        startBackend();
         startDocker().then(generateDemoData);
+        startBackend().then(ingestEventData);
       });
     }
 
@@ -82,25 +83,31 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function startBackend() {
-      const backendProcess = spawn(
-        'java',
-        [
-          '-cp',
-          `../src/main/resources/:optimize-backend-${backendVersion}.jar`,
-          'org.camunda.optimize.Main',
-          '-Xms1g',
-          '-Xmx1g',
-          '-XX:MetaspaceSize=256m',
-          '-XX:MaxMetaspaceSize=256m'
-        ],
-        {
-          cwd: path.resolve(__dirname, '..', '..', 'backend', 'target'),
-          shell: true
-        }
-      );
+      return new Promise(resolve => {
+        const backendProcess = spawn(
+          'java',
+          [
+            '-cp',
+            `../src/main/resources/:optimize-backend-${backendVersion}.jar`,
+            '-Xms1g',
+            '-Xmx1g',
+            '-XX:MetaspaceSize=256m',
+            '-XX:MaxMetaspaceSize=256m',
+            '-DOPTIMIZE_EVENT_INGESTION_API_SECRET=secret',
+            'org.camunda.optimize.Main'
+          ],
+          {
+            cwd: path.resolve(__dirname, '..', '..', 'backend', 'target'),
+            shell: true
+          }
+        );
 
-      backendProcess.stdout.on('data', data => addLog(data, 'backend'));
-      backendProcess.stderr.on('data', data => addLog(data, 'backend', true));
+        backendProcess.stdout.on('data', data => addLog(data, 'backend'));
+        backendProcess.stderr.on('data', data => addLog(data, 'backend', true));
+
+        // wait for the optimize endpoint to be up before resolving the promise
+        serverCheck('http://localhost:8090', resolve);
+      });
     }
 
     function startDocker() {
@@ -122,23 +129,23 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         process.on('SIGTERM', stopDocker);
 
         // wait for the engine rest endpoint to be up before resolving the promise
-        function serverCheck() {
-          setTimeout(() => {
-            request('http://localhost:8080', err => {
-              if (err) {
-                return serverCheck();
-              }
-              resolve();
-            });
-          }, 1000);
-        }
-
-        serverCheck();
+        serverCheck('http://localhost:8080', resolve);
       });
     }
 
+    function serverCheck(url, onComplete) {
+      setTimeout(() => {
+        request(url, err => {
+          if (err) {
+            return serverCheck(url, onComplete);
+          }
+          onComplete();
+        });
+      }, 1000);
+    }
+
     function generateDemoData() {
-      const dataGenerator = spawn('yarn', ['run', 'generate-data']);
+      const dataGenerator = spawn('node', ['scripts/generate-data']);
 
       dataGenerator.stdout.on('data', data => addLog(data, 'dataGenerator'));
       dataGenerator.stderr.on('data', data => addLog(data, 'dataGenerator', true));
@@ -147,7 +154,21 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       process.on('SIGTERM', () => dataGenerator.kill('SIGTERM'));
 
       dataGenerator.on('exit', () => {
-        dataGenerationComplete = true;
+        engineDataGenerationComplete = true;
+      });
+    }
+
+    function ingestEventData() {
+      const eventIngestProcess = spawn('node', ['scripts/ingest-event-data']);
+
+      eventIngestProcess.stdout.on('data', data => addLog(data, 'dataGenerator'));
+      eventIngestProcess.stderr.on('data', data => addLog(data, 'dataGenerator', true));
+
+      process.on('SIGINT', () => eventIngestProcess.kill('SIGINT'));
+      process.on('SIGTERM', () => eventIngestProcess.kill('SIGTERM'));
+
+      eventIngestProcess.on('exit', () => {
+        eventIngestionComplete = true;
       });
     }
 
@@ -155,7 +176,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
       const server = http.createServer(function(request, response) {
         if (request.url === '/api/dataGenerationComplete') {
           response.writeHead(200, {'Content-Type': 'text/plain'});
-          response.end(dataGenerationComplete.toString(), 'utf-8');
+          response.end((engineDataGenerationComplete && eventIngestionComplete).toString(), 'utf-8');
           return;
         }
 

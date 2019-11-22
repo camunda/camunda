@@ -46,7 +46,6 @@
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
-    "generate-data": "node scripts/generate-data",
     "dependencies": "node scripts/dependencies.js"
   },
   "husky": {
