@@ -94,6 +94,9 @@ data:
       # fetching date data from the engine(should be the same as in the engine)
       engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
 
+    ingestion:
+      apiSecret: secret
+
 ######################## CAM BPM ########################
   configure-and-run.sh: |
     #!/bin/bash -ex

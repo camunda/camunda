@@ -166,6 +166,23 @@ pipeline {
         }
       }
     }
+    stage('Ingest Event Data') {
+      steps {
+        container('gcloud') {
+          dir('optimize') {
+            sh("""
+              kubectl -n optimize-stage rollout status deployment/stage-optimize-camunda-cloud --watch=true
+              kubectl -n optimize-stage port-forward deployment/stage-optimize-camunda-cloud 8090:8090 &
+              curl -X PUT \
+                http://localhost:8090/api/ingestion/event/batch \
+                -H 'Content-Type: application/json' \
+                -H 'X-Optimize-API-Secret: secret' \
+                --data "@.client/demo-data/eventIngestionBatch.json"
+            """)
+          }
+        }
+      }
+    }
   }
 
   post {
