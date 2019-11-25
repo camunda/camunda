@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.SetVariablesResponse;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.client.util.StringUtil;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
@@ -36,12 +37,17 @@ public class SetVariablesTest extends ClientTest {
   @Test
   public void shouldCommandWithVariablesAsString() {
     // given
+    gatewayService.onSetVariablesRequest(345);
     final String variables = "{\"key\": \"val\"}";
 
     // when
-    client.newSetVariablesCommand(123).variables(variables).send().join();
+    final SetVariablesResponse response =
+        client.newSetVariablesCommand(123).variables(variables).send().join();
 
     // then
+    assertThat(response).isNotNull();
+    assertThat(response.getKey()).isEqualTo(345);
+
     final SetVariablesRequest request = gatewayService.getLastRequest();
     assertThat(request.getElementInstanceKey()).isEqualTo(123);
     assertThat(fromJsonAsMap(request.getVariables())).containsOnly(entry("key", "val"));
