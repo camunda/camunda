@@ -285,3 +285,10 @@ function getDateFormat(unit) {
   }
   return dateFormat;
 }
+
+export function formatTenantName({id, name}) {
+  if (!id) {
+    return t('common.definitionSelection.tenant.notDefined');
+  }
+  return name || id;
+}

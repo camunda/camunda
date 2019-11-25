@@ -10,6 +10,8 @@ import {Popover, ButtonGroup, Button, Switch, Form} from 'components';
 
 import './TenantPopover.scss';
 import {t} from 'translation';
+import {formatters} from 'services';
+const {formatTenantName} = formatters;
 
 export default function TenantPopover({tenants, selected, onChange}) {
   const allSelected = tenants.length === selected.length;
@@ -37,20 +39,22 @@ export default function TenantPopover({tenants, selected, onChange}) {
             </Button>
             <Button onClick={() => onChange([])}>{t('common.disableAll')}</Button>
           </ButtonGroup>
-          {tenants.map(tenant => (
-            <Switch
-              key={tenant.id}
-              checked={selected.includes(tenant.id)}
-              onChange={({target}) => {
-                if (target.checked) {
-                  onChange(selected.concat([tenant.id]));
-                } else {
-                  onChange(selected.filter(id => id !== tenant.id));
-                }
-              }}
-              label={tenant.name}
-            />
-          ))}
+          {tenants.map(tenant => {
+            return (
+              <Switch
+                key={tenant.id}
+                checked={selected.includes(tenant.id)}
+                onChange={({target}) => {
+                  if (target.checked) {
+                    onChange(selected.concat([tenant.id]));
+                  } else {
+                    onChange(selected.filter(id => id !== tenant.id));
+                  }
+                }}
+                label={formatTenantName(tenant)}
+              />
+            );
+          })}
         </fieldset>
       </Form>
     </Popover>

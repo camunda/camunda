@@ -6,6 +6,8 @@
 
 import {get} from 'request';
 import {t} from 'translation';
+import {formatters} from 'services';
+const {formatTenantName} = formatters;
 
 export async function searchIdentities(terms) {
   const response = await get(`api/identity/search`, {terms});
@@ -44,22 +46,22 @@ export function formatTenants(tenants, selectedTenants) {
 
     return {
       id,
-      label: name,
+      label: formatTenantName({id, name}),
       checked: selectedTenants.some(tenant => tenant.id === id)
     };
   });
 }
 
 export function formatDefinitions(definitions, selectedDefinitions) {
-  return definitions.map(({key, name, type}) => ({
-    id: key,
-    label: formatDefintionName({name, type}),
-    checked: selectedDefinitions.some(def => def.key === key)
+  return definitions.map(def => ({
+    id: def.key,
+    label: formatDefintionName(def),
+    checked: selectedDefinitions.some(({key}) => key === def.key)
   }));
 }
 
-export function formatDefintionName({name, type}) {
+export function formatDefintionName({key, name, type}) {
   const typeLabel = type === 'process' ? t('home.sources.process') : t('home.sources.decision');
 
-  return name + ' (' + typeLabel + ')';
+  return (name || key) + ' (' + typeLabel + ')';
 }

@@ -623,7 +623,8 @@
         }
       },
       "tenant": {
-        "includeData": "Include data from"
+        "includeData": "Include data from",
+        "notDefined": "Not defined"
       },
       "versionWarning": "Note: data from the older versions can deviate, therefore the report data can be inconsistent",
       "noSourcesWarning": "To enable selection, Data Sources must be added to the Collection."

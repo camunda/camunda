@@ -1,0 +1,37 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should correctly format definitions 1`] = `
+Array [
+  Object {
+    "checked": false,
+    "id": "beverages",
+    "label": "Beverages (Decision Table)",
+  },
+  Object {
+    "checked": true,
+    "id": "process_id",
+    "label": "process_id (Process)",
+  },
+]
+`;
+
+exports[`should correctly format tenants 1`] = `
+Array [
+  Object {
+    "checked": true,
+    "id": null,
+    "label": "Not defined",
+  },
+  Object {
+    "checked": false,
+    "id": "tenant_id",
+    "label": "tenant_id",
+  },
+  Object {
+    "checked": true,
+    "disabled": true,
+    "id": 2,
+    "label": "(Unauthorized Tenant)",
+  },
+]
+`;
