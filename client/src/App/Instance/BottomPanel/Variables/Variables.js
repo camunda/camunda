@@ -50,11 +50,15 @@ export default function Variables({
     setValue(value);
   }
 
+  function scrollToBottom() {
+    const scrollableElement = variablesContentRef.current.children[0];
+    scrollableElement.scrollTop = scrollableElement.scrollHeight;
+  }
+
   // scroll to the bottom of the table if the variables inputs got added
   useEffect(() => {
     if (editMode === MODE.ADD) {
-      const scrollableElement = variablesContentRef.current.children[0];
-      scrollableElement.scrollTop = scrollableElement.scrollHeight;
+      scrollToBottom();
     }
   }, [editMode]);
 
@@ -134,6 +138,7 @@ export default function Variables({
             maxRows={4}
             value={value}
             onChange={e => setValue(e.target.value)}
+            onHeightChange={scrollToBottom}
           />
         </Styled.EditInputTD>
         <Styled.AddButtonsTD>
