@@ -34,7 +34,9 @@ func TestSetVariablesCommandWithVariablesFromString(t *testing.T) {
 		ElementInstanceKey: 123,
 		Variables:          variables,
 	}
-	stub := &pb.SetVariablesResponse{}
+	stub := &pb.SetVariablesResponse{
+		Key: 523,
+	}
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
@@ -68,7 +70,9 @@ func TestSetVariablesCommandWithVariablesFromStringer(t *testing.T) {
 		ElementInstanceKey: 123,
 		Variables:          variables,
 	}
-	stub := &pb.SetVariablesResponse{}
+	stub := &pb.SetVariablesResponse{
+		Key: 523,
+	}
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
@@ -102,7 +106,9 @@ func TestSetVariablesCommandWithVariablesFromObject(t *testing.T) {
 		ElementInstanceKey: 123,
 		Variables:          variables,
 	}
-	stub := &pb.SetVariablesResponse{}
+	stub := &pb.SetVariablesResponse{
+		Key: 523,
+	}
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
@@ -136,7 +142,9 @@ func TestSetVariablesCommandWithVariablesFromObjectOmitempty(t *testing.T) {
 		ElementInstanceKey: 123,
 		Variables:          variables,
 	}
-	stub := &pb.SetVariablesResponse{}
+	stub := &pb.SetVariablesResponse{
+		Key: 523,
+	}
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
@@ -170,7 +178,9 @@ func TestSetVariablesCommandWithVariablesFromObjectIgnoreOmitempty(t *testing.T)
 		ElementInstanceKey: 123,
 		Variables:          variables,
 	}
-	stub := &pb.SetVariablesResponse{}
+	stub := &pb.SetVariablesResponse{
+		Key: 523,
+	}
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
@@ -206,7 +216,9 @@ func TestSetVariablesCommandWithVariablesFromMap(t *testing.T) {
 		ElementInstanceKey: 123,
 		Variables:          variables,
 	}
-	stub := &pb.SetVariablesResponse{}
+	stub := &pb.SetVariablesResponse{
+		Key: 523,
+	}
 
 	client.EXPECT().SetVariables(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
