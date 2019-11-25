@@ -31,21 +31,21 @@ export const Row = themed(styled.div`
       dark: Colors.uiDark04,
       light: Colors.uiLight05
     })};
-  padding: 10px 10px;
+  padding: 13px 10px;
 `);
 
 export const VariableBlock = themed(styled.div`
-  margin-left: 8px;
-  height: 12px;
-  max-width: 129px;
+  margin-left: 4px;
+  height: 14px;
+  max-width: 200px;
   flex-grow: 1;
   ${colors};
 `);
 
 export const ValueBlock = themed(styled.div`
-  margin-left: 80px;
+  margin-left: 30px;
   margin-right: 40px;
-  height: 12px;
+  height: 14px;
 
   flex-grow: 2;
   ${colors};
