@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.ImmutableSet;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -46,6 +47,8 @@ public class ConfigurationParser {
   private static final Pattern VARIABLE_PLACEHOLDER_PATTERN = Pattern.compile(
     "\\$\\{([a-zA-Z_]+[a-zA-Z0-9_]*)(:(.*))?}"
   );
+  // explicit yaml null values see https://yaml.org/type/null.html
+  private static final Set<String> YAML_EXPLICIT_NULL_VALUES = ImmutableSet.of("~", "null", "Null", "NULL");
 
   public static Optional<DocumentContext> parseConfigFromLocations(List<InputStream> sources) {
     YAMLMapper yamlMapper = configureConfigMapper();
@@ -98,9 +101,9 @@ public class ConfigurationParser {
     return newValue;
   }
 
-  private static String resolveVariablePlaceholders(final String value) {
-    String resolvedValue = value;
-    final Matcher matcher = VARIABLE_PLACEHOLDER_PATTERN.matcher(value);
+  private static String resolveVariablePlaceholders(final String rawValue) {
+    String resolvedValue = rawValue;
+    final Matcher matcher = VARIABLE_PLACEHOLDER_PATTERN.matcher(rawValue);
     while (matcher.find()) {
       final String envVariableName = matcher.group(1);
       String envVariableValue = Optional.ofNullable(System.getProperty(envVariableName, null))
@@ -113,9 +116,11 @@ public class ConfigurationParser {
             envVariableName
           ));
         }
-        envVariableValue = envVariableDefaultValue;
+        envVariableValue = YAML_EXPLICIT_NULL_VALUES.contains(envVariableDefaultValue) ? null : envVariableDefaultValue;
       }
-      resolvedValue = value.replace(matcher.group(), envVariableValue);
+      resolvedValue = Optional.ofNullable(envVariableValue)
+        .map(value -> rawValue.replace(matcher.group(), value))
+        .orElse(null);
     }
     return resolvedValue;
   }

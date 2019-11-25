@@ -21,9 +21,11 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 public class ConfigurationServiceTest {
 
@@ -46,6 +48,8 @@ public class ConfigurationServiceTest {
   private static final String CUSTOM_PACKAGE_2 = "pack2";
   private static final String DEFAULT_PACKAGE_3 = "";
   private static final String CUSTOM_PACKAGE_3 = "pack_3";
+  private static final String SECRET = "secret";
+  private static final String ACCESS_URL = "accessUrl";
 
   @Rule
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -163,6 +167,8 @@ public class ConfigurationServiceTest {
     environmentVariables.set("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
     environmentVariables.set("PACKAGE_2", CUSTOM_PACKAGE_2);
     environmentVariables.set("PACKAGE_3", CUSTOM_PACKAGE_3);
+    environmentVariables.set("SECRET", SECRET);
+    environmentVariables.set("ACCESS_URL", ACCESS_URL);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -182,6 +188,8 @@ public class ConfigurationServiceTest {
     System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
     System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
+    System.setProperty("SECRET", SECRET);
+    System.setProperty("ACCESS_URL", ACCESS_URL);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -201,6 +209,8 @@ public class ConfigurationServiceTest {
     environmentVariables.set("ES_PORT_2", "wrong");
     environmentVariables.set("PACKAGE_2", "wrong");
     environmentVariables.set("PACKAGE_3", "wrong");
+    environmentVariables.set("SECRET", "wrong");
+    environmentVariables.set("ACCESS_URL", "wrong");
     System.setProperty("AUTH_TOKEN_LIFEMIN", String.valueOf(CUSTOM_AUTH_TOKEN_LIFEMIN));
     System.setProperty("IMPORT_ENABLED_1", String.valueOf(CUSTOM_FIRST_ENGINE_IMPORT_ENABLED));
     System.setProperty("IMPORT_ENABLED_2", String.valueOf(CUSTOM_SECOND_ENGINE_IMPORT_ENABLED));
@@ -210,6 +220,8 @@ public class ConfigurationServiceTest {
     System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
     System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
+    System.setProperty("SECRET", SECRET);
+    System.setProperty("ACCESS_URL", ACCESS_URL);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -239,6 +251,8 @@ public class ConfigurationServiceTest {
     System.setProperty("ES_PORT_2", String.valueOf(CUSTOM_SECOND_ES_PORT));
     System.setProperty("PACKAGE_2", CUSTOM_PACKAGE_2);
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
+    System.setProperty("SECRET", SECRET);
+    System.setProperty("ACCESS_URL", ACCESS_URL);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -331,6 +345,20 @@ public class ConfigurationServiceTest {
       underTest.getVariableImportPluginBasePackages(),
       contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3)
     );
+    // by default a secret will get generated, so it should neither be the custom secret value
+    assertThat(
+      underTest.getIngestionConfiguration().getApiSecret(),
+      is(not(SECRET))
+    );
+    // nor should it be null
+    assertThat(
+      underTest.getIngestionConfiguration().getApiSecret(),
+      is(not(nullValue()))
+    );
+    assertThat(
+      underTest.getContainerAccessUrl().isPresent(),
+      is(false)
+    );
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
@@ -356,6 +384,14 @@ public class ConfigurationServiceTest {
     assertThat(
       underTest.getVariableImportPluginBasePackages(),
       contains("1", CUSTOM_PACKAGE_2, CUSTOM_PACKAGE_3)
+    );
+    assertThat(
+      underTest.getIngestionConfiguration().getApiSecret(),
+      is(SECRET)
+    );
+    assertThat(
+      underTest.getContainerAccessUrl().get(),
+      is(ACCESS_URL)
     );
   }
 
