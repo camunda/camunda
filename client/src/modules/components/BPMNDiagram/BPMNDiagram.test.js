@@ -220,6 +220,20 @@ it('should re-use viewer instances', async () => {
   expect(viewer1).toBe(viewer2);
 });
 
+it('should not re-use modeler instances', async () => {
+  const node1 = mount(<BPMNDiagram {...props} allowModeling />);
+  await flushPromises();
+
+  const viewer1 = node1.instance().viewer;
+  node1.unmount();
+
+  const node2 = mount(<BPMNDiagram {...props} allowModeling />);
+  await flushPromises();
+
+  const viewer2 = node2.instance().viewer;
+  expect(viewer1).not.toBe(viewer2);
+});
+
 it('should show a loading indicator while loading', () => {
   const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
 

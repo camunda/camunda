@@ -61,7 +61,7 @@ exports[`matches the snapshot 1`] = `
           "/events/*",
         ]
       }
-      linksTo="/events"
+      linksTo="/events/"
       name="Event Based Processes"
     />
   </HeaderNav>

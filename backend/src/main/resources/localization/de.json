@@ -97,8 +97,12 @@
     "empty": "Es wurde noch nichts erstellt"
   },
   "events": {
+    "new": "Neuer Prozess",
+    "modelProcess": "Prozess modellieren",
+    "upload": ".bpmn hochladen",
     "empty": "Es wurden noch keine Eventbasierten Prozesse erstellt",
-    "label": "Eventbasierter Prozess"
+    "label": "Eventbasierter Prozess",
+    "parseError": "Konnte Datei nicht verarbeiten. Bitte wählen Sie eine valide BPMN-Datei aus."
   },
   "report": {
     "label": "Bericht",
@@ -454,7 +458,8 @@
       "showLess": "Zeige weniger ...",
       "namePlaceholder": {
         "Report": "Berichtsname",
-        "Dashboard": "Dashboard-Name"
+        "Dashboard": "Dashboard-Name",
+        "Process": "Prozessname"
       }
     },
     "user": {

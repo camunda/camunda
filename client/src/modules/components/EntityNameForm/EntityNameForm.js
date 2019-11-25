@@ -26,6 +26,8 @@ export default class EntityNameForm extends React.Component {
   render() {
     const {entity, name, isNew, disabledButtons, onCancel, onSave, onChange} = this.props;
 
+    const homeLink = entity === 'Process' ? '../' : '../../';
+
     return (
       <div className="EntityNameForm head">
         <div className="name-container">
@@ -52,7 +54,7 @@ export default class EntityNameForm extends React.Component {
           <Link
             disabled={disabledButtons}
             className="Button tool-button cancel-button"
-            to={isNew ? '../../' : './'}
+            to={isNew ? homeLink : './'}
             onClick={onCancel}
           >
             <Icon type="stop" />

@@ -1,0 +1,30 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="ProcessEdit"
+>
+  <div
+    className="header"
+  >
+    <EntityNameForm
+      entity="Process"
+      isNew={false}
+      name="initial Name"
+      onCancel={[MockFunction]}
+      onChange={[Function]}
+      onSave={[Function]}
+    />
+  </div>
+  <Themed(BPMNDiagramErrorHandler)
+    allowModeling={true}
+    xml="initial XML"
+  >
+    <ProcessRenderer
+      getXml={Object {}}
+      name="initial Name"
+      onChange={[Function]}
+    />
+  </Themed(BPMNDiagramErrorHandler)>
+</div>
+`;

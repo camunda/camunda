@@ -6,6 +6,7 @@
 
 import React from 'react';
 
+import Modeler from 'bpmn-js/lib/Modeler';
 import NavigatedViewer from 'bpmn-js/lib/NavigatedViewer';
 import Viewer from 'bpmn-js/lib/Viewer';
 
@@ -58,7 +59,7 @@ export default themed(
       }
 
       unattach = (xml, theme) => {
-        if (this.viewer) {
+        if (this.viewer && this.viewer.constructor !== Modeler) {
           this.viewer.detach();
           availableViewers.push({
             viewer: this.viewer,
@@ -80,26 +81,36 @@ export default themed(
 
         const available = availableViewers[idx];
 
-        if (available) {
+        if (!this.props.allowModeling && available) {
           availableViewers.splice(idx, 1);
           return available.viewer;
         }
 
-        const viewer = new (this.props.disableNavigation ? Viewer : NavigatedViewer)({
+        let Constructor = NavigatedViewer;
+        if (this.props.disableNavigation) {
+          Constructor = Viewer;
+        } else if (this.props.allowModeling) {
+          Constructor = Modeler;
+        }
+
+        const viewer = new Constructor({
           canvas: {
             deferUpdate: false
           },
+          keyboard: {bindTo: document},
           bpmnRenderer: getDiagramColors(theme)
         });
 
         return new Promise(resolve => {
           viewer.importXML(xml, () => {
             const defs = viewer._container.querySelector('defs');
-            const highlightMarker = defs.querySelector('marker').cloneNode(true);
+            if (defs) {
+              const highlightMarker = defs.querySelector('marker').cloneNode(true);
 
-            highlightMarker.setAttribute('id', 'sequenceflow-end-highlight');
+              highlightMarker.setAttribute('id', 'sequenceflow-end-highlight');
 
-            defs.appendChild(highlightMarker);
+              defs.appendChild(highlightMarker);
+            }
             resolve(viewer);
           });
         });

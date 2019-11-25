@@ -18,6 +18,7 @@ import {
   Dashboard,
   Analysis,
   Events,
+  Process,
   Sharing
 } from './components';
 
@@ -42,9 +43,10 @@ class App extends React.Component {
     const components = {
       report: Report,
       dashboard: Dashboard,
+      events: Process,
       collection: Collection
     };
-    const entities = ['report', 'dashboard', 'collection'];
+    const entities = ['report', 'dashboard', 'collection', 'events'];
     let Component, newProps;
     for (let entity of entities) {
       const splitResult = props.location.pathname.split('/' + entity)[1];
@@ -95,10 +97,10 @@ class App extends React.Component {
                       <Switch>
                         <PrivateRoute exact path="/" component={Home} />
                         <PrivateRoute path="/analysis" component={Analysis} />
-                        <PrivateRoute path="/events" component={Events} />
+                        <PrivateRoute exact path="/events" component={Events} />
                         <Route exact path="/share/:type/:id" component={Sharing} />
                         <PrivateRoute
-                          path="/(report|dashboard|collection)/*"
+                          path="/(report|dashboard|collection|events)/*"
                           render={this.renderEntity}
                         />
                         <PrivateRoute path="*" component={ErrorPage} />

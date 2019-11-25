@@ -5,7 +5,7 @@
  */
 
 export {Analysis} from './Analysis';
-export {Events} from './Events';
+export {Events, Process} from './Events';
 export {Footer} from './Footer';
 export {Header} from './Header';
 export {PrivateRoute} from './PrivateRoute';

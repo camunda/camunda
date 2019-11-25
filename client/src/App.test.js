@@ -58,7 +58,7 @@ it('should render the last component in the url', async () => {
   );
 
   const renderedEntity = shallow(
-    routes.find({path: '/(report|dashboard|collection)/*'}).prop('render')({
+    routes.find({path: '/(report|dashboard|collection|events)/*'}).prop('render')({
       location: {pathname: '/collection/cid/dashboard/did/report/rid'}
     })
   );

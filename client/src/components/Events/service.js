@@ -4,13 +4,29 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get, del} from 'request';
+import {get, post, put, del} from 'request';
 
 export async function loadProcesses() {
   const response = await get('/api/eventBasedProcess');
   return await response.json();
 }
 
+export async function loadProcess(id) {
+  const response = await get('/api/eventBasedProcess/' + id);
+  return await response.json();
+}
+
 export async function removeProcess(id) {
   return await del(`api/eventBasedProcess/${id}`);
+}
+
+export async function createProcess(name, xml) {
+  const response = await post('/api/eventBasedProcess', {name, xml, mappings: {}});
+  const json = await response.json();
+
+  return json.id;
+}
+
+export async function updateProcess(id, name, xml) {
+  return await put('/api/eventBasedProcess/' + id, {name, xml, mappings: {}});
 }

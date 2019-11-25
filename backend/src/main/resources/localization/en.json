@@ -97,8 +97,12 @@
     "empty": "There are no items created yet"
   },
   "events": {
+    "new": "New Process",
+    "modelProcess": "Model a Process",
+    "upload": "Upload .bpmn",
     "empty": "There are no Event Based Processes created yet",
-    "label": "Event Based Process"
+    "label": "Event Based Process",
+    "parseError": "Could not parse file. Please make sure to upload a valid bpmn file."
   },
   "report": {
     "label": "Report",
@@ -454,7 +458,8 @@
       "showLess": "Show less...",
       "namePlaceholder": {
         "Report": "Report name",
-        "Dashboard": "Dashboard name"
+        "Dashboard": "Dashboard name",
+        "Process": "Process name"
       }
     },
     "user": {

@@ -5,6 +5,22 @@ exports[`should match snapshot 1`] = `
   className="Events"
 >
   <EntityList
+    action={
+      <Dropdown
+        label="New Process"
+      >
+        <ForwardRef(DropdownOption)
+          link="new/edit"
+        >
+          Model a Process
+        </ForwardRef(DropdownOption)>
+        <ForwardRef(DropdownOption)
+          onClick={[Function]}
+        >
+          Upload .bpmn
+        </ForwardRef(DropdownOption)>
+      </Dropdown>
+    }
     data={
       Array [
         Object {
