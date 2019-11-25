@@ -236,7 +236,9 @@ pipeline {
       }
       steps {
         container('docker') {
-          sh ("""
+          configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+            sh("""
+            cp \$MAVEN_SETTINGS_XML settings.xml 
             echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
             echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize optimize.registry.camunda.cloud --password-stdin
 
@@ -256,6 +258,7 @@ pipeline {
               docker push ${PUBLIC_DOCKER_IMAGE()}:latest
             fi
           """)
+          }
         }
       }
     }

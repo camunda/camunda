@@ -38,8 +38,8 @@
               <target name="unpack optimize distributions">
                 <!-- if executed in Jenkins, use settings.xml in Optimize root dir -->
                 <property environment="env" />
-                <condition property="maven-settings" value="--settings=settings.xml" else="">
-                  <isset property="env.JENKINS_URL" />
+                <condition property="maven-settings" value="--settings=${env.MAVEN_SETTINGS_XML}" else="">
+                  <isset property="env.MAVEN_SETTINGS_XML" />
                 </condition>
                 <ac:for xmlns:ac="antlib:net.sf.antcontrib" list="${upgrade.versions}" param="currentVersion">
                   <sequential>

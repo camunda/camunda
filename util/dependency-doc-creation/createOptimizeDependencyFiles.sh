@@ -4,9 +4,8 @@ BASEDIR="$( cd "$(dirname "$0")" ; pwd -P )"
 
 cd ${BASEDIR}/../../
 OPTIMIZE_ROOT=`pwd`
-SETTINGS_PATH=`find ${OPTIMIZE_ROOT} -iname "settings.xml"`
 
-SETTINGS_COMMAND=$([[ "$1" == "useCISettings" ]] && echo "-s ${SETTINGS_PATH}" || echo "")
+SETTINGS_COMMAND=$([[ "$1" == "useCISettings" ]] && echo "-s ${MAVEN_SETTINGS_XML}" || echo "")
 echo "Using maven settings command option: ${SETTINGS_COMMAND}"
 
 cd ./backend

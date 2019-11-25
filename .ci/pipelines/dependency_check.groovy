@@ -111,7 +111,8 @@ pipeline {
         stage('Create dependency lists') {
             steps {
                 container('maven') {
-                    sh ("""
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh("""
                         cd ./util/dependency-doc-creation/
                         ./createOptimizeDependencyFiles.sh useCISettings
 
@@ -139,7 +140,8 @@ pipeline {
                         sed '1d' frontend_diff.md > tmpfile; mv tmpfile frontend_diff.md
                         sed '1d' backend_diff.md > tmpfile; mv tmpfile backend_diff.md
                     """)
-                    buildNotification()
+                        buildNotification()
+                    }
                 }
             }
         }

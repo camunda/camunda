@@ -443,7 +443,9 @@ pipeline {
           steps {
             retry(2) {
               container('docker') {
-                sh ("""
+                configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
+                  sh("""
+                  cp \$MAVEN_SETTINGS_XML settings.xml 
                   echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
 
                   docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
@@ -459,6 +461,7 @@ pipeline {
                     docker push ${PROJECT_DOCKER_IMAGE()}:latest
                   fi
                 """)
+                }
               }
             }
           }

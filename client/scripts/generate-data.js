@@ -8,10 +8,7 @@ const {spawn} = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-// argument to determine if we are in CI mode
-const ciMode = process.argv.indexOf('ci') > -1;
-
-console.debug('executing generate-data script in [ci=' + ciMode + ']');
+console.debug('executing generate-data script in [ci=true]');
 
 // ~~~ Generator Configuration ~~~
 const e2ePresetsFile = path.resolve(__dirname, '..', 'e2e_presets.json');
@@ -23,8 +20,7 @@ const generateDataProcess = spawn(
   [
     'exec:java',
     '-f ./qa/data-generation/pom.xml',
-    `-Dexec.args="--numberOfProcessInstances ${e2ePresets.numberOfProcessInstances} --removeDeployments false --definitions ${e2ePresets.definitions}"`,
-    ciMode ? '-s settings.xml' : undefined
+    `-Dexec.args="--numberOfProcessInstances ${e2ePresets.numberOfProcessInstances} --removeDeployments false --definitions ${e2ePresets.definitions}"`
   ],
   {
     cwd: path.resolve(__dirname, '..', '..'),
