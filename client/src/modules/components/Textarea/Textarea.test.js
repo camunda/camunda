@@ -5,12 +5,19 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
 import Textarea from './Textarea';
 
 describe('Textarea', () => {
-  it('should match snapshot', () => {
-    const node = shallow(<Textarea />);
-    expect(node).toMatchSnapshot();
+  it('should render default textarea', () => {
+    const node = mount(<Textarea />);
+
+    expect(node.find('textarea').exists()).toBe(true);
+  });
+
+  it('should render autosize textarea', () => {
+    const node = mount(<Textarea hasAutoSize />);
+
+    expect(node.find('textarea').exists()).toBe(true);
   });
 });

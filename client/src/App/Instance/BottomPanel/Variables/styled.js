@@ -87,10 +87,12 @@ export const TD = themed(styled.td`
     light: 'rgba(98, 98, 110, 0.9)'
   })};
   font-weight: ${props => (props.isBold ? 'bold' : 'normal')};
+
+  padding-top: 5px
+  padding-bottom: 5px;
   padding-left: 17px;
-  padding-bottom: 2px;
   padding-right: 9px;
-  height: 32px;
+
   &:not(:nth-child(2)) {
     white-space: nowrap;
   }
@@ -176,6 +178,7 @@ export const THead = themed(styled.thead`
 export const VariableName = styled.span`
   height: 100%;
   padding-top: 5px;
+  padding-bottom: 5px;
 
   display: block;
   text-overflow: ellipsis;
@@ -204,37 +207,49 @@ export const Plus = styled(DefaultPlus)`
   margin-right: 4px;
 `;
 
+const inputMargin = css`
+  margin: 4px 0 4px 7px;
+`;
+
 export const TextInput = styled(BasicInput)`
-  height: 26px;
+  height: 30px;
+
   padding-top: 6px;
+  ${inputMargin};
+
   font-size: 14px;
   max-width: 181px;
 `;
 
 export const DisplayText = styled.div`
-  padding: 4px 0px;
-  max-height: 64px;
+  line-height: 18px;
   word-break: break-word;
+
+  padding: 4px 1px 0 0;
+  margin: 1px -14px 7px 0;
+  max-height: 76px;
 
   overflow-y: auto;
   overflow-wrap: break-word;
 `;
 
 const textAreaStyles = css`
-  min-height: 26px;
+  line-height: 18px;
   resize: vertical;
   font-size: 14px;
-`;
 
-export const EditTextarea = styled(BasicTextarea)`
-  padding: 4px 11px 2px 7px;
-  ${textAreaStyles};
+  ${inputMargin};
+  width: 100%;
 `;
 
 export const AddTextarea = styled(BasicTextarea)`
-  padding: 3px 11px 5px 8px;
-  height: 26px;
   ${textAreaStyles};
+`;
+
+export const EditTextarea = styled(BasicTextarea)`
+  ${textAreaStyles};
+  min-height: 30px;
+  max-height: 84px;
 `;
 
 export const EditButtonsTD = styled.td`
@@ -242,6 +257,7 @@ export const EditButtonsTD = styled.td`
   padding-top: 6px;
   display: flex;
   justify-content: flex-end;
+  width: 100px;
 `;
 
 export const AddButtonsTD = styled(EditButtonsTD)`
@@ -249,7 +265,6 @@ export const AddButtonsTD = styled(EditButtonsTD)`
 `;
 
 export const EditInputTD = styled.td`
-  padding: 3px 9px 4px 9px;
   position: relative;
 
   &:not(:nth-child(2)) {
@@ -261,6 +276,10 @@ export const EditInputTD = styled.td`
   }
 
   vertical-align: top;
+`;
+
+export const DisplayTextTD = styled(TD)`
+  width: 100%;
 `;
 
 export const EditButton = styled(IconButton)`

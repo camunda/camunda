@@ -4,14 +4,27 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, createRef} from 'react';
 import PropTypes from 'prop-types';
 
 import * as Styled from './styled';
 
 export default function Textarea({hasAutoSize, ...props}) {
+  const textareaAutosize = createRef();
+
+  // Initially scroll to top to maintain a consistent text position.
+  useEffect(() => {
+    if (textareaAutosize.current) {
+      textareaAutosize.current.scrollTop = 0;
+    }
+  }, []);
+
   return hasAutoSize ? (
-    <Styled.TextareaAutosize aria-label={props.placeholder} {...props} />
+    <Styled.TextareaAutosize
+      aria-label={props.placeholder}
+      {...props}
+      inputRef={textareaAutosize}
+    />
   ) : (
     <Styled.Textarea aria-label={props.placeholder} {...props} />
   );

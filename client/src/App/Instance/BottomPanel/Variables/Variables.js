@@ -173,9 +173,9 @@ export default function Variables({
                     renderInlineEdit(propValue, name)
                   ) : (
                     <>
-                      <Styled.TD>
+                      <Styled.DisplayTextTD>
                         <Styled.DisplayText>{propValue}</Styled.DisplayText>
-                      </Styled.TD>
+                      </Styled.DisplayTextTD>
                       {isRunning && (
                         <Styled.EditButtonsTD>
                           {hasActiveOperation ? (
