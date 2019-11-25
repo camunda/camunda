@@ -3,7 +3,7 @@
   "version": "1.2.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "bpmn-js": "^4.0.3",
+    "bpmn-js": "^6.0.2",
     "date-fns": "^2.7.0",
     "lodash": "^4.17.15",
     "prop-types": "^15.6.2",
