@@ -530,6 +530,7 @@ public class OptimizeRequestExecutor {
     this.addSingleQueryParam(EntityNameRequestDto.Fields.collectionId.name(), requestDto.getCollectionId());
     this.addSingleQueryParam(EntityNameRequestDto.Fields.dashboardId.name(), requestDto.getDashboardId());
     this.addSingleQueryParam(EntityNameRequestDto.Fields.reportId.name(), requestDto.getReportId());
+    this.addSingleQueryParam(EntityNameRequestDto.Fields.eventBasedProcessId.name(), requestDto.getEventBasedProcessId());
     return this;
   }
 

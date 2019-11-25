@@ -17,4 +17,6 @@ public class EntityNameDto {
   private String collectionName;
   private String dashboardName;
   private String reportName;
+  private String eventBasedProcessName;
+
 }

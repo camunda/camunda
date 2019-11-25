@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.persistence.EventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
@@ -357,15 +358,17 @@ public class EntitiesRestServiceIT extends AbstractIT {
     String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
+    String eventBasedProcessId = addEventBasedProcessToOptimize("anEventBasedProcessName");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(collectionId, dashboardId, reportId);
+    EntityNameDto result = getEntityNames(collectionId, dashboardId, reportId, eventBasedProcessId);
 
     // then
     assertThat(result.getCollectionName(), is("aCollectionName"));
     assertThat(result.getDashboardName(), is("aDashboardName"));
     assertThat(result.getReportName(), is("aReportName"));
+    assertThat(result.getEventBasedProcessName(), is("anEventBasedProcessName"));
   }
 
   @Test
@@ -377,12 +380,13 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(null, null, reportId);
+    EntityNameDto result = getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName(), nullValue());
     assertThat(result.getDashboardName(), nullValue());
     assertThat(result.getReportName(), is("aProcessReportName"));
+    assertThat(result.getEventBasedProcessName(), nullValue());
   }
 
   @Test
@@ -392,12 +396,13 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(null, null, reportId);
+    EntityNameDto result = getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName(), nullValue());
     assertThat(result.getDashboardName(), nullValue());
     assertThat(result.getReportName(), is("aDecisionReportName"));
+    assertThat(result.getEventBasedProcessName(), nullValue());
   }
 
   @Test
@@ -407,12 +412,13 @@ public class EntitiesRestServiceIT extends AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(null, null, reportId);
+    EntityNameDto result = getEntityNames(null, null, reportId, null);
 
     // then
     assertThat(result.getCollectionName(), nullValue());
     assertThat(result.getDashboardName(), nullValue());
     assertThat(result.getReportName(), is("aCombinedReportName"));
+    assertThat(result.getEventBasedProcessName(), nullValue());
   }
 
   @Test
@@ -423,7 +429,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, "notAvailableRequest"))
+      .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, "notAvailableRequest", null))
       .execute();
 
     // then
@@ -438,7 +444,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, null))
+      .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, null, null))
       .execute();
 
     // then
@@ -527,6 +533,16 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .execute(IdDto.class, 200).getId();
   }
 
+  private String addEventBasedProcessToOptimize(String name) {
+    EventBasedProcessDto eventBasedProcessDto = new EventBasedProcessDto();
+    eventBasedProcessDto.setName(name);
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateEventBasedProcessRequest(eventBasedProcessDto)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .execute(IdDto.class, 200).getId();
+  }
+
   private List<EntityDto> getEntities() {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -534,10 +550,10 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .executeAndReturnList(EntityDto.class, 200);
   }
 
-  private EntityNameDto getEntityNames(String collectionId, String dashboardId, String reportId) {
+  private EntityNameDto getEntityNames(String collectionId, String dashboardId, String reportId, String eventBasedProcessId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId))
+      .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventBasedProcessId))
       .execute(EntityNameDto.class, 200);
   }
 
