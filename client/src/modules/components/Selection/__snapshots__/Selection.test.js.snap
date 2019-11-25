@@ -105,11 +105,10 @@ exports[`Selection should contain Actions 1`] = `
                       "componentStyle": ComponentStyle {
                         "componentId": "sc-fjdhpX",
                         "isStatic": false,
-                        "lastClassName": "Yobvn",
+                        "lastClassName": "fCEyoV",
                         "rules": Array [
                           "
   position: relative;
-  height: 20px;
 ",
                         ],
                       },
@@ -126,7 +125,7 @@ exports[`Selection should contain Actions 1`] = `
                   forwardedRef={[Function]}
                 >
                   <div
-                    className="sc-fjdhpX Yobvn"
+                    className="sc-fjdhpX fCEyoV"
                   >
                     <Themed(styled.button)
                       buttonStyles={

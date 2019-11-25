@@ -6,24 +6,15 @@
 
 import React from 'react';
 import {MemoryRouter} from 'react-router-dom';
-import {mount, shallow} from 'enzyme';
+import {mount} from 'enzyme';
 
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
-
-import {
-  wrapperFactory,
-  mountWrappedComponent
-} from 'modules/testHelpers/wrapperFactory';
+import {mountWrappedComponent} from 'modules/testHelpers/wrapperFactory';
 
 import {testData} from './Instance.setup';
 
 import {PAGE_TITLE} from 'modules/constants';
-import * as instancesApi from 'modules/api/instances/instances';
-import * as eventsApi from 'modules/api/events/events';
-import * as activityInstanceApi from 'modules/api/activityInstances/activityInstances';
 
 import {getWorkflowName} from 'modules/utils/instance';
-import * as diagramUtils from 'modules/utils/bpmn';
 import {ThemeProvider} from 'modules/theme';
 
 import {
@@ -33,9 +24,7 @@ import {
 import {DataManagerProvider} from 'modules/DataManager';
 
 import TopPanel from './TopPanel';
-import FlowNodeInstancesTree from './FlowNodeInstancesTree';
 import BottomPanel from './BottomPanel';
-import Diagram from 'modules/components/Diagram';
 import VariablePanel from './BottomPanel/VariablePanel';
 import IncidentsWrapper from './IncidentsWrapper';
 
@@ -111,28 +100,6 @@ const {
 } = testData.fetch.onPageLoad;
 
 const {mockDefinition} = testData.diagramData;
-
-const mountRenderComponent = (customProps = {}) => {
-  const node = mount(
-    wrapperFactory(
-      [ThemeProvider, DataManagerProvider, MemoryRouter],
-      <Instance match={testData.props.match} {...customProps} />
-    )
-  );
-
-  return node.find('Instance');
-};
-
-const shallowRenderComponent = (customProps = {}) => {
-  const node = shallow(
-    wrapperFactory(
-      [ThemeProvider, DataManagerProvider, MemoryRouter],
-      <Instance match={testData.props.match} {...customProps} />
-    )
-  );
-
-  return node.find('Instance');
-};
 
 describe('Instance', () => {
   const {SUBSCRIPTION_TOPIC} = dataManagerConstants;
@@ -594,6 +561,10 @@ describe('Instance', () => {
       expect(node.find(BottomPanel)).toHaveLength(1);
       expect(node.find(VariablePanel)).toHaveLength(1);
       expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
+    });
+
+    it('should pass skeleton for instance detail to Header', () => {
+      //
     });
   });
 });
