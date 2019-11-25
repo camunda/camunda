@@ -41,10 +41,9 @@ class Header extends React.Component {
     active: PropTypes.oneOf(['dashboard', 'instances']),
     runningInstancesCount: PropTypes.number,
     filter: PropTypes.object,
-    // TODO: what happpend?
-    // filterCount: PropTypes.number,
-    // selectionCount: PropTypes.number,
-    // instancesInSelectionsCount: PropTypes.number,
+    filterCount: PropTypes.number,
+    selectionCount: PropTypes.number,
+    instancesInSelectionsCount: PropTypes.number,
     incidentsCount: PropTypes.number,
     detail: PropTypes.element,
     getStateLocally: PropTypes.func.isRequired,
@@ -114,28 +113,11 @@ class Header extends React.Component {
     if (!this.state.filter) {
       this.setState({filter: DEFAULT_FILTER});
     }
-
-    // if (this.didCountUpdate(prevState)) {
-    //   console.log('asd');
-    // }
-    // recalc dynamic parts of labels
   };
 
   componentWillUnmount() {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
-
-  // didCountUpdate(prevState) {
-  //   const countTypes = [
-  //     'runningInstancesCount',
-  //     'filterCount',
-  //     'instancesInSelectionsCount',
-  //     'selectionCount',
-  //     'incidentsCount'
-  //   ];
-
-  //   return countTypes.find(count => this.state[count] !== prevState[count]);
-  // }
 
   updateCounts({running, withIncidents}) {
     const {runningInstancesCount, incidentsCount} = this.props;
@@ -338,7 +320,7 @@ class Header extends React.Component {
             isActive={filters.isActive}
             title={filters.title}
             label={Header.labels['filters']}
-            count={filters.count}
+            count={this.props.filterCount || filters.count}
             linkProps={filters.linkProps}
             type={BADGE_TYPE.FILTERS}
           />
@@ -359,8 +341,11 @@ class Header extends React.Component {
             label={Header.labels['selections']}
             isActive={selections.isActive}
             expandSelections={this.props.expandSelections}
-            selectionCount={selections.count.selectionCount}
+            selectionCount={
+              this.props.selectionCount || selections.count.selectionCount
+            }
             instancesInSelectionsCount={
+              this.props.instancesInSelectionsCount ||
               selections.count.instancesInSelectionsCount
             }
             type={COMBO_BADGE_TYPE.SELECTIONS}
