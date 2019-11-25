@@ -197,7 +197,7 @@ pipeline {
             // Compile QA
             sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
             // Generate Data
-            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration spring-boot:run -Dmigration.app=DataGenerationApp')
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration spring-boot:run')
             sh('sleep 10')
           }
         }
@@ -220,7 +220,7 @@ pipeline {
 		  container('maven') {
 		      configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
 		        // Validate operate indices 
-		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration spring-boot:run -Dmigration.app=ValidationApp')
+		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration verify')
 		      }
           }
        }

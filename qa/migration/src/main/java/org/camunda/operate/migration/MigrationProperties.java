@@ -19,20 +19,17 @@ public class MigrationProperties {
 
   public static final String PROPERTIES_PREFIX = "camunda.operate.migration";
 
-  private int workflowCount = 10;
+  private int workflowCount = 11;
 
-  private int workflowInstanceCount = 100;
+  private int workflowInstanceCount = 101;
 
-  private int incidentCount = 50;
+  private int incidentCount = 27;
 
   private String zeebeBrokerContactPoint = "localhost:26500";
 
   private String elasticsearchHost = "localhost";
 
   private int elasticsearchPort = 9200;
-
-  private String zeebeElasticsearchPrefix = "zeebe-record";
-  
   private List<String> versions = Arrays.asList("1.0.0","1.1.0","1.2.0");
   
   public void setVersions(String versionsAsCSV) {
@@ -91,11 +88,5 @@ public class MigrationProperties {
     this.elasticsearchPort = elasticsearchPort;
   }
 
-  public String getZeebeElasticsearchPrefix() {
-    return zeebeElasticsearchPrefix;
-  }
-
-  public void setZeebeElasticsearchPrefix(String zeebeElasticsearchPrefix) {
-    this.zeebeElasticsearchPrefix = zeebeElasticsearchPrefix;
-  }
+ 
 }

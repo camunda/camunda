@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.migration;
 
+import java.time.format.DateTimeFormatter;
+
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -21,15 +23,14 @@ public class Connector {
 
   @Autowired
   private MigrationProperties dataGeneratorProperties;
-
+  
   @Bean
   public ZeebeClient createZeebeClient() {
     String brokerContactPoint = dataGeneratorProperties.getZeebeBrokerContactPoint();
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
       .brokerContactPoint(brokerContactPoint)
       .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
-      .usePlaintext();
-    //TODO test the connection?
+      .usePlaintext();    
     return builder.build();
   }
 
@@ -39,5 +40,8 @@ public class Connector {
       RestClient.builder(new HttpHost(dataGeneratorProperties.getElasticsearchHost(), dataGeneratorProperties.getElasticsearchPort(), "http")));
   }
 
-
+  @Bean
+  public DateTimeFormatter getDateTimeFormatter() {
+    return DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+  }
 }
