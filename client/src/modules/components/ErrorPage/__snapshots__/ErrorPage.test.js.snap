@@ -10,7 +10,8 @@ exports[`displays the error message passed in props 1`] = `
   <Link
     to="/"
   >
-    Go to Home…
+    Go to Home
+    …
   </Link>
   This is the error message.
 </div>

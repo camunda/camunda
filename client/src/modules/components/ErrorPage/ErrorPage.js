@@ -8,12 +8,13 @@ import React from 'react';
 import {Link} from 'react-router-dom';
 
 import './ErrorPage.scss';
+import {t} from 'translation';
 
-export default function ErrorPage({children, noLink, text = 'This link is not valid.'}) {
+export default function ErrorPage({children, noLink, text}) {
   return (
     <div className="ErrorPage">
-      <h1>{text}</h1>
-      {!noLink && <Link to="/">Go to Home…</Link>}
+      <h1>{text || t('common.errors.inValidLink')}</h1>
+      {!noLink && <Link to="/">{t('common.goToHome')}…</Link>}
       {children}
     </div>
   );

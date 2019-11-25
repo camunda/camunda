@@ -433,6 +433,10 @@
     "viewDetails": "View Details",
     "notFound": "No results found",
     "searchForMore": "Displaying {count} results only. Search to refine.",
+    "goToHome": "Go to Home",
+    "errors": {
+      "inValidLink": "This link is not valid."
+    },
     "tenant": {
       "label": "Tenant",
       "label-plural": "Tenants"

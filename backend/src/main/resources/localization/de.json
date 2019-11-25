@@ -433,6 +433,10 @@
     "viewDetails": "Details anzeigen",
     "notFound": "keine Ergebnisse gefunden",
     "searchForMore": "Es werden nur {count} Einträge angezeigt. Suche verfeinern.",
+    "goToHome": "zur Homepage",
+    "errors": {
+      "inValidLink": "Dieser Link ist nicht gültig"
+    },
     "tenant": {
       "label": "Mandant",
       "label-plural": "Mandanten"
