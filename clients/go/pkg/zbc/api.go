@@ -22,7 +22,7 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
 )
 
-type ZBClient interface {
+type Client interface {
 	NewTopologyCommand() *commands.TopologyCommand
 	NewDeployWorkflowCommand() *commands.DeployCommand
 
@@ -40,7 +40,7 @@ type ZBClient interface {
 
 	NewJobWorker() worker.JobWorkerBuilderStep1
 
-	SetRequestTimeout(time.Duration) ZBClient
+	SetRequestTimeout(time.Duration) Client
 
 	Close() error
 }

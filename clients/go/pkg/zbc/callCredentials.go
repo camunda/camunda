@@ -18,16 +18,16 @@ import (
 	"context"
 )
 
-type zeebeCallCredentials struct {
+type callCredentials struct {
 	credentialsProvider CredentialsProvider
 }
 
-func (zbCallCredentials *zeebeCallCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
+func (cc *callCredentials) GetRequestMetadata(ctx context.Context, uri ...string) (map[string]string, error) {
 	headers := make(map[string]string)
-	zbCallCredentials.credentialsProvider.ApplyCredentials(headers)
+	cc.credentialsProvider.ApplyCredentials(headers)
 	return headers, nil
 }
 
-func (*zeebeCallCredentials) RequireTransportSecurity() bool {
+func (*callCredentials) RequireTransportSecurity() bool {
 	return false
 }

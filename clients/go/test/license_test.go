@@ -40,7 +40,7 @@ const license = `// Copyright © 2018 Camunda Services GmbH (info@camunda.com)
 
 var skip = map[string]bool{
 	// These files are generated.
-	"../tools/pb/gateway.pb.go":           true,
+	"../pkg/pb/gateway.pb.go":             true,
 	"../internal/mock_pb/mock_gateway.go": true,
 }
 

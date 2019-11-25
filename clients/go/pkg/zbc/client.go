@@ -17,7 +17,6 @@ package zbc
 import (
 	"crypto/tls"
 	"fmt"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/credentials"
 	"log"
 	"os"
@@ -25,105 +24,98 @@ import (
 	"time"
 
 	"github.com/zeebe-io/zeebe/clients/go/pkg/commands"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
-	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
 	"google.golang.org/grpc"
 )
 
 const DefaultRequestTimeout = 15 * time.Second
-const ZbInsecureEnvVar = "ZEEBE_INSECURE_CONNECTION"
-const ZbCaCertificatePath = "ZEEBE_CA_CERTIFICATE_PATH"
+const InsecureEnvVar = "ZEEBE_INSECURE_CONNECTION"
+const CaCertificatePath = "ZEEBE_CA_CERTIFICATE_PATH"
 
-type ZBClientImpl struct {
+type ClientImpl struct {
 	gateway             pb.GatewayClient
 	requestTimeout      time.Duration
 	connection          *grpc.ClientConn
 	credentialsProvider CredentialsProvider
 }
 
-type ZBClientConfig struct {
+type ClientConfig struct {
 	GatewayAddress         string
 	UsePlaintextConnection bool
 	CaCertificatePath      string
 	CredentialsProvider    CredentialsProvider
 }
 
-// FileNotFoundError is returned whenever a file can't be found at the provided path. Use this value to do error comparison.
-const FileNotFoundError = ZBError("file not found")
+// ErrFileNotFound is returned whenever a file can't be found at the provided path. Use this value to do error comparison.
+const ErrFileNotFound = Error("file not found")
 
-// InvalidArgumentError is returned whenever an argument differs from the expected format. Use this value to do error comparison.
-const InvalidArgumentError = ZBError("invalid argument")
+type Error string
 
-type ZBError string
-
-func (e ZBError) Error() string {
+func (e Error) Error() string {
 	return string(e)
 }
 
-func (client *ZBClientImpl) NewTopologyCommand() *commands.TopologyCommand {
+func (client *ClientImpl) NewTopologyCommand() *commands.TopologyCommand {
 	return commands.NewTopologyCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
+func (client *ClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
 	return commands.NewDeployCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
+func (client *ClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
 	return commands.NewPublishMessageCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
+func (client *ClientImpl) NewResolveIncidentCommand() commands.ResolveIncidentCommandStep1 {
 	return commands.NewResolveIncidentCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCommandStep1 {
+func (client *ClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCommandStep1 {
 	return commands.NewCreateInstanceCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewCancelInstanceCommand() commands.CancelInstanceStep1 {
+func (client *ClientImpl) NewCancelInstanceCommand() commands.CancelInstanceStep1 {
 	return commands.NewCancelInstanceCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
+func (client *ClientImpl) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
 	return commands.NewCompleteJobCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewFailJobCommand() commands.FailJobCommandStep1 {
+func (client *ClientImpl) NewFailJobCommand() commands.FailJobCommandStep1 {
 	return commands.NewFailJobCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1 {
+func (client *ClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1 {
 	return commands.NewUpdateJobRetriesCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
+func (client *ClientImpl) NewSetVariablesCommand() commands.SetVariablesCommandStep1 {
 	return commands.NewSetVariablesCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandStep1 {
+func (client *ClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandStep1 {
 	return commands.NewActivateJobsCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
-func (client *ZBClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
+func (client *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
 	return worker.NewJobWorkerBuilder(client.gateway, client, client.requestTimeout)
 }
 
-func (client *ZBClientImpl) SetRequestTimeout(requestTimeout time.Duration) ZBClient {
+func (client *ClientImpl) SetRequestTimeout(requestTimeout time.Duration) Client {
 	client.requestTimeout = requestTimeout
 	return client
 }
 
-func (client *ZBClientImpl) Close() error {
+func (client *ClientImpl) Close() error {
 	return client.connection.Close()
 }
 
-func NewZBClient(gatewayAddress string) (ZBClient, error) {
-	return NewZBClientWithConfig(&ZBClientConfig{GatewayAddress: gatewayAddress})
-}
-
-func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
+func NewClient(config *ClientConfig) (Client, error) {
 	var opts []grpc.DialOption
-	applyZBClientEnvOverrides(config)
+	applyClientEnvOverrides(config)
 
 	if err := configureConnectionSecurity(config, &opts); err != nil {
 		return nil, err
@@ -138,7 +130,7 @@ func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
 		return nil, err
 	}
 
-	return &ZBClientImpl{
+	return &ClientImpl{
 		gateway:             pb.NewGatewayClient(conn),
 		requestTimeout:      DefaultRequestTimeout,
 		connection:          conn,
@@ -146,17 +138,17 @@ func NewZBClientWithConfig(config *ZBClientConfig) (ZBClient, error) {
 	}, nil
 }
 
-func applyZBClientEnvOverrides(config *ZBClientConfig) {
-	if insecureConn := env.get(ZbInsecureEnvVar); insecureConn != "" {
+func applyClientEnvOverrides(config *ClientConfig) {
+	if insecureConn := env.get(InsecureEnvVar); insecureConn != "" {
 		config.UsePlaintextConnection = (insecureConn == "true")
 	}
 
-	if caCertificatePath := env.get(ZbCaCertificatePath); caCertificatePath != "" {
+	if caCertificatePath := env.get(CaCertificatePath); caCertificatePath != "" {
 		config.CaCertificatePath = caCertificatePath
 	}
 }
 
-func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOption) error {
+func configureCredentialsProvider(config *ClientConfig, opts *[]grpc.DialOption) error {
 	if config.CredentialsProvider == nil && shouldUseDefaultCredentialsProvider() {
 		if err := setDefaultCredentialsProvider(config); err != nil {
 			return err
@@ -168,7 +160,7 @@ func configureCredentialsProvider(config *ZBClientConfig, opts *[]grpc.DialOptio
 			log.Println("Warning: The configured security level does not guarantee that the credentials will be confidential. If this unintentional, please enable transport security.")
 		}
 
-		callCredentials := &zeebeCallCredentials{credentialsProvider: config.CredentialsProvider}
+		callCredentials := &callCredentials{credentialsProvider: config.CredentialsProvider}
 		*opts = append(*opts, grpc.WithPerRPCCredentials(callCredentials))
 	} else {
 		config.CredentialsProvider = &NoopCredentialsProvider{}
@@ -181,7 +173,7 @@ func shouldUseDefaultCredentialsProvider() bool {
 	return env.get(OAuthClientSecretEnvVar) != "" || env.get(OAuthClientIdEnvVar) != ""
 }
 
-func setDefaultCredentialsProvider(config *ZBClientConfig) error {
+func setDefaultCredentialsProvider(config *ClientConfig) error {
 	var audience string
 	index := strings.LastIndex(config.GatewayAddress, ":")
 	if index > 0 {
@@ -197,14 +189,14 @@ func setDefaultCredentialsProvider(config *ZBClientConfig) error {
 	return nil
 }
 
-func configureConnectionSecurity(config *ZBClientConfig, opts *[]grpc.DialOption) error {
+func configureConnectionSecurity(config *ClientConfig, opts *[]grpc.DialOption) error {
 	if !config.UsePlaintextConnection {
 		var creds credentials.TransportCredentials
 
 		if config.CaCertificatePath == "" {
 			creds = credentials.NewTLS(&tls.Config{})
 		} else if _, err := os.Stat(config.CaCertificatePath); os.IsNotExist(err) {
-			return fileNotFoundError("CA certificate", config.CaCertificatePath)
+			return fmt.Errorf("expected to find CA certificate but no such file at '%s': %w", config.CaCertificatePath, ErrFileNotFound)
 		} else {
 			creds, err = credentials.NewClientTLSFromFile(config.CaCertificatePath, "")
 			if err != nil {
@@ -218,12 +210,4 @@ func configureConnectionSecurity(config *ZBClientConfig, opts *[]grpc.DialOption
 	}
 
 	return nil
-}
-
-func fileNotFoundError(fileDescription, path string) error {
-	return errors.Wrap(FileNotFoundError, fmt.Sprintf("expected to find %s but there was no such file at path '%s'", fileDescription, path))
-}
-
-func invalidArgumentError(argument, errorReason string) error {
-	return errors.Wrap(InvalidArgumentError, fmt.Sprintf("expected to find valid %s but found error: %s", argument, errorReason))
 }

@@ -17,10 +17,10 @@ package zbc
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	validation "github.com/go-ozzo/ozzo-validation"
 	"github.com/go-ozzo/ozzo-validation/is"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"io/ioutil"
@@ -105,15 +105,13 @@ func NewOAuthCredentialsProvider(config *OAuthProviderConfig) (*OAuthCredentials
 	applyCredentialDefaults(config)
 
 	if err := validation.Validate(config.AuthorizationServerURL, is.URL); err != nil {
-		return nil, invalidArgumentError("authorization server URL", err.Error())
+		return nil, fmt.Errorf("expected to find valid authz server URL '%s': %w", config.AuthorizationServerURL, err)
 	} else if err := validation.Validate(config.ClientID, validation.Required); err != nil {
-		return nil, invalidArgumentError("client ID", err.Error())
+		return nil, fmt.Errorf("expected to find non-empty client id")
 	} else if err := validation.Validate(config.ClientSecret, validation.Required); err != nil {
-		return nil, invalidArgumentError("client secret", err.Error())
+		return nil, fmt.Errorf("expected to find non-empty client secret")
 	} else if err := validation.Validate(config.Audience, validation.Required); err != nil {
-		return nil, invalidArgumentError("audience", err.Error())
-	} else if err := validation.Validate(config.Cache, validation.Required); err != nil {
-		return nil, invalidArgumentError("cache", err.Error())
+		return nil, fmt.Errorf("expected to find non-empty audience")
 	}
 
 	payload := &oauthRequestPayload{
@@ -211,7 +209,7 @@ func fetchAccessToken(authorizationServerURL string, payload *oauthRequestPayloa
 	reader := bytes.NewReader(jsonPayload)
 	response, err := http.Post(authorizationServerURL, "application/json", reader)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("failed while requesting access token from URL '%s'", authorizationServerURL))
+		return nil, fmt.Errorf("failed while requesting access token from URL '%s': %w", authorizationServerURL, err)
 	}
 
 	defer response.Body.Close()
@@ -222,12 +220,12 @@ func fetchAccessToken(authorizationServerURL string, payload *oauthRequestPayloa
 
 	jsonResponse, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed while reading response to access token request")
+		return nil, fmt.Errorf("failed while reading response to access token request: %w", err)
 	}
 
 	responsePayload := &OAuthCredentials{}
 	if err := json.Unmarshal(jsonResponse, responsePayload); err != nil {
-		return nil, errors.Wrap(err, "failed while unmarshalling access token response from JSON")
+		return nil, fmt.Errorf("failed while unmarshalling access token response from JSON: %w", err)
 	}
 
 	return responsePayload, nil

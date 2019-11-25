@@ -16,10 +16,10 @@ package zbc
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
-	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -70,7 +70,7 @@ func TestCustomCredentialsProvider(t *testing.T) {
 
 	parts := strings.Split(lis.Addr().String(), ":")
 
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    credsProvider,
@@ -112,7 +112,7 @@ func TestRetryMoreThanOnce(t *testing.T) {
 	}
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    provider,
@@ -145,7 +145,7 @@ func TestNoRetryWithoutProvider(t *testing.T) {
 	}()
 
 	parts := strings.Split(lis.Addr().String(), ":")
-	client, err := NewZBClientWithConfig(&ZBClientConfig{
+	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
 		CredentialsProvider:    nil,

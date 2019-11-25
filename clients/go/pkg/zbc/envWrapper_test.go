@@ -21,12 +21,12 @@ import (
 
 func TestReadEnvWrapper(t *testing.T) {
 	// given
-	env.set(ZbCaCertificatePath, "path")
-	defer env.unset(ZbCaCertificatePath)
+	env.set(CaCertificatePath, "path")
+	defer env.unset(CaCertificatePath)
 
 	// when
-	config := &ZBClientConfig{}
-	_, _ = NewZBClientWithConfig(config)
+	config := &ClientConfig{}
+	_, _ = NewClient(config)
 
 	// then
 	require.EqualValues(t, "path", config.CaCertificatePath)
@@ -34,12 +34,12 @@ func TestReadEnvWrapper(t *testing.T) {
 
 func TestUnsetEnv(t *testing.T) {
 	// given
-	env.set(ZbCaCertificatePath, "path")
-	env.unset(ZbCaCertificatePath)
+	env.set(CaCertificatePath, "path")
+	env.unset(CaCertificatePath)
 
 	// when
-	config := &ZBClientConfig{}
-	_, _ = NewZBClientWithConfig(config)
+	config := &ClientConfig{}
+	_, _ = NewClient(config)
 
 	// then
 	require.Empty(t, config.CaCertificatePath)

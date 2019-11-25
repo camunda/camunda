@@ -46,7 +46,7 @@ func (s zeebeWaitStrategy) WaitUntilReady(ctx context.Context, target wait.Strat
 		return err
 	}
 
-	client, err := zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
+	client, err := zbc.NewClient(&zbc.ClientConfig{
 		UsePlaintextConnection: true,
 		GatewayAddress:         fmt.Sprintf("%s:%d", host, mappedPort.Int()),
 	})
@@ -79,7 +79,7 @@ type containerSuite struct {
 
 	suite.Suite
 	container testcontainers.Container
-	client    zbc.ZBClient
+	client    zbc.Client
 }
 
 func (s *containerSuite) SetupSuite() {
@@ -109,7 +109,7 @@ func (s *containerSuite) SetupSuite() {
 		s.T().Fatal(err)
 	}
 
-	s.client, err = zbc.NewZBClientWithConfig(&zbc.ZBClientConfig{
+	s.client, err = zbc.NewClient(&zbc.ClientConfig{
 		UsePlaintextConnection: true,
 		GatewayAddress:         fmt.Sprintf("%s:%d", host, port.Int()),
 	})

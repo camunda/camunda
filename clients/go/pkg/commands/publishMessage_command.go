@@ -19,7 +19,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
-	"github.com/zeebe-io/zeebe/clients/go/tools/pb"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"time"
 )
 

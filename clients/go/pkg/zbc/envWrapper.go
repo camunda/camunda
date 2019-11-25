@@ -21,17 +21,6 @@ import (
 
 var env = &envWrapper{vars: make(map[string]string)}
 
-// destructive operations (e.g., set, unset) on the environment are only applied to the wrapper. Therefore unsetting a
-// variable doesn't guarantee that a subsequent get doesn't return a value since one might be set in the process env.
-type environment interface {
-	get(variable string) string
-	set(variable, value string)
-	unset(variable string)
-	lookup(variable string) (string, bool)
-	copy() map[string]string
-	overwrite(environ map[string]string)
-}
-
 type envWrapper struct {
 	vars map[string]string
 }
