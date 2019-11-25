@@ -6,12 +6,13 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.persistence.EventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.EventBasedProcessService;
 import org.springframework.stereotype.Component;
 
+import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -47,7 +48,7 @@ public class EventBasedProcessRestService {
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createEventBasedProcess(EventBasedProcessDto eventBasedProcessDto) {
+  public IdDto createEventBasedProcess(@Valid EventBasedProcessDto eventBasedProcessDto) {
     return eventBasedProcessService.createEventBasedProcess(eventBasedProcessDto);
   }
 
@@ -55,7 +56,8 @@ public class EventBasedProcessRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateEventBasedProcess(@PathParam("id") String eventBasedProcessId, EventBasedProcessDto eventBasedProcessDto) {
+  public void updateEventBasedProcess(@PathParam("id") String eventBasedProcessId,
+                                      @Valid EventBasedProcessDto eventBasedProcessDto) {
     eventBasedProcessDto.setId(eventBasedProcessId);
     eventBasedProcessService.updateEventBasedProcess(eventBasedProcessDto);
   }

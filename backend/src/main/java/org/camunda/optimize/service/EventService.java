@@ -6,9 +6,9 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.EventCountDto;
-import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.service.es.reader.EventReader;
 import org.camunda.optimize.service.es.writer.EventWriter;
 import org.springframework.stereotype.Component;

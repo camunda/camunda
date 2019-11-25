@@ -9,8 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.persistence.EventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventBasedProcessDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -49,7 +50,7 @@ public class EventBasedProcessWriter {
     try {
       IndexRequest request = new IndexRequest(EVENT_BASED_PROCESS_INDEX_NAME)
         .id(id)
-        .source(objectMapper.writeValueAsString(eventBasedProcessDto), XContentType.JSON)
+        .source(objectMapper.writeValueAsString(IndexableEventBasedProcessDto.fromEventBasedProcessDto(eventBasedProcessDto)), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
       indexResponse = esClient.index(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -72,8 +73,8 @@ public class EventBasedProcessWriter {
     UpdateResponse updateResponse;
     try {
       Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-        Sets.newHashSet("name", "xml"),
-        eventBasedProcessDto,
+        Sets.newHashSet("name", "xml", "mappings"),
+        IndexableEventBasedProcessDto.fromEventBasedProcessDto(eventBasedProcessDto),
         objectMapper
       );
       final UpdateRequest request = new UpdateRequest()

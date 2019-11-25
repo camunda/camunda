@@ -9,28 +9,39 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.persistence.EventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
+import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.MappedEventDto;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
 public class EventBasedProcessRestServiceIT extends AbstractIT {
 
-  private static final String PROCESS_DEFINITION_XML_WITH_NAME = "bpmn/simple_withName.bpmn";
-  private static final String PROCESS_DEFINITION_XML_NO_NAME = "bpmn/simple_woName.bpmn";
+  private static final String FULL_PROCESS_DEFINITION_XML = "bpmn/leadQualification.bpmn";
+  private static final String VALID_SCRIPT_TASK_ID = "ScriptTask_1";
+  private static final String VALID_USER_TASK_ID = "UserTask_1d75hsy";
+  private static final String VALID_SERVICE_TASK_ID = "ServiceTask_0j2w5af";
 
   @Test
   public void createEventBasedProcessWithoutAuthorization() throws IOException {
     // when
-    Response response = createCreateEventProcessDtoRequest(createEventBasedProcessDto(PROCESS_DEFINITION_XML_WITH_NAME))
+    Response response = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
+      FULL_PROCESS_DEFINITION_XML))
       .withoutAuthentication()
       .execute();
 
@@ -41,11 +52,86 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void createEventBasedProcess() throws IOException {
     // when
-    Response response = createCreateEventProcessDtoRequest(createEventBasedProcessDto(PROCESS_DEFINITION_XML_WITH_NAME))
+    Response response = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
+      FULL_PROCESS_DEFINITION_XML))
       .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(200);
+  }
+
+  @Test
+  public void createEventBasedProcessWithEventMappingCombinations() throws IOException {
+    // given event mappings with IDs existing in XML
+    Map<String, EventMappingDto> eventMappings = new HashMap<>();
+    eventMappings.put(VALID_SCRIPT_TASK_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto()));
+    eventMappings.put(VALID_USER_TASK_ID, createEventMappingsDto(createMappedEventDto(), null));
+    eventMappings.put(VALID_SERVICE_TASK_ID, createEventMappingsDto(null, createMappedEventDto()));
+    EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
+      eventMappings,
+      "process name",
+      FULL_PROCESS_DEFINITION_XML
+    );
+
+    // when
+    Response response = createCreateEventProcessDtoRequest(eventBasedProcessDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(200);
+  }
+
+  @Test
+  public void createEventBasedProcessWithEventMappingIdNotExistInXml() throws IOException {
+    // given event mappings with ID does not exist in XML
+    EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
+      Collections.singletonMap("invalid_Id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+      "process name",
+      FULL_PROCESS_DEFINITION_XML
+    );
+
+    // when
+    Response response = createCreateEventProcessDtoRequest(eventBasedProcessDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(400);
+  }
+
+  @Test
+  public void createEventBasedProcessWithEventMappingsAndXmlNotPresent() throws IOException {
+    // given event mappings but no XML provided
+    EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
+      Collections.singletonMap("some_task_id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+      "process name",
+      null
+    );
+
+    // when
+    Response response = createCreateEventProcessDtoRequest(eventBasedProcessDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(400);
+  }
+
+  @ParameterizedTest(name = "Invalid mapped event: {0}")
+  @MethodSource("createInvalidMappedEventDtos")
+  public void createEventBasedProcessWithInvalidEventMappings(MappedEventDto invalidMappedEventDto) throws IOException {
+    // given event mappings but mapped events have fields missing
+    invalidMappedEventDto.setGroup(null);
+    EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
+      Collections.singletonMap("some_task_id", createEventMappingsDto(invalidMappedEventDto, createMappedEventDto())),
+      "process name",
+      FULL_PROCESS_DEFINITION_XML
+    );
+
+    // when
+    Response response = createCreateEventProcessDtoRequest(eventBasedProcessDto)
+      .execute();
+
+    // then a bad request exception is thrown
+    assertThat(response.getStatus()).isEqualTo(400);
   }
 
   @Test
@@ -62,8 +148,12 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void getEventBasedProcessWithId() throws IOException {
     // given
-    EventBasedProcessDto expected = createEventBasedProcessDto(PROCESS_DEFINITION_XML_WITH_NAME);
-    String expectedId = createCreateEventProcessDtoRequest(expected).execute(IdDto.class, 200).getId();
+    EventBasedProcessDto eventBasedProcessDto =  createEventBasedProcessDtoWithMappings(
+      Collections.singletonMap(VALID_SERVICE_TASK_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+      "process name",
+      FULL_PROCESS_DEFINITION_XML
+    );
+    String expectedId = createCreateEventProcessDtoRequest(eventBasedProcessDto).execute(IdDto.class, 200).getId();
 
     // when
     EventBasedProcessDto actual = createGetEventBasedProcessRequest(expectedId).execute(
@@ -73,7 +163,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
 
     // then the report is returned with expect
     assertThat(actual.getId()).isEqualTo(expectedId);
-    assertThat(actual).isEqualToIgnoringGivenFields(expected, "id");
+    assertThat(actual).isEqualToIgnoringGivenFields(eventBasedProcessDto, "id");
   }
 
   @Test
@@ -101,9 +191,9 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void getAllEventBasedProcess() throws IOException {
     // given
-    EventBasedProcessDto firstExpectedDto = createEventBasedProcessDto(PROCESS_DEFINITION_XML_WITH_NAME);
+    EventBasedProcessDto firstExpectedDto = createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML);
     String firstExpectedId = createCreateEventProcessDtoRequest(firstExpectedDto).execute(IdDto.class, 200).getId();
-    EventBasedProcessDto secondExpectedDto = createEventBasedProcessDto(PROCESS_DEFINITION_XML_NO_NAME);
+    EventBasedProcessDto secondExpectedDto = createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML);
     String secondExpectedId = createCreateEventProcessDtoRequest(secondExpectedDto).execute(IdDto.class, 200).getId();
 
     // when
@@ -113,17 +203,17 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
       .executeAndReturnList(EventBasedProcessDto.class, 200);
 
     // then the response contains expected processes with xml omitted
-    assertThat(response).extracting("id", "name", "xml")
+    assertThat(response).extracting("id", "name", "xml", "mappings")
       .containsExactlyInAnyOrder(
-        tuple(firstExpectedId, firstExpectedDto.getName(), null),
-        tuple(secondExpectedId, secondExpectedDto.getName(), null)
+        tuple(firstExpectedId, firstExpectedDto.getName(), null, null),
+        tuple(secondExpectedId, secondExpectedDto.getName(), null, null)
       );
   }
 
   @Test
   public void updateEventBasedProcessWithoutAuthorization() throws IOException {
     // when
-    EventBasedProcessDto updateDto = createEventBasedProcessDto(PROCESS_DEFINITION_XML_WITH_NAME);
+    EventBasedProcessDto updateDto = createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML);
     Response response = createUpdateEventBasedProcessRequest(UUID.randomUUID().toString(), updateDto)
       .withoutAuthentication()
       .execute();
@@ -133,15 +223,16 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void updateEventBasedProcess() throws IOException {
+  public void updateEventBasedProcessWithMappingsAdded() throws IOException {
     // given
     String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      PROCESS_DEFINITION_XML_NO_NAME)).execute(IdDto.class, 200).getId();
+      FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
 
     // when
-    EventBasedProcessDto updateDto = createEventBasedProcessDto(
+    EventBasedProcessDto updateDto =  createEventBasedProcessDtoWithMappings(
+      Collections.singletonMap(VALID_SERVICE_TASK_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "new process name",
-      PROCESS_DEFINITION_XML_WITH_NAME
+      FULL_PROCESS_DEFINITION_XML
     );
     Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
 
@@ -161,11 +252,66 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     // when
     Response response = createUpdateEventBasedProcessRequest(
       UUID.randomUUID().toString(),
-      createEventBasedProcessDto(PROCESS_DEFINITION_XML_WITH_NAME)
+      createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML)
     ).execute();
 
     // then the report is returned with expect
     assertThat(response.getStatus()).isEqualTo(404);
+  }
+
+  @Test
+  public void updateEventBasedProcessWithEventMappingIdNotExistInXml() throws IOException {
+    // given
+    String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
+      FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
+
+    // when update event mappings with ID does not exist in XML
+    EventBasedProcessDto updateDto = createEventBasedProcessDtoWithMappings(
+      Collections.singletonMap("invalid_Id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+      "process name",
+      FULL_PROCESS_DEFINITION_XML
+    );
+    Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
+
+    // then the update response code is correct
+    assertThat(response.getStatus()).isEqualTo(400);
+  }
+
+  @ParameterizedTest(name = "Invalid mapped event: {0}")
+  @MethodSource("createInvalidMappedEventDtos")
+  public void updateEventBasedProcessWithInvalidEventMappings(MappedEventDto invalidMappedEventDto) throws IOException {
+    // given existing event based process
+    String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
+      FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
+
+    // when update event mappings with a mapped event with missing fields
+    EventBasedProcessDto updateDto = createEventBasedProcessDtoWithMappings(
+      Collections.singletonMap(VALID_SERVICE_TASK_ID, createEventMappingsDto(invalidMappedEventDto, createMappedEventDto())),
+      "process name",
+      FULL_PROCESS_DEFINITION_XML
+    );
+    Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
+
+    // then a bad request exception is thrown
+    assertThat(response.getStatus()).isEqualTo(400);
+  }
+
+  @Test
+  public void updateEventBasedProcessWithEventMappingAndNoXmlPresent() throws IOException {
+    // given
+    String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
+      null)).execute(IdDto.class, 200).getId();
+
+    // when update event mappings and no XML present
+    EventBasedProcessDto updateDto = createEventBasedProcessDtoWithMappings(
+      Collections.singletonMap("some_task_id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+      "process name",
+      null
+    );
+    Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
+
+    // then the update response code is correct
+    assertThat(response.getStatus()).isEqualTo(400);
   }
 
   @Test
@@ -183,7 +329,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   public void deleteEventBasedProcess() throws IOException {
     // given
     String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      PROCESS_DEFINITION_XML_NO_NAME)).execute(IdDto.class, 200).getId();
+      FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
 
     // when
     Response response = createDeleteEventBasedProcessRequest(storedEventBasedProcessId).execute();
@@ -227,16 +373,42 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     return createEventBasedProcessDto(null, xmlPath);
   }
 
-  private EventBasedProcessDto createEventBasedProcessDto(final String name,
-                                                          final String xmlPath) throws IOException {
+  private EventBasedProcessDto createEventBasedProcessDto(final String name, final String xmlPath) throws IOException {
+    return createEventBasedProcessDtoWithMappings(null, name, xmlPath);
+  }
+
+  private EventBasedProcessDto createEventBasedProcessDtoWithMappings(final Map<String, EventMappingDto> flowNodeEventMappingsDto,
+                                                                      final String name, final String xmlPath) throws
+                                                                                                               IOException {
     EventBasedProcessDto eventBasedProcessDto = new EventBasedProcessDto();
+    eventBasedProcessDto.setMappings(flowNodeEventMappingsDto);
     eventBasedProcessDto.setName(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)));
-    eventBasedProcessDto.setXml(
-      IOUtils.toString(
-        getClass().getClassLoader().getResourceAsStream(xmlPath),
-        "UTF-8"
-      ));
+    String xml = xmlPath == null ? xmlPath : IOUtils.toString(getClass().getClassLoader().getResourceAsStream(xmlPath), "UTF-8");
+    eventBasedProcessDto.setXml(xml);
     return eventBasedProcessDto;
+  }
+
+  private EventMappingDto createEventMappingsDto(MappedEventDto startEventDto, MappedEventDto endEventDto) {
+    return EventMappingDto.builder()
+      .start(startEventDto)
+      .end(endEventDto)
+      .build();
+  }
+
+  private static Stream<MappedEventDto> createInvalidMappedEventDtos() {
+    return Stream.of(
+      MappedEventDto.builder().group(null).source(UUID.randomUUID().toString()).eventName(UUID.randomUUID().toString()).build(),
+      MappedEventDto.builder().group(UUID.randomUUID().toString()).source(null).eventName(UUID.randomUUID().toString()).build(),
+      MappedEventDto.builder().group(UUID.randomUUID().toString()).source(UUID.randomUUID().toString()).eventName(null).build()
+    );
+  }
+
+  private static MappedEventDto createMappedEventDto() {
+    return MappedEventDto.builder()
+      .group(UUID.randomUUID().toString())
+      .source(UUID.randomUUID().toString())
+      .eventName(UUID.randomUUID().toString())
+      .build();
   }
 
 }

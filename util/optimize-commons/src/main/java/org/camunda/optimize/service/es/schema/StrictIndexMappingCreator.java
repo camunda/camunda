@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.schema;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +17,8 @@ import static org.camunda.optimize.service.es.schema.DynamicMappingsBuilder.DYNA
 import static org.camunda.optimize.service.es.schema.DynamicMappingsBuilder.createDynamicSettings;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
 
+@Getter
+@Setter
 public abstract class StrictIndexMappingCreator implements IndexMappingCreator, PropertiesAppender {
   private Logger logger = LoggerFactory.getLogger(StrictIndexMappingCreator.class);
 
@@ -32,11 +36,4 @@ public abstract class StrictIndexMappingCreator implements IndexMappingCreator, 
     return source;
   }
 
-  public String getDynamicMappingsValue() {
-    return dynamicMappingsValue;
-  }
-
-  public void setDynamicMappingsValue(final String dynamicMappingsValue) {
-    this.dynamicMappingsValue = dynamicMappingsValue;
-  }
 }

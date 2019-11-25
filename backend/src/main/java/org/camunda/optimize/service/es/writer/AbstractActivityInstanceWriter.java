@@ -10,7 +10,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;

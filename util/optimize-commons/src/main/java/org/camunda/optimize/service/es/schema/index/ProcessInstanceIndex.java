@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.SimpleEventDto;
+import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;

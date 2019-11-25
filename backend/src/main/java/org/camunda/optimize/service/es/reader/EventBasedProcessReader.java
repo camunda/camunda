@@ -8,7 +8,8 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.persistence.EventBasedProcessDto;
+import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventBasedProcessDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_BASED_PROCESS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
@@ -53,7 +55,8 @@ public class EventBasedProcessReader {
 
     if (getResponse.isExists()) {
       try {
-        return objectMapper.readValue(getResponse.getSourceAsString(), EventBasedProcessDto.class);
+        return objectMapper.readValue(getResponse.getSourceAsString(), IndexableEventBasedProcessDto.class)
+          .toEventBasedProcessDto();
       } catch (IOException e) {
         String reason = "Could not deserialize information for event based process with ID: " + eventBasedProcessId;
         log.error(
@@ -65,13 +68,14 @@ public class EventBasedProcessReader {
       }
     } else {
       log.error("Was not able to retrieve event based process with id [{}] from Elasticsearch.", eventBasedProcessId);
-      throw new NotFoundException("Event based process does not exist! Tried to retrieve event based process with id " + eventBasedProcessId);
+      throw new NotFoundException("Event based process does not exist! Tried to retrieve event based process with id "
+                                    + eventBasedProcessId);
     }
   }
 
   public List<EventBasedProcessDto> getAllEventBasedProcessesOmitXml() {
     log.debug("Fetching all available event based processes");
-    String[] fieldsToExclude = new String[]{EventBasedProcessDto.Fields.xml.name()};
+    String[] fieldsToExclude = new String[]{IndexableEventBasedProcessDto.Fields.xml};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
       .size(LIST_FETCH_LIMIT)
@@ -88,13 +92,12 @@ public class EventBasedProcessReader {
       throw new OptimizeRuntimeException("Was not able to retrieve event based processes!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
-      scrollResp,
-      EventBasedProcessDto.class,
-      objectMapper,
-      esClient,
-      configurationService.getElasticsearchScrollTimeout()
-    );
+    List<IndexableEventBasedProcessDto> indexableEventBasedProcessDtos =
+      ElasticsearchHelper.retrieveAllScrollResults(scrollResp, IndexableEventBasedProcessDto.class,
+                                                   objectMapper, esClient, configurationService.getElasticsearchScrollTimeout());
+    return indexableEventBasedProcessDtos.stream()
+      .map(IndexableEventBasedProcessDto::toEventBasedProcessDto)
+      .collect(Collectors.toList());
   }
 
 }

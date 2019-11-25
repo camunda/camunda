@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
+import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.time.OffsetDateTime;

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;

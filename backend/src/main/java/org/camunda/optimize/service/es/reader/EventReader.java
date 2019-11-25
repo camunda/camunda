@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.reader;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.EventCountDto;
-import org.camunda.optimize.dto.optimize.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
@@ -49,8 +49,6 @@ public class EventReader {
   private static final String SOURCE = EventDto.Fields.source;
   private static final String GROUP = EventDto.Fields.group;
   private static final String KEYWORD_ANALYZER = "keyword";
-  private static final String ASCENDING = "asc";
-  private static final String DESCENDING = "desc";
   private static final Comparator DEFAULT_COMPARATOR = Comparator.comparing(EventCountDto::getGroup, String.CASE_INSENSITIVE_ORDER)
     .thenComparing(EventCountDto::getSource, String.CASE_INSENSITIVE_ORDER)
     .thenComparing(EventCountDto::getEventName, String.CASE_INSENSITIVE_ORDER);
