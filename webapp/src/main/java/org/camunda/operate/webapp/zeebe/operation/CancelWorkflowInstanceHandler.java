@@ -10,7 +10,7 @@ import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

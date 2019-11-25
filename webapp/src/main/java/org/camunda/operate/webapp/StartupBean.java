@@ -9,7 +9,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchConnector;
-import org.camunda.operate.webapp.user.ElasticSearchUserDetailsService;
+import org.camunda.operate.webapp.security.es.ElasticSearchUserDetailsService;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ public class StartupBean {
   @Autowired
   private RestHighLevelClient zeebeEsClient; 
   
-  @Autowired
+  @Autowired(required = false)
   private ElasticSearchUserDetailsService elasticsearchUserDetailsService;
 
   @Autowired
@@ -43,8 +43,10 @@ public class StartupBean {
 
   @PostConstruct
   public void initApplication() {
-    logger.info("INIT: Create users in elasticsearch if not exists ...");
-    elasticsearchUserDetailsService.initializeUsers();
+    if (elasticsearchUserDetailsService != null) {
+      logger.info("INIT: Create users in elasticsearch if not exists ...");
+      elasticsearchUserDetailsService.initializeUsers();
+    }
     logger.debug("INIT: Generate demo data...");
     try {
       dataGenerator.createZeebeDataAsync(false);

@@ -39,6 +39,8 @@ public class ListViewTemplate extends AbstractTemplateCreator {
   public static final String VAR_VALUE = "varValue";
   public static final String SCOPE_KEY = "scopeKey";
 
+  public static final String BATCH_OPERATION_ID = "batchOperationId";
+
   public static final String JOIN_RELATION = "joinRelation";
   public static final String WORKFLOW_INSTANCE_JOIN_RELATION = "workflowInstance";
   public static final String ACTIVITIES_JOIN_RELATION = "activity";
@@ -115,6 +117,9 @@ public class ListViewTemplate extends AbstractTemplateCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(VAR_VALUE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(BATCH_OPERATION_ID)
         .field("type", "keyword")
       .endObject()
       .startObject(JOIN_RELATION)

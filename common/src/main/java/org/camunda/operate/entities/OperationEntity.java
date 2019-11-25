@@ -16,12 +16,15 @@ public class OperationEntity extends OperateEntity {
   private String variableName;
   private String variableValue;
   private OperationType type;
+  @Deprecated //OPE-786
   private OffsetDateTime startDate;
+  @Deprecated //OPE-786
   private OffsetDateTime endDate;
   private OffsetDateTime lockExpirationTime;
   private String lockOwner;
   private OperationState state;
   private String errorMessage;
+  private String batchOperationId;
 
   public Long getWorkflowInstanceKey() {
     return workflowInstanceKey;
@@ -71,6 +74,7 @@ public class OperationEntity extends OperateEntity {
     this.type = type;
   }
 
+  @Deprecated //OPE-786
   public OffsetDateTime getStartDate() {
     return startDate;
   }
@@ -79,6 +83,7 @@ public class OperationEntity extends OperateEntity {
     this.startDate = startDate;
   }
 
+  @Deprecated //OPE-786
   public OffsetDateTime getEndDate() {
     return endDate;
   }
@@ -119,6 +124,14 @@ public class OperationEntity extends OperateEntity {
     this.errorMessage = errorMessage;
   }
 
+  public String getBatchOperationId() {
+    return batchOperationId;
+  }
+
+  public void setBatchOperationId(String batchOperationId) {
+    this.batchOperationId = batchOperationId;
+  }
+
   public void generateId() {
     setId(UUID.randomUUID().toString());
   }
@@ -156,7 +169,10 @@ public class OperationEntity extends OperateEntity {
       return false;
     if (state != that.state)
       return false;
-    return errorMessage != null ? errorMessage.equals(that.errorMessage) : that.errorMessage == null;
+    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
+      return false;
+    return batchOperationId != null ? batchOperationId.equals(that.batchOperationId) : that.batchOperationId == null;
+
   }
 
   @Override
@@ -174,6 +190,7 @@ public class OperationEntity extends OperateEntity {
     result = 31 * result + (lockOwner != null ? lockOwner.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
+    result = 31 * result + (batchOperationId != null ? batchOperationId.hashCode() : 0);
     return result;
   }
 }

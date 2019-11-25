@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.webapp.es.reader.WorkflowReader;
 import org.camunda.operate.webapp.rest.dto.WorkflowDto;
 import org.camunda.operate.webapp.rest.dto.WorkflowGroupDto;
 import org.springframework.beans.factory.annotation.Autowired;

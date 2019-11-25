@@ -10,11 +10,11 @@ import java.time.Instant;
 import org.camunda.operate.Application;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.es.writer.BatchOperationWriter;
+import org.camunda.operate.webapp.es.writer.OldBatchOperationWriter;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.ExecutionFinishedListener;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -48,7 +48,7 @@ public class BatchOperationPerformanceTest {
   @Autowired
   private OperateProperties operateProperties;
   @Autowired
-  private BatchOperationWriter batchOperationWriter;
+  private OldBatchOperationWriter batchOperationWriter;
   @Autowired
   private RestHighLevelClient esClient;
   @Autowired

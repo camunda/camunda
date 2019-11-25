@@ -6,6 +6,7 @@
 package org.camunda.operate.webapp.rest.dto.operation;
 
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 
 public class OperationRequestDto {
 
@@ -16,7 +17,19 @@ public class OperationRequestDto {
     this.operationType = operationType;
   }
 
+  public OperationRequestDto(ListViewQueryDto query, OperationType operationType) {
+    this.query = query;
+    this.operationType = operationType;
+  }
+
+  private ListViewQueryDto query;
+
   private OperationType operationType;
+
+  /**
+   * Batch operation name.
+   */
+  private String name;
 
   /**
    * RESOLVE_INCIDENT operation.
@@ -26,11 +39,19 @@ public class OperationRequestDto {
   /**
    * UPDATE_VARIABLE operation.
    */
-  private String scopeId;
+  private String variableScopeId;
 
-  private String name;
+  private String variableName;
 
-  private String value;
+  private String variableValue;
+
+  public ListViewQueryDto getQuery() {
+    return query;
+  }
+
+  public void setQuery(ListViewQueryDto query) {
+    this.query = query;
+  }
 
   public OperationType getOperationType() {
     return operationType;
@@ -38,22 +59,6 @@ public class OperationRequestDto {
 
   public void setOperationType(OperationType operationType) {
     this.operationType = operationType;
-  }
-
-  public String getIncidentId() {
-    return incidentId;
-  }
-
-  public void setIncidentId(String incidentId) {
-    this.incidentId = incidentId;
-  }
-
-  public String getScopeId() {
-    return scopeId;
-  }
-
-  public void setScopeId(String scopeId) {
-    this.scopeId = scopeId;
   }
 
   public String getName() {
@@ -64,12 +69,36 @@ public class OperationRequestDto {
     this.name = name;
   }
 
-  public String getValue() {
-    return value;
+  public String getIncidentId() {
+    return incidentId;
   }
 
-  public void setValue(String value) {
-    this.value = value;
+  public void setIncidentId(String incidentId) {
+    this.incidentId = incidentId;
+  }
+
+  public String getVariableScopeId() {
+    return variableScopeId;
+  }
+
+  public void setVariableScopeId(String variableScopeId) {
+    this.variableScopeId = variableScopeId;
+  }
+
+  public String getVariableName() {
+    return variableName;
+  }
+
+  public void setVariableName(String variableName) {
+    this.variableName = variableName;
+  }
+
+  public String getVariableValue() {
+    return variableValue;
+  }
+
+  public void setVariableValue(String variableValue) {
+    this.variableValue = variableValue;
   }
 
   @Override
@@ -81,24 +110,37 @@ public class OperationRequestDto {
 
     OperationRequestDto that = (OperationRequestDto) o;
 
+    if (query != null ? !query.equals(that.query) : that.query != null)
+      return false;
     if (operationType != that.operationType)
-      return false;
-    if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
-      return false;
-    if (scopeId != null ? !scopeId.equals(that.scopeId) : that.scopeId != null)
       return false;
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
-    return value != null ? value.equals(that.value) : that.value == null;
+    if (incidentId != null ? !incidentId.equals(that.incidentId) : that.incidentId != null)
+      return false;
+    if (variableScopeId != null ? !variableScopeId.equals(that.variableScopeId) : that.variableScopeId != null)
+      return false;
+    if (variableName != null ? !variableName.equals(that.variableName) : that.variableName != null)
+      return false;
+    return variableValue != null ? variableValue.equals(that.variableValue) : that.variableValue == null;
+
   }
 
   @Override
   public int hashCode() {
-    int result = operationType != null ? operationType.hashCode() : 0;
-    result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
-    result = 31 * result + (scopeId != null ? scopeId.hashCode() : 0);
+    int result = query != null ? query.hashCode() : 0;
+    result = 31 * result + (operationType != null ? operationType.hashCode() : 0);
     result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + (value != null ? value.hashCode() : 0);
+    result = 31 * result + (incidentId != null ? incidentId.hashCode() : 0);
+    result = 31 * result + (variableScopeId != null ? variableScopeId.hashCode() : 0);
+    result = 31 * result + (variableName != null ? variableName.hashCode() : 0);
+    result = 31 * result + (variableValue != null ? variableValue.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "OperationRequestDto{" + "query=" + query + ", operationType=" + operationType + ", name='" + name + '\'' + ", incidentId='" + incidentId + '\''
+        + ", variableScopeId='" + variableScopeId + '\'' + ", variableName='" + variableName + '\'' + ", variableValue='" + variableValue + '\'' + '}';
   }
 }

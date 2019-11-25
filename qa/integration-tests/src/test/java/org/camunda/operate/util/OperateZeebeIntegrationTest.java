@@ -8,6 +8,7 @@ package org.camunda.operate.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -20,8 +21,8 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.it.OperateTester;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
+import org.camunda.operate.webapp.security.UserService;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ImportPositionHolder;
 import org.camunda.operate.zeebe.PartitionHolder;
@@ -48,7 +49,8 @@ import io.zeebe.test.EmbeddedBrokerRule;
 public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest {
   
   private static final String POST_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/%s/operation";
-  private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/operation";
+  private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/batch-operation";
+  protected static final String USERNAME = "testuser";
 
   @MockBean
   protected ZeebeClient mockedZeebeClient;    //we don't want to create ZeebeClient, we will rather use the one from test rule
@@ -145,8 +147,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   @Autowired
   protected OperationExecutor operationExecutor;
+
   @Autowired
   private MeterRegistry meterRegistry;
+
+  @MockBean
+  private UserService userService;
 
   protected OperateTester tester;
 
@@ -170,6 +176,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     } catch (NoSuchFieldException e) {
       fail("Failed to inject ZeebeClient into some of the beans");
     }
+
+    //TODO is it OK for all tests?
+    when(userService.getCurrentUsername()).thenReturn(USERNAME);
   }
 
   @After
@@ -240,17 +249,17 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   
   protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {
     final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
-    op.setName(newVarName);
-    op.setValue(newVarValue);
-    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
+    op.setVariableName(newVarName);
+    op.setVariableValue(newVarValue);
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
     postOperationWithOKResponse(workflowInstanceKey, op);
   }
 
   protected void postUpdateVariableOperation(Long workflowInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
     final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
-    op.setName(newVarName);
-    op.setValue(newVarValue);
-    op.setScopeId(ConversionUtils.toStringOrNull(scopeKey));
+    op.setVariableName(newVarName);
+    op.setVariableValue(newVarValue);
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
     postOperationWithOKResponse(workflowInstanceKey, op);
   }
   
@@ -291,11 +300,15 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType) throws Exception {
-    return postBatchOperation(query, operationType, HttpStatus.SC_OK);
+    return postBatchOperationWithOKResponse(query, operationType, null);
   }
 
-  protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, int expectedStatus) throws Exception {
-    BatchOperationRequestDto batchOperationDto = createBatchOperationDto(operationType, query);
+  protected MvcResult postBatchOperationWithOKResponse(ListViewQueryDto query, OperationType operationType, String name) throws Exception {
+    return postBatchOperation(query, operationType, name, HttpStatus.SC_OK);
+  }
+
+  protected MvcResult postBatchOperation(ListViewQueryDto query, OperationType operationType, String name, int expectedStatus) throws Exception {
+    OperationRequestDto batchOperationDto = createBatchOperationDto(operationType, name, query);
     MockHttpServletRequestBuilder postOperationRequest =
       post(POST_BATCH_OPERATION_URL)
         .content(mockMvcTestRule.json(batchOperationDto))
@@ -309,10 +322,13 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return mvcResult;
   }
 
-  protected BatchOperationRequestDto createBatchOperationDto(OperationType operationType, ListViewQueryDto query) {
-    BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
-    batchOperationDto.getQueries().add(query);
+  protected OperationRequestDto createBatchOperationDto(OperationType operationType, String name, ListViewQueryDto query) {
+    OperationRequestDto batchOperationDto = new OperationRequestDto();
+    batchOperationDto.setQuery(query);
     batchOperationDto.setOperationType(operationType);
+    if (name != null) {
+      batchOperationDto.setName(name);
+    }
     return batchOperationDto;
   }
 

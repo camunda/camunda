@@ -12,6 +12,8 @@ import java.util.Random;
 
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
+import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
+import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;

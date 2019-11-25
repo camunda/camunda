@@ -11,14 +11,14 @@ import java.util.List;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
-import org.camunda.operate.es.reader.ActivityStatisticsReader;
-import org.camunda.operate.es.reader.IncidentReader;
-import org.camunda.operate.es.reader.ListViewReader;
-import org.camunda.operate.es.reader.SequenceFlowReader;
-import org.camunda.operate.es.reader.VariableReader;
-import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.writer.BatchOperationWriter;
-import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.webapp.es.reader.ActivityStatisticsReader;
+import org.camunda.operate.webapp.es.reader.IncidentReader;
+import org.camunda.operate.webapp.es.reader.ListViewReader;
+import org.camunda.operate.webapp.es.reader.SequenceFlowReader;
+import org.camunda.operate.webapp.es.reader.VariableReader;
+import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
+import org.camunda.operate.webapp.es.writer.OldBatchOperationWriter;
 import org.camunda.operate.webapp.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
@@ -28,7 +28,7 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
-import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -57,6 +57,9 @@ import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFL
 public class WorkflowInstanceRestService {
   
   public static final String WORKFLOW_INSTANCE_URL = "/api/workflow-instances";
+
+  @Autowired
+  private OldBatchOperationWriter oldBatchOperationWriter;
 
   @Autowired
   private BatchOperationWriter batchOperationWriter;
@@ -94,12 +97,19 @@ public class WorkflowInstanceRestService {
     return listViewReader.queryWorkflowInstances(workflowInstanceRequest, firstResult, maxResults);
   }
 
-  @ApiOperation("Perform batch operation on an instance (async)")
+  @ApiOperation("Perform single operation on an instance (async)")
   @PostMapping("/{id}/operation")
   public OperationResponseDto operation(@PathVariable String id,
-      @RequestBody OperationRequestDto operationRequest) throws PersistenceException {
+      @RequestBody org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto operationRequest) {
     validateOperationRequest(operationRequest);
-    return batchOperationWriter.scheduleOperation(Long.valueOf(id), operationRequest);
+    return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), operationRequest);
+  }
+
+  private void validateBatchOperationRequest(OperationRequestDto operationRequest) {
+    validateOperationRequest(operationRequest);
+    if (operationRequest.getQuery() == null) {
+      throw new InvalidRequestException("List view query must be defined.");
+    }
   }
 
   private void validateOperationRequest(OperationRequestDto operationRequest) {
@@ -107,17 +117,25 @@ public class WorkflowInstanceRestService {
       throw new InvalidRequestException("Operation type must be defined.");
     }
     if (operationRequest.getOperationType().equals(OperationType.UPDATE_VARIABLE)
-      && (operationRequest.getScopeId() == null || operationRequest.getName() == null || operationRequest.getName().isEmpty()
-        || operationRequest.getValue() == null)) {
+      && (operationRequest.getVariableScopeId() == null || operationRequest.getVariableName() == null || operationRequest.getVariableName().isEmpty()
+        || operationRequest.getVariableValue() == null)) {
         throw new InvalidRequestException("ScopeId, name and value must be defined for UPDATE_VARIABLE operation.");
     }
   }
 
-  @ApiOperation("Perform batch operation on selection (async)")
+  @Deprecated //OPE-786
+  @ApiOperation("DEPRECATED Perform batch operation on selection (async)")
   @PostMapping("/operation")
   public OperationResponseDto batchOperation(
       @RequestBody BatchOperationRequestDto batchOperationRequest) {
-    return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
+    return oldBatchOperationWriter.scheduleBatchOperation(batchOperationRequest);
+  }
+
+  @ApiOperation("Create batch operation based on filter")
+  @PostMapping("/batch-operation")
+  public OperationResponseDto createBatchOperation(@RequestBody OperationRequestDto operationRequest) {
+    validateBatchOperationRequest(operationRequest);
+    return batchOperationWriter.scheduleBatchOperation(operationRequest);
   }
 
   @ApiOperation("Get workflow instance by id")

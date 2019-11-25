@@ -15,24 +15,29 @@ import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.reader.ActivityInstanceReader;
-import org.camunda.operate.es.reader.IncidentReader;
-import org.camunda.operate.es.reader.ListViewReader;
-import org.camunda.operate.es.reader.VariableReader;
-import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.CollectionUtil;
+import org.camunda.operate.util.TestUtil;
+import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
+import org.camunda.operate.webapp.es.reader.IncidentReader;
+import org.camunda.operate.webapp.es.reader.ListViewReader;
+import org.camunda.operate.webapp.es.reader.VariableReader;
+import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.webapp.es.reader.WorkflowReader;
 import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Configuration
+@ConditionalOnProperty(prefix = OperateProperties.PREFIX, name = "webappEnabled", havingValue = "true", matchIfMissing = true)
 public class ElasticsearchChecks {
 
   @Autowired

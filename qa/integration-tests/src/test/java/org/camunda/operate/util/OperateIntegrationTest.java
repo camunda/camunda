@@ -67,7 +67,7 @@ public abstract class OperateIntegrationTest {
     return mvcResult;
   }
   
-  protected MvcResult postRequest(String requestUrl,Object query) throws Exception {
+  protected MvcResult postRequest(String requestUrl, Object query) throws Exception {
     MockHttpServletRequestBuilder request = post(requestUrl)
         .content(mockMvcTestRule.json(query))
         .contentType(mockMvcTestRule.getContentType());

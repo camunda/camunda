@@ -22,7 +22,7 @@ import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
-import org.camunda.operate.es.writer.BatchOperationWriter;
+import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
@@ -32,7 +32,7 @@ import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -57,7 +57,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @TestPropertySource(properties = { OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-    OperateProperties.PREFIX + ".webappEnabled = false",
     OperateProperties.PREFIX + ".clusterNode.nodeCount = 2",
     OperateProperties.PREFIX + ".clusterNode.currentNodeId = 0" })
 public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
@@ -134,10 +133,9 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   protected void createOperations(List<Long> ids1) throws PersistenceException {
-    final List<ListViewQueryDto> queries = TestUtil.createGetAllWorkflowInstancesQuery().getQueries();
-    queries.get(0).setIds(CollectionUtil.toSafeListOfStrings(ids1));
-    BatchOperationRequestDto batchOperationRequest = new BatchOperationRequestDto(queries);
-    batchOperationRequest.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE); //the type does not matter
+    final ListViewQueryDto query = TestUtil.createGetAllWorkflowInstancesQuery().getQueries().get(0);
+    query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
+    OperationRequestDto batchOperationRequest = new OperationRequestDto(query, OperationType.CANCEL_WORKFLOW_INSTANCE);  //the type does not matter
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 

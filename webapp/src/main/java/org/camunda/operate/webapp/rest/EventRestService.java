@@ -7,7 +7,7 @@ package org.camunda.operate.webapp.rest;
 
 import java.util.List;
 import org.camunda.operate.entities.EventEntity;
-import org.camunda.operate.es.reader.EventReader;
+import org.camunda.operate.webapp.es.reader.EventReader;
 import org.camunda.operate.webapp.rest.dto.EventDto;
 import org.camunda.operate.webapp.rest.dto.EventQueryDto;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
-import org.camunda.operate.es.writer.BatchOperationWriter;
+import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
@@ -24,6 +24,7 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   @Autowired
   protected BatchOperationWriter batchOperationWriter;
+
   @Autowired
   protected OperateProperties operateProperties;
 

@@ -17,8 +17,9 @@ public class OperationDto {
   private String id;
 
   private OperationType type;
-
+  @Deprecated //OPE-786
   private OffsetDateTime startDate;
+  @Deprecated //OPE-786
   private OffsetDateTime endDate;
 
   private OperationState state;
@@ -41,6 +42,7 @@ public class OperationDto {
     this.type = type;
   }
 
+  @Deprecated
   public OffsetDateTime getStartDate() {
     return startDate;
   }
@@ -49,6 +51,7 @@ public class OperationDto {
     this.startDate = startDate;
   }
 
+  @Deprecated
   public OffsetDateTime getEndDate() {
     return endDate;
   }

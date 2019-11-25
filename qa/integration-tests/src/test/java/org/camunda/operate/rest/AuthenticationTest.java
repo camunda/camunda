@@ -27,6 +27,7 @@ import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.rest.AuthenticationRestService;
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.security.WebSecurityConfig;
+import org.camunda.operate.webapp.security.es.DefaultUserService;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -51,8 +52,7 @@ import org.springframework.util.MultiValueMap;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {
-      TestApplicationWithNoBeans.class,OperateProperties.class,WebSecurityConfig.class,AuthenticationRestService.class
+  classes = { TestApplicationWithNoBeans.class, OperateProperties.class, WebSecurityConfig.class, DefaultUserService.class, AuthenticationRestService.class
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )

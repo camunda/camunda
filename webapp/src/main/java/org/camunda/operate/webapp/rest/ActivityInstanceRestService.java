@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.webapp.rest;
 
-import org.camunda.operate.es.reader.ActivityInstanceReader;
+import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeDto;
 import org.camunda.operate.webapp.rest.dto.activity.ActivityInstanceTreeRequestDto;
 import org.camunda.operate.webapp.rest.exception.InvalidRequestException;

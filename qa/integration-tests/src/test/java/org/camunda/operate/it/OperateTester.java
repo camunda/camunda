@@ -24,7 +24,6 @@ import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.ImportValueType;
@@ -173,9 +172,9 @@ public class OperateTester {
 
   public OperateTester updateVariableOperation(String varName, String varValue) throws Exception {
     final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
-    op.setName(varName);
-    op.setValue(varValue);
-    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
+    op.setVariableName(varName);
+    op.setVariableValue(varValue);
+    op.setVariableScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
     postOperation(op);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return this;
@@ -185,10 +184,8 @@ public class OperateTester {
     final ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
     workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey.toString()));
     
-    BatchOperationRequestDto batchOperationDto = new BatchOperationRequestDto();
-    batchOperationDto.getQueries().add(workflowInstanceQuery);
-    batchOperationDto.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
-    
+    OperationRequestDto batchOperationDto = new OperationRequestDto(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
+
     postOperation(batchOperationDto);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return this;

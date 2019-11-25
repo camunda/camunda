@@ -17,7 +17,7 @@ import org.camunda.operate.JacksonConfig;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
-import org.camunda.operate.es.reader.EventReader;
+import org.camunda.operate.webapp.es.reader.EventReader;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.dto.EventDto;
 import org.camunda.operate.webapp.rest.dto.EventQueryDto;

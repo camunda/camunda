@@ -10,8 +10,8 @@ import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Arrays;
 
-import org.camunda.operate.es.reader.IncidentReader;
-import org.camunda.operate.es.reader.ListViewReader;
+import org.camunda.operate.webapp.es.reader.IncidentReader;
+import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;

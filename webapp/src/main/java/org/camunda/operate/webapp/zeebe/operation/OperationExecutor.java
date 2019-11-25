@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.writer.BatchOperationWriter;
+import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;

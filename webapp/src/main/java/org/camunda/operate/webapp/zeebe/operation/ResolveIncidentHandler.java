@@ -11,7 +11,7 @@ import io.zeebe.client.api.command.ClientException;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.reader.IncidentReader;
+import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
 import org.slf4j.Logger;

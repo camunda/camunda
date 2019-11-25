@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.webapp.es.reader.WorkflowReader;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
 import org.camunda.operate.webapp.rest.dto.WorkflowGroupDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;

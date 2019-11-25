@@ -28,6 +28,7 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
   public static final String ERROR_MSG = "errorMessage";
   public static final String LOCK_EXPIRATION_TIME = "lockExpirationTime";
   public static final String LOCK_OWNER = "lockOwner";
+  public static final String BATCH_OPERATION_ID = "batchOperationId";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -80,6 +81,9 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
         .field("type", "keyword")
       .endObject()
       .startObject(ERROR_MSG)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(BATCH_OPERATION_ID)
         .field("type", "keyword")
       .endObject();
     return newBuilder;

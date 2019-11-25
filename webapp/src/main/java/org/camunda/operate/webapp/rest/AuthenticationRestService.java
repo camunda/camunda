@@ -5,47 +5,33 @@
  */
 package org.camunda.operate.webapp.rest;
 
-import org.camunda.operate.webapp.sso.SSOWebSecurityConfig;
-import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
-
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.rest.exception.UserNotFoundException;
+import org.camunda.operate.webapp.security.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Profile;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
 
-@Profile("!"+SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 @RestController
 @RequestMapping(value = AUTHENTICATION_URL)
 public class AuthenticationRestService {
 
-  public static final String AUTHENTICATION_URL = "/api/authentications/";
+  public static final String AUTHENTICATION_URL = "/api/authentications";
   public static final String USER_ENDPOINT = "/user";
 
   @Autowired
-  private UserDetailsService userDetailsService;
+  private UserService userService;
 
   @GetMapping(path = USER_ENDPOINT)
   public UserDto getCurrentAuthentication() {
-    SecurityContext context = SecurityContextHolder.getContext();
-    Authentication authentication = context.getAuthentication();
-
-    String username = authentication.getName();
-
     try {
-      UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-      return UserDto.fromUserDetails(userDetails);
+      return userService.getCurrentUser();
     }
     catch (UsernameNotFoundException e) {
-      throw new UserNotFoundException(String.format("User '%s' not found.", username));
+      throw new UserNotFoundException(String.format("User '%s' not found.", userService.getCurrentUsername()));
     }
   }
 

@@ -7,6 +7,8 @@ package org.camunda.operate.webapp.rest.dto.operation;
 
 public class OperationResponseDto {
 
+  private String batchOperationId;
+
   private int count;
 
   private String reason;
@@ -14,13 +16,23 @@ public class OperationResponseDto {
   public OperationResponseDto() {
   }
 
-  public OperationResponseDto(int count) {
+  public OperationResponseDto(String batchOperationId, int count) {
+    this.batchOperationId = batchOperationId;
     this.count = count;
   }
 
-  public OperationResponseDto(int count, String reason) {
+  public OperationResponseDto(String batchOperationId, int count, String reason) {
+    this.batchOperationId = batchOperationId;
     this.count = count;
     this.reason = reason;
+  }
+
+  public String getBatchOperationId() {
+    return batchOperationId;
+  }
+
+  public void setBatchOperationId(String batchOperationId) {
+    this.batchOperationId = batchOperationId;
   }
 
   /**
@@ -54,12 +66,16 @@ public class OperationResponseDto {
 
     if (count != that.count)
       return false;
+    if (batchOperationId != null ? !batchOperationId.equals(that.batchOperationId) : that.batchOperationId != null)
+      return false;
     return reason != null ? reason.equals(that.reason) : that.reason == null;
+
   }
 
   @Override
   public int hashCode() {
-    int result = count;
+    int result = batchOperationId != null ? batchOperationId.hashCode() : 0;
+    result = 31 * result + count;
     result = 31 * result + (reason != null ? reason.hashCode() : 0);
     return result;
   }

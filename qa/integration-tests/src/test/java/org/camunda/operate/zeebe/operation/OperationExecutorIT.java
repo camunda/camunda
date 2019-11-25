@@ -17,7 +17,7 @@ import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceState;
-import org.camunda.operate.es.reader.OperationReader;
+import org.camunda.operate.webapp.es.reader.OperationReader;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;

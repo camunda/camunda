@@ -6,7 +6,7 @@
 package org.camunda.operate.webapp.rest;
 
 import java.util.Collection;
-import org.camunda.operate.es.reader.IncidentStatisticsReader;
+import org.camunda.operate.webapp.es.reader.IncidentStatisticsReader;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
 import org.springframework.beans.factory.annotation.Autowired;
