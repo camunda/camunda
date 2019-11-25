@@ -2,7 +2,7 @@
 
 exports[`InstanceDetail should render state icon and instance id 1`] = `
 <Fragment>
-  <Themed(StateIcon)
+  <Styled(Themed(StateIcon))
     state="ACTIVE"
   />
    Instance 

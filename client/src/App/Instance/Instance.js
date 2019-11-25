@@ -500,7 +500,15 @@ class Instance extends Component {
 
     return (
       <Fragment>
-        <Header detail={instance && <InstanceDetail instance={instance} />} />
+        <Header
+          detail={
+            instance ? (
+              <InstanceDetail instance={instance} />
+            ) : (
+              <Styled.SkeletonBlock />
+            )
+          }
+        />
         <Styled.Instance>
           <VisuallyHiddenH1>
             {instance && `Camunda Operate Instance ${instance.id}`}

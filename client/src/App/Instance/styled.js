@@ -107,3 +107,20 @@ export const SplitPaneBody = themed(styled(SplitPane.Pane.Body)`
   border: none;
   ${pseudoBorder}
 `);
+
+const colors = css`
+  background: ${themeStyle({
+    dark: 'rgba(136, 136, 141)',
+    light: Colors.uiLight06
+  })};
+  opacity: ${themeStyle({
+    dark: 0.2,
+    light: 0.09
+  })};
+`;
+
+export const SkeletonBlock = themed(styled.div`
+  height: 12px;
+  width: 120px;
+  ${colors};
+`);
