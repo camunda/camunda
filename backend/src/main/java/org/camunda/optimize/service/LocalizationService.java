@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.io.ByteStreams;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -30,17 +31,24 @@ import java.util.Optional;
 public class LocalizationService implements ConfigurationReloadable {
 
   public static final String LOCALIZATION_PATH = "localization/";
-  public static final String API_ERRORS_FIELD = "apiErrors";
+
+  private static final String API_ERRORS_FIELD = "apiErrors";
+  private static final String JSON_FILE_EXTENSION = "json";
+  private static final String MARKDOWN_FILE_EXTENSION = "md";
+  private static final String LOCALIZATION_FILE_PREFIX_WHATSNEW = "whatsnew";
 
   private final ObjectMapper objectMapper = new ObjectMapper();
   private final ConfigurationService configurationService;
 
-  public byte[] getLocalizationFileBytes(final String localeCode) {
-    final String resolvedLocaleCode = configurationService.getAvailableLocales().contains(localeCode)
-      ? localeCode
-      : configurationService.getFallbackLocale();
+  @PostConstruct
+  public void validateLocalizationSetup() {
+    validateLocalizationFiles();
+    validateMarkdownFiles();
+    validateFallbackLocale();
+  }
 
-    return getFileBytes(resolveLocaleFilePath(resolvedLocaleCode));
+  public byte[] getLocalizationFileBytes(final String localeCode) {
+    return getLocalizedJsonFile(localeCode);
   }
 
   public String getDefaultLocaleMessageForApiErrorCode(final String code) {
@@ -51,32 +59,40 @@ public class LocalizationService implements ConfigurationReloadable {
     }
   }
 
-  @Override
-  public void reloadConfiguration(final ApplicationContext context) {
-    validateLocaleConfigurationFiles();
+  public byte[] getLocalizedWhatsNewMarkdown(final String localeCode) {
+    return getLocalizedMarkdownFile(LOCALIZATION_FILE_PREFIX_WHATSNEW, localeCode);
   }
 
-  @PostConstruct
-  public void validateLocaleConfigurationFiles() {
-    configurationService.getAvailableLocales().forEach(locale -> {
-      final String localeFileName = resolveLocaleFilePath(locale);
-      final URL localizationFile = getClass().getClassLoader().getResource(localeFileName);
-      if (localizationFile == null) {
-        throw new OptimizeConfigurationException(
-          String.format("File for configured availableLocale is not available [%s].", localeFileName)
-        );
-      } else {
-        try {
-          objectMapper.readTree(localizationFile);
-        } catch (IOException e) {
-          throw new OptimizeConfigurationException(
-            String.format("File for configured availableLocale is not a valid JSON file [%s].", localeFileName),
-            e
-          );
-        }
-      }
-    });
+  @Override
+  public void reloadConfiguration(final ApplicationContext context) {
+    validateLocalizationSetup();
+  }
 
+  private void validateLocalizationFiles() {
+    configurationService.getAvailableLocales().forEach(locale -> {
+      final String filePath = resolveFilePath(JSON_FILE_EXTENSION, locale);
+      validateFileExists(filePath);
+      validateJsonFile(filePath);
+    });
+  }
+
+  private void validateMarkdownFiles() {
+    configurationService.getAvailableLocales().forEach(locale -> {
+      final String filePath = resolveFilePath(LOCALIZATION_FILE_PREFIX_WHATSNEW, MARKDOWN_FILE_EXTENSION, locale);
+      validateFileExists(filePath);
+    });
+  }
+
+  private void validateFileExists(final String fileName) {
+    final URL localizationFile = getClass().getClassLoader().getResource(fileName);
+    if (localizationFile == null) {
+      throw new OptimizeConfigurationException(
+        String.format("File for configured availableLocale is not available [%s].", fileName)
+      );
+    }
+  }
+
+  private void validateFallbackLocale() {
     if (!configurationService.getAvailableLocales().contains(configurationService.getFallbackLocale())) {
       final String message = String.format(
         "The configured fallbackLocale [%s] is not present in availableLocales %s.",
@@ -87,8 +103,40 @@ public class LocalizationService implements ConfigurationReloadable {
     }
   }
 
-  private String resolveLocaleFilePath(final String localeCode) {
-    return LOCALIZATION_PATH + localeCode + ".json";
+  private void validateJsonFile(final String fileName) {
+    final URL localizationFile = getClass().getClassLoader().getResource(fileName);
+    try {
+      objectMapper.readTree(localizationFile);
+    } catch (IOException e) {
+      throw new OptimizeConfigurationException(
+        String.format("File for configured availableLocale is not a valid JSON file [%s].", fileName), e
+      );
+    }
+  }
+
+  private byte[] getLocalizedJsonFile(final String localeCode) {
+    return getLocalizedFile(null, JSON_FILE_EXTENSION, localeCode);
+  }
+
+  private byte[] getLocalizedMarkdownFile(final String key, final String localeCode) {
+    return getLocalizedFile(key, MARKDOWN_FILE_EXTENSION, localeCode);
+  }
+
+  private byte[] getLocalizedFile(final String filePrefix, final String fileExtension, final String localeCode) {
+    final String resolvedLocaleCode = configurationService.getAvailableLocales().contains(localeCode)
+      ? localeCode
+      : configurationService.getFallbackLocale();
+
+    return getFileBytes(resolveFilePath(filePrefix, fileExtension, resolvedLocaleCode));
+  }
+
+  private String resolveFilePath(final String fileExtension, final String localeCode) {
+    return resolveFilePath(null, fileExtension, localeCode);
+  }
+
+  private String resolveFilePath(final String filePrefix, final String fileExtension, final String localeCode) {
+    final String prefix = StringUtils.isNotBlank(filePrefix) ? filePrefix + "_" : "";
+    return LOCALIZATION_PATH + prefix + localeCode + "." + fileExtension;
   }
 
   private byte[] getFileBytes(final String localeFileName) {
@@ -111,16 +159,16 @@ public class LocalizationService implements ConfigurationReloadable {
     return result.orElseThrow(() -> new OptimizeRuntimeException("Could not load localization file: " + localeFileName));
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   private String getMessageForCode(final String localeCode,
-                                   final String categoryCode, final String messageCode) throws IOException {
-    final String localeFileName = resolveLocaleFilePath(localeCode);
-    final URL localizationFile = getClass().getClassLoader().getResource(localeFileName);
-    Map<String, Map> localisationMap = objectMapper.readValue(
-      localizationFile,
-      new TypeReference<Map<String, Map>>() {
-      }
+                                   final String categoryCode,
+                                   final String messageCode) throws IOException {
+    // @formatter:off
+    final Map<String, Map> localisationMap = objectMapper.readValue(
+      getLocalizedJsonFile(localeCode), new TypeReference<Map<String, Map>>() {}
     );
-    Map<String, String> errorCodeMap = localisationMap.get(categoryCode);
+    // @formatter:on
+    final Map<String, String> errorCodeMap = localisationMap.get(categoryCode);
     return errorCodeMap.get(messageCode);
   }
 }

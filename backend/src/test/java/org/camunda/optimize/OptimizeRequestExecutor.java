@@ -815,6 +815,13 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetLocalizedWhatsNewMarkdownRequest(final String localeCode) {
+    this.path = "localization/whatsnew";
+    this.requestType = GET;
+    this.addSingleQueryParam("localeCode", localeCode);
+    return this;
+  }
+
   public OptimizeRequestExecutor buildFlowNodeOutliersRequest(String key,
                                                               List<String> version,
                                                               List<String> tenantIds) {

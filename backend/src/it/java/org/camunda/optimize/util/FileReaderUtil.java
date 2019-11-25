@@ -7,20 +7,16 @@ package org.camunda.optimize.util;
 
 import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.io.IOUtils;
 
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 @UtilityClass
 public class FileReaderUtil {
 
   @SneakyThrows
-  public String readFile(String pathString) {
-    Path path = Paths.get(FileReaderUtil.class.getResource(pathString).toURI());
-    byte[] content = Files.readAllBytes(path);
-    return new String(content, StandardCharsets.UTF_8);
+  public String readFile(final String pathString) {
+    return IOUtils.toString(FileReaderUtil.class.getResource(pathString).toURI(), StandardCharsets.UTF_8);
   }
 
   public String readFileWithWindowsLineSeparator(String path) {
