@@ -189,7 +189,6 @@ public class CollectionHandlingIT extends AbstractIT {
     data.setConfiguration(configuration);
     collectionUpdate.setData(data);
 
-
     // when
     updateCollectionRequest(id, collectionUpdate);
     ResolvedCollectionDefinitionDto collection = getCollectionById(id);

@@ -15,9 +15,27 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+
 @Component
 public class EventBasedProcessIndex extends StrictIndexMappingCreator {
+
   public static final int VERSION = 1;
+
+  public static final String ID = IndexableEventBasedProcessDto.Fields.id;
+  public static final String NAME = IndexableEventBasedProcessDto.Fields.name;
+  public static final String XML = IndexableEventBasedProcessDto.Fields.xml;
+  public static final String LAST_MODIFIED = IndexableEventBasedProcessDto.Fields.lastModified;
+  public static final String LAST_MODIFIER = IndexableEventBasedProcessDto.Fields.lastModifier;
+  public static final String MAPPINGS = IndexableEventBasedProcessDto.Fields.mappings;
+
+  public static final String FLOWNODE_ID = IndexableEventMappingDto.Fields.flowNodeId;
+  public static final String START = IndexableEventMappingDto.Fields.start;
+  public static final String END = IndexableEventMappingDto.Fields.end;
+
+  public static final String GROUP = MappedEventDto.Fields.group;
+  public static final String SOURCE = MappedEventDto.Fields.source;
+  public static final String EVENT_NAME = MappedEventDto.Fields.eventName;
 
   @Override
   public String getIndexName() {
@@ -33,18 +51,25 @@ public class EventBasedProcessIndex extends StrictIndexMappingCreator {
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     XContentBuilder newXContentBuilder = xContentBuilder
-      .startObject(IndexableEventBasedProcessDto.Fields.id)
+      .startObject(ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(IndexableEventBasedProcessDto.Fields.name)
+      .startObject(NAME)
         .field("type", "keyword")
       .endObject()
-      .startObject(IndexableEventBasedProcessDto.Fields.xml)
+      .startObject(LAST_MODIFIER)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(LAST_MODIFIED)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(XML)
         .field("type", "text")
         .field("index", true)
         .field("analyzer", "is_present_analyzer")
       .endObject()
-      .startObject(IndexableEventBasedProcessDto.Fields.mappings)
+      .startObject(MAPPINGS)
         .field("type", "object")
         .startObject("properties");
           addNestedFlowNodeMappingsFields(newXContentBuilder)
@@ -57,16 +82,16 @@ public class EventBasedProcessIndex extends StrictIndexMappingCreator {
   private XContentBuilder addNestedFlowNodeMappingsFields(XContentBuilder xContentBuilder) throws IOException {
       // @formatter:off
     XContentBuilder newXContentBuilder = xContentBuilder
-      .startObject(IndexableEventMappingDto.Fields.flowNodeId)
+      .startObject(FLOWNODE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(IndexableEventMappingDto.Fields.start)
+      .startObject(START)
         .field("type", "object")
         .startObject("properties");
           addEventMappingFields(newXContentBuilder)
         .endObject()
       .endObject()
-      .startObject(IndexableEventMappingDto.Fields.end)
+      .startObject(END)
         .field("type", "object")
         .startObject("properties");
           addEventMappingFields(newXContentBuilder)
@@ -79,13 +104,13 @@ public class EventBasedProcessIndex extends StrictIndexMappingCreator {
   private XContentBuilder addEventMappingFields(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       // @formatter:off
-      .startObject(MappedEventDto.Fields.group)
+      .startObject(GROUP)
         .field("type", "keyword")
       .endObject()
-      .startObject(MappedEventDto.Fields.source)
+      .startObject(SOURCE)
         .field("type", "keyword")
       .endObject()
-      .startObject(MappedEventDto.Fields.eventName)
+      .startObject(EVENT_NAME)
         .field("type", "keyword")
       .endObject();
     // @formatter:on

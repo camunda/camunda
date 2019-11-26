@@ -13,12 +13,14 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.MappedEventDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -153,6 +155,8 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
       "process name",
       FULL_PROCESS_DEFINITION_XML
     );
+    OffsetDateTime now = OffsetDateTime.parse("2019-11-25T10:00:00+01:00");
+    LocalDateUtil.setCurrentTime(now);
     String expectedId = createCreateEventProcessDtoRequest(eventBasedProcessDto).execute(IdDto.class, 200).getId();
 
     // when
@@ -163,7 +167,10 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
 
     // then the report is returned with expect
     assertThat(actual.getId()).isEqualTo(expectedId);
-    assertThat(actual).isEqualToIgnoringGivenFields(eventBasedProcessDto, "id");
+    assertThat(actual).isEqualToIgnoringGivenFields(eventBasedProcessDto, EventBasedProcessDto.Fields.id,
+                                                    EventBasedProcessDto.Fields.lastModified, EventBasedProcessDto.Fields.lastModifier);
+    assertThat(actual.getLastModified()).isEqualTo(now);
+    assertThat(actual.getLastModifier()).isEqualTo("demo");
   }
 
   @Test
@@ -192,6 +199,8 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   public void getAllEventBasedProcess() throws IOException {
     // given
     EventBasedProcessDto firstExpectedDto = createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML);
+    OffsetDateTime now = OffsetDateTime.parse("2019-11-25T10:00:00+01:00");
+    LocalDateUtil.setCurrentTime(now);
     String firstExpectedId = createCreateEventProcessDtoRequest(firstExpectedDto).execute(IdDto.class, 200).getId();
     EventBasedProcessDto secondExpectedDto = createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML);
     String secondExpectedId = createCreateEventProcessDtoRequest(secondExpectedDto).execute(IdDto.class, 200).getId();
@@ -203,10 +212,12 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
       .executeAndReturnList(EventBasedProcessDto.class, 200);
 
     // then the response contains expected processes with xml omitted
-    assertThat(response).extracting("id", "name", "xml", "mappings")
+    assertThat(response).extracting(EventBasedProcessDto.Fields.id, EventBasedProcessDto.Fields.name,
+                                    EventBasedProcessDto.Fields.xml, EventBasedProcessDto.Fields.lastModified,
+                                    EventBasedProcessDto.Fields.lastModifier, EventBasedProcessDto.Fields.mappings)
       .containsExactlyInAnyOrder(
-        tuple(firstExpectedId, firstExpectedDto.getName(), null, null),
-        tuple(secondExpectedId, secondExpectedDto.getName(), null, null)
+        tuple(firstExpectedId, firstExpectedDto.getName(), null, now, "demo", null),
+        tuple(secondExpectedId, secondExpectedDto.getName(), null, now, "demo", null)
       );
   }
 
@@ -225,6 +236,8 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void updateEventBasedProcessWithMappingsAdded() throws IOException {
     // given
+    OffsetDateTime createdTime = OffsetDateTime.parse("2019-11-24T18:00:00+01:00");
+    LocalDateUtil.setCurrentTime(createdTime);
     String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
       FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
 
@@ -234,6 +247,8 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
       "new process name",
       FULL_PROCESS_DEFINITION_XML
     );
+    OffsetDateTime updatedTime = OffsetDateTime.parse("2019-11-25T10:00:00+01:00");
+    LocalDateUtil.setCurrentTime(updatedTime);
     Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
 
     // then the update response code is correct
@@ -243,8 +258,11 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     EventBasedProcessDto storedDto = createGetEventBasedProcessRequest(storedEventBasedProcessId)
       .execute(EventBasedProcessDto.class, 200);
     assertThat(storedDto)
-      .isEqualToIgnoringGivenFields(updateDto, "id")
+      .isEqualToIgnoringGivenFields(updateDto, EventBasedProcessDto.Fields.id,
+                                    EventBasedProcessDto.Fields.lastModified, EventBasedProcessDto.Fields.lastModifier)
       .extracting("id").isEqualTo(storedEventBasedProcessId);
+    assertThat(storedDto.getLastModified()).isEqualTo(updatedTime);
+    assertThat(storedDto.getLastModifier()).isEqualTo("demo");
   }
 
   @Test
