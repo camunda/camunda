@@ -291,6 +291,8 @@ message SetVariablesRequest {
 }
 
 message SetVariablesResponse {
+  // the unique key of the set variables command
+  int64 key = 1;
 }
 
 service Gateway {

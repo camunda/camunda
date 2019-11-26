@@ -20,12 +20,14 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.zeebe.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
+import io.zeebe.client.api.response.SetVariablesResponse;
 import io.zeebe.client.impl.RetriableClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
+import io.zeebe.client.impl.response.SetVariablesResponseImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest.Builder;
-import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
@@ -55,25 +57,29 @@ public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVar
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<SetVariablesResponse> requestTimeout(Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
 
   @Override
-  public ZeebeFuture<Void> send() {
+  public ZeebeFuture<SetVariablesResponse> send() {
     final SetVariablesRequest request = builder.build();
 
-    final RetriableClientFutureImpl<Void, SetVariablesResponse> future =
-        new RetriableClientFutureImpl<>(
-            retryPredicate, streamObserver -> send(request, streamObserver));
+    final RetriableClientFutureImpl<SetVariablesResponse, GatewayOuterClass.SetVariablesResponse>
+        future =
+            new RetriableClientFutureImpl<>(
+                SetVariablesResponseImpl::new,
+                retryPredicate,
+                streamObserver -> send(request, streamObserver));
 
     send(request, future);
     return future;
   }
 
   private void send(
-      SetVariablesRequest request, StreamObserver<SetVariablesResponse> streamObserver) {
+      SetVariablesRequest request,
+      StreamObserver<GatewayOuterClass.SetVariablesResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .setVariables(request, streamObserver);

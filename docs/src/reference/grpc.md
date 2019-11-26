@@ -527,6 +527,8 @@ message SetVariablesRequest {
 
 ```protobuf
 message SetVariablesResponse {
+  // the unique key of the set variables command
+  int64 key = 1;
 }
 ```
 

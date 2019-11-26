@@ -101,7 +101,7 @@ public class ResponseMapper {
 
   public static SetVariablesResponse toSetVariablesResponse(
       long key, VariableDocumentRecord brokerResponse) {
-    return SetVariablesResponse.getDefaultInstance();
+    return SetVariablesResponse.newBuilder().setKey(key).build();
   }
 
   public static ActivateJobsResponse toActivateJobsResponse(

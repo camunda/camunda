@@ -16,15 +16,20 @@ import io.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
 public class SetVariablesStub
     implements RequestStub<BrokerSetVariablesRequest, BrokerResponse<VariableDocumentRecord>> {
 
+  private static final long KEY = 12345L;
+
   @Override
   public void registerWith(StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerSetVariablesRequest.class, this);
   }
 
+  public long getKey() {
+    return KEY;
+  }
+
   @Override
   public BrokerResponse<VariableDocumentRecord> handle(BrokerSetVariablesRequest request)
       throws Exception {
-    return new BrokerResponse<>(
-        new VariableDocumentRecord(), request.getPartitionId(), request.getKey());
+    return new BrokerResponse<>(new VariableDocumentRecord(), request.getPartitionId(), KEY);
   }
 }

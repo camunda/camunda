@@ -37,9 +37,9 @@ var setVariablesCmd = &cobra.Command{
 		}
 
 		request.Local(setVariablesLocalFlag)
-		_, err = request.Send()
+		response, err := request.Send()
 		if err == nil {
-			log.Println("Set the variables of element instance with key", setVariablesKey, "to", setVariablesVariablesFlag)
+			log.Println("Set the variables of element instance with key", setVariablesKey, "to", setVariablesVariablesFlag, "with command", response.GetKey())
 		}
 
 		return err
