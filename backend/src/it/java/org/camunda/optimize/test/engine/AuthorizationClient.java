@@ -77,7 +77,7 @@ public class AuthorizationClient {
     revokeAllDefinitionAuthorizationsForGroup(GROUP_ID, resourceType);
   }
 
-  public void revokeSingleDefinitionAuthorizationsForKermitGroup(final String resourceId, final int resourceType) {
+  public void revokeSingleResourceAuthorizationsForKermitGroup(final String resourceId, final int resourceType) {
     revokeSingleResourceAuthorizationsForGroup(GROUP_ID, resourceId, resourceType);
   }
 

@@ -135,7 +135,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
     secondAuthorizationClient.createKermitGroupAndAddKermitToThatGroup();
     secondAuthorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
-    secondAuthorizationClient.revokeSingleDefinitionAuthorizationsForKermitGroup(
+    secondAuthorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
       getDefinitionKeySecondEngine(definitionResourceType),
       definitionResourceType
     );

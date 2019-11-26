@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.AuthorizedIdentitiesResult;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
@@ -53,10 +54,14 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
   private ThreadPoolTaskScheduler taskScheduler;
   private ScheduledFuture<?> scheduledTrigger;
 
+  private List<SyncedIdentityCacheListener> syncedIdentityCacheListeners;
+
   public SyncedIdentityCacheService(final ConfigurationService configurationService,
-                                    final EngineContextFactory engineContextFactory) {
+                                    final EngineContextFactory engineContextFactory,
+                                    final List<SyncedIdentityCacheListener> syncedIdentityCacheListeners) {
     this.configurationService = configurationService;
     this.engineContextFactory = engineContextFactory;
+    this.syncedIdentityCacheListeners = syncedIdentityCacheListeners;
     this.activeIdentityCache = new SearchableIdentityCache(getIdentitySyncConfiguration().getMaxEntryLimit());
   }
 
@@ -110,6 +115,16 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
       engineContextFactory.getConfiguredEngines()
         .forEach(engineContext -> populateAllAuthorizedIdentitiesForEngineToCache(engineContext, newIdentityCache));
       replaceActiveCache(newIdentityCache);
+      for (SyncedIdentityCacheListener syncedIdentityCacheListener : syncedIdentityCacheListeners) {
+        try {
+          syncedIdentityCacheListener.onFinishIdentitySync(newIdentityCache);
+        } catch (Exception e) {
+          log.error(
+            "Error while calling listener {} after identitySync.",
+            syncedIdentityCacheListener.getClass().getSimpleName()
+          );
+        }
+      }
     } catch (MaxEntryLimitHitException e) {
       log.error(String.format(
         "Could not synchronize identity cache as the limit of %s records was reached on refresh.\n"
@@ -117,7 +132,6 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
         IdentitySyncConfiguration.Fields.maxEntryLimit.name()
       ));
     }
-
   }
 
   public void addIdentity(final IdentityDto identity) {

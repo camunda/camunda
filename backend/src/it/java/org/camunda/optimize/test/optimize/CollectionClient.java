@@ -11,6 +11,7 @@ import lombok.Builder;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
@@ -26,6 +27,7 @@ import static java.util.Collections.singletonList;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 @AllArgsConstructor
 @Builder
@@ -181,5 +183,18 @@ public class CollectionClient {
       .execute(IdDto.class, 204);
   }
 
+  public IdDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildAddRoleToCollectionRequest(collectionId, roleDto)
+      .execute(IdDto.class, 200);
+  }
 
+  public List<CollectionRoleDto> getAllRolesForCollection(final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(CollectionRoleDto.class, 200);
+  }
 }

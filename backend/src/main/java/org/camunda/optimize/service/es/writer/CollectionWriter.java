@@ -186,7 +186,8 @@ public class CollectionWriter {
       final Map<String, Object> params = new HashMap<>();
       params.put(
         "scopeEntriesToUpdate",
-        objectMapper.convertValue(scopeUpdates, new TypeReference<List<Map>>() {})
+        objectMapper.convertValue(scopeUpdates, new TypeReference<List<Map>>() {
+        })
       );
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
@@ -457,13 +458,69 @@ public class CollectionWriter {
     }
   }
 
-  public void removeRoleFromCollection(final String collectionId, final String roleEntryId, final String userId)
+  public void removeRoleFromCollectionUnlessIsLastManager(final String collectionId, final String roleEntryId,
+                                                          final String userId)
+    throws OptimizeConflictException {
+    final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, userId);
+    removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, params);
+  }
+
+  public void removeRoleFromCollection(final String collectionId, final String roleEntryId) {
+    final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, null);
+    removeRoleFromCollection(collectionId, roleEntryId, params);
+  }
+
+  private void removeRoleFromCollection(final String collectionId, final String roleEntryId,
+                                        final Map<String, Object> params) {
+    log.debug("Deleting the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
+    try {
+      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+        // @formatter:off
+        "def optionalExistingEntry = ctx._source.data.roles.stream()" +
+          ".filter(dto -> dto.id.equals(params.roleEntryId))" +
+          ".findFirst();" +
+        "if(optionalExistingEntry.isPresent()){ " +
+          "def existingEntry = optionalExistingEntry.get();" +
+          "ctx._source.data.roles.removeIf(entry -> entry.id.equals(params.roleEntryId));" +
+          "if (params.containsKey(\"lastModifier\")) {" +
+            "ctx._source.lastModifier = params.lastModifier;" +
+          "}" +
+          "if (params.containsKey(\"lastModified\")) {" +
+            "ctx._source.lastModified = params.lastModified;" +
+          "}" +
+        "} else {" +
+          "throw new Exception('Cannot find role.');" +
+        "}",
+        // @formatter:on
+        params
+      );
+
+      executeUpdateRequest(
+        collectionId,
+        addEntityScript,
+        "Was not able to delete role from collection with id [%s]."
+      );
+
+    } catch (IOException e) {
+      String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    } catch (ElasticsearchStatusException e) {
+      String errorMessage = String.format(
+        "Was not able to update role with id [%s] on collection with id [%s]. Collection or role does not exist!",
+        roleEntryId,
+        collectionId
+      );
+      log.error(errorMessage, e);
+      throw new NotFoundException(errorMessage, e);
+    }
+  }
+
+  private void removeRoleFromCollectionUnlessIsLastManager(final String collectionId, final String roleEntryId,
+                                                           final Map<String, Object> params)
     throws OptimizeConflictException {
     log.debug("Deleting the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
-
     try {
-      final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, userId);
-
       final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
         // @formatter:off
         "def optionalExistingEntry = ctx._source.data.roles.stream()" +
@@ -481,8 +538,12 @@ public class CollectionWriter {
             "ctx.op = \"none\";" +
           "} else {" +
             "ctx._source.data.roles.removeIf(entry -> entry.id.equals(params.roleEntryId));" +
-            "ctx._source.lastModifier = params.lastModifier; " +
-            "ctx._source.lastModified = params.lastModified; " +
+            "if (params.containsKey(\"lastModifier\")) {" +
+              "ctx._source.lastModifier = params.lastModifier;" +
+            "}" +
+            "if (params.containsKey(\"lastModified\")) {" +
+              "ctx._source.lastModified = params.lastModified;" +
+            "}" +
           "}" +
         "} else {" +
           "throw new Exception('Cannot find role.');" +
@@ -523,9 +584,10 @@ public class CollectionWriter {
     final Map<String, Object> params = new HashMap<>();
     params.put("roleEntryId", roleEntryId);
     params.put("managerRole", RoleType.MANAGER.toString());
-    params.put("lastModifier", userId);
-    params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+    if (userId != null) {
+      params.put("lastModifier", userId);
+      params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
+    }
     return params;
   }
-
 }

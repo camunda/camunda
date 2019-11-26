@@ -222,7 +222,7 @@ public class CollectionRestService {
                          @PathParam("id") String collectionId,
                          @PathParam("roleEntryId") String roleEntryId) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    collectionRoleService.removeRoleFromCollection(userId, collectionId, roleEntryId);
+    collectionRoleService.removeRoleFromCollectionUnlessIsLastManager(userId, collectionId, roleEntryId);
   }
 
   @GET

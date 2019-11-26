@@ -7,15 +7,21 @@ package org.camunda.optimize.service;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.camunda.optimize.test.optimize.CollectionClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
@@ -24,6 +30,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -37,6 +44,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
   );
 
   public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+
+  private static final String USER_KERMIT = "kermit";
+  private static final String TEST_GROUP = "testGroup";
+  private static final String TEST_GROUP_B = "anotherTestGroup";
 
   @Test
   public void verifySyncEnabledByDefault() {
@@ -261,7 +272,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    authorizationClient.revokeSingleDefinitionAuthorizationsForKermitGroup(
+    authorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
@@ -276,7 +287,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
-    authorizationClient.revokeSingleDefinitionAuthorizationsForKermitGroup(
+    authorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
       OPTIMIZE_APPLICATION_RESOURCE_ID, RESOURCE_TYPE_APPLICATION
     );
 
@@ -286,6 +297,93 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(false));
   }
 
+  @Test
+  public void testPermissionCleanupAfterIdentitySync() {
+    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
+    try {
+      // given a collection with permissions for users/groups
+      syncedIdentityCacheService.stopSchedulingUserSync();
+
+      authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
+      authorizationClient.addKermitUserWithoutAuthorizations();
+      authorizationClient.addUserAndGrantOptimizeAccess(DEFAULT_USERNAME);
+      authorizationClient.createGroupAndAddUser(TEST_GROUP, USER_KERMIT);
+      authorizationClient.createGroupAndAddUser(TEST_GROUP_B, DEFAULT_USERNAME);
+
+      syncedIdentityCacheService.synchronizeIdentities();
+
+      final String collectionId1 = collectionClient.createNewCollection();
+      final String collectionId2 = collectionClient.createNewCollection();
+
+      CollectionRoleDto testGroupRole = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
+      CollectionRoleDto testGroupBRole = new CollectionRoleDto(new GroupDto(TEST_GROUP_B), RoleType.EDITOR);
+      CollectionRoleDto userKermitRole = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
+      CollectionRoleDto userDemoRole = new CollectionRoleDto(new UserDto(DEFAULT_USERNAME), RoleType.MANAGER);
+
+      collectionClient.addRoleToCollection(collectionId1, testGroupRole);
+      collectionClient.addRoleToCollection(collectionId1, testGroupBRole);
+      collectionClient.addRoleToCollection(collectionId1, userKermitRole);
+
+      collectionClient.addRoleToCollection(collectionId2, testGroupRole);
+      collectionClient.addRoleToCollection(collectionId2, testGroupBRole);
+      collectionClient.addRoleToCollection(collectionId2, userKermitRole);
+
+      // when users/groups are removed from identityCache
+      authorizationClient.revokeSingleResourceAuthorizationsForGroup(
+        TEST_GROUP,
+        OPTIMIZE_APPLICATION_RESOURCE_ID,
+        RESOURCE_TYPE_APPLICATION
+      );
+      authorizationClient.revokeSingleResourceAuthorizationsForUser(
+        USER_KERMIT,
+        OPTIMIZE_APPLICATION_RESOURCE_ID,
+        RESOURCE_TYPE_APPLICATION
+      );
+
+      syncedIdentityCacheService.synchronizeIdentities();
+
+      // then users/groups no longer existing in identityCache have been removed from the collection's permissions
+      List<CollectionRoleDto> roles1 = collectionClient.getAllRolesForCollection(collectionId1);
+      List<CollectionRoleDto> roles2 = collectionClient.getAllRolesForCollection(collectionId2);
+      assertThat(roles1.containsAll(roles2) && roles1.size() == roles2.size(), is(true));
+      assertThat(roles1).containsExactlyInAnyOrder(testGroupBRole, userDemoRole);
+    } finally {
+      syncedIdentityCacheService.startSchedulingUserSync();
+    }
+  }
+
+  @Test
+  public void testPermissionCleanupAfterIdentitySyncRemovesLastManager() {
+    final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
+    try {
+      // given
+      syncedIdentityCacheService.stopSchedulingUserSync();
+
+      authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_APPLICATION);
+      authorizationClient.addKermitUserWithoutAuthorizations();
+      embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(DEFAULT_USERNAME);
+
+      syncedIdentityCacheService.synchronizeIdentities();
+
+      final String collectionId = collectionClient.createNewCollection(USER_KERMIT, USER_KERMIT);
+
+      // when
+      authorizationClient.revokeSingleResourceAuthorizationsForUser(
+        USER_KERMIT,
+        OPTIMIZE_APPLICATION_RESOURCE_ID,
+        RESOURCE_TYPE_APPLICATION
+      );
+
+      syncedIdentityCacheService.synchronizeIdentities();
+
+      // then
+      List<CollectionRoleDto> roles = collectionClient.getAllRolesForCollection(collectionId);
+      assertThat(roles.isEmpty(), is(true));
+    } finally {
+      syncedIdentityCacheService.startSchedulingUserSync();
+    }
+  }
+
   private SyncedIdentityCacheService getSyncedIdentityCacheService() {
     return embeddedOptimizeExtension.getSyncedIdentityCacheService();
   }
@@ -293,5 +391,4 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
   private IdentitySyncConfiguration getIdentitySyncConfiguration() {
     return embeddedOptimizeExtension.getConfigurationService().getIdentitySyncConfiguration();
   }
-
 }

@@ -77,10 +77,10 @@ public class CollectionRoleService {
     collectionWriter.updateRoleInCollection(collectionId, roleEntryId, roleUpdateDto, userId);
   }
 
-  public void removeRoleFromCollection(String userId, String collectionId, String roleEntryId)
+  public void removeRoleFromCollectionUnlessIsLastManager(String userId, String collectionId, String roleEntryId)
     throws OptimizeConflictException {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
-    collectionWriter.removeRoleFromCollection(collectionId, roleEntryId, userId);
+    collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
   }
 
   private void verifyIdentityExists(final IdentityDto identity) {

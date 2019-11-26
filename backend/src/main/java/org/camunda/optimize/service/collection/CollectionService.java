@@ -115,7 +115,7 @@ public class CollectionService {
   }
 
 
-  AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
+  private AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
                                                                                 final String collectionId) {
     return authorizedCollectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
   }

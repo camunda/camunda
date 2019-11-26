@@ -169,7 +169,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
-    authorizationClient.revokeSingleDefinitionAuthorizationsForKermitGroup(
+    authorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
       getDefinitionKey(definitionResourceType),
       definitionResourceType
     );
@@ -424,7 +424,7 @@ public class DefinitionAuthorizationIT extends AbstractIT {
     assertThat(definitions.size(), is(1));
 
     // when
-    authorizationClient.revokeSingleDefinitionAuthorizationsForKermitGroup(
+    authorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
       getDefinitionKey(definitionResourceType),
       definitionResourceType
     );
