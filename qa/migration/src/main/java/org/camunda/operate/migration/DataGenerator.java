@@ -37,41 +37,37 @@ public class DataGenerator {
   @Autowired
   private ZeebeClient zeebeClient;
 
-private Random random = new Random();
+  private Random random = new Random();
 
   public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     logger.info("Starting generating data...");
 
-    deployWorkflows();
-    startWorkflowInstances();
-    completeAllTasks("task1");
-    createIncidents("task2");
+    deployWorkflows(migrationProperties.getWorkflowCount());
+    startWorkflowInstances(migrationProperties.getWorkflowInstanceCount());
+    completeTasks("task1",migrationProperties.getWorkflowInstanceCount());
+    createIncidents("task2",migrationProperties.getIncidentCount());
 
     logger.info("Data generation completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
   }
 
-  private void createIncidents(String jobType) {
-    final int incidentCount = migrationProperties.getIncidentCount();
-    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", incidentCount);
-    logger.info("{} incidents created", migrationProperties.getIncidentCount());
-  }
-
-  private void completeAllTasks(String jobType) {
-    completeTasks(jobType, migrationProperties.getWorkflowInstanceCount());
-    logger.info("{} jobs task1 completed", migrationProperties.getWorkflowInstanceCount());
+private void createIncidents(String jobType, int numberOfIncidents) {
+    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
+    logger.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
   private void completeTasks(String jobType, int count) {
     ZeebeTestUtil.completeTask(zeebeClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
+    logger.info("{} tasks {} completed",count,jobType);
   }
 
-  private void startWorkflowInstances() {
-    for(int i=0;i<migrationProperties.getWorkflowInstanceCount();i++) {
+  private void startWorkflowInstances(int numberOfWorkflowInstances) {
+    for(int i=0;i<numberOfWorkflowInstances;i++) {
     	String bpmnProcessId = getRandomBpmnProcessId();
     	long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient,bpmnProcessId, "{\"var1\": \"value1\"}");
     	logger.info("Started workflowInstance {} for workflow {}",workflowInstanceKey,bpmnProcessId);
     }
+    logger.info("{} workflowInstances started",numberOfWorkflowInstances);
   }
   
   private String getRandomBpmnProcessId() {
@@ -83,16 +79,17 @@ private Random random = new Random();
     zeebeClient.close();
   }
 
-  private void deployWorkflows() {
-    for (int i = 0; i< migrationProperties.getWorkflowCount(); i++) {
+  protected void deployWorkflows(int numberOfWorkflows) {
+    for (int i = 0; i< numberOfWorkflows; i++) {
       String bpmnProcessId = getBpmnProcessId(i);
-      ZeebeTestUtil.deployWorkflow(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+      String workflowKey = ZeebeTestUtil.deployWorkflow(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
+      logger.info("Deployed workflow {} with key {}",bpmnProcessId,workflowKey);
     }
-    logger.info("{} workflows deployed", migrationProperties.getWorkflowCount());
+    logger.info("{} workflows deployed", numberOfWorkflows);
   }
 
-  private String getBpmnProcessId(int i) {
-    return "process" + i;
+  private String getBpmnProcessId(int workflowNumber) {
+    return "process-" + workflowNumber;
   }
 
   private BpmnModelInstance createModel(String bpmnProcessId) {
@@ -108,4 +105,5 @@ private Random random = new Random();
     .endEvent()
     .done();
   }
+  
 }

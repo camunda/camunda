@@ -223,10 +223,14 @@ pipeline {
 		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration verify')
 		      }
           }
+          post {
+        	always {
+          	junit testResults: 'qa/migration/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+        	}
+      	  }
        }
     }
   }
-
   post {
     failure {
 	  script {

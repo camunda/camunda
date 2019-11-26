@@ -13,22 +13,36 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.camunda.operate.entities.ActivityInstanceEntity;
+import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.SequenceFlowEntity;
+import org.camunda.operate.entities.meta.ImportPositionEntity;
+import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
 import org.camunda.operate.es.reader.OperationReader;
+import org.camunda.operate.es.reader.SequenceFlowReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
+import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
+import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
@@ -37,12 +51,20 @@ import org.springframework.test.context.TestContextManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-@ContextConfiguration(classes = { MigrationProperties.class,Connector.class,ObjectMapper.class,OperateProperties.class,
+/*
+TODO: ??? operate-operation_         
+TODO: with ESClient  operate-variable_  
+TODO: with ESClient  operate-list-view_        
+*/
+@ContextConfiguration(classes = 
+	  { MigrationProperties.class,Connector.class,ObjectMapper.class,OperateProperties.class,
 		ListViewTemplate.class,ListViewReader.class,
 		OperationReader.class,OperationTemplate.class,
 		WorkflowReader.class,WorkflowIndex.class,
 		WorkflowInstanceReader.class,
-		IncidentReader.class,IncidentTemplate.class
+		IncidentReader.class,IncidentTemplate.class,
+		SequenceFlowReader.class, SequenceFlowTemplate.class,
+		ActivityInstanceReader.class,ActivityInstanceTemplate.class
 })
 public class ValidationTest {
 
@@ -51,6 +73,9 @@ public class ValidationTest {
 
 	@Autowired
 	ObjectMapper objectMapper;
+	
+	@Autowired
+	RestHighLevelClient esClient;
 
 	@Autowired
 	WorkflowReader workflowReader;
@@ -63,6 +88,12 @@ public class ValidationTest {
 	
 	@Autowired
 	IncidentReader incidentReader;
+	
+	@Autowired
+	SequenceFlowReader sequenceFlowReader;
+	
+	@Autowired
+	ActivityInstanceReader activityInstanceReader;
 	
 	Set<Long> workflowKeys;
 
@@ -92,6 +123,53 @@ public class ValidationTest {
 
 	private LinkedHashSet<Long> getWorkflowKeys() {
 		return new LinkedHashSet<Long>(workflowReader.getWorkflows().keySet());
+	}
+	
+	@Ignore @Test
+	public void testImportPositions() throws Throwable {
+		SearchRequest searchRequest = new SearchRequest("operate-import-position-1.2.0_");
+		searchRequest.source().size(1000);
+		SearchResponse searchResponse;
+		searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+		List<ImportPositionEntity> importPositions = CollectionUtil.map(searchResponse.getHits().getHits(), hit ->
+				ElasticsearchUtil.fromSearchHit(hit.getSourceAsString(), objectMapper,ImportPositionEntity.class)
+		);
+		assertThat(importPositions.size()).isEqualTo(10);
+	}
+	
+	@Test
+	public void testEvents() throws Throwable {
+		SearchRequest searchRequest = new SearchRequest("operate-event-1.2.0_");
+		searchRequest.source().size(1000);
+		SearchResponse searchResponse;
+		searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+		List<EventEntity> events = CollectionUtil.map(searchResponse.getHits().getHits(), hit ->
+				ElasticsearchUtil.fromSearchHit(hit.getSourceAsString(), objectMapper,EventEntity.class)
+		);
+		assertThat(events.size()).isEqualTo(644);
+	}
+	
+	@Test
+
+	public void testSequenceFlows() throws Throwable {
+		List<SequenceFlowEntity> sequenceFlowEntities = new ArrayList<>();
+		workflowInstanceKeys.forEach(key -> {
+				sequenceFlowEntities.addAll(sequenceFlowReader.getSequenceFlowsByWorkflowInstanceKey(key));
+		});
+		assertThat(sequenceFlowEntities.size()).isEqualTo(202);
+	}
+	
+	public void testActivityInstances() throws Throwable {
+		List<ActivityInstanceEntity> activityInstanceEntities = new ArrayList<>();
+		workflowInstanceKeys.forEach(key -> {
+			activityInstanceEntities.addAll(activityInstanceReader.getAllActivityInstances(key));
+		});
+		assertThat(activityInstanceEntities.size()).isEqualTo(303);
+	}
+	
+
+	public void testVariables() throws Throwable {
+		
 	}
 	
 	@Test

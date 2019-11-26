@@ -29,7 +29,6 @@
 			<groupId>org.camunda.operate</groupId>
 			<artifactId>camunda-operate-webapp</artifactId>
 			<version>${project.version}</version>
-			<scope>test</scope>
 		</dependency>
 
 		<dependency>

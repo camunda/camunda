@@ -16,7 +16,7 @@ pipelineJob('migrate-elasticsearch-data') {
     }
   }
   
-  //triggers {
-  //  cron('H 3 * * *')
-  //}
+  triggers {
+    cron('H 5 * * *')
+  }
 }

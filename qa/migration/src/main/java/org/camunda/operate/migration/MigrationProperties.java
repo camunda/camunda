@@ -30,6 +30,7 @@ public class MigrationProperties {
   private String elasticsearchHost = "localhost";
 
   private int elasticsearchPort = 9200;
+  
   private List<String> versions = Arrays.asList("1.0.0","1.1.0","1.2.0");
   
   public void setVersions(String versionsAsCSV) {
