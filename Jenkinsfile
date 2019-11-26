@@ -193,5 +193,5 @@ pipeline {
 }
 
 boolean nodeDisconnected() {
-  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException).*/
+  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|uv_resident_set_memory).*/
 }
