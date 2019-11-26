@@ -334,6 +334,7 @@ public class IngestionRestIT extends AbstractIT {
       UUID.randomUUID().toString(),
       RandomStringUtils.randomAlphabetic(10),
       System.currentTimeMillis(),
+      System.currentTimeMillis(),
       RandomStringUtils.randomAlphabetic(10),
       Math.abs(RANDOM.nextLong()),
       RandomStringUtils.randomAlphabetic(10),

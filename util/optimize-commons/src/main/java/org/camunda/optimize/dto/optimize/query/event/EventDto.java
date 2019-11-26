@@ -39,6 +39,8 @@ public class EventDto {
   @Min(0)
   @ToString.Include
   private Long timestamp;
+  @ToString.Include
+  private Long ingestionTimestamp;
   @NotBlank
   @ToString.Include
   private String traceId;

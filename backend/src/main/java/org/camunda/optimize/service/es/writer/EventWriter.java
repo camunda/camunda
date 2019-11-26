@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -32,6 +33,7 @@ public class EventWriter {
   public void upsertEvent(final EventDto eventDto) {
     log.debug("Writing event [{}] to elasticsearch", eventDto.getId());
     try {
+      eventDto.setIngestionTimestamp(System.currentTimeMillis());
       final UpdateRequest request = createEventUpsert(eventDto);
       esClient.update(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -45,7 +47,9 @@ public class EventWriter {
     log.debug("Writing [{}] events to elasticsearch", eventDtos.size());
 
     final BulkRequest bulkRequest = new BulkRequest();
+    Long ingestionTimestamp = System.currentTimeMillis();
     for (EventDto eventDto : eventDtos) {
+      eventDto.setIngestionTimestamp(ingestionTimestamp);
       bulkRequest.add(createEventUpsert(eventDto));
     }
 
@@ -70,7 +74,7 @@ public class EventWriter {
   private UpdateRequest createEventUpsert(final EventDto eventDto) {
     return new UpdateRequest()
       .index(ElasticsearchConstants.EVENT_INDEX_NAME)
-      .id(eventDto.getId())
+      .id(IdGenerator.getNextId())
       .doc(objectMapper.convertValue(eventDto, Map.class))
       .docAsUpsert(true);
   }
