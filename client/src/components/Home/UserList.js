@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter} from 'components';
+import {Button, EntityList, Deleter, Icon} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
@@ -83,7 +83,7 @@ export default withErrorHandling(
             data={
               users &&
               users.map(user => {
-                const {identity, role} = user;
+                const {identity, role, hasFullScopeAuthorizations} = user;
 
                 const numberOfManagers = users.filter(({role}) => role === 'manager').length;
                 const isLastManager = role === 'manager' && numberOfManagers === 1;
@@ -100,6 +100,16 @@ export default withErrorHandling(
                     </>
                   ),
                   meta2: formatRole(role),
+                  meta3: hasFullScopeAuthorizations === false && (
+                    <>
+                      <Icon type="error" size="18px" />
+                      <div className="Tooltip dark">
+                        <div className="Tooltip__text-bottom">
+                          {t('home.roles.missingAuthorizationsWarning')}
+                        </div>
+                      </div>
+                    </>
+                  ),
                   actions: !readOnly &&
                     !isLastManager && [
                       {

@@ -78,7 +78,8 @@
       "manager": "Manager",
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
       "existing-user-error": "Ein Benutzer mit dieser ID existiert schon in dieser Sammlung",
-      "existing-group-error": "Eine Gruppe mit dieser ID existiert schon in dieser Sammlung"
+      "existing-group-error": "Eine Gruppe mit dieser ID existiert schon in dieser Sammlung",
+      "missingAuthorizationsWarning": "Einige Daten können aufgrund fehlender Berechtigungen für Benutzer ausgeblendet sein."
     },
     "sources": {
       "title": "Datenquellen",

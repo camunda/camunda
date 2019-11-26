@@ -14,6 +14,21 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
           "icon": <ForwardRef(SvgUser) />,
           "meta1": false,
           "meta2": "Manager",
+          "meta3": <React.Fragment>
+            <Icon
+              size="18px"
+              type="error"
+            />
+            <div
+              className="Tooltip dark"
+            >
+              <div
+                className="Tooltip__text-bottom"
+              >
+                Some data may be hidden from users due to missing authorizations.
+              </div>
+            </div>
+          </React.Fragment>,
           "name": "kermit",
           "type": "User",
         },
@@ -27,6 +42,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
             Users
           </React.Fragment>,
           "meta2": "Manager",
+          "meta3": false,
           "name": "sales",
           "type": "User Group",
         },
@@ -46,6 +62,7 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     existingUsers={
       Array [
         Object {
+          "hasFullScopeAuthorizations": false,
           "id": "USER:kermit",
           "identity": Object {
             "id": "kermit",
@@ -102,6 +119,21 @@ exports[`should match snapshot 1`] = `
           "icon": <ForwardRef(SvgUser) />,
           "meta1": false,
           "meta2": "Manager",
+          "meta3": <React.Fragment>
+            <Icon
+              size="18px"
+              type="error"
+            />
+            <div
+              className="Tooltip dark"
+            >
+              <div
+                className="Tooltip__text-bottom"
+              >
+                Some data may be hidden from users due to missing authorizations.
+              </div>
+            </div>
+          </React.Fragment>,
           "name": "kermit",
           "type": "User",
         },
@@ -126,6 +158,7 @@ exports[`should match snapshot 1`] = `
             Users
           </React.Fragment>,
           "meta2": "Manager",
+          "meta3": false,
           "name": "sales",
           "type": "User Group",
         },
@@ -145,6 +178,7 @@ exports[`should match snapshot 1`] = `
     existingUsers={
       Array [
         Object {
+          "hasFullScopeAuthorizations": false,
           "id": "USER:kermit",
           "identity": Object {
             "id": "kermit",
