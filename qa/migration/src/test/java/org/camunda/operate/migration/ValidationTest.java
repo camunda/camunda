@@ -9,15 +9,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.camunda.operate.entities.ActivityInstanceEntity;
-import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.SequenceFlowEntity;
-import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.reader.ActivityInstanceReader;
 import org.camunda.operate.es.reader.IncidentReader;
 import org.camunda.operate.es.reader.ListViewReader;
@@ -33,16 +32,13 @@ import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
@@ -51,11 +47,6 @@ import org.springframework.test.context.TestContextManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-/*
-TODO: ??? operate-operation_         
-TODO: with ESClient  operate-variable_  
-TODO: with ESClient  operate-list-view_        
-*/
 @ContextConfiguration(classes = 
 	  { MigrationProperties.class,Connector.class,ObjectMapper.class,OperateProperties.class,
 		ListViewTemplate.class,ListViewReader.class,
@@ -125,33 +116,30 @@ public class ValidationTest {
 		return new LinkedHashSet<Long>(workflowReader.getWorkflows().keySet());
 	}
 	
-	@Ignore @Test
+	@Test
 	public void testImportPositions() throws Throwable {
-		SearchRequest searchRequest = new SearchRequest("operate-import-position-1.2.0_");
-		searchRequest.source().size(1000);
-		SearchResponse searchResponse;
-		searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-		List<ImportPositionEntity> importPositions = CollectionUtil.map(searchResponse.getHits().getHits(), hit ->
-				ElasticsearchUtil.fromSearchHit(hit.getSourceAsString(), objectMapper,ImportPositionEntity.class)
-		);
-		assertThat(importPositions.size()).isEqualTo(10);
+		assertAllIndexVersionsHasSameCounts("operate-import-position");
+		// Details:
+//		SearchRequest searchRequest = new SearchRequest("operate-import-position-1.2.0_");
+//		searchRequest.source().size(1000);
+//		SearchResponse searchResponse;
+//		searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+//		List<ImportPositionEntity> importPositions = CollectionUtil.map(searchResponse.getHits().getHits(), hit ->
+//				ElasticsearchUtil.fromSearchHit(hit.getSourceAsString(), objectMapper,ImportPositionEntity.class)
+//		);
+//		assertThat(importPositions.size()).isEqualTo(10);
 	}
 	
 	@Test
 	public void testEvents() throws Throwable {
-		SearchRequest searchRequest = new SearchRequest("operate-event-1.2.0_");
-		searchRequest.source().size(1000);
-		SearchResponse searchResponse;
-		searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
-		List<EventEntity> events = CollectionUtil.map(searchResponse.getHits().getHits(), hit ->
-				ElasticsearchUtil.fromSearchHit(hit.getSourceAsString(), objectMapper,EventEntity.class)
-		);
-		assertThat(events.size()).isEqualTo(644);
+		assertAllIndexVersionsHasSameCounts("operate-event");
 	}
 	
 	@Test
 
 	public void testSequenceFlows() throws Throwable {
+		assertAllIndexVersionsHasSameCounts("operate-sequence-flow");
+		// Details:
 		List<SequenceFlowEntity> sequenceFlowEntities = new ArrayList<>();
 		workflowInstanceKeys.forEach(key -> {
 				sequenceFlowEntities.addAll(sequenceFlowReader.getSequenceFlowsByWorkflowInstanceKey(key));
@@ -160,6 +148,8 @@ public class ValidationTest {
 	}
 	
 	public void testActivityInstances() throws Throwable {
+		assertAllIndexVersionsHasSameCounts("operate-activity-instance");
+		// Details:
 		List<ActivityInstanceEntity> activityInstanceEntities = new ArrayList<>();
 		workflowInstanceKeys.forEach(key -> {
 			activityInstanceEntities.addAll(activityInstanceReader.getAllActivityInstances(key));
@@ -167,13 +157,24 @@ public class ValidationTest {
 		assertThat(activityInstanceEntities.size()).isEqualTo(303);
 	}
 	
-
+	@Test
 	public void testVariables() throws Throwable {
-		
+		assertAllIndexVersionsHasSameCounts("operate-variable");
+	}
+	
+	@Test
+	public void testOperations() throws Throwable {
+		assertAllIndexVersionsHasSameCounts("operate-operation");
+	}
+        	
+	@Test
+	public void testListViews() throws Throwable {
+		assertAllIndexVersionsHasSameCounts("operate-list-view");
 	}
 	
 	@Test
 	public void testWorkflows() throws IOException {	
+		assertAllIndexVersionsHasSameCounts("operate-workflow");
 		assertThat(workflowKeys.size()).isEqualTo(migrationProperties.getWorkflowCount());
 	}
 	
@@ -184,11 +185,27 @@ public class ValidationTest {
 	
 	@Test
 	public void testIncidents() {
+		assertAllIndexVersionsHasSameCounts("operate-incident");
+		// Details:
 		final List<IncidentEntity> incidents = new ArrayList<IncidentEntity>();
 		workflowInstanceKeys.forEach(workflowInstanceKey -> {
 			incidents.addAll(incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey));
 		});
 		assertThat(incidents.size()).isEqualTo(migrationProperties.getIncidentCount());
 	}
+	
+	protected void assertAllIndexVersionsHasSameCounts(String indexName) {
+		List<String> versions = migrationProperties.getVersions();
+		List<Long> hitsForVersions = CollectionUtil.map(versions, version -> getTotalHitsFor(indexName+"-"+version+"_"));
+		assertThat(new HashSet<>(hitsForVersions).size()).as("Checks %s index for versions %s has the same counts", indexName, versions).isEqualTo(1);
+	}
 
+	protected long getTotalHitsFor(String indexName) {
+		try {
+			return esClient.search(new SearchRequest(indexName), RequestOptions.DEFAULT).getHits().getTotalHits();
+		} catch (Throwable e) {
+			return 0;
+		}
+	}
+	
 }
