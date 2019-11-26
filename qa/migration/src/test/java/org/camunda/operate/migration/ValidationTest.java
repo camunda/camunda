@@ -8,33 +8,11 @@ package org.camunda.operate.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
-import org.camunda.operate.entities.ActivityInstanceEntity;
-import org.camunda.operate.entities.IncidentEntity;
-import org.camunda.operate.entities.SequenceFlowEntity;
-import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
-import org.camunda.operate.webapp.es.reader.IncidentReader;
-import org.camunda.operate.webapp.es.reader.ListViewReader;
-import org.camunda.operate.webapp.es.reader.OperationReader;
-import org.camunda.operate.webapp.es.reader.SequenceFlowReader;
-import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.webapp.es.reader.WorkflowReader;
-import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.es.schema.templates.ActivityInstanceTemplate;
-import org.camunda.operate.es.schema.templates.IncidentTemplate;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.es.schema.templates.OperationTemplate;
-import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -48,14 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @ContextConfiguration(classes = 
-	  { MigrationProperties.class,Connector.class,ObjectMapper.class,OperateProperties.class,
-		ListViewTemplate.class,ListViewReader.class,
-		OperationReader.class,OperationTemplate.class,
-		WorkflowReader.class,WorkflowIndex.class,
-		WorkflowInstanceReader.class,
-		IncidentReader.class,IncidentTemplate.class,
-		SequenceFlowReader.class, SequenceFlowTemplate.class,
-		ActivityInstanceReader.class,ActivityInstanceTemplate.class
+	  { MigrationProperties.class,Connector.class,ObjectMapper.class,OperateProperties.class
 })
 public class ValidationTest {
 
@@ -67,34 +38,10 @@ public class ValidationTest {
 	
 	@Autowired
 	RestHighLevelClient esClient;
-
-	@Autowired
-	WorkflowReader workflowReader;
-	
-	@Autowired
-	WorkflowInstanceReader workflowInstanceReader;
-
-	@Autowired
-	ListViewReader listViewReader;
-	
-	@Autowired
-	IncidentReader incidentReader;
-	
-	@Autowired
-	SequenceFlowReader sequenceFlowReader;
-	
-	@Autowired
-	ActivityInstanceReader activityInstanceReader;
-	
-	Set<Long> workflowKeys;
-
-	List<Long> workflowInstanceKeys;
 	
 	@Before
 	public void setUp() {
 		setupContext();
-	    workflowKeys = getWorkflowKeys();
-	    workflowInstanceKeys = getWorkflowInstanceKeys();
 	}
 
 	protected void setupContext() {
@@ -105,15 +52,6 @@ public class ValidationTest {
 	    } catch (Exception e) {
 	      throw new RuntimeException("Failed to initialize context manager", e);
 	    }
-	}
-
-	private List<Long> getWorkflowInstanceKeys() {
-		ListViewResponseDto listViewResponseDto = listViewReader.queryWorkflowInstances(new ListViewRequestDto(ListViewQueryDto.createAll()),0,migrationProperties.getWorkflowInstanceCount());
-	    return CollectionUtil.map(listViewResponseDto.getWorkflowInstances(), wfi -> Long.valueOf(wfi.getId()));
-	}
-
-	private LinkedHashSet<Long> getWorkflowKeys() {
-		return new LinkedHashSet<Long>(workflowReader.getWorkflows().keySet());
 	}
 	
 	@Test
@@ -139,22 +77,10 @@ public class ValidationTest {
 
 	public void testSequenceFlows() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("operate-sequence-flow");
-		// Details:
-		List<SequenceFlowEntity> sequenceFlowEntities = new ArrayList<>();
-		workflowInstanceKeys.forEach(key -> {
-				sequenceFlowEntities.addAll(sequenceFlowReader.getSequenceFlowsByWorkflowInstanceKey(key));
-		});
-		assertThat(sequenceFlowEntities.size()).isEqualTo(202);
 	}
 	
 	public void testActivityInstances() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("operate-activity-instance");
-		// Details:
-		List<ActivityInstanceEntity> activityInstanceEntities = new ArrayList<>();
-		workflowInstanceKeys.forEach(key -> {
-			activityInstanceEntities.addAll(activityInstanceReader.getAllActivityInstances(key));
-		});
-		assertThat(activityInstanceEntities.size()).isEqualTo(303);
 	}
 	
 	@Test
@@ -175,23 +101,11 @@ public class ValidationTest {
 	@Test
 	public void testWorkflows() throws IOException {	
 		assertAllIndexVersionsHasSameCounts("operate-workflow");
-		assertThat(workflowKeys.size()).isEqualTo(migrationProperties.getWorkflowCount());
-	}
-	
-	@Test
-	public void testWorkflowInstances() {
-		assertThat(workflowInstanceKeys.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount());
 	}
 	
 	@Test
 	public void testIncidents() {
 		assertAllIndexVersionsHasSameCounts("operate-incident");
-		// Details:
-		final List<IncidentEntity> incidents = new ArrayList<IncidentEntity>();
-		workflowInstanceKeys.forEach(workflowInstanceKey -> {
-			incidents.addAll(incidentReader.getAllIncidentsByWorkflowInstanceKey(workflowInstanceKey));
-		});
-		assertThat(incidents.size()).isEqualTo(migrationProperties.getIncidentCount());
 	}
 	
 	protected void assertAllIndexVersionsHasSameCounts(String indexName) {
