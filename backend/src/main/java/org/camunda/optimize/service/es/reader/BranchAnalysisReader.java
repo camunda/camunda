@@ -12,6 +12,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
@@ -61,7 +62,7 @@ public class BranchAnalysisReader {
   public BranchAnalysisDto branchAnalysis(final String userId, final BranchAnalysisQueryDto request) {
     ValidationHelper.validate(request);
     if (!definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-      userId, request.getProcessDefinitionKey(), request.getTenantIds()
+      userId, IdentityType.USER, request.getProcessDefinitionKey(), request.getTenantIds()
     )) {
       throw new ForbiddenException(
         "Current user is not authorized to access data of the provided process definition and tenant combination");

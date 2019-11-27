@@ -126,7 +126,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
 
   private List<GroupDto> fetchUserGroups(final String userId) {
     final Set<GroupDto> result = new HashSet<>();
-    applicationAuthorizationService.getAuthorizedEngines(userId)
+    applicationAuthorizationService.getAuthorizedEnginesForUser(userId)
       .forEach(engineAlias -> {
         final EngineContext engineContext = engineContextFactory.getConfiguredEngineByAlias(engineAlias);
         result.addAll(engineContext.getAllGroupsOfUser(userId));

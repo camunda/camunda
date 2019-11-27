@@ -7,9 +7,10 @@ package org.camunda.optimize.service.variable;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
+import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.service.es.reader.ProcessVariableReader;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
 import org.springframework.stereotype.Component;
@@ -17,7 +18,8 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.ForbiddenException;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.ValidationHelper.*;
+import static org.camunda.optimize.service.util.ValidationHelper.ensureListNotEmpty;
+import static org.camunda.optimize.service.util.ValidationHelper.ensureNotEmpty;
 
 @RequiredArgsConstructor
 @Component
@@ -28,11 +30,16 @@ public class ProcessVariableService {
   private final TenantAuthorizationService tenantAuthorizationService;
 
 
-  public List<ProcessVariableNameResponseDto> getVariableNames(String userId, ProcessVariableNameRequestDto variableRequestDto) {
+  public List<ProcessVariableNameResponseDto> getVariableNames(String userId,
+                                                               ProcessVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("process definition key", variableRequestDto.getProcessDefinitionKey());
     ensureListNotEmpty("process definition versions", variableRequestDto.getProcessDefinitionVersions());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, variableRequestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(
+      userId,
+      IdentityType.USER,
+      variableRequestDto.getTenantIds()
+    )) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     return processVariableReader.getVariableNames(variableRequestDto);
@@ -44,7 +51,7 @@ public class ProcessVariableService {
     ensureNotEmpty("variable name", requestDto.getName());
     ensureNotEmpty("variable type", requestDto.getType());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, requestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, requestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     return processVariableReader.getVariableValues(requestDto);

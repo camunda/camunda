@@ -7,10 +7,13 @@ package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
@@ -18,9 +21,11 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
+import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,6 +34,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class CollectionRoleService {
   private final AuthorizedCollectionService authorizedCollectionService;
+  private final DefinitionAuthorizationService definitionAuthorizationService;
   private final CollectionWriter collectionWriter;
   private final IdentityService identityService;
 
@@ -83,7 +89,7 @@ public class CollectionRoleService {
     collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
   }
 
-  private void verifyIdentityExists(final IdentityDto identity) {
+  public void verifyIdentityExists(final IdentityDto identity) {
     final boolean identityFound;
     switch (identity.getType()) {
       case USER:
@@ -102,14 +108,32 @@ public class CollectionRoleService {
     }
   }
 
-  public List<CollectionRoleDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
-    List<CollectionRoleDto> roles = getSimpleCollectionDefinitionWithRoleMetadata(
+  public List<CollectionRoleRestDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
+    AuthorizedSimpleCollectionDefinitionDto authCollectionDto = getSimpleCollectionDefinitionWithRoleMetadata(
       userId,
       collectionId
-    )
-      .getDefinitionDto()
+    );
+
+    List<CollectionRoleRestDto> roles = new ArrayList<>();
+    authCollectionDto.getDefinitionDto()
       .getData()
-      .getRoles();
+      .getRoles()
+      .forEach(role -> roles.add(new CollectionRoleRestDto(role)));
+
+    if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {
+      for (CollectionRoleRestDto role : roles) {
+        List<CollectionScopeEntryDto> scopes = authCollectionDto.getDefinitionDto().getData().getScope();
+        Boolean hasFullScopeAuthorizations = scopes.stream()
+          .allMatch(s -> definitionAuthorizationService.isAuthorizedToSeeDefinition(
+            role.getIdentity().getId(),
+            role.getIdentity().getType(),
+            s.getDefinitionKey(),
+            s.getDefinitionType(),
+            s.getTenants()
+          ));
+        role.setHasFullScopeAuthorizations(hasFullScopeAuthorizations);
+      }
+    }
 
     Collections.sort(roles);
     return roles;

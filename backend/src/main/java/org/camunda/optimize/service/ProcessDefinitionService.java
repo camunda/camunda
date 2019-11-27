@@ -9,6 +9,7 @@ package org.camunda.optimize.service;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.service.collection.CollectionScopeService;
@@ -111,7 +112,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
   public List<DefinitionAvailableVersionsWithTenants> getProcessDefinitionVersionsWithTenants(@NonNull final String userId,
                                                                                               @NonNull final String collectionId) {
     final Map<String, List<String>> keysAndTenants = collectionScopeService
-      .getAvailableKeysAndTenantsFromCollectionScope(userId, collectionId);
+      .getAvailableKeysAndTenantsFromCollectionScope(userId, IdentityType.USER, collectionId);
 
     List<ProcessDefinitionOptimizeDto> definitions = processDefinitionReader
       .getFullyImportedProcessDefinitionsForKeys(false, keysAndTenants.keySet());
@@ -132,7 +133,7 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
 
   private boolean isAuthorizedToReadProcessDefinition(final String userId,
                                                       final ProcessDefinitionOptimizeDto processDefinition) {
-    return definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+    return definitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
       userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
     );
   }

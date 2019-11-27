@@ -22,21 +22,16 @@ import java.util.Optional;
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
-public class CollectionRoleDto {
+public class CollectionRoleRestDto implements Comparable<CollectionRoleRestDto> {
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
   private IdentityDto identity;
   private RoleType role;
+  private Boolean hasFullScopeAuthorizations;
 
-  public CollectionRoleDto(final IdentityDto identity, final RoleType role) {
-    this.id = convertIdentityToRoleId(identity);
-    this.identity = identity;
-    this.role = role;
-  }
-
-  public CollectionRoleDto(CollectionRoleDto oldRole) {
+  public CollectionRoleRestDto(CollectionRoleDto oldRole) {
     if (oldRole.getIdentity().getType().equals(IdentityType.USER)) {
       UserDto oldUserDto = (UserDto) oldRole.getIdentity();
       this.identity = new UserDto(
@@ -50,15 +45,18 @@ public class CollectionRoleDto {
       this.identity = new GroupDto(oldGroupDto.getId(), oldGroupDto.getName(), oldGroupDto.getMemberCount());
     }
 
-    this.role = oldRole.role;
-    this.id = convertIdentityToRoleId(this.identity);
+    this.role = oldRole.getRole();
+    this.id = oldRole.getId();
   }
 
-  public String getId() {
-    return Optional.ofNullable(id).orElse(convertIdentityToRoleId(identity));
-  }
-
-  private String convertIdentityToRoleId(final IdentityDto identity) {
-    return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
+  @Override
+  public int compareTo(final CollectionRoleRestDto other) {
+    if (this.identity instanceof UserDto && other.getIdentity() instanceof GroupDto) {
+      return 1;
+    } else if (this.identity instanceof GroupDto && other.getIdentity() instanceof UserDto) {
+      return -1;
+    } else {
+      return StringUtils.compareIgnoreCase(this.identity.getName(), other.getIdentity().getName());
+    }
   }
 }

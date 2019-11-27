@@ -9,11 +9,14 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -30,7 +33,8 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   protected final EngineContextFactory engineContextFactory;
   protected final ConfigurationService configurationService;
 
-  protected LoadingCache<String, T> authorizationLoadingCache;
+  protected LoadingCache<String, T> userAuthorizationLoadingCache;
+  protected LoadingCache<String, T> groupAuthorizationLoadingCache;
 
   public AbstractCachingAuthorizationService(final EngineContextFactory engineContextFactory,
                                              final ConfigurationService configurationService) {
@@ -50,16 +54,16 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
     onSessionCreateOrRefresh(userId);
   }
 
-  private void onSessionCreateOrRefresh(final String userId) {
+  private void onSessionCreateOrRefresh(final String identityId) {
     // invalidate to force removal of old entry synchronously
-    authorizationLoadingCache.invalidate(userId);
+    userAuthorizationLoadingCache.invalidate(identityId);
     // trigger eager load of authorizations when new session is created
-    authorizationLoadingCache.refresh(userId);
+    userAuthorizationLoadingCache.refresh(identityId);
   }
 
   @Override
-  public void onSessionDestroy(final String userId) {
-    authorizationLoadingCache.invalidate(userId);
+  public void onSessionDestroy(final String identityId) {
+    userAuthorizationLoadingCache.invalidate(identityId);
   }
 
   @Override
@@ -73,11 +77,18 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
 
   protected abstract T fetchAuthorizationsForUserId(final String userId);
 
+  protected abstract T fetchAuthorizationsForGroupId(final String userId);
+
   private void initAuthorizationsCache() {
-    authorizationLoadingCache = Caffeine.newBuilder()
+    userAuthorizationLoadingCache = Caffeine.newBuilder()
       .maximumSize(CACHE_MAXIMUM_SIZE)
       .expireAfterAccess(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
       .build(this::fetchAuthorizationsForUserId);
+
+    groupAuthorizationLoadingCache = Caffeine.newBuilder()
+      .maximumSize(CACHE_MAXIMUM_SIZE)
+      .expireAfterAccess(configurationService.getTokenLifeTimeMinutes(), TimeUnit.MINUTES)
+      .build(this::fetchAuthorizationsForGroupId);
   }
 
   public static ResolvedResourceTypeAuthorizations resolveResourceAuthorizations(final String engine,
@@ -88,6 +99,18 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
                                                                                  final int resourceType) {
     return resolveResourceAuthorizations(
       mapToEngineAuthorizations(engine, allEngineAuthorizations, userId, userGroups),
+      relevantPermissions,
+      resourceType
+    );
+  }
+
+  public static ResolvedResourceTypeAuthorizations resolveResourceAuthorizations(final String engine,
+                                                                                 final List<AuthorizationDto> allEngineAuthorizations,
+                                                                                 final List<String> relevantPermissions,
+                                                                                 final List<GroupDto> groups,
+                                                                                 final int resourceType) {
+    return resolveResourceAuthorizations(
+      mapToEngineAuthorizations(engine, allEngineAuthorizations, groups),
       relevantPermissions,
       resourceType
     );
@@ -128,6 +151,17 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
       allEngineAuthorizations,
       extractGroupAuthorizations(userGroups, allEngineAuthorizations),
       extractUserAuthorizations(userId, allEngineAuthorizations)
+    );
+  }
+
+  public static EngineAuthorizations mapToEngineAuthorizations(final String engine,
+                                                               final List<AuthorizationDto> allEngineAuthorizations,
+                                                               final List<GroupDto> groups) {
+    return new EngineAuthorizations(
+      engine,
+      allEngineAuthorizations,
+      extractGroupAuthorizations(groups, allEngineAuthorizations),
+      Collections.EMPTY_LIST
     );
   }
 
@@ -247,5 +281,16 @@ public abstract class AbstractCachingAuthorizationService<T> implements SessionL
   private static boolean hasRelevantPermissions(final AuthorizationDto authorization,
                                                 final List<String> relevantPermissions) {
     return authorization.getPermissions().stream().anyMatch(relevantPermissions::contains);
+  }
+
+  public T getCachedAuthorizationsForId(final String identityId, final IdentityType identityType) {
+    switch (identityType) {
+      case USER:
+        return userAuthorizationLoadingCache.get(identityId);
+      case GROUP:
+        return groupAuthorizationLoadingCache.get(identityId);
+      default:
+        throw new OptimizeRuntimeException("Unsupported IdentityType: " + identityType);
+    }
   }
 }

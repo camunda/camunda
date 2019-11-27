@@ -8,9 +8,15 @@ package org.camunda.optimize.service.security.collection;
 import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -27,12 +33,14 @@ import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -44,6 +52,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
@@ -51,12 +60,19 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
   private static final String PROCESS_KEY = "aProcess";
   private static final String DECISION_KEY = "aDecision";
+  private static final String USER_KERMIT = "kermit";
+  private static final String TEST_GROUP = "testGroup";
+  private static final String USER_MISS_PIGGY = "MissPiggy";
 
   private static final List<ReportScenario> POSSIBLE_REPORT_SCENARIOS = ImmutableList.of(
     new ReportScenario(ReportType.PROCESS, false),
     new ReportScenario(ReportType.PROCESS, true),
     new ReportScenario(ReportType.DECISION, false)
   );
+
+  private static Stream<RoleType> nonManagerRoleTypes() {
+    return Stream.of(RoleType.EDITOR, RoleType.VIEWER);
+  }
 
   private static final String ACCESS_IDENTITY_ROLES_AND_REPORT_TYPES = "accessIdentityRolesAndReportTypes";
 
@@ -820,6 +836,109 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
 
     // then
     assertThat(response.getStatus(), is(403));
+  }
+
+  @Test
+  public void getRolesContainsScopeAuthorizationsWhenManagerCalls() {
+    // given
+    final String collectionId = createCollectionAndAddRolesWithKermitRoleType(RoleType.EDITOR);
+
+    // when
+    List<CollectionRoleRestDto> roles = getRoles(collectionId);
+    Optional<CollectionRoleRestDto> testGroup = roles.stream()
+      .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
+      .findFirst();
+    Optional<CollectionRoleRestDto> missPiggy = roles.stream()
+      .filter(r -> r.getIdentity().getId().equals(USER_MISS_PIGGY))
+      .findFirst();
+    Optional<CollectionRoleRestDto> kermit = roles.stream()
+      .filter(r -> r.getIdentity().getId().equals(USER_KERMIT))
+      .findFirst();
+
+    // then
+    assertThat(testGroup.isPresent(), is(true));
+    assertThat(missPiggy.isPresent(), is(true));
+    assertThat(kermit.isPresent(), is(true));
+
+    // if manager gets all roles, hasFullScopeAuthorizations should be boolean
+    assertThat(testGroup.get().getHasFullScopeAuthorizations(), is(false));
+    assertThat(missPiggy.get().getHasFullScopeAuthorizations(), is(false));
+    assertThat(kermit.get().getHasFullScopeAuthorizations(), is(true));
+  }
+
+  @ParameterizedTest(name = "Get authorizations as non manager role type {0}")
+  @MethodSource("nonManagerRoleTypes")
+  public void getRolesDoesNotContainScopeAuthorizationsWhenNonManagerCalls(RoleType kermitRoleType) {
+    // given
+    final String collectionId = createCollectionAndAddRolesWithKermitRoleType(kermitRoleType);
+
+    // when
+    List<CollectionRoleRestDto> roles = getRoles(USER_KERMIT, USER_KERMIT, collectionId);
+    Optional<CollectionRoleRestDto> testGroup = roles.stream()
+      .filter(r -> r.getIdentity().getId().equals(TEST_GROUP))
+      .findFirst();
+    Optional<CollectionRoleRestDto> missPiggy = roles.stream()
+      .filter(r -> r.getIdentity().getId().equals(USER_MISS_PIGGY))
+      .findFirst();
+    Optional<CollectionRoleRestDto> kermit = roles.stream()
+      .filter(r -> r.getIdentity().getId().equals(USER_KERMIT))
+      .findFirst();
+
+    // then
+    assertThat(testGroup.isPresent(), is(true));
+    assertThat(missPiggy.isPresent(), is(true));
+    assertThat(kermit.isPresent(), is(true));
+
+    // if non manager get all roles, hasFullScopeAuthorizations should be null
+    assertThat(testGroup.get().getHasFullScopeAuthorizations(), is(nullValue()));
+    assertThat(missPiggy.get().getHasFullScopeAuthorizations(), is(nullValue()));
+    assertThat(kermit.get().getHasFullScopeAuthorizations(), is(nullValue()));
+  }
+
+  private List<CollectionRoleRestDto> getRoles(final String collectionId) {
+    return getRoles(DEFAULT_USERNAME, DEFAULT_PASSWORD, collectionId);
+  }
+
+  private List<CollectionRoleRestDto> getRoles(final String userId, final String password, final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(userId, password)
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(CollectionRoleRestDto.class, 200);
+  }
+
+  private String createCollectionAndAddRolesWithKermitRoleType(RoleType kermitRoleType) {
+    final String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto collectionScope1 = new CollectionScopeEntryDto(DefinitionType.PROCESS, "key1");
+    final CollectionScopeEntryDto collectionScope2 = new CollectionScopeEntryDto(DefinitionType.DECISION, "key2");
+
+    collectionClient.addScopeEntriesToCollection(collectionId, Arrays.asList(collectionScope1, collectionScope2));
+
+    engineIntegrationExtension.createGroup(TEST_GROUP, TEST_GROUP);
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_KERMIT);
+    authorizationClient.addUserAndGrantOptimizeAccess(USER_MISS_PIGGY);
+    authorizationClient.grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(
+      USER_KERMIT,
+      RESOURCE_TYPE_PROCESS_DEFINITION
+    );
+    authorizationClient.grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(
+      USER_KERMIT,
+      RESOURCE_TYPE_DECISION_DEFINITION
+    );
+    authorizationClient.grantAllDefinitionAuthorizationsForUserWithReadHistoryPermission(
+      USER_MISS_PIGGY,
+      RESOURCE_TYPE_PROCESS_DEFINITION
+    );
+
+    final CollectionRoleDto testGroupRole = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
+    final CollectionRoleDto missPiggyUserRole = new CollectionRoleDto(new UserDto(USER_MISS_PIGGY), RoleType.EDITOR);
+    final CollectionRoleDto kermitUserRole = new CollectionRoleDto(new UserDto(USER_KERMIT), kermitRoleType);
+
+    collectionClient.addRoleToCollection(collectionId, testGroupRole);
+    collectionClient.addRoleToCollection(collectionId, missPiggyUserRole);
+    collectionClient.addRoleToCollection(collectionId, kermitUserRole);
+
+    return collectionId;
   }
 
   private String createPrivateReportAsDefaultUser(final ReportScenario reportScenario) {

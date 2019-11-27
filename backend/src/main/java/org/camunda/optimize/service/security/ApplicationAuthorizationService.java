@@ -14,6 +14,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,14 +48,20 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
    * grant nor revoke.
    */
   public boolean isAuthorizedToAccessOptimize(final String userId) {
-    authorizationLoadingCache.invalidate(userId);
-    final List<String> authorizedEngines = getAuthorizedEngines(userId);
+    userAuthorizationLoadingCache.invalidate(userId);
+    final List<String> authorizedEngines = getAuthorizedEnginesForUser(userId);
     return !authorizedEngines.isEmpty();
   }
 
-  public List<String> getAuthorizedEngines(final String userId) {
+  public List<String> getAuthorizedEnginesForUser(final String userId) {
     return Optional
-      .ofNullable(authorizationLoadingCache.get(userId))
+      .ofNullable(userAuthorizationLoadingCache.get(userId))
+      .orElseGet(ArrayList::new);
+  }
+
+  public List<String> getAuthorizedEnginesForGroup(final String groupId) {
+    return Optional
+      .ofNullable(groupAuthorizationLoadingCache.get(groupId))
       .orElseGet(ArrayList::new);
   }
 
@@ -62,15 +69,26 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
   protected List<String> fetchAuthorizationsForUserId(final String userId) {
     final List<String> result = new ArrayList<>();
     for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
-      if (isAuthorizedToAccessOptimizeOnEngine(userId, engineContext)) {
+      if (isUserAuthorizedToAccessOptimizeOnEngine(userId, engineContext)) {
         result.add(engineContext.getEngineAlias());
       }
     }
     return result;
   }
 
-  private static boolean isAuthorizedToAccessOptimizeOnEngine(final String username,
-                                                              final EngineContext engineContext) {
+  @Override
+  protected List<String> fetchAuthorizationsForGroupId(final String groupId) {
+    final List<String> result = new ArrayList<>();
+    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
+      if (isGroupAuthorizedToAccessOptimizeOnEngine(groupId, engineContext)) {
+        result.add(engineContext.getEngineAlias());
+      }
+    }
+    return result;
+  }
+
+  private static boolean isUserAuthorizedToAccessOptimizeOnEngine(final String username,
+                                                                  final EngineContext engineContext) {
     final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
     final List<AuthorizationDto> allAuthorizations = engineContext.getAllApplicationAuthorizations();
     final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
@@ -78,6 +96,20 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
       allAuthorizations,
       RELEVANT_PERMISSIONS,
       username,
+      groups,
+      RESOURCE_TYPE_APPLICATION
+    );
+    return resolvedApplicationAuthorizations.isAuthorizedToAccessResource(OPTIMIZE_APPLICATION_RESOURCE_ID);
+  }
+
+  private static boolean isGroupAuthorizedToAccessOptimizeOnEngine(final String groupId,
+                                                                  final EngineContext engineContext) {
+    final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
+    final List<AuthorizationDto> allAuthorizations = engineContext.getAllApplicationAuthorizations();
+    final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(
+      engineContext.getEngineAlias(),
+      allAuthorizations,
+      RELEVANT_PERMISSIONS,
       groups,
       RESOURCE_TYPE_APPLICATION
     );

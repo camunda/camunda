@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -32,7 +33,7 @@ public class ReportAuthorizationService {
     final Optional<RoleType> authorizedRole = isSuperUser
       ? Optional.of(RoleType.EDITOR)
       : getAuthorizedReportRole(userId, report);
-    return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, report));
+    return authorizedRole.filter(role -> isAuthorizedToAccessReportDefinition(userId, IdentityType.USER, report));
   }
 
   private Optional<RoleType> getAuthorizedReportRole(final String userId, final ReportDefinitionDto report) {
@@ -46,21 +47,22 @@ public class ReportAuthorizationService {
     return Optional.ofNullable(role);
   }
 
-  public boolean isAuthorizedToAccessReportDefinition(final String userId,
+  public boolean isAuthorizedToAccessReportDefinition(final String identityId,
+                                                      final IdentityType identityType,
                                                       final ReportDefinitionDto report) {
     boolean authorizedToAccessDefinition = false;
     if (report instanceof SingleProcessReportDefinitionDto) {
       final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionDto) report).getData();
       if (reportData != null) {
         authorizedToAccessDefinition = definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-          userId, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
+          identityId, identityType, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
         );
       }
     } else if (report instanceof SingleDecisionReportDefinitionDto) {
       final DecisionReportDataDto reportData = ((SingleDecisionReportDefinitionDto) report).getData();
       if (reportData != null) {
-        authorizedToAccessDefinition = definitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
-          userId, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
+        authorizedToAccessDefinition = definitionAuthorizationService.isUserAuthorizedToSeeDecisionDefinition(
+          identityId, identityType, reportData.getDecisionDefinitionKey(), reportData.getTenantIds()
         );
       }
     } else if (report instanceof CombinedReportDefinitionDto) {

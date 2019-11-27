@@ -7,6 +7,7 @@ package org.camunda.optimize.service.collection;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -58,12 +59,13 @@ public class CollectionScopeService {
   private final CollectionWriter collectionWriter;
   private final ReportService reportService;
 
-  public List<CollectionScopeEntryRestDto> getCollectionScope(final String userId,
+  public List<CollectionScopeEntryRestDto> getCollectionScope(final String identityId,
+                                                              final IdentityType identityType,
                                                               final String collectionId) {
-    final Map<String, TenantDto> tenantsForUserById = tenantService.getTenantsForUser(userId)
+    final Map<String, TenantDto> tenantsForUserById = tenantService.getTenantsForUser(identityId)
       .stream()
       .collect(Collectors.toMap(TenantDto::getId, tenantDto -> tenantDto));
-    return collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
+    return collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(identityId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
@@ -72,7 +74,7 @@ public class CollectionScopeService {
         final List<String> tenantsToMask = scope.getTenants();
         final List<TenantDto> authorizedTenantDtos = definitionAuthorizationService
           .filterAuthorizedTenantsForDefinition(
-            userId, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
+            identityId, identityType, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
           )
           .stream()
           .peek(tenantsToMask::remove)
@@ -95,7 +97,7 @@ public class CollectionScopeService {
       // for all visible entries we need to resolve the actual definition name
       // we do it only after the filtering as only then it is ensured the user has access to that entry at all
       .peek(collectionScopeEntryRestDto -> collectionScopeEntryRestDto.setDefinitionName(
-        getDefinitionName(userId, collectionScopeEntryRestDto)
+        getDefinitionName(identityId, collectionScopeEntryRestDto)
       ))
       .sorted(
         Comparator.comparing(CollectionScopeEntryRestDto::getDefinitionType)
@@ -257,20 +259,22 @@ public class CollectionScopeService {
     scopeUpdate.setTenants(allTenantsWithMaskedTenantsBeingResolved);
   }
 
-  public Map<String, List<String>> getAvailableKeysAndTenantsFromCollectionScope(final String userId,
+  public Map<String, List<String>> getAvailableKeysAndTenantsFromCollectionScope(final String identityId,
+                                                                                 final IdentityType identityType,
                                                                                  final String collectionId) {
     if (collectionId == null) {
       return Collections.emptyMap();
     }
-    return getAuthorizedCollectionScopeEntries(userId, collectionId)
+    return getAuthorizedCollectionScopeEntries(identityId, identityType, collectionId)
       .stream()
       .map(scopeEntryDto -> new AbstractMap.SimpleEntry<>(scopeEntryDto.getDefinitionKey(), scopeEntryDto.getTenants()))
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
-  private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String userId,
+  private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String identityId,
+                                                                            final IdentityType identityType,
                                                                             final String collectionId) {
-    return collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(userId, collectionId)
+    return collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(identityId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
@@ -278,7 +282,7 @@ public class CollectionScopeService {
       .peek(scope -> scope.setTenants(
         definitionAuthorizationService
           .filterAuthorizedTenantsForDefinition(
-            userId, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
+            identityId, identityType, scope.getDefinitionKey(), scope.getDefinitionType(), scope.getTenants()
           )
       ))
       // at least one authorized tenant is required for an entry to be included in the result

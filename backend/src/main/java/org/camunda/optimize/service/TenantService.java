@@ -8,6 +8,7 @@ package org.camunda.optimize.service;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.service.es.reader.TenantReader;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
@@ -55,18 +56,27 @@ public class TenantService implements ConfigurationReloadable {
   }
 
   public boolean isAuthorizedToSeeTenant(final String userId, final String tenantId) {
-    return tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantId);
+    return tenantAuthorizationService.isAuthorizedToSeeTenant(userId, IdentityType.USER, tenantId);
   }
 
   public List<TenantDto> getTenantsForUser(final String userId) {
     return getTenants().stream()
-      .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantDto.getId()))
+      .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(
+        userId,
+        IdentityType.USER,
+        tenantDto.getId()
+      ))
       .collect(Collectors.toList());
   }
 
   public List<TenantDto> getTenantsForUserByEngine(final String userId, final String engineAlias) {
     return getTenantsByEngine(engineAlias).stream()
-      .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantDto.getId(), engineAlias))
+      .filter(tenantDto -> tenantAuthorizationService.isAuthorizedToSeeTenant(
+        userId,
+        IdentityType.USER,
+        tenantDto.getId(),
+        engineAlias
+      ))
       .collect(Collectors.toList());
   }
 

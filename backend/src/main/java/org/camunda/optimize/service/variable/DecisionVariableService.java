@@ -8,6 +8,7 @@ package org.camunda.optimize.service.variable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
@@ -34,12 +35,12 @@ public class DecisionVariableService {
   private final DecisionDefinitionReader decisionDefinitionReader;
 
 
-  public List<DecisionVariableNameDto> getInputVariableNames(String userId,
+  public List<DecisionVariableNameDto> getInputVariableNames(String identityId,
                                                              DecisionVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("decision definition key", variableRequestDto.getDecisionDefinitionKey());
     ensureListNotEmpty("decision definition versions", variableRequestDto.getDecisionDefinitionVersions());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, variableRequestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(identityId, IdentityType.USER, variableRequestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     final Optional<DecisionDefinitionOptimizeDto> decisionDefinition = getDecisionDefinition(variableRequestDto);
@@ -52,7 +53,7 @@ public class DecisionVariableService {
     ensureNotEmpty("decision definition key", variableRequestDto.getDecisionDefinitionKey());
     ensureListNotEmpty("decision definition versions", variableRequestDto.getDecisionDefinitionVersions());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, variableRequestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, variableRequestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     final Optional<DecisionDefinitionOptimizeDto> decisionDefinition = getDecisionDefinition(variableRequestDto);
@@ -66,7 +67,7 @@ public class DecisionVariableService {
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, requestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, requestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     return decisionVariableReader.getInputVariableValues(requestDto);
@@ -78,7 +79,7 @@ public class DecisionVariableService {
     ensureNotEmpty("variable id", requestDto.getVariableId());
     ensureNotEmpty("variable type", requestDto.getVariableType());
 
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, requestDto.getTenantIds())) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(userId, IdentityType.USER, requestDto.getTenantIds())) {
       throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
     }
     return decisionVariableReader.getOutputVariableValues(requestDto);

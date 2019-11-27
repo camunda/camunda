@@ -8,6 +8,7 @@ package org.camunda.optimize.service;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
@@ -63,6 +64,10 @@ public class DefinitionService {
       .collect(Collectors.toList());
   }
 
+  public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenantForUser(final String userId) {
+    return getDefinitionsGroupedByTenant(userId);
+  }
+
   public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenant(final String userId) {
 
     final Map<String, TenantIdWithDefinitionsDto> definitionsGroupedByTenant =
@@ -84,7 +89,7 @@ public class DefinitionService {
         // now filter for tenant and definition key pair authorization
         final List<SimpleDefinitionDto> authorizedDefinitions = tenantIdWithDefinitionsDto.getDefinitions().stream()
           .filter(definition -> definitionAuthorizationService.isAuthorizedToSeeDefinition(
-            userId, definition.getKey(), definition.getType(), tenantIdWithDefinitionsDto.getId()
+            userId, IdentityType.USER, definition.getKey(), definition.getType(), tenantIdWithDefinitionsDto.getId()
           ))
           // sort by name case insensitive
           .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
@@ -146,6 +151,7 @@ public class DefinitionService {
         final List<TenantRestDto> authorizedTenants = definitionAuthorizationService
           .filterAuthorizedTenantsForDefinition(
             userId,
+            IdentityType.USER,
             definitionWithTenantIds.getKey(),
             definitionWithTenantIds.getType(),
             definitionWithTenantIds.getTenantIds()

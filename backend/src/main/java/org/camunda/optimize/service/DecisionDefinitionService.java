@@ -9,6 +9,7 @@ package org.camunda.optimize.service;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionAvailableVersionsWithTenants;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
@@ -85,7 +86,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
   public List<DefinitionAvailableVersionsWithTenants> getDecisionDefinitionVersionsWithTenants(@NonNull final String userId,
                                                                                                @NonNull final String collectionId) {
     final Map<String, List<String>> keysAndTenants = collectionScopeService
-      .getAvailableKeysAndTenantsFromCollectionScope(userId, collectionId);
+      .getAvailableKeysAndTenantsFromCollectionScope(userId, IdentityType.USER, collectionId);
 
     List<DecisionDefinitionOptimizeDto> definitions = decisionDefinitionReader
       .getFullyImportedDecisionDefinitionsForKeys(false, keysAndTenants.keySet());
@@ -106,7 +107,7 @@ public class DecisionDefinitionService extends AbstractDefinitionService {
 
   private boolean isAuthorizedToReadDecisionDefinition(final String userId,
                                                        final DecisionDefinitionOptimizeDto decisionDefinition) {
-    return definitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
+    return definitionAuthorizationService.isUserAuthorizedToSeeDecisionDefinition(
       userId, decisionDefinition.getKey(), decisionDefinition.getTenantId(), decisionDefinition.getEngine()
     );
   }

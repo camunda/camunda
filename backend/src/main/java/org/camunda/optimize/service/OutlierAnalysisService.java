@@ -6,6 +6,7 @@
 package org.camunda.optimize.service;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FindingsDto;
 import org.camunda.optimize.dto.optimize.query.analysis.FlowNodeOutlierParametersDto;
@@ -54,7 +55,7 @@ public class OutlierAnalysisService {
 
   private void doAuthorizationCheck(final ProcessDefinitionParametersDto processDefinitionParams, final String userId) {
     if (!definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-      userId, processDefinitionParams.getProcessDefinitionKey(), processDefinitionParams.getTenantIds()
+      userId, IdentityType.USER, processDefinitionParams.getProcessDefinitionKey(), processDefinitionParams.getTenantIds()
     )) {
       throw new ForbiddenException(
         "Current user is not authorized to access data of the provided process definition and tenant combination");

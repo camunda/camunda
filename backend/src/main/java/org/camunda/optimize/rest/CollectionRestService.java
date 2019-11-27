@@ -6,9 +6,11 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
@@ -167,15 +169,15 @@ public class CollectionRestService {
   public List<CollectionScopeEntryRestDto> getScopes(@Context ContainerRequestContext requestContext,
                                                      @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return collectionScopeService.getCollectionScope(userId, collectionId);
+    return collectionScopeService.getCollectionScope(userId, IdentityType.USER, collectionId);
   }
 
   @GET
   @Path("/{id}/role/")
   @Consumes(MediaType.APPLICATION_JSON)
   @Produces(MediaType.APPLICATION_JSON)
-  public List<CollectionRoleDto> getRoles(@Context ContainerRequestContext requestContext,
-                                          @PathParam("id") String collectionId) {
+  public List<CollectionRoleRestDto> getRoles(@Context ContainerRequestContext requestContext,
+                                              @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     return collectionRoleService.getAllRolesOfCollectionSorted(userId, collectionId);
   }

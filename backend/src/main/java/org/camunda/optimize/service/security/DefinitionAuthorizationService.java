@@ -10,6 +10,7 @@ import lombok.Value;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.TenantService;
@@ -20,6 +21,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -65,12 +67,12 @@ public class DefinitionAuthorizationService
 
   @Override
   protected Map<String, EngineAuthorizations> fetchAuthorizationsForUserId(final String userId) {
-    final List<String> authorizedEngines = applicationAuthorizationService.getAuthorizedEngines(userId);
+    final List<String> authorizedEngines = applicationAuthorizationService.getAuthorizedEnginesForUser(userId);
     final Map<String, EngineAuthorizations> result = new HashMap<>();
     engineContextFactory.getConfiguredEngines()
       .forEach(engineContext -> {
         if (authorizedEngines.contains(engineContext.getEngineAlias())) {
-          result.put(engineContext.getEngineAlias(), fetchEngineAuthorizations(userId, engineContext));
+          result.put(engineContext.getEngineAlias(), fetchEngineAuthorizationsForUser(userId, engineContext));
         } else {
           result.put(engineContext.getEngineAlias(), new EngineAuthorizations(engineContext.getEngineAlias()));
         }
@@ -78,47 +80,41 @@ public class DefinitionAuthorizationService
     return result;
   }
 
-  public boolean isAuthorizedToSeeProcessDefinition(final String userId,
-                                                    final String processDefinitionKey,
-                                                    final String tenantId,
-                                                    final String engineAlias) {
-    return isAuthorizedToSeeFullyQualifiedDefinition(
-      userId, processDefinitionKey, DefinitionType.PROCESS, tenantId, engineAlias
-    );
+
+  @Override
+  protected Map<String, EngineAuthorizations> fetchAuthorizationsForGroupId(final String groupId) {
+    final List<String> authorizedEngines = applicationAuthorizationService.getAuthorizedEnginesForGroup(groupId);
+    final Map<String, EngineAuthorizations> result = new HashMap<>();
+    engineContextFactory.getConfiguredEngines()
+      .forEach(engineContext -> {
+        if (authorizedEngines.contains(engineContext.getEngineAlias())) {
+          result.put(engineContext.getEngineAlias(), fetchEngineAuthorizationsForGroup(groupId, engineContext));
+        } else {
+          result.put(engineContext.getEngineAlias(), new EngineAuthorizations(engineContext.getEngineAlias()));
+        }
+      });
+    return result;
   }
 
-  public boolean isAuthorizedToSeeDecisionDefinition(final String userId,
-                                                     final String decisionDefinitionKey,
-                                                     final String tenantId,
-                                                     final String engineAlias) {
-    return isAuthorizedToSeeFullyQualifiedDefinition(
-      userId, decisionDefinitionKey, DefinitionType.DECISION, tenantId, engineAlias
-    );
-  }
-
-  public boolean isAuthorizedToSeeDefinition(final String userId,
+  public boolean isAuthorizedToSeeDefinition(final String identityId,
+                                             final IdentityType identityType,
                                              final String definitionKey,
                                              final DefinitionType definitionType,
                                              final String tenantId) {
-    return isAuthorizedToSeeDefinition(userId, definitionKey, definitionType, Collections.singletonList(tenantId));
+    return isAuthorizedToSeeDefinition(
+      identityId,
+      identityType,
+      definitionKey,
+      definitionType,
+      Collections.singletonList(tenantId)
+    );
   }
 
-  public boolean isAuthorizedToSeeProcessDefinition(final String userId,
-                                                    final String definitionKey,
-                                                    final List<String> tenantIds) {
-    return isAuthorizedToSeeDefinition(userId, definitionKey, DefinitionType.PROCESS, tenantIds);
-  }
-
-  public boolean isAuthorizedToSeeDecisionDefinition(final String userId,
-                                                     final String definitionKey,
-                                                     final List<String> tenantIds) {
-    return isAuthorizedToSeeDefinition(userId, definitionKey, DefinitionType.DECISION, tenantIds);
-  }
-
-  private boolean isAuthorizedToSeeDefinition(final String userId,
-                                              final String definitionKey,
-                                              final DefinitionType definitionType,
-                                              final List<String> tenantIds) {
+  public boolean isAuthorizedToSeeDefinition(final String identityId,
+                                             final IdentityType identityType,
+                                             final String definitionKey,
+                                             final DefinitionType definitionType,
+                                             final List<String> tenantIds) {
     if (definitionKey == null || definitionKey.isEmpty() || definitionType == null) {
       // null key or type provided is considered authorized
       return true;
@@ -130,11 +126,57 @@ public class DefinitionAuthorizationService
     final List<String> expectedTenants = nullSafeTenants.size() == 0 ? SINGLETON_LIST_NOT_DEFINED_TENANT : tenantIds;
     // user needs to be authorized for all considered tenants get access
     return filterAuthorizedTenantsForDefinition(
-      userId, definitionKey, definitionType, expectedTenants
+      identityId, identityType, definitionKey, definitionType, expectedTenants
     ).size() == expectedTenants.size();
   }
 
-  public List<String> filterAuthorizedTenantsForDefinition(final String userId,
+  public boolean isAuthorizedToSeeProcessDefinition(final String identityId,
+                                                    final IdentityType identityType,
+                                                    final String definitionKey,
+                                                    final List<String> tenantIds) {
+    return isAuthorizedToSeeDefinition(identityId, identityType, definitionKey, DefinitionType.PROCESS, tenantIds);
+  }
+
+  public boolean isAuthorizedToSeeProcessDefinition(final String identityId,
+                                                    final IdentityType identityType,
+                                                    final String processDefinitionKey,
+                                                    final String tenantId,
+                                                    final String engineAlias) {
+    return isAuthorizedToSeeFullyQualifiedDefinition(
+      identityId, identityType, processDefinitionKey, DefinitionType.PROCESS, tenantId, engineAlias
+    );
+  }
+
+  public boolean isUserAuthorizedToSeeProcessDefinition(final String userId,
+                                                        final String processDefinitionKey,
+                                                        final String tenantId,
+                                                        final String engineAlias) {
+    return isAuthorizedToSeeProcessDefinition(userId, IdentityType.USER, processDefinitionKey, tenantId, engineAlias);
+  }
+
+  public boolean isUserAuthorizedToSeeDecisionDefinition(final String identityId,
+                                                         final String decisionDefinitionKey,
+                                                         final String tenantId,
+                                                         final String engineAlias) {
+    return isAuthorizedToSeeFullyQualifiedDefinition(
+      identityId,
+      IdentityType.USER,
+      decisionDefinitionKey,
+      DefinitionType.DECISION,
+      tenantId,
+      engineAlias
+    );
+  }
+
+  public boolean isUserAuthorizedToSeeDecisionDefinition(final String identityId,
+                                                         final IdentityType identityType,
+                                                         final String definitionKey,
+                                                         final List<String> tenantIds) {
+    return isAuthorizedToSeeDefinition(identityId, identityType, definitionKey, DefinitionType.DECISION, tenantIds);
+  }
+
+  public List<String> filterAuthorizedTenantsForDefinition(final String identityId,
+                                                           final IdentityType identityType,
                                                            final String definitionKey,
                                                            final DefinitionType definitionType,
                                                            final List<String> tenantIds) {
@@ -155,7 +197,12 @@ public class DefinitionAuthorizationService
           }
         })
       .filter(tenantAndEnginePair -> isAuthorizedToSeeFullyQualifiedDefinition(
-        userId, definitionKey, definitionType, tenantAndEnginePair.getTenantId(), tenantAndEnginePair.getEngine()
+        identityId,
+        identityType,
+        definitionKey,
+        definitionType,
+        tenantAndEnginePair.getTenantId(),
+        tenantAndEnginePair.getEngine()
       ))
       .map(TenantAndEnginePair::getTenantId)
       .distinct()
@@ -174,16 +221,20 @@ public class DefinitionAuthorizationService
     }
   }
 
-  private boolean isAuthorizedToSeeFullyQualifiedDefinition(final String userId,
+  private boolean isAuthorizedToSeeFullyQualifiedDefinition(final String identityId,
+                                                            final IdentityType identityType,
                                                             final String definitionKey,
                                                             final DefinitionType definitionType,
                                                             final String tenantId,
                                                             final String engineAlias) {
-    if (!tenantAuthorizationService.isAuthorizedToSeeTenant(userId, tenantId, engineAlias)) {
+    if (!tenantAuthorizationService.isAuthorizedToSeeTenant(identityId, identityType, tenantId, engineAlias)) {
       return false;
     }
 
-    final Map<String, EngineAuthorizations> authorizationsByEngine = authorizationLoadingCache.get(userId);
+    final Map<String, EngineAuthorizations> authorizationsByEngine = getCachedAuthorizationsForId(
+      identityId,
+      identityType
+    );
 
     if (authorizationsByEngine == null) {
       return false;
@@ -200,14 +251,24 @@ public class DefinitionAuthorizationService
     return resourceAuthorizations.isAuthorizedToAccessResource(definitionKey);
   }
 
-  private static EngineAuthorizations fetchEngineAuthorizations(final String username,
-                                                                final EngineContext engineContext) {
+  private static EngineAuthorizations fetchEngineAuthorizationsForUser(final String username,
+                                                                       final EngineContext engineContext) {
     final List<GroupDto> groups = engineContext.getAllGroupsOfUser(username);
     final List<AuthorizationDto> allAuthorizations = ImmutableList.<AuthorizationDto>builder()
       .addAll(engineContext.getAllProcessDefinitionAuthorizations())
       .addAll(engineContext.getAllDecisionDefinitionAuthorizations())
       .build();
     return mapToEngineAuthorizations(engineContext.getEngineAlias(), allAuthorizations, username, groups);
+  }
+
+  private static EngineAuthorizations fetchEngineAuthorizationsForGroup(final String groupId,
+                                                                        final EngineContext engineContext) {
+    final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
+    final List<AuthorizationDto> allAuthorizations = ImmutableList.<AuthorizationDto>builder()
+      .addAll(engineContext.getAllProcessDefinitionAuthorizations())
+      .addAll(engineContext.getAllDecisionDefinitionAuthorizations())
+      .build();
+    return mapToEngineAuthorizations(engineContext.getEngineAlias(), allAuthorizations, groups);
   }
 
   private List<TenantAndEnginePair> resolveTenantAndEnginePairs(final List<String> tenantIds) {
