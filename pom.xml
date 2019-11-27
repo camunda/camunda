@@ -15,7 +15,7 @@
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
-    <module>qa/integration-tests</module>
+    <module>qa</module>
     <module>distro</module>
   </modules>
 

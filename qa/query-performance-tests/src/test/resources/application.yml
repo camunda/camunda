@@ -4,6 +4,7 @@ camunda.operate.qa.queries:
     port: 8080
     username: demo
     password: demo
+    schemaVersion: 1.2.0
   elasticsearch:
     host: localhost
     port: 9200

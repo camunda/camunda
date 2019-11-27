@@ -124,4 +124,16 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<profile>
+			<id>skipTests</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<skipTests>true</skipTests>
+			</properties>
+		</profile>
+	</profiles>
+
 </project>

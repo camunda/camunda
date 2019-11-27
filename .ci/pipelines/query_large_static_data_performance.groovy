@@ -206,7 +206,7 @@ pipeline {
       steps {
         container('maven') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-            sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa/query-performance-tests -P -docker verify')
+            sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa/query-performance-tests -P -docker,-skipTests verify')
           }
         }
       }

@@ -220,7 +220,7 @@ pipeline {
 		  container('maven') {
 		      configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
 		        // Validate operate indices 
-		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration verify')
+		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration -P -skipTests verify')
 		      }
           }
           post {

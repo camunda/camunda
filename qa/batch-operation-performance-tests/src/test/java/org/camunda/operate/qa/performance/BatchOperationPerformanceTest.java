@@ -115,7 +115,7 @@ public class BatchOperationPerformanceTest {
   }
 
   private String getOperateAlias(String indexName) {
-    return String.format("%s-%s_alias", operateProperties.getElasticsearch().getIndexPrefix(), indexName);
+    return String.format("%s-%s-%s_alias", operateProperties.getElasticsearch().getIndexPrefix(), indexName, operateProperties.getSchemaVersion());
   }
 
   private class BenchmarkingExecutionFinishedListener implements ExecutionFinishedListener {

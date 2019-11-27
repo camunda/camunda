@@ -10,7 +10,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -64,6 +63,9 @@ public class ParametersResolver {
 
   @Value("${camunda.operate.qa.queries.elasticsearch.prefix:operate}")
   private String prefix;
+
+  @Value("${camunda.operate.qa.queries.operate.schemaVersion:}")
+  private String schemaVersion;
 
   @Autowired
   private ObjectMapper objectMapper;
@@ -198,7 +200,7 @@ public class ParametersResolver {
   }
 
   private String getAlias(String indexName) {
-    return String.format("%s-%s_alias", prefix, indexName);
+    return String.format("%s-%s-%s_alias", prefix, indexName, schemaVersion);
   }
 
 }

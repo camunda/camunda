@@ -193,7 +193,7 @@ public class DataGenerator {
     @Override
     public void run() {
       int count = 0;
-      while (count++ <= dataGeneratorProperties.getWorkflowInstanceCount() && ! shuttingDown) {
+      while (++count <= dataGeneratorProperties.getWorkflowInstanceCount() && ! shuttingDown) {
         try {
           futures.put(ZeebeTestUtil.startWorkflowInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
         } catch (InterruptedException e) {
