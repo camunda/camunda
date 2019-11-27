@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.clustering.atomix;
 
-import io.atomix.protocols.raft.RaftException;
 import io.atomix.protocols.raft.RaftStateMachine;
 import io.atomix.protocols.raft.impl.RaftContext;
 import io.atomix.protocols.raft.metrics.RaftServiceMetrics;
@@ -191,14 +190,8 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     final var maybeFuture = Optional.ofNullable(future);
     logger.trace("Applying {}", indexed);
 
-    if (RaftLogEntry.class.isAssignableFrom(indexed.type())) {
-      raft.notifyCommitListeners(indexed);
-      maybeFuture.ifPresent(f -> f.complete(null));
-    } else {
-      maybeFuture.ifPresent(
-          f ->
-              f.completeExceptionally(new RaftException.ProtocolException("Unknown indexed type")));
-    }
+    raft.notifyCommitListeners(indexed);
+    maybeFuture.ifPresent(f -> f.complete(null));
 
     // mark as applied regardless of result
     raft.setLastApplied(indexed.index(), indexed.entry().term());
