@@ -1,0 +1,74 @@
+{
+  "order": 30,
+  "index_patterns": [
+    "operate-batch-operation-1.2.0_*"
+  ],
+  "settings": {
+    "index": {
+      "refresh_interval": "2s",
+      "analysis": {
+        "normalizer": {
+          "case_insensitive": {
+            "filter": "lowercase"
+          }
+        }
+      },
+      "number_of_shards": "5",
+      "number_of_replicas": "1"
+    }
+  },
+  "mappings": {
+    "_doc": {
+      "dynamic": "strict",
+      "dynamic_templates": [
+        {
+          "string_template": {
+            "path_match": "*",
+            "mapping": {
+              "norms": {
+                "enabled": false
+              },
+              "type": "string",
+              "index_options": "docs"
+            },
+            "match_mapping_type": "string"
+          }
+        }
+      ],
+      "properties": {
+        "finishedCount": {
+          "type": "long"
+        },
+        "endDate": {
+          "format": "date_time",
+          "type": "date"
+        },
+        "name": {
+          "type": "keyword"
+        },
+        "instancesCount": {
+          "type": "long"
+        },
+        "operationsCount": {
+          "type": "long"
+        },
+        "id": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "keyword"
+        },
+        "startDate": {
+          "format": "date_time",
+          "type": "date"
+        },
+        "username": {
+          "type": "keyword"
+        }
+      }
+    }
+  },
+  "aliases": {
+    "operate-batch-operation_alias": {}
+  }
+}
