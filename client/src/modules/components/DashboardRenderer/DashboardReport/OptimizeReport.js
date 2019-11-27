@@ -45,12 +45,11 @@ export default themed(
               });
             },
             async e => {
-              const {errorCode, errorMessage, reportDefinition} = await e.json();
-              const message = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
+              const errorData = await e.json();
               this.setState({
                 loading: false,
-                data: reportDefinition,
-                error: !reportDefinition && message
+                data: errorData.reportDefinition,
+                error: formatError(e, errorData)
               });
             }
           );
@@ -103,7 +102,7 @@ export default themed(
                 })}
               >
                 {error ? (
-                  <NoDataNotice>{error}</NoDataNotice>
+                  <NoDataNotice title={error.title}>{error.text}</NoDataNotice>
                 ) : (
                   <ReportRenderer
                     disableReportScrolling={disableReportScrolling}
@@ -120,3 +119,16 @@ export default themed(
     )
   )
 );
+
+function formatError(e, {errorCode, errorMessage}) {
+  if (e.status === 403) {
+    return {
+      title: t('dashboard.noAuthorization'),
+      text: t('dashboard.noReportAccess')
+    };
+  }
+
+  return {
+    text: errorCode ? t('apiErrors.' + errorCode) : errorMessage
+  };
+}

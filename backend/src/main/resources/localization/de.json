@@ -312,7 +312,7 @@
     "label-plural": "Dashboards",
     "new": "Neues Dashboard",
     "cannotSave": "Dashboard \"{name}\" konnte nicht gespeichert werden",
-    "cannotShare": "Sie können dieses Dashboard nicht teilen, da Sie nicht Zugriff auf alle Berichte in diesem Dashboard haben!",
+    "cannotShare": "Teilen verboten. Fehlende Berechtigung für enthaltenen Report.",
     "toggleTheme": "Design wechseln",
     "enterFullscreen": "Vollbildmodus aktivieren",
     "leaveFullscreen": "Vollbildmodus verlassen",
@@ -325,7 +325,9 @@
       "selectReportPlaceholder": "Einen Report auswählen",
       "noReports": "Es wurden noch keine Berichte erstellt",
       "externalUrl": "Externe URL"
-    }
+    },
+    "noAuthorization": "Fehlende Berechtigung",
+    "noReportAccess": "Kein Zugriff auf Report"
   },
   "alert": {
     "label": "Alarm",

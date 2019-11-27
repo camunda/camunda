@@ -9,10 +9,10 @@ import React from 'react';
 import './NoDataNotice.scss';
 import {t} from 'translation';
 
-export default function NoDataNotice({children}) {
+export default function NoDataNotice({title, children}) {
   return (
     <div className="NoDataNotice">
-      <h1>{t('report.noDataNotice')}</h1>
+      <h1>{title || t('report.noDataNotice')}</h1>
       <p>{children}</p>
     </div>
   );

@@ -312,7 +312,7 @@
     "label-plural": "Dashboards",
     "new": "New Dashboard",
     "cannotSave": "Dashboard \"{name}\" could not be saved",
-    "cannotShare": "You are not authorized to share the dashboard because you don't have access to all reports on the dashboard!",
+    "cannotShare": "Sharing forbidden. Missing authorization for contained report.",
     "toggleTheme": "Toggle Theme",
     "enterFullscreen": "Enter Fullscreen",
     "leaveFullscreen": "Leave Fullscreen",
@@ -325,7 +325,9 @@
       "selectReportPlaceholder": "Select a Report",
       "noReports": "No reports have been created",
       "externalUrl": "External URL"
-    }
+    },
+    "noAuthorization": "Missing authorization",
+    "noReportAccess": "No access to report"
   },
   "alert": {
     "label": "Alert",
