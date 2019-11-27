@@ -9,7 +9,7 @@ package io.zeebe.broker.system.monitoring;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
-import io.atomix.primitive.partition.PartitionGroup;
+import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.servicecontainer.Injector;
@@ -62,8 +62,8 @@ public class BrokerHealthCheckService extends Actor implements Service<Void> {
   }
 
   private void initializePartitionInstallStatus() {
-    final PartitionGroup partitionGroup =
-        atomix.getPartitionService().getPartitionGroup(Partition.GROUP_NAME);
+    final RaftPartitionGroup partitionGroup =
+        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup(Partition.GROUP_NAME);
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
 
     partitionInstallStatus =

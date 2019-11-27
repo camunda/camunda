@@ -75,11 +75,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>atomix-primitive</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>atomix-raft</artifactId>
     </dependency>
 

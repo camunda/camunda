@@ -263,12 +263,6 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>atomix-primary-backup</artifactId>
-        <version>${version.atomix}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
         <artifactId>atomix-primitive</artifactId>
         <version>${version.atomix}</version>
       </dependency>
