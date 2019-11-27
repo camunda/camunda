@@ -5,7 +5,9 @@
  */
 package org.camunda.operate.entities.meta;
 
-public class ImportPositionEntity {
+import org.camunda.operate.entities.OperateEntity;
+
+public class ImportPositionEntity extends OperateEntity {
 
   private String aliasName;
 
@@ -75,6 +77,8 @@ public class ImportPositionEntity {
       return true;
     if (o == null || getClass() != o.getClass())
       return false;
+    if (!super.equals(o))
+        return false;
 
     ImportPositionEntity that = (ImportPositionEntity) o;
 
@@ -90,7 +94,8 @@ public class ImportPositionEntity {
 
   @Override
   public int hashCode() {
-    int result = aliasName != null ? aliasName.hashCode() : 0;
+	int result = super.hashCode();
+    result = 31 * result + (aliasName != null ? aliasName.hashCode() : 0);
     result = 31 * result + partitionId;
     result = 31 * result + (int) (position ^ (position >>> 32));
     result = 31 * result + (indexName != null ? indexName.hashCode() : 0);
