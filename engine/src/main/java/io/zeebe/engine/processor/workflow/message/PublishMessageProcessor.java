@@ -9,7 +9,6 @@ package io.zeebe.engine.processor.workflow.message;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.engine.Loggers;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.SideEffectProducer;
 import io.zeebe.engine.processor.TypedRecord;
@@ -23,6 +22,7 @@ import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
@@ -30,12 +30,9 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
-import org.agrona.DirectBuffer;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  public static final String ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE =
-      "Expected to trigger event for workflow with key '%d', but could not (either does not exist or is not accepting)";
   private static final String ALREADY_PUBLISHED_MESSAGE =
       "Expected to publish a new message with id '%s', but a message with that id was already published";
 
@@ -152,33 +149,70 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
   private void correlateToMessageStartEvents(
       final MessageRecord messageRecord, final TypedStreamWriter streamWriter) {
+
     startEventSubscriptionState.visitSubscriptionsByMessageName(
         messageRecord.getNameBuffer(),
         subscription -> {
-          if (!correlatingSubscriptions.contains(subscription.getBpmnProcessIdBuffer())) {
+          final var bpmnProcessIdBuffer = subscription.getBpmnProcessIdBuffer();
+          final var correlationKeyBuffer = messageRecord.getCorrelationKeyBuffer();
 
-            final DirectBuffer startEventId = subscription.getStartEventIdBuffer();
-            final long workflowKey = subscription.getWorkflowKey();
+          // create only one instance of a workflow per correlation key
+          // - allow multiple instance if correlation key is empty
+          if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
+              && (correlationKeyBuffer.capacity() == 0
+                  || !messageState.existActiveWorkflowInstance(
+                      bpmnProcessIdBuffer, correlationKeyBuffer))) {
 
-            final boolean wasTriggered =
-                scopeEventInstanceState.triggerEvent(
-                    workflowKey, messageKey, startEventId, messageRecord.getVariablesBuffer());
+            correlatingSubscriptions.add(subscription);
 
-            if (wasTriggered) {
-              // create the workflow instance directly on the same partition
-              streamWriter.appendNewEvent(
-                  messageKey,
-                  WorkflowInstanceIntent.EVENT_OCCURRED,
-                  startEventRecord.setWorkflowKey(workflowKey).setElementId(startEventId));
+            createEventTrigger(subscription);
+            final long workflowInstanceKey = createNewWorkflowInstance(streamWriter, subscription);
 
-              correlatingSubscriptions.add(subscription);
-
-            } else {
-              Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
-                  String.format(ERROR_START_EVENT_NOT_TRIGGERED_MESSAGE, workflowKey));
+            if (correlationKeyBuffer.capacity() > 0) {
+              // lock the workflow for this correlation key
+              // - other messages with same correlation key are not correlated to this workflow
+              // until the created instance is ended
+              messageState.putActiveWorkflowInstance(bpmnProcessIdBuffer, correlationKeyBuffer);
+              messageState.putWorkflowInstanceCorrelationKey(
+                  workflowInstanceKey, correlationKeyBuffer);
             }
           }
         });
+  }
+
+  private void createEventTrigger(final MessageStartEventSubscriptionRecord subscription) {
+
+    final boolean success =
+        scopeEventInstanceState.triggerEvent(
+            subscription.getWorkflowKey(),
+            messageKey,
+            subscription.getStartEventIdBuffer(),
+            messageRecord.getVariablesBuffer());
+
+    if (!success) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected the event trigger for be created of the workflow with key '%d' but failed.",
+              subscription.getWorkflowKey()));
+    }
+  }
+
+  private long createNewWorkflowInstance(
+      final TypedStreamWriter streamWriter,
+      final MessageStartEventSubscriptionRecord subscription) {
+
+    final var workflowInstanceKey = keyGenerator.nextKey();
+    final var eventKey = keyGenerator.nextKey();
+
+    streamWriter.appendNewEvent(
+        eventKey,
+        WorkflowInstanceIntent.EVENT_OCCURRED,
+        startEventRecord
+            .setWorkflowKey(subscription.getWorkflowKey())
+            .setWorkflowInstanceKey(workflowInstanceKey)
+            .setElementId(subscription.getStartEventId()));
+
+    return workflowInstanceKey;
   }
 
   private boolean sendCorrelateCommand() {

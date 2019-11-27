@@ -7,349 +7,223 @@
  */
 package io.zeebe.engine.processor.workflow.message;
 
-import static io.zeebe.protocol.record.Assertions.assertThat;
-import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
-import static io.zeebe.test.util.record.RecordingExporter.messageStartEventSubscriptionRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.engine.util.EngineRule;
-import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.ProcessBuilder;
+import io.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
-import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
-import io.zeebe.protocol.record.value.DeploymentRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
-import java.util.List;
+import java.time.Duration;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class MessageStartEventTest {
 
-  private static final String MESSAGE_NAME1 = "startMessage1";
-  private static final String EVENT_ID1 = "startEventId1";
+  private static final String MESSAGE_NAME_1 = "a";
+  private static final String MESSAGE_NAME_2 = "b";
 
-  private static final String MESSAGE_NAME2 = "startMessage2";
-  private static final String EVENT_ID2 = "startEventId2";
+  private static final String CORRELATION_KEY_1 = "key-1";
+  private static final String CORRELATION_KEY_2 = "key-2";
+
+  private static final BpmnModelInstance SINGLE_START_EVENT = singleStartEvent(startEvent -> {});
+  private static final BpmnModelInstance MULTIPLE_START_EVENTS = multipleStartEvents();
 
   @Rule public EngineRule engine = EngineRule.singlePartition();
+
+  private static BpmnModelInstance singleStartEvent(final Consumer<StartEventBuilder> customizer) {
+    final var startEventBuilder =
+        Bpmn.createExecutableProcess("wf").startEvent().message(MESSAGE_NAME_1);
+
+    customizer.accept(startEventBuilder);
+
+    return startEventBuilder.serviceTask("task", t -> t.zeebeTaskType("test")).done();
+  }
+
+  private static BpmnModelInstance multipleStartEvents() {
+    final var process = Bpmn.createExecutableProcess("wf");
+    process.startEvent().message(MESSAGE_NAME_1).serviceTask("task", t -> t.zeebeTaskType("test"));
+    process.startEvent().message(MESSAGE_NAME_2).connectTo("task");
+
+    return process.done();
+  }
 
   @Test
   public void shouldCorrelateMessageToStartEvent() {
     // given
-    final Record<DeploymentRecordValue> deploymentRecord =
-        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
-    final long workflowKey = getFirstDeployedWorkflowKey(deploymentRecord);
-
-    // wait until subscription is opened
-    assertThat(
-            messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED)
-                .exists())
-        .isTrue();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
 
     // when
-    engine
-        .message()
-        .withCorrelationKey("order-123")
-        .withName(MESSAGE_NAME1)
-        .withVariables(asMsgPack("foo", "bar"))
-        .publish();
+    engine.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
 
     // then
-    final Record<WorkflowInstanceRecordValue> record =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.EVENT_OCCURRED).getFirst();
+    final var workflowInstance =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .filterRootScope()
+            .getFirst();
 
-    assertThat(record.getValue()).hasWorkflowKey(workflowKey).hasElementId(EVENT_ID1);
+    final var startEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.START_EVENT)
+            .getFirst();
+
+    Assertions.assertThat(startEvent.getValue())
+        .hasWorkflowKey(workflowInstance.getValue().getWorkflowKey())
+        .hasBpmnProcessId(workflowInstance.getValue().getBpmnProcessId())
+        .hasVersion(workflowInstance.getValue().getVersion())
+        .hasWorkflowInstanceKey(workflowInstance.getKey())
+        .hasFlowScopeKey(workflowInstance.getKey());
   }
 
   @Test
-  public void shouldCreateInstanceOnMessage() {
+  public void shouldCreateNewInstance() {
     // given
-    final Record<DeploymentRecordValue> deploymentRecord =
-        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
-    final long workflowKey = getFirstDeployedWorkflowKey(deploymentRecord);
-
-    // wait until subscription is opened
-    assertThat(
-            messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED)
-                .exists())
-        .isTrue();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
 
     // when
-    engine
-        .message()
-        .withCorrelationKey("order-123")
-        .withName(MESSAGE_NAME1)
-        .withVariables(asMsgPack("foo", "bar"))
-        .publish();
+    engine.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
+
+    final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+    engine.job().withKey(job.getKey()).complete();
 
     // then
-    final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords().limit(5).asList();
-
-    assertThat(records)
-        .extracting(Record::getIntent)
-        .containsExactly(
-            WorkflowInstanceIntent.EVENT_OCCURRED, // message
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // start event
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey);
-
-    assertThat(records.get(3).getValue()).hasElementId(EVENT_ID1);
+    assertThat(RecordingExporter.workflowInstanceRecords().limitToWorkflowInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSequence(
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.EVENT_OCCURRED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETING),
+            tuple(BpmnElementType.START_EVENT, WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
-  public void shouldMergeMessageVariables() {
+  public void shouldCreateNewInstanceWithMessageVariables() {
     // given
-    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
-
-    // wait until subscription is opened
-    assertThat(
-            messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED)
-                .exists())
-        .isTrue();
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
 
     // when
     engine
         .message()
-        .withCorrelationKey("order-123")
-        .withName(MESSAGE_NAME1)
-        .withVariables(asMsgPack("foo", "bar"))
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withName(MESSAGE_NAME_1)
+        .withVariables(Map.of("x", 1, "y", 2))
         .publish();
 
     // then
-    assertThat(RecordingExporter.variableRecords().withName("foo").withValue("\"bar\"").exists())
-        .isTrue();
+    assertThat(RecordingExporter.variableRecords().limit(2))
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
+        .hasSize(2)
+        .contains(tuple("x", "1"), tuple("y", "2"));
   }
 
   @Test
-  public void shouldApplyOutputMappingsOfMessageStartEvent() {
+  public void shouldApplyOutputMappings() {
     // given
     engine
         .deployment()
-        .withXmlResource(createWorkflowWithMessageStartEventOutputMapping())
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.zeebeOutput("x", "y")))
         .deploy();
 
-    // wait until subscription is opened
-    assertThat(
-            messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED)
-                .exists())
-        .isTrue();
-
     // when
     engine
         .message()
-        .withCorrelationKey("order-123")
-        .withName(MESSAGE_NAME1)
-        .withVariables(asMsgPack("foo", "bar"))
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withName(MESSAGE_NAME_1)
+        .withVariables(Map.of("x", 1))
         .publish();
 
     // then
-    assertThat(
-            RecordingExporter.variableRecords().withName("mappedfoo").withValue("\"bar\"").exists())
-        .isTrue();
-  }
-
-  @Test
-  public void shouldCreateInstancesForMultipleMessagesOfSameName() {
-    // given
-    final Record<DeploymentRecordValue> record =
-        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
-
-    final long workflowKey = getFirstDeployedWorkflowKey(record);
-
-    // wait until subscription is opened
-    assertThat(
-            messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED)
-                .exists())
-        .isTrue();
-
-    // when
-    final PublishMessageClient messageClient =
-        engine.message().withName(MESSAGE_NAME1).withVariables(asMsgPack("foo", "bar"));
-
-    messageClient.withCorrelationKey("order-123").publish();
-    messageClient.withCorrelationKey("order-124").publish();
-
-    // then
-
-    // check if two instances are created
-    final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
-            .withElementType(BpmnElementType.PROCESS)
-            .limit(2)
-            .asList();
-
-    assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey);
-
-    final WorkflowInstanceRecordValue recordValue1 = records.get(0).getValue();
-    final WorkflowInstanceRecordValue recordValue2 = records.get(1).getValue();
-
-    assertThat(recordValue1.getWorkflowInstanceKey())
-        .isNotEqualTo(recordValue2.getWorkflowInstanceKey());
-  }
-
-  @Test
-  public void shouldCreateInstancesForDifferentMessages() {
-    // given
-    final Record<DeploymentRecordValue> record =
-        engine.deployment().withXmlResource(createWorkflowWithTwoMessageStartEvent()).deploy();
-
-    final long workflowKey = getFirstDeployedWorkflowKey(record);
-
-    // check if two subscriptions are opened
-    assertThat(
-            messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED)
-                .limit(2)
-                .count())
-        .isEqualTo(2);
-
-    // when
-    final PublishMessageClient messageClient =
-        engine.message().withVariables(asMsgPack("foo", "bar"));
-
-    messageClient.withName(MESSAGE_NAME1).withCorrelationKey("order-123").publish();
-    messageClient.withName(MESSAGE_NAME2).withCorrelationKey("order-124").publish();
-
-    // then
-
-    // check if two instances are created
-    final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETING)
-            .withElementType(BpmnElementType.START_EVENT)
-            .limit(2)
-            .asList();
-
-    assertThat(records.size()).isEqualTo(2);
-    assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey);
-
-    assertThat(records.get(0).getValue())
-        .hasElementId(EVENT_ID1); // Message 1 triggers start event 1
-    assertThat(records.get(1).getValue())
-        .hasElementId(EVENT_ID2); // Message 2 triggers start event 2
-  }
-
-  @Test
-  public void shouldNotCreateInstanceOfOldVersion() {
-    // given
-    engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
-
-    // new version
-    final Record<DeploymentRecordValue> record =
-        engine.deployment().withXmlResource(createWorkflowWithOneMessageStartEvent()).deploy();
-    final long workflowKey2 = getFirstDeployedWorkflowKey(record);
-
-    // wait until second subscription is opened
-    assertThat(
-            messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED)
-                .limit(2)
-                .count())
-        .isEqualTo(2);
-
-    // when
-    engine
-        .message()
-        .withCorrelationKey("order-123")
-        .withName(MESSAGE_NAME1)
-        .withVariables(asMsgPack("foo", "bar"))
-        .publish();
-
-    // then
-    final List<Record<WorkflowInstanceRecordValue>> records =
-        RecordingExporter.workflowInstanceRecords().limit(5).asList();
-
-    assertThat(records.stream().map(Record::getIntent))
-        .containsExactly(
-            WorkflowInstanceIntent.EVENT_OCCURRED, // message
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // workflow instance
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
-            WorkflowInstanceIntent.ELEMENT_ACTIVATING, // start event
-            WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    assertThat(records).allMatch(r -> r.getValue().getWorkflowKey() == workflowKey2);
-  }
-
-  @Test
-  public void shouldNotCorrelateToStartedInstance() {
-    // given
-    // create a workflow with an event based gateway waiting for two messages:
-    //  1. the same message that started the workflow, which should NOT be correlated
-    //  2. another message which can be properly correlated
-    // this slightly heavier example is used to avoid having to wait to ensure the message "msg" is
-    // not correlated twice
-    final var workflow =
-        Bpmn.createExecutableProcess("shouldNotCorrelateToStartedInstance")
-            .startEvent("start")
-            .message(m -> m.name("msg").zeebeCorrelationKey("key"))
-            .eventBasedGateway("gate")
-            .intermediateCatchEvent("catch1")
-            .message(m -> m.name("msg").zeebeCorrelationKey("key"))
-            .endEvent("end1")
-            .moveToLastGateway()
-            .intermediateCatchEvent("catch2")
-            .message(m -> m.name("other").zeebeCorrelationKey("key"))
-            .endEvent("end2")
-            .done();
-
-    // when
-    final var workflowKey =
-        getFirstDeployedWorkflowKey(engine.deployment().withXmlResource(workflow).deploy());
-    engine
-        .message()
-        .withName("msg")
-        .withCorrelationKey("key")
-        .withVariables(Map.of("key", "key"))
-        .publish();
-
-    // then
-    final var gateway =
+    final var workflowInstance =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withWorkflowKey(workflowKey)
-            .withElementId("gate")
-            .findFirst()
-            .get();
+            .filterRootScope()
+            .getFirst();
 
-    // wait until both subscriptions are opened for the gateway
-    assertThat(
-            RecordingExporter.workflowInstanceSubscriptionRecords(
-                    WorkflowInstanceSubscriptionIntent.OPENED)
-                .withWorkflowInstanceKey(gateway.getValue().getWorkflowInstanceKey())
-                .limit(2))
-        .hasSize(2);
+    assertThat(RecordingExporter.variableRecords().withScopeKey(workflowInstance.getKey()).limit(1))
+        .extracting(Record::getValue)
+        .extracting(VariableRecordValue::getName, VariableRecordValue::getValue)
+        .contains(tuple("y", "1"));
+  }
 
-    engine.message().withName("other").withCorrelationKey("key").publish();
-    assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .limitToWorkflowInstanceCompleted()
-                .withElementId("end2")
-                .withWorkflowInstanceKey(gateway.getValue().getWorkflowInstanceKey()))
-        .hasSize(1);
+  @Test
+  public void shouldCreateInstanceOfLatestVersion() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.id("v1")))
+        .deploy();
+
+    engine
+        .deployment()
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.id("v2")))
+        .deploy();
+
+    // when
+    engine.message().withCorrelationKey(CORRELATION_KEY_1).withName(MESSAGE_NAME_1).publish();
+
+    // then
+    final var startEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.START_EVENT)
+            .getFirst();
+
+    Assertions.assertThat(startEvent.getValue()).hasElementId("v2");
+  }
+
+  @Test
+  public void shouldCreateNewInstanceWithMultipleStartEvents() {
+    // given
+    engine.deployment().withXmlResource(MULTIPLE_START_EVENTS).deploy();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_2)
+        .withCorrelationKey(CORRELATION_KEY_2)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,2] to be correlated")
+        .containsExactly("1", "2");
   }
 
   @Test
   public void shouldTriggerOnlyMessageStartEvent() {
     // given
-    final var processBuilder = Bpmn.createExecutableProcess("process");
-    processBuilder.startEvent("none-start").endEvent();
-    processBuilder.startEvent("message-start").message(MESSAGE_NAME1).endEvent();
-    processBuilder.startEvent("timer-start").timerWithCycle("R/PT1H").endEvent();
+    final var process = Bpmn.createExecutableProcess("process");
+    process.startEvent("none-start").endEvent();
+    process.startEvent("message-start").message(MESSAGE_NAME_1).endEvent();
+    process.startEvent("timer-start").timerWithCycle("R/PT1H").endEvent();
 
-    engine.deployment().withXmlResource(processBuilder.done()).deploy();
+    engine.deployment().withXmlResource(process.done()).deploy();
 
     // when
-    messageStartEventSubscriptionRecords(MessageStartEventSubscriptionIntent.OPENED).await();
-
-    engine.message().withCorrelationKey("order-123").withName(MESSAGE_NAME1).publish();
+    engine.message().withName(MESSAGE_NAME_1).withCorrelationKey(CORRELATION_KEY_1).publish();
 
     // then
     assertThat(
@@ -361,16 +235,16 @@ public class MessageStartEventTest {
   }
 
   @Test
-  public void shouldCorrelateMessageOnlyToCreatedInstanceIfExists() {
+  public void shouldNotCorrelateSameMessageToCreatedInstance() {
     // given
     engine
         .deployment()
         .withXmlResource(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .message("message")
+            Bpmn.createExecutableProcess("wf")
+                .startEvent()
+                .message(MESSAGE_NAME_1)
                 .intermediateCatchEvent(
-                    "catch", c -> c.message(m -> m.name("message").zeebeCorrelationKey("key")))
+                    "catch", e -> e.message(m -> m.name(MESSAGE_NAME_1).zeebeCorrelationKey("key")))
                 .endEvent()
                 .done())
         .deploy();
@@ -378,56 +252,458 @@ public class MessageStartEventTest {
     // when
     engine
         .message()
-        .withName("message")
-        .withCorrelationKey("order-123")
-        .withVariables(Map.of("key", "order-123"))
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("key", CORRELATION_KEY_1, "x", 1))
         .publish();
 
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED).await();
 
+    final var message2 =
+        engine
+            .message()
+            .withName(MESSAGE_NAME_1)
+            .withCorrelationKey(CORRELATION_KEY_1)
+            .withVariables(Map.of("x", 2))
+            .publish();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,2] to be correlated")
+        .containsExactly("1", "2");
+
+    final var subscription =
+        RecordingExporter.workflowInstanceSubscriptionRecords(
+                WorkflowInstanceSubscriptionIntent.CORRELATED)
+            .getFirst();
+
+    Assertions.assertThat(subscription.getValue()).hasMessageKey(message2.getKey());
+  }
+
+  @Test
+  public void shouldCreateMultipleInstancesIfCorrelationKeyIsEmpty() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+
     engine
         .message()
-        .withName("message")
-        .withCorrelationKey("order-123")
-        .withVariables(Map.of("key", "order-123"))
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey("")
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED).await();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey("")
+        .withVariables(Map.of("x", 2))
         .publish();
 
     // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,2] to be correlated")
+        .containsExactly("1", "2");
+  }
+
+  @Test
+  public void shouldCreateOnlyOneInstancePerCorrelationKey() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED).await();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_2)
+        .withVariables(Map.of("x", 3))
+        .publish();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,3] to be correlated")
+        .containsExactly("1", "3");
+  }
+
+  @Test
+  public void shouldNotCreateInstanceForDifferentVersion() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.id("v1")))
+        .deploy();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED).await();
+
+    engine
+        .deployment()
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.id("v2")))
+        .deploy();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_2)
+        .withVariables(Map.of("x", 3))
+        .publish();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,3] to be correlated")
+        .containsExactly("1", "3");
+  }
+
+  @Test
+  public void shouldCreateNewInstanceAfterCompletion() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+    engine.job().withKey(job.getKey()).complete();
+
+    RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+        .withWorkflowInstanceKey(job.getValue().getWorkflowInstanceKey())
+        .filterRootScope()
+        .await();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,2] to be correlated")
+        .containsExactly("1", "2");
+  }
+
+  @Test
+  public void shouldCreateNewInstanceAfterTermination() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    engine.workflowInstance().withInstanceKey(job.getValue().getWorkflowInstanceKey()).cancel();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,2] to be correlated")
+        .containsExactly("1", "2");
+  }
+
+  @Test
+  public void shouldCreateNewInstanceForBufferedMessageAfterCompletion() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    final var job1 = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 3))
+        .publish();
+
+    engine.job().withKey(job1.getKey()).complete();
+
+    final var job2 = RecordingExporter.jobRecords(JobIntent.CREATED).skip(1).getFirst();
+    engine.job().withKey(job2.getKey()).complete();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(3))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,2,3] to be correlated")
+        .containsExactly("1", "2", "3");
+  }
+
+  @Test
+  public void shouldCreateNewInstanceForBufferedMessageAfterTermination() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    final var job1 = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 3))
+        .publish();
+
+    engine.workflowInstance().withInstanceKey(job1.getValue().getWorkflowInstanceKey()).cancel();
+
+    final var job2 = RecordingExporter.jobRecords(JobIntent.CREATED).skip(1).getFirst();
+    engine.workflowInstance().withInstanceKey(job2.getValue().getWorkflowInstanceKey()).cancel();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(3))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,2,3] to be correlated")
+        .containsExactly("1", "2", "3");
+  }
+
+  @Test
+  public void shouldCreateNewInstanceOfLatestWorkflowVersionForBufferedMessage() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.id("v1")))
+        .deploy();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    engine
+        .deployment()
+        .withXmlResource(singleStartEvent(startEvent -> startEvent.id("v2")))
+        .deploy();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    engine.job().withKey(job.getKey()).complete();
+
+    // then
     assertThat(
-            RecordingExporter.workflowInstanceRecords()
-                .limitToWorkflowInstanceCompleted()
-                .withIntent(WorkflowInstanceIntent.EVENT_OCCURRED))
-        .extracting(r -> r.getValue().getBpmnElementType())
-        .hasSize(2)
-        .containsExactly(BpmnElementType.START_EVENT, BpmnElementType.INTERMEDIATE_CATCH_EVENT);
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.START_EVENT)
+                .limit(2))
+        .extracting(r -> r.getValue().getElementId())
+        .containsExactly("v1", "v2");
   }
 
-  private static BpmnModelInstance createWorkflowWithOneMessageStartEvent() {
-    return Bpmn.createExecutableProcess("processId")
-        .startEvent(EVENT_ID1)
-        .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
-        .endEvent()
-        .done();
+  @Test
+  public void shouldNotCreateNewInstanceForBufferedMessageAfterTTL() {
+    // given
+    engine.deployment().withXmlResource(SINGLE_START_EVENT).deploy();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    final var messageTTL = Duration.ofSeconds(1);
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .withTimeToLive(messageTTL)
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 3))
+        .withTimeToLive(messageTTL.multipliedBy(2))
+        .publish();
+
+    // when
+    final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    engine.getClock().addTime(messageTTL);
+
+    engine.job().withKey(job.getKey()).complete();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,3] to be correlated")
+        .containsExactly("1", "3");
   }
 
-  private static BpmnModelInstance createWorkflowWithTwoMessageStartEvent() {
-    final ProcessBuilder process = Bpmn.createExecutableProcess("processId");
-    process.startEvent(EVENT_ID1).message(m -> m.name(MESSAGE_NAME1).id("startmsgId1")).endEvent();
-    process.startEvent(EVENT_ID2).message(m -> m.name(MESSAGE_NAME2).id("startmsgId2")).endEvent();
+  @Test
+  public void shouldCreateOnlyOneInstancePerCorrelationKeyWithMultipleStartEvents() {
+    // given
+    engine.deployment().withXmlResource(MULTIPLE_START_EVENTS).deploy();
 
-    return process.done();
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED).await();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_2)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_2)
+        .withVariables(Map.of("x", 3))
+        .publish();
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(2))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,3] to be correlated")
+        .containsExactly("1", "3");
   }
 
-  private static BpmnModelInstance createWorkflowWithMessageStartEventOutputMapping() {
-    return Bpmn.createExecutableProcess("processId")
-        .startEvent(EVENT_ID1)
-        .zeebeOutput("foo", "mappedfoo")
-        .message(m -> m.name(MESSAGE_NAME1).id("startmsgId"))
-        .endEvent()
-        .done();
-  }
+  @Test
+  public void shouldCreateNewInstanceForBufferedMessageWithMultipleStartEvents() {
+    // given
+    engine.deployment().withXmlResource(MULTIPLE_START_EVENTS).deploy();
 
-  private long getFirstDeployedWorkflowKey(final Record<DeploymentRecordValue> deploymentRecord) {
-    return deploymentRecord.getValue().getDeployedWorkflows().get(0).getWorkflowKey();
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 1))
+        .publish();
+
+    // when
+    engine
+        .message()
+        .withName(MESSAGE_NAME_2)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 2))
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_1)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 3))
+        .publish();
+
+    engine
+        .message()
+        .withName(MESSAGE_NAME_2)
+        .withCorrelationKey(CORRELATION_KEY_1)
+        .withVariables(Map.of("x", 4))
+        .publish();
+
+    IntStream.range(0, 4)
+        .forEach(
+            j -> {
+              final var job = RecordingExporter.jobRecords(JobIntent.CREATED).skip(j).getFirst();
+              engine.job().withKey(job.getKey()).complete();
+            });
+
+    // then
+    assertThat(RecordingExporter.variableRecords().withName("x").limit(4))
+        .extracting(r -> r.getValue().getValue())
+        .describedAs("Expected messages [1,2,3,4] to be correlated")
+        .containsExactly("1", "2", "3", "4");
   }
 }

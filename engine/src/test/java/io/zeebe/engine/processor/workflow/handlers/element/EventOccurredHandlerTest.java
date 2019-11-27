@@ -30,7 +30,7 @@ public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableF
   }
 
   @Override
-  protected ElementInstance createAndSetContextElementInstance(WorkflowInstanceIntent state) {
+  protected ElementInstance createAndSetContextElementInstance(final WorkflowInstanceIntent state) {
     final ElementInstance instance = super.createAndSetContextElementInstance(state);
     return instance;
   }
@@ -63,20 +63,6 @@ public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableF
       instance.getValue().setWorkflowInstanceKey(zeebeStateRule.getKeyGenerator().nextKey());
 
       Assertions.assertThat(handler.shouldHandleState(context)).isFalse();
-    }
-  }
-
-  @Test
-  public void shouldHandleStateIfElementHasNoWorkflowInstance() {
-    // given
-    final Set<WorkflowInstanceIntent> inactiveStates =
-        EnumSet.complementOf(EnumSet.of(WorkflowInstanceIntent.ELEMENT_ACTIVATED));
-
-    // when - then
-    for (final WorkflowInstanceIntent inactiveState : inactiveStates) {
-      createAndSetContextElementInstance(inactiveState);
-
-      Assertions.assertThat(handler.shouldHandleState(context)).isTrue();
     }
   }
 

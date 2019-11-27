@@ -16,12 +16,16 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 public class ProcessTerminatedHandler
     extends ElementTerminatedHandler<ExecutableFlowElementContainer> {
 
-  public ProcessTerminatedHandler(IncidentResolver incidentResolver) {
+  private final WorkflowPostProcessor postProcessor;
+
+  public ProcessTerminatedHandler(
+      final IncidentResolver incidentResolver, final WorkflowPostProcessor postProcessor) {
     super(incidentResolver);
+    this.postProcessor = postProcessor;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<ExecutableFlowElementContainer> context) {
+  protected boolean handleState(final BpmnStepContext<ExecutableFlowElementContainer> context) {
     if (!super.handleState(context)) {
       return false;
     }
@@ -47,6 +51,8 @@ public class ProcessTerminatedHandler
                 parentElementInstance.getValue());
       }
     }
+
+    postProcessor.accept(context);
 
     return true;
   }
