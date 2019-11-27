@@ -9,7 +9,6 @@ package io.zeebe.logstreams.spi;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.CompletableFuture;
 
 /** Log structured storage abstraction */
 public interface LogStorage {
@@ -48,28 +47,18 @@ public interface LogStorage {
    * Writes a block containing one or multiple log entries in the storage and returns the address at
    * which the block has been written.
    *
-   * <p>Storage implementations must guarantee eventually atomicity. When this method returns,
+   * <p>Storage implementations must guarantee eventually atomicity. When this method completes,
    * either all the bytes must be written or none at all.
    *
    * <p>The caller of this method must guarantee that the provided block contains unfragmented log
    * entries.
    *
+   * @param lowestPosition the lowest record position of all records in the block buffer
+   * @param highestPosition the highest record position of all records in the block buffer
    * @param blockBuffer the buffer containing a block of log entries to be written into storage
-   * @return the address at which the block has been written or error status code
-   * @throws IOException on I/O error during the append operation
-   * @throws IllegalArgumentException when block size is to large
-   * @throws IllegalStateException when logstorage was not opened and not initialized
    */
-  long append(ByteBuffer blockBuffer) throws IOException;
-
-  default CompletableFuture<Long> appendAsync(
-      final long lowestPosition, final long highestPosition, final ByteBuffer blockBuffer) {
-    try {
-      return CompletableFuture.completedFuture(append(blockBuffer));
-    } catch (final IOException e) {
-      return CompletableFuture.failedFuture(e);
-    }
-  }
+  void append(
+      long lowestPosition, long highestPosition, ByteBuffer blockBuffer, AppendListener listener);
 
   /**
    * Deletes from the log storage, uses the given address as upper limit.
@@ -95,10 +84,46 @@ public interface LogStorage {
 
   /**
    * Flushes all appended blocks to ensure that all blocks are written completely. Note that a
-   * storage implementation may do nothing if {@link #append(ByteBuffer)} guarantees that all blocks
-   * are written immediately.
+   * storage implementation may do nothing if {@link #append(long, long, ByteBuffer, AppendListener)} guarantees
+   * that all blocks are written immediately.
    *
    * @throws Exception if fails to flush all blocks
    */
   void flush() throws Exception;
+
+  /**
+   * An append listener can be added to an append call to be notified of different events that can
+   * occur during the append operation.
+   */
+  interface AppendListener {
+
+    /**
+     * Called when the entry has been successfully written to the local storage.
+     *
+     * @param address the address of the written entry
+     */
+    void onWrite(long address);
+
+    /**
+     * Called when an error occurred while writing to the entry.
+     *
+     * @param error the error that occurred
+     */
+    void onWriteError(Throwable error);
+
+    /**
+     * Called when the entry has been successfully committed.
+     *
+     * @param address the address of the committed entry
+     */
+    void onCommit(long address);
+
+    /**
+     * Called when an error occurs while committing an entry.
+     *
+     * @param address the address of the entry to be committed
+     * @param error the error that occurred
+     */
+    void onCommitError(long address, Throwable error);
+  }
 }

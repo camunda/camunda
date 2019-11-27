@@ -7,13 +7,10 @@
  */
 package io.zeebe.logstreams.storage.atomix;
 
-import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.NoSuchElementException;
-import java.util.concurrent.CompletableFuture;
 
 public class AtomixLogStorage implements LogStorage {
   private final AtomixReaderFactory readerFactory;
@@ -37,23 +34,21 @@ public class AtomixLogStorage implements LogStorage {
   }
 
   @Override
-  public long append(final ByteBuffer blockBuffer) throws IOException {
-    throw new UnsupportedOperationException("Not supported");
-  }
+  public void append(
+      final long lowestPosition,
+      final long highestPosition,
+      final ByteBuffer buffer,
+      final AppendListener listener) {
+    final var maybeAppender = appenderSupplier.getAppender();
 
-  @Override
-  public CompletableFuture<Long> appendAsync(
-      final long lowestPosition, final long highestPosition, final ByteBuffer buffer) {
-    final var appender = appenderSupplier.getAppender();
-
-    if (appender.isPresent()) {
-      return appender
-          .get()
-          .appendEntry(lowestPosition, highestPosition, buffer)
-          .thenApply(Indexed::index);
+    if (maybeAppender.isPresent()) {
+      final var appender = maybeAppender.get();
+      final var adapter = new AtomixAppendListenerAdapter(listener);
+      appender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
+    } else {
+      // todo: better error message
+      listener.onWriteError(new NoSuchElementException());
     }
-
-    return CompletableFuture.failedFuture(new NoSuchElementException());
   }
 
   @Override

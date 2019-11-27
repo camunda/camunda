@@ -86,21 +86,22 @@ public class AtomixLogStorageRule extends ExternalResource
   }
 
   @Override
-  public CompletableFuture<Indexed<ZeebeEntry>> appendEntry(
-      final long lowestPosition, final long highestPosition, final ByteBuffer data) {
+  public void appendEntry(
+      final long lowestPosition, final long highestPosition, final ByteBuffer data, final AppendListener listener) {
     final Indexed<ZeebeEntry> entry =
         raftLog
             .writer()
             .append(
                 new ZeebeEntry(
                     0, System.currentTimeMillis(), lowestPosition, highestPosition, data));
+    listener.onWrite(entry);
     raftLog.writer().commit(entry.index());
 
     if (positionListener != null) {
       positionListener.accept(findGreatestPosition(entry));
     }
 
-    return CompletableFuture.completedFuture(entry);
+    listener.onCommit(entry);
   }
 
   @Override

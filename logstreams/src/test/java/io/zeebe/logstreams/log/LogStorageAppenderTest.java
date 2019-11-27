@@ -7,94 +7,140 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.logstreams.util.LogStreamReaderRule;
-import io.zeebe.logstreams.util.LogStreamRule;
-import io.zeebe.logstreams.util.LogStreamWriterRule;
-import java.util.concurrent.atomic.AtomicBoolean;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.ByteValue;
+import io.zeebe.util.exception.UncheckedExecutionException;
+import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TemporaryFolder;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 public class LogStorageAppenderTest {
-  private static final DirectBuffer EVENT = wrapString("FOO");
+  private static ByteValue maxFragmentSize = ByteValue.ofMegabytes(4);
 
-  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
 
-  private final LogStreamRule logStreamRule = LogStreamRule.startByDefault(temporaryFolder);
-
-  private final LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
-  private final LogStreamReaderRule reader = new LogStreamReaderRule(logStreamRule);
-
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(temporaryFolder).around(logStreamRule).around(reader).around(writer);
-
-  private LogStream logStream;
-  private LogStorage logStorageSpy;
+  private LogStorage logStorageMock;
+  private LogStorageAppender appender;
+  private LogStreamWriterImpl writer;
 
   @Before
   public void setup() {
-    logStream = logStreamRule.getLogStream();
-    logStorageSpy = logStream.getLogStorage();
+    logStorageMock = mock(LogStorage.class);
+
+    when(logStorageMock.append(anyLong(), anyLong(), any(), any())
+    when(primitiveMock.asyncAppend(anyLong(), any(byte[].class), anyLong()))
+      .thenReturn(CompletableFuture.completedFuture(1L));
+
+    final Dispatcher dispatcher =
+      Dispatchers.create("dispatcher")
+        .maxFragmentLength(maxFragmentSize)
+        .initialPartitionId(1)
+        .actorScheduler(schedulerRule.get())
+        .build();
+    final Subscription subscription = dispatcher.openSubscription("subscription");
+    appender =
+      new LogStorageAppender(
+        "appender", 1, logStorageMock, subscription, (int) maxFragmentSize.toBytes());
+
+    final LogStream logStream = mock(LogStream.class);
+    when(logStream.getPartitionId()).thenReturn(1);
+    when(logStream.getWriteBuffer()).thenReturn(dispatcher);
+    writer = new LogStreamWriterImpl(logStream);
+  }
+
+  public long writeEvent(final String message) {
+    final AtomicLong writePosition = new AtomicLong();
+    final DirectBuffer value = wrapString(message);
+
+    TestUtil.doRepeatedly(
+      () -> writer.value(value).tryWrite())
+      .until(
+        position -> {
+          if (position != null && position >= 0) {
+            writePosition.set(position);
+            return true;
+          } else {
+            return false;
+          }
+        },
+        "Failed to write event with message {}",
+        message);
+    return writePosition.get();
   }
 
   @Test
-  public void shouldAppendEvents() {
-    writer.writeEvents(10, EVENT);
+  public void shouldAppend() {
+    // given
+    schedulerRule.submitActor(appender).join();
 
-    reader.assertEvents(10, EVENT);
-  }
-
-  @Test
-  public void shouldUpdateAppenderPosition() {
-    final LogStorageAppender storageAppender = logStream.getLogStorageAppender();
-    final long positionBefore = storageAppender.getCurrentAppenderPosition();
-
-    writer.writeEvent(EVENT);
-
-    waitUntil(() -> storageAppender.getCurrentAppenderPosition() > positionBefore);
-  }
-
-  @Test
-  @Ignore // TODO: handle failures in append
-  public void shouldDiscardEventsIfFailToAppend() throws Exception {
-    final Subscription subscription = logStream.getWriteBuffer().openSubscription("test");
-
-    final LogStorageAppender logStorageAppender = logStream.getLogStorageAppender();
-    final long positionBefore = logStorageAppender.getCurrentAppenderPosition();
-
-    doReturn(-1L).when(logStorageSpy).append(any());
-
-    // when log storage append fails
-    writer.writeEvent(EVENT);
+    // when
+    writeEvent("msg");
 
     // then
-    waitUntil(() -> logStorageAppender.getCurrentAppenderPosition() > positionBefore);
+    verify(logStorageMock, timeout(1000)).append(eq(1L), eq(1L), any(ByteBuffer.class), any());
+  }
 
-    assertThat(logStorageAppender.isFailed()).isTrue();
+  @Test
+  public void shouldRetryOnError() {
+    // given
+    when(primitiveMock.asyncAppend(anyLong(), any(byte[].class), anyLong()))
+      .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed to append!")))
+      .thenReturn(CompletableFuture.completedFuture(1L));
+    schedulerRule.submitActor(appender).join();
 
-    // verify that the segment is marked as failed
-    final AtomicBoolean fragmentIsFailed = new AtomicBoolean();
-    subscription.poll(
-        (buffer, offset, length, streamId, isMarkedFailed) -> {
-          fragmentIsFailed.set(isMarkedFailed);
-          return 0;
-        },
-        1);
+    // when
+    writeEvent("msg");
 
-    assertThat(fragmentIsFailed).isTrue();
+    // then
+    verify(primitiveMock, timeout(1000).times(2)).asyncAppend(eq(1L), any(byte[].class), anyLong());
+  }
+
+  @Test
+  public void shouldAppendNextEventsAfterRetrySuccess() {
+    // given
+    final CompletableFuture firstAttempt = new CompletableFuture();
+    final CompletableFuture secondAttempt = new CompletableFuture();
+    final CompletableFuture thirdAttempt = new CompletableFuture();
+
+    when(primitiveMock.asyncAppend(anyLong(), any(byte[].class), anyLong()))
+      .thenReturn(firstAttempt)
+      .thenReturn(secondAttempt)
+      .thenReturn(thirdAttempt);
+    schedulerRule.submitActor(appender).join();
+
+    // when
+    writeEvent("retried-msg");
+    firstAttempt.complete(-1L);
+    verify(primitiveMock, timeout(1000).times(2)).asyncAppend(eq(1L), any(byte[].class), anyLong());
+    writeEvent("blocked-msg");
+    secondAttempt.complete(-1L);
+    verify(primitiveMock, timeout(1000).times(3)).asyncAppend(eq(1L), any(byte[].class), anyLong());
+    thirdAttempt.complete(1L);
+
+    // then
+    verify(primitiveMock, timeout(1000).times(1)).asyncAppend(eq(2L), any(byte[].class), anyLong());
   }
 }
