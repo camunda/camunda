@@ -108,7 +108,7 @@ public class LogStorageAppender extends Actor {
     appendBackpressureMetrics.newEntryToAppend();
     if (appendEntryLimiter.tryAcquire(positions.highest)) {
       currentInFlightBytes += bytes;
-      appendToPrimitive(copiedBuffer, positions);
+      appendToStorage(copiedBuffer, positions);
       blockPeek.markCompleted();
     } else {
       appendBackpressureMetrics.deferred();
@@ -121,7 +121,7 @@ public class LogStorageAppender extends Actor {
     }
   }
 
-  private void appendToPrimitive(final ByteBuffer bytesToAppend, final Positions positions) {
+  private void appendToStorage(final ByteBuffer bytesToAppend, final Positions positions) {
     actor.submit(
         () -> {
           final var length = bytesToAppend.remaining();
@@ -133,7 +133,7 @@ public class LogStorageAppender extends Actor {
                       LOG.error(
                           "Failed to append block with last event position {}, retry.",
                           positions.highest);
-                      appendToPrimitive(bytesToAppend, positions);
+                      appendToStorage(bytesToAppend, positions);
                     } else {
                       actor.run(
                           () -> {

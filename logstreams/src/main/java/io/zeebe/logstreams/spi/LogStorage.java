@@ -38,12 +38,6 @@ public interface LogStorage {
   long OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY = -3L;
 
   /**
-   * Status code returned by the {@link #append(ByteBuffer)} operation in case the provided block is
-   * too big to write in the storage.
-   */
-  long OP_RESULT_BLOCK_SIZE_TOO_BIG = -4L;
-
-  /**
    * Creates a new reader initialized at the given address.
    *
    * @return a new stateful storage reader

@@ -51,14 +51,6 @@ public interface LogStream extends AutoCloseable {
   void setCommitPosition(long position);
 
   /**
-   * Appends the given block of events to the logstream and updates the commit position.
-   *
-   * @param commitPosition the new commit position (position of the last event in the given buffer)
-   * @param buffer the events to append
-   */
-  long append(long commitPosition, ByteBuffer buffer);
-
-  /**
    * Returns the log storage, which is accessed by the LogStream.
    *
    * @return the log storage

@@ -139,28 +139,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
-  public long append(final long commitPosition, final ByteBuffer buffer) {
-    long appendResult = -1;
-    boolean notAppended = true;
-    do {
-      try {
-        appendResult = logStorage.append(buffer);
-        notAppended = false;
-      } catch (final IOException ioe) {
-        // we want to retry the append
-        // we avoid recursion, otherwise we can get stack overflow exceptions
-        LOG.error(
-            "Expected to append new buffer, but caught IOException. Will retry this operation.",
-            ioe);
-      }
-    } while (notAppended);
-
-    setCommitPosition(commitPosition);
-
-    return appendResult;
-  }
-
-  @Override
   public LogStorage getLogStorage() {
     return logStorage;
   }
