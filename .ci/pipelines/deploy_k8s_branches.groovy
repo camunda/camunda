@@ -173,11 +173,14 @@ pipeline {
             sh("""
               kubectl -n optimize-stage rollout status deployment/stage-optimize-camunda-cloud --watch=true
               kubectl -n optimize-stage port-forward deployment/stage-optimize-camunda-cloud 8090:8090 &
+              while ! nc -z -w 3 localhost 8090; do
+                sleep 5
+              done
               curl -X PUT \
                 http://localhost:8090/api/ingestion/event/batch \
                 -H 'Content-Type: application/json' \
                 -H 'X-Optimize-API-Secret: secret' \
-                --data "@.client/demo-data/eventIngestionBatch.json"
+                --data "@${WORKSPACE}/optimize/client/demo-data/eventIngestionBatch.json"
             """)
           }
         }
