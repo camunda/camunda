@@ -5,6 +5,7 @@
  */
 
 import fetch from 'node-fetch';
+import dedent from 'dedent';
 
 import config from './config';
 import license from './license';
@@ -17,6 +18,40 @@ export async function ensureLicense() {
       body: license
     });
   }
+}
+
+export async function ensureWhatsNewSeenIsSetToSeenForAllUsers() {
+  const countResponse = await fetch(config.elasticSearchEndpoint + '/optimize-onboarding-state/_doc/_count');
+  const countJsonResponse = await countResponse.json();
+  if (countJsonResponse.count === 0) {
+    const userIndexRequests = [];
+    Object.values(config.users).forEach(usersPerBrowser =>
+      usersPerBrowser.forEach(userSet =>
+        Object.values(userSet).forEach(({username}) => {
+          userIndexRequests.push(dedent(
+           `{ "index" : { "_index" : "optimize-onboarding-state", "_id" : "${username}:whatsnew" } }
+            { "id" : "${username}:whatsnew", "userId": "${username}", "key": "whatsnew", "seen": true }`
+          ));
+        })
+      )
+    );
+    // there needs to be a final new line to finish the batch body
+    const batchBody = userIndexRequests.join('\n') + '\n';
+    const batchResponse = await fetch(config.elasticSearchEndpoint + '/optimize-onboarding-state/_doc/_bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-ndjson' },
+      body: batchBody
+    });
+    if (!batchResponse.ok) {
+      console.error('Failed to set whatsnew seen state for test users.');
+      console.error(await batchResponse.text())
+    }
+  }
+}
+
+export async function beforeAllTests() {
+  await ensureLicense();
+  await ensureWhatsNewSeenIsSetToSeenForAllUsers();
 }
 
 async function getSession(user) {

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ensureLicense, cleanEntities} from '../setup';
+import {beforeAllTests, cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 
@@ -12,7 +12,7 @@ import * as e from './Dashboard.elements.js';
 
 fixture('Dashboard')
   .page(config.endpoint)
-  .before(ensureLicense)
+  .before(beforeAllTests)
   .beforeEach(u.login)
   .afterEach(cleanEntities);
 

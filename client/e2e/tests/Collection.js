@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ensureLicense, cleanEntities} from '../setup';
+import {beforeAllTests, cleanEntities} from '../setup';
 import config from '../config';
 import {login, save, getUser} from '../utils';
 
@@ -14,7 +14,7 @@ import * as e from './Collection.elements.js';
 
 fixture('Collection')
   .page(config.endpoint)
-  .before(ensureLicense)
+  .before(beforeAllTests)
   .beforeEach(login)
   .afterEach(cleanEntities);
 

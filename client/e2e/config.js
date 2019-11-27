@@ -6,6 +6,7 @@
 
 export default {
   endpoint: 'http://localhost:3000',
+  elasticSearchEndpoint: 'http://localhost:9200',
   users: {
     Chrome: [
       {

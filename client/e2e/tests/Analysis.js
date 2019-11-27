@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {ensureLicense, cleanEntities} from '../setup';
+import {beforeAllTests, cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
 import {addAnnotation, clearAllAnnotations} from '../browserMagic';
@@ -13,7 +13,7 @@ import * as Analysis from './Analysis.elements.js';
 
 fixture('Process Analysis')
   .page(config.endpoint)
-  .before(ensureLicense)
+  .before(beforeAllTests)
   .beforeEach(u.login)
   .afterEach(cleanEntities);
 
