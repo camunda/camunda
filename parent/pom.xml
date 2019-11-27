@@ -41,7 +41,7 @@
     <version.animal-sniffer>1.18</version.animal-sniffer>
     <version.assertj>3.14.0</version.assertj>
     <version.atomix>3.2.0-SNAPSHOT</version.atomix>
-    <version.camunda>7.10.0</version.camunda>
+    <version.camunda>7.11.0</version.camunda>
     <version.commons-lang>3.9</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -67,7 +67,7 @@
     <version.netty-tcnative>2.0.27.Final</version.netty-tcnative>
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.8.0</version.prometheus>
-    <version.protobuf>3.10.0</version.protobuf>
+    <version.protobuf>3.11.0</version.protobuf>
     <version.rocksdbjni>6.4.6</version.rocksdbjni>
     <version.sbe>1.15.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
