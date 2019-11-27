@@ -1,12 +1,25 @@
-## German title
+## Kopieren einer Sammlung
 
-German text
+Ein Benutzer mit Manager Rolle für eine Sammlung kann diese ab sofort kopieren.
 
-## Another German title
+## Datenquellen für Sammlungen
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. Consetetur sadipcing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat. At vero eos et accusam et justo duo dolores et ea rebum. 
+Um Sammlungen auf bestimme Prozess- und/oder Entscheidungsdefinitionen fokussiert zu halten,
+wurden Datenquellen für Sammlungen eingeführt.
+Es ist ab sofort notwendig zuerst eine Definition als Datenquelle einer Sammlung zu konfigurieren, bevor
+diese in einem Bericht der Sammlung genutzt werden kann.
 
-## Last Chapter here
+## Alarme nur innerhalb von Sammlungen
 
-Dolore magna aliquyam erat. At vero eos et accusam et justo duo dolores et ea rebum. 
-More details on [docs.camunda.org/optimize/latest/](http://docs.camunda.org/optimize/latest/)
+Alarme sind ab sofort Teil von Sammlungen. Alarme für bereits existierende Berichte
+die zu keiner Sammlung gehörten wurden in eine `Alert Archive` Sammlung für den jeweiligen Ersteller des Berichts
+migriert.
+
+## Wartend oder in Ausführung Prozesskontenfilter
+
+Neben `wurde ausgeführt` und `wurde nicht ausgeführt` gibt es jetzt die Möglichkeit in Prozessberichten nach Prozessknoten
+`wartend oder in Ausführung` zu filtern.
+
+## Prozessinstanz Laufzeit in Rohdaten Prozessberichten
+
+Rohdaten Prozessberichte enthalten eine neue Spalte in der die Laufzeit der jeweiligen Prozessinstanz angezeigt wird.

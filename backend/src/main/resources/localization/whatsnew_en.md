@@ -1,19 +1,24 @@
-## Organize data with Collections
+## Copying a Collection
 
-Now collections are no longer only a list of grouped objects but own pages to organize Dashboards and Reports by topic, region, data or your specific need.
+A user with the Manager Role on a particular collection can now create a copy of that Collection.
 
-## Give role-based access to Collections
+## Data Sources for Collections
 
-Collections are offering a way to share and collaborate insights by mapping users and user groups to it. Set the role Viewer, Editor or Manager to give specific access rights.
+In order to keep your Collections focused on particular process and/or decision definitions the concept of Collection
+Data Sources was introduced. It is now required to first define the Data Sources of a collection before definitions
+can be selected in the report builder.
 
-- Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore
-- Dolore magna aliquyam erat, sed diam voluptua
+## Alerts only inside Collections
 
-## Another headline
+Alerts are now a part of a Collection. So you can only see and create Alerts inside a collection.
+Existing alerts that were associated with a Report that didn't reside within a Collection are migrated to an
+`Alert Archive` Collection that is created for each user that owned such alerts.
 
-Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. Consetetur sadipcing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat. At vero eos et accusam et justo duo dolores et ea rebum. 
+## Pending or Executing Flow Node Filter
 
-## Last chapter here
+Besides `was executed` and `was not executed` there is now the possibility to filter for `pending or executing` flow nodes
+in a Process Report. 
 
-Dolore magna aliquyam erat. At vero eos et accusam et justo duo dolores et ea rebum. 
-More details on [docs.camunda.org/optimize/latest/](http://docs.camunda.org/optimize/latest/)
+## Process Instance Duration column for Raw Data Process Reports
+
+In Raw Data Process Reports a new column was added that shows the duration of that particular process instance.
