@@ -71,7 +71,7 @@ public class ValidationTest {
 	public void testImportPositions() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("import-position");
 		List<ImportPositionEntity> importPositions = getEntitiesFor("import-position", ImportPositionEntity.class);
-		assertThat(importPositions.size()).isEqualTo(10);
+		assertThat(importPositions.isEmpty()).describedAs("There should exists at least 1 ImportPosition").isTrue();
 	}
 	
 	@Test
