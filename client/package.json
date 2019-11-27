@@ -47,6 +47,7 @@
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
+    "restart-backend": "curl http://localhost:8100/api/restartBackend",
     "dependencies": "node scripts/dependencies.js"
   },
   "husky": {

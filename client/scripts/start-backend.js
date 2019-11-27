@@ -21,6 +21,10 @@ const ciMode = process.argv.indexOf('ci') > -1;
 let engineDataGenerationComplete = ciMode;
 let eventIngestionComplete = false;
 
+let backendProcess;
+let buildBackendProcess;
+let dockerProcess;
+
 fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) => {
   xml2js.parseString(data, {explicitArray: false}, (err, data) => {
     if (err) {
@@ -34,13 +38,23 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     startManagementServer();
 
+    function buildAndStartOptimize() {
+      buildBackend().then(() => {
+        if (!dockerProcess) {
+          startDocker().then(generateDemoData);
+        }
+        startBackend().then(ingestEventData).catch(() => {
+          console.log("Optimize process killed, restarting...")
+        });
+      }).catch(() => {
+        console.log("Optimize build interrupted")
+      });
+    }
+
     if (ciMode) {
       startBackend().then(ingestEventData);
     } else {
-      buildBackend().then(() => {
-        startDocker().then(generateDemoData);
-        startBackend().then(ingestEventData);
-      });
+      buildAndStartOptimize();
     }
 
     const logs = {
@@ -53,7 +67,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     function buildBackend() {
       return new Promise((resolve, reject) => {
-        const buildBackendProcess = spawn(
+        buildBackendProcess = spawn(
           'mvn',
           [
             'clean',
@@ -73,6 +87,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         buildBackendProcess.stdout.on('data', data => addLog(data, 'backend'));
         buildBackendProcess.stderr.on('data', data => addLog(data, 'backend', true));
         buildBackendProcess.on('close', code => {
+          buildBackendProcess = null;
           if (code === 0) {
             resolve();
           } else {
@@ -83,8 +98,8 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
     }
 
     function startBackend() {
-      return new Promise(resolve => {
-        const backendProcess = spawn(
+      return new Promise((resolve, reject) => {
+        backendProcess = spawn(
           'java',
           [
             '-cp',
@@ -105,6 +120,14 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
         backendProcess.stdout.on('data', data => addLog(data, 'backend'));
         backendProcess.stderr.on('data', data => addLog(data, 'backend', true));
+        backendProcess.on('close', code => {
+          backendProcess = null;
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(code);
+          }
+        });
 
         // wait for the optimize endpoint to be up before resolving the promise
         serverCheck('http://localhost:8090', resolve);
@@ -113,7 +136,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
 
     function startDocker() {
       return new Promise(resolve => {
-        const dockerProcess = spawn('docker-compose', ['up', '--force-recreate', '--no-color'], {
+        dockerProcess = spawn('docker-compose', ['up', '--force-recreate', '--no-color'], {
           cwd: path.resolve(__dirname, '..'),
           shell: true,
           env: {
@@ -178,6 +201,19 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
         if (request.url === '/api/dataGenerationComplete') {
           response.writeHead(200, {'Content-Type': 'text/plain'});
           response.end((engineDataGenerationComplete && eventIngestionComplete).toString(), 'utf-8');
+          return;
+        }
+        if (request.url === '/api/restartBackend') {
+          addLog("--------- BACKEND RESTART INITIATED ---------", "backend");
+          if (buildBackendProcess) {
+            buildBackendProcess.kill();
+          }
+          if (backendProcess) {
+            backendProcess.kill();
+          }
+          buildAndStartOptimize();
+          response.statusCode = 200;
+          response.end("Restarting Optimize backend...", "utf-8");
           return;
         }
 
@@ -281,5 +317,6 @@ function stopDocker() {
 
   dockerStopProcess.on('close', () => {
     process.exit();
+    dockerProcess = null;
   });
 }
