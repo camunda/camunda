@@ -150,6 +150,18 @@ public class CollectionRestService {
     collectionScopeService.deleteScopeEntry(userId, collectionId, scopeEntryId, force);
   }
 
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  @Path("/{id}/scope/{scopeEntryId}/delete-conflicts")
+  public ConflictResponseDto getScopeDeleteConflicts(@Context ContainerRequestContext requestContext,
+                                                     @PathParam("id") String collectionId,
+                                                     @PathParam("scopeEntryId") String scopeEntryId) {
+    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    return new ConflictResponseDto(
+      collectionScopeService.getAllConflictsOnScopeDeletion(userId, collectionId, scopeEntryId)
+    );
+  }
+
   @PUT
   @Path("/{id}/scope/{scopeEntryId}")
   @Consumes(MediaType.APPLICATION_JSON)

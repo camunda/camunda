@@ -127,16 +127,34 @@ public class CollectionScopeService {
     collectionWriter.removeScopeEntry(collectionId, scopeEntryId, userId);
   }
 
+  public Set<ConflictedItemDto> getAllConflictsOnScopeDeletion(final String userId,
+                                                               final String collectionId,
+                                                               final String scopeId) {
+    final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion =
+      getAllReportsAffectedByScopeDeletion(collectionId, scopeId);
+    return getConflictsForReports(userId, reportsAffectedByScopeDeletion);
+  }
+
   private void checkForConflictsOnScopeDeletion(final String userId,
                                                 final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeDeletion) {
     Set<ConflictedItemDto> conflictedItems =
-      reportsAffectedByScopeDeletion
-      .stream()
-      .flatMap(report -> retrieveAllReportConflicts(userId, report))
-      .collect(Collectors.toSet());
+      getConflictsForReports(userId, reportsAffectedByScopeDeletion);
     if (!conflictedItems.isEmpty()) {
       throw new OptimizeConflictException(conflictedItems);
     }
+  }
+
+  private Set<ConflictedItemDto> getConflictsForReports(final String userId,
+                                                        final List<SingleReportDefinitionDto<?>> reports) {
+    return reports
+      .stream()
+      .flatMap(report -> {
+        Set<ConflictedItemDto> reportConflicts =
+          reportService.getReportDeleteConflictingItems(userId, report.getId()).getConflictedItems();
+        reportConflicts.add(this.reportToConflictedItem(report));
+        return reportConflicts.stream();
+      })
+      .collect(Collectors.toSet());
   }
 
   private List<SingleReportDefinitionDto<?>> getAllReportsAffectedByScopeDeletion(final String collectionId,
@@ -154,14 +172,6 @@ public class CollectionScopeService {
     final CollectionScopeEntryDto scopeOfReport =
       new CollectionScopeEntryDto(report.getDefinitionType(), report.getData().getDefinitionKey());
     return scopeOfReport.equals(scopeEntry);
-  }
-
-  private Stream<? extends ConflictedItemDto> retrieveAllReportConflicts(final String userId,
-                                                                         final SingleReportDefinitionDto<?> report) {
-    Set<ConflictedItemDto> reportConflicts =
-      reportService.getReportDeleteConflictingItems(userId, report.getId()).getConflictedItems();
-    reportConflicts.add(this.reportToConflictedItem(report));
-    return reportConflicts.stream();
   }
 
   public void updateScopeEntry(final String userId,
@@ -215,9 +225,7 @@ public class CollectionScopeService {
 
   private void checkForConflictOnUpdate(final String userId,
                                         final List<SingleReportDefinitionDto<?>> reportsAffectedByUpdate) {
-    Set<ConflictedItemDto> conflictedItems = reportsAffectedByUpdate.stream()
-      .flatMap(report -> retrieveAllReportConflicts(userId, report))
-      .collect(Collectors.toSet());
+    Set<ConflictedItemDto> conflictedItems = getConflictsForReports(userId, reportsAffectedByUpdate);
     if (!conflictedItems.isEmpty()) {
       throw new OptimizeConflictException(conflictedItems);
     }

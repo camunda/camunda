@@ -22,6 +22,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
@@ -100,6 +101,49 @@ public class CollectionConflictIT extends AbstractIT {
     // when
     ConflictResponseDto conflictResponse =
       deleteScopeFailsWithConflict(collectionId, scopeEntry.getId(), false);
+
+    // then
+    checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.COMBINED_REPORT, new String[]{combinedReportId});
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getScopeDeletionConflicts_reportsAlertsAndDashboards(final DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(collectionId, definitionType, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String alertId = alertClient.createAlertForReport(singleReportId);
+    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
+
+    // when
+    ConflictResponseDto conflictResponse =
+      getScopeDeletionConflicts(collectionId, scopeEntry.getId());
+
+    // then
+    checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.ALERT, new String[]{alertId});
+    checkConflictedItems(conflictResponse, ConflictedItemType.DASHBOARD, new String[]{dashboardId});
+  }
+
+  @Test
+  public void getScopeDeletionConflicts_combinedReports() {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId =
+      reportClient.createSingleReport(collectionId, PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
+
+    // when
+    ConflictResponseDto conflictResponse =
+      getScopeDeletionConflicts(collectionId, scopeEntry.getId());
 
     // then
     checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
@@ -223,6 +267,13 @@ public class CollectionConflictIT extends AbstractIT {
         force
       )
       .execute(ConflictResponseDto.class, 409);
+  }
+
+  private ConflictResponseDto getScopeDeletionConflicts(final String collectionId, final String scopeEntryId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetScopeDeletionConflictsRequest(collectionId, scopeEntryId)
+      .execute(ConflictResponseDto.class, 200);
   }
 
   private String createNewDashboardAndAddItToCollection(String collectionId) {

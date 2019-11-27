@@ -971,30 +971,37 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(String collectionId,
-                                                                            String entryId) {
-    return buildDeleteScopeEntryFromCollectionRequest(collectionId, entryId, false);
+                                                                            String scopeEntryId) {
+    return buildDeleteScopeEntryFromCollectionRequest(collectionId, scopeEntryId, false);
   }
 
   public OptimizeRequestExecutor buildDeleteScopeEntryFromCollectionRequest(String collectionId,
-                                                                            String entryId,
+                                                                            String scopeEntryId,
                                                                             Boolean force) {
-    this.path = "collection/" + collectionId + "/scope/" + entryId;
+    this.path = "collection/" + collectionId + "/scope/" + scopeEntryId;
     this.requestType = DELETE;
     Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateCollectionScopeEntryRequest(String collectionId,
-                                                                        String entryId,
-                                                                        CollectionScopeEntryUpdateDto entryDto) {
-    return buildUpdateCollectionScopeEntryRequest(collectionId, entryId, entryDto, false);
+  public OptimizeRequestExecutor buildGetScopeDeletionConflictsRequest(final String collectionId,
+                                                                       final String scopeEntryId) {
+    this.path = "collection/" + collectionId + "/scope/" + scopeEntryId + "/delete-conflicts";
+    this.requestType = GET;
+    return this;
   }
 
   public OptimizeRequestExecutor buildUpdateCollectionScopeEntryRequest(String collectionId,
-                                                                        String entryId,
+                                                                        String scopeEntryId,
+                                                                        CollectionScopeEntryUpdateDto entryDto) {
+    return buildUpdateCollectionScopeEntryRequest(collectionId, scopeEntryId, entryDto, false);
+  }
+
+  public OptimizeRequestExecutor buildUpdateCollectionScopeEntryRequest(String collectionId,
+                                                                        String scopeEntryId,
                                                                         CollectionScopeEntryUpdateDto entryDto,
                                                                         Boolean force) {
-    this.path = "collection/" + collectionId + "/scope/" + entryId;
+    this.path = "collection/" + collectionId + "/scope/" + scopeEntryId;
     this.requestType = PUT;
     this.body = getBody(entryDto);
     Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
