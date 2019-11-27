@@ -127,8 +127,8 @@ async function startTest() {
             skipJsErrors: true,
             disableScreenshots: true,
             concurrency: 3,
-            assertionTimeout: 10000,
-            pageLoadTimeout: 10000
+            assertionTimeout: 40000,
+            pageLoadTimeout: 40000
           })
       ) {
         hasFailures = true;
