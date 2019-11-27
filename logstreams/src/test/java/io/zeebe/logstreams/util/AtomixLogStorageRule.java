@@ -39,7 +39,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-/** This thing really does everything :+1: */
 public class AtomixLogStorageRule extends ExternalResource
     implements AtomixLogCompactor,
         AtomixReaderFactory,
@@ -183,7 +182,7 @@ public class AtomixLogStorageRule extends ExternalResource
   private RaftStorage.Builder buildDefaultStorage() {
     return RaftStorage.builder()
         .withFlushOnCommit()
-        .withStorageLevel(StorageLevel.MAPPED)
+        .withStorageLevel(StorageLevel.DISK)
         .withNamespace(RaftNamespaces.RAFT_STORAGE)
         .withRetainStaleSnapshots();
   }
