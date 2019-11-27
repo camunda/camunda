@@ -161,9 +161,7 @@ pipeline {
             container('maven') {
               // Compile Operate and skip tests
               configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh ('mvn -B -s $MAVEN_SETTINGS_XML -DskipTests -P skipFrontendBuild clean install')
-                // Compile QA
-                sh ('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
+                sh ('mvn -B -s $MAVEN_SETTINGS_XML -P skipFrontendBuild clean install')
               }
             }
           }
