@@ -380,9 +380,7 @@ public class TestStreams {
     @Override
     public void close() {
       logStream.close();
-      // closing it causes the record printer to fail...so don't close it?
-      // not ideal however :s
-      // logStorageRule.close();
+      logStorageRule.close();
     }
 
     public LogStream getLogStream() {
