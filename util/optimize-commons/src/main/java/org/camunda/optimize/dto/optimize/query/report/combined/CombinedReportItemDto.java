@@ -20,6 +20,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_CONFIGUR
 public class CombinedReportItemDto {
 
   private String id;
+  @Builder.Default
   private String color = DEFAULT_CONFIGURATION_COLOR;
 
   public CombinedReportItemDto(String id) {

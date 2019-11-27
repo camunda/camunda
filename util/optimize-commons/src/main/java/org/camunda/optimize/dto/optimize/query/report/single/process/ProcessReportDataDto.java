@@ -8,6 +8,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.process;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.Lists;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -22,6 +23,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   protected String processDefinitionKey;

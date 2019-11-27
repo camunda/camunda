@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
@@ -18,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class AuthorizedSimpleCollectionDefinitionDto extends AuthorizedEntityDto {
   @JsonUnwrapped
   private SimpleCollectionDefinitionDto definitionDto;

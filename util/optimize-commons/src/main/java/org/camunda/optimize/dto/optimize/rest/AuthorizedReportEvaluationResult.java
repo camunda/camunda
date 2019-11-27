@@ -8,12 +8,14 @@ package org.camunda.optimize.dto.optimize.rest;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
+@EqualsAndHashCode(callSuper=true)
 public class AuthorizedReportEvaluationResult extends AuthorizedEntityDto {
   @JsonUnwrapped
   private ReportEvaluationResult<?, ?> evaluationResult;

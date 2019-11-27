@@ -5,11 +5,9 @@
  */
 package org.camunda.optimize.dto.optimize.rest;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 
-@Getter
-@Setter
+@Data
 public class ErrorResponseDto {
   private String errorCode;
   private String errorMessage;
