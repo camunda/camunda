@@ -48,12 +48,13 @@ public class DataGenerator {
     completeTasks("task1",migrationProperties.getWorkflowInstanceCount());
     createIncidents("task2",migrationProperties.getIncidentCount());
 
+    
     logger.info("Data generation completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
   }
 
-private void createIncidents(String jobType, int numberOfIncidents) {
-    ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
-    logger.info("{} incidents in {} created", numberOfIncidents, jobType);
+  private void createIncidents(String jobType, int numberOfIncidents) {
+	ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
+	logger.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
   private void completeTasks(String jobType, int count) {

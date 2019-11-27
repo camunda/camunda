@@ -207,14 +207,14 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
-    T workflowInstance;
+    T entity;
     try {
-      workflowInstance = objectMapper.readValue(searchHitString, clazz);
+    	entity = objectMapper.readValue(searchHitString, clazz);
     } catch (IOException e) {
       logger.error(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
       throw new OperateRuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
     }
-    return workflowInstance;
+    return entity;
   }
 
   public static <T> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, JavaType valueType) {
@@ -222,14 +222,14 @@ public abstract class ElasticsearchUtil {
   }
 
   public static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, JavaType valueType) {
-    T workflowInstance;
+    T entity;
     try {
-      workflowInstance = objectMapper.readValue(searchHitString, valueType);
+    	entity = objectMapper.readValue(searchHitString, valueType);
     } catch (IOException e) {
       logger.error(String.format("Error while reading entity of type %s from Elasticsearch!", valueType.toString()), e);
       throw new OperateRuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", valueType.toString()), e);
     }
-    return workflowInstance;
+    return entity;
   }
 
   public static <T extends OperateEntity> List<T> scroll(SearchRequest searchRequest, Class<T> clazz, ObjectMapper objectMapper, RestHighLevelClient esClient)
