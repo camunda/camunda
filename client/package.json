@@ -26,6 +26,7 @@
     "react-date-range": "^0.9.4",
     "react-dom": "^16.12.0",
     "react-full-screen": "^0.2.4",
+    "react-markdown": "^4.2.2",
     "react-router": "^5.0.1",
     "react-router-dom": "^5.1.2",
     "react-table": "^6.10.3",

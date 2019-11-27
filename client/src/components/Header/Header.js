@@ -15,6 +15,7 @@ import {getHeader} from 'config';
 import classnames from 'classnames';
 import {withErrorHandling} from 'HOC';
 import {addNotification} from 'notifications';
+import ChangeLog from './ChangeLog';
 
 import './Header.scss';
 
@@ -63,6 +64,7 @@ class Header extends React.Component {
             active={['/events/', '/events/*']}
           />
         </HeaderNav>
+        <ChangeLog />
         <LogoutButton />
       </header>
     );

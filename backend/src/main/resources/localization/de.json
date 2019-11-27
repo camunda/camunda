@@ -33,6 +33,10 @@
     "yes": "Änderungen Speichern",
     "no": "Nicht Speichern"
   },
+  "whatsNew": {
+    "buttonTitle": "Was ist neu",
+    "modalHeader": "Neues in Optimize"
+  },
   "home": {
     "createBtn": {
       "default": "Erstelle neu",
@@ -413,6 +417,7 @@
     "save": "Speichern",
     "apply": "Anwenden",
     "cancel": "Abbrechen",
+    "close": "Schließen",
     "add": "Hinzufügen",
     "copy": "Kopieren",
     "copyName": "{name} kopieren",

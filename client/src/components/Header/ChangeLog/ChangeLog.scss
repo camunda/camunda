@@ -1,0 +1,30 @@
+.ChangeLog {
+  display: flex;
+
+  .Button {
+    padding: 0 20px;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    margin-right: 20px;
+    white-space: nowrap;
+    font-size: 0.8em;
+
+    &:hover {
+      border-right: 1px solid rgba(0, 0, 0, 0.1);
+      text-decoration: none;
+    }
+  }
+}
+
+.ChangeLogModal {
+  font-size: 0.875em;
+
+  .Modal__content {
+    max-height: calc(100vh - 150px);
+    overflow: auto;
+  }
+
+  h2 {
+    font-size: 1.143em;
+    font-weight: 600;
+  }
+}

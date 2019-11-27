@@ -33,6 +33,10 @@
     "yes": "Save Changes",
     "no": "Don't Save"
   },
+  "whatsNew": {
+    "buttonTitle": "What’s New",
+    "modalHeader": "What's New in Optimize"
+  },
   "home": {
     "createBtn": {
       "default": "Create New",
@@ -413,6 +417,7 @@
     "save": "Save",
     "apply": "Apply",
     "cancel": "Cancel",
+    "close": "Close",
     "add": "Add",
     "copy": "Copy",
     "copyName": "Copy {name}",

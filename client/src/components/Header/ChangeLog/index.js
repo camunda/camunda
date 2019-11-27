@@ -4,4 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export {init, t, getLanguage} from './translation';
+import ChangeLog from './ChangeLog';
+
+export default ChangeLog;

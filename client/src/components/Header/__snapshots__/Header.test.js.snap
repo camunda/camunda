@@ -65,6 +65,7 @@ exports[`matches the snapshot 1`] = `
       name="Event Based Processes"
     />
   </HeaderNav>
+  <ChangeLogErrorHandler />
   <LogoutButtonErrorHandler />
 </header>
 `;

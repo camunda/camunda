@@ -21,7 +21,7 @@ export function t(key, data) {
   return injectData(findValue(key, translationObject), data);
 }
 
-function getLanguage() {
+export function getLanguage() {
   const nav = window.navigator;
   const browserLang = (
     (Array.isArray(nav.languages)
