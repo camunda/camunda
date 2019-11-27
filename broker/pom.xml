@@ -185,6 +185,11 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>atomix-primitive</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>atomix-storage</artifactId>
     </dependency>
 

@@ -18,7 +18,7 @@ public class AtomixRaftServer
     implements AtomixLogCompactor, AtomixReaderFactory, AtomixAppenderSupplier {
   private final RaftPartitionServer server;
 
-  public AtomixRaftServer(final RaftPartitionServer server) {
+  AtomixRaftServer(final RaftPartitionServer server) {
     this.server = server;
   }
 
@@ -29,8 +29,7 @@ public class AtomixRaftServer
 
   @Override
   public CompletableFuture<Void> compact(final long index) {
-    server.setCompactablePosition(index, 0); // todo: remove term
-    // actually just delegates compact to the state machine
+    server.setCompactableIndex(index);
     return server.snapshot();
   }
 

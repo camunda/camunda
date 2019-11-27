@@ -107,7 +107,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
   }
 
   @Override
-  public void setCompactablePosition(final long index, final long term) {
+  public void setCompactableIndex(final long index) {
     this.compactableIndex = index;
   }
 
