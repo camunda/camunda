@@ -95,6 +95,12 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     //call activity process
     jobWorkers.add(progressSimpleTask("called-task"));
 
+    //eventSubprocess
+    jobWorkers.add(progressSimpleTask("parentProcessTask"));
+    jobWorkers.add(progressSimpleTask("subprocessTask"));
+    jobWorkers.add(progressSimpleTask("subSubprocessTask"));
+    jobWorkers.add(progressSimpleTask("eventSupbprocessTask"));
+
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 20);
     sendMessages("interruptMessageTask", "{\"messageVar2\": \"someValue2\"}", 20);
     sendMessages("dataReceived", "{\"messageVar3\": \"someValue3\"}", 20);
@@ -209,6 +215,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     ZeebeTestUtil.deployWorkflow(client, "develop/callActivityProcess.bpmn");
 
+    ZeebeTestUtil.deployWorkflow(client, "develop/eventSubProcess_v_1.bpmn");
+
   }
 
   @Override
@@ -224,6 +232,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         //call activity process
         //these instances will have incident on call activity
         workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "call-activity-process", "{\"var\": " + random.nextInt(10) + "}"));
+
+        //eventSubprocess
+        workflowInstanceKeys.add(ZeebeTestUtil.startWorkflowInstance(client, "eventSubprocessWorkflow", "{\"clientId\": \"" + random.nextInt(10) + "\"}"));
       }
 
       if (version == 2) {
