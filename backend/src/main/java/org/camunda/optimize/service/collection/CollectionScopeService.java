@@ -8,6 +8,7 @@ package org.camunda.optimize.service.collection;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
@@ -16,6 +17,8 @@ import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefini
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
@@ -31,8 +34,10 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -127,6 +132,14 @@ public class CollectionScopeService {
     collectionWriter.removeScopeEntry(collectionId, scopeEntryId, userId);
   }
 
+  private void deleteReports(final String userId,
+                             final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate) {
+    reportsAffectedByScopeUpdate
+      .stream()
+      .map(SingleReportDefinitionDto::getId)
+      .forEach(reportId -> reportService.deleteReport(userId, reportId, true));
+  }
+
   public Set<ConflictedItemDto> getAllConflictsOnScopeDeletion(final String userId,
                                                                final String collectionId,
                                                                final String scopeId) {
@@ -183,11 +196,11 @@ public class CollectionScopeService {
       authorizedCollectionService
         .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId)
         .getDefinitionDto();
-    final CollectionScopeEntryDto currentScope = getScopeOfCollection(collectionId, scopeEntryId, collectionDefinition);
+    final CollectionScopeEntryDto currentScope = getScopeOfCollection(scopeEntryId, collectionDefinition);
     replaceMaskedTenantsInUpdateWithRealOnes(userId, scopeUpdate, currentScope);
+    final Set<String> tenantsThatWillBeRemoved = retrieveRemovedTenants(scopeUpdate, currentScope);
 
-    // this will also adjust the current scope in the collectionDefinition from above
-    addScopeUpdateToCurrentScope(currentScope, scopeUpdate);
+    updateScopeInCollection(scopeEntryId, scopeUpdate, collectionDefinition);
     final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate =
       getReportsAffectedByScopeUpdate(collectionId, collectionDefinition);
 
@@ -195,20 +208,44 @@ public class CollectionScopeService {
       checkForConflictOnUpdate(userId, reportsAffectedByScopeUpdate);
     }
 
-    deleteReports(userId, reportsAffectedByScopeUpdate);
+    updateReportsWithNewTenants(userId, tenantsThatWillBeRemoved, reportsAffectedByScopeUpdate);
     collectionWriter.updateScopeEntity(collectionId, scopeUpdate, userId, scopeEntryId);
   }
 
-  private void deleteReports(final String userId,
-                             final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate) {
-    reportsAffectedByScopeUpdate
-      .stream()
-      .map(SingleReportDefinitionDto::getId)
-      .forEach(reportId -> reportService.deleteReport(userId, reportId, true));
+  private Set<String> retrieveRemovedTenants(final CollectionScopeEntryUpdateDto scopeUpdate,
+                                             final CollectionScopeEntryDto currentScope) {
+    final Set<String> tenantsToBeRemoved = new HashSet<>(currentScope.getTenants());
+    tenantsToBeRemoved.removeAll(scopeUpdate.getTenants());
+    return tenantsToBeRemoved;
   }
 
-  private CollectionScopeEntryDto getScopeOfCollection(final String collectionId,
-                                                       final String scopeEntryId,
+  private void updateReportsWithNewTenants(final String userId,
+                                           final Set<String> tenantsToBeRemoved,
+                                           final List<SingleReportDefinitionDto<?>> reportsAffectedByScopeUpdate) {
+
+    final Map<ReportType, List<SingleReportDefinitionDto<?>>> byDefinitionType = reportsAffectedByScopeUpdate
+      .stream()
+      .peek(r -> {
+        r.getData().getTenantIds().removeAll(tenantsToBeRemoved);
+        if (r.getData().getTenantIds().isEmpty()) {
+          reportService.deleteReport(userId, r.getId(), true);
+        }
+      })
+      .filter(r -> !r.getData().getTenantIds().isEmpty())
+      .collect(Collectors.groupingBy(SingleReportDefinitionDto::getReportType));
+    byDefinitionType.getOrDefault(ReportType.DECISION, new ArrayList<>())
+      .stream()
+      .filter(r -> r instanceof SingleDecisionReportDefinitionDto)
+      .map(r -> (SingleDecisionReportDefinitionDto) r)
+      .forEach(r -> reportService.updateSingleDecisionReport(r.getId(), r, userId, true));
+    byDefinitionType.getOrDefault(ReportType.PROCESS, new ArrayList<>())
+      .stream()
+      .filter(r -> r instanceof SingleProcessReportDefinitionDto)
+      .map(r -> (SingleProcessReportDefinitionDto) r)
+      .forEach(r -> reportService.updateSingleProcessReport(r.getId(), r, userId, true));
+  }
+
+  private CollectionScopeEntryDto getScopeOfCollection(final String scopeEntryId,
                                                        final SimpleCollectionDefinitionDto collectionDefinition) {
     return collectionDefinition
       .getData()
@@ -218,7 +255,7 @@ public class CollectionScopeService {
       .findFirst()
       .orElseThrow(() -> new NotFoundException(String.format(
         "Unknown scope entry for collection [%s] and scope [%s]",
-        collectionId,
+        collectionDefinition.getId(),
         scopeEntryId
       )));
   }
@@ -241,9 +278,11 @@ public class CollectionScopeService {
       .collect(Collectors.toList());
   }
 
-  private void addScopeUpdateToCurrentScope(final CollectionScopeEntryDto currentScope,
-                                            final CollectionScopeEntryUpdateDto scopeUpdate) {
-    currentScope.setTenants(scopeUpdate.getTenants());
+  private void updateScopeInCollection(final String scopeEntryId,
+                                       final CollectionScopeEntryUpdateDto scopeUpdate,
+                                       final SimpleCollectionDefinitionDto collectionDefinition) {
+    getScopeOfCollection(scopeEntryId, collectionDefinition)
+      .setTenants(scopeUpdate.getTenants());
   }
 
   private void replaceMaskedTenantsInUpdateWithRealOnes(final String userId,

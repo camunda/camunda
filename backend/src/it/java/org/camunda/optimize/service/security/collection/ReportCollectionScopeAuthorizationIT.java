@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
@@ -305,7 +306,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       RESOURCE_TYPE_PROCESS_DEFINITION
     );
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
-    reportClient.createSingleReport(collectionId, PROCESS, "KEY_1", asList(authorizedTenant, null));
+    reportClient.createSingleReport(collectionId, PROCESS, "KEY_1", singletonList(authorizedTenant));
 
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)

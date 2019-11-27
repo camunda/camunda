@@ -30,9 +30,11 @@ import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -774,7 +776,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
-  public void updateSingleScopeOverrulesConflictsOnForceSet(DefinitionType definitionType) {
+  public void updateSingleScope_oneTenantRemoved(DefinitionType definitionType) {
     // given
     String collectionId = collectionClient.createNewCollection();
     addTenantToElasticsearch("tenantToBeRemovedFromScope");
@@ -783,13 +785,47 @@ public class CollectionHandlingIT extends AbstractIT {
     final CollectionScopeEntryDto scopeEntry =
       new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, tenants);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
-    final String singleReportId =
-      reportClient.createSingleReport(
+    reportClient.createSingleReport(collectionId, definitionType, DEFAULT_DEFINITION_KEY, tenants);
+
+    // when
+    tenants.remove("tenantToBeRemovedFromScope");
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateCollectionScopeEntryRequest(
         collectionId,
-        definitionType,
-        DEFAULT_DEFINITION_KEY,
-        singletonList("tenantToBeRemovedFromScope")
-      );
+        scopeEntry.getId(),
+        new CollectionScopeEntryUpdateDto(tenants),
+        true
+      )
+      .execute();
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
+
+    // then
+    assertThat(collectionClient.getReportsForCollection(collectionId))
+      .hasSize(1)
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .extracting(r -> (SingleReportDefinitionDto<?>) r)
+      .extracting(SingleReportDefinitionDto::getData)
+      .flatExtracting(SingleReportDataDto::getTenantIds)
+      .containsExactlyElementsOf(tenants);
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void updateSingleScope_reportsWithoutTenantsAreBeingRemoved(DefinitionType definitionType) {
+    // given
+    String collectionId = collectionClient.createNewCollection();
+    addTenantToElasticsearch("tenantToBeRemovedFromScope");
+    final ArrayList<String> tenants = new ArrayList<>(DEFAULT_TENANTS);
+    tenants.add("tenantToBeRemovedFromScope");
+    final CollectionScopeEntryDto scopeEntry =
+      new CollectionScopeEntryDto(definitionType, DEFAULT_DEFINITION_KEY, tenants);
+    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
+    final String singleReportId = reportClient.createSingleReport(
+      collectionId,
+      definitionType,
+      DEFAULT_DEFINITION_KEY,
+      singletonList("tenantToBeRemovedFromScope")
+    );
     alertClient.createAlertForReport(singleReportId);
     final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
 
@@ -812,7 +848,7 @@ public class CollectionHandlingIT extends AbstractIT {
   }
 
   @Test
-  public void updateSingleScopeOverrulesCombinedReportConflictsOnForceSet() {
+  public void updateSingleScope_reportsWithoutTenantsAreBeingRemoved_affectsCombinedReportsAsWell() {
     // given
     String collectionId = collectionClient.createNewCollection();
     addTenantToElasticsearch("tenantToBeRemovedFromScope");
@@ -821,13 +857,12 @@ public class CollectionHandlingIT extends AbstractIT {
     final CollectionScopeEntryDto scopeEntry =
       new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, tenants);
     collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
-    final String singleReportId =
-      reportClient.createSingleReport(
-        collectionId,
-        PROCESS,
-        DEFAULT_DEFINITION_KEY,
-        singletonList("tenantToBeRemovedFromScope")
-      );
+    final String singleReportId = reportClient.createSingleReport(
+      collectionId,
+      PROCESS,
+      DEFAULT_DEFINITION_KEY,
+      singletonList("tenantToBeRemovedFromScope")
+    );
     final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
 
     // when
