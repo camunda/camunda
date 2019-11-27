@@ -7,6 +7,7 @@
 import React from 'react';
 
 import {Input, Select} from 'components';
+import {t} from 'translation';
 
 export default function ThresholdInput({id, value, onChange, type, isInvalid}) {
   if (type === 'duration') {
@@ -19,13 +20,13 @@ export default function ThresholdInput({id, value, onChange, type, isInvalid}) {
           onChange={({target}) => onChange({...value, value: target.value})}
         />
         <Select value={value.unit} onChange={unit => onChange({...value, unit})}>
-          <Select.Option value="millis">Milliseconds</Select.Option>
-          <Select.Option value="seconds">Seconds</Select.Option>
-          <Select.Option value="minutes">Minutes</Select.Option>
-          <Select.Option value="hours">Hours</Select.Option>
-          <Select.Option value="days">Days</Select.Option>
-          <Select.Option value="weeks">Weeks</Select.Option>
-          <Select.Option value="months">Months</Select.Option>
+          <Select.Option value="millis">{t('common.unit.milli.label-plural')}</Select.Option>
+          <Select.Option value="seconds">{t('common.unit.second.label-plural')}</Select.Option>
+          <Select.Option value="minutes">{t('common.unit.minute.label-plural')}</Select.Option>
+          <Select.Option value="hours">{t('common.unit.hour.label-plural')}</Select.Option>
+          <Select.Option value="days">{t('common.unit.day.label-plural')}</Select.Option>
+          <Select.Option value="weeks">{t('common.unit.week.label-plural')}</Select.Option>
+          <Select.Option value="months">{t('common.unit.month.label-plural')}</Select.Option>
         </Select>
       </>
     );
