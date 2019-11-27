@@ -16,6 +16,7 @@ import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.ThreadContextFactory;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -148,14 +149,12 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
 
   private void safeApplyIndex(final long index, final CompletableFuture<?> future) {
     threadContext.checkThread();
+    final var maybeFuture = Optional.ofNullable(future);
 
     // skip if we have a newer snapshot
     if (raft.getSnapshotStore().getCurrentSnapshotIndex() >= index
         || reader.getNextIndex() > index) {
-      if (future != null) {
-        future.complete(null);
-      }
-
+      maybeFuture.ifPresent(f -> f.complete(null));
       return;
     }
 
@@ -169,9 +168,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
         safeApplyIndexed(reader.next(), future);
       } catch (final Exception e) {
         logger.error("Failed to apply entry at index {}", index, e);
-        if (future != null) {
-          future.completeExceptionally(e);
-        }
+        maybeFuture.ifPresent(f -> f.completeExceptionally(e));
       }
     } else if (reader.getNextIndex() < raft.getSnapshotStore().getCurrentSnapshotIndex()) {
       reader.reset(raft.getSnapshotStore().getCurrentSnapshotIndex());
@@ -181,24 +178,26 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
           "Expected next index is {} and reader hasNext {}",
           reader.getNextIndex(),
           reader.hasNext());
-      if (future != null) {
-        future.completeExceptionally(new IndexOutOfBoundsException("Cannot apply index " + index));
-      }
+      maybeFuture.ifPresent(
+          f ->
+              f.completeExceptionally(
+                  new IndexOutOfBoundsException("Cannot apply index " + index)));
     }
   }
 
   private <T> void safeApplyIndexed(
       final Indexed<? extends RaftLogEntry> indexed, final CompletableFuture<T> future) {
     threadContext.checkThread();
+    final var maybeFuture = Optional.ofNullable(future);
     logger.trace("Applying {}", indexed);
 
     if (RaftLogEntry.class.isAssignableFrom(indexed.type())) {
       raft.notifyCommitListeners(indexed);
-      if (future != null) {
-        future.complete(null);
-      }
-    } else if (future != null) {
-      future.completeExceptionally(new RaftException.ProtocolException("Unknown indexed type"));
+      maybeFuture.ifPresent(f -> f.complete(null));
+    } else {
+      maybeFuture.ifPresent(
+          f ->
+              f.completeExceptionally(new RaftException.ProtocolException("Unknown indexed type")));
     }
 
     // mark as applied regardless of result
