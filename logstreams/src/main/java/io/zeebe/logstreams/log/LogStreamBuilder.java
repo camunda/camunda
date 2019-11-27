@@ -84,8 +84,5 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
               "Expected fragment size to be at least '%d', but was '%d'",
               MINIMUM_FRAGMENT_SIZE, maxFragmentSize));
     }
-
-    // TODO: storage should validate the max fragment size to ensure we don't attempt
-    // to write blocks that are too large
   }
 }
