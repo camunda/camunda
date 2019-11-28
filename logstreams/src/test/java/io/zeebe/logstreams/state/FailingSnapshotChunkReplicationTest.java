@@ -77,13 +77,7 @@ public class FailingSnapshotChunkReplicationTest {
     assertThat(replicatedChunks.size()).isGreaterThan(0);
 
     final var snapshotDirectory = receiverStorage.getPendingDirectoryFor("1");
-    assertThat(snapshotDirectory).exists();
-
-    final var files = Files.list(snapshotDirectory).collect(Collectors.toList());
-    assertThat(files).hasSize(1);
-    assertThat(files.get(0).getFileName().toString())
-        .isEqualTo(replicatedChunks.get(0).getChunkName());
-
+    assertThat(snapshotDirectory).doesNotExist();
     assertThat(receiverStorage.exists("1")).isFalse();
   }
 
