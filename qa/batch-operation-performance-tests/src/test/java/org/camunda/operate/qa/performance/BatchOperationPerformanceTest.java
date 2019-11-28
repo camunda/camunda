@@ -10,11 +10,11 @@ import java.time.Instant;
 import org.camunda.operate.Application;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.webapp.es.writer.OldBatchOperationWriter;
+import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.ExecutionFinishedListener;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -48,7 +48,7 @@ public class BatchOperationPerformanceTest {
   @Autowired
   private OperateProperties operateProperties;
   @Autowired
-  private OldBatchOperationWriter batchOperationWriter;
+  private BatchOperationWriter batchOperationWriter;
   @Autowired
   private RestHighLevelClient esClient;
   @Autowired
@@ -76,25 +76,25 @@ public class BatchOperationPerformanceTest {
   }
 
   private void createResolveIncidentOperations() {
-    BatchOperationRequestDto resolveIncidentRequest = new BatchOperationRequestDto();
+    OperationRequestDto resolveIncidentRequest = new OperationRequestDto();
     resolveIncidentRequest.setOperationType(OperationType.RESOLVE_INCIDENT);
     ListViewQueryDto queryForResolveIncident = new ListViewQueryDto();
     queryForResolveIncident.setRunning(true);
     queryForResolveIncident.setIncidents(true);
     queryForResolveIncident.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 5));
-    resolveIncidentRequest.getQueries().add(queryForResolveIncident);
+    resolveIncidentRequest.setQuery(queryForResolveIncident);
     final OperationResponseDto operationResponseDto = batchOperationWriter.scheduleBatchOperation(resolveIncidentRequest);
     logger.info("RESOLVE_INCIDENT operations scheduled: {}", operationResponseDto.getCount());
   }
 
   private void createCancelOperations() {
-    BatchOperationRequestDto cancelRequest = new BatchOperationRequestDto();
+    OperationRequestDto cancelRequest = new OperationRequestDto();
     cancelRequest.setOperationType(OperationType.CANCEL_WORKFLOW_INSTANCE);
     ListViewQueryDto queryForCancel = new ListViewQueryDto();
     queryForCancel.setRunning(true);
     queryForCancel.setActive(true);
     queryForCancel.setWorkflowIds(ElasticsearchUtil.getWorkflowIds(esClient, getOperateAlias(WorkflowIndex.INDEX_NAME), 1));
-    cancelRequest.getQueries().add(queryForCancel);
+    cancelRequest.setQuery(queryForCancel);
     final OperationResponseDto operationResponseDto = batchOperationWriter.scheduleBatchOperation(cancelRequest);
     logger.info("CANCEL_WORKFLOW_INSTANCE operations scheduled: {}", operationResponseDto.getCount());
   }
