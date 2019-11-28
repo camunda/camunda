@@ -60,42 +60,6 @@ public class DbSnapshotStore implements SnapshotStore {
     this.listeners = new CopyOnWriteArraySet<>();
   }
 
-  public DbSnapshot put(final DbSnapshot snapshot) {
-    // caveat: if the metadata is the same but the location is different, this will do nothing
-    final var previous = snapshots.put(snapshot.getMetadata(), snapshot);
-    if (previous == null) {
-      listeners.forEach(listener -> listener.onNewSnapshot(snapshot, this));
-    }
-
-    return snapshot;
-  }
-
-  public DbSnapshot put(final Path directory, final DbSnapshotMetadata metadata) {
-    if (snapshots.containsKey(metadata)) {
-      LOGGER.debug("Snapshot {} already exists", metadata);
-      return snapshots.get(metadata);
-    }
-
-    final var destination = buildSnapshotDirectory(metadata);
-    try {
-      Files.move(directory, destination);
-    } catch (final FileAlreadyExistsException e) {
-      LOGGER.debug(
-          "Expected to move snapshot from {} to {}, but it already exists",
-          directory,
-          destination,
-          e);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    return put(new DbSnapshot(destination, metadata));
-  }
-
-  public Optional<DbSnapshot> getLatestSnapshot() {
-    return Optional.ofNullable(snapshots.lastEntry()).map(Entry::getValue);
-  }
-
   /**
    * Returns the newest snapshot for the given index, meaning the snapshot with the given index with
    * the highest position.
@@ -213,6 +177,42 @@ public class DbSnapshotStore implements SnapshotStore {
   @Override
   public void removeListener(final SnapshotListener listener) {
     listeners.remove(listener);
+  }
+
+  private DbSnapshot put(final DbSnapshot snapshot) {
+    // caveat: if the metadata is the same but the location is different, this will do nothing
+    final var previous = snapshots.put(snapshot.getMetadata(), snapshot);
+    if (previous == null) {
+      listeners.forEach(listener -> listener.onNewSnapshot(snapshot, this));
+    }
+
+    return snapshot;
+  }
+
+  private DbSnapshot put(final Path directory, final DbSnapshotMetadata metadata) {
+    if (snapshots.containsKey(metadata)) {
+      LOGGER.debug("Snapshot {} already exists", metadata);
+      return snapshots.get(metadata);
+    }
+
+    final var destination = buildSnapshotDirectory(metadata);
+    try {
+      Files.move(directory, destination);
+    } catch (final FileAlreadyExistsException e) {
+      LOGGER.debug(
+          "Expected to move snapshot from {} to {}, but it already exists",
+          directory,
+          destination,
+          e);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
+    return put(new DbSnapshot(destination, metadata));
+  }
+
+  private Optional<DbSnapshot> getLatestSnapshot() {
+    return Optional.ofNullable(snapshots.lastEntry()).map(Entry::getValue);
   }
 
   private void remove(final DbSnapshot snapshot) {
