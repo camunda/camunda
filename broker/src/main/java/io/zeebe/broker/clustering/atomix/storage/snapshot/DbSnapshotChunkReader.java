@@ -29,14 +29,14 @@ import org.agrona.concurrent.UnsafeBuffer;
  * the directory once this is created.
  */
 public class DbSnapshotChunkReader implements SnapshotChunkReader {
-  private static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
+  static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
   private final Path directory;
   private final NavigableSet<CharSequence> chunks;
   private final CharSequenceView chunkIdView;
 
   private NavigableSet<CharSequence> chunksView;
 
-  public DbSnapshotChunkReader(final Path directory, final NavigableSet<CharSequence> chunks) {
+  DbSnapshotChunkReader(final Path directory, final NavigableSet<CharSequence> chunks) {
     this.directory = directory;
     this.chunks = chunks;
     this.chunksView = this.chunks;
