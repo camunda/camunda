@@ -86,8 +86,8 @@ public class AtomixLogStorageReader implements LogStorageReader {
     var high = reader.getLastIndex();
 
     if (position == Long.MIN_VALUE) {
-      final var maybeEntry = findEntry(reader.getFirstIndex());
-      return maybeEntry.map(Indexed::index).orElse(LogStorage.OP_RESULT_INVALID_ADDR);
+      final var optionalEntry = findEntry(reader.getFirstIndex());
+      return optionalEntry.map(Indexed::index).orElse(LogStorage.OP_RESULT_INVALID_ADDR);
     }
 
     // when the log is empty, last index is defined as first index - 1

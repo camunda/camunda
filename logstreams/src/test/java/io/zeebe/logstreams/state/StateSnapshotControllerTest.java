@@ -249,13 +249,13 @@ public class StateSnapshotControllerTest {
     final var snapshot = storage.getLatestSnapshot();
     assertThat(snapshot).isPresent();
 
-    final var maybeFile =
+    final var optionalFile =
         Files.list(snapshot.get().getPath())
             .filter(p -> p.toString().endsWith(".sst"))
             .sorted(Comparator.reverseOrder())
             .findFirst();
-    assertThat(maybeFile).isPresent();
+    assertThat(optionalFile).isPresent();
     Files.write(
-        maybeFile.get(), "<--corrupted-->".getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
+        optionalFile.get(), "<--corrupted-->".getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
   }
 }

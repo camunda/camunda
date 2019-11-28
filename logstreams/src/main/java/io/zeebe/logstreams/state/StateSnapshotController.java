@@ -64,16 +64,15 @@ public class StateSnapshotController implements SnapshotController {
 
   @Override
   public void commitSnapshot(final Snapshot snapshot) throws IOException {
-    // TODO: why this check? it was previously here
     Objects.requireNonNull(db, "Cannot commit snapshot for a closed database");
     storage.commitSnapshot(snapshot);
   }
 
   @Override
   public void replicateLatestSnapshot(final Consumer<Runnable> executor) {
-    final var maybeLatest = storage.getLatestSnapshot();
-    if (maybeLatest.isPresent()) {
-      final var latestSnapshotDirectory = maybeLatest.get().getPath();
+    final var optionalLatest = storage.getLatestSnapshot();
+    if (optionalLatest.isPresent()) {
+      final var latestSnapshotDirectory = optionalLatest.get().getPath();
       LOG.debug("Start replicating latest snapshot {}", latestSnapshotDirectory);
 
       try (var stream = Files.list(latestSnapshotDirectory)) {

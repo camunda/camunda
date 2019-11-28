@@ -39,15 +39,15 @@ public class AtomixLogStorage implements LogStorage {
       final long highestPosition,
       final ByteBuffer buffer,
       final AppendListener listener) {
-    final var maybeAppender = appenderSupplier.getAppender();
+    final var optionalAppender = appenderSupplier.getAppender();
 
-    if (maybeAppender.isPresent()) {
-      final var appender = maybeAppender.get();
+    if (optionalAppender.isPresent()) {
+      final var appender = optionalAppender.get();
       final var adapter = new AtomixAppendListenerAdapter(listener);
       appender.appendEntry(lowestPosition, highestPosition, buffer, adapter);
     } else {
       // todo: better error message
-      listener.onWriteError(new NoSuchElementException());
+      listener.onWriteError(new NoSuchElementException("Expected an appender, but none found, most likely we are not the leader"));
     }
   }
 
