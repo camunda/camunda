@@ -17,6 +17,7 @@ import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.util.ZbLogger;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -134,10 +135,15 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
       final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
       final SnapshotStore store) {
     final var snapshots = store.getSnapshots();
-    if (snapshots.size() > maxSnapshotCount) {
+    if (snapshots.size() >= maxSnapshotCount) {
       // by the condition it's guaranteed there be a snapshot after skipping maxSnapshotCount - 1
       @SuppressWarnings("squid:S3655")
-      final var oldest = snapshots.stream().skip(maxSnapshotCount - 1L).findFirst().get();
+      final var oldest =
+          snapshots.stream()
+              .sorted(Comparator.reverseOrder())
+              .skip(maxSnapshotCount - 1L)
+              .findFirst()
+              .get();
 
       LOGGER.info(
           "Max snapshot count reached ({}), purging snapshots older than {}",

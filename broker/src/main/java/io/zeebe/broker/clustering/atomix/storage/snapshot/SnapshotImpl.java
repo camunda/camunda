@@ -48,4 +48,9 @@ final class SnapshotImpl implements Snapshot {
     final SnapshotImpl snapshot = (SnapshotImpl) o;
     return getPosition() == snapshot.getPosition() && getPath().equals(snapshot.getPath());
   }
+
+  @Override
+  public String toString() {
+    return "SnapshotImpl{" + "position=" + position + ", path=" + path + '}';
+  }
 }

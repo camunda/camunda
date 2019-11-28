@@ -8,7 +8,12 @@
 package io.zeebe.broker.clustering.atomix.storage.snapshot;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.protocols.raft.storage.snapshot.SnapshotStore;
@@ -16,6 +21,7 @@ import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.clustering.atomix.storage.AtomixRecordEntrySupplier;
 import io.zeebe.logstreams.state.Snapshot;
+import io.zeebe.logstreams.state.SnapshotDeletionListener;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -151,19 +157,18 @@ public class AtomixSnapshotStorageTest {
   public void shouldNotifyDeletionListenersOnMaxSnapshotCount() throws IOException {
     // given
     final var maxCount = 2;
-    final var listener = new TreeSet<Snapshot>();
+    final var listener = mock(SnapshotDeletionListener.class);
     final var storage = newStorage(maxCount);
-    storage.addDeletionListener(listener::add);
+    storage.addDeletionListener(listener);
 
     // when - then
-    newCommittedSnapshot(1);
+    final var first = newCommittedSnapshot(1);
+    verify(listener, never()).onSnapshotDeleted(any());
+
+    // when - then
     final var second = newCommittedSnapshot(2);
-    assertThat(listener).isEmpty();
-
-    // when - then
-    final var last = newCommittedSnapshot(3);
-    assertThat(listener).hasSize(1).containsExactly(second);
-    assertThat(storage.getSnapshots()).hasSize(maxCount).containsExactly(second, last);
+    verify(listener, times(1)).onSnapshotDeleted(eq(first));
+    assertThat(storage.getSnapshots()).hasSize(maxCount).containsExactly(first, second);
   }
 
   private Snapshot newPendingSnapshot(final long position) {
