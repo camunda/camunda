@@ -115,37 +115,6 @@ public class FailingSnapshotChunkReplicationTest {
     assertThat(receiverStorage.exists("1")).isFalse();
   }
 
-  //  @Test
-  //  public void shouldDeleteOrphanedSnapshots() throws Exception {
-  //    // given
-  //    final FlakyReplicator flakyReplicator = new FlakyReplicator();
-  //    setup(flakyReplicator);
-  //    receiverSnapshotController.consumeReplicatedSnapshots();
-  //    replicatorSnapshotController.takeSnapshot(1);
-  //    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
-  //    replicatorSnapshotController.close();
-  //
-  //    final Replicator workingReplicator = new Replicator();
-  //    setupReplication(workingReplicator);
-  //    receiverSnapshotController.consumeReplicatedSnapshots();
-  //    replicatorSnapshotController.takeSnapshot(2);
-  //    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
-  //
-  //    // when
-  //    replicatorSnapshotController.takeSnapshot(3);
-  //    replicatorSnapshotController.replicateLatestSnapshot(Runnable::run);
-  //
-  //    // then
-  //    final List<SnapshotChunk> replicatedChunks = workingReplicator.replicatedChunks;
-  //    assertThat(replicatedChunks.size()).isGreaterThan(0);
-  //
-  //    final var snapshotDirectory = receiverStorage.getPendingDirectoryFor("1");
-  //    assertThat(snapshotDirectory).doesNotExist();
-  //    assertThat(receiverStorage.exists("1")).isFalse();
-  //    assertThat(receiverStorage.exists("2")).isFalse();
-  //    assertThat(receiverStorage.exists("3")).isTrue();
-  //  }
-
   private final class FlakyReplicator implements SnapshotReplication {
 
     final List<SnapshotChunk> replicatedChunks = new ArrayList<>();
