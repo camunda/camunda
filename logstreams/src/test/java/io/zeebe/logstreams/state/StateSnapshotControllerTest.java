@@ -128,49 +128,6 @@ public class StateSnapshotControllerTest {
     assertThat(wrapper.getInt("x")).isEqualTo(3);
   }
 
-  //  @Test
-  //  public void shouldEnsureMaxSnapshotCount() throws Exception {
-  //    // given
-  //    snapshotController.openDb();
-  //    snapshotController.takeSnapshot(16);
-  //    snapshotController.takeSnapshot(2322);
-  //    snapshotController.takeSnapshot(131);
-  //    snapshotController.takeSnapshot(45);
-  //    snapshotController.takeSnapshot(34);
-  //
-  //    // when
-  //    snapshotController.ensureMaxSnapshotCount();
-  //
-  //    // then
-  //    assertThat(storage.list()).hasSize(2);
-  //    assertThat(storage.list()).extracting(f -> f.getName()).containsOnly("2322", "131");
-  //    final long latestLowerBound = snapshotController.recover();
-  //    assertThat(latestLowerBound).isEqualTo(2322);
-  //  }
-  //
-  //  @Test
-  //  public void shouldCleanUpOrphanedTmpSnapshots() throws Exception {
-  //    // given
-  //    snapshotController.openDb();
-  //    snapshotController.takeSnapshot(16);
-  //    snapshotController.takeSnapshot(2322);
-  //    snapshotController.takeSnapshot(131);
-  //    createSnapshotDirectory("18-tmp");
-  //    createSnapshotDirectory("1-tmp");
-  //    createSnapshotDirectory("132-tmp");
-  //
-  //    // when
-  //    snapshotController.ensureMaxSnapshotCount();
-  //
-  //    // then
-  //    assertThat(storage.getSnapshotsDirectory().listFiles())
-  //        .extracting(File::getName)
-  //        .containsOnly("2322", "131", "132-tmp");
-  //
-  //    final long latestLowerBound = snapshotController.recover();
-  //    assertThat(latestLowerBound).isEqualTo(2322);
-  //  }
-
   @Test
   public void shouldRecoverFromLatestNotCorruptedSnapshot() throws Exception {
     // given two snapshots
