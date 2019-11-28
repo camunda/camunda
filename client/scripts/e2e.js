@@ -7,6 +7,7 @@
 const fetch = require('node-fetch');
 const createTestCafe = require('testcafe');
 const chalk = require('chalk');
+const request = require('request');
 
 const {spawn} = require('child_process');
 const net = require('net');
@@ -48,8 +49,8 @@ if (ciMode) {
 
 let dataInterval;
 const connectionInterval = setInterval(async () => {
-  const backendDone = await checkPort(8090);
-  const frontendDone = await checkPort(3000);
+  const backendDone = await checkHttpPort(8090);
+  const frontendDone = await checkHttpPort(3000);
 
   console.log(
     `waiting for servers to be started: backend = ${
@@ -64,21 +65,12 @@ const connectionInterval = setInterval(async () => {
   }
 }, 5000);
 
-function checkPort(number) {
+function checkHttpPort(number) {
   return new Promise(resolve => {
-    const socket = new net.Socket();
-
-    const destroy = () => {
-      socket.destroy();
-      resolve(false);
-    };
-
-    socket.setTimeout(1000);
-    socket.once('error', destroy);
-    socket.once('timeout', destroy);
-
-    socket.connect(number, 'localhost', () => {
-      socket.end();
+    request({url: 'http://localhost:' + number, timeout: 1000}, err => {
+      if (err) {
+        resolve(false);
+      }
       resolve(true);
     });
   });
