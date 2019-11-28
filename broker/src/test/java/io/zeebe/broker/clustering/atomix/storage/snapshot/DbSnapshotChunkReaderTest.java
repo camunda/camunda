@@ -12,14 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.atomix.protocols.raft.storage.snapshot.SnapshotChunk;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import java.util.stream.StreamSupport;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -67,7 +65,9 @@ public class DbSnapshotChunkReaderTest {
     }
 
     // then
-    assertThat(chunks).extracting(SnapshotChunk::id).containsExactly(asBuffer("a"), asBuffer("b"), asBuffer("c"));
+    assertThat(chunks)
+        .extracting(SnapshotChunk::id)
+        .containsExactly(asBuffer("a"), asBuffer("b"), asBuffer("c"));
     assertThat(reader.nextId()).isEqualTo(null);
     assertThat(reader.hasNext()).isFalse();
   }
