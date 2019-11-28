@@ -61,9 +61,9 @@ public class DbSnapshotStoreFactory implements SnapshotStoreFactory {
 
   private void collectSnapshot(
       final NavigableMap<DbSnapshotId, DbSnapshot> snapshots, final Path path) {
-    final var maybeMeta = DbSnapshotMetadata.ofPath(path);
-    if (maybeMeta.isPresent()) {
-      final var metadata = maybeMeta.get();
+    final var optionalMeta = DbSnapshotMetadata.ofPath(path);
+    if (optionalMeta.isPresent()) {
+      final var metadata = optionalMeta.get();
       snapshots.put(metadata, new DbSnapshot(path, metadata));
     } else {
       LOGGER.warn("Expected snapshot file format to be %d-%d-%d-%d, but was {}", path);

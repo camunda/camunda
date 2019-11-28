@@ -148,12 +148,12 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
 
   private void safeApplyIndex(final long index, final CompletableFuture<?> future) {
     threadContext.checkThread();
-    final var maybeFuture = Optional.ofNullable(future);
+    final var optionalFuture = Optional.ofNullable(future);
 
     // skip if we have a newer snapshot
     if (raft.getSnapshotStore().getCurrentSnapshotIndex() >= index
         || reader.getNextIndex() > index) {
-      maybeFuture.ifPresent(f -> f.complete(null));
+      optionalFuture.ifPresent(f -> f.complete(null));
       return;
     }
 
@@ -167,7 +167,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
         safeApplyIndexed(reader.next(), future);
       } catch (final Exception e) {
         logger.error("Failed to apply entry at index {}", index, e);
-        maybeFuture.ifPresent(f -> f.completeExceptionally(e));
+        optionalFuture.ifPresent(f -> f.completeExceptionally(e));
       }
     } else if (reader.getNextIndex() < raft.getSnapshotStore().getCurrentSnapshotIndex()) {
       reader.reset(raft.getSnapshotStore().getCurrentSnapshotIndex());
@@ -177,7 +177,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
           "Expected next index is {} and reader hasNext {}",
           reader.getNextIndex(),
           reader.hasNext());
-      maybeFuture.ifPresent(
+      optionalFuture.ifPresent(
           f ->
               f.completeExceptionally(
                   new IndexOutOfBoundsException("Cannot apply index " + index)));
@@ -187,11 +187,11 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
   private <T> void safeApplyIndexed(
       final Indexed<? extends RaftLogEntry> indexed, final CompletableFuture<T> future) {
     threadContext.checkThread();
-    final var maybeFuture = Optional.ofNullable(future);
+    final var optionalFuture = Optional.ofNullable(future);
     logger.trace("Applying {}", indexed);
 
     raft.notifyCommitListeners(indexed);
-    maybeFuture.ifPresent(f -> f.complete(null));
+    optionalFuture.ifPresent(f -> f.complete(null));
 
     // mark as applied regardless of result
     raft.setLastApplied(indexed.index(), indexed.entry().term());

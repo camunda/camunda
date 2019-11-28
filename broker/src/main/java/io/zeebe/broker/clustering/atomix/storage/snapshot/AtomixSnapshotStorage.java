@@ -48,9 +48,9 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
 
   @Override
   public Snapshot getPendingSnapshotFor(final long snapshotPosition) {
-    final var maybeIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
-    if (maybeIndexed.isPresent()) {
-      final var indexed = maybeIndexed.get();
+    final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
+    if (optionalIndexed.isPresent()) {
+      final var indexed = optionalIndexed.get();
       final var pending =
           store.newPendingSnapshot(
               indexed.index(),
@@ -71,9 +71,9 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
 
   @Override
   public Path getPendingDirectoryFor(final String id) {
-    final var maybeMeta = DbSnapshotMetadata.ofFileName(id);
-    if (maybeMeta.isPresent()) {
-      final var metadata = maybeMeta.get();
+    final var optionalMeta = DbSnapshotMetadata.ofFileName(id);
+    if (optionalMeta.isPresent()) {
+      final var metadata = optionalMeta.get();
       return getPendingDirectoryFor(
           metadata.getIndex(), metadata.getTerm(), metadata.getTimestamp(), metadata.getPosition());
     }
@@ -145,9 +145,9 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
           oldest);
       store.purgeSnapshots(oldest);
 
-      final var maybeConverted = toSnapshot(oldest.getPath());
-      if (maybeConverted.isPresent()) {
-        final var converted = maybeConverted.get();
+      final var optionalConverted = toSnapshot(oldest.getPath());
+      if (optionalConverted.isPresent()) {
+        final var converted = optionalConverted.get();
         deletionListeners.forEach(listener -> listener.onSnapshotDeleted(converted));
       }
     }
