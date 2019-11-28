@@ -51,7 +51,9 @@ export const Button = themed(styled.button`
   &:hover {
     ${Icon.WrappedComponent}::before {
       // hover background color/opacity
-      ${props => getTheme(props.iconButtonTheme).hover.background[props.theme]}
+      ${props =>
+        !props.disabled &&
+        getTheme(props.iconButtonTheme).hover.background[props.theme]}
 
       transition: background 0.15s ease-out;
     }
