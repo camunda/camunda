@@ -84,8 +84,8 @@ public interface LogStorage {
 
   /**
    * Flushes all appended blocks to ensure that all blocks are written completely. Note that a
-   * storage implementation may do nothing if {@link #append(long, long, ByteBuffer, AppendListener)} guarantees
-   * that all blocks are written immediately.
+   * storage implementation may do nothing if {@link #append(long, long, ByteBuffer,
+   * AppendListener)} guarantees that all blocks are written immediately.
    *
    * @throws Exception if fails to flush all blocks
    */

@@ -87,7 +87,10 @@ public class AtomixLogStorageRule extends ExternalResource
 
   @Override
   public void appendEntry(
-      final long lowestPosition, final long highestPosition, final ByteBuffer data, final AppendListener listener) {
+      final long lowestPosition,
+      final long highestPosition,
+      final ByteBuffer data,
+      final AppendListener listener) {
     final Indexed<ZeebeEntry> entry =
         raftLog
             .writer()

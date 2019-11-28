@@ -26,7 +26,6 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -36,9 +35,7 @@ public class LogStorageAppender extends Actor {
   public static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final Map<String, AlgorithmCfg> ALGORITHM_CFG =
       Map.of("vegas", new AppenderVegasCfg(), "gradient2", new AppenderGradient2Cfg());
-  private final AtomicBoolean isFailed = new AtomicBoolean(false);
 
-  private final BlockPeek blockPeek = new BlockPeek();
   private final String name;
   private final Subscription writeBufferSubscription;
   private final int maxAppendBlockSize;
@@ -47,8 +44,6 @@ public class LogStorageAppender extends Actor {
   private final AppendBackpressureMetrics appendBackpressureMetrics;
   private final Environment env;
   private final LoggedEventImpl positionReader = new LoggedEventImpl();
-
-  private boolean isAppending = false;
 
   public LogStorageAppender(
       final String name,
@@ -110,13 +105,14 @@ public class LogStorageAppender extends Actor {
     if (appendEntryLimiter.tryAcquire(positions.highest)) {
       final var listener = new Listener(positions, copiedBuffer);
       appendToStorage(copiedBuffer, positions, listener);
+      blockPeek.markCompleted();
     } else {
       appendBackpressureMetrics.deferred();
       LOG.trace(
           "Backpressure happens: in flight {} limit {}",
           appendEntryLimiter.getInflight(),
           appendEntryLimiter.getLimit());
-      actor.submit(() -> appendBlock(blockPeek));
+      // we will be called later again
     }
   }
 
@@ -129,10 +125,6 @@ public class LogStorageAppender extends Actor {
     return actor.close();
   }
 
-  public long getCurrentAppenderPosition() {
-    return writeBufferSubscription.getPosition();
-  }
-
   @Override
   public String getName() {
     return name;
@@ -140,26 +132,16 @@ public class LogStorageAppender extends Actor {
 
   @Override
   protected void onActorStarting() {
-
     actor.consume(writeBufferSubscription, this::onWriteBufferAvailable);
   }
 
   private void onWriteBufferAvailable() {
-    if (isAppending) {
-      actor.yield();
-      return;
-    }
-
+    final BlockPeek blockPeek = new BlockPeek();
     if (writeBufferSubscription.peekBlock(blockPeek, maxAppendBlockSize, true) > 0) {
-      isAppending = true;
       appendBlock(blockPeek);
     } else {
       actor.yield();
     }
-  }
-
-  public boolean isFailed() {
-    return isFailed.get();
   }
 
   private Positions readPositions(final ByteBuffer buffer) {
@@ -195,13 +177,7 @@ public class LogStorageAppender extends Actor {
     }
 
     @Override
-    public void onWrite(final long address) {
-      actor.run(
-          () -> {
-            isAppending = false;
-            blockPeek.markCompleted();
-          });
-    }
+    public void onWrite(final long address) {}
 
     @Override
     public void onWriteError(final Throwable error) {
