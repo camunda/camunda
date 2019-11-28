@@ -49,6 +49,7 @@ public class AsyncSnapshotDirector extends Actor {
   private long lowerBoundSnapshotPosition;
   private long lastValidSnapshotPosition;
   private final Runnable prepareTakingSnapshot = this::prepareTakingSnapshot;
+  private boolean takingSnapshot;
 
   public AsyncSnapshotDirector(
       final StreamProcessor streamProcessor,
@@ -92,10 +93,11 @@ public class AsyncSnapshotDirector extends Actor {
   }
 
   private void prepareTakingSnapshot() {
-    if (pendingSnapshot != null) {
+    if (takingSnapshot) {
       return;
     }
 
+    takingSnapshot = true;
     final ActorFuture<Long> lastProcessedPosition = streamProcessor.getLastProcessedPositionAsync();
     actor.runOnCompletion(
         lastProcessedPosition,
@@ -109,10 +111,12 @@ public class AsyncSnapshotDirector extends Actor {
                   "No changes since last snapshot we will skip snapshot creation. Last valid snapshot position {}, new lower bound position {}",
                   lastValidSnapshotPosition,
                   position);
+              takingSnapshot = false;
             }
 
           } else {
             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
+            takingSnapshot = false;
           }
         });
   }
@@ -133,6 +137,7 @@ public class AsyncSnapshotDirector extends Actor {
             lastWrittenEventPosition = endPosition;
             onCommitCheck();
           } else {
+            takingSnapshot = false;
             pendingSnapshot = null;
             LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
           }
@@ -162,6 +167,7 @@ public class AsyncSnapshotDirector extends Actor {
       } catch (final Exception ex) {
         LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
       } finally {
+        takingSnapshot = false;
         pendingSnapshot = null;
       }
     }
