@@ -238,6 +238,9 @@ const textAreaStyles = css`
   resize: vertical;
   font-size: 14px;
 
+  min-height: 30px;
+  max-height: 84px;
+
   ${inputMargin};
   width: 100%;
 `;
@@ -248,8 +251,6 @@ export const AddTextarea = styled(BasicTextarea)`
 
 export const EditTextarea = styled(BasicTextarea)`
   ${textAreaStyles};
-  min-height: 30px;
-  max-height: 84px;
 `;
 
 export const EditButtonsTD = styled.td`
