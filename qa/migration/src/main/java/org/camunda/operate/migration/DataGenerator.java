@@ -81,7 +81,11 @@ public class DataGenerator {
 	    operationStarted = operateRestClient.createOperation(workflowInstanceKey,operationType);
 	    attempts++;
 	 }
-	 logger.info("Operation {} started",operationType.name());
+	 if(operationStarted) {
+		 logger.info("Operation {} started",operationType.name());
+	 }else {
+		 logger.info("Operation {} could not started",operationType.name());
+	 }
   }
   
   private void createIncidents(String jobType, int numberOfIncidents) {

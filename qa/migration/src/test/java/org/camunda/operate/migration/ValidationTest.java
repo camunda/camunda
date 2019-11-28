@@ -34,6 +34,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
@@ -107,6 +108,7 @@ public class ValidationTest {
 		assertThat(variableEntities.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount() * 4);
 	}
 	
+	@Ignore 
 	@Test
 	public void testOperations() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("operation");
