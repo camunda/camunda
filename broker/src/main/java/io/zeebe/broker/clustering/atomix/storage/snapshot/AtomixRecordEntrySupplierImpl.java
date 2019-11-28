@@ -24,8 +24,7 @@ public class AtomixRecordEntrySupplierImpl implements AtomixRecordEntrySupplier 
   public Optional<Indexed<ZeebeEntry>> getIndexedEntry(final long position) {
     final var index = reader.lookUpApproximateAddress(position, null);
     // since Atomix assumes that a snapshot for index Y means Y is processed, return for the
-    // previous
-    // index
+    // previous index
     return reader.findEntry(index - 1);
   }
 
