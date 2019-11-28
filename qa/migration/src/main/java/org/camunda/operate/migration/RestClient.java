@@ -1,3 +1,8 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
 package org.camunda.operate.migration;
 
 import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGIN_RESOURCE;
@@ -13,6 +18,8 @@ import javax.annotation.PostConstruct;
 
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.util.CollectionUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.client.TestRestTemplate.HttpClientOption;
@@ -27,6 +34,7 @@ import org.springframework.util.MultiValueMap;
 @Component
 public class RestClient {
 
+	private static final Logger logger = LoggerFactory.getLogger(RestClient.class);
 	private TestRestTemplate testRestTemplate = new TestRestTemplate(HttpClientOption.ENABLE_COOKIES);
 	
 	private HttpEntity<Map<String, String>> loggedInHeaders;
@@ -48,6 +56,7 @@ public class RestClient {
 		body.add("password", password);
 		loggedInHeaders = prepareRequestWithCookies(testRestTemplate
 				.postForEntity( migrationProperties.getFromOperateBaseUrl() + LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class));
+		logger.info("Logged in as {}",loggedInHeaders);
 		return this;
 	}
 	
@@ -55,6 +64,7 @@ public class RestClient {
 		Map<String,Object> operationRequest = CollectionUtil.asMap("operationType",operationType.name());
 		String apiEndpoint = migrationProperties.getFromOperateBaseUrl()+"/api/workflow-instances/" + workflowInstanceKey + "/operation";
 		ResponseEntity<Map> operationResponse = testRestTemplate.postForEntity(apiEndpoint,operationRequest,Map.class, loggedInHeaders);
+		logger.info("OperationResponse: {}",operationResponse.getBody());
 		return operationResponse.getStatusCode().equals(HttpStatus.OK) && operationResponse.getBody().get("count").equals(1);
 	}
 	  

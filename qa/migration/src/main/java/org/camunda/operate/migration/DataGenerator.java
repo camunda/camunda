@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.migration;
 
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -15,6 +16,9 @@ import javax.annotation.PreDestroy;
 
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +45,9 @@ public class DataGenerator {
   private ZeebeClient zeebeClient;
   
   @Autowired
+  private RestHighLevelClient esClient;
+  
+  @Autowired
   private RestClient operateRestClient;
 
   private Random random = new Random();
@@ -58,6 +65,11 @@ public class DataGenerator {
     
     createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE);
     
+    try {
+		esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
+	} catch (IOException e) {
+		logger.error("Error in refreshing indices",e);
+	}
     logger.info("Data generation completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
   }
   
