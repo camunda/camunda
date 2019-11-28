@@ -21,6 +21,6 @@ VOLUME ${ZB_HOME}/data
 
 COPY docker/utils/startup.sh /usr/local/bin
 
-RUN apt-get --purge remove -y curl
+RUN apt-get --purge remove -y --auto-remove curl
 
 ENTRYPOINT ["tini", "--", "/usr/local/bin/startup.sh"]
