@@ -16,6 +16,7 @@ import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
+import org.camunda.operate.webapp.security.UserService;
 import org.camunda.operate.webapp.zeebe.operation.ExecutionFinishedListener;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -45,6 +46,8 @@ public class BatchOperationPerformanceTest {
 
   private static long TEST_TIMEOUT_SECONDS = 60 * 60;   //1 hour
 
+  protected static final String USERNAME = "testuser";
+
   @Autowired
   private OperateProperties operateProperties;
   @Autowired
@@ -57,6 +60,9 @@ public class BatchOperationPerformanceTest {
   @MockBean(answer = Answers.RETURNS_DEEP_STUBS)
   private ZeebeClient zeebeClient;
 
+  @MockBean
+  private UserService userService;
+
   @Before
   public void setup() {
     Answer answerWithDelay = invocation -> {
@@ -68,6 +74,8 @@ public class BatchOperationPerformanceTest {
     when(zeebeClient.newResolveIncidentCommand(anyLong()).send().join()).thenAnswer(answerWithDelay);
 
     createOperations();
+
+    when(userService.getCurrentUsername()).thenReturn(USERNAME);
   }
 
   private void createOperations() {
