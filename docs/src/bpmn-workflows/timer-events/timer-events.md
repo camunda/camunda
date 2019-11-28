@@ -51,7 +51,7 @@ If the duration is zero or negative then the timer will fire immediately.
 A cycle defined as ISO 8601 repeating intervals format. It contains the duration and the number of repetitions. If the repetitions are not defined then the timer will be repeated infinitely until it is canceled.
 
 * `R5/PT10S` - every 10 seconds, up to 5 times
-* `R/PT1D` - every day, infinitely
+* `R/P1D` - every day, infinitely
 
 ## Additional Resources
 
