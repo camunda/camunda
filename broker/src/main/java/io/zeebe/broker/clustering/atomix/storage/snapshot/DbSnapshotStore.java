@@ -219,7 +219,7 @@ public class DbSnapshotStore implements SnapshotStore {
     LOGGER.debug("Deleting snapshot {}", snapshot);
     snapshot.delete();
     snapshots.remove(snapshot.getMetadata());
-    LOGGER.debug("Snapshots count: {}", snapshots.size());
+    LOGGER.trace("Snapshots count: {}", snapshots.size());
   }
 
   private void cleanUpTemporarySnapshots(final DbSnapshotId cutoffId) throws IOException {

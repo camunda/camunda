@@ -134,7 +134,7 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
       final io.atomix.protocols.raft.storage.snapshot.Snapshot snapshot,
       final SnapshotStore store) {
     final var snapshots = store.getSnapshots();
-    if (snapshots.size() >= maxSnapshotCount) {
+    if (snapshots.size() > maxSnapshotCount) {
       // by the condition it's guaranteed there be a snapshot after skipping maxSnapshotCount - 1
       @SuppressWarnings("squid:S3655")
       final var oldest = snapshots.stream().skip(maxSnapshotCount - 1L).findFirst().get();
@@ -163,25 +163,5 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
   private Optional<Snapshot> toSnapshot(final Path path) {
     return DbSnapshotMetadata.ofPath(path)
         .map(metadata -> new SnapshotImpl(metadata.getPosition(), path));
-  }
-
-  private static final class SnapshotImpl implements Snapshot {
-    private final long position;
-    private final Path path;
-
-    private SnapshotImpl(final long position, final Path path) {
-      this.position = position;
-      this.path = path;
-    }
-
-    @Override
-    public long getPosition() {
-      return position;
-    }
-
-    @Override
-    public Path getPath() {
-      return path;
-    }
   }
 }
