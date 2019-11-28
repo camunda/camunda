@@ -35,10 +35,10 @@ export default class ListFooter extends React.Component {
 
     return (
       <Styled.Footer>
-        <Styled.AddSelectionWrapper>
+        <div>
           <AddSelection />
-        </Styled.AddSelectionWrapper>
-        <Styled.PaginatorWrapper>
+        </div>
+        <div>
           {this.isPaginationRequired(maxPage, filterCount) ? (
             <Paginator
               firstElement={firstElement}
@@ -47,7 +47,8 @@ export default class ListFooter extends React.Component {
               onFirstElementChange={onFirstElementChange}
             />
           ) : null}
-        </Styled.PaginatorWrapper>
+        </div>
+        <Styled.Copyright />
       </Styled.Footer>
     );
   }

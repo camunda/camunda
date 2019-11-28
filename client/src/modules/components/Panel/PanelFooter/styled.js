@@ -11,7 +11,12 @@ export const Footer = themed(styled.div`
   z-index: 1;
   height: 38px;
   width: 100%;
-  padding: 10px 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+
   border-top: solid 1px
     ${themeStyle({
       dark: Colors.uiDark04,

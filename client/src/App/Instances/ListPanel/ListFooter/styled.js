@@ -5,21 +5,24 @@
  */
 
 import styled from 'styled-components';
+import BasicCopyright from 'modules/components/Copyright';
 
 export const Footer = styled.div`
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  position: relative;
+  width: 100%;
+  height: 100%;
+
+  padding: 0 20px;
+  margin-bottom: 1px;
+
+  div {
+    flex-grow: 1;
+    flex-basis: 0;
+  }
 `;
 
-export const AddSelectionWrapper = styled.div`
-  position: absolute;
-  top: -4px;
-  left: 0;
-`;
-
-export const PaginatorWrapper = styled.div`
-  position: relative;
-  bottom: 3px;
+export const Copyright = styled(BasicCopyright)`
+  text-align: right;
 `;
