@@ -18,11 +18,6 @@ import java.util.TreeSet;
 final class DbSnapshotChunkReaderFactory {
   private DbSnapshotChunkReaderFactory() {}
 
-  /** @return a static, stateless instance of the factory */
-  static DbSnapshotChunkReaderFactory factory() {
-    return Singleton.INSTANCE;
-  }
-
   /**
    * Creates a new {@link DbSnapshotChunkReader} by walking the snapshot's directory recursively,
    * collecting the files using their name relative to the directory, and ordering them
@@ -32,7 +27,7 @@ final class DbSnapshotChunkReaderFactory {
    * @return a new {@link DbSnapshotChunkReader} for this {@code snapshot}
    * @throws java.io.UncheckedIOException if any file cannot be visited (e.g. read, opened, etc.)
    */
-  DbSnapshotChunkReader ofSnapshot(final DbSnapshot snapshot) {
+  static DbSnapshotChunkReader ofSnapshot(final DbSnapshot snapshot) {
     final var directory = snapshot.getDirectory();
 
     try {
@@ -42,15 +37,11 @@ final class DbSnapshotChunkReaderFactory {
     }
   }
 
-  private NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {
+  private static NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {
     final var set = new TreeSet<>(CharSequence::compare);
     try (var stream = Files.list(directory)) {
       stream.map(directory::relativize).map(Path::toString).forEach(set::add);
     }
     return set;
-  }
-
-  private static final class Singleton {
-    private static final DbSnapshotChunkReaderFactory INSTANCE = new DbSnapshotChunkReaderFactory();
   }
 }

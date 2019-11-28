@@ -72,7 +72,7 @@ public class DbSnapshot implements Snapshot {
 
   @Override
   public SnapshotChunkReader newChunkReader() {
-    return DbSnapshotChunkReaderFactory.factory().ofSnapshot(this);
+    return DbSnapshotChunkReaderFactory.ofSnapshot(this);
   }
 
   @Override
