@@ -71,7 +71,7 @@ public class ValidationTest {
 	public void testImportPositions() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("import-position");
 		List<ImportPositionEntity> importPositions = getEntitiesFor("import-position", ImportPositionEntity.class);
-		assertThat(importPositions.isEmpty()).describedAs("There should exists at least 1 ImportPosition").isTrue();
+		assertThat(importPositions.isEmpty()).describedAs("There should exists at least 1 ImportPosition").isFalse();
 	}
 	
 	@Test
@@ -91,6 +91,7 @@ public class ValidationTest {
 		assertThat(sequenceFlows.size()).isEqualTo(202);
 	}
 	
+	@Test
 	public void testActivityInstances() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("activity-instance");
 		List<ActivityInstanceEntity> activityInstances = getEntitiesFor("activity-instance", ActivityInstanceEntity.class);
@@ -152,6 +153,17 @@ public class ValidationTest {
 		assertThat(incidents.stream().allMatch(i -> i.getErrorType() != null)).describedAs("Each incident has an errorType").isTrue();
 	}
 	
+
+	protected void setupContext() {
+		TestContextManager testContextManager = new TestContextManager(getClass());
+	    try {
+	      testContextManager.prepareTestInstance(this);
+	      objectMapper.registerModule(new JavaTimeModule());
+	    } catch (Exception e) {
+	      throw new RuntimeException("Failed to initialize context manager", e);
+	    }
+	}
+	
 	protected void assertAllIndexVersionsHasSameCounts(String indexName) {
 		List<String> versions = migrationProperties.getVersions();
 		List<Long> hitsForVersions = map(versions, version -> getTotalHitsFor("operate-"+indexName+"-"+version+"_"));
@@ -176,16 +188,6 @@ public class ValidationTest {
 		searchRequest.source().size(1000);
 		SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
 		return mapSearchHits(searchResponse.getHits().getHits(), objectMapper, entityClass);	
-	}
-	
-	protected void setupContext() {
-		TestContextManager testContextManager = new TestContextManager(getClass());
-	    try {
-	      testContextManager.prepareTestInstance(this);
-	      objectMapper.registerModule(new JavaTimeModule());
-	    } catch (Exception e) {
-	      throw new RuntimeException("Failed to initialize context manager", e);
-	    }
 	}
 	
 	protected String getIndexNameFor(String index) {
