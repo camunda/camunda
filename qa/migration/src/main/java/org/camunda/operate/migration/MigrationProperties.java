@@ -24,6 +24,8 @@ public class MigrationProperties {
   private int workflowInstanceCount = 101;
 
   private int incidentCount = 27;
+  
+  private String fromOperateBaseUrl = "http://localhost:8080";
 
   private String zeebeBrokerContactPoint = "localhost:26500";
 
@@ -39,6 +41,14 @@ public class MigrationProperties {
   
   public List<String> getVersions(){
 	  return versions;
+  }
+  
+  public void setFromOperateBaseUrl(String fromOperateBaseUrl) {
+	  this.fromOperateBaseUrl = fromOperateBaseUrl;
+  }
+  
+  public String getFromOperateBaseUrl() {
+	  return fromOperateBaseUrl;
   }
 
   public int getWorkflowCount() {
@@ -89,5 +99,4 @@ public class MigrationProperties {
     this.elasticsearchPort = elasticsearchPort;
   }
 
- 
 }

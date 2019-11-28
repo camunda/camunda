@@ -88,14 +88,14 @@ public class ValidationTest {
 	public void testSequenceFlows() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("sequence-flow");
 		List<SequenceFlowEntity> sequenceFlows = getEntitiesFor("sequence-flow", SequenceFlowEntity.class);
-		assertThat(sequenceFlows.size()).isEqualTo(202);
+		assertThat(sequenceFlows.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount() * 2);
 	}
 	
 	@Test
 	public void testActivityInstances() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("activity-instance");
 		List<ActivityInstanceEntity> activityInstances = getEntitiesFor("activity-instance", ActivityInstanceEntity.class);
-		assertThat(activityInstances.size()).isEqualTo(303);
+		assertThat(activityInstances.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount() * 3);
 		assertThat(activityInstances.stream().allMatch( a -> a.getType() != null)).as("All activity instances have a type").isTrue();
 		assertThat(activityInstances.stream().allMatch( a -> a.getState()!= null)).as("All activity instances have a state").isTrue();
 	}
@@ -104,15 +104,14 @@ public class ValidationTest {
 	public void testVariables() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("variable");
 		List<VariableEntity> variableEntities = getEntitiesFor("variable", VariableEntity.class);
-		assertThat(variableEntities.size()).isEqualTo(404);
+		assertThat(variableEntities.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount() * 4);
 	}
 	
 	@Test
 	public void testOperations() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("operation");
 		List<OperationEntity> operations = getEntitiesFor("operation", OperationEntity.class);
-		// TODO: check operation (needs to create a operation from data generator
-		assertThat(operations).isNotNull();
+		assertThat(operations.size()).describedAs("At least one operation is active").isGreaterThan(0);
 	}
         	
 	@Test
@@ -166,7 +165,7 @@ public class ValidationTest {
 	
 	protected void assertAllIndexVersionsHasSameCounts(String indexName) {
 		List<String> versions = migrationProperties.getVersions();
-		List<Long> hitsForVersions = map(versions, version -> getTotalHitsFor("operate-"+indexName+"-"+version+"_"));
+		List<Long> hitsForVersions = map(versions, version -> getTotalHitsFor(getIndexNameFor(indexName,version)));
 		assertThat(new HashSet<>(hitsForVersions).size()).as("Checks %s index for versions %s has the same counts", indexName, versions).isEqualTo(1);
 	}
 
@@ -179,9 +178,7 @@ public class ValidationTest {
 	}
 	
 	protected <T> List<T> getEntitiesFor(String index,Class<T> entityClass) throws IOException{
-		SearchRequest searchRequest = new SearchRequest(getIndexNameFor(index));
-		searchRequest.source().size(1000);
-		return searchEntitiesFor(searchRequest, entityClass);
+		return searchEntitiesFor(new SearchRequest(getIndexNameFor(index)), entityClass);
 	}
 	
 	protected <T> List<T> searchEntitiesFor(SearchRequest searchRequest,Class<T> entityClass) throws IOException{
@@ -191,7 +188,11 @@ public class ValidationTest {
 	}
 	
 	protected String getIndexNameFor(String index) {
-		return String.format("operate-%s-%s_", index,operateProperties.getSchemaVersion());
+		return getIndexNameFor(index, operateProperties.getSchemaVersion());
+	}
+	
+	protected String getIndexNameFor(String index,String version) {
+		return String.format("operate-%s-%s_", index,version);
 	}
 	
 }

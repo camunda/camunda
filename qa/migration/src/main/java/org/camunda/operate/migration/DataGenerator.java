@@ -7,10 +7,13 @@ package org.camunda.operate.migration;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import javax.annotation.PreDestroy;
 
+import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,22 +39,39 @@ public class DataGenerator {
 
   @Autowired
   private ZeebeClient zeebeClient;
+  
+  @Autowired
+  private RestClient operateRestClient;
 
   private Random random = new Random();
 
+  private List<Long> workflowInstanceKeys = new ArrayList<>();
+  
   public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     logger.info("Starting generating data...");
 
     deployWorkflows(migrationProperties.getWorkflowCount());
-    startWorkflowInstances(migrationProperties.getWorkflowInstanceCount());
+    workflowInstanceKeys = startWorkflowInstances(migrationProperties.getWorkflowInstanceCount());
     completeTasks("task1",migrationProperties.getWorkflowInstanceCount());
     createIncidents("task2",migrationProperties.getIncidentCount());
-
+    
+    createOperation(OperationType.CANCEL_WORKFLOW_INSTANCE);
     
     logger.info("Data generation completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
   }
-
+  
+  private void createOperation(OperationType operationType) {
+	 boolean operationStarted = false;
+	 int attempts = 0;
+	 while(!operationStarted && attempts < workflowInstanceKeys.size() * 2) {
+	    Long workflowInstanceKey = chooseKey(workflowInstanceKeys);
+	    operationStarted = operateRestClient.createOperation(workflowInstanceKey,operationType);
+	    attempts++;
+	 }
+	 logger.info("Operation {} started",operationType.name());
+  }
+  
   private void createIncidents(String jobType, int numberOfIncidents) {
 	ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
 	logger.info("{} incidents in {} created", numberOfIncidents, jobType);
@@ -62,13 +82,16 @@ public class DataGenerator {
     logger.info("{} tasks {} completed",count,jobType);
   }
 
-  private void startWorkflowInstances(int numberOfWorkflowInstances) {
-    for(int i=0;i<numberOfWorkflowInstances;i++) {
+  private List<Long> startWorkflowInstances(int numberOfWorkflowInstances) {
+	List<Long> workflowInstanceKeys = new ArrayList<>();
+	for(int i=0;i<numberOfWorkflowInstances;i++) {
     	String bpmnProcessId = getRandomBpmnProcessId();
     	long workflowInstanceKey = ZeebeTestUtil.startWorkflowInstance(zeebeClient,bpmnProcessId, "{\"var1\": \"value1\"}");
     	logger.info("Started workflowInstance {} for workflow {}",workflowInstanceKey,bpmnProcessId);
+    	workflowInstanceKeys.add(workflowInstanceKey);
     }
-    logger.info("{} workflowInstances started",numberOfWorkflowInstances);
+    logger.info("{} workflowInstances started",workflowInstanceKeys.size());
+    return workflowInstanceKeys;
   }
   
   private String getRandomBpmnProcessId() {
@@ -105,6 +128,10 @@ public class DataGenerator {
       .serviceTask("task5").zeebeTaskType("task5")
     .endEvent()
     .done();
+  }
+  
+  private Long chooseKey(List<Long> keys) {
+	return keys.get(random.nextInt(keys.size()));
   }
   
 }
