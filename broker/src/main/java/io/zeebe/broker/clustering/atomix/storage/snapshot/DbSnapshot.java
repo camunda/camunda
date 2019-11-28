@@ -17,6 +17,7 @@ import io.zeebe.util.ZbLogger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import org.slf4j.Logger;
 
 public class DbSnapshot implements Snapshot {
@@ -130,6 +131,25 @@ public class DbSnapshot implements Snapshot {
   @Override
   public void closeWriter(final SnapshotWriter writer) {
     throw new UnsupportedOperationException("Deprecated operation, use DbPendingSnapshot");
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getDirectory(), getMetadata());
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final DbSnapshot that = (DbSnapshot) o;
+    return getDirectory().equals(that.getDirectory()) && getMetadata().equals(that.getMetadata());
   }
 
   @Override
