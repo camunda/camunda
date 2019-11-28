@@ -69,6 +69,7 @@ exports[`Login should display an error if any field is empty 1`] = `
     </Themed(styled.a)>
     .
   </Themed(styled.div)>
+  <Styled(Copyright) />
 </styled.div>
 `;
 
@@ -129,6 +130,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     </Themed(styled.a)>
     .
   </Themed(styled.div)>
+  <Styled(Copyright) />
 </styled.div>
 `;
 
@@ -187,5 +189,6 @@ exports[`Login should render login form by default 1`] = `
     </Themed(styled.a)>
     .
   </Themed(styled.div)>
+  <Styled(Copyright) />
 </styled.div>
 `;

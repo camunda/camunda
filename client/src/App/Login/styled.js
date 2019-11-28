@@ -9,6 +9,7 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
 import Input from 'modules/components/Input';
+import BasicCopyright from 'modules/components/Copyright';
 
 export const Login = styled.div`
   display: flex;
@@ -121,3 +122,8 @@ export const Disclaimer = themed(styled.div`
   width: 100%;
   margin-top: 35px;
 `);
+
+export const Copyright = styled(BasicCopyright)`
+  position: absolute;
+  bottom: 8px;
+`;

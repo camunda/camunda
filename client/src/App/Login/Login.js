@@ -105,6 +105,7 @@ class Login extends React.Component {
           </Styled.Anchor>
           .
         </Styled.Disclaimer>
+        <Styled.Copyright />
       </Styled.Login>
     );
   }
