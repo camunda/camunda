@@ -31,7 +31,7 @@ public class UpgradeMain {
   private static Map<String, UpgradeProcedure> upgrades = new HashMap<>();
 
   static {
-    new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
+    new LoggingConfigurationReader("upgrade-logback.xml").defineLogbackLoggingConfiguration();
     upgrades.put("2.7.0", new UpgradeFrom26To27());
   }
 

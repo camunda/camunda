@@ -9,39 +9,46 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Objects;
 
 
 public class LoggingConfigurationReader {
 
+  private LinkedList<String> loggingConfigNames = Lists.newLinkedList(Arrays.asList(
+    "environment-logback.xml",
+    "logback-test.xml",
+    "logback.xml"
+  ));
+
   private Logger logger = LoggerFactory.getLogger(getClass());
+
+  public LoggingConfigurationReader() {
+  }
+
+  public LoggingConfigurationReader(String configXmlName) {
+    this.loggingConfigNames.addFirst(configXmlName);
+  }
+
 
   public void defineLogbackLoggingConfiguration() {
     LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
     loggerContext.reset();
     JoranConfigurator configurator = new JoranConfigurator();
-    InputStream configStream = null;
-    try {
-      configStream = getLogbackConfigurationFileStream();
+    try (InputStream configStream = getLogbackConfigurationFileStream()) {
       configurator.setContext(loggerContext);
       configurator.doConfigure(configStream); // loads logback file
       Objects.requireNonNull(configStream).close();
     } catch (JoranException | IOException e) {
       //since logging setup broke, print it in standard error stream
       e.printStackTrace();
-    } finally {
-      if (configStream != null) {
-        try {
-          configStream.close();
-        } catch (IOException e) {
-          logger.error("error closing stream", e);
-        }
-      }
     }
     enableElasticsearchRequestLogging(loggerContext);
   }
@@ -58,20 +65,10 @@ public class LoggingConfigurationReader {
   }
 
   private InputStream getLogbackConfigurationFileStream() {
-    InputStream stream = this.getClass()
-      .getClassLoader()
-      .getResourceAsStream("environment-logback.xml");
-    if (stream != null) {
-      return stream;
-    }
-    stream = this.getClass().getClassLoader().getResourceAsStream("logback-test.xml");
-    if (stream != null) {
-      return stream;
-    }
-    stream = this.getClass().getClassLoader().getResourceAsStream("logback.xml");
-    if (stream != null) {
-      return stream;
-    }
-    return null;
+    return loggingConfigNames.stream()
+      .map(config -> this.getClass().getClassLoader().getResourceAsStream(config))
+      .filter(Objects::nonNull)
+      .findFirst()
+      .orElse(null);
   }
 }

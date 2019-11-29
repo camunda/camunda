@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 public class UpgradeExecutionPlan implements UpgradePlan {
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private OptimizeElasticsearchClient prefixAwareClient;
 
