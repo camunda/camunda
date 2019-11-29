@@ -51,7 +51,7 @@ export default withErrorHandling(
               .getElementsByTagName('bpmn:process')[0];
             const name = process.getAttribute('name') || process.getAttribute('id');
 
-            this.props.mightFail(createProcess(name, xml), this.loadList, showError);
+            this.props.mightFail(createProcess(name, xml, {}), this.loadList, showError);
           } catch (e) {
             showError(t('events.parseError'));
           }
