@@ -28,6 +28,8 @@ import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.EventBasedProcessIndex;
 import org.camunda.optimize.service.es.schema.index.EventIndex;
+import org.camunda.optimize.service.es.schema.index.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.index.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.LicenseIndex;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
@@ -137,6 +139,8 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeStep(movePrivateProcessReportsWithAlertsToAlertArchiveCollection())
       .addUpgradeStep(movePrivateDecisionReportsWithAlertsToAlertArchiveCollection())
       .addUpgradeStep(addScopeToExistingCollections())
+      .addUpgradeStep(new CreateIndexStep(new EventSequenceCountIndex()))
+      .addUpgradeStep(new CreateIndexStep(new EventTraceStateIndex()))
 
       .build();
   }

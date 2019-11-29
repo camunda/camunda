@@ -12,7 +12,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.MappedEventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -119,11 +119,11 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
 
   @ParameterizedTest(name = "Invalid mapped event: {0}")
   @MethodSource("createInvalidMappedEventDtos")
-  public void createEventBasedProcessWithInvalidEventMappings(MappedEventDto invalidMappedEventDto) throws IOException {
+  public void createEventBasedProcessWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) throws IOException {
     // given event mappings but mapped events have fields missing
-    invalidMappedEventDto.setGroup(null);
+    invalidEventTypeDto.setGroup(null);
     EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
-      Collections.singletonMap("some_task_id", createEventMappingsDto(invalidMappedEventDto, createMappedEventDto())),
+      Collections.singletonMap("some_task_id", createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())),
       "process name",
       FULL_PROCESS_DEFINITION_XML
     );
@@ -297,14 +297,14 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
 
   @ParameterizedTest(name = "Invalid mapped event: {0}")
   @MethodSource("createInvalidMappedEventDtos")
-  public void updateEventBasedProcessWithInvalidEventMappings(MappedEventDto invalidMappedEventDto) throws IOException {
+  public void updateEventBasedProcessWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) throws IOException {
     // given existing event based process
     String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
       FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
 
     // when update event mappings with a mapped event with missing fields
     EventBasedProcessDto updateDto = createEventBasedProcessDtoWithMappings(
-      Collections.singletonMap(VALID_SERVICE_TASK_ID, createEventMappingsDto(invalidMappedEventDto, createMappedEventDto())),
+      Collections.singletonMap(VALID_SERVICE_TASK_ID, createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())),
       "process name",
       FULL_PROCESS_DEFINITION_XML
     );
@@ -406,23 +406,23 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     return eventBasedProcessDto;
   }
 
-  private EventMappingDto createEventMappingsDto(MappedEventDto startEventDto, MappedEventDto endEventDto) {
+  private EventMappingDto createEventMappingsDto(EventTypeDto startEventDto, EventTypeDto endEventDto) {
     return EventMappingDto.builder()
       .start(startEventDto)
       .end(endEventDto)
       .build();
   }
 
-  private static Stream<MappedEventDto> createInvalidMappedEventDtos() {
+  private static Stream<EventTypeDto> createInvalidMappedEventDtos() {
     return Stream.of(
-      MappedEventDto.builder().group(null).source(UUID.randomUUID().toString()).eventName(UUID.randomUUID().toString()).build(),
-      MappedEventDto.builder().group(UUID.randomUUID().toString()).source(null).eventName(UUID.randomUUID().toString()).build(),
-      MappedEventDto.builder().group(UUID.randomUUID().toString()).source(UUID.randomUUID().toString()).eventName(null).build()
+      EventTypeDto.builder().group(null).source(UUID.randomUUID().toString()).eventName(UUID.randomUUID().toString()).build(),
+      EventTypeDto.builder().group(UUID.randomUUID().toString()).source(null).eventName(UUID.randomUUID().toString()).build(),
+      EventTypeDto.builder().group(UUID.randomUUID().toString()).source(UUID.randomUUID().toString()).eventName(null).build()
     );
   }
 
-  private static MappedEventDto createMappedEventDto() {
-    return MappedEventDto.builder()
+  private static EventTypeDto createMappedEventDto() {
+    return EventTypeDto.builder()
       .group(UUID.randomUUID().toString())
       .source(UUID.randomUUID().toString())
       .eventName(UUID.randomUUID().toString())

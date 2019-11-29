@@ -12,18 +12,20 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 
 @Builder
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldNameConstants
-public class EventMappingDto implements OptimizeDto {
+public class EventTypeDto implements OptimizeDto {
 
-  @Valid
-  EventTypeDto start;
-  @Valid
-  EventTypeDto end;
+  @NotBlank
+  private String group;
+  @NotBlank
+  private String source;
+  @NotBlank
+  private String eventName;
 
 }

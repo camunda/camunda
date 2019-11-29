@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 public class IndexableEventMappingDto implements OptimizeDto {
 
   String flowNodeId;
-  MappedEventDto start;
-  MappedEventDto end;
+  EventTypeDto start;
+  EventTypeDto end;
 
 }

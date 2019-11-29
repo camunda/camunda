@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.schema.index;
 
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.MappedEventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -33,9 +33,9 @@ public class EventBasedProcessIndex extends StrictIndexMappingCreator {
   public static final String START = IndexableEventMappingDto.Fields.start;
   public static final String END = IndexableEventMappingDto.Fields.end;
 
-  public static final String GROUP = MappedEventDto.Fields.group;
-  public static final String SOURCE = MappedEventDto.Fields.source;
-  public static final String EVENT_NAME = MappedEventDto.Fields.eventName;
+  public static final String GROUP = EventTypeDto.Fields.group;
+  public static final String SOURCE = EventTypeDto.Fields.source;
+  public static final String EVENT_NAME = EventTypeDto.Fields.eventName;
 
   @Override
   public String getIndexName() {

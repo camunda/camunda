@@ -109,7 +109,7 @@ public class SchemaInitializerIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size(), is(21));
+    assertThat(mappings.size(), is(23));
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
     }
