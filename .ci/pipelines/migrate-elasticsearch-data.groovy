@@ -128,6 +128,8 @@ spec:
     - name: operate
       image: camunda/operate:1.0.0
       env:
+      	- name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
+      	  value: false
       resources:
         limits:
           cpu: 1

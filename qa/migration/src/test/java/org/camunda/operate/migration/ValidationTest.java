@@ -6,6 +6,13 @@
 package org.camunda.operate.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.ACTIVITIES_JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.VARIABLES_JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.CollectionUtil.map;
+import static org.camunda.operate.util.ElasticsearchUtil.mapSearchHits;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -23,18 +30,11 @@ import org.camunda.operate.entities.listview.VariableForListViewEntity;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.property.OperateProperties;
-
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.*;
-import static org.camunda.operate.util.CollectionUtil.*;
-import static org.camunda.operate.util.ElasticsearchUtil.*;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
@@ -108,7 +108,6 @@ public class ValidationTest {
 		assertThat(variableEntities.size()).isEqualTo(migrationProperties.getWorkflowInstanceCount() * 4);
 	}
 	
-	@Ignore 
 	@Test
 	public void testOperations() throws Throwable {
 		assertAllIndexVersionsHasSameCounts("operation");
