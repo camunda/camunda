@@ -14,8 +14,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static org.camunda.optimize.data.generation.generators.client.SimpleEngineClient.DELAY_VARIABLE_NAME;
-
 public class InvoiceDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/invoice.bpmn";
@@ -47,7 +45,6 @@ public class InvoiceDataGenerator extends DataGenerator {
       "invoiceCategory",
       invoiceCategory[ThreadLocalRandom.current().nextInt(0, invoiceCategory.length)]
     );
-    variables.put(DELAY_VARIABLE_NAME, ThreadLocalRandom.current().nextDouble() > 0.9);
     return variables;
   }
 
