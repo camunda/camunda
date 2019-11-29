@@ -63,8 +63,7 @@ public class StateSnapshotController implements SnapshotController {
   }
 
   @Override
-  public void commitSnapshot(final Snapshot snapshot) throws IOException {
-    Objects.requireNonNull(db, "Cannot commit snapshot for a closed database");
+  public void commitSnapshot(final Snapshot snapshot) {
     storage.commitSnapshot(snapshot);
   }
 
