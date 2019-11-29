@@ -26,5 +26,21 @@
   h2 {
     font-size: 1.143em;
     font-weight: 600;
+    margin: 24px 0 10px;
+
+    &:first-of-type {
+      margin-top: 0;
+    }
+  }
+
+  code {
+    background-color: #eee;
+    font-size: 12px;
+    padding: 0px 4px;
+    border: 1px solid #ddd;
+  }
+
+  p {
+    margin: 0 0 6px 0;
   }
 }
