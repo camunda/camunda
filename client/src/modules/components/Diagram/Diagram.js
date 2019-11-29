@@ -11,7 +11,7 @@ import {flatMap} from 'lodash';
 
 import {themed} from 'modules/theme';
 
-import {STATE} from 'modules/constants';
+import {STATE, EXPAND_STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
@@ -77,7 +77,12 @@ class Diagram extends React.PureComponent {
     const hasNewDefinitions = this.props.definitions !== prevDefinitions;
     const hasNewTheme = this.props.theme !== prevTheme;
 
-    if (this.props.expandState !== prevExpandState) {
+    const {expandState} = this.props;
+
+    if (
+      expandState !== prevExpandState &&
+      expandState !== EXPAND_STATE.COLLAPSED
+    ) {
       this.handleZoomReset();
     }
 
