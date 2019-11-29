@@ -57,11 +57,16 @@ exports[`matches the snapshot 1`] = `
     <NavItem
       active={
         Array [
-          "/events/",
-          "/events/*",
+          "/eventBasedProcess/",
+          "/eventBasedProcess/*",
         ]
       }
-      linksTo="/events/"
+      breadcrumbsEntities={
+        Array [
+          "eventBasedProcess",
+        ]
+      }
+      linksTo="/eventBasedProcess/"
       name="Event Based Processes"
     />
   </HeaderNav>

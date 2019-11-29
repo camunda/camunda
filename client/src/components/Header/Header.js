@@ -60,8 +60,9 @@ class Header extends React.Component {
           />
           <HeaderNav.Item
             name={t('navigation.events')}
-            linksTo="/events/"
-            active={['/events/', '/events/*']}
+            linksTo="/eventBasedProcess/"
+            active={['/eventBasedProcess/', '/eventBasedProcess/*']}
+            breadcrumbsEntities={['eventBasedProcess']}
           />
         </HeaderNav>
         <ChangeLog />

@@ -86,7 +86,7 @@ export default withErrorHandling(
               processes.map(process => {
                 const {id, name} = process;
 
-                const link = `/events/${id}/`;
+                const link = `/eventBasedProcess/${id}/`;
 
                 return {
                   icon: <ProcessIcon />,
