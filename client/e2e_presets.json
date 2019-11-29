@@ -1,4 +1,4 @@
 {
   "numberOfProcessInstances": 5000,
-  "definitions": "Invoice:4,InvoiceDataFor2Tenants:2,LeadQualification:6,BranchAnalysis:2,DmnTable:3,BookRequest:1,BookRequestForOneTenant:4,MultiInstanceSubprocessRequest:3,EmbeddedSubprocessRequest:2,HiringProcess:4,HiringProcessFor5Tenants:3,ProcessRequest:12"
+  "definitions": "Invoice:4,InvoiceDataFor2Tenants:2,LeadQualification:6,BranchAnalysis:2,DmnTable:3,BookRequest:1,BookRequestForOneTenant:4,MultiInstanceSubprocessRequest:3,EmbeddedSubprocessRequest:2,HiringProcess:4,HiringProcessFor5Tenants:3,ProcessRequest:12,AnalysisTesting:6"
 }

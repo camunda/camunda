@@ -89,8 +89,8 @@ test('should show outliers heatmap when selecting a process definition', async t
 
   await t.resizeWindow(1050, 700);
 
-  await u.selectDefinition(t, 'Invoice Receipt', [6, 5, 4, 3]);
-  await t.hover(Analysis.flowNode('approveInvoice'));
+  await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
+  await t.hover(Analysis.flowNode('AE0010P0030'));
 
   await t
     .takeScreenshot('process/analysis/outlier-analysis/outlierExample_1_heatMap.png', {
@@ -104,9 +104,9 @@ test('should show outliers heatmap when selecting a process definition', async t
 test('should show outlier details modal when clicking view details on a flow node', async t => {
   await t.click(Analysis.navItem);
 
-  await u.selectDefinition(t, 'Invoice Receipt', [6, 5, 4, 3]);
+  await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
 
-  await t.hover(Analysis.flowNode('approveInvoice'));
+  await t.hover(Analysis.flowNode('AE0010P0030'));
 
   await t.click(Analysis.tooltipDetailsButton);
 
@@ -124,9 +124,9 @@ test('should show outlier details modal when clicking view details on a flow nod
 test('should show common outliers variables as a table', async t => {
   await t.click(Analysis.navItem);
 
-  await u.selectDefinition(t, 'Invoice Receipt', [6, 5, 4, 3]);
+  await u.selectDefinition(t, 'Analysis Testing Process', [6, 5, 4, 3]);
 
-  await t.hover(Analysis.flowNode('approveInvoice'));
+  await t.hover(Analysis.flowNode('AE0010P0030'));
 
   await t.click(Analysis.tooltipDetailsButton);
 

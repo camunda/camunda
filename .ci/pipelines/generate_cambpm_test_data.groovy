@@ -214,29 +214,6 @@ pipeline {
                 }
             }
         }
-        stage('Prepare') {
-            agent {
-                kubernetes {
-                    cloud 'optimize-ci'
-                    label "optimize-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
-                    defaultContainer 'jnlp'
-                    slaveConnectTimeout 600
-                    yaml dataGenerationAgent(env, POSTGRES_VERSION, env.CAMBPM_VERSION)
-                }
-            }
-            steps {
-                cloneGitRepo()
-                container('postgres') {
-                    sh("df -h /export /var/lib/postgresql/data")
-                }
-                container('gcloud') {
-                    sh("apk add --no-cache jq")
-                }
-                container('maven') {
-                    sh("apt-get update && apt-get install -y jq")
-                }
-            }
-        }
         stage('Data Generation') {
             agent {
                 kubernetes {
@@ -247,8 +224,21 @@ pipeline {
                     yaml dataGenerationAgent(env, POSTGRES_VERSION, env.CAMBPM_VERSION)
                 }
             }
-
             stages {
+                stage('Prepare') {
+                    steps {
+                        cloneGitRepo()
+                        container('postgres') {
+                            sh("df -h /export /var/lib/postgresql/data")
+                        }
+                        container('gcloud') {
+                            sh("apk add --no-cache jq")
+                        }
+                        container('maven') {
+                            sh("apt-get update && apt-get install -y jq")
+                        }
+                    }
+                }
                 stage('Generate Data') {
                     steps {
                         container('maven') {
