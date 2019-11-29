@@ -98,19 +98,19 @@ public class AsyncSnapshotDirector extends Actor {
     }
 
     takingSnapshot = true;
-    final ActorFuture<Long> lastProcessedPosition = streamProcessor.getLastProcessedPositionAsync();
+    final var futureLastProcessedPosition = streamProcessor.getLastProcessedPositionAsync();
     actor.runOnCompletion(
-        lastProcessedPosition,
-        (position, error) -> {
+        futureLastProcessedPosition,
+        (lastProcessedPosition, error) -> {
           if (error == null) {
-            if (position > lastValidSnapshotPosition) {
-              this.lowerBoundSnapshotPosition = position;
+            if (lastProcessedPosition > lastValidSnapshotPosition) {
+              this.lowerBoundSnapshotPosition = lastProcessedPosition;
               takeSnapshot();
             } else {
               LOG.debug(
                   "No changes since last snapshot we will skip snapshot creation. Last valid snapshot position {}, new lower bound position {}",
                   lastValidSnapshotPosition,
-                  position);
+              lastProcessedPosition);
               takingSnapshot = false;
             }
 
