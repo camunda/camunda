@@ -15,9 +15,12 @@ import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.TreeSet;
 import org.slf4j.Logger;
 
 public class DbSnapshot implements Snapshot {
@@ -73,7 +76,11 @@ public class DbSnapshot implements Snapshot {
 
   @Override
   public SnapshotChunkReader newChunkReader() {
-    return DbSnapshotChunkReaderFactory.ofSnapshot(this);
+    try {
+      return new DbSnapshotChunkReader(directory, collectChunks(directory));
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
   @Override
@@ -155,5 +162,13 @@ public class DbSnapshot implements Snapshot {
   @Override
   public String toString() {
     return "DbSnapshot{" + "directory=" + directory + ", metadata=" + metadata + '}';
+  }
+
+  private NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {
+    final var set = new TreeSet<>(CharSequence::compare);
+    try (var stream = Files.list(directory)) {
+      stream.map(directory::relativize).map(Path::toString).forEach(set::add);
+    }
+    return set;
   }
 }
