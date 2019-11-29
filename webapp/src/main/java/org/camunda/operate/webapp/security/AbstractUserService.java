@@ -5,6 +5,7 @@
  */
 package org.camunda.operate.webapp.security;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -13,6 +14,7 @@ public abstract class AbstractUserService implements UserService {
   @Override
   public String getCurrentUsername() {
     SecurityContext context = SecurityContextHolder.getContext();
-    return context.getAuthentication().getPrincipal().toString();
+    Authentication authentication = context.getAuthentication();
+    return authentication.getName();
   }
 }
