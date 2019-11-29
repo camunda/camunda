@@ -19,6 +19,7 @@ class Modeler {
       getGraphics: jest.fn(() => ({
         querySelector: jest.fn(() => ({setAttribute: jest.fn()}))
       })),
+      get: jest.fn().mockReturnValue({}),
       forEach: jest.fn()
     };
     this.eventBus = {on: jest.fn()};

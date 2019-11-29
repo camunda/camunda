@@ -133,7 +133,17 @@ export default withErrorHandling(
               name={name}
               mappings={mappings}
               getXml={this.getXml}
-              onChange={this.setDirty}
+              onChange={viewer => {
+                this.setDirty();
+
+                // remove all mappings where the diagram element does not exist anymore
+                const elementRegistry = viewer.get('elementRegistry');
+                this.setState(({mappings}) => ({
+                  mappings: update(mappings, {
+                    $unset: Object.keys(mappings).filter(key => !elementRegistry.get(key))
+                  })
+                }));
+              }}
               onSelectNode={({newSelection}) => {
                 if (newSelection.length !== 1) {
                   this.setState({selectedNode: null});
@@ -141,13 +151,6 @@ export default withErrorHandling(
                   this.setState({selectedNode: newSelection[0].businessObject});
                 }
               }}
-              onElementDelete={({context: {elements}}) =>
-                this.setState(({mappings}) => ({
-                  mappings: update(mappings, {
-                    $unset: elements.map(({businessObject: {id}}) => id)
-                  })
-                }))
-              }
             />
           </BPMNDiagram>
           <EventTable selection={selectedNode} mappings={mappings} onChange={this.setMapping} />

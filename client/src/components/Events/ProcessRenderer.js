@@ -14,17 +14,20 @@ export default function ProcessRenderer({
   mappings = {},
   getXml = {},
   onChange = () => {},
-  onElementDelete = () => {},
   onSelectNode = () => {}
 }) {
+  function onChangeWithViewer() {
+    onChange(viewer);
+  }
+
   useEffect(() => {
     const eventBus = viewer.get('eventBus');
 
-    eventBus.on('commandStack.changed', onChange);
+    eventBus.on('commandStack.changed', onChangeWithViewer);
     eventBus.on('selection.changed', onSelectNode);
-    eventBus.on('commandStack.elements.delete.preExecute', onElementDelete);
 
     const overlays = viewer.get('overlays');
+    const elementRegistry = viewer.get('elementRegistry');
 
     function createOverlay(id, type) {
       const position = type === 'start' ? {top: -33, left: 9} : {top: -33, right: 27};
@@ -39,18 +42,19 @@ export default function ProcessRenderer({
     }
 
     Object.entries(mappings).forEach(([id, {start, end}]) => {
-      if (start) {
-        createOverlay(id, 'start');
-      }
-      if (end) {
-        createOverlay(id, 'end');
+      if (elementRegistry.get(id)) {
+        if (start) {
+          createOverlay(id, 'start');
+        }
+        if (end) {
+          createOverlay(id, 'end');
+        }
       }
     });
 
     return () => {
-      eventBus.off('commandStack.changed', onChange);
+      eventBus.off('commandStack.changed', onChangeWithViewer);
       eventBus.off('selection.changed', onSelectNode);
-      eventBus.off('commandStack.elements.delete.preExecute', onElementDelete);
       overlays.remove({type: 'MAPPED'});
     };
   });

@@ -25,7 +25,6 @@ exports[`should match snapshot 1`] = `
       mappings={Object {}}
       name="initial Name"
       onChange={[Function]}
-      onElementDelete={[Function]}
       onSelectNode={[Function]}
     />
   </Themed(BPMNDiagramErrorHandler)>

@@ -95,8 +95,8 @@ it('should remove mappings when a node is removed', () => {
     <ProcessEdit {...props} initialMappings={{a: {end: {eventName: '1'}, start: null}}} />
   );
 
-  node.find(ProcessRenderer).prop('onElementDelete')({
-    context: {elements: [{businessObject: {id: 'a'}}]}
+  node.find(ProcessRenderer).prop('onChange')({
+    get: () => ({get: () => null})
   });
 
   expect(node.find(EventTable).prop('mappings')).toEqual({});
