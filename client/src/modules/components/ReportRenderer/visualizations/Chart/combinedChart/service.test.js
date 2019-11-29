@@ -43,7 +43,10 @@ it('should return correct cominbed chart repot data properties for single report
     },
     result: {
       instanceCount: 100,
-      data: [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}]
+      data: [
+        {key: '2015-03-25T12:00:00Z', value: 2},
+        {key: '2015-03-26T12:00:00Z', value: 3}
+      ]
     }
   };
 
@@ -54,15 +57,24 @@ it('should return correct cominbed chart repot data properties for single report
 
   const data = {
     ...report.data,
-    reports: [{id: 'report A', color: 'red'}, {id: 'report B', color: 'blue'}]
+    reports: [
+      {id: 'report A', color: 'red'},
+      {id: 'report B', color: 'blue'}
+    ]
   };
 
   const chartProps = getCombinedChartProps(result, data);
 
   expect(chartProps).toEqual({
     resultArr: [
-      [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}],
-      [{key: '2015-03-25T12:00:00Z', value: 2}, {key: '2015-03-26T12:00:00Z', value: 3}]
+      [
+        {key: '2015-03-25T12:00:00Z', value: 2},
+        {key: '2015-03-26T12:00:00Z', value: 3}
+      ],
+      [
+        {key: '2015-03-25T12:00:00Z', value: 2},
+        {key: '2015-03-26T12:00:00Z', value: 3}
+      ]
     ],
     reportsNames: ['report A', 'report A'],
     reportColors: ['red', 'blue']
@@ -85,7 +97,11 @@ it('should convert results of a combined number report to a correctly formatted 
 
   const chartProps = getCombinedChartProps(result, {
     visualization: 'number',
-    reports: [{id: 'NumberReportA', color: 'red'}, {id: 'NumberReportB', color: 'blue'}]
+    reports: [
+      {id: 'NumberReportA', color: 'red'},
+      {id: 'NumberReportB', color: 'blue'},
+      {id: 'unauthorizedReport', color: 'green'}
+    ]
   });
 
   expect(chartProps).toEqual({

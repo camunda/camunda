@@ -33,6 +33,10 @@ export function getCombinedChartProps(reports, data) {
   return data.reports.reduce(
     (prev, {id, color}) => {
       const report = reports[id];
+      // skip unauthorized reports
+      if (!report) {
+        return prev;
+      }
       let singleReportResult;
       if (data.visualization === 'number') {
         singleReportResult = [{key: report.name, value: report.result.data}];
