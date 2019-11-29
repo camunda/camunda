@@ -664,17 +664,25 @@
     "confirmationModal": {
       "title": {
         "delete": "Delete {entityName}",
-        "save": "Save {entityName}"
+        "save": "Save {entityName}",
+        "edit": "Edit {entityName}"
       },
       "description": {
         "label": "The following item will be affected by your action:",
         "label-plural": "The following items will be affected by your action:"
       },
       "affectedMessage": {
-        "alerts": "\"{item}\" will be deleted from Alerts",
-        "combined_report": "\"{item}\" will be removed from the Combined Report: \"{container}\"",
-        "dashboard": "\"{item}\" will be removed from the Dashboard: \"{container}\"",
-        "collection": "\"{item}\" will be removed from the Collection: \"{container}\""
+        "source": {
+          "alerts": "The alert \"{item}\" will be deleted from the collection",
+          "combined_report": "The deleted reports will be removed from the combined report \"{container}\" ",
+          "dashboard": "The deleted reports will be removed from the dashboard \"{container}\"",
+          "report": "The report \"{container}\" will be deleted from the collection"
+        },
+        "default": {
+          "combined_report": "\"{item}\" will be removed from the Combined Report: \"{container}\"",
+          "dashboard": "\"{item}\" will be removed from the Dashboard: \"{container}\"",
+          "collection": "\"{item}\" will be removed from the Collection: \"{container}\""
+        }
       },
       "areYouSure": "Are you sure you want to proceed?"
     },

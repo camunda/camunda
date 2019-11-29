@@ -9,13 +9,14 @@ import {shallow} from 'enzyme';
 
 import {EntityList, Deleter} from 'components';
 
-import {removeSource, editSource, addSources} from './service';
+import {getSources, removeSource, editSource, addSources} from './service';
 
 import SourcesListWithErrorHandling from './SourcesList';
 import EditSourceModal from './modals/EditSourceModal';
 import AddSourceModal from './modals/AddSourceModal';
 import {areTenantsAvailable} from 'config';
 
+jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('config', () => ({areTenantsAvailable: jest.fn().mockReturnValue(true)}));
 
 jest.mock('./service', () => ({
@@ -52,6 +53,7 @@ const SourcesList = SourcesListWithErrorHandling.WrappedComponent;
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   collection: 'collectionId',
+  onChange: jest.fn(),
   readOnly: false
 };
 
@@ -110,7 +112,7 @@ it('should modify the tenants in source', () => {
   const updatedTenants = [{id: 'newTenant', name: 'New Tenant'}];
   node.find(EditSourceModal).prop('onConfirm')(updatedTenants);
 
-  expect(editSource).toHaveBeenCalledWith('collectionId', 'sourceId', updatedTenants);
+  expect(editSource).toHaveBeenCalledWith('collectionId', 'sourceId', updatedTenants, undefined);
 });
 
 it('should add sources when addSourceModal is confirmed', () => {
@@ -135,4 +137,28 @@ it('should hide edit and tenants in source items if there are not tenants availa
   const node = shallow(<SourcesList {...props} />);
   await node.update();
   expect(node.find('EntityList').props().data[0]).toMatchSnapshot();
+});
+
+it('should pass conflict to confirmation modal if update failed', async () => {
+  const conflictedItems = [{id: 'reportId', type: 'report', name: 'Report Name'}];
+  const mightFail = (promise, cb, err) => {
+    if (err) {
+      err({statusText: 'Conflict', json: () => ({conflictedItems})});
+    }
+  };
+
+  const node = shallow(<SourcesList {...props} mightFail={mightFail} />);
+
+  node.setState({editing: {id: 'sourceId'}});
+  const updatedTenants = [{id: 'newTenant', name: 'New Tenant'}];
+  node.find(EditSourceModal).prop('onConfirm')(updatedTenants);
+
+  await node.update();
+  expect(node.find('ConfirmationModal').prop('conflict').items).toEqual(conflictedItems);
+
+  node.setProps({mightFail: props.mightFail});
+  node.find('ConfirmationModal').prop('onConfirm')();
+
+  expect(getSources).toHaveBeenCalled();
+  expect(props.onChange).toHaveBeenCalled();
 });

@@ -61,7 +61,7 @@ export default withErrorHandling(
     };
 
     render() {
-      const {entity, onClose, getName} = this.props;
+      const {entity, onClose, getName, entityType} = this.props;
       const {conflictedItems, loading} = this.state;
 
       if (!entity) {
@@ -73,7 +73,11 @@ export default withErrorHandling(
           onClose={onClose}
           onConfirm={this.delete}
           entityName={getName(entity)}
-          conflict={{type: 'delete', items: conflictedItems}}
+          conflict={{
+            type: 'delete',
+            items: conflictedItems,
+            entityType
+          }}
           loading={loading}
         />
       );

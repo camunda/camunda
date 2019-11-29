@@ -210,6 +210,7 @@ export default withErrorHandling(
             )}
             {sourcesTab && collection && (
               <SourcesList
+                onChange={this.loadCollection}
                 readOnly={collection.currentUserRole !== 'manager'}
                 collection={collection.id}
               />

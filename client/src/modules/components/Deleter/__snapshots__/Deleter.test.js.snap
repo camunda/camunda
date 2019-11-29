@@ -6,6 +6,7 @@ exports[`should show the confirmation modal when entity is set 1`] = `
 <ConfirmationModal
   conflict={
     Object {
+      "entityType": undefined,
       "items": Array [],
       "type": "delete",
     }

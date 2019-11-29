@@ -37,12 +37,17 @@ export async function addSources(collection, sources) {
   return await put(`api/collection/${collection}/scope`, sources);
 }
 
-export async function editSource(collection, scopeId, tenants) {
-  return await put(`api/collection/${collection}/scope/${scopeId}`, {tenants});
+export async function editSource(collection, scopeId, tenants, force) {
+  return await put(`api/collection/${collection}/scope/${scopeId}`, {tenants}, {query: {force}});
 }
 
 export async function removeSource(collection, scopeId) {
-  return await del(`api/collection/${collection}/scope/${scopeId}`);
+  return await del(`api/collection/${collection}/scope/${scopeId}?force=true`);
+}
+
+export async function checkDeleteSourceConflicts(collection, scopeId) {
+  const response = await get(`/api/collection/${collection}/scope/${scopeId}/delete-conflicts`);
+  return await response.json();
 }
 
 export async function loadAlerts(collection) {

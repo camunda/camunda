@@ -12,6 +12,7 @@ import {t} from 'translation';
 export default function ConfirmationModal(props) {
   const {entityName, loading, conflict, ...modalProps} = props;
   const operation = conflict ? conflict.type : 'delete';
+  const entityType = (conflict && conflict.entityType) || 'default';
   return (
     <Modal open {...modalProps}>
       <Modal.Header>{t(`common.confirmationModal.title.${operation}`, {entityName})}</Modal.Header>
@@ -28,8 +29,10 @@ export default function ConfirmationModal(props) {
             {conflict.items.map(item => (
               <li key={item.id}>
                 {item.type === 'alert'
-                  ? t('common.confirmationModal.affectedMessage.alerts', {item: item.name})
-                  : t(`common.confirmationModal.affectedMessage.${item.type}`, {
+                  ? t(`common.confirmationModal.affectedMessage.${entityType}.alerts`, {
+                      item: item.name
+                    })
+                  : t(`common.confirmationModal.affectedMessage.${entityType}.${item.type}`, {
                       item: entityName,
                       container: item.name
                     })}

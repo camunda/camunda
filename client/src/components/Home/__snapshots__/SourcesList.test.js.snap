@@ -31,11 +31,21 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     name="Data Sources"
   />
   <DeleterErrorHandler
+    checkConflicts={[Function]}
     deleteEntity={[Function]}
     entity={null}
+    entityType="source"
     getName={[Function]}
     onClose={[Function]}
     onDelete={[Function]}
+  />
+  <ConfirmationModal
+    conflict={null}
+    entityName={null}
+    loading={false}
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={null}
   />
   <AddSourceModalErrorHandler
     onClose={[Function]}
@@ -122,11 +132,21 @@ exports[`should match snapshot 1`] = `
     name="Data Sources"
   />
   <DeleterErrorHandler
+    checkConflicts={[Function]}
     deleteEntity={[Function]}
     entity={null}
+    entityType="source"
     getName={[Function]}
     onClose={[Function]}
     onDelete={[Function]}
+  />
+  <ConfirmationModal
+    conflict={null}
+    entityName={null}
+    loading={false}
+    onClose={[Function]}
+    onConfirm={[Function]}
+    open={null}
   />
   <AddSourceModalErrorHandler
     onClose={[Function]}

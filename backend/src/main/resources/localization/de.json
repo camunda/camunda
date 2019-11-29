@@ -664,17 +664,25 @@
     "confirmationModal": {
       "title": {
         "delete": "{entityName} löschen",
-        "save": "{entityName} speichern"
+        "save": "{entityName} speichern",
+        "edit": "{entityName} bearbeiten"
       },
       "description": {
         "label": "Das folgende Element ist von der Aktion betroffen:",
         "label-plural": "Die folgenden Elemente sind von der Aktion betroffen:"
       },
       "affectedMessage": {
-        "alerts": "\"{item}\" wird aus den Alarmen gelöscht",
-        "combined_report": "\"{item}\" wird aus dem kombinierten Bericht: \"{container}\" entfernt",
-        "dashboard": "\"{item}\" wird aus dem Dashboard: \"{container}\" entfernt",
-        "collection": "\"{item}\" wird aus der Sammlung: \"{container}\" entfernt"
+        "source": {
+          "alerts": "Der Alarm \"{item}\" wird aus der Sammlung gelösch",
+          "combined_report": "Die gelöschten Reports werden aus dem kombinierten Report \"{container}\" entfernt",
+          "dashboard": "Die gelöschten Reports werden aus dem Dashboard \"{container}\" entfernt",
+          "report": "Der Report \"{container}\" wird aus der Sammlung gelösch"
+        },
+        "default": {
+          "combined_report": "\"{item}\" wird aus dem kombinierten Bericht: \"{container}\" entfernt",
+          "dashboard": "\"{item}\" wird aus dem Dashboard: \"{container}\" entfernt",
+          "collection": "\"{item}\" wird aus der Sammlung: \"{container}\" entfernt"
+        }
       },
       "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?"
     },

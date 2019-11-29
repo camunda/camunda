@@ -7,11 +7,18 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter} from 'components';
+import {Button, EntityList, Deleter, ConfirmationModal} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
+import update from 'immutability-helper';
 
-import {getSources, addSources, editSource, removeSource} from './service';
+import {
+  getSources,
+  addSources,
+  editSource,
+  removeSource,
+  checkDeleteSourceConflicts
+} from './service';
 
 import {ReactComponent as ProcessIcon} from './icons/process.svg';
 import {ReactComponent as DecisionIcon} from './icons/decision.svg';
@@ -28,7 +35,9 @@ export default withErrorHandling(
       deleting: null,
       editing: null,
       addingSource: false,
-      tenantsAvailable: false
+      tenantsAvailable: false,
+      conflict: null,
+      editLoading: false
     };
 
     async componentDidMount() {
@@ -53,17 +62,54 @@ export default withErrorHandling(
 
     openEditSourceModal = editing => this.setState({editing});
     editSource = tenants => {
-      this.props.mightFail(
-        editSource(this.props.collection, this.state.editing.id, tenants),
-        this.getSources,
-        showError
+      this.setState(
+        {editing: update(this.state.editing, {tenants: {$set: tenants}})},
+        this.applyEdit
       );
-      this.closeEditSourceModal();
     };
-    closeEditSourceModal = () => this.setState({editing: null});
+    applyEdit = force => {
+      const {id, tenants} = this.state.editing;
+      this.setState({editLoading: true});
+      this.props.mightFail(
+        editSource(this.props.collection, id, tenants, force),
+        () => {
+          this.closeEditSourceModal();
+          this.getSources();
+          if (force) {
+            this.props.onChange();
+          }
+        },
+        async error => {
+          if (error.statusText === 'Conflict') {
+            const conflictData = await error.json();
+            this.setState({
+              editLoading: false,
+              conflict: {
+                type: 'edit',
+                items: conflictData.conflictedItems,
+                entityType: 'source'
+              }
+            });
+          } else {
+            this.closeEditSourceModal();
+            showError(error);
+          }
+        }
+      );
+    };
+    closeEditSourceModal = () => this.setState({conflict: null, editing: null, editLoading: false});
 
     render() {
-      const {deleting, editing, addingSource, sources, tenantsAvailable} = this.state;
+      const {
+        deleting,
+        editing,
+        editLoading,
+        addingSource,
+        sources,
+        tenantsAvailable,
+        conflict
+      } = this.state;
+
       const {readOnly, collection} = this.props;
 
       return (
@@ -114,9 +160,22 @@ export default withErrorHandling(
           <Deleter
             entity={deleting}
             getName={() => deleting.definitionName || deleting.definitionKey}
-            onDelete={this.getSources}
+            onDelete={() => {
+              this.getSources();
+              this.props.onChange();
+            }}
+            checkConflicts={async () => checkDeleteSourceConflicts(collection, deleting.id)}
             onClose={() => this.setState({deleting: null})}
+            entityType="source"
             deleteEntity={() => removeSource(collection, deleting.id)}
+          />
+          <ConfirmationModal
+            open={conflict}
+            onClose={this.closeEditSourceModal}
+            onConfirm={() => this.applyEdit(true)}
+            entityName={editing && (editing.definitionName || editing.definitionKey)}
+            conflict={conflict}
+            loading={editLoading}
           />
           <AddSourceModal
             open={addingSource}
@@ -124,7 +183,7 @@ export default withErrorHandling(
             onConfirm={this.addSource}
             tenantsAvailable={tenantsAvailable}
           />
-          {editing && (
+          {editing && !conflict && (
             <EditSourceModal
               source={editing}
               onClose={this.closeEditSourceModal}
