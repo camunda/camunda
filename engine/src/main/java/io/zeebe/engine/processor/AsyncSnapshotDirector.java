@@ -110,7 +110,7 @@ public class AsyncSnapshotDirector extends Actor {
               LOG.debug(
                   "No changes since last snapshot we will skip snapshot creation. Last valid snapshot position {}, new lower bound position {}",
                   lastValidSnapshotPosition,
-              lastProcessedPosition);
+                  lastProcessedPosition);
               takingSnapshot = false;
             }
 
