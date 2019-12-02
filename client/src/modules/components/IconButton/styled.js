@@ -61,7 +61,9 @@ export const Button = themed(styled.button`
     ${Icon.WrappedComponent} {
       svg {
         // hover icon color/opacity
-        ${props => getTheme(props.iconButtonTheme).hover.icon[props.theme]};
+        ${props =>
+          !props.disabled &&
+          getTheme(props.iconButtonTheme).hover.icon[props.theme]};
       }
     }
   }
