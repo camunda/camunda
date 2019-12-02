@@ -68,7 +68,7 @@ public class AlertReader {
     );
   }
 
-  public AlertDefinitionDto findAlert(String alertId) {
+  public AlertDefinitionDto getAlert(String alertId) {
     log.debug("Fetching alert with id [{}]", alertId);
     GetRequest getRequest = new GetRequest(ALERT_INDEX_NAME).id(alertId);
 

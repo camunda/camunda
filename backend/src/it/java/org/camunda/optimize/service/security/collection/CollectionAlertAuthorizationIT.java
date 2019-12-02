@@ -7,7 +7,6 @@ package org.camunda.optimize.service.security.collection;
 
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.AbstractAlertIT;
-import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
@@ -52,7 +51,8 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
   private ImmutableMap<DefinitionType, Integer> definitionTypeToResourceType =
     ImmutableMap.of(PROCESS, RESOURCE_TYPE_PROCESS_DEFINITION,
-                    DECISION, RESOURCE_TYPE_DECISION_DEFINITION);
+                    DECISION, RESOURCE_TYPE_DECISION_DEFINITION
+    );
 
   @ParameterizedTest
   @MethodSource("definitionTypes")
@@ -74,10 +74,14 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId1);
 
     // when
-    List<String> allAlertIds = getAlertsRequestAsKermit(collectionId1).executeAndReturnList(
-      AlertDefinitionDto.class,
-      200
-    ).stream().map(AlertDefinitionDto::getId).collect(toList());
+    List<String> allAlertIds = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1)
+      .executeAndReturnList(
+        AlertDefinitionDto.class,
+        200
+      )
+      .stream()
+      .map(AlertDefinitionDto::getId)
+      .collect(toList());
 
     // then
     assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2, alertId3));
@@ -100,10 +104,14 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId1);
 
     // when
-    List<String> allAlertIds = getAlertsRequestAsKermit(collectionId1).executeAndReturnList(
-      AlertDefinitionDto.class,
-      200
-    ).stream().map(AlertDefinitionDto::getId).collect(toList());
+    List<String> allAlertIds = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1)
+      .executeAndReturnList(
+        AlertDefinitionDto.class,
+        200
+      )
+      .stream()
+      .map(AlertDefinitionDto::getId)
+      .collect(toList());
 
     // then
     assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2));
@@ -121,17 +129,10 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
 
     // when
-    Response response = getAlertsRequestAsKermit(collectionId1).execute();
+    Response response = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1).execute();
 
     // then
     assertThat(response.getStatus(), is(403));
-  }
-
-  private OptimizeRequestExecutor getAlertsRequestAsKermit(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAlertsForCollectionRequest(collectionId)
-      .withUserAuthentication(KERMIT_USER, KERMIT_USER);
   }
 
   private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,

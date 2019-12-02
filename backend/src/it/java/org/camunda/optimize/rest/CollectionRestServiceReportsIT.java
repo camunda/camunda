@@ -23,10 +23,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toList;
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
@@ -89,6 +91,29 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
 
     // then
     assertTrue(response.contains("Collection does not exist!"));
+  }
+
+  @ParameterizedTest(name = "deleting a collection with reports of definition type {0} also deletes containing reports")
+  @MethodSource("definitionTypes")
+  public void deleteCollectionAlsoDeletesContainingReports(final DefinitionType definitionType) {
+    // given
+    List<String> expectedReportIds = new ArrayList<>();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+
+    final String reportId1 = createReportForCollection(collectionId, definitionType);
+    final String reportId2 = createReportForCollection(collectionId, definitionType);
+    expectedReportIds.add(reportId1);
+    expectedReportIds.add(reportId2);
+
+    // when
+    collectionClient.deleteCollection(collectionId);
+
+    Response report1Response = getReportByIdRequest(reportId1);
+    Response report2Response = getReportByIdRequest(reportId2);
+
+    // then
+    assertThat(report1Response.getStatus(), is(404));
+    assertThat(report2Response.getStatus(), is(404));
   }
 
   private String createReportForCollection(final String collectionId, final DefinitionType definitionType) {
@@ -159,5 +184,12 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
       .buildCreateSingleProcessReportRequest(procReport)
       .execute(IdDto.class, 200)
       .getId();
+  }
+
+  public Response getReportByIdRequest(String reportId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetReportRequest(reportId)
+      .execute();
   }
 }

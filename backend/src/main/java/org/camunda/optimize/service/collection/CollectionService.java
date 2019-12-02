@@ -114,7 +114,6 @@ public class CollectionService {
     return new ConflictResponseDto(getConflictedItemsForDelete(userId, collectionId));
   }
 
-
   private AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinition(final String userId,
                                                                                 final String collectionId) {
     return authorizedCollectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);

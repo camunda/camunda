@@ -51,7 +51,7 @@ public class AlertJob implements Job {
     String alertId = dataMap.getString("alertId");
     log.debug("executing status check for alert [{}]", alertId);
 
-    AlertDefinitionDto alert = alertReader.findAlert(alertId);
+    AlertDefinitionDto alert = alertReader.getAlert(alertId);
 
     try {
       ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId());

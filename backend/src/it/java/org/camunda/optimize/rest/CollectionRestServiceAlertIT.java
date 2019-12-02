@@ -8,15 +8,19 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -74,5 +78,28 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
       .buildGetAlertsForCollectionRequest(collectionId)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .executeAndReturnList(AlertDefinitionDto.class, 200);
+  }
+
+  @ParameterizedTest(name = "deleting a collection with reports of definition type {0} also deletes associated alerts")
+  @MethodSource("definitionType")
+  public void deleteCollectionAlsoDeletesContainingAlerts(final DefinitionType definitionType) {
+    // given
+    List<String> expectedAlertIds = new ArrayList<>();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+
+    final String reportId1 = createNumberReportForCollection(collectionId, definitionType);
+    final String reportId2 = createNumberReportForCollection(collectionId, definitionType);
+
+    expectedAlertIds.add(createAlertForReport(reportId1));
+    expectedAlertIds.add(createAlertForReport(reportId1));
+    expectedAlertIds.add(createAlertForReport(reportId2));
+
+    // when
+    collectionClient.deleteCollection(collectionId);
+
+    Integer alertCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
+
+    // then
+    assertThat(alertCount, is(0));
   }
 }

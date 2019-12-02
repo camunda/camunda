@@ -54,6 +54,7 @@ import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
 import java.util.AbstractMap;
@@ -72,10 +73,12 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.ID;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 public class UpgradeFrom26To27 extends UpgradeProcedure {
 
@@ -141,6 +144,7 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .addUpgradeStep(addScopeToExistingCollections())
       .addUpgradeStep(new CreateIndexStep(new EventSequenceCountIndex()))
       .addUpgradeStep(new CreateIndexStep(new EventTraceStateIndex()))
+      .addUpgradeStep(removeOrphanedAlerts())
 
       .build();
   }
@@ -322,6 +326,16 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
     );
   }
 
+  private DeleteDataStep removeOrphanedAlerts() {
+    QueryBuilder removeAlertsQuery = boolQuery()
+      .must((QueryBuilders.idsQuery().addIds(getOrphanedAlertsList())));
+
+    return new DeleteDataStep(
+      ALERT_INDEX_NAME,
+      removeAlertsQuery
+    );
+  }
+
   private String getRenameProcessInstanceDurationFieldScript() {
     final StringSubstitutor substitutor = new StringSubstitutor(
       ImmutableMap.<String, String>builder()
@@ -347,6 +361,19 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       populateReportToAlertArchiveCollectionMap();
     }
     return ImmutableMap.of(ALERT_ARCHIVE_MAP_PARAMETER_NAME, alertArchiveMap);
+  }
+
+  private String[] getOrphanedAlertsList() {
+    List<String> allReportIds = reportReader.getAllReportsOmitXml()
+      .stream()
+      .map(reportDto -> reportDto.getId())
+      .collect(toList());
+
+    return alertReader.getStoredAlerts()
+      .stream()
+      .filter(alertDto -> alertDto.getId() != null && !allReportIds.contains(alertDto.getReportId()))
+      .map(AlertDefinitionDto::getId)
+      .toArray(String[]::new);
   }
 
   private void populateReportToAlertArchiveCollectionMap() {

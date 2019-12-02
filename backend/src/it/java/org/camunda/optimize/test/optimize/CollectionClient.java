@@ -8,6 +8,7 @@ package org.camunda.optimize.test.optimize;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -15,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
@@ -99,6 +101,13 @@ public class CollectionClient {
       .getId();
   }
 
+  public ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .execute(ResolvedCollectionDefinitionDto.class, 200);
+  }
+
   public List<AuthorizedReportDefinitionDto> getReportsForCollection(final String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
@@ -174,7 +183,7 @@ public class CollectionClient {
   }
 
   public void addScopeEntryToCollection(final String collectionId, final CollectionScopeEntryDto entry) {
-    addScopeEntriesToCollection(collectionId,  singletonList(entry));
+    addScopeEntriesToCollection(collectionId, singletonList(entry));
   }
 
   public void addScopeEntriesToCollection(final String collectionId, final List<CollectionScopeEntryDto> entries) {
@@ -197,6 +206,14 @@ public class CollectionClient {
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200);
   }
+  public OptimizeRequestExecutor getAlertsRequest(final String userId, final String password,
+                                                  final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAlertsForCollectionRequest(collectionId)
+      .withUserAuthentication(userId, password);
+  }
+
 
   public List<CollectionRoleDto> getAllRolesForCollection(final String collectionId) {
     return embeddedOptimizeExtension

@@ -51,7 +51,7 @@ public class CollectionRestServiceIT extends AbstractIT {
     assertThat(idDto, is(notNullValue()));
 
     // and saved Collection has expected properties
-    ResolvedCollectionDefinitionDto savedCollectionDto = getCollectionById(idDto.getId());
+    ResolvedCollectionDefinitionDto savedCollectionDto = collectionClient.getCollectionById(idDto.getId());
     assertThat(savedCollectionDto.getName(), is(CollectionWriter.DEFAULT_COLLECTION_NAME));
     assertThat(savedCollectionDto.getData().getConfiguration(), equalTo(Collections.EMPTY_MAP));
     assertThat(savedCollectionDto.getData().getRoles().size(), is(1));
@@ -78,7 +78,7 @@ public class CollectionRestServiceIT extends AbstractIT {
     assertThat(idDto, is(notNullValue()));
 
     // and saved Collection has expected properties
-    ResolvedCollectionDefinitionDto savedCollectionDto = getCollectionById(idDto.getId());
+    ResolvedCollectionDefinitionDto savedCollectionDto = collectionClient.getCollectionById(idDto.getId());
     assertThat(savedCollectionDto.getName(), is(collectionName));
     assertThat(savedCollectionDto.getData().getConfiguration(), is(configMap));
     assertThat(savedCollectionDto.getData().getRoles().size(), is(1));
@@ -114,7 +114,7 @@ public class CollectionRestServiceIT extends AbstractIT {
   @Test
   public void updateNameOfCollection() {
     //given
-    String id = addEmptyCollectionToOptimize();
+    String id = collectionClient.createNewCollection();
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
 
     // when
@@ -143,10 +143,10 @@ public class CollectionRestServiceIT extends AbstractIT {
   @Test
   public void getCollection() {
     //given
-    String id = addEmptyCollectionToOptimize();
+    String id = collectionClient.createNewCollection();
 
     // when
-    ResolvedCollectionDefinitionDto collection = getCollectionById(id);
+    ResolvedCollectionDefinitionDto collection = collectionClient.getCollectionById(id);
 
     // then
     assertThat(collection, is(notNullValue()));
@@ -182,7 +182,7 @@ public class CollectionRestServiceIT extends AbstractIT {
   @Test
   public void deleteNewCollection() {
     //given
-    String id = addEmptyCollectionToOptimize();
+    String id = collectionClient.createNewCollection();
 
     // when
     Response response = embeddedOptimizeExtension
@@ -212,18 +212,4 @@ public class CollectionRestServiceIT extends AbstractIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  private String addEmptyCollectionToOptimize() {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCollectionRequest()
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
-  private ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetCollectionRequest(collectionId)
-      .execute(ResolvedCollectionDefinitionDto.class, 200);
-  }
 }

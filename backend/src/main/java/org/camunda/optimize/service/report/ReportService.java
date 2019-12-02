@@ -94,6 +94,10 @@ public class ReportService implements CollectionReferencingService {
 
   @Override
   public void handleCollectionDeleted(final SimpleCollectionDefinitionDto definition) {
+    List<ReportDefinitionDto> reportsToDelete = getReportsForCollection(definition.getId());
+    for (ReportDefinitionDto reportDefinition : reportsToDelete) {
+      reportRelationService.handleDeleted(reportDefinition);
+    }
     reportWriter.deleteAllReportsOfCollection(definition.getId());
   }
 
@@ -202,6 +206,10 @@ public class ReportService implements CollectionReferencingService {
 
     List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
     return filterAuthorizedReports(userId, reportsInCollection);
+  }
+
+  private List<ReportDefinitionDto> getReportsForCollection(final String collectionId) {
+    return reportReader.findReportsForCollectionOmitXml(collectionId);
   }
 
   public AuthorizedReportEvaluationResult evaluateSavedReport(String userId, String reportId) {

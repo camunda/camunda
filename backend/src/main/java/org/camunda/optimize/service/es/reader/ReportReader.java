@@ -220,6 +220,13 @@ public class ReportReader {
     return getReportDefinitionDtos(reportIds, reportType, indices);
   }
 
+  public List<SingleDecisionReportDefinitionDto> getAllSingleDecisionReportsForIdsOmitXml(final List<String> reportIds) {
+    log.debug("Fetching all available single decision reports for IDs [{}]", reportIds);
+    final Class<SingleDecisionReportDefinitionDto> reportType = SingleDecisionReportDefinitionDto.class;
+    final String[] indices = new String[]{SINGLE_DECISION_REPORT_INDEX_NAME};
+    return getReportDefinitionDtos(reportIds, reportType, indices);
+  }
+
   public List<ReportDefinitionDto> findReportsForCollectionOmitXml(String collectionId) {
     log.debug("Fetching reports using collection with id {}", collectionId);
 

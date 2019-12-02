@@ -206,6 +206,10 @@ public class AlertService implements ReportReferencingService {
     return alertReader.findFirstAlertsForReport(reportId);
   }
 
+  public AlertDefinitionDto getAlert(String alertId){
+    return alertReader.getAlert(alertId);
+  }
+
   public IdDto createAlert(AlertCreationDto toCreate, String userId) {
     validateAlert(toCreate, userId);
     String alertId = this.createAlertForUser(toCreate, userId).getId();
@@ -278,7 +282,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   private void updateAlertForUser(String alertId, AlertCreationDto toCreate, String userId) {
-    AlertDefinitionDto toUpdate = alertReader.findAlert(alertId);
+    AlertDefinitionDto toUpdate = alertReader.getAlert(alertId);
     unscheduleJob(toUpdate);
     AlertUtil.updateFromUser(userId, toUpdate);
     AlertUtil.mapBasicFields(toCreate, toUpdate);
@@ -287,7 +291,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   public void deleteAlert(String alertId) {
-    AlertDefinitionDto toDelete = alertReader.findAlert(alertId);
+    AlertDefinitionDto toDelete = alertReader.getAlert(alertId);
     alertWriter.deleteAlert(alertId);
     unscheduleJob(toDelete);
   }
