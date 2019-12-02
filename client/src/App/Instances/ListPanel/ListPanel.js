@@ -170,6 +170,7 @@ class ListPanel extends React.Component {
       ...paneProps
     } = this.props;
     const isListEmpty = this.props.instances.length === 0;
+    const isExpanded = this.props.expandState !== EXPAND_STATE.COLLAPSED;
 
     return (
       <SplitPane.Pane {...paneProps} hasShiftableControls>
@@ -202,6 +203,7 @@ class ListPanel extends React.Component {
               perPage={this.state.entriesPerPage}
               firstElement={this.props.firstElement}
               onFirstElementChange={this.props.onFirstElementChange}
+              hasContent={isExpanded}
             />
           )}
         </SplitPane.Pane.Footer>
