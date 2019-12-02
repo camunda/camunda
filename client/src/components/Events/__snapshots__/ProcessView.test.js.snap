@@ -57,6 +57,7 @@ exports[`should match snapshot 1`] = `
     entity={null}
     onClose={[Function]}
     onDelete={[MockFunction]}
+    type="process"
   />
 </div>
 `;

@@ -12,13 +12,7 @@ import moment from 'moment';
 
 import {withErrorHandling} from 'HOC';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {
-  ReportRenderer,
-  LoadingIndicator,
-  Message,
-  ConfirmationModal,
-  EntityNameForm
-} from 'components';
+import {ReportRenderer, LoadingIndicator, Message, Modal, Button, EntityNameForm} from 'components';
 
 import {
   incompatibleFilters,
@@ -67,15 +61,18 @@ export default withRouter(
             () => resolve(id),
             async error => {
               if (error.statusText === 'Conflict') {
-                const conflictData = await error.json();
+                const {conflictedItems} = await error.json();
                 this.setState({
                   report: update(this.state.report, {name: {$set: name}}),
                   confirmModalVisible: true,
                   saveLoading: false,
-                  conflict: {
-                    type: 'save',
-                    items: conflictData.conflictedItems
-                  }
+                  conflict: conflictedItems.reduce(
+                    (obj, conflict) => {
+                      obj[conflict.type].push(conflict);
+                      return obj;
+                    },
+                    {alert: [], combined_report: []}
+                  )
                 });
               } else {
                 reject(this.showSaveError(name));
@@ -216,68 +213,100 @@ export default withRouter(
         }
 
         return (
-          <>
-            <ConfirmationModal
+          <div className="Report">
+            <div className="Report__header">
+              <EntityNameForm
+                name={name}
+                entity="Report"
+                isNew={this.props.isNew}
+                onChange={this.updateName}
+                onSave={this.saveAndGoBack}
+                onCancel={this.cancel}
+                disabledButtons={saveLoading}
+              />
+              <div className="subHead">
+                <div className="metadata">
+                  {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
+                  {t('common.entity.by')} {lastModifier}
+                </div>
+              </div>
+            </div>
+
+            {!combined && reportType === 'process' && (
+              <ReportControlPanel report={report} updateReport={this.updateReport} />
+            )}
+
+            {!combined && reportType === 'decision' && (
+              <DecisionControlPanel report={report} updateReport={this.updateReport} />
+            )}
+
+            {this.showIncompleteResultWarning() && (
+              <Message type="warning">
+                {t('report.incomplete', {
+                  count: report.result.data.length || Object.keys(report.result.data).length
+                })}
+              </Message>
+            )}
+
+            {data && data.filter && incompatibleFilters(data.filter) && (
+              <Message type="warning">{t('common.filter.incompatibleFilters')}</Message>
+            )}
+
+            <div className="Report__view">
+              <div className="Report__content">
+                {loadingReportData ? (
+                  <LoadingIndicator />
+                ) : (
+                  <ReportRenderer report={report} updateReport={this.updateReport} />
+                )}
+              </div>
+              {combined && <CombinedReportPanel report={report} updateReport={this.updateReport} />}
+            </div>
+            <Modal
               open={confirmModalVisible}
               onClose={this.closeConfirmModal}
               onConfirm={this.saveAndGoBack}
-              conflict={conflict}
-              entityName={name}
-              loading={saveLoading}
-            />
-            <div className="Report">
-              <div className="Report__header">
-                <EntityNameForm
-                  name={name}
-                  entity="Report"
-                  isNew={this.props.isNew}
-                  onChange={this.updateName}
-                  onSave={this.saveAndGoBack}
-                  onCancel={this.cancel}
-                  disabledButtons={saveLoading}
-                />
-                <div className="subHead">
-                  <div className="metadata">
-                    {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
-                    {t('common.entity.by')} {lastModifier}
-                  </div>
-                </div>
-              </div>
+              className="saveModal"
+            >
+              <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
+              <Modal.Content>
+                {conflict &&
+                  ['combined_report', 'alert'].map(type => {
+                    if (conflict[type].length === 0) {
+                      return null;
+                    }
 
-              {!combined && reportType === 'process' && (
-                <ReportControlPanel report={report} updateReport={this.updateReport} />
-              )}
-
-              {!combined && reportType === 'decision' && (
-                <DecisionControlPanel report={report} updateReport={this.updateReport} />
-              )}
-
-              {this.showIncompleteResultWarning() && (
-                <Message type="warning">
-                  {t('report.incomplete', {
-                    count: report.result.data.length || Object.keys(report.result.data).length
+                    return (
+                      <div key={type}>
+                        <p>{t(`report.saveConflict.${type}.header`)}</p>
+                        <ul>
+                          {conflict[type].map(({id, name}) => (
+                            <li key={id}>'{name || id}'</li>
+                          ))}
+                        </ul>
+                        <p>
+                          <b>{t(`report.saveConflict.${type}.message`)}</b>
+                        </p>
+                      </div>
+                    );
                   })}
-                </Message>
-              )}
-
-              {data && data.filter && incompatibleFilters(data.filter) && (
-                <Message type="warning">{t('common.filter.incompatibleFilters')}</Message>
-              )}
-
-              <div className="Report__view">
-                <div className="Report__content">
-                  {loadingReportData ? (
-                    <LoadingIndicator />
-                  ) : (
-                    <ReportRenderer report={report} updateReport={this.updateReport} />
-                  )}
-                </div>
-                {combined && (
-                  <CombinedReportPanel report={report} updateReport={this.updateReport} />
-                )}
-              </div>
-            </div>
-          </>
+              </Modal.Content>
+              <Modal.Actions>
+                <Button disabled={saveLoading} className="close" onClick={this.closeConfirmModal}>
+                  {t('saveGuard.no')}
+                </Button>
+                <Button
+                  disabled={saveLoading}
+                  variant="primary"
+                  color="blue"
+                  className="confirm"
+                  onClick={this.saveAndGoBack}
+                >
+                  {t('saveGuard.yes')}
+                </Button>
+              </Modal.Actions>
+            </Modal>
+          </div>
         );
       }
     }

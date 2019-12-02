@@ -130,6 +130,7 @@ export default withErrorHandling(
             }
           />
           <Deleter
+            type="alert"
             entity={deleting}
             onDelete={this.loadAlerts}
             onClose={() => this.setState({deleting: null})}

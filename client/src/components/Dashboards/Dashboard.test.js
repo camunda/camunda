@@ -8,7 +8,8 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import DashboardWithErrorHandling from './Dashboard';
-import {loadEntity, deleteEntity, createEntity} from 'services';
+import DashboardView from './DashboardView';
+import {loadEntity, createEntity} from 'services';
 
 const {WrappedComponent: Dashboard} = DashboardWithErrorHandling;
 
@@ -96,14 +97,6 @@ it('should create a new dashboard in a collection', async () => {
   });
 });
 
-it('should remove a dashboard on dashboard deletion', () => {
-  const node = shallow(<Dashboard {...props} />);
-
-  node.instance().deleteDashboard();
-
-  expect(deleteEntity).toHaveBeenCalledWith('dashboard', '1');
-});
-
 it('should redirect to the Overview page on dashboard deletion', async () => {
   const node = shallow(<Dashboard {...props} />);
   // the componentDidUpdate is mocked because it resets the redirect state
@@ -114,7 +107,7 @@ it('should redirect to the Overview page on dashboard deletion', async () => {
     loaded: true
   });
 
-  await node.instance().deleteDashboard();
+  await node.find(DashboardView).prop('onDelete')();
 
   expect(node.find('Redirect')).toExist();
 });

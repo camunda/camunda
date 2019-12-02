@@ -8,21 +8,19 @@ import React from 'react';
 import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 
-import {Button, ShareEntity, ReportRenderer, Popover, Icon, ConfirmationModal} from 'components';
+import {Button, ShareEntity, ReportRenderer, Popover, Icon, Deleter} from 'components';
 import {isSharingEnabled} from 'config';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
-import {checkDeleteConflict, deleteEntity} from 'services';
+import {checkDeleteConflict} from 'services';
 
 import './ReportView.scss';
 import {t} from 'translation';
 
 export default class ReportView extends React.Component {
   state = {
-    confirmModalVisible: false,
-    conflict: null,
-    deleteLoading: false
+    deleting: null
   };
 
   async componentDidMount() {
@@ -31,25 +29,6 @@ export default class ReportView extends React.Component {
   }
 
   shouldShowCSVDownload = () => typeof this.props.report.result !== 'undefined';
-
-  showDeleteModal = async () => {
-    this.setState({confirmModalVisible: true, deleteLoading: true});
-    let conflictState = {};
-    const response = await checkDeleteConflict(this.props.report.id, 'report');
-    if (response && response.conflictedItems && response.conflictedItems.length) {
-      conflictState = {
-        conflict: {
-          type: 'delete',
-          items: response.conflictedItems
-        }
-      };
-    }
-
-    this.setState({
-      ...conflictState,
-      deleteLoading: false
-    });
-  };
 
   constructCSVDownloadLink = () => {
     const {excludedColumns} = this.props.report.data.configuration;
@@ -65,25 +44,9 @@ export default class ReportView extends React.Component {
     )}.csv${queryString}`;
   };
 
-  deleteReport = async evt => {
-    this.setState({deleteLoading: true});
-    await deleteEntity('report', this.props.report.id);
-
-    this.setState({
-      redirect: '/'
-    });
-  };
-
-  closeConfirmModal = () => {
-    this.setState({
-      confirmModalVisible: false,
-      conflict: null
-    });
-  };
-
   render() {
     const {report} = this.props;
-    const {confirmModalVisible, conflict, redirect, sharingEnabled, deleteLoading} = this.state;
+    const {redirect, sharingEnabled, deleting} = this.state;
 
     const {id, name, currentUserRole, lastModifier, lastModified} = report;
 
@@ -92,78 +55,78 @@ export default class ReportView extends React.Component {
     }
 
     return (
-      <>
-        <ConfirmationModal
-          open={confirmModalVisible}
-          onClose={this.closeConfirmModal}
-          onConfirm={this.deleteReport}
-          conflict={conflict}
-          entityName={name}
-          loading={deleteLoading}
-        />
-        <div className="ReportView Report">
-          <div className="Report__header">
-            <div className="head">
-              <div className="name-container">
-                <h1 className="name">{name}</h1>
-              </div>
-              <div className="tools">
-                {currentUserRole === 'editor' && (
-                  <>
-                    <Link className="tool-button edit-button" to="edit">
-                      <Button>
-                        <Icon type="edit" />
-                        {t('common.edit')}
-                      </Button>
-                    </Link>
-                    <Button className="tool-button delete-button" onClick={this.showDeleteModal}>
-                      <Icon type="delete" />
-                      {t('common.delete')}
-                    </Button>
-                  </>
-                )}
-                <Popover
-                  className="tool-button share-button"
-                  icon="share"
-                  title={t('common.sharing.buttonTitle')}
-                  tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
-                  disabled={!sharingEnabled}
-                >
-                  <ShareEntity
-                    type="report"
-                    resourceId={id}
-                    shareEntity={shareReport}
-                    revokeEntitySharing={revokeReportSharing}
-                    getSharedEntity={getSharedReport}
-                  />
-                </Popover>
-                {this.shouldShowCSVDownload() && (
-                  <a
-                    className="Report__tool-button Report__csv-download-button"
-                    href={this.constructCSVDownloadLink()}
-                  >
-                    <Button>
-                      <Icon type="save" />
-                      {t('report.downloadCSV')}
-                    </Button>
-                  </a>
-                )}
-              </div>
+      <div className="ReportView Report">
+        <div className="Report__header">
+          <div className="head">
+            <div className="name-container">
+              <h1 className="name">{name}</h1>
             </div>
-            <div className="subHead">
-              <div className="metadata">
-                {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
-                {t('common.entity.by')} {lastModifier}
-              </div>
+            <div className="tools">
+              {currentUserRole === 'editor' && (
+                <>
+                  <Link className="tool-button edit-button" to="edit">
+                    <Button>
+                      <Icon type="edit" />
+                      {t('common.edit')}
+                    </Button>
+                  </Link>
+                  <Button
+                    className="tool-button delete-button"
+                    onClick={() => this.setState({deleting: {...report, entityType: 'report'}})}
+                  >
+                    <Icon type="delete" />
+                    {t('common.delete')}
+                  </Button>
+                </>
+              )}
+              <Popover
+                className="tool-button share-button"
+                icon="share"
+                title={t('common.sharing.buttonTitle')}
+                tooltip={!sharingEnabled ? t('common.sharing.disabled') : ''}
+                disabled={!sharingEnabled}
+              >
+                <ShareEntity
+                  type="report"
+                  resourceId={id}
+                  shareEntity={shareReport}
+                  revokeEntitySharing={revokeReportSharing}
+                  getSharedEntity={getSharedReport}
+                />
+              </Popover>
+              {this.shouldShowCSVDownload() && (
+                <a
+                  className="Report__tool-button Report__csv-download-button"
+                  href={this.constructCSVDownloadLink()}
+                >
+                  <Button>
+                    <Icon type="save" />
+                    {t('report.downloadCSV')}
+                  </Button>
+                </a>
+              )}
             </div>
           </div>
-          <div className="Report__view">
-            <div className="Report__content">
-              <ReportRenderer report={report} />
+          <div className="subHead">
+            <div className="metadata">
+              {t('common.entity.modified')} {moment(lastModified).format('lll')}{' '}
+              {t('common.entity.by')} {lastModifier}
             </div>
           </div>
         </div>
-      </>
+        <div className="Report__view">
+          <div className="Report__content">
+            <ReportRenderer report={report} />
+          </div>
+        </div>
+        <Deleter
+          type="report"
+          entity={deleting}
+          checkConflicts={({id}) => checkDeleteConflict(id, 'report')}
+          onClose={() => this.setState({deleting: null})}
+          onDelete={() => this.setState({redirect: '../../'})}
+        />
+      </div>
     );
   }
 }

@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EntityList, Deleter} from 'components';
+import {EntityList, Deleter, Modal} from 'components';
 
 import {getSources, removeSource, editSource, addSources} from './service';
 
@@ -154,10 +154,10 @@ it('should pass conflict to confirmation modal if update failed', async () => {
   node.find(EditSourceModal).prop('onConfirm')(updatedTenants);
 
   await node.update();
-  expect(node.find('ConfirmationModal').prop('conflict').items).toEqual(conflictedItems);
+  expect(node.find(Modal.Content)).toMatchSnapshot();
 
   node.setProps({mightFail: props.mightFail});
-  node.find('ConfirmationModal').prop('onConfirm')();
+  node.find(Modal).prop('onConfirm')();
 
   expect(editSource).toHaveBeenCalledWith('collectionId', 'sourceId', updatedTenants, true);
   expect(getSources).toHaveBeenCalled();

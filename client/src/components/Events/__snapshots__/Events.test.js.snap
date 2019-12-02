@@ -88,6 +88,7 @@ exports[`should match snapshot 1`] = `
     entity={null}
     onClose={[Function]}
     onDelete={[Function]}
+    type="process"
   />
 </div>
 `;

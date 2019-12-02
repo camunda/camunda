@@ -1,19 +1,61 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should accept a custom name formatter 1`] = `
+<Component>
+  <p>
+    The 'cool name' Report will be permanently deleted.
+  </p>
+  <p>
+    <b>
+      Warning: This action cannot be undone.
+    </b>
+  </p>
+</Component>
+`;
+
 exports[`should not render anything when no entity is set 1`] = `""`;
 
 exports[`should show the confirmation modal when entity is set 1`] = `
-<ConfirmationModal
-  conflict={
-    Object {
-      "entityType": undefined,
-      "items": Array [],
-      "type": "delete",
-    }
-  }
-  entityName="Doomed Report"
-  loading={false}
-  onClose={[MockFunction]}
+<Modal
+  className="Deleter"
+  onClose={[Function]}
   onConfirm={[Function]}
-/>
+  open={true}
+>
+  <Component>
+    Delete
+     
+    Report
+  </Component>
+  <Component>
+    <p>
+      The 'Doomed Report' Report will be permanently deleted.
+    </p>
+    <p>
+      <b>
+        Warning: This action cannot be undone.
+      </b>
+    </p>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="close"
+      disabled={false}
+      onClick={[Function]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="red"
+      disabled={false}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Delete
+       
+      Report
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
 `;

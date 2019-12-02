@@ -7,9 +7,14 @@
 import React from 'react';
 
 import {withErrorHandling} from 'HOC';
-import {ConfirmationModal} from 'components';
+import {Button, Modal, LoadingIndicator} from 'components';
 import {showError} from 'notifications';
 import {deleteEntity} from 'services';
+import {t} from 'translation';
+
+import './Deleter.scss';
+
+const sectionOrder = ['report', 'combined_report', 'dashboard', 'alert', 'collection'];
 
 export default withErrorHandling(
   class Deleter extends React.Component {
@@ -18,40 +23,55 @@ export default withErrorHandling(
       getName: ({name}) => name
     };
 
+    cancelButton = React.createRef();
+
     state = {
-      conflictedItems: [],
+      conflicts: {},
       loading: false
     };
 
-    componentDidUpdate(prevProps) {
+    componentDidUpdate(prevProps, prevState) {
       const {entity, checkConflicts} = this.props;
       if (prevProps.entity !== entity && entity) {
         if (checkConflicts) {
+          this.setState({loading: true});
           this.props.mightFail(
             checkConflicts(entity),
             ({conflictedItems}) => {
-              this.setState({conflictedItems, loading: false});
+              this.setState({
+                conflicts: conflictedItems.reduce((obj, conflict) => {
+                  obj[conflict.type] = obj[conflict.type] || [];
+                  obj[conflict.type].push(conflict);
+                  return obj;
+                }, {}),
+                loading: false
+              });
             },
             error => {
               showError(error);
-              this.setState({conflictedItems: [], loading: false});
+              this.setState({conflicts: {}, loading: false});
             }
           );
         } else {
-          this.setState({conflictedItems: [], loading: false});
+          this.setState({conflicts: {}, loading: false});
+          this.cancelButton.current.focus();
         }
+      }
+
+      if (prevState.loading && !this.state.loading) {
+        this.cancelButton.current.focus();
       }
     }
 
     delete = () => {
-      const {entity, onDelete, onClose, deleteEntity} = this.props;
+      const {entity, onDelete, deleteEntity} = this.props;
 
       this.setState({loading: true});
       this.props.mightFail(
         deleteEntity(entity),
         (...args) => {
           onDelete(...args);
-          onClose();
+          this.close();
         },
         error => {
           showError(error);
@@ -60,26 +80,76 @@ export default withErrorHandling(
       );
     };
 
+    close = () => {
+      this.setState({conflicts: {}, loading: false});
+      this.props.onClose();
+    };
+
     render() {
-      const {entity, onClose, getName, entityType} = this.props;
-      const {conflictedItems, loading} = this.state;
+      const {entity, getName, type, descriptionText} = this.props;
+      const {conflicts, loading} = this.state;
 
       if (!entity) {
         return null;
       }
 
+      const translatedType = t(`common.deleter.types.${type}`);
+
       return (
-        <ConfirmationModal
-          onClose={onClose}
-          onConfirm={this.delete}
-          entityName={getName(entity)}
-          conflict={{
-            type: 'delete',
-            items: conflictedItems,
-            entityType
-          }}
-          loading={loading}
-        />
+        <Modal open onClose={this.close} onConfirm={this.delete} className="Deleter">
+          <Modal.Header>
+            {t('common.delete')} {translatedType}
+          </Modal.Header>
+          <Modal.Content>
+            {loading ? (
+              <LoadingIndicator />
+            ) : (
+              <>
+                <p>
+                  {descriptionText ||
+                    t('common.deleter.permanent', {
+                      name: getName(entity),
+                      type: translatedType
+                    })}
+                </p>
+                {Object.keys(conflicts)
+                  .sort((a, b) => sectionOrder.indexOf(a) - sectionOrder.indexOf(b))
+                  .map(conflictType => (
+                    <div key={conflictType}>
+                      {t(`common.deleter.affectedMessage.${type}.${conflictType}`)}
+                      <ul>
+                        {conflicts[conflictType].map(({id, name}) => (
+                          <li key={id}>'{name || id}'</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                <p>
+                  <b>{t('common.deleter.noUndo')}</b>
+                </p>
+              </>
+            )}
+          </Modal.Content>
+          <Modal.Actions>
+            <Button
+              disabled={loading}
+              className="close"
+              onClick={this.close}
+              ref={this.cancelButton}
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              disabled={loading}
+              variant="primary"
+              color="red"
+              className="confirm"
+              onClick={this.delete}
+            >
+              {t('common.delete')} {translatedType}
+            </Button>
+          </Modal.Actions>
+        </Modal>
       );
     }
   }

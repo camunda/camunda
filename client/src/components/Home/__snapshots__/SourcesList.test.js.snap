@@ -34,19 +34,40 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
     checkConflicts={[Function]}
     deleteEntity={[Function]}
     entity={null}
-    entityType="source"
     getName={[Function]}
     onClose={[Function]}
     onDelete={[Function]}
+    type="source"
   />
-  <ConfirmationModal
-    conflict={null}
-    entityName={null}
-    loading={false}
+  <Modal
+    className="saveModal"
     onClose={[Function]}
     onConfirm={[Function]}
     open={null}
-  />
+  >
+    <Component>
+      Destructive Changes
+    </Component>
+    <Component />
+    <Component>
+      <ForwardRef(Button)
+        className="close"
+        disabled={false}
+        onClick={[Function]}
+      >
+        Don't Save
+      </ForwardRef(Button)>
+      <ForwardRef(Button)
+        className="confirm"
+        color="blue"
+        disabled={false}
+        onClick={[Function]}
+        variant="primary"
+      >
+        Save Changes
+      </ForwardRef(Button)>
+    </Component>
+  </Modal>
   <AddSourceModalErrorHandler
     onClose={[Function]}
     onConfirm={[Function]}
@@ -130,19 +151,40 @@ exports[`should match snapshot 1`] = `
     checkConflicts={[Function]}
     deleteEntity={[Function]}
     entity={null}
-    entityType="source"
     getName={[Function]}
     onClose={[Function]}
     onDelete={[Function]}
+    type="source"
   />
-  <ConfirmationModal
-    conflict={null}
-    entityName={null}
-    loading={false}
+  <Modal
+    className="saveModal"
     onClose={[Function]}
     onConfirm={[Function]}
     open={null}
-  />
+  >
+    <Component>
+      Destructive Changes
+    </Component>
+    <Component />
+    <Component>
+      <ForwardRef(Button)
+        className="close"
+        disabled={false}
+        onClick={[Function]}
+      >
+        Don't Save
+      </ForwardRef(Button)>
+      <ForwardRef(Button)
+        className="confirm"
+        color="blue"
+        disabled={false}
+        onClick={[Function]}
+        variant="primary"
+      >
+        Save Changes
+      </ForwardRef(Button)>
+    </Component>
+  </Modal>
   <AddSourceModalErrorHandler
     onClose={[Function]}
     onConfirm={[Function]}
@@ -150,4 +192,26 @@ exports[`should match snapshot 1`] = `
     tenantsAvailable={true}
   />
 </div>
+`;
+
+exports[`should pass conflict to confirmation modal if update failed 1`] = `
+<Component>
+  <p>
+    These changes are incompatible with the Report(s):
+  </p>
+  <ul>
+    <li
+      key="reportId"
+    >
+      '
+      Report Name
+      '
+    </li>
+  </ul>
+  <p>
+    <b>
+      Warning: Saving will remove Tenants from the Report(s).
+    </b>
+  </p>
+</Component>
 `;

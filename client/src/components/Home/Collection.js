@@ -232,6 +232,7 @@ export default withErrorHandling(
           )}
           <Deleter
             entity={deleting}
+            type={deleting && deleting.entityType}
             onDelete={() => {
               if (deleting.entityType === 'collection') {
                 this.setState({redirect: '/'});

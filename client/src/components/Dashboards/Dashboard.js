@@ -9,7 +9,7 @@ import {Redirect} from 'react-router-dom';
 import moment from 'moment';
 
 import {withErrorHandling} from 'HOC';
-import {loadEntity, deleteEntity, updateEntity, createEntity, getCollection} from 'services';
+import {loadEntity, updateEntity, createEntity, getCollection} from 'services';
 import {isSharingEnabled} from 'config';
 
 import {ErrorPage, LoadingIndicator} from 'components';
@@ -92,11 +92,9 @@ export default withErrorHandling(
       );
     };
 
-    deleteDashboard = async evt => {
-      await deleteEntity('dashboard', this.getId());
-
+    goHome = () => {
       this.setState({
-        redirect: '/'
+        redirect: '../../'
       });
     };
 
@@ -194,7 +192,7 @@ export default withErrorHandling(
               sharingEnabled={sharingEnabled}
               isAuthorizedToShare={isAuthorizedToShare}
               loadDashboard={this.loadDashboard}
-              deleteDashboard={this.deleteDashboard}
+              onDelete={this.goHome}
               currentUserRole={currentUserRole}
               reports={reports}
             />

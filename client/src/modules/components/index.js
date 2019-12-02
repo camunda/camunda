@@ -35,7 +35,6 @@ export {LabeledInput} from './LabeledInput';
 export {TypeaheadMultipleSelection} from './TypeaheadMultipleSelection';
 export {DatePicker} from './DatePicker';
 export {LoadingIndicator} from './LoadingIndicator';
-export {ConfirmationModal} from './ConfirmationModal';
 export {ColorPicker} from './ColorPicker';
 export {EntityNameForm} from './EntityNameForm';
 export {Form} from './Form';

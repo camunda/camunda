@@ -110,6 +110,7 @@ export default withErrorHandling(
             }
           />
           <Deleter
+            type="process"
             entity={deleting}
             onDelete={this.loadList}
             onClose={() => this.setState({deleting: null})}

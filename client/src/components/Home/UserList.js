@@ -128,10 +128,19 @@ export default withErrorHandling(
             }
           />
           <Deleter
+            type={deleting && deleting.identity && deleting.identity.type}
             entity={deleting && deleting.identity}
             onDelete={this.updateList}
             onClose={() => this.setState({deleting: null})}
             deleteEntity={() => removeUser(collection, deleting.id)}
+            descriptionText={t('home.roles.deleteWarning', {
+              name:
+                (deleting &&
+                  deleting.identity &&
+                  (deleting.identity.name || deleting.identity.id)) ||
+                '',
+              type: deleting && deleting.identity && formatType(deleting.identity.type)
+            })}
           />
           <AddUserModal
             open={addingUser}

@@ -121,6 +121,7 @@ exports[`should render content depending on the selected tab 1`] = `
     entity={false}
     onClose={[Function]}
     onDelete={[Function]}
+    type={false}
   />
   <CopierErrorHandler
     collection="aCollectionId"

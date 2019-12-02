@@ -9,13 +9,13 @@ import {shallow} from 'enzyme';
 
 import ReportView from './ReportView';
 
-import {checkDeleteConflict, deleteEntity} from 'services';
+import {Deleter} from 'components';
+import {checkDeleteConflict} from 'services';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
     ...rest,
-    deleteEntity: jest.fn(),
     checkDeleteConflict: jest.fn()
   };
 });
@@ -73,26 +73,16 @@ it('should open a deletion modal on delete button click', async () => {
 
   await node.find('.delete-button').prop('onClick')();
 
-  expect(node).toHaveState('confirmModalVisible', true);
+  expect(node.find(Deleter).prop('entity')).toBeTruthy();
 });
 
-it('should remove a report when delete is invoked', () => {
-  const node = shallow(<ReportView report={report} />);
-  node.setState({
-    ConfirmModalVisible: true
-  });
-
-  node.instance().deleteReport();
-  expect(deleteEntity).toHaveBeenCalledWith('report', '1');
-});
-
-it('should redirect to the report list on report deletion', async () => {
+it('should redirect to the report list on report deletion', () => {
   const node = shallow(<ReportView report={report} />);
 
-  await node.instance().deleteReport();
+  node.find(Deleter).prop('onDelete')();
 
   expect(node.find('Redirect')).toExist();
-  expect(node.props().to).toEqual('/');
+  expect(node.props().to).toEqual('../../');
 });
 
 it('should contain a ReportRenderer with the report evaluation result', () => {
@@ -134,16 +124,11 @@ it('should reflect excluded columns in the csv download link', () => {
   expect(href).toContain('?excludedColumns=prop1,variable:VariableName');
 });
 
-it('should set conflict state when conflict happens on delete button click', async () => {
-  const conflictedItems = [{id: '1', name: 'alert', type: 'Alert'}];
-  checkDeleteConflict.mockReturnValue({
-    conflictedItems
-  });
+it('should provide conflict check method to Deleter', () => {
   const node = shallow(<ReportView report={report} />);
 
-  await node.find('.delete-button').prop('onClick')();
-  expect(node.state().conflict.type).toEqual('delete');
-  expect(node.state().conflict.items).toEqual(conflictedItems);
+  node.find(Deleter).prop('checkConflicts')({id: '1'});
+  expect(checkDeleteConflict).toHaveBeenCalledWith('1', 'report');
 });
 
 it('should hide edit/delete if the report current user role is not "editor"', () => {

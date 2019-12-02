@@ -83,7 +83,8 @@
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
       "existing-user-error": "Ein Benutzer mit dieser ID existiert schon in dieser Sammlung",
       "existing-group-error": "Eine Gruppe mit dieser ID existiert schon in dieser Sammlung",
-      "missingAuthorizationsWarning": "Einige Daten können aufgrund fehlender Berechtigungen für Benutzer ausgeblendet sein."
+      "missingAuthorizationsWarning": "Einige Daten können aufgrund fehlender Berechtigungen für Benutzer ausgeblendet sein.",
+      "deleteWarning": "'{name}' {type} wird von der Sammlung entfernt."
     },
     "sources": {
       "title": "Datenquellen",
@@ -91,6 +92,10 @@
       "process": "Prozess",
       "notCreated": "Es wurden noch keine Quellen hinzugefügt",
       "add": "Quelle hinzufügen",
+      "saveConflict": {
+        "header": "Die Änderungen sind nicht kompatibel mit diesen Berichten:",
+        "message": "Warnung: Beim Speichern werden Mandanten aus den Berichten entfernt."
+      },
       "definition": {
         "label": "Definition",
         "label-plural": "Definitionen"
@@ -220,6 +225,17 @@
     "noDefinitionMessage": {
       "process": "Wählen Sie oben eine <b>Prozessdefinition</b> aus.",
       "decision": "Wählen Sie oben eine <b>Entscheidungsdefinition</b> aus."
+    },
+    "saveConflict": {
+      "header": "Gefährliche Änderungen",
+      "combined_report": {
+        "header": "Diese Änderungen sind nicht kompatibel mit diesen kombinierten Berichten:",
+        "message": "Warnung: Beim Speichern wird dieser Bericht aus den kombinierten Berichten entfernt."
+      },
+      "alert": {
+        "header": "Diese Änderungen sind nicht kompatibel mit diesen Alarmen:",
+        "message": "Warnung: Beim Speichern werden diese Alarme gelöscht."
+      }
     },
     "combinedEmptyMessage": "Um einen Bericht anzuzeigen, wählen Sie bitte einen oder mehrere Berichte aus der Liste aus.",
     "noViewMessage": "Wählen Sie oben eine Option für <b>Ansicht</b> aus.",
@@ -648,27 +664,30 @@
       "versionWarning": "Hinweis: Daten aus älteren Versionen können abweichen, daher können die Berichtsdaten inkonsistent sein.",
       "noSourcesWarning": "Um die Auswahl zu aktivieren, müssen der Sammlung Datenquellen hinzugefügt werden."
     },
-    "confirmationModal": {
-      "title": {
-        "delete": "{entityName} löschen",
-        "save": "{entityName} speichern",
-        "edit": "{entityName} bearbeiten"
+    "deleter": {
+      "types": {
+        "report": "Bericht",
+        "combined_report": "Bericht",
+        "dashboard": "Dashboard",
+        "alert": "Alarm",
+        "user": "Benutzer",
+        "group": "Gruppe",
+        "source": "Datenquelle",
+        "collection": "Sammlung"
       },
-      "description": {
-        "label": "Das folgende Element ist von der Aktion betroffen:",
-        "label-plural": "Die folgenden Elemente sind von der Aktion betroffen:"
-      },
+      "permanent": "'{name}' {type} wird entgültig gelöscht.",
+      "noUndo": "Warnung: Diese Aktion kann nicht rückgängig gemacht werden.",
       "affectedMessage": {
         "source": {
-          "alerts": "Der Alarm \"{item}\" wird aus der Sammlung gelösch",
-          "combined_report": "Die gelöschten Reports werden aus dem kombinierten Report \"{container}\" entfernt",
-          "dashboard": "Die gelöschten Reports werden aus dem Dashboard \"{container}\" entfernt",
-          "report": "Der Report \"{container}\" wird aus der Sammlung gelösch"
+          "alert": "Diese Alarme werden gelöscht:",
+          "combined_report": "Die gelöschten Berichte werden aus diesen kombinierten Berichten entfernt:",
+          "dashboard": "Die gelöschten Berichte werden aus diesen Dashboards entfernt:",
+          "report": "Diese Berichte werden aus der Sammlung gelöscht:"
         },
-        "default": {
-          "combined_report": "\"{item}\" wird aus dem kombinierten Bericht: \"{container}\" entfernt",
-          "dashboard": "\"{item}\" wird aus dem Dashboard: \"{container}\" entfernt",
-          "collection": "\"{item}\" wird aus der Sammlung: \"{container}\" entfernt"
+        "report": {
+          "combined_report": "Der Bericht wird aus diesen kombinierten Berichten entfernt:",
+          "dashboard": "Der Bericht wird aus diesen Dashboards entfernt:",
+          "alert": "Diese Alarme werden gelöscht:"
         }
       },
       "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?"

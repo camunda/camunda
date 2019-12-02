@@ -7,7 +7,7 @@
 import React from 'react';
 
 import {t} from 'translation';
-import {Button, EntityList, Deleter, ConfirmationModal} from 'components';
+import {Button, EntityList, Deleter, Modal} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 
@@ -75,14 +75,10 @@ export default withErrorHandling(
         },
         async error => {
           if (error.statusText === 'Conflict') {
-            const conflictData = await error.json();
+            const {conflictedItems} = await error.json();
             this.setState({
               editLoading: false,
-              conflict: {
-                type: 'edit',
-                items: conflictData.conflictedItems,
-                entityType: 'source'
-              },
+              conflict: conflictedItems,
               tenants
             });
           } else {
@@ -164,17 +160,46 @@ export default withErrorHandling(
             }}
             checkConflicts={async () => await checkDeleteSourceConflicts(collection, deleting.id)}
             onClose={() => this.setState({deleting: null})}
-            entityType="source"
+            type="source"
             deleteEntity={() => removeSource(collection, deleting.id)}
           />
-          <ConfirmationModal
+          <Modal
             open={conflict}
             onClose={this.closeEditSourceModal}
             onConfirm={() => this.editSource(tenants, true)}
-            entityName={editing && (editing.definitionName || editing.definitionKey)}
-            conflict={conflict}
-            loading={editLoading}
-          />
+            className="saveModal"
+          >
+            <Modal.Header>{t('report.saveConflict.header')}</Modal.Header>
+            <Modal.Content>
+              {conflict && conflict.length > 0 && (
+                <>
+                  <p>{t('home.sources.saveConflict.header')}</p>
+                  <ul>
+                    {conflict.map(({id, name}) => (
+                      <li key={id}>'{name || id}'</li>
+                    ))}
+                  </ul>
+                  <p>
+                    <b>{t('home.sources.saveConflict.message')}</b>
+                  </p>
+                </>
+              )}
+            </Modal.Content>
+            <Modal.Actions>
+              <Button disabled={editLoading} className="close" onClick={this.closeEditSourceModal}>
+                {t('saveGuard.no')}
+              </Button>
+              <Button
+                disabled={editLoading}
+                variant="primary"
+                color="blue"
+                className="confirm"
+                onClick={() => this.editSource(tenants, true)}
+              >
+                {t('saveGuard.yes')}
+              </Button>
+            </Modal.Actions>
+          </Modal>
           <AddSourceModal
             open={addingSource}
             onClose={this.closeAddSourceModal}

@@ -83,7 +83,8 @@
       "manager-description": "Full rights editing Collection and Users",
       "existing-user-error": "A user with this id already exists in this collection",
       "existing-group-error": "A group with this id already exists in this collection",
-      "missingAuthorizationsWarning": "Some data may be hidden from users due to missing authorizations."
+      "missingAuthorizationsWarning": "Some data may be hidden from users due to missing authorizations.",
+      "deleteWarning": "The '{name}' {type} will be removed from the Collection."
     },
     "sources": {
       "title": "Data Sources",
@@ -91,6 +92,10 @@
       "process": "Process",
       "notCreated": "There are no sources added yet",
       "add": "Add Source",
+      "saveConflict": {
+        "header": "These changes are incompatible with the Report(s):",
+        "message": "Warning: Saving will remove Tenants from the Report(s)."
+      },
       "definition": {
         "label": "Definition",
         "label-plural": "Definitions"
@@ -220,6 +225,17 @@
     "noDefinitionMessage": {
       "process": "Select a <b>Process Definition</b> above.",
       "decision": "Select a <b>Decision Definition</b> above."
+    },
+    "saveConflict": {
+      "header": "Destructive Changes",
+      "combined_report": {
+        "header": "These changes are incompatible with the Combined Report(s):",
+        "message": "Warning: Saving will remove this Report from the Combined Report(s)."
+      },
+      "alert": {
+        "header": "These changes are incompatible with the Alert(s):",
+        "message": "Warning: Saving will delete the Alert(s)."
+      }
     },
     "combinedEmptyMessage": "To display a report, please select one or more reports from the list.",
     "noViewMessage": "Select an option for <b>View</b> above.",
@@ -648,27 +664,30 @@
       "versionWarning": "Note: data from the older versions can deviate, therefore the report data can be inconsistent",
       "noSourcesWarning": "To enable selection, Data Sources must be added to the Collection."
     },
-    "confirmationModal": {
-      "title": {
-        "delete": "Delete {entityName}",
-        "save": "Save {entityName}",
-        "edit": "Edit {entityName}"
+    "deleter": {
+      "types": {
+        "report": "Report",
+        "combined_report": "Combined Report",
+        "dashboard": "Dashboard",
+        "alert": "Alert",
+        "user": "User",
+        "group": "Group",
+        "source": "Data Source",
+        "collection": "Collection"
       },
-      "description": {
-        "label": "The following item will be affected by your action:",
-        "label-plural": "The following items will be affected by your action:"
-      },
+      "permanent": "The '{name}' {type} will be permanently deleted.",
+      "noUndo": "Warning: This action cannot be undone.",
       "affectedMessage": {
         "source": {
-          "alerts": "The alert \"{item}\" will be deleted from the collection",
-          "combined_report": "The deleted reports will be removed from the combined report \"{container}\" ",
-          "dashboard": "The deleted reports will be removed from the dashboard \"{container}\"",
-          "report": "The report \"{container}\" will be deleted from the collection"
+          "alert": "The following Alert(s) will also be deleted:",
+          "combined_report": "The deleted Report(s) will be removed from the Combined Report(s):",
+          "dashboard": "The deleted Report(s) will be removed from the Dashboard(s):",
+          "report": "The following Report(s) will be deleted from the Collection:"
         },
-        "default": {
-          "combined_report": "\"{item}\" will be removed from the Combined Report: \"{container}\"",
-          "dashboard": "\"{item}\" will be removed from the Dashboard: \"{container}\"",
-          "collection": "\"{item}\" will be removed from the Collection: \"{container}\""
+        "report": {
+          "combined_report": "This will remove the Report from the Combined Report(s):",
+          "dashboard": "This will remove the Report from the Dashboard(s):",
+          "alert": "The following Alert(s) will also be deleted:"
         }
       },
       "areYouSure": "Are you sure you want to proceed?"

@@ -43,6 +43,7 @@ export default function ProcessView({id, name, xml, mappings, onDelete}) {
         <ProcessRenderer mappings={mappings} />
       </BPMNDiagram>
       <Deleter
+        type="process"
         entity={deleting}
         onDelete={onDelete}
         onClose={() => setDeleting(null)}

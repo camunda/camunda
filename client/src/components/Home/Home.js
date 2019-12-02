@@ -145,6 +145,7 @@ export default withErrorHandling(
           </EntityList>
           <Deleter
             entity={deleting}
+            type={deleting && deleting.entityType}
             onDelete={this.loadList}
             checkConflicts={async () => {
               const {entityType, id} = deleting;

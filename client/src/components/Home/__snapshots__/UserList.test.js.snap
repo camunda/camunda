@@ -54,9 +54,11 @@ exports[`should hide add button and edit menu when in readOnly mode 1`] = `
   />
   <DeleterErrorHandler
     deleteEntity={[Function]}
+    descriptionText="The '' null will be removed from the Collection."
     entity={null}
     onClose={[Function]}
     onDelete={[Function]}
+    type={null}
   />
   <AddUserModal
     existingUsers={
@@ -170,9 +172,11 @@ exports[`should match snapshot 1`] = `
   />
   <DeleterErrorHandler
     deleteEntity={[Function]}
+    descriptionText="The '' null will be removed from the Collection."
     entity={null}
     onClose={[Function]}
     onDelete={[Function]}
+    type={null}
   />
   <AddUserModal
     existingUsers={

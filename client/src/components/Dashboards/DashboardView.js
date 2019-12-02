@@ -11,15 +11,7 @@ import Fullscreen from 'react-full-screen';
 import {Link} from 'react-router-dom';
 import {evaluateReport} from 'services';
 
-import {
-  Button,
-  ShareEntity,
-  DashboardRenderer,
-  Icon,
-  Dropdown,
-  Popover,
-  ConfirmationModal
-} from 'components';
+import {Button, ShareEntity, DashboardRenderer, Icon, Dropdown, Popover, Deleter} from 'components';
 
 import {themed} from 'theme';
 import {t} from 'translation';
@@ -36,7 +28,7 @@ export default themed(
     state = {
       fullScreenActive: false,
       autoRefreshInterval: null,
-      confirmModalVisible: false
+      deleting: null
     };
 
     componentWillUnmount = () => {
@@ -83,18 +75,6 @@ export default themed(
       );
     };
 
-    closeConfirmModal = () => {
-      this.setState({
-        confirmModalVisible: false
-      });
-    };
-
-    openDeleteModal = async () => {
-      this.setState({
-        confirmModalVisible: true
-      });
-    };
-
     render() {
       const {
         id,
@@ -104,10 +84,12 @@ export default themed(
         currentUserRole,
         isAuthorizedToShare,
         sharingEnabled,
-        reports
+        reports,
+        toggleTheme,
+        onDelete
       } = this.props;
 
-      const {fullScreenActive, autoRefreshInterval, confirmModalVisible} = this.state;
+      const {fullScreenActive, autoRefreshInterval, deleting} = this.state;
 
       return (
         <Fullscreen enabled={fullScreenActive} onChange={this.changeFullScreen}>
@@ -137,7 +119,9 @@ export default themed(
                             </Button>
                           </Link>
                           <Button
-                            onClick={this.openDeleteModal}
+                            onClick={() =>
+                              this.setState({deleting: {...this.props, entityType: 'dashboard'}})
+                            }
                             className="tool-button delete-button"
                           >
                             <Icon type="delete" />
@@ -163,12 +147,12 @@ export default themed(
                     </React.Fragment>
                   )}
                   {fullScreenActive && (
-                    <Button onClick={this.props.toggleTheme} className="tool-button theme-toggle">
+                    <Button onClick={toggleTheme} className="tool-button theme-toggle">
                       {t('dashboard.toggleTheme')}
                     </Button>
                   )}
                   <Button
-                    onClick={() => this.changeFullScreen(!this.state.fullScreenActive)}
+                    onClick={() => this.changeFullScreen(!fullScreenActive)}
                     className="tool-button fullscreen-button"
                   >
                     <Icon type={fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />{' '}
@@ -217,11 +201,11 @@ export default themed(
                 </div>
               </div>
             </div>
-            <ConfirmationModal
-              open={confirmModalVisible}
-              onClose={this.closeConfirmModal}
-              onConfirm={this.props.deleteDashboard}
-              entityName={name}
+            <Deleter
+              type="dashboard"
+              entity={deleting}
+              onDelete={onDelete}
+              onClose={() => this.setState({deleting: null})}
             />
             <DashboardRenderer
               loadReport={evaluateReport}
