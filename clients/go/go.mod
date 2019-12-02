@@ -12,7 +12,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
 	github.com/gogo/protobuf v1.3.1 // indirect
-	github.com/golang/mock v1.3.1-0.20190508161146-9fa652df1129
+	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.3.1
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
