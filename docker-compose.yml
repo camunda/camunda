@@ -22,7 +22,7 @@ services:
       - ./config/log4j2.xml:/usr/app/config/log4j2.xml
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.5
     container_name: elasticsearch
     environment:
       - cluster.name=docker-cluster
@@ -39,7 +39,7 @@ services:
     restart: always
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:6.8.3
+    image: docker.elastic.co/kibana/kibana-oss:6.8.5
     ports:
         - 5601:5601
     links:
