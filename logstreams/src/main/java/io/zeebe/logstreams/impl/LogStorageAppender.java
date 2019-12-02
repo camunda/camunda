@@ -103,7 +103,7 @@ public class LogStorageAppender extends Actor {
     // Commit position is the position of the last event.
     appendBackpressureMetrics.newEntryToAppend();
     if (appendEntryLimiter.tryAcquire(positions.highest)) {
-      final var listener = new Listener(positions, copiedBuffer);
+      final var listener = new Listener(positions);
       appendToStorage(copiedBuffer, positions, listener);
       blockPeek.markCompleted();
     } else {
@@ -169,11 +169,9 @@ public class LogStorageAppender extends Actor {
 
   private final class Listener implements AppendListener {
     private final Positions positions;
-    private final ByteBuffer buffer;
 
-    private Listener(final Positions positions, final ByteBuffer buffer) {
+    private Listener(final Positions positions) {
       this.positions = positions;
-      this.buffer = buffer;
     }
 
     @Override
@@ -181,8 +179,7 @@ public class LogStorageAppender extends Actor {
 
     @Override
     public void onWriteError(final Throwable error) {
-      LOG.error("Failed to append block with last event position {}, retry.", positions.highest);
-      actor.run(() -> appendToStorage(buffer, positions, this));
+      LOG.error("Failed to append block with last event position {}.", positions.highest, error);
     }
 
     @Override
@@ -192,6 +189,7 @@ public class LogStorageAppender extends Actor {
 
     @Override
     public void onCommitError(final long address, final Throwable error) {
+      LOG.error("Failed to commit block with last event position {}.", positions.highest, error);
       releaseBackPressure();
     }
 
