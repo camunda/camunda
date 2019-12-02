@@ -158,7 +158,7 @@ public class SystemContext implements AutoCloseable {
 
     try {
       for (final ActorFuture<?> requiredStartAction : requiredStartActions) {
-        requiredStartAction.get(40, TimeUnit.SECONDS);
+        requiredStartAction.get(600, TimeUnit.SECONDS);
       }
     } catch (final Exception e) {
       LOG.error("Could not start broker", e);
