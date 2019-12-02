@@ -47,6 +47,7 @@
     * [Control Flow](yaml-workflows/control-flow.md)
     * [Data Flow](yaml-workflows/data-flow.md)
 * [Reference](reference/index.md)
+    * [Workflow Instance Creation](reference/workflow-instance-creation.md)
     * [Workflow Lifecycles](reference/workflow-lifecycles.md)
     * [Variables](reference/variables.md)
     * [Conditions](reference/conditions.md)
