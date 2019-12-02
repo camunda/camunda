@@ -141,7 +141,8 @@ export default withRouter(
         const availableTenants = this.getAvailableTenants(definitionKey, versions);
         const selectedTenants = this.getSelectedTenants();
 
-        const definition = this.getDefinitionObject(definitionKey).name;
+        const definition = this.getDefinitionObject(definitionKey);
+        const definitionName = definition.name || definition.key;
 
         let versionString = t('common.none');
         if (versions.length === 1 && versions[0] === 'all') {
@@ -162,13 +163,14 @@ export default withRouter(
         } else if (selectedTenants.length === availableTenants.length) {
           tenant = t('common.all');
         } else if (selectedTenants.length === 1) {
-          tenant = availableTenants.find(({id}) => id === selectedTenants[0]).name;
+          const tenantObj = availableTenants.find(({id}) => id === selectedTenants[0]);
+          tenant = tenantObj.name || tenantObj.id;
         }
 
         if (tenant) {
-          return `${definition} : ${versionString} : ${tenant}`;
+          return `${definitionName} : ${versionString} : ${tenant}`;
         } else {
-          return `${definition} : ${versionString}`;
+          return `${definitionName} : ${versionString}`;
         }
       } else {
         return t(`common.definitionSelection.select.${type}`);
