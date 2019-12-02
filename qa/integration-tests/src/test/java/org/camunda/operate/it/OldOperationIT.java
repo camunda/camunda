@@ -6,9 +6,14 @@
 package org.camunda.operate.it;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
+import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.OperationReader;
@@ -18,17 +23,21 @@ import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.OperationDto;
+import org.camunda.operate.webapp.rest.dto.VariableDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
 import org.camunda.operate.webapp.rest.dto.listview.WorkflowInstanceStateDto;
 import org.camunda.operate.webapp.rest.dto.oldoperation.BatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -268,6 +277,229 @@ public class OldOperationIT extends OperateZeebeIntegrationTest {
     final String expectedErrorMsg = String
       .format("Too many workflow instances are selected for batch operation. Maximum possible amount: %s", operateProperties.getBatchOperationMaxSize());
     assertThat(mvcResult.getResolvedException().getMessage()).contains(expectedErrorMsg);
+  }
+
+
+  @Test
+  public void testUpdateVariableOnWorkflowInstance() throws Exception {
+    // given
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
+
+    //when
+    //we call UPDATE_VARIABLE operation on instance
+    final String varName = "a";
+    final String newVarValue = "\"newValue\"";
+    postUpdateVariableOperation(workflowInstanceKey, varName, newVarValue);
+
+    //then variable with new value is returned
+    List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, workflowInstanceKey);
+    assertThat(variables).hasSize(1);
+    assertVariable(variables, varName, newVarValue, true);
+
+    //when execute the operation
+    executeOneBatch();
+
+    //then
+    //before we process messages from Zeebe, the state of the operation must be SENT
+    ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
+
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(true);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    OperationDto operation = workflowInstance.getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(operation.getState()).isEqualTo(OperationState.SENT);
+    assertThat(operation.getId()).isNotNull();
+
+    //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
+    //elasticsearchTestRule.processAllEvents(2);
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompleted, workflowInstanceKey);
+    workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    operation = workflowInstance.getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
+
+    //check variables
+    variables = variableReader.getVariables(workflowInstanceKey, workflowInstanceKey);
+    assertThat(variables).hasSize(1);
+    assertVariable(variables, varName, newVarValue, false);
+  }
+
+  @Test
+  public void testAddVariableOnWorkflowInstance() throws Exception {
+    // given
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
+
+    //TC1 we call UPDATE_VARIABLE operation on instance
+    final String newVar1Name = "newVar1";
+    final String newVar1Value = "\"newValue1\"";
+    postUpdateVariableOperation(workflowInstanceKey, newVar1Name, newVar1Value);
+    final String newVar2Name = "newVar2";
+    final String newVar2Value = "\"newValue2\"";
+    postUpdateVariableOperation(workflowInstanceKey, newVar2Name, newVar2Value);
+
+    //then new variables are returned
+    List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, workflowInstanceKey);
+    assertThat(variables).hasSize(3);
+    assertVariable(variables, newVar1Name, newVar1Value, true);
+    assertVariable(variables, newVar2Name, newVar2Value, true);
+
+    //TC2 execute the operations
+    executeOneBatch();
+
+    //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
+    //then new variables are returned
+    variables = variableReader.getVariables(workflowInstanceKey, workflowInstanceKey);
+    assertThat(variables).hasSize(3);
+    assertVariable(variables, newVar1Name, newVar1Value, true);
+    assertVariable(variables, newVar2Name, newVar2Value, true);
+
+    //TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
+    //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompleted, workflowInstanceKey);
+
+    variables = variableReader.getVariables(workflowInstanceKey, workflowInstanceKey);
+    assertThat(variables).hasSize(3);
+    assertVariable(variables, newVar1Name, newVar1Value, false);
+    assertVariable(variables, newVar2Name, newVar2Value, false);
+  }
+
+  @Test
+  public void testAddVariableOnTask() throws Exception {
+    // given
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
+    final Long taskAId = getActivityInstanceId(workflowInstanceKey, "taskA");
+
+    //TC1 we call UPDATE_VARIABLE operation on instance
+    final String newVar1Name = "newVar1";
+    final String newVar1Value = "\"newValue1\"";
+    postUpdateVariableOperation(workflowInstanceKey, taskAId, newVar1Name, newVar1Value);
+    final String newVar2Name = "newVar2";
+    final String newVar2Value = "\"newValue2\"";
+    postUpdateVariableOperation(workflowInstanceKey, taskAId, newVar2Name, newVar2Value);
+
+    //then new variables are returned
+    List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, taskAId);
+    assertThat(variables).hasSize(3);
+    assertVariable(variables, newVar1Name, newVar1Value, true);
+    assertVariable(variables, newVar2Name, newVar2Value, true);
+
+    //TC2 execute the operations
+    executeOneBatch();
+
+    //then - before we process messages from Zeebe, the state of the operation must be SENT - variables has still hasActiveOperation = true
+    //then new variables are returned
+    variables = variableReader.getVariables(workflowInstanceKey, taskAId);
+    assertThat(variables).hasSize(3);
+    assertVariable(variables, newVar1Name, newVar1Value, true);
+    assertVariable(variables, newVar2Name, newVar2Value, true);
+
+    //TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
+    //elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
+    //elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, workflowInstanceKey, workflowInstanceKey, newVar2Name);
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompleted, workflowInstanceKey);
+
+    variables = variableReader.getVariables(workflowInstanceKey, taskAId);
+    assertThat(variables).hasSize(3);
+    assertVariable(variables, newVar1Name, newVar1Value, false);
+    assertVariable(variables, newVar2Name, newVar2Value, false);
+  }
+
+  private void assertVariable(List<VariableDto> variables, String name, String value, Boolean hasActiveOperation) {
+    final List<VariableDto> collect = variables.stream().filter(v -> v.getName().equals(name)).collect(Collectors.toList());
+    assertThat(collect).hasSize(1);
+    final VariableDto variable = collect.get(0);
+    assertThat(variable.getValue()).isEqualTo(value);
+    if (hasActiveOperation != null) {
+      assertThat(variable.isHasActiveOperation()).isEqualTo(hasActiveOperation);
+    }
+  }
+
+  @Test
+  public void testUpdateVariableOnTask() throws Exception {
+    // given
+    final Long workflowInstanceKey = startDemoWorkflowInstance();
+
+    //when
+    //we call UPDATE_VARIABLE operation on task level
+    final Long taskAId = getActivityInstanceId(workflowInstanceKey, "taskA");
+    final String varName = "foo";
+    final String varValue = "\"newFooValue\"";
+    postUpdateVariableOperation(workflowInstanceKey, taskAId, varName, varValue);
+
+    //and execute the operation
+    executeOneBatch();
+
+    //then
+    //before we process messages from Zeebe, the state of the operation must be SENT
+    ListViewWorkflowInstanceDto workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
+
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(true);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    OperationDto operation = workflowInstance.getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(operation.getState()).isEqualTo(OperationState.SENT);
+    assertThat(operation.getId()).isNotNull();
+
+    //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
+    //elasticsearchTestRule.processAllEvents(2);
+    elasticsearchTestRule.processAllRecordsAndWait(operationsByWorkflowInstanceAreCompleted, workflowInstanceKey);
+    workflowInstance = workflowInstanceReader.getWorkflowInstanceWithOperationsByKey(workflowInstanceKey);
+    assertThat(workflowInstance.isHasActiveOperation()).isEqualTo(false);
+    assertThat(workflowInstance.getOperations()).hasSize(1);
+    operation = workflowInstance.getOperations().get(0);
+    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
+
+    //check variables
+    final List<VariableDto> variables = variableReader.getVariables(workflowInstanceKey, taskAId);
+    assertThat(variables).hasSize(1);
+    assertThat(variables.get(0).getName()).isEqualTo(varName);
+    assertThat(variables.get(0).getValue()).isEqualTo(varValue);
+  }
+
+  protected Long getActivityInstanceId(Long workflowInstanceKey, String activityId) {
+    final List<ActivityInstanceEntity> allActivityInstances = activityInstanceReader.getAllActivityInstances(workflowInstanceKey);
+    final Optional<ActivityInstanceEntity> first = allActivityInstances.stream().filter(ai -> ai.getActivityId().equals(activityId)).findFirst();
+    assertThat(first.isPresent()).isTrue();
+    return Long.valueOf(first.get().getId());
+  }
+
+  @Override
+  protected void postUpdateVariableOperation(Long workflowInstanceKey, String newVarName, String newVarValue) throws Exception {
+    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    op.setName(newVarName);
+    op.setValue(newVarValue);
+    op.setScopeId(ConversionUtils.toStringOrNull(workflowInstanceKey));
+    postOperationWithOKResponse(workflowInstanceKey, op);
+  }
+
+  @Override
+  protected void postUpdateVariableOperation(Long workflowInstanceKey, Long scopeKey, String newVarName, String newVarValue) throws Exception {
+    final OperationRequestDto op = new OperationRequestDto(OperationType.UPDATE_VARIABLE);
+    op.setName(newVarName);
+    op.setValue(newVarValue);
+    op.setScopeId(ConversionUtils.toStringOrNull(scopeKey));
+    postOperationWithOKResponse(workflowInstanceKey, op);
+  }
+
+  protected MvcResult postOperationWithOKResponse(Long workflowInstanceKey, OperationRequestDto operationRequest) throws Exception {
+    return postOperation(workflowInstanceKey, operationRequest, HttpStatus.SC_OK);
+  }
+
+  protected MvcResult postOperation(Long workflowInstanceKey, OperationRequestDto operationRequest, int expectedStatus) throws Exception {
+    MockHttpServletRequestBuilder postOperationRequest =
+        post(String.format(POST_OPERATION_URL, workflowInstanceKey))
+            .content(mockMvcTestRule.json(operationRequest))
+            .contentType(mockMvcTestRule.getContentType());
+
+    final MvcResult mvcResult =
+        mockMvc.perform(postOperationRequest)
+            .andExpect(status().is(expectedStatus))
+            .andReturn();
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    return mvcResult;
   }
 
   private ListViewResponseDto getWorkflowInstances(ListViewQueryDto query) throws Exception {

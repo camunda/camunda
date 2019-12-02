@@ -317,6 +317,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-786")
   public void testUpdateVariableOnWorkflowInstance() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
@@ -363,6 +364,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-786")
   public void testAddVariableOnWorkflowInstance() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
@@ -402,6 +404,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-786")
   public void testAddVariableOnTask() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();
@@ -453,6 +456,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
+  @Ignore("OPE-786")
   public void testUpdateVariableOnTask() throws Exception {
     // given
     final Long workflowInstanceKey = startDemoWorkflowInstance();

@@ -100,9 +100,16 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Perform single operation on an instance (async)")
   @PostMapping("/{id}/operation")
   public OperationResponseDto operation(@PathVariable String id,
-      @RequestBody org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto operationRequest) {
-    validateOperationRequest(operationRequest);
-    return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), operationRequest);
+      @RequestBody org.camunda.operate.webapp.rest.dto.oldoperation.OperationRequestDto operationRequest) {
+    //TODO OPE-786 remove operation conversion
+    OperationRequestDto newRequest = new OperationRequestDto();
+    newRequest.setVariableScopeId(operationRequest.getScopeId());
+    newRequest.setVariableName(operationRequest.getName());
+    newRequest.setVariableValue(operationRequest.getValue());
+    newRequest.setOperationType(operationRequest.getOperationType());
+    newRequest.setIncidentId(operationRequest.getIncidentId());
+    validateOperationRequest(newRequest);
+    return batchOperationWriter.scheduleSingleOperation(Long.valueOf(id), newRequest);
   }
 
   private void validateBatchOperationRequest(OperationRequestDto operationRequest) {
