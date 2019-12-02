@@ -54,11 +54,13 @@ public class MessageCorrelator {
   private boolean correlateMessage(final Message message) {
     // correlate the first message which is not correlated to the workflow instance yet
     messageKey = message.getKey();
-    final boolean isCorrelatedBefore =
-        messageState.existMessageCorrelation(
-            messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
 
-    if (!isCorrelatedBefore) {
+    final boolean correlateMessage =
+        message.getDeadline() > ActorClock.currentTimeMillis()
+            && !messageState.existMessageCorrelation(
+                messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
+
+    if (correlateMessage) {
       subscriptionState.updateToCorrelatingState(
           subscription, message.getVariables(), ActorClock.currentTimeMillis(), messageKey);
 
@@ -69,7 +71,7 @@ public class MessageCorrelator {
       messageState.putMessageCorrelation(messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
     }
 
-    return isCorrelatedBefore;
+    return !correlateMessage;
   }
 
   private boolean sendCorrelateCommand() {

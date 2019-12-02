@@ -16,8 +16,10 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
@@ -26,6 +28,7 @@ import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.WorkflowInstances;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -238,36 +241,6 @@ public class MessageCorrelationTest {
             .getFirst();
 
     assertThat(event.getValue().getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
-  }
-
-  @Test
-  public void shouldNotCorrelateMessageAfterTTL() {
-    // given
-    engine.deployment().withXmlResource(SINGLE_MESSAGE_WORKFLOW).deploy();
-
-    final PublishMessageClient messageClient =
-        engine.message().withName("message").withCorrelationKey("order-123");
-
-    messageClient.withVariables(asMsgPack("nr", 1)).withTimeToLive(0L).publish();
-    messageClient.withVariables(asMsgPack("nr", 2)).withTimeToLive(10_000L).publish();
-
-    // when
-    final long workflowInstanceKey =
-        engine
-            .workflowInstance()
-            .ofBpmnProcessId(PROCESS_ID)
-            .withVariable("key", "order-123")
-            .create();
-
-    // then
-    final Record<WorkflowInstanceRecordValue> event =
-        RecordingExporter.workflowInstanceRecords()
-            .withElementId("receive-message")
-            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .getFirst();
-    final Map<String, String> variables =
-        WorkflowInstances.getCurrentVariables(workflowInstanceKey, event.getPosition());
-    assertThat(variables).containsOnly(entry("key", "\"order-123\""), entry("nr", "2"));
   }
 
   @Test
@@ -854,6 +827,63 @@ public class MessageCorrelationTest {
                 .withElementId("process")
                 .limit(1))
         .isNotEmpty();
+  }
+
+  @Test
+  public void shouldNotCorrelateMessageAfterTTL() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("wf")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeTaskType("test"))
+                .intermediateCatchEvent(
+                    "catch", c -> c.message(m -> m.name("a").zeebeCorrelationKey("key")))
+                .done())
+        .deploy();
+
+    engine.workflowInstance().ofBpmnProcessId("wf").withVariable("key", "key-1").create();
+
+    // - zero TTL
+    engine
+        .message()
+        .withName("a")
+        .withCorrelationKey("key-1")
+        .withVariables(Map.of("x", 1))
+        .withTimeToLive(Duration.ZERO)
+        .publish();
+
+    // - short TTL
+    final var messageTtl = Duration.ofSeconds(1);
+
+    engine
+        .message()
+        .withName("a")
+        .withCorrelationKey("key-1")
+        .withVariables(Map.of("x", 2))
+        .withTimeToLive(messageTtl)
+        .publish();
+
+    // - long TTL
+    engine
+        .message()
+        .withName("a")
+        .withCorrelationKey("key-1")
+        .withVariables(Map.of("x", 3))
+        .withTimeToLive(messageTtl.multipliedBy(2))
+        .publish();
+
+    // when
+    final var job = RecordingExporter.jobRecords(JobIntent.CREATED).getFirst();
+
+    engine.getClock().addTime(messageTtl);
+
+    engine.job().withKey(job.getKey()).complete();
+
+    // then
+    final var variable = RecordingExporter.variableRecords().withName("x").getFirst();
+    Assertions.assertThat(variable.getValue()).hasValue("3");
   }
 
   private List<Record<WorkflowInstanceSubscriptionRecordValue>> awaitMessagesCorrelated(

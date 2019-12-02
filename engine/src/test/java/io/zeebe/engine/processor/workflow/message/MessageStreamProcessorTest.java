@@ -28,6 +28,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -453,7 +454,7 @@ public class MessageStreamProcessorTest {
     message
         .setName(wrapString("order canceled"))
         .setCorrelationKey(wrapString("order-123"))
-        .setTimeToLive(1L)
+        .setTimeToLive(Duration.ofSeconds(10).toMillis())
         .setVariables(asMsgPack("orderId", "order-123"));
 
     return message;
