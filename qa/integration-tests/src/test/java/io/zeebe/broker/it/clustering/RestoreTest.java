@@ -49,7 +49,7 @@ public class RestoreTest {
           config ->
               config
                   .brokerContactPoint(clusteringRule.getGatewayAddress().toString())
-                  .defaultRequestTimeout(Duration.ofSeconds(30))
+                  .defaultRequestTimeout(Duration.ofMinutes(1))
                   .usePlaintext());
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
