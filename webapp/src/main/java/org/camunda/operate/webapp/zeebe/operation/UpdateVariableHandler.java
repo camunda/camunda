@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.response.SetVariablesResponse;
 
 /**
  * Update the variable.
@@ -30,11 +31,13 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
   public void handleWithException(OperationEntity operation) throws PersistenceException {
     try {
       String updateVariableJson = mergeVariableJson(operation.getVariableName(), operation.getVariableValue());
-      zeebeClient.newSetVariablesCommand(operation.getScopeKey())
-        .variables(updateVariableJson)
-        .local(true)
-        .send().join();
-      markAsSucceeded(operation);
+      SetVariablesResponse response =
+          zeebeClient
+              .newSetVariablesCommand(operation.getScopeKey())
+              .variables(updateVariableJson)
+              .local(true)
+              .send().join();
+      markAsSucceeded(operation, response.getKey());
     } catch (ClientException ex) {
       logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
       //fail operation

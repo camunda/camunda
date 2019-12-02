@@ -22,6 +22,7 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
   public static final String SCOPE_KEY = "scopeKey";
   public static final String VARIABLE_NAME = "variableName";
   public static final String VARIABLE_VALUE = "variableValue";
+  public static final String CREATION_DATE = "creationDate";
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String STATE = "state";
@@ -29,6 +30,7 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
   public static final String LOCK_EXPIRATION_TIME = "lockExpirationTime";
   public static final String LOCK_OWNER = "lockOwner";
   public static final String BATCH_OPERATION_ID = "batchOperationId";
+  public static final String ZEEBE_COMMAND_KEY = "zeebeCommandKey";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -65,6 +67,10 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
       .startObject(STATE)
         .field("type", "keyword")
       .endObject()
+      .startObject(CREATION_DATE)
+        .field("type", "date")
+        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
+      .endObject()
       .startObject(START_DATE)
         .field("type", "date")
         .field("format", operateProperties.getElasticsearch().getElsDateFormat())
@@ -84,6 +90,9 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
         .field("type", "keyword")
       .endObject()
       .startObject(BATCH_OPERATION_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ZEEBE_COMMAND_KEY)
         .field("type", "keyword")
       .endObject();
     return newBuilder;

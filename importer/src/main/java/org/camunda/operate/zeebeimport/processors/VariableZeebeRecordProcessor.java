@@ -72,10 +72,6 @@ public class VariableZeebeRecordProcessor {
 
   private UpdateRequest getVariableQuery(VariableEntity entity) throws PersistenceException {
     try {
-
-      //complete operation
-      elasticsearchManager.completeUpdateVariableOperation(entity.getWorkflowInstanceKey(), entity.getScopeKey(), entity.getName());
-
       logger.debug("Variable instance for list view: id {}", entity.getId());
       Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(VariableTemplate.VALUE, entity.getValue());

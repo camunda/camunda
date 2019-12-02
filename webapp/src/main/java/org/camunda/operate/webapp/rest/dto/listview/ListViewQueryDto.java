@@ -307,4 +307,13 @@ public class ListViewQueryDto {
         setActive(true).
         setIncidents(true);
   }
+
+  @Override
+  public String toString() {
+    return "ListViewQueryDto{" + "running=" + running + ", active=" + active + ", incidents=" + incidents + ", finished=" + finished + ", completed="
+        + completed + ", canceled=" + canceled + ", ids=" + ids + ", errorMessage='" + errorMessage + '\'' + ", activityId='" + activityId + '\''
+        + ", startDateAfter=" + startDateAfter + ", startDateBefore=" + startDateBefore + ", endDateAfter=" + endDateAfter + ", endDateBefore=" + endDateBefore
+        + ", workflowIds=" + workflowIds + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", workflowVersion=" + workflowVersion + ", excludeIds=" + excludeIds
+        + ", variable=" + variable + '}';
+  }
 }

@@ -8,6 +8,7 @@ package org.camunda.operate.zeebe;
 import org.camunda.operate.zeebe.record.value.DeploymentRecordValueImpl;
 import org.camunda.operate.zeebe.record.value.IncidentRecordValueImpl;
 import org.camunda.operate.zeebe.record.value.JobRecordValueImpl;
+import org.camunda.operate.zeebe.record.value.VariableDocumentRecord;
 import org.camunda.operate.zeebe.record.value.VariableRecordValueImpl;
 import org.camunda.operate.zeebe.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.protocol.record.RecordValue;
@@ -21,13 +22,15 @@ public class ImportValueType {
   public final static ImportValueType INCIDENT = new ImportValueType(ValueType.INCIDENT, ZeebeESConstants.INCIDENT_INDEX_NAME, IncidentRecordValueImpl.class);
   public final static ImportValueType DEPLOYMENT = new ImportValueType(ValueType.DEPLOYMENT, ZeebeESConstants.DEPLOYMENT_INDEX_NAME, DeploymentRecordValueImpl.class);
   public final static ImportValueType VARIABLE = new ImportValueType(ValueType.VARIABLE, ZeebeESConstants.VARIABLE_INDEX_NAME, VariableRecordValueImpl.class);
+  public final static ImportValueType VARIABLE_DOCUMENT = new ImportValueType(ValueType.VARIABLE_DOCUMENT, ZeebeESConstants.VARIABLE_DOCUMENT_INDEX_NAME, VariableDocumentRecord.class);
 
   public static final ImportValueType[] IMPORT_VALUE_TYPES = new ImportValueType[]{
       ImportValueType.DEPLOYMENT,
       ImportValueType.WORKFLOW_INSTANCE,
       ImportValueType.JOB,
       ImportValueType.INCIDENT,
-      ImportValueType.VARIABLE};
+      ImportValueType.VARIABLE,
+      ImportValueType.VARIABLE_DOCUMENT};
 
   private final ValueType valueType;
   private final String aliasTemplate;

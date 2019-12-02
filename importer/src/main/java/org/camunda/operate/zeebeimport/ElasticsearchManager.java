@@ -6,29 +6,29 @@
 package org.camunda.operate.zeebeimport;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.es.OperationsManager;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
+import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.bulk.BulkItemResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -59,84 +59,81 @@ public class ElasticsearchManager {
   private OperationTemplate operationTemplate;
 
   @Autowired
+  private BatchOperationTemplate batchOperationTemplate;
+
+  @Autowired
   private ListViewTemplate listViewTemplate;
 
   @Autowired
   private WorkflowIndex workflowType;
 
-  public void completeOperation(Long workflowInstanceKey, Long incidentKey, OperationType operationType) throws PersistenceException {
-    try {
-      TermQueryBuilder incidentKeyQuery = null;
-      if (incidentKey != null) {
-        incidentKeyQuery = termQuery(OperationTemplate.INCIDENT_KEY, incidentKey);
+  @Autowired
+  private OperationsManager operationsManager;
+
+  public void completeOperation(Long zeebeCommandKey, Long workflowInstanceKey, Long incidentKey, OperationType operationType, BulkRequest bulkRequest)
+      throws PersistenceException {
+    OperationEntity operation = getOperation(zeebeCommandKey, workflowInstanceKey, incidentKey, operationType);
+    if (operation != null) {
+      //TODO remove this null check within OPE-786
+      if (operation.getBatchOperationId() != null) {
+        operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId(), bulkRequest);
       }
-
-      QueryBuilder query =
-          joinWithAnd(
-              termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey),
-              incidentKeyQuery,
-              termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
-              termQuery(OperationTemplate.TYPE, operationType.name())
-          );
-
-      executeUpdateQuery(query);
-    } catch (IOException e) {
-      logger.error("Error preparing the query to complete operation", e);
-      throw new PersistenceException(String.format("Error preparing the query to complete operation of type [%s] for workflow instance id [%s]",
-          operationType, workflowInstanceKey), e);
+      completeOperation(operation.getId(), bulkRequest);
     }
   }
 
-  public void completeUpdateVariableOperation(Long workflowInstanceKey, Long scopeKey, String variableName) throws PersistenceException {
+  public OperationEntity getOperation(Long zeebeCommandKey, Long workflowInstanceKey, Long incidentKey, OperationType operationType){
+    if (workflowInstanceKey == null && zeebeCommandKey == null) {
+      throw new OperateRuntimeException("Wrong call to search for operation. Not enough parameters.");
+    }
+    TermQueryBuilder zeebeCommandKeyQ = zeebeCommandKey != null ? termQuery(OperationTemplate.ZEEBE_COMMAND_KEY, zeebeCommandKey) : null;
+    TermQueryBuilder workflowInstanceKeyQ = workflowInstanceKey != null ? termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey) : null;
+    TermQueryBuilder incidentKeyQ = incidentKey != null ? termQuery(OperationTemplate.INCIDENT_KEY, incidentKey) : null;
+    TermQueryBuilder operationTypeQ = zeebeCommandKey != null ? termQuery(OperationTemplate.TYPE, operationType.name()) : null;
+
+    QueryBuilder query =
+        joinWithAnd(
+            zeebeCommandKeyQ,
+            workflowInstanceKeyQ,
+            incidentKeyQ,
+            operationTypeQ,
+            termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name())
+        );
+    final SearchRequest searchRequest = new SearchRequest(operationTemplate.getAlias())
+        .source(new SearchSourceBuilder()
+            .query(query)
+            .size(1));
     try {
-      TermQueryBuilder scopeKeyQuery = termQuery(OperationTemplate.SCOPE_KEY, scopeKey);
-      TermQueryBuilder variableNameIdQ = termQuery(OperationTemplate.VARIABLE_NAME, variableName);
-
-      QueryBuilder query =
-          joinWithAnd(
-              termQuery(OperationTemplate.WORKFLOW_INSTANCE_KEY, workflowInstanceKey),
-              scopeKeyQuery,
-              variableNameIdQ,
-              termsQuery(OperationTemplate.STATE, OperationState.SENT.name(), OperationState.LOCKED.name()),
-              termQuery(OperationTemplate.TYPE, OperationType.UPDATE_VARIABLE.name())
-          );
-
-      executeUpdateQuery(query);
+      SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      if (response.getHits().totalHits == 1) {
+        return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, OperationEntity.class);
+      } else if (response.getHits().totalHits > 1) {
+        throw new OperateRuntimeException(String
+            .format("Could not find unique operation for parameters zeebeCommandKey [%d], workflowInstanceKey [%d], incidentKey [%d], operationType [%s].",
+                zeebeCommandKey, workflowInstanceKey, incidentKey, operationType.name()));
+      } else {
+        return null;
+      }
     } catch (IOException e) {
-      logger.error("Error preparing the query to complete operation", e);
-      throw new PersistenceException(String.format("Error preparing the query to complete operation of type [%s] for workflow instance id [%s]",
-          OperationType.UPDATE_VARIABLE, workflowInstanceKey), e);
+      final String message = String.format("Exception occurred, while obtaining the operation: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
     }
   }
 
-  private Script getUpdateScript() throws IOException {
-    Map<String,Object> paramsMap = new HashMap<>();
-    paramsMap.put("endDate", OffsetDateTime.now());
-    Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(paramsMap), HashMap.class);
+  public void completeOperation(String operationId, BulkRequest bulkRequest) {
+    UpdateRequest updateRequest = new UpdateRequest(operationTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, operationId)
+        .script(getUpdateOperationScript());
+    bulkRequest.add(updateRequest);
+  }
 
+  private Script getUpdateOperationScript() {
     String script =
         "ctx._source.state = '" + OperationState.COMPLETED.toString() + "';" +
-            "ctx._source.endDate = params.endDate;" +
             "ctx._source.lockOwner = null;" +
             "ctx._source.lockExpirationTime = null;";
-    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
+    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, Collections.emptyMap());
   }
-
-  private void executeUpdateQuery(QueryBuilder query) throws IOException, PersistenceException {
-    UpdateByQueryRequest request = new UpdateByQueryRequest(operationTemplate.getMainIndexName())
-        .setQuery(query)
-        .setSize(1)
-        .setScript(getUpdateScript())
-        .setRefresh(true);
-
-    final BulkByScrollResponse response = esClient.updateByQuery(request, RequestOptions.DEFAULT);
-    for (BulkItemResponse.Failure failure: response.getBulkFailures()) {
-      logger.error(String.format("Complete operation failed for operation id [%s]: %s", failure.getId(),
-          failure.getMessage()), failure.getCause());
-      throw new PersistenceException("Complete operation failed: " + failure.getMessage(), failure.getCause());
-    }
-  }
-
 
   public List<Long> queryWorkflowInstancesWithEmptyWorkflowVersion(Long workflowKey) {
     QueryBuilder queryBuilder = constantScoreQuery(

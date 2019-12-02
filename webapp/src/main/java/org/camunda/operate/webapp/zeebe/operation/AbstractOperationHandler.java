@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
+import org.camunda.operate.es.OperationsManager;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
@@ -24,6 +25,9 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   @Autowired
   protected BatchOperationWriter batchOperationWriter;
+
+  @Autowired
+  private OperationsManager operationsManager;
 
   @Autowired
   protected OperateProperties operateProperties;
@@ -57,6 +61,10 @@ public abstract class AbstractOperationHandler implements OperationHandler {
       operation.setLockOwner(null);
       operation.setEndDate(OffsetDateTime.now());
       operation.setErrorMessage(StringUtils.trimWhitespace(errorMsg));
+      //TODO remove this null check within OPE-786
+      if (operation.getBatchOperationId() != null) {
+        operationsManager.updateFinishedInBatchOperation(operation.getBatchOperationId());
+      }
       batchOperationWriter.updateOperation(operation);
       logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
     }
@@ -64,11 +72,16 @@ public abstract class AbstractOperationHandler implements OperationHandler {
   }
 
   protected void markAsSucceeded(OperationEntity operation) throws PersistenceException {
+    this.markAsSucceeded(operation, null);
+  }
+
+  protected void markAsSucceeded(OperationEntity operation, Long zeebeCommandKey) throws PersistenceException {
     if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
       && operation.getType().equals(getType())) {
       operation.setState(OperationState.SENT);
       operation.setLockExpirationTime(null);
       operation.setLockOwner(null);
+      operation.setZeebeCommandKey(zeebeCommandKey);
       batchOperationWriter.updateOperation(operation);
       logger.debug("Operation {} was sent to Zeebe", operation.getId());
     }

@@ -12,5 +12,6 @@ public interface ZeebeESConstants {
   String INCIDENT_INDEX_NAME = "incident";
   String DEPLOYMENT_INDEX_NAME = "deployment";
   String VARIABLE_INDEX_NAME = "variable";
+  String VARIABLE_DOCUMENT_INDEX_NAME = "variable-document";
 
 }

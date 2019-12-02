@@ -18,15 +18,3 @@ className = "io.zeebe.exporter.ElasticsearchExporter"
 
   [exporters.args.index]
   prefix = "test-record"
-  createTemplate = true
-  command = false
-  event = true
-  rejection = false
-  deployment = true
-  incident = true
-  job = true
-  message = false
-  messageSubscription = false
-  raft = false
-  workflowInstance = true
-  workflowInstanceSubscription = false

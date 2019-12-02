@@ -25,6 +25,7 @@ public class OperationEntity extends OperateEntity {
   private OperationState state;
   private String errorMessage;
   private String batchOperationId;
+  private Long zeebeCommandKey;
 
   public Long getWorkflowInstanceKey() {
     return workflowInstanceKey;
@@ -72,6 +73,14 @@ public class OperationEntity extends OperateEntity {
 
   public void setType(OperationType type) {
     this.type = type;
+  }
+
+  public Long getZeebeCommandKey() {
+    return zeebeCommandKey;
+  }
+
+  public void setZeebeCommandKey(Long zeebeCommandKey) {
+    this.zeebeCommandKey = zeebeCommandKey;
   }
 
   @Deprecated //OPE-786
@@ -171,7 +180,9 @@ public class OperationEntity extends OperateEntity {
       return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
       return false;
-    return batchOperationId != null ? batchOperationId.equals(that.batchOperationId) : that.batchOperationId == null;
+    if (batchOperationId != null ? !batchOperationId.equals(that.batchOperationId) : that.batchOperationId != null)
+      return false;
+    return zeebeCommandKey != null ? zeebeCommandKey.equals(that.zeebeCommandKey) : that.zeebeCommandKey == null;
 
   }
 
@@ -191,6 +202,15 @@ public class OperationEntity extends OperateEntity {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (batchOperationId != null ? batchOperationId.hashCode() : 0);
+    result = 31 * result + (zeebeCommandKey != null ? zeebeCommandKey.hashCode() : 0);
     return result;
+  }
+
+  @Override
+  public String toString() {
+    return "OperationEntity{" + "workflowInstanceKey=" + workflowInstanceKey + ", incidentKey=" + incidentKey + ", scopeKey=" + scopeKey + ", variableName='"
+        + variableName + '\'' + ", variableValue='" + variableValue + '\'' + ", type=" + type + ", startDate=" + startDate
+        + ", endDate=" + endDate + ", lockExpirationTime=" + lockExpirationTime + ", lockOwner='" + lockOwner + '\'' + ", state=" + state + ", errorMessage='"
+        + errorMessage + '\'' + ", batchOperationId='" + batchOperationId + '\'' + ", zeebeCommandKey=" + zeebeCommandKey + '}';
   }
 }

@@ -17,6 +17,7 @@ import org.camunda.operate.zeebeimport.processors.ActivityInstanceZeebeRecordPro
 import org.camunda.operate.zeebeimport.processors.EventZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.IncidentZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.ListViewZeebeRecordProcessor;
+import org.camunda.operate.zeebeimport.processors.OperationZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.SequenceFlowZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.VariableZeebeRecordProcessor;
 import org.camunda.operate.zeebeimport.processors.WorkflowZeebeRecordProcessor;
@@ -47,6 +48,9 @@ public class ElasticsearchBulkProcessor {
 
   @Autowired
   private VariableZeebeRecordProcessor variableZeebeRecordProcessor;
+
+  @Autowired
+  private OperationZeebeRecordProcessor operationZeebeRecordProcessor;
 
   @Autowired
   private IncidentZeebeRecordProcessor incidentZeebeRecordProcessor;
@@ -98,6 +102,11 @@ public class ElasticsearchBulkProcessor {
       for (Record record : zeebeRecords) {
         listViewZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
         variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
+      }
+      break;
+    case VARIABLE_DOCUMENT:
+      for (Record record : zeebeRecords) {
+        operationZeebeRecordProcessor.processVariableDocumentRecords(record, bulkRequest);
       }
       break;
     case DEPLOYMENT:

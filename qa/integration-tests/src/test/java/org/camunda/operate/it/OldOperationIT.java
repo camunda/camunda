@@ -188,8 +188,6 @@ public class OldOperationIT extends OperateZeebeIntegrationTest {
     operation = workflowInstances.getWorkflowInstances().get(0).getOperations().get(0);
     assertThat(operation.getType()).isEqualTo(OperationType.CANCEL_WORKFLOW_INSTANCE);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
-    assertThat(operation.getStartDate()).isNotNull();
-    assertThat(operation.getEndDate()).isNotNull();
     //assert that process is canceled
     assertThat(workflowInstances.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
   }
@@ -220,8 +218,6 @@ public class OldOperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
     assertThat(operation.getErrorMessage()).isEqualTo("Unable to cancel CANCELED workflow instance. Instance must be in ACTIVE or INCIDENT state.");
     assertThat(operation.getId()).isNotNull();
-    assertThat(operation.getEndDate()).isNotNull();
-    assertThat(operation.getStartDate()).isNotNull();
   }
 
   @Test

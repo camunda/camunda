@@ -240,14 +240,13 @@ public class BatchOperationWriter {
   private Script getUpdateBatchOperationIdScript(String batchOperationId) throws IOException {
     Map<String,Object> paramsMap = new HashMap<>();
     paramsMap.put("batchOperationId", batchOperationId);
-    Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(paramsMap), HashMap.class);
 
     String script = "if (ctx._source.batchOperationId == null){"
         + "ctx._source.batchOperationId = new String[]{params.batchOperationId};"
         + "} else {"
         + "ctx._source.batchOperationId.add(params.batchOperationId);"
         + "}";
-    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
+    return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, paramsMap);
   }
 
 
@@ -319,19 +318,17 @@ public class BatchOperationWriter {
   }
 
   private IndexRequest getIndexUpdateVariableOperationRequest(Long workflowInstanceKey, Long scopeKey, String name, String value, String batchOperationId) throws PersistenceException {
-    OperationEntity operationEntity = createOperationEntity(workflowInstanceKey, OperationType.UPDATE_VARIABLE);
+    OperationEntity operationEntity = createOperationEntity(workflowInstanceKey, OperationType.UPDATE_VARIABLE, batchOperationId);
 
     operationEntity.setScopeKey(scopeKey);
     operationEntity.setVariableName(name);
     operationEntity.setVariableValue(value);
-    operationEntity.setBatchOperationId(batchOperationId);
 
     return createIndexRequest(operationEntity, OperationType.UPDATE_VARIABLE, workflowInstanceKey);
   }
 
   private IndexRequest getIndexOperationRequest(Long workflowInstanceKey, Long incidentKey, String batchOperationId, OperationType operationType) throws PersistenceException {
-    OperationEntity operationEntity = createOperationEntity(workflowInstanceKey, operationType);
-    operationEntity.setBatchOperationId(batchOperationId);
+    OperationEntity operationEntity = createOperationEntity(workflowInstanceKey, operationType, batchOperationId);
     operationEntity.setIncidentKey(incidentKey);
 
     return createIndexRequest(operationEntity, operationType, workflowInstanceKey);
@@ -352,12 +349,13 @@ public class BatchOperationWriter {
     }
   }
 
-  private OperationEntity createOperationEntity(Long workflowInstanceKey, OperationType operationType) {
+  private OperationEntity createOperationEntity(Long workflowInstanceKey, OperationType operationType, String batchOperationId) {
     OperationEntity operationEntity = new OperationEntity();
     operationEntity.generateId();
     operationEntity.setWorkflowInstanceKey(workflowInstanceKey);
     operationEntity.setType(operationType);
     operationEntity.setState(OperationState.SCHEDULED);
+    operationEntity.setBatchOperationId(batchOperationId);
     return operationEntity;
   }
 

@@ -361,6 +361,16 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     variables = variableReader.getVariables(workflowInstanceKey, workflowInstanceKey);
     assertThat(variables).hasSize(1);
     assertVariable(variables, varName, newVarValue, false);
+
+    //check batch operation progress
+    //TODO replace this with REST API call - OPE-790
+    List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    assertThat(batchOperations).hasSize(1);
+
+    BatchOperationEntity batchOperationEntity = batchOperations.get(0);
+    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
+    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getEndDate()).isNotNull();
   }
 
   @Test
@@ -545,6 +555,16 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
     //assert that process is canceled
     assertThat(workflowInstances.getWorkflowInstances().get(0).getState()).isEqualTo(WorkflowInstanceStateDto.CANCELED);
+
+    //check batch operation progress
+    //TODO replace this with REST API call - OPE-790
+    List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    assertThat(batchOperations).hasSize(1);
+
+    BatchOperationEntity batchOperationEntity = batchOperations.get(0);
+    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.CANCEL_WORKFLOW_INSTANCE);
+    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getEndDate()).isNotNull();
   }
 
   @Test
@@ -573,6 +593,19 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     //check incidents
     final List<IncidentDto> incidents = incidentReader.getIncidentsByWorkflowInstanceKey(workflowInstanceKey).getIncidents();
     assertThat(incidents).hasSize(0);
+
+    //check batch operation progress
+    //TODO replace this with REST API call - OPE-790
+    List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    assertThat(batchOperations).hasSize(2);
+    BatchOperationEntity batchOperationEntity = batchOperations.get(0);
+    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
+    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getEndDate()).isNotNull();
+    batchOperationEntity = batchOperations.get(1);
+    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
+    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getEndDate()).isNotNull();
 
   }
 

@@ -84,7 +84,7 @@ public class OperationReader extends AbstractReader {
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(operationTemplate, ONLY_RUNTIME)
       .source(new SearchSourceBuilder()
         .query(constantScoreQuery)
-        .sort(OperationTemplate.START_DATE, SortOrder.ASC)
+        .sort(OperationTemplate.BATCH_OPERATION_ID, SortOrder.ASC)
         .from(0)
         .size(batchSize));
     try {

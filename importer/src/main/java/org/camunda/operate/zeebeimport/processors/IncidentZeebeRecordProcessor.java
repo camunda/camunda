@@ -59,11 +59,7 @@ public class IncidentZeebeRecordProcessor {
     if (intentStr.equals(RESOLVED.toString())) {
 
       //resolve corresponding operation
-      //TODO must be idempotent
-      //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
-      elasticsearchManager.completeOperation(recordValue.getWorkflowInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT);
-      //if we update smth, we need it to have affect at once
-      bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
+      elasticsearchManager.completeOperation(null, recordValue.getWorkflowInstanceKey(), incidentKey, OperationType.RESOLVE_INCIDENT, bulkRequest);
 
       bulkRequest.add(getIncidentDeleteQuery(incidentKey));
     } else if (intentStr.equals(CREATED.toString())) {

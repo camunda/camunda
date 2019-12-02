@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.7.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0uef7zo" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.8.0">
   <bpmn:process id="eventSubprocessWorkflow" name="Event Subprocess Workflow" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1vnazga">
       <bpmn:outgoing>SequenceFlow_0b1strv</bpmn:outgoing>
@@ -24,7 +24,7 @@
       <bpmn:startEvent id="StartEvent_1u9mwoj" name="Interrupting timer">
         <bpmn:outgoing>SequenceFlow_0xk369x</bpmn:outgoing>
         <bpmn:timerEventDefinition>
-          <bpmn:timeCycle xsi:type="bpmn:tFormalExpression">R1/PT3M</bpmn:timeCycle>
+          <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT3M</bpmn:timeDuration>
         </bpmn:timerEventDefinition>
       </bpmn:startEvent>
     </bpmn:subProcess>

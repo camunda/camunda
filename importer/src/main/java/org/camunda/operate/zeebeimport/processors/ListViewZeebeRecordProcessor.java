@@ -103,9 +103,8 @@ public class ListViewZeebeRecordProcessor {
         if (isProcessEvent(recordValue)) {
           //complete operation
           if (intentStr.equals(ELEMENT_TERMINATED.name())) {
-            //TODO must be idempotent
-            //not possible to include UpdateByQueryRequestBuilder in bulk query -> executing at once
-            elasticsearchManager.completeOperation(record.getKey(), null, OperationType.CANCEL_WORKFLOW_INSTANCE);
+            //resolve corresponding operation
+            elasticsearchManager.completeOperation(null, record.getKey(), null, OperationType.CANCEL_WORKFLOW_INSTANCE, bulkRequest);
           }
           wiEntity = updateWorkflowInstance(importBatch, record, intentStr, recordValue, wiEntity);
         } else if (!intentStr.equals(Intent.SEQUENCE_FLOW_TAKEN.name()) && !intentStr.equals(Intent.UNKNOWN.name())) {
