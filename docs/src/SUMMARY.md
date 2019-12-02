@@ -7,7 +7,7 @@
     * [Community Contributions](introduction/community-contributions.md)
     * [Get Help & Get Involved](introduction/get-help-get-involved.md)
 * [Basics](basics/index.md)
-    * [Architecture](basics/client-server.md)
+    * [Architecture](basics/architecture.md)
     * [Workflows](basics/workflows.md)
     * [Job Workers](basics/job-workers.md)
     * [Partitions](basics/partitions.md)
@@ -88,3 +88,4 @@
     * [Variables & Incidents](operate-user-guide/resolve-incidents-update-variables.md)
     * [Selections & Batch Operations](operate-user-guide/selections-batch-operations.md)
     * [Feedback & Questions](operate-user-guide/operate-feedback-and-questions.md)
+* [Glossary](glossary.md)

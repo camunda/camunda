@@ -2,7 +2,7 @@
 
 This section provides an overview of Zeebe's core concepts. Understanding them helps to successfully build workflow applications.
 
-* [Client / Server](/basics/client-server.html)
+* [Architecture](/basics/architecture.html)
 * [Workflows](/basics/workflows.html)
 * [Job Workers](/basics/job-workers.html)
 * [Partitions](/basics/partitions.html)
