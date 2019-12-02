@@ -13,8 +13,10 @@ import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Objects;
 import org.agrona.concurrent.status.AtomicLongPosition;
 
@@ -23,12 +25,12 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
   private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
   protected int maxFragmentSize = 1024 * 1024 * 4;
   protected int partitionId = -1;
-  protected ServiceContainer serviceContainer;
+  protected ActorScheduler actorScheduler;
   protected LogStorage logStorage;
   protected String logName;
 
-  public SELF withServiceContainer(final ServiceContainer serviceContainer) {
-    this.serviceContainer = serviceContainer;
+  public SELF withActorScheduler(final ActorScheduler actorScheduler) {
+    this.actorScheduler = actorScheduler;
     return (SELF) this;
   }
 
@@ -56,16 +58,14 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
     applyDefaults();
     validate();
 
-    final var service =
-        new LogStreamService(
-            serviceContainer,
+    return CompletableActorFuture.completed(new LogStreamService(
+            actorScheduler,
             new ActorConditions(),
             logName,
             partitionId,
             ByteValue.ofBytes(maxFragmentSize),
             new AtomicLongPosition(),
-            logStorage);
-    return serviceContainer.createService(logStreamServiceName(logName), service).install();
+            logStorage));
   }
 
   public LogStream build() {
@@ -75,7 +75,7 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
   protected void applyDefaults() {}
 
   protected void validate() {
-    Objects.requireNonNull(serviceContainer, "Must specify a service container");
+    Objects.requireNonNull(actorScheduler, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {

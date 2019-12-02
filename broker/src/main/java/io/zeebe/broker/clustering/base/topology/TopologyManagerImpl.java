@@ -13,6 +13,8 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.PartitionListener;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.LogUtil;
@@ -25,7 +27,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
 public class TopologyManagerImpl extends Actor
-    implements TopologyManager, ClusterMembershipEventListener {
+    implements TopologyManager, ClusterMembershipEventListener, PartitionListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final Int2ObjectHashMap<BrokerInfo> partitionLeaders = new Int2ObjectHashMap<>();
@@ -45,6 +47,16 @@ public class TopologyManagerImpl extends Actor
     publishTopologyChanges();
   }
 
+  @Override
+  public void onBecomingFollower(Partition partition) {
+    setFollower(partition.getPartitionId());
+  }
+
+  @Override
+  public void onBecomingLeader(Partition partition) {
+    setLeader(partition.getTerm(), partition.getPartitionId());
+
+  }
   @Override
   public String getName() {
     return "topology";

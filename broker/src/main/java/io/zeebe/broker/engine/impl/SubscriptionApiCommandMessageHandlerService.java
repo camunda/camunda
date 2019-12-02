@@ -26,10 +26,8 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   private final Int2ObjectHashMap<LogStream> leaderPartitions = new Int2ObjectHashMap<>();
   private final Atomix atomix;
-  private SubscriptionCommandMessageHandler messageHandler;
 
-  public SubscriptionApiCommandMessageHandlerService(
-    SubscriptionCommandMessageHandler messageHandler, Atomix atomix) {
+  public SubscriptionApiCommandMessageHandlerService(Atomix atomix) {
     this.atomix = atomix;
   }
 
@@ -50,7 +48,8 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   protected void onActorStarting() {
-    messageHandler = new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
+    SubscriptionCommandMessageHandler messageHandler = new SubscriptionCommandMessageHandler(
+      actor::call, leaderPartitions::get);
     atomix.getCommunicationService().subscribe("subscription", messageHandler);
   }
 

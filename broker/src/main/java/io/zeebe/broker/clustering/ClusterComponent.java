@@ -17,7 +17,7 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.PARTI
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
 
 import io.zeebe.broker.clustering.atomix.AtomixJoinService;
-import io.zeebe.broker.clustering.atomix.AtomixService;
+import io.zeebe.broker.clustering.atomix.AtomixFactory;
 import io.zeebe.broker.clustering.base.EmbeddedGatewayService;
 import io.zeebe.broker.clustering.base.partitions.BootstrapPartitions;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerService;
@@ -86,8 +86,8 @@ public class ClusterComponent implements Component {
   private void initAtomix(
       final CompositeServiceBuilder baseLayerInstall, final SystemContext context) {
 
-    final AtomixService atomixService = new AtomixService(context.getBrokerConfiguration());
-    baseLayerInstall.createService(ATOMIX_SERVICE, atomixService).install();
+    final AtomixFactory atomixFactory = new AtomixFactory(context.getBrokerConfiguration());
+    baseLayerInstall.createService(ATOMIX_SERVICE, atomixFactory).install();
 
     final AtomixJoinService atomixJoinService = new AtomixJoinService();
     // With RaftPartitionGroup AtomixJoinService completes only when majority of brokers have

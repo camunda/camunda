@@ -40,18 +40,12 @@ import java.util.concurrent.CompletableFuture;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
-public class AtomixService implements Service<Atomix> {
+public final class AtomixFactory {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-  private final BrokerCfg configuration;
-  private Atomix atomix;
+  private AtomixFactory() {}
 
-  public AtomixService(final BrokerCfg configuration) {
-    this.configuration = configuration;
-  }
-
-  @Override
-  public void start(final ServiceStartContext startContext) {
+  public static Atomix fromConfiguration(BrokerCfg configuration) {
     final var clusterCfg = configuration.getCluster();
     final var nodeId = clusterCfg.getNodeId();
     final var localMemberId = Integer.toString(nodeId);
@@ -99,24 +93,12 @@ public class AtomixService implements Service<Atomix> {
 
     final String raftPartitionGroupName = Partition.GROUP_NAME;
     final RaftPartitionGroup partitionGroup =
-        createRaftPartitionGroup(rootDirectory, raftPartitionGroupName);
+        createRaftPartitionGroup(configuration, rootDirectory, raftPartitionGroupName);
 
-    atomix =
-        atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup).build();
+    return atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup).build();
   }
 
-  @Override
-  public void stop(final ServiceStopContext stopContext) {
-    final CompletableFuture<Void> stopFuture = atomix.stop();
-    stopContext.async(mapCompletableFuture(stopFuture));
-  }
-
-  @Override
-  public Atomix get() {
-    return atomix;
-  }
-
-  private RaftPartitionGroup createRaftPartitionGroup(
+  private static RaftPartitionGroup createRaftPartitionGroup(final BrokerCfg configuration,
       final String rootDirectory, final String raftPartitionGroupName) {
 
     final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
@@ -157,7 +139,7 @@ public class AtomixService implements Service<Atomix> {
     return partitionGroupBuilder.build();
   }
 
-  private List<String> getRaftGroupMembers(final ClusterCfg clusterCfg) {
+  private static List<String> getRaftGroupMembers(final ClusterCfg clusterCfg) {
     final int clusterSize = clusterCfg.getClusterSize();
     // node ids are always 0 to clusterSize - 1
     final List<String> members = new ArrayList<>();
@@ -167,7 +149,7 @@ public class AtomixService implements Service<Atomix> {
     return members;
   }
 
-  private NodeDiscoveryProvider createDiscoveryProvider(
+  private static NodeDiscoveryProvider createDiscoveryProvider(
       final ClusterCfg clusterCfg, final String localMemberId) {
     final BootstrapDiscoveryBuilder builder = BootstrapDiscoveryProvider.builder();
     final List<String> initialContactPoints = clusterCfg.getInitialContactPoints();
@@ -184,18 +166,5 @@ public class AtomixService implements Service<Atomix> {
           nodes.add(node);
         });
     return builder.withNodes(nodes).build();
-  }
-
-  private ActorFuture<Void> mapCompletableFuture(final CompletableFuture<Void> atomixFuture) {
-    final ActorFuture<Void> mappedActorFuture = new CompletableActorFuture<>();
-
-    atomixFuture
-        .thenAccept(mappedActorFuture::complete)
-        .exceptionally(
-            t -> {
-              mappedActorFuture.completeExceptionally(t);
-              return null;
-            });
-    return mappedActorFuture;
   }
 }

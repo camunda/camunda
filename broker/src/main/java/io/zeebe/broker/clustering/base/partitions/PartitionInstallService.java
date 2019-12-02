@@ -21,6 +21,7 @@ import static io.zeebe.broker.exporter.ExporterServiceNames.exporterDirectorServ
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVICE_NAME;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterEventService;
 import io.atomix.protocols.raft.RaftCommitListener;
 import io.atomix.protocols.raft.partition.RaftPartition;
@@ -51,6 +52,7 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.DurationUtil;
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -63,23 +65,15 @@ import org.slf4j.Logger;
  * to attach to.
  */
 public class PartitionInstallService extends Actor
-    implements Service<PartitionInstallService>, PartitionRoleChangeListener, RaftCommitListener {
+    implements PartitionRoleChangeListener, RaftCommitListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final ClusterEventService clusterEventService;
   private final BrokerCfg brokerCfg;
   private final RaftPartition partition;
-  private final ServiceContainer serviceContainer;
   private final ExporterRepository exporterRepository = new ExporterRepository();
 
-  private ServiceStartContext startContext;
-  private ServiceName<LogStream> logStreamServiceName;
-  private ServiceName<Void> openLogStreamServiceName;
-  private ServiceName<Partition> leaderPartitionServiceName;
-  private ServiceName<Partition> followerPartitionServiceName;
-  private ServiceName<Void> leaderInstallRootServiceName;
   private String logName;
-  private ActorFuture<PartitionLeaderElection> leaderElectionInstallFuture;
   private PartitionLeaderElection leaderElection;
   private ActorFuture<Void> transitionFuture;
   private LogStream logStream;
@@ -88,12 +82,42 @@ public class PartitionInstallService extends Actor
   public PartitionInstallService(
       final RaftPartition partition,
       final ClusterEventService clusterEventService,
-      final ServiceContainer serviceContainer,
+      final ActorScheduler actorScheduler,
       final BrokerCfg brokerCfg) {
     this.partition = partition;
     this.clusterEventService = clusterEventService;
-    this.serviceContainer = serviceContainer;
     this.brokerCfg = brokerCfg;
+
+      final int partitionId = partition.id().id();
+      logName = Partition.getPartitionName(partitionId);
+
+      // installs the logstream service
+      logStreamServiceName = LogStreamServiceNames.logStreamServiceName(logName);
+      logStreamFuture =
+        LogStreams.createAtomixLogStream(partition)
+          .withMaxFragmentSize((int) brokerCfg.getNetwork().getMaxMessageSize().toBytes())
+          .withActorScheduler(actorScheduler)
+          .buildAsync();
+
+      leaderInstallRootServiceName = PartitionServiceNames.leaderInstallServiceRootName(logName);
+      leaderElection = new PartitionLeaderElection(partition);
+
+//    final MemberId memberId = atomix.getMembershipService().getLocalMember().id();
+//    LOG.debug("Broker {} created leader election service for partition {}.", memberId, partitionId);
+    actorScheduler.submitActor(leaderElection);
+
+
+      // load and validate exporters
+      for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
+        try {
+          exporterRepository.load(exporterCfg);
+        } catch (ExporterLoadException | ExporterJarLoadException e) {
+          throw new IllegalStateException(
+            "Failed to load exporter with configuration: " + exporterCfg, e);
+        }
+      }
+
+      actorScheduler.submitActor(this);
   }
 
   @Override
@@ -126,56 +150,6 @@ public class PartitionInstallService extends Actor
         });
   }
 
-  @Override
-  public void start(final ServiceStartContext startContext) {
-    this.startContext = startContext;
-
-    final int partitionId = partition.id().id();
-    logName = Partition.getPartitionName(partitionId);
-
-    // TODO: rename/remove?
-    final ServiceName<Void> raftInstallServiceName = raftInstallServiceName(partitionId);
-
-    final CompositeServiceBuilder partitionInstall =
-        startContext.createComposite(raftInstallServiceName);
-
-    // installs the logstream service
-    logStreamServiceName = LogStreamServiceNames.logStreamServiceName(logName);
-    logStreamFuture =
-        LogStreams.createAtomixLogStream(partition)
-            .withMaxFragmentSize((int) brokerCfg.getNetwork().getMaxMessageSize().toBytes())
-            .withServiceContainer(serviceContainer)
-            .buildAsync();
-
-    leaderInstallRootServiceName = PartitionServiceNames.leaderInstallServiceRootName(logName);
-    leaderElection = new PartitionLeaderElection(partition);
-    final ServiceName<PartitionLeaderElection> partitionLeaderElectionServiceName =
-        partitionLeaderElectionServiceName(logName);
-    leaderElectionInstallFuture =
-        partitionInstall
-            .createService(partitionLeaderElectionServiceName, leaderElection)
-            .dependency(ATOMIX_SERVICE, leaderElection.getAtomixInjector())
-            .dependency(ATOMIX_JOIN_SERVICE)
-            .group(LEADERSHIP_SERVICE_GROUP)
-            .install();
-
-    partitionInstall.install();
-
-    // load and validate exporters
-    for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
-      try {
-        exporterRepository.load(exporterCfg);
-      } catch (ExporterLoadException | ExporterJarLoadException e) {
-        throw new IllegalStateException(
-            "Failed to load exporter with configuration: " + exporterCfg, e);
-      }
-    }
-
-    leaderPartitionServiceName = leaderPartitionServiceName(logName);
-    openLogStreamServiceName = leaderOpenLogStreamServiceName(logName);
-    followerPartitionServiceName = followerPartitionServiceName(logName);
-    startContext.getScheduler().submitActor(this);
-  }
 
   @Override
   public void stop(final ServiceStopContext stopContext) {

@@ -17,6 +17,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.dispatcher.impl.PositionUtil;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -31,29 +32,30 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
-public class LogStreamService implements LogStream, Service<LogStream> {
+public class LogStreamService implements LogStream, AutoCloseable {
   public static final long INVALID_ADDRESS = -1L;
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
   private static final String APPENDER_SUBSCRIPTION_NAME = "appender";
 
-  private final Injector<LogStorage> logStorageInjector = new Injector<>();
-  private final ServiceContainer serviceContainer;
   private final ActorConditions onCommitPositionUpdatedConditions;
   private final String logName;
   private final int partitionId;
   private final ByteValue maxFrameLength;
   private final Position commitPosition;
+  private final ActorScheduler actorScheduler;
 
   private BufferedLogStreamReader reader;
-  private ServiceStartContext serviceContext;
   private LogStorage logStorage;
   private ActorFuture<Dispatcher> writeBufferFuture;
   private ActorFuture<LogStorageAppender> appenderFuture;
@@ -61,27 +63,20 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private LogStorageAppender appender;
 
   public LogStreamService(
-      final ServiceContainer serviceContainer,
+      final ActorScheduler actorScheduler,
       final ActorConditions onCommitPositionUpdatedConditions,
       final String logName,
       final int partitionId,
       final ByteValue maxFrameLength,
       final Position commitPosition,
       final LogStorage logStorage) {
-    this.serviceContainer = serviceContainer;
+    this.actorScheduler = actorScheduler;
     this.onCommitPositionUpdatedConditions = onCommitPositionUpdatedConditions;
     this.logName = logName;
     this.partitionId = partitionId;
     this.maxFrameLength = maxFrameLength;
     this.commitPosition = commitPosition;
     this.logStorage = logStorage;
-  }
-
-  @Override
-  public void start(final ServiceStartContext startContext) {
-    if (logStorage == null) {
-      logStorage = logStorageInjector.getValue();
-    }
 
     try {
       logStorage.open();
@@ -90,19 +85,8 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     }
 
     commitPosition.setVolatile(INVALID_ADDRESS);
-    serviceContext = startContext;
     this.reader = new BufferedLogStreamReader(logStorage);
     setCommitPosition(reader.seekToEnd());
-  }
-
-  @Override
-  public void stop(final ServiceStopContext stopContext) {
-    logStorage.close();
-  }
-
-  @Override
-  public LogStream get() {
-    return this;
   }
 
   @Override
@@ -117,12 +101,13 @@ public class LogStreamService implements LogStream, Service<LogStream> {
 
   @Override
   public void close() {
-    closeAsync().join();
+    logStorage.close();
   }
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    return serviceContainer.removeService(logStreamServiceName(logName));
+    close();
+    return CompletableActorFuture.completed(null);
   }
 
   @Override
@@ -162,52 +147,55 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   public ActorFuture<Void> closeAppender() {
     appenderFuture = null;
     writeBufferFuture = null;
+
+    appender.close();
+    writeBuffer.close();
     appender = null;
     writeBuffer = null;
-
-    final String logName = getLogName();
-    return serviceContext.removeService(logStorageAppenderRootService(logName));
+    return CompletableActorFuture.completed(null);
   }
 
   @Override
   public ActorFuture<LogStorageAppender> openAppender() {
     final String logName = getLogName();
-    final ServiceName<Void> logStorageAppenderRootService = logStorageAppenderRootService(logName);
     final ServiceName<Dispatcher> logWriteBufferServiceName = logWriteBufferServiceName(logName);
-    final ServiceName<Subscription> appenderSubscriptionServiceName =
-        logWriteBufferSubscriptionServiceName(logName, APPENDER_SUBSCRIPTION_NAME);
     final ServiceName<LogStorageAppender> logStorageAppenderServiceName =
         logStorageAppenderServiceName(logName);
 
-    final DispatcherBuilder writeBufferBuilder =
-        Dispatchers.create(logWriteBufferServiceName.getName()).maxFragmentLength(maxFrameLength);
+    final int partitionId = determineInitialPartitionId();
+    writeBuffer =
+      Dispatchers.create(logWriteBufferServiceName.getName()).maxFragmentLength(maxFrameLength)
+        .initialPartitionId(partitionId + 1)
+        .name(logName+"-write-buffer")
+        .actorScheduler(actorScheduler)
+        .build();
 
-    final CompositeServiceBuilder installOperation =
-        serviceContext.createComposite(logStorageAppenderRootService);
-
-    final LogWriteBufferService writeBufferService =
-        new LogWriteBufferService(writeBufferBuilder, logStorage);
-    writeBufferFuture =
-        installOperation.createService(logWriteBufferServiceName, writeBufferService).install();
-
-    final LogWriteBufferSubscriptionService subscriptionService =
-        new LogWriteBufferSubscriptionService(APPENDER_SUBSCRIPTION_NAME);
-    installOperation
-        .createService(appenderSubscriptionServiceName, subscriptionService)
-        .dependency(logWriteBufferServiceName, subscriptionService.getWritebufferInjector())
-        .install();
-
-    final LogStorageAppenderService appenderService =
-        new LogStorageAppenderService(getLogStorage(), partitionId, (int) maxFrameLength.toBytes());
-    appenderFuture =
-        installOperation
-            .createService(logStorageAppenderServiceName, appenderService)
-            .dependency(
-                appenderSubscriptionServiceName, appenderService.getAppenderSubscriptionInjector())
-            .install();
-
-    return installOperation.installAndReturn(logStorageAppenderServiceName);
+    final var subscription = writeBuffer.openSubscription(APPENDER_SUBSCRIPTION_NAME);
+    appender =
+      new LogStorageAppender(
+        logStorageAppenderServiceName.getName(), partitionId, logStorage, subscription, (int) maxFrameLength.toBytes());
+    appenderFuture = CompletableActorFuture.completed(appender);
+    return appenderFuture;
   }
+
+  private int determineInitialPartitionId() {
+    try (BufferedLogStreamReader logReader = new BufferedLogStreamReader()) {
+      logReader.wrap(logStorage);
+
+      // Get position of last entry
+      final long lastPosition = logReader.seekToEnd();
+
+      // dispatcher needs to generate positions greater than the last position
+      int partitionId = 0;
+
+      if (lastPosition > 0) {
+        partitionId = PositionUtil.partitionId(lastPosition);
+      }
+
+      return partitionId;
+    }
+  }
+
 
   @Override
   public void delete(final long position) {
@@ -234,9 +222,5 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   @Override
   public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     onCommitPositionUpdatedConditions.removeConsumer(condition);
-  }
-
-  public Injector<LogStorage> getLogStorageInjector() {
-    return logStorageInjector;
   }
 }

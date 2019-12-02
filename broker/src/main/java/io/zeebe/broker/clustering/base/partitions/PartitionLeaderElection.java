@@ -12,6 +12,7 @@ import io.atomix.core.Atomix;
 import io.atomix.protocols.raft.RaftServer.Role;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -24,11 +25,9 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public class PartitionLeaderElection extends Actor
-    implements Service<PartitionLeaderElection>, Consumer<Role> {
+    implements Consumer<Role> {
 
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
-
-  private final Injector<Atomix> atomixInjector = new Injector<>();
 
   private final int partitionId;
   private final RaftPartition partition;
@@ -40,29 +39,13 @@ public class PartitionLeaderElection extends Actor
     this.partition = partition;
     this.partitionId = partition.id().id();
     leaderElectionListeners = new ArrayList<>();
-  }
-
-  @Override
-  public void start(ServiceStartContext startContext) {
-    final Atomix atomix = atomixInjector.getValue();
-    final MemberId memberId = atomix.getMembershipService().getLocalMember().id();
-
     startFuture = new CompletableActorFuture<>();
-    startContext.getScheduler().submitActor(this);
-    startContext.async(startFuture, true);
-
-    LOG.debug("Broker {} created leader election service for partition {}.", memberId, partitionId);
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void close() {
     partition.removeRoleChangeListener(this);
     actor.close();
-  }
-
-  @Override
-  public PartitionLeaderElection get() {
-    return this;
   }
 
   @Override
@@ -115,10 +98,6 @@ public class PartitionLeaderElection extends Actor
 
   public int getPartitionId() {
     return partitionId;
-  }
-
-  public Injector<Atomix> getAtomixInjector() {
-    return atomixInjector;
   }
 
   /**

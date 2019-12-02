@@ -15,6 +15,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
 import io.atomix.protocols.raft.partition.RaftPartition;
 import io.atomix.protocols.raft.partition.RaftPartitionGroup;
+import io.zeebe.broker.clustering.atomix.AtomixFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -31,19 +32,12 @@ import java.util.stream.Collectors;
 public class BootstrapPartitions implements Service<Void> {
   private final BrokerCfg brokerCfg;
   private final ServiceContainer serviceContainer;
-  private final Injector<Atomix> atomixInjector = new Injector<>();
   private ServiceStartContext startContext;
-  private Atomix atomix;
+  private final Atomix atomix;
 
-  public BootstrapPartitions(final BrokerCfg brokerCfg, final ServiceContainer serviceContainer) {
+  public BootstrapPartitions(final Atomix atomix, final BrokerCfg brokerCfg) {
+    this.atomix = atomix;
     this.brokerCfg = brokerCfg;
-    this.serviceContainer = serviceContainer;
-  }
-
-  @Override
-  public void start(final ServiceStartContext startContext) {
-    atomix = atomixInjector.getValue();
-
     final RaftPartitionGroup partitionGroup =
         (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup(Partition.GROUP_NAME);
 
@@ -54,13 +48,9 @@ public class BootstrapPartitions implements Service<Void> {
             .map(RaftPartition.class::cast)
             .collect(Collectors.toList());
 
-    this.startContext = startContext;
-    startContext.run(
-        () -> {
           for (final RaftPartition owningPartition : owningPartitions) {
             installPartition(owningPartition);
           }
-        });
   }
 
   @Override

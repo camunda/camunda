@@ -7,24 +7,20 @@
  */
 package io.zeebe.broker;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.system.SystemServiceNames.BROKER_HEALTH_CHECK_SERVICE;
-import static io.zeebe.broker.system.SystemServiceNames.BROKER_HTTP_SERVER;
-import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVICE_NAME;
 
+import io.atomix.cluster.MemberId;
+import io.atomix.core.Atomix;
+import io.atomix.protocols.raft.partition.RaftPartition;
+import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
-import io.zeebe.broker.clustering.ClusterComponent;
-import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
-import io.zeebe.broker.engine.EngineComponent;
-import io.zeebe.broker.engine.EngineServiceNames;
+import io.zeebe.broker.clustering.atomix.AtomixFactory;
+import io.zeebe.broker.clustering.base.EmbeddedGatewayService;
+import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
+import io.zeebe.broker.clustering.base.topology.TopologyManagerImpl;
 import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
-import io.zeebe.broker.system.SystemComponent;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BackpressureCfg;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -33,15 +29,10 @@ import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.zeebe.broker.system.monitoring.BrokerHttpServer;
-import io.zeebe.broker.system.monitoring.BrokerHttpServerService;
-import io.zeebe.broker.transport.ServerTransportService;
-import io.zeebe.broker.transport.TransportComponent;
-import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.transport.ServerTransport;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
@@ -50,11 +41,11 @@ import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public class Broker implements AutoCloseable {
@@ -78,6 +69,7 @@ public class Broker implements AutoCloseable {
   protected final SystemContext brokerContext;
   protected boolean isClosed = false;
   private List<AutoCloseable> closeables;
+  private List<PartitionListener> partitionListeners;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -93,24 +85,36 @@ public class Broker implements AutoCloseable {
 
   public Broker(final SystemContext systemContext) {
     this.brokerContext = systemContext;
+    this.partitionListeners = new ArrayList<>();
+    this.closeables = new ArrayList<>();
+
     LogUtil.doWithMDC(systemContext.getDiagnosticContext(), () -> start());
   }
 
   protected void start() {
     final BrokerCfg brokerCfg = getConfig();
+    final NetworkCfg networkCfg = brokerCfg.getNetwork();
 
     if (LOG.isInfoEnabled()) {
       LOG.info("Version: {}", VERSION);
       LOG.info("Starting broker with configuration {}", brokerCfg.toJson());
     }
 
+    // core components
+
     final ActorScheduler scheduler = brokerContext.getScheduler();
-    final NetworkCfg networkCfg = brokerCfg.getNetwork();
+    final Atomix atomix = AtomixFactory.fromConfiguration(brokerCfg);
 
-    final List<PartitionListener> partitionListeners = new ArrayList<>();
-    closeables = new ArrayList<>();
 
-//    brokerContext.addComponent(new SystemComponent());
+    final BrokerInfo localMember =
+      new BrokerInfo(
+        brokerCfg.getCluster().getNodeId(),
+        networkCfg.getCommandApi().getAdvertisedAddress().toString());
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// METRICS AND READY CHECK ////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
     final BrokerHealthCheckService healthCheckService = new BrokerHealthCheckService(atomix);
     partitionListeners.add(healthCheckService);
     scheduleActor(healthCheckService);
@@ -127,8 +131,9 @@ public class Broker implements AutoCloseable {
       new LeaderManagementRequestHandler(atomix);
     scheduleActor(requestHandlerService);
 
-
-//    brokerContext.addComponent(new TransportComponent());
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// COMMAND API //////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     final CommandApiMessageHandler commandApiMessageHandler = new CommandApiMessageHandler();
 
     final BackpressureCfg backpressure = brokerCfg.getBackpressure();
@@ -160,18 +165,55 @@ public class Broker implements AutoCloseable {
       new CommandApiService(serverTransport.getOutput(), commandApiMessageHandler, limiter);
     partitionListeners.add(commandHandler);
 
-
-//    brokerContext.addComponent(new EngineComponent());
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// SUBSCRIPTION API /////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
     final SubscriptionApiCommandMessageHandlerService messageHandlerService =
       new SubscriptionApiCommandMessageHandlerService(atomix);
     partitionListeners.add(messageHandlerService);
     scheduleActor(messageHandlerService);
 
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// TOPOLOGY /////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
 
+    final TopologyManagerImpl topologyManager =
+      new TopologyManagerImpl(atomix, localMember, brokerCfg.getCluster());
+    partitionListeners.add(topologyManager);
+    scheduleActor(topologyManager);
 
-    brokerContext.addComponent(new ClusterComponent());
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// GATEWAY /////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    brokerContext.init();
+    if (brokerCfg.getGateway().isEnable()) {
+      closeables.add(new EmbeddedGatewayService(brokerCfg, scheduler, atomix));
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// ATOMIX JOIN /////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // after topology mgr is created
+    atomix.start().join();
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// START PARTITIONS /////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+      final RaftPartitionGroup partitionGroup =
+        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup(Partition.GROUP_NAME);
+
+      final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+      final List<RaftPartition> owningPartitions =
+        partitionGroup.getPartitions().stream()
+          .filter(partition -> partition.members().contains(nodeId))
+          .map(RaftPartition.class::cast)
+          .collect(Collectors.toList());
+
+      for (final RaftPartition owningPartition : owningPartitions) {
+        final PartitionInstallService partitionInstallService =
+          new PartitionInstallService(owningPartition, atomix.getEventService(), scheduler, brokerCfg);
+        scheduleActor(partitionInstallService);
+      }
   }
 
   private void scheduleActor(Actor actor)
