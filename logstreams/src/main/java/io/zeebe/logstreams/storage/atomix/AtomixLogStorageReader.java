@@ -15,7 +15,6 @@ import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.spi.ReadResultProcessor;
 import java.nio.ByteBuffer;
 import java.util.Optional;
-import java.util.function.LongUnaryOperator;
 
 public class AtomixLogStorageReader implements LogStorageReader {
   private static final ReadResultProcessor DEFAULT_READ_PROCESSOR =
@@ -80,8 +79,7 @@ public class AtomixLogStorageReader implements LogStorageReader {
    * <p>{@inheritDoc}
    */
   @Override
-  public long lookUpApproximateAddress(
-      final long position, final LongUnaryOperator positionReader) {
+  public long lookUpApproximateAddress(final long position) {
     var low = reader.getFirstIndex();
     var high = reader.getLastIndex();
 
@@ -108,12 +106,14 @@ public class AtomixLogStorageReader implements LogStorageReader {
 
       if (pivotEntry.isPresent()) {
         final Indexed<ZeebeEntry> entry = pivotEntry.get();
+        // using the entry index to reset high/low can lead to infinite loops as `findEntry`
+        // actually seeks to the next entry
         if (position < entry.entry().lowestPosition()) {
           high = pivotIndex - 1;
         } else if (position > entry.entry().highestPosition()) {
           low = pivotIndex + 1;
         } else {
-          return pivotIndex;
+          return entry.index();
         }
         atLeastOneZeebeEntry = true;
       } else {

@@ -82,10 +82,9 @@ public interface LogStorageReader extends Closeable {
    * be implementation-dependent. For example, a segmented storage can return the address of the
    * first byte in the segment.
    *
-   * @param positionReader takes an address as input and returns a position
    * @return address in the underlying storage for which positionReader returns a value <= position
    */
-  long lookUpApproximateAddress(long position, LongUnaryOperator positionReader);
+  long lookUpApproximateAddress(long position);
 
   @Override
   void close();
