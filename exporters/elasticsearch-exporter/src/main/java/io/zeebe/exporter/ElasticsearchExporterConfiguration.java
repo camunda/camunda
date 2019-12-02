@@ -105,7 +105,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean message = false;
     public boolean messageSubscription = false;
     public boolean variable = true;
-    public boolean variableDocument = false;
+    public boolean variableDocument = true;
     public boolean workflowInstance = true;
     public boolean workflowInstanceCreation = false;
     public boolean workflowInstanceSubscription = false;
