@@ -159,6 +159,7 @@ it('should pass conflict to confirmation modal if update failed', async () => {
   node.setProps({mightFail: props.mightFail});
   node.find('ConfirmationModal').prop('onConfirm')();
 
+  expect(editSource).toHaveBeenCalledWith('collectionId', 'sourceId', updatedTenants, true);
   expect(getSources).toHaveBeenCalled();
   expect(props.onChange).toHaveBeenCalled();
 });

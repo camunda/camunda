@@ -10,7 +10,6 @@ import {t} from 'translation';
 import {Button, EntityList, Deleter, ConfirmationModal} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
-import update from 'immutability-helper';
 
 import {
   getSources,
@@ -37,7 +36,8 @@ export default withErrorHandling(
       addingSource: false,
       tenantsAvailable: false,
       conflict: null,
-      editLoading: false
+      editLoading: false,
+      tenants: []
     };
 
     async componentDidMount() {
@@ -61,14 +61,8 @@ export default withErrorHandling(
     closeAddSourceModal = () => this.setState({addingSource: false});
 
     openEditSourceModal = editing => this.setState({editing});
-    editSource = tenants => {
-      this.setState(
-        {editing: update(this.state.editing, {tenants: {$set: tenants}})},
-        this.applyEdit
-      );
-    };
-    applyEdit = force => {
-      const {id, tenants} = this.state.editing;
+    editSource = (tenants, force) => {
+      const {id} = this.state.editing;
       this.setState({editLoading: true});
       this.props.mightFail(
         editSource(this.props.collection, id, tenants, force),
@@ -88,16 +82,17 @@ export default withErrorHandling(
                 type: 'edit',
                 items: conflictData.conflictedItems,
                 entityType: 'source'
-              }
+              },
+              tenants
             });
           } else {
-            this.closeEditSourceModal();
             showError(error);
           }
         }
       );
     };
-    closeEditSourceModal = () => this.setState({conflict: null, editing: null, editLoading: false});
+    closeEditSourceModal = () =>
+      this.setState({conflict: null, editing: null, editLoading: false, tenants: []});
 
     render() {
       const {
@@ -107,7 +102,8 @@ export default withErrorHandling(
         addingSource,
         sources,
         tenantsAvailable,
-        conflict
+        conflict,
+        tenants
       } = this.state;
 
       const {readOnly, collection} = this.props;
@@ -164,7 +160,7 @@ export default withErrorHandling(
               this.getSources();
               this.props.onChange();
             }}
-            checkConflicts={async () => checkDeleteSourceConflicts(collection, deleting.id)}
+            checkConflicts={async () => await checkDeleteSourceConflicts(collection, deleting.id)}
             onClose={() => this.setState({deleting: null})}
             entityType="source"
             deleteEntity={() => removeSource(collection, deleting.id)}
@@ -172,7 +168,7 @@ export default withErrorHandling(
           <ConfirmationModal
             open={conflict}
             onClose={this.closeEditSourceModal}
-            onConfirm={() => this.applyEdit(true)}
+            onConfirm={() => this.editSource(tenants, true)}
             entityName={editing && (editing.definitionName || editing.definitionKey)}
             conflict={conflict}
             loading={editLoading}
