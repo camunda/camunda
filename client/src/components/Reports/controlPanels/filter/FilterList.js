@@ -18,7 +18,7 @@ export default class FilterList extends React.Component {
   createOperator = name => <span> {name} </span>;
 
   getVariableName = (type, nameOrId) => {
-    if (this.props.variables) {
+    if (this.props.variables && this.props.variables[type].length) {
       return this.props.variables[type].find(({id}) => id === nameOrId).name;
     }
 

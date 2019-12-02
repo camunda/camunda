@@ -106,12 +106,16 @@ it('should use the variables prop to resolve variable names', () => {
   ];
 
   const node = shallow(
-    <FilterList
-      variables={{inputVariable: [{id: 'notANameButAnId', name: 'Resolved Name', type: 'String'}]}}
-      data={data}
-      openEditFilterModal={jest.fn()}
-    />
+    <FilterList variables={{inputVariable: []}} data={data} openEditFilterModal={jest.fn()} />
   );
+
+  expect(node.find('ActionItem span').first()).toIncludeText('notANameButAnId');
+
+  node.setProps({
+    variables: {
+      inputVariable: [{id: 'notANameButAnId', name: 'Resolved Name', type: 'String'}]
+    }
+  });
 
   expect(node.find('ActionItem span').first()).toIncludeText('Resolved Name');
 });
