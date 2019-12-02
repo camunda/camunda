@@ -3235,16 +3235,16 @@ bpmn-font@^0.9.3:
   resolved "https://registry.yarnpkg.com/bpmn-font/-/bpmn-font-0.9.3.tgz#03c2c906dbd30653e5b1f113d92c78cab6710df4"
   integrity sha512-kzRGXGLzTROLRNCSskkOyj/+SbtTAn2unKfgB9tNt7RWJFybg/Wbe9YjK2ALotI3b64wwlCTkAalXiTiskP6dg==
 
-bpmn-js@5.1.2:
-  version "5.1.2"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-5.1.2.tgz#b449d1efa734b4a4faf2f1d865c2254101d7252c"
-  integrity sha512-s674cn+N4zhmlGMBOBFp6zAGV3Qd23ss13bW+Hy6gg23wxExVqlY/xRwE/FnrfvYmRag4Pz1c+lyP7OYD8VwuA==
+bpmn-js@6.0.4:
+  version "6.0.4"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-6.0.4.tgz#cd04d43d926ef8998bed70e8edf62745fbf73fa3"
+  integrity sha512-Yjh3lQrhXoUniflD1qA1expLA2akOyPTcr3TKSVwdqOiEAB+lTHJTWQfAxbghEkgKssiYWGNrAa091tkAFWY+g==
   dependencies:
     bpmn-font "^0.9.3"
     bpmn-moddle "^6.0.0"
     css.escape "^1.5.1"
-    diagram-js "^5.1.1"
-    diagram-js-direct-editing "^1.6.0"
+    diagram-js "^6.0.2"
+    diagram-js-direct-editing "^1.6.1"
     ids "^1.0.0"
     inherits "^2.0.1"
     min-dash "^3.5.1"
@@ -4823,10 +4823,10 @@ dezalgo@^1.0.0:
     asap "^2.0.0"
     wrappy "1"
 
-diagram-js-direct-editing@^1.5.0, diagram-js-direct-editing@^1.6.0:
-  version "1.6.0"
-  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.6.0.tgz#8c0e220266c8234969a46a47c0f5609decfe1ee3"
-  integrity sha512-bO9FqB6lJm+kaA6tSrXO0jT+Fu++yJTHbBf/wYb+AfJYAB92zZJrxwHRPTRhZGB4Md7XMEba5LAuNL8u9bjf3w==
+diagram-js-direct-editing@^1.5.0, diagram-js-direct-editing@^1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/diagram-js-direct-editing/-/diagram-js-direct-editing-1.6.1.tgz#c2a040f7d910631e5c8f178bbc326db3afbd1ae0"
+  integrity sha512-FOW2qp7yT/L3Go/YfBOfnWrV2pc2PPoTSSRIg2nnld8pQDTnMaqKPva9GZEoCtcTJzPV4ctZX52ZdkJ3C7aWaA==
   dependencies:
     min-dash "^3.0.0"
     min-dom "^3.0.0"
@@ -4846,10 +4846,10 @@ diagram-js@^4.0.1:
     path-intersection "^1.0.2"
     tiny-svg "^2.2.1"
 
-diagram-js@^5.1.1:
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-5.1.1.tgz#511a41bd5fbe74dd63bb0789d9fb1049aabd054c"
-  integrity sha512-SLxHOfEDLBC7LBjQFmXyvQXt4P5yZYFnTvhsCZZtJyQCadrVs71cUlchMmH+kUS/zaga/BkPWFbnV1d+4MsF8A==
+diagram-js@^6.0.2:
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-6.0.2.tgz#5fb40c9670717d196141cb620e9384322e03e3b7"
+  integrity sha512-oO4xuKcYSCgD5asvs+JtXQsvDkrk6u1di6Ij09EZamlpU8JINkvaWu6EwR/BYKKtGYZ1KM/OcDdgqvDVQ2AiMA==
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
