@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker.transport.commandapi;
 
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
@@ -23,57 +24,44 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import java.util.function.Consumer;
 
-public class CommandApiService implements Service<CommandApiService> {
+public class CommandApiService implements PartitionListener {
 
-  private final ServiceGroupReference<Partition> leaderPartitionsGroupReference;
-  private final Injector<ServerTransport> serverTransportInjector = new Injector<>();
   private final CommandApiMessageHandler service;
   private final PartitionAwareRequestLimiter limiter;
   private ServerOutput serverOutput;
 
-  public CommandApiService(
+
+  public CommandApiService(ServerOutput serverOutput,
       CommandApiMessageHandler commandApiMessageHandler, PartitionAwareRequestLimiter limiter) {
+    this.serverOutput = serverOutput;
     this.limiter = limiter;
     this.service = commandApiMessageHandler;
-    leaderPartitionsGroupReference =
-        ServiceGroupReference.<Partition>create()
-            .onAdd(this::addPartition)
-            .onRemove(this::removePartition)
-            .build();
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
-    serverOutput = serverTransportInjector.getValue().getOutput();
+  public void onBecomingFollower(Partition partition) {
+    removePartition(partition);
   }
 
   @Override
-  public CommandApiService get() {
-    return this;
+  public void onBecomingLeader(Partition partition) {
+    addPartition(partition);
   }
 
   public CommandResponseWriter newCommandResponseWriter() {
     return new CommandResponseWriterImpl(serverOutput);
   }
 
-  public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {
-    return leaderPartitionsGroupReference;
-  }
-
-  public Injector<ServerTransport> getServerTransportInjector() {
-    return serverTransportInjector;
-  }
-
   public CommandApiMessageHandler getCommandApiMessageHandler() {
     return service;
   }
 
-  private void removePartition(ServiceName<Partition> partitionServiceName, Partition partition) {
+  private void removePartition(Partition partition) {
     limiter.removePartition(partition.getPartitionId());
     service.removePartition(partition.getLogStream());
   }
 
-  private void addPartition(ServiceName<Partition> partitionServiceName, Partition partition) {
+  private void addPartition(Partition partition) {
     limiter.addPartition(partition.getPartitionId());
     service.addPartition(partition.getLogStream(), limiter.getLimiter(partition.getPartitionId()));
   }

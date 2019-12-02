@@ -9,7 +9,7 @@ package io.zeebe.util.sched;
 
 import java.util.function.Consumer;
 
-public abstract class Actor {
+public abstract class Actor implements AutoCloseable {
   protected final ActorControl actor = new ActorControl(this);
 
   public String getName() {
@@ -48,5 +48,10 @@ public abstract class Actor {
         r.accept(actor);
       }
     };
+  }
+
+  @Override
+  public void close() {
+    actor.close().join();
   }
 }

@@ -8,6 +8,7 @@
 package io.zeebe.broker.engine.impl;
 
 import io.atomix.core.Atomix;
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.logstreams.log.LogStream;
@@ -21,21 +22,30 @@ import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
 public class SubscriptionApiCommandMessageHandlerService extends Actor
-    implements Service<SubscriptionCommandMessageHandler> {
+    implements PartitionListener {
 
-  private final Injector<Atomix> atomixInjector = new Injector<>();
   private final Int2ObjectHashMap<LogStream> leaderPartitions = new Int2ObjectHashMap<>();
-  private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
-      ServiceGroupReference.<Partition>create()
-          .onAdd(this::addPartition)
-          .onRemove(this::removePartition)
-          .build();
+  private final Atomix atomix;
   private SubscriptionCommandMessageHandler messageHandler;
-  private Atomix atomix;
+
+  public SubscriptionApiCommandMessageHandlerService(
+    SubscriptionCommandMessageHandler messageHandler, Atomix atomix) {
+    this.atomix = atomix;
+  }
 
   @Override
   public String getName() {
     return "subscription-api";
+  }
+
+  @Override
+  public void onBecomingFollower(Partition partition) {
+    removePartition(partition);
+  }
+
+  @Override
+  public void onBecomingLeader(Partition partition) {
+    addPartition(partition);
   }
 
   @Override
@@ -44,35 +54,12 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
     atomix.getCommunicationService().subscribe("subscription", messageHandler);
   }
 
-  @Override
-  public void start(ServiceStartContext context) {
-    atomix = atomixInjector.getValue();
-    context.async(context.getScheduler().submitActor(this));
-  }
-
-  @Override
-  public void stop(ServiceStopContext stopContext) {
-    stopContext.async(actor.close());
-  }
-
-  @Override
-  public SubscriptionCommandMessageHandler get() {
-    return messageHandler;
-  }
-
-  private void addPartition(final ServiceName<Partition> sericeName, final Partition partition) {
+  private void addPartition(final Partition partition) {
     actor.submit(() -> leaderPartitions.put(partition.getPartitionId(), partition.getLogStream()));
   }
 
-  private void removePartition(final ServiceName<Partition> sericeName, final Partition partition) {
+  private void removePartition(final Partition partition) {
     actor.submit(() -> leaderPartitions.remove(partition.getPartitionId()));
   }
 
-  public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {
-    return leaderPartitionsGroupReference;
-  }
-
-  public Injector<Atomix> getAtomixInjector() {
-    return atomixInjector;
-  }
 }

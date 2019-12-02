@@ -7,21 +7,68 @@
  */
 package io.zeebe.broker;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.system.SystemServiceNames.BROKER_HEALTH_CHECK_SERVICE;
+import static io.zeebe.broker.system.SystemServiceNames.BROKER_HTTP_SERVER;
+import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
+import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVICE_NAME;
+
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.broker.clustering.ClusterComponent;
+import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.engine.EngineComponent;
+import io.zeebe.broker.engine.EngineServiceNames;
+import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
 import io.zeebe.broker.system.SystemComponent;
 import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.configuration.BackpressureCfg;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
+import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
+import io.zeebe.broker.system.monitoring.BrokerHttpServer;
+import io.zeebe.broker.system.monitoring.BrokerHttpServerService;
+import io.zeebe.broker.transport.ServerTransportService;
 import io.zeebe.broker.transport.TransportComponent;
+import io.zeebe.broker.transport.TransportServiceNames;
+import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
+import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
+import io.zeebe.broker.transport.commandapi.CommandApiService;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
+import io.zeebe.util.ByteValue;
 import io.zeebe.util.LogUtil;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import org.slf4j.Logger;
 
 public class Broker implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
+  private static final int TRANSPORT_BUFFER_FACTOR = 16;
 
   public static final String VERSION;
+
+  private static final CollectorRegistry METRICS_REGISTRY = CollectorRegistry.defaultRegistry;
+
+  static {
+    // enable hotspot prometheus metric collection
+    DefaultExports.initialize();
+  }
 
   static {
     final String version = Broker.class.getPackage().getImplementationVersion();
@@ -30,6 +77,7 @@ public class Broker implements AutoCloseable {
 
   protected final SystemContext brokerContext;
   protected boolean isClosed = false;
+  private List<AutoCloseable> closeables;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -49,17 +97,87 @@ public class Broker implements AutoCloseable {
   }
 
   protected void start() {
+    final BrokerCfg brokerCfg = getConfig();
+
     if (LOG.isInfoEnabled()) {
       LOG.info("Version: {}", VERSION);
-      LOG.info("Starting broker with configuration {}", getConfig().toJson());
+      LOG.info("Starting broker with configuration {}", brokerCfg.toJson());
     }
 
-    brokerContext.addComponent(new SystemComponent());
-    brokerContext.addComponent(new TransportComponent());
-    brokerContext.addComponent(new EngineComponent());
+    final ActorScheduler scheduler = brokerContext.getScheduler();
+    final NetworkCfg networkCfg = brokerCfg.getNetwork();
+
+    final List<PartitionListener> partitionListeners = new ArrayList<>();
+    closeables = new ArrayList<>();
+
+//    brokerContext.addComponent(new SystemComponent());
+    final BrokerHealthCheckService healthCheckService = new BrokerHealthCheckService(atomix);
+    partitionListeners.add(healthCheckService);
+    scheduleActor(healthCheckService);
+
+    final SocketBindingCfg monitoringApi = networkCfg.getMonitoringApi();
+    final BrokerHttpServer httpServer = new BrokerHttpServer(
+      monitoringApi.getHost(),
+      monitoringApi.getPort(),
+      METRICS_REGISTRY,
+      healthCheckService);
+    closeables.add(httpServer);
+
+    final LeaderManagementRequestHandler requestHandlerService =
+      new LeaderManagementRequestHandler(atomix);
+    scheduleActor(requestHandlerService);
+
+
+//    brokerContext.addComponent(new TransportComponent());
+    final CommandApiMessageHandler commandApiMessageHandler = new CommandApiMessageHandler();
+
+    final BackpressureCfg backpressure = brokerCfg.getBackpressure();
+    PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
+    if (backpressure.isEnabled()) {
+      limiter = PartitionAwareRequestLimiter.newLimiter(
+        backpressure.getAlgorithm(), backpressure.useWindowed());
+    }
+
+    final SocketAddress bindAddr = networkCfg.getCommandApi().getAddress();
+    final ByteValue transportBufferSize =
+      ByteValue.ofBytes(
+        networkCfg.getMaxMessageSize().toBytes() * TRANSPORT_BUFFER_FACTOR);
+
+    final InetSocketAddress bindAddress = bindAddr.toInetSocketAddress();
+    final var serverTransport =
+      Transports.newServerTransport()
+        .name(COMMAND_API_SERVER_NAME)
+        .bindAddress(bindAddr.toInetSocketAddress())
+        .scheduler(scheduler)
+        .messageMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
+        .messageMaxLength(networkCfg.getMaxMessageSize())
+        .build(commandApiMessageHandler, commandApiMessageHandler);
+    closeables.add(serverTransport);
+
+    LOG.info("Bound {} to {}", COMMAND_API_SERVER_NAME, bindAddress);
+
+    final CommandApiService commandHandler =
+      new CommandApiService(serverTransport.getOutput(), commandApiMessageHandler, limiter);
+    partitionListeners.add(commandHandler);
+
+
+//    brokerContext.addComponent(new EngineComponent());
+    final SubscriptionApiCommandMessageHandlerService messageHandlerService =
+      new SubscriptionApiCommandMessageHandlerService(atomix);
+    partitionListeners.add(messageHandlerService);
+    scheduleActor(messageHandlerService);
+
+
+
     brokerContext.addComponent(new ClusterComponent());
 
     brokerContext.init();
+  }
+
+  private void scheduleActor(Actor actor)
+  {
+    brokerContext.getScheduler().submitActor(actor).join();
+    closeables.add(actor);
   }
 
   @Override
