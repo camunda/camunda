@@ -116,6 +116,7 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
 
   @Override
   public void close() {
+    deletionListeners.clear();
     store.removeListener(this);
     entrySupplier.close();
   }
@@ -154,7 +155,7 @@ public class AtomixSnapshotStorage implements SnapshotStorage, SnapshotListener 
       final var optionalConverted = toSnapshot(oldest.getPath());
       if (optionalConverted.isPresent()) {
         final var converted = optionalConverted.get();
-        deletionListeners.forEach(listener -> listener.onSnapshotDeleted(converted));
+        deletionListeners.forEach(listener -> listener.onSnapshotsDeleted(converted));
       }
     }
   }

@@ -9,7 +9,6 @@ package io.zeebe.logstreams.spi;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;
-import java.util.function.LongUnaryOperator;
 
 public interface LogStorageReader extends Closeable {
   /**

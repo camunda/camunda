@@ -1,31 +1,34 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Zeebe Community License 1.0. You may not use this file
+ * except in compliance with the Zeebe Community License 1.0.
+ */
 package io.zeebe.logstreams.storage.atomix;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
-import com.google.common.base.Stopwatch;
 import io.atomix.protocols.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.protocols.raft.zeebe.ZeebeLogAppender.AppendListener;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import java.nio.ByteBuffer;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
-import org.junit.After;
-import org.junit.Before;
+import org.assertj.core.groups.Tuple;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AtomixLogStorageReaderTest {
   private static final ByteBuffer DATA = ByteBuffer.allocate(4).putInt(0, 1);
-  private static final Logger LOGGER = LoggerFactory.getLogger(AtomixLogStorageReaderTest.class);
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final AtomixLogStorageRule storageRule = new AtomixLogStorageRule(temporaryFolder);
@@ -36,15 +39,18 @@ public class AtomixLogStorageReaderTest {
   public void shouldLookUpAddress() {
     // given
     final var reader = storageRule.get().newReader();
-    final var entries = List.of(append(1, 4, DATA), append(5, 8, DATA), append(9, 10, DATA));
+    final var firstEntry = append(1, 4, DATA);
+    final var secondEntry = append(5, 8, DATA);
 
-    // when - then
-    IntStream.range(1, 4)
-        .forEach(
-            i -> assertThat(reader.lookUpApproximateAddress(i)).isEqualTo(entries.get(0).index()));
-    IntStream.range(5, 8)
-        .forEach(
-            i -> assertThat(reader.lookUpApproximateAddress(i)).isEqualTo(entries.get(1).index()));
+    // when
+    final var firstEntryAddresses =
+        IntStream.range(1, 4).mapToLong(reader::lookUpApproximateAddress);
+    final var secondEntryAddresses =
+        IntStream.range(5, 8).mapToLong(reader::lookUpApproximateAddress);
+
+    // then
+    assertThat(firstEntryAddresses).allMatch(address -> address == firstEntry.index());
+    assertThat(secondEntryAddresses).allMatch(address -> address == secondEntry.index());
   }
 
   @Test
@@ -52,8 +58,11 @@ public class AtomixLogStorageReaderTest {
     // given
     final var reader = storageRule.get().newReader();
 
-    // when - then
-    assertThat(reader.lookUpApproximateAddress(1)).isEqualTo(LogStorage.OP_RESULT_INVALID_ADDR);
+    // when
+    final var address = reader.lookUpApproximateAddress(1);
+
+    // then
+    assertThat(address).isEqualTo(LogStorage.OP_RESULT_INVALID_ADDR);
   }
 
   @Test
@@ -61,36 +70,27 @@ public class AtomixLogStorageReaderTest {
     // given
     final var reader = storageRule.get().newReader();
 
-    // when - then
-    assertThat(reader.read(ByteBuffer.allocate(1), 1)).isEqualTo(LogStorage.OP_RESULT_NO_DATA);
+    // when
+    final var result = reader.read(ByteBuffer.allocate(1), 1);
+
+    // then
+    assertThat(result).isEqualTo(LogStorage.OP_RESULT_NO_DATA);
   }
 
   @Test
   public void shouldReadEntry() {
     // given
     final var reader = storageRule.get().newReader();
-    final var entries =
-        List.of(
-            append(1, 4, ByteBuffer.allocate(4).putInt(0, 1)),
-            append(5, 8, ByteBuffer.allocate(4).putInt(0, 2)),
-            append(9, 10, ByteBuffer.allocate(4).putInt(0, 3)));
-    final var buffer = ByteBuffer.allocate(4);
+    final var firstEntry = append(1, 4, ByteBuffer.allocate(4).putInt(0, 1));
+    final var secondEntry = append(5, 8, ByteBuffer.allocate(4).putInt(0, 2));
 
-    // when - then
-    IntStream.range(1, 4)
-        .forEach(
-            i -> {
-              assertThat(reader.read(buffer.clear(), entries.get(0).index()))
-                  .isEqualTo(entries.get(1).index());
-              assertThat(buffer.getInt(0)).isEqualTo(1);
-            });
-    IntStream.range(5, 8)
-        .forEach(
-            i -> {
-              assertThat(reader.read(buffer.clear(), entries.get(1).index()))
-                  .isEqualTo(entries.get(2).index());
-              assertThat(buffer.getInt(0)).isEqualTo(2);
-            });
+    // when
+    final var firstEntryResults = read(reader, firstEntry.index());
+    final var secondEntryResults = read(reader, secondEntry.index());
+
+    // then
+    assertThat(firstEntryResults).isEqualTo(tuple(1, secondEntry.index()));
+    assertThat(secondEntryResults).isEqualTo(tuple(2, secondEntry.index() + 1));
   }
 
   @Test
@@ -124,14 +124,19 @@ public class AtomixLogStorageReaderTest {
     assertThat(buffer.getInt(0)).isEqualTo(2);
   }
 
-
-
   private Indexed<ZeebeEntry> append(
       final long lowestPosition, final long highestPosition, final ByteBuffer data) {
     final var future = new CompletableFuture<Indexed<ZeebeEntry>>();
     final var listener = new Listener(future);
     storageRule.appendEntry(lowestPosition, highestPosition, data, listener);
     return future.join();
+  }
+
+  private Tuple read(final LogStorageReader reader, final long address) {
+    final var buffer = ByteBuffer.allocate(Integer.BYTES);
+    final var result = reader.read(buffer, address);
+
+    return tuple(buffer.getInt(0), result);
   }
 
   private static final class Listener implements AppendListener {
