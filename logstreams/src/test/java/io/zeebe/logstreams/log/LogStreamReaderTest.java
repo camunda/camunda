@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
@@ -38,7 +39,9 @@ public class LogStreamReaderTest {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
   public LogStreamRule logStreamRule =
       LogStreamRule.startByDefault(
-          temporaryFolder, builder -> builder.logSegmentSize(LOG_SEGMENT_SIZE));
+          temporaryFolder,
+          builder -> builder.withMaxFragmentSize(LOG_SEGMENT_SIZE),
+          builder -> builder.withMaxEntrySize(LOG_SEGMENT_SIZE));
   public LogStreamWriterRule writer = new LogStreamWriterRule(logStreamRule);
   public LogStreamReaderRule readerRule = new LogStreamReaderRule(logStreamRule);
 
@@ -325,8 +328,8 @@ public class LogStreamReaderTest {
   @Test
   public void shouldLimitAllocate() {
     // mock logStorage to always return insufficient capacity to increase buffer til max
-    final LogStorage logStorage = mock(LogStorage.class);
-    when(logStorage.read(any(), anyLong(), any()))
+    final LogStorageReader logStorageReader = mock(LogStorageReader.class);
+    when(logStorageReader.read(any(), anyLong(), any()))
         .thenReturn(LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
 
     // then
@@ -336,7 +339,8 @@ public class LogStreamReaderTest {
             + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
 
     // when
-    ((BufferedLogStreamReader) reader).wrap(logStorage);
+    ((BufferedLogStreamReader) reader)
+        .wrap(logStorageReader, BufferedLogStreamReader.FIRST_POSITION);
   }
 
   @Test

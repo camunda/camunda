@@ -34,7 +34,6 @@ public class PartitionLeaderElection extends Actor
   private final RaftPartition partition;
   private final List<PartitionRoleChangeListener> leaderElectionListeners;
   private Role raftRole;
-  private long leaderTerm; // current term if this node is the leader.
   private CompletableActorFuture<Void> startFuture;
 
   public PartitionLeaderElection(RaftPartition partition) {
@@ -87,7 +86,7 @@ public class PartitionLeaderElection extends Actor
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
-          transitionToLeader(partition.term());
+          transitionToLeader();
         }
         break;
       case INACTIVE:
@@ -97,7 +96,7 @@ public class PartitionLeaderElection extends Actor
       case FOLLOWER:
       default:
         if (raftRole == null || raftRole == Role.LEADER) {
-          transitionToFollower(partition.term());
+          transitionToFollower();
         }
         break;
     }
@@ -106,13 +105,12 @@ public class PartitionLeaderElection extends Actor
     raftRole = newRole;
   }
 
-  private void transitionToFollower(long term) {
-    leaderElectionListeners.forEach(l -> l.onTransitionToFollower(partitionId, term));
+  private void transitionToFollower() {
+    leaderElectionListeners.forEach(l -> l.onTransitionToFollower(partitionId));
   }
 
-  private void transitionToLeader(long term) {
-    leaderTerm = term;
-    leaderElectionListeners.forEach(l -> l.onTransitionToLeader(partitionId, term));
+  private void transitionToLeader() {
+    leaderElectionListeners.forEach(l -> l.onTransitionToLeader(partitionId));
   }
 
   public int getPartitionId() {
@@ -132,9 +130,9 @@ public class PartitionLeaderElection extends Actor
         () -> {
           leaderElectionListeners.add(listener);
           if (raftRole == Role.LEADER) {
-            listener.onTransitionToLeader(partitionId, leaderTerm);
+            listener.onTransitionToLeader(partitionId);
           } else {
-            listener.onTransitionToFollower(partitionId, partition.term());
+            listener.onTransitionToFollower(partitionId);
           }
         });
   }

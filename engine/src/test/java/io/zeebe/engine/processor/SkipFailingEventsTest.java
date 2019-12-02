@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -372,7 +373,7 @@ public class SkipFailingEventsTest {
         new MockTypedRecord<>(0, metadata, Records.workflowInstance(1));
     Assertions.assertThat(zeebeState.isOnBlacklist(mockTypedRecord)).isFalse();
 
-    verify(dumpProcessor, times(2)).processRecord(any(), any(), any(), any());
+    verify(dumpProcessor, timeout(1000).times(2)).processRecord(any(), any(), any(), any());
     assertThat(processedInstances).containsExactly(1L, 2L);
   }
 

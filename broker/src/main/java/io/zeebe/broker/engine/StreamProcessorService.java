@@ -27,7 +27,6 @@ import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -43,7 +42,6 @@ public class StreamProcessorService implements Service<StreamProcessor> {
       new Injector<>();
   private final Injector<Partition> partitionInjector = new Injector<>();
   private final Injector<Dispatcher> logStreamWriteBufferInjector = new Injector<>();
-  private Injector<LogStorage> logStorageInjector = new Injector<>();
 
   private final ClusterCfg clusterCfg;
   private TopologyManager topologyManager;
@@ -66,7 +64,7 @@ public class StreamProcessorService implements Service<StreamProcessor> {
         StreamProcessor.builder()
             .logStream(logStream)
             // for the reader
-            .logStorage(logStorageInjector.getValue())
+            .logStorage(logStream.getLogStorage())
             // for the writer
             .writeBuffer(logStreamWriteBufferInjector.getValue())
             .actorScheduler(serviceContext.getScheduler())
@@ -145,10 +143,6 @@ public class StreamProcessorService implements Service<StreamProcessor> {
 
   public Injector<LeaderManagementRequestHandler> getLeaderManagementRequestInjector() {
     return leaderManagementRequestHandlerInjector;
-  }
-
-  public Injector<LogStorage> getLogStorageInjector() {
-    return logStorageInjector;
   }
 
   public Injector<Dispatcher> getLogStreamWriteBufferInjector() {

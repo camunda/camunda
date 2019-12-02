@@ -45,10 +45,10 @@ public class StateReplication implements SnapshotReplication {
         snapshot,
         (s) -> {
           LOG.trace(
-              "Replicate on topic {} snapshot chunk {} for snapshot pos {}.",
+              "Replicate on topic {} snapshot chunk {} for snapshot {}.",
               replicationTopic,
               s.getChunkName(),
-              s.getSnapshotPosition());
+              s.getSnapshotId());
 
           final SnapshotChunkImpl chunkImpl = new SnapshotChunkImpl(s);
           return chunkImpl.toBytes();
@@ -68,10 +68,10 @@ public class StateReplication implements SnapshotReplication {
                   final SnapshotChunkImpl chunk = new SnapshotChunkImpl();
                   chunk.wrap(readBuffer, 0, bytes.length);
                   LOG.trace(
-                      "Received on topic {} replicated snapshot chunk {} for snapshot pos {}.",
+                      "Received on topic {} replicated snapshot chunk {} for snapshot {}.",
                       replicationTopic,
                       chunk.getChunkName(),
-                      chunk.getSnapshotPosition());
+                      chunk.getSnapshotId());
                   return chunk;
                 }),
                 consumer,

@@ -37,13 +37,12 @@ The storage is **optimized for streaming (sequential) read access**: sequential 
 ### Creating a Log Stream
 
 ```java
-TaskScheduler scheduler = TaskSchedulerImpl.createDefaultExecutor();
-
-final LogStream stream = LogStreams.createFsLogStream("order-events", 0)
-        .logRootPath("data/")
-        .logSegmentSize(1024 * 1024 * 256)
-        .writeBufferSize(1024 * 1024 * 16)
-        .taskScheduler(taskScheduler)
+final LogStream stream = LogStreams.createLogStream()
+        .withLogName("log")
+        .withPartitionId(1)
+        .withMaxFragmentSize(1024 * 1024 * 16)
+        .withServiceContainer(serviceContainer)
+        .withLogStorage(logStorage)
         .build();
 
 stream.open();

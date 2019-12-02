@@ -7,6 +7,7 @@
  */
 package io.zeebe.logstreams.impl.delete;
 
+@FunctionalInterface
 public interface DeletionService {
   /**
    * Triggers deletion of data from the log stream, where the given position is used as upper bound.

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
@@ -507,9 +508,10 @@ public class StreamProcessorTest {
     final InOrder inOrder = Mockito.inOrder(stateSnapshotController);
 
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).takeTempSnapshot();
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).moveValidSnapshot(position);
-    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).ensureMaxSnapshotCount();
+    inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
+    inOrder
+        .verify(stateSnapshotController, TIMEOUT.times(1))
+        .commitSnapshot(argThat(s -> s.getPosition() == position));
   }
 
   @Test
@@ -596,9 +598,10 @@ public class StreamProcessorTest {
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
-    inOrder.verify(stateSnapshotController, never()).takeTempSnapshot();
-    inOrder.verify(stateSnapshotController, never()).moveValidSnapshot(position);
-    inOrder.verify(stateSnapshotController, never()).ensureMaxSnapshotCount();
+    inOrder.verify(stateSnapshotController, never()).takeTempSnapshot(anyLong());
+    inOrder
+        .verify(stateSnapshotController, never())
+        .commitSnapshot(argThat(s -> s.getPosition() == position));
   }
 
   @Test
@@ -623,9 +626,8 @@ public class StreamProcessorTest {
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).openDb();
     inOrder.verify(stateSnapshotController, TIMEOUT.times(1)).getLastValidSnapshotPosition();
 
-    inOrder.verify(stateSnapshotController, never()).takeTempSnapshot();
-    inOrder.verify(stateSnapshotController, never()).moveValidSnapshot(anyLong());
-    inOrder.verify(stateSnapshotController, never()).ensureMaxSnapshotCount();
+    inOrder.verify(stateSnapshotController, never()).takeTempSnapshot(anyLong());
+    inOrder.verify(stateSnapshotController, never()).commitSnapshot(any());
   }
 
   @Test
