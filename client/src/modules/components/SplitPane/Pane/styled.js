@@ -34,9 +34,7 @@ export const Body = styled(Panel.Body)`
   ${({expandState}) => (isCollapsed(expandState) ? collapsedStyle : '')};
 `;
 
-export const Footer = styled(Panel.Footer)`
-  ${({expandState}) => (isCollapsed(expandState) ? collapsedStyle : '')};
-`;
+export const Footer = Panel.Footer;
 
 export const PaneCollapseButton = styled(CollapseButton)`
   margin: 0;
