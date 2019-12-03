@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDt
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;
@@ -67,13 +67,13 @@ public class CollectionWriter {
     log.debug("Writing new collection to Elasticsearch");
 
     String id = IdGenerator.getNextId();
-    SimpleCollectionDefinitionDto simpleCollectionDefinitionDto = new SimpleCollectionDefinitionDto();
-    simpleCollectionDefinitionDto.setId(id);
-    simpleCollectionDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
-    simpleCollectionDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
-    simpleCollectionDefinitionDto.setOwner(userId);
-    simpleCollectionDefinitionDto.setLastModifier(userId);
-    simpleCollectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName())
+    CollectionDefinitionDto collectionDefinitionDto = new CollectionDefinitionDto();
+    collectionDefinitionDto.setId(id);
+    collectionDefinitionDto.setCreated(LocalDateUtil.getCurrentDateTime());
+    collectionDefinitionDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    collectionDefinitionDto.setOwner(userId);
+    collectionDefinitionDto.setLastModifier(userId);
+    collectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName())
                                             .orElse(DEFAULT_COLLECTION_NAME));
 
     final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
@@ -81,17 +81,17 @@ public class CollectionWriter {
     if (partialCollectionDefinitionDto.getData() != null) {
       newCollectionDataDto.setConfiguration(partialCollectionDefinitionDto.getData().getConfiguration());
     }
-    simpleCollectionDefinitionDto.setData(newCollectionDataDto);
+    collectionDefinitionDto.setData(newCollectionDataDto);
 
-    persistCollection(id, simpleCollectionDefinitionDto);
+    persistCollection(id, collectionDefinitionDto);
     return new IdDto(id);
   }
 
-  private void persistCollection(String id, SimpleCollectionDefinitionDto simpleCollectionDefinitionDto) {
+  private void persistCollection(String id, CollectionDefinitionDto collectionDefinitionDto) {
     try {
       IndexRequest request = new IndexRequest(COLLECTION_INDEX_NAME)
         .id(id)
-        .source(objectMapper.writeValueAsString(simpleCollectionDefinitionDto), XContentType.JSON)
+        .source(objectMapper.writeValueAsString(collectionDefinitionDto), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE);
 
       IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
@@ -110,8 +110,8 @@ public class CollectionWriter {
     log.debug("Collection with id [{}] has successfully been created.", id);
   }
 
-  public void createNewCollection(@NonNull SimpleCollectionDefinitionDto simpleCollectionDefinitionDto) {
-    persistCollection(simpleCollectionDefinitionDto.getId(), simpleCollectionDefinitionDto);
+  public void createNewCollection(@NonNull CollectionDefinitionDto collectionDefinitionDto) {
+    persistCollection(collectionDefinitionDto.getId(), collectionDefinitionDto);
   }
 
   public void updateCollection(CollectionDefinitionUpdateDto collection, String id) {

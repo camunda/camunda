@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.junit.jupiter.api.BeforeAll;
@@ -115,7 +115,7 @@ public class PostMigrationTest {
       .collect(Collectors.toList());
 
     for (EntityDto collection : collections) {
-      final AuthorizedResolvedCollectionDefinitionDto collectionById = getCollectionById(collection.getId());
+      final AuthorizedCollectionDefinitionRestDto collectionById = getCollectionById(collection.getId());
       final List<EntityDto> collectionEntities = collectionById.getDefinitionDto().getData().getEntities();
       for (EntityDto entity : collectionEntities.stream()
         .filter(entityDto -> EntityType.REPORT.equals(entityDto.getEntityType()))
@@ -145,14 +145,14 @@ public class PostMigrationTest {
     }
   }
 
-  private AuthorizedResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
+  private AuthorizedCollectionDefinitionRestDto getCollectionById(final String collectionId) {
     Response response = client.target(OPTIMIZE_API_ENDPOINT + "collection/" + collectionId)
       .request()
       .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
       .get();
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(new GenericType<AuthorizedResolvedCollectionDefinitionDto>() {
+    return response.readEntity(new GenericType<AuthorizedCollectionDefinitionRestDto>() {
     });
   }
 

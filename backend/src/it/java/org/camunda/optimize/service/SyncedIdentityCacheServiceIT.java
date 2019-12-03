@@ -9,12 +9,10 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.camunda.optimize.test.optimize.CollectionClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
@@ -343,8 +341,8 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       syncedIdentityCacheService.synchronizeIdentities();
 
       // then users/groups no longer existing in identityCache have been removed from the collection's permissions
-      List<CollectionRoleDto> roles1 = collectionClient.getAllRolesForCollection(collectionId1);
-      List<CollectionRoleDto> roles2 = collectionClient.getAllRolesForCollection(collectionId2);
+      List<CollectionRoleDto> roles1 = collectionClient.getCollectionRoles(collectionId1);
+      List<CollectionRoleDto> roles2 = collectionClient.getCollectionRoles(collectionId2);
       assertThat(roles1.containsAll(roles2) && roles1.size() == roles2.size(), is(true));
       assertThat(roles1).containsExactlyInAnyOrder(testGroupBRole, userDemoRole);
     } finally {
@@ -377,7 +375,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       syncedIdentityCacheService.synchronizeIdentities();
 
       // then
-      List<CollectionRoleDto> roles = collectionClient.getAllRolesForCollection(collectionId);
+      List<CollectionRoleDto> roles = collectionClient.getCollectionRoles(collectionId);
       assertThat(roles.isEmpty(), is(true));
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();

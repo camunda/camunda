@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.relations;
 
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -24,7 +24,7 @@ public class CollectionRelationService {
     this.referenceServices = referenceServices;
   }
 
-  public Set<ConflictedItemDto> getConflictedItemsForDelete(SimpleCollectionDefinitionDto definition) {
+  public Set<ConflictedItemDto> getConflictedItemsForDelete(CollectionDefinitionDto definition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
     for (CollectionReferencingService referencingService : referenceServices) {
       conflictedItems.addAll(referencingService.getConflictedItemsForCollectionDelete(definition));
@@ -32,7 +32,7 @@ public class CollectionRelationService {
     return conflictedItems;
   }
 
-  public void handleDeleted(SimpleCollectionDefinitionDto definition) {
+  public void handleDeleted(CollectionDefinitionDto definition) {
     for (CollectionReferencingService referencingService : referenceServices) {
       referencingService.handleCollectionDeleted(definition);
     }

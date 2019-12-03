@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -30,10 +30,10 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     final String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtension
+    AuthorizedCollectionDefinitionRestDto collection = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedResolvedCollectionDefinitionDto.class, 200);
+      .execute(AuthorizedCollectionDefinitionRestDto.class, 200);
 
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));
@@ -55,11 +55,11 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     );
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtension
+    AuthorizedCollectionDefinitionRestDto collection = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedResolvedCollectionDefinitionDto.class, 200);
+      .execute(AuthorizedCollectionDefinitionRestDto.class, 200);
 
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));

@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Accessors(chain = true)
@@ -25,6 +26,10 @@ public class CollectionScopeEntryRestDto {
 
   public String getDefinitionName() {
     return definitionName == null? definitionKey : definitionName;
+  }
+
+  public List<String> getTenantIds() {
+    return tenants.stream().map(TenantDto::getId).collect(Collectors.toList());
   }
 }
 

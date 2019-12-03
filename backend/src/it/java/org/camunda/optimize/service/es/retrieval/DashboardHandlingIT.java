@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.retrieval;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -191,7 +191,7 @@ public class DashboardHandlingIT extends AbstractIT {
     );
     assertThat(newReportIds, everyItem(is(newReportIds.get(0))));
 
-    final ResolvedCollectionDefinitionDto collectionById = getCollectionById(collectionId);
+    final CollectionDefinitionRestDto collectionById = getCollectionById(collectionId);
     assertThat(collectionById.getData().getEntities().size(), is(2));
   }
 
@@ -226,7 +226,7 @@ public class DashboardHandlingIT extends AbstractIT {
       not(containsInAnyOrder(oldDashboard.getReports().stream().map(ReportLocationDto::getId).toArray()))
     );
 
-    final ResolvedCollectionDefinitionDto collectionById = getCollectionById(collectionId);
+    final CollectionDefinitionRestDto collectionById = getCollectionById(collectionId);
     assertThat(collectionById.getData().getEntities().size(), is(3));
   }
 
@@ -583,10 +583,10 @@ public class DashboardHandlingIT extends AbstractIT {
       .execute(IdDto.class, 200);
   }
 
-  private ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
+  private CollectionDefinitionRestDto getCollectionById(final String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
-      .execute(ResolvedCollectionDefinitionDto.class, 200);
+      .execute(CollectionDefinitionRestDto.class, 200);
   }
 }

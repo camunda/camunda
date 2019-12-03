@@ -5,15 +5,22 @@
  */
 package org.camunda.optimize.dto.optimize.query.collection;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-@Data()
-@EqualsAndHashCode(callSuper = true)
-public class ResolvedCollectionDataDto extends CollectionDataDto {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
+@FieldNameConstants(asEnum = true)
+@EqualsAndHashCode
+public class CollectionDataRestDto {
+
+  protected Object configuration = new HashMap<>();
   protected List<EntityDto> entities = new ArrayList<>();
 }

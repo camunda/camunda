@@ -6,12 +6,10 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.junit.jupiter.api.Test;
 
@@ -51,12 +49,9 @@ public class CollectionRestServiceIT extends AbstractIT {
     assertThat(idDto, is(notNullValue()));
 
     // and saved Collection has expected properties
-    ResolvedCollectionDefinitionDto savedCollectionDto = collectionClient.getCollectionById(idDto.getId());
+    CollectionDefinitionRestDto savedCollectionDto = collectionClient.getCollectionById(idDto.getId());
     assertThat(savedCollectionDto.getName(), is(CollectionWriter.DEFAULT_COLLECTION_NAME));
     assertThat(savedCollectionDto.getData().getConfiguration(), equalTo(Collections.EMPTY_MAP));
-    assertThat(savedCollectionDto.getData().getRoles().size(), is(1));
-    assertThat(savedCollectionDto.getData().getRoles().get(0).getRole(), is(RoleType.MANAGER));
-    assertThat(savedCollectionDto.getData().getRoles().get(0).getIdentity().getType(), is(IdentityType.USER));
   }
 
   @Test
@@ -78,12 +73,9 @@ public class CollectionRestServiceIT extends AbstractIT {
     assertThat(idDto, is(notNullValue()));
 
     // and saved Collection has expected properties
-    ResolvedCollectionDefinitionDto savedCollectionDto = collectionClient.getCollectionById(idDto.getId());
+    CollectionDefinitionRestDto savedCollectionDto = collectionClient.getCollectionById(idDto.getId());
     assertThat(savedCollectionDto.getName(), is(collectionName));
     assertThat(savedCollectionDto.getData().getConfiguration(), is(configMap));
-    assertThat(savedCollectionDto.getData().getRoles().size(), is(1));
-    assertThat(savedCollectionDto.getData().getRoles().get(0).getRole(), is(RoleType.MANAGER));
-    assertThat(savedCollectionDto.getData().getRoles().get(0).getIdentity().getType(), is(IdentityType.USER));
   }
 
   @Test
@@ -146,7 +138,7 @@ public class CollectionRestServiceIT extends AbstractIT {
     String id = collectionClient.createNewCollection();
 
     // when
-    ResolvedCollectionDefinitionDto collection = collectionClient.getCollectionById(id);
+    CollectionDefinitionRestDto collection = collectionClient.getCollectionById(id);
 
     // then
     assertThat(collection, is(notNullValue()));
@@ -211,5 +203,4 @@ public class CollectionRestServiceIT extends AbstractIT {
     // then
     assertThat(response.getStatus(), is(404));
   }
-
 }

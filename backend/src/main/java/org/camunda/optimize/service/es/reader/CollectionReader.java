@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.reader;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -38,7 +38,7 @@ public class CollectionReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-  public SimpleCollectionDefinitionDto getCollection(String collectionId) {
+  public CollectionDefinitionDto getCollection(String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
     GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME).id(collectionId);
 
@@ -54,7 +54,7 @@ public class CollectionReader {
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
       try {
-        return objectMapper.readValue(responseAsString, SimpleCollectionDefinitionDto.class);
+        return objectMapper.readValue(responseAsString, CollectionDefinitionDto.class);
       } catch (IOException e) {
         String reason = "Could not deserialize collection information for collection " + collectionId;
         log.error(
@@ -70,12 +70,12 @@ public class CollectionReader {
     }
   }
 
-  public List<SimpleCollectionDefinitionDto> getAllCollections() {
+  public List<CollectionDefinitionDto> getAllCollections() {
     log.debug("Fetching all available collections");
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(QueryBuilders.matchAllQuery())
-      .sort(SimpleCollectionDefinitionDto.Fields.name.name(), SortOrder.ASC)
+      .sort(CollectionDefinitionDto.Fields.name.name(), SortOrder.ASC)
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(COLLECTION_INDEX_NAME)
       .source(searchSourceBuilder)
@@ -91,7 +91,7 @@ public class CollectionReader {
 
     return ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
-      SimpleCollectionDefinitionDto.class,
+      CollectionDefinitionDto.class,
       objectMapper,
       esClient,
       configurationService.getElasticsearchScrollTimeout()

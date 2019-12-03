@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom26To27;
@@ -79,7 +79,7 @@ public class UpgradeCollectionScopeIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final Optional<SimpleCollectionDefinitionDto> collectionDefinitionDto = getCollectionById(EXISTING_COLLECTION_ID_1);
+    final Optional<CollectionDefinitionDto> collectionDefinitionDto = getCollectionById(EXISTING_COLLECTION_ID_1);
     assertThat(collectionDefinitionDto)
       .get()
       .extracting(BaseCollectionDefinitionDto::getData)
@@ -118,7 +118,7 @@ public class UpgradeCollectionScopeIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final Optional<SimpleCollectionDefinitionDto> collectionDefinitionDto = getCollectionById(EXISTING_COLLECTION_ID_2);
+    final Optional<CollectionDefinitionDto> collectionDefinitionDto = getCollectionById(EXISTING_COLLECTION_ID_2);
     assertThat(collectionDefinitionDto)
       .get()
       .extracting(BaseCollectionDefinitionDto::getData)
@@ -163,7 +163,7 @@ public class UpgradeCollectionScopeIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final Optional<SimpleCollectionDefinitionDto> collectionDefinitionDto = getCollectionById(EXISTING_COLLECTION_ID_3);
+    final Optional<CollectionDefinitionDto> collectionDefinitionDto = getCollectionById(EXISTING_COLLECTION_ID_3);
     assertThat(collectionDefinitionDto)
       .get()
       .extracting(BaseCollectionDefinitionDto::getData)
@@ -181,7 +181,7 @@ public class UpgradeCollectionScopeIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final List<SimpleCollectionDefinitionDto> addedCollections = getAllCollections()
+    final List<CollectionDefinitionDto> addedCollections = getAllCollections()
       .stream()
       .filter(simpleCollectionDefinitionDto -> !EXISTING_COLLECTION_IDS.contains(simpleCollectionDefinitionDto.getId()))
       .collect(toList());
@@ -218,13 +218,13 @@ public class UpgradeCollectionScopeIT extends AbstractUpgradeIT {
   }
 
   @SneakyThrows
-  private Optional<SimpleCollectionDefinitionDto> getCollectionById(final String s) {
+  private Optional<CollectionDefinitionDto> getCollectionById(final String s) {
     final GetResponse getResponse = prefixAwareClient.get(
       new GetRequest(COLLECTION_INDEX_NAME).id(s), RequestOptions.DEFAULT
     );
     if (getResponse.isExists()) {
       return Optional.ofNullable(
-        objectMapper.readValue(getResponse.getSourceAsString(), SimpleCollectionDefinitionDto.class)
+        objectMapper.readValue(getResponse.getSourceAsString(), CollectionDefinitionDto.class)
       );
     } else {
       return Optional.empty();
@@ -232,7 +232,7 @@ public class UpgradeCollectionScopeIT extends AbstractUpgradeIT {
   }
 
   @SneakyThrows
-  private List<SimpleCollectionDefinitionDto> getAllCollections() {
+  private List<CollectionDefinitionDto> getAllCollections() {
     final SearchResponse searchResponse = prefixAwareClient.search(
       new SearchRequest(COLLECTION_INDEX_NAME).source(new SearchSourceBuilder().size(10000)),
       RequestOptions.DEFAULT
@@ -241,7 +241,7 @@ public class UpgradeCollectionScopeIT extends AbstractUpgradeIT {
       .stream(searchResponse.getHits().getHits())
       .map(doc -> {
         try {
-          return objectMapper.readValue(doc.getSourceAsString(), SimpleCollectionDefinitionDto.class);
+          return objectMapper.readValue(doc.getSourceAsString(), CollectionDefinitionDto.class);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

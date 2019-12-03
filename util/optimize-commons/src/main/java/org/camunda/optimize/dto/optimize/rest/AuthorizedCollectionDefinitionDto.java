@@ -13,19 +13,19 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class AuthorizedSimpleCollectionDefinitionDto extends AuthorizedEntityDto {
+public class AuthorizedCollectionDefinitionDto extends AuthorizedEntityDto {
   @JsonUnwrapped
-  private SimpleCollectionDefinitionDto definitionDto;
+  private CollectionDefinitionDto definitionDto;
 
-  public AuthorizedSimpleCollectionDefinitionDto(final RoleType currentUserRole,
-                                                 final SimpleCollectionDefinitionDto definitionDto) {
+  public AuthorizedCollectionDefinitionDto(final RoleType currentUserRole,
+                                           final CollectionDefinitionDto definitionDto) {
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }

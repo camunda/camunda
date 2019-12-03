@@ -13,7 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
@@ -84,7 +84,7 @@ public class ReportService implements CollectionReferencingService {
   private final AuthorizedCollectionService collectionService;
 
   @Override
-  public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final SimpleCollectionDefinitionDto definition) {
+  public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final CollectionDefinitionDto definition) {
     return reportReader.findReportsForCollectionOmitXml(definition.getId()).stream()
       .map(reportDefinitionDto -> new ConflictedItemDto(
         reportDefinitionDto.getId(), ConflictedItemType.COLLECTION, reportDefinitionDto.getName()
@@ -93,7 +93,7 @@ public class ReportService implements CollectionReferencingService {
   }
 
   @Override
-  public void handleCollectionDeleted(final SimpleCollectionDefinitionDto definition) {
+  public void handleCollectionDeleted(final CollectionDefinitionDto definition) {
     List<ReportDefinitionDto> reportsToDelete = getReportsForCollection(definition.getId());
     for (ReportDefinitionDto reportDefinition : reportsToDelete) {
       reportRelationService.handleDeleted(reportDefinition);
@@ -202,7 +202,7 @@ public class ReportService implements CollectionReferencingService {
 
   public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId, String collectionId) {
     // verify user is authorized to access collection
-    collectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
+    collectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
 
     List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
     return filterAuthorizedReports(userId, reportsInCollection);
@@ -505,8 +505,8 @@ public class ReportService implements CollectionReferencingService {
       return;
     }
 
-    final SimpleCollectionDefinitionDto collection =
-      collectionService.getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId).getDefinitionDto();
+    final CollectionDefinitionDto collection =
+      collectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId).getDefinitionDto();
 
     boolean isAllowedForCollectionScope = isReportAllowedForCollectionScope(definition, collection);
     if (!isAllowedForCollectionScope) {
@@ -520,7 +520,7 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public boolean isReportAllowedForCollectionScope(final SingleReportDefinitionDto<?> definition,
-                                                   final SimpleCollectionDefinitionDto collection) {
+                                                   final CollectionDefinitionDto collection) {
     final boolean definitionKeyDefined = definition.getData().getDefinitionKey() != null;
     return collection.getData()
       .getScope()

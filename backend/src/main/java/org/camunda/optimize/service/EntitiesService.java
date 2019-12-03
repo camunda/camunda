@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.collection.CollectionService;
 import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
@@ -31,18 +31,18 @@ public class EntitiesService {
   private EntitiesReader entitiesReader;
 
   public List<EntityDto> getAllEntities(final String userId) {
-    final List<AuthorizedSimpleCollectionDefinitionDto> collectionDefinitions =
-      collectionService.getAllSimpleCollectionDefinitions(userId);
+    final List<AuthorizedCollectionDefinitionDto> collectionDefinitions =
+      collectionService.getAllCollectionDefinitions(userId);
     final Map<String, Map<EntityType, Long>> collectionEntityCounts = entitiesReader.countEntitiesForCollections(
       collectionDefinitions.stream()
-        .map(AuthorizedSimpleCollectionDefinitionDto::getDefinitionDto)
+        .map(AuthorizedCollectionDefinitionDto::getDefinitionDto)
         .collect(Collectors.toList())
     );
     final List<EntityDto> privateEntities = authorizedEntitiesService.getAuthorizedPrivateEntities(userId);
 
     return Stream.concat(
       collectionDefinitions.stream()
-        .map(AuthorizedSimpleCollectionDefinitionDto::toEntityDto)
+        .map(AuthorizedCollectionDefinitionDto::toEntityDto)
         .peek(entityDto -> entityDto.getData().setSubEntityCounts(collectionEntityCounts.get(entityDto.getId()))),
       privateEntities.stream())
       .sorted(

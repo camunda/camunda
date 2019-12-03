@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
@@ -79,7 +79,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   @Override
-  public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final SimpleCollectionDefinitionDto definition) {
+  public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final CollectionDefinitionDto definition) {
     return dashboardReader.findDashboardsForCollection(definition.getId()).stream()
       .map(dashboardDefinitionDto -> new ConflictedItemDto(
         dashboardDefinitionDto.getId(), ConflictedItemType.COLLECTION, dashboardDefinitionDto.getName()
@@ -88,7 +88,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   @Override
-  public void handleCollectionDeleted(final SimpleCollectionDefinitionDto definition) {
+  public void handleCollectionDeleted(final CollectionDefinitionDto definition) {
     dashboardWriter.deleteDashboardsOfCollection(definition.getId());
   }
 

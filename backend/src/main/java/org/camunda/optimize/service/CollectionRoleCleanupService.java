@@ -10,11 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -31,10 +30,10 @@ public class CollectionRoleCleanupService implements SyncedIdentityCacheListener
 
   @Override
   public void onFinishIdentitySync(final SearchableIdentityCache newIdentityCache) {
-    List<SimpleCollectionDefinitionDto> allCollections = collectionReader.getAllCollections();
+    List<CollectionDefinitionDto> allCollections = collectionReader.getAllCollections();
     Map<String, HashSet<String>> rolesToRemove = new HashMap<>();
 
-    for (SimpleCollectionDefinitionDto collection : allCollections) {
+    for (CollectionDefinitionDto collection : allCollections) {
       rolesToRemove.put(collection.getId(), new HashSet<>());
       final CollectionDataDto collectionData = collection.getData();
       for (CollectionRoleDto role : collectionData.getRoles()) {

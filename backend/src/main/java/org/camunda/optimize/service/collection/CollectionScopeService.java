@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -73,7 +73,7 @@ public class CollectionScopeService {
     final Map<String, TenantDto> tenantsForUserById = tenantService.getTenantsForUser(identityId)
       .stream()
       .collect(Collectors.toMap(TenantDto::getId, tenantDto -> tenantDto));
-    return collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(identityId, collectionId)
+    return collectionRoleService.getCollectionDefinitionWithRoleMetadata(identityId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
@@ -214,7 +214,7 @@ public class CollectionScopeService {
                                final CollectionScopeEntryUpdateDto scopeUpdate,
                                final String scopeEntryId,
                                boolean force) {
-    final SimpleCollectionDefinitionDto collectionDefinition =
+    final CollectionDefinitionDto collectionDefinition =
       authorizedCollectionService
         .getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId)
         .getDefinitionDto();
@@ -268,7 +268,7 @@ public class CollectionScopeService {
   }
 
   private CollectionScopeEntryDto getScopeOfCollection(final String scopeEntryId,
-                                                       final SimpleCollectionDefinitionDto collectionDefinition) {
+                                                       final CollectionDefinitionDto collectionDefinition) {
     return collectionDefinition
       .getData()
       .getScope()
@@ -291,7 +291,7 @@ public class CollectionScopeService {
   }
 
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,
-                                                                             final SimpleCollectionDefinitionDto collectionDefinition) {
+                                                                             final CollectionDefinitionDto collectionDefinition) {
     List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
       .filter(report -> !report.getCombined())
@@ -302,7 +302,7 @@ public class CollectionScopeService {
 
   private void updateScopeInCollection(final String scopeEntryId,
                                        final CollectionScopeEntryUpdateDto scopeUpdate,
-                                       final SimpleCollectionDefinitionDto collectionDefinition) {
+                                       final CollectionDefinitionDto collectionDefinition) {
     getScopeOfCollection(scopeEntryId, collectionDefinition)
       .setTenants(scopeUpdate.getTenants());
   }
@@ -343,7 +343,7 @@ public class CollectionScopeService {
   private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String identityId,
                                                                             final IdentityType identityType,
                                                                             final String collectionId) {
-    return collectionRoleService.getSimpleCollectionDefinitionWithRoleMetadata(identityId, collectionId)
+    return collectionRoleService.getCollectionDefinitionWithRoleMetadata(identityId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()

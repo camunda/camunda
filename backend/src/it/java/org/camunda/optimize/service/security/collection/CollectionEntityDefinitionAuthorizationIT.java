@@ -16,7 +16,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedResolvedCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.junit.jupiter.api.Test;
@@ -56,11 +56,11 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     createSingleProcessReportForDefinitionAsDefaultUser(unauthorizedProcessDefinition, collectionId);
 
     // when
-    AuthorizedResolvedCollectionDefinitionDto collection = embeddedOptimizeExtension
+    AuthorizedCollectionDefinitionRestDto collection = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
       .buildGetCollectionRequest(collectionId)
-      .execute(AuthorizedResolvedCollectionDefinitionDto.class, 200);
+      .execute(AuthorizedCollectionDefinitionRestDto.class, 200);
 
     // then
     assertThat(collection.getDefinitionDto().getId(), is(collectionId));

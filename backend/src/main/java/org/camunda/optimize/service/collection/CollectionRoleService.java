@@ -8,13 +8,13 @@ package org.camunda.optimize.service.collection;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -39,7 +39,7 @@ public class CollectionRoleService {
   private final IdentityService identityService;
 
   @SuppressWarnings("Convert2MethodRef")
-  void enrichRoleIdentityMetaData(final BaseCollectionDefinitionDto<?> collectionDefinitionDto) {
+  private void enrichRoleIdentityMetaData(final CollectionDefinitionDto collectionDefinitionDto) {
     final CollectionDataDto collectionData = collectionDefinitionDto.getData();
     collectionData.setRoles(
       collectionData.getRoles().stream()
@@ -89,7 +89,7 @@ public class CollectionRoleService {
     collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
   }
 
-  public void verifyIdentityExists(final IdentityDto identity) {
+  private void verifyIdentityExists(final IdentityDto identity) {
     final boolean identityFound;
     switch (identity.getType()) {
       case USER:
@@ -109,7 +109,7 @@ public class CollectionRoleService {
   }
 
   public List<CollectionRoleRestDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
-    AuthorizedSimpleCollectionDefinitionDto authCollectionDto = getSimpleCollectionDefinitionWithRoleMetadata(
+    AuthorizedCollectionDefinitionDto authCollectionDto = getCollectionDefinitionWithRoleMetadata(
       userId,
       collectionId
     );
@@ -139,15 +139,15 @@ public class CollectionRoleService {
     return roles;
   }
 
-  AuthorizedSimpleCollectionDefinitionDto getSimpleCollectionDefinitionWithRoleMetadata(final String userId,
-                                                                                        final String collectionId) {
-    final AuthorizedSimpleCollectionDefinitionDto simpleCollectionDefinition =
-      authorizedCollectionService.getAuthorizedSimpleCollectionDefinitionOrFail(
+  AuthorizedCollectionDefinitionDto getCollectionDefinitionWithRoleMetadata(final String userId,
+                                                                            final String collectionId) {
+    final AuthorizedCollectionDefinitionDto collectionDefinition =
+      authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(
       userId,
       collectionId
     );
 
-    enrichRoleIdentityMetaData(simpleCollectionDefinition.getDefinitionDto());
-    return simpleCollectionDefinition;
+    enrichRoleIdentityMetaData(collectionDefinition.getDefinitionDto());
+    return collectionDefinition;
   }
 }

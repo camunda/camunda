@@ -5,14 +5,14 @@
  */
 package org.camunda.optimize.service.relations;
 
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 
 import java.util.Set;
 
 public interface CollectionReferencingService {
-  Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(SimpleCollectionDefinitionDto definition);
+  Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(CollectionDefinitionDto definition);
 
-  void handleCollectionDeleted(SimpleCollectionDefinitionDto definition);
+  void handleCollectionDeleted(CollectionDefinitionDto definition);
 
 }

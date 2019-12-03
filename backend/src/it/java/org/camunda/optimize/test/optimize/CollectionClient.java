@@ -13,11 +13,10 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.ResolvedCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -102,11 +101,11 @@ public class CollectionClient {
       .getId();
   }
 
-  public ResolvedCollectionDefinitionDto getCollectionById(final String collectionId) {
+  public CollectionDefinitionRestDto getCollectionById(final String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(collectionId)
-      .execute(ResolvedCollectionDefinitionDto.class, 200);
+      .execute(CollectionDefinitionRestDto.class, 200);
   }
 
   public List<AuthorizedReportDefinitionDto> getReportsForCollection(final String collectionId) {
@@ -172,13 +171,6 @@ public class CollectionClient {
       .execute();
   }
 
-  public SimpleCollectionDefinitionDto getCollection(final String id) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetCollectionRequest(id)
-      .execute(SimpleCollectionDefinitionDto.class, 200);
-  }
-
   private CollectionScopeEntryDto createSimpleScopeEntry(String definitionKey, DefinitionType definitionType) {
     return new CollectionScopeEntryDto(definitionType, definitionKey, DEFAULT_TENANTS);
   }
@@ -216,7 +208,7 @@ public class CollectionClient {
   }
 
 
-  public List<CollectionRoleDto> getAllRolesForCollection(final String collectionId) {
+  public List<CollectionRoleDto> getCollectionRoles(final String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)

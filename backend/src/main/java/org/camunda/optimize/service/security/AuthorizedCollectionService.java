@@ -10,8 +10,8 @@ import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.SimpleCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionDto;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.CollectionReader;
 import org.springframework.stereotype.Component;
@@ -40,22 +40,22 @@ public class AuthorizedCollectionService {
 
   public Optional<RoleType> getUsersCollectionResourceRole(final String userId, final String collectionId)
     throws NotFoundException, ForbiddenException {
-    return getAuthorizedSimpleCollectionDefinition(userId, collectionId)
-      .map(AuthorizedSimpleCollectionDefinitionDto::getCollectionResourceRole);
+    return getAuthorizedCollectionDefinition(userId, collectionId)
+      .map(AuthorizedCollectionDefinitionDto::getCollectionResourceRole);
   }
 
-  public AuthorizedSimpleCollectionDefinitionDto getAuthorizedSimpleCollectionDefinitionOrFail(final String userId,
-                                                                                               final String collectionId) {
-    return getAuthorizedSimpleCollectionDefinition(userId, collectionId)
+  public AuthorizedCollectionDefinitionDto getAuthorizedCollectionDefinitionOrFail(final String userId,
+                                                                                   final String collectionId) {
+    return getAuthorizedCollectionDefinition(userId, collectionId)
       .orElseThrow(() -> new ForbiddenException(String.format(VIEW_NOT_AUTHORIZED_MESSAGE, userId, collectionId)));
   }
 
-  public AuthorizedSimpleCollectionDefinitionDto getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
+  public AuthorizedCollectionDefinitionDto getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(
     final String userId,
     final String collectionId) {
 
-    final AuthorizedSimpleCollectionDefinitionDto collectionDefinition =
-      getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
+    final AuthorizedCollectionDefinitionDto collectionDefinition =
+      getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
     if (collectionDefinition.getCurrentUserRole().ordinal() < RoleType.MANAGER.ordinal()) {
       throw new ForbiddenException(String.format(EDIT_NOT_AUTHORIZED_MESSAGE, collectionId, userId));
     }
@@ -65,32 +65,32 @@ public class AuthorizedCollectionService {
   public void verifyUserAuthorizedToEditCollectionResources(final String userId, final String collectionId)
     throws NotFoundException, ForbiddenException {
     if (collectionId != null) {
-      final AuthorizedSimpleCollectionDefinitionDto authorizedCollection =
-        getAuthorizedSimpleCollectionDefinitionOrFail(userId, collectionId);
+      final AuthorizedCollectionDefinitionDto authorizedCollection =
+        getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
       if (authorizedCollection.getCurrentUserRole().ordinal() < RoleType.EDITOR.ordinal()) {
         throw new ForbiddenException(String.format(RESOURCE_EDIT_NOT_AUTHORIZED_MESSAGE, userId, collectionId));
       }
     }
   }
 
-  public List<AuthorizedSimpleCollectionDefinitionDto> getAuthorizedSimpleCollectionDefinitions(final String userId) {
+  public List<AuthorizedCollectionDefinitionDto> getAuthorizedCollectionDefinitions(final String userId) {
     return collectionReader.getAllCollections().stream()
-      .map(definitionDto -> resolveToAuthorizedSimpleCollection(userId, definitionDto))
+      .map(definitionDto -> resolveToAuthorizedCollection(userId, definitionDto))
       .filter(Optional::isPresent)
       .map(Optional::get)
       .collect(Collectors.toList());
   }
 
-  private Optional<AuthorizedSimpleCollectionDefinitionDto> getAuthorizedSimpleCollectionDefinition(
+  private Optional<AuthorizedCollectionDefinitionDto> getAuthorizedCollectionDefinition(
     final String userId,
     final String collectionId) {
-    final SimpleCollectionDefinitionDto collectionDefinition = collectionReader.getCollection(collectionId);
-    return resolveToAuthorizedSimpleCollection(userId, collectionDefinition);
+    final CollectionDefinitionDto collectionDefinition = collectionReader.getCollection(collectionId);
+    return resolveToAuthorizedCollection(userId, collectionDefinition);
   }
 
-  private Optional<AuthorizedSimpleCollectionDefinitionDto> resolveToAuthorizedSimpleCollection(
+  private Optional<AuthorizedCollectionDefinitionDto> resolveToAuthorizedCollection(
     final String userId,
-    final SimpleCollectionDefinitionDto collectionDefinition) {
+    final CollectionDefinitionDto collectionDefinition) {
     final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
 
     final Optional<RoleType> userRole;
@@ -119,7 +119,7 @@ public class AuthorizedCollectionService {
         .findFirst()
         .map(CollectionRoleDto::getRole);
     }
-    return userRole.map(roleType -> new AuthorizedSimpleCollectionDefinitionDto(roleType, collectionDefinition));
+    return userRole.map(roleType -> new AuthorizedCollectionDefinitionDto(roleType, collectionDefinition));
   }
 
 }
