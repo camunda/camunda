@@ -78,7 +78,7 @@
       "viewer": "Viewer",
       "viewer-description": "Read-only access to all objects",
       "editor": "Editor",
-      "editor-description": "Create, edit and delete Dashboards and Reports",
+      "editor-description": "Create, edit and delete Dashboards, Reports and Alerts",
       "manager": "Manager",
       "manager-description": "Full rights editing Collection and Users",
       "existing-user-error": "A user with this id already exists in this collection",

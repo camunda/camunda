@@ -78,7 +78,7 @@
       "viewer": "Betrachter",
       "viewer-description": "Nur lesender Zugriff auf alle Objekte",
       "editor": "Editor",
-      "editor-description": "Erstellen, bearbeiten und löschen von Dashboards und Berichten",
+      "editor-description": "Erstellen, bearbeiten und löschen von Dashboards, Berichten und Alarmen",
       "manager": "Manager",
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
       "existing-user-error": "Ein Benutzer mit dieser ID existiert schon in dieser Sammlung",

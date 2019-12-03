@@ -45,7 +45,7 @@ exports[`should match snapshot 1`] = `
               <p
                 className="label"
               >
-                Create, edit and delete Dashboards and Reports
+                Create, edit and delete Dashboards, Reports and Alerts
               </p>
             </React.Fragment>
           }
