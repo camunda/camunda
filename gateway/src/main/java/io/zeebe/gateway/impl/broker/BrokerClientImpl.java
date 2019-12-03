@@ -42,10 +42,6 @@ import org.slf4j.Logger;
 public class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  // max message size * factor = transport buffer size
-  // - note that this factor is randomly chosen, feel free to change it
-  private static final int TRANSPORT_BUFFER_FACTOR = 16;
-
   protected final ActorScheduler actorScheduler;
   protected final ClientTransport transport;
   protected final BrokerTopologyManagerImpl topologyManager;
@@ -92,8 +88,9 @@ public class BrokerClientImpl implements BrokerClient {
     final ClusterCfg clusterCfg = configuration.getCluster();
 
     final ByteValue maxMessageSize = clusterCfg.getMaxMessageSize();
+    final int maxMessageCount = clusterCfg.getMaxMessageCount();
     final ByteValue transportBufferSize =
-        ByteValue.ofBytes(maxMessageSize.toBytes() * TRANSPORT_BUFFER_FACTOR);
+        ByteValue.ofBytes(maxMessageSize.toBytes() * maxMessageCount);
 
     dataFrameReceiveBuffer =
         Dispatchers.create("gateway-receive-buffer")

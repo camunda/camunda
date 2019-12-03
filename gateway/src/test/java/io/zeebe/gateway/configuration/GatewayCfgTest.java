@@ -15,6 +15,7 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MANAGEMENT_THREADS;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_COUNT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_SIZE;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_ENABLED;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MONITORING_HOST;
@@ -50,6 +51,7 @@ public class GatewayCfgTest {
         .getCluster()
         .setContactPoint("foobar:1234")
         .setMaxMessageSize("4K")
+        .setMaxMessageCount(13)
         .setRequestTimeout("123h")
         .setClusterName("testCluster")
         .setMemberId("testMember")
@@ -94,6 +96,7 @@ public class GatewayCfgTest {
     setEnv(ENV_GATEWAY_PORT, "5432");
     setEnv(ENV_GATEWAY_CONTACT_POINT, "broker:432");
     setEnv(ENV_GATEWAY_MAX_MESSAGE_SIZE, "1G");
+    setEnv(ENV_GATEWAY_MAX_MESSAGE_COUNT, "123");
     setEnv(ENV_GATEWAY_MANAGEMENT_THREADS, "32");
     setEnv(ENV_GATEWAY_REQUEST_TIMEOUT, "43m");
     setEnv(ENV_GATEWAY_CLUSTER_NAME, "envCluster");
@@ -123,6 +126,7 @@ public class GatewayCfgTest {
         .getCluster()
         .setContactPoint("broker:432")
         .setMaxMessageSize("1G")
+        .setMaxMessageCount(123)
         .setRequestTimeout("43m")
         .setClusterName("envCluster")
         .setMemberId("envMember")

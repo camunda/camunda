@@ -5,6 +5,7 @@ port = 123
 [cluster]
 contactPoint = "foobar:1234"
 maxMessageSize = "4K"
+maxMessageCount = 13
 requestTimeout = "123h"
 clusterName = "testCluster"
 memberId = "testMember"
