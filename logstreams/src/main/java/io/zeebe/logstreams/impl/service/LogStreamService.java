@@ -85,6 +85,7 @@ public class LogStreamService implements LogStream, AutoCloseable {
 
   @Override
   public void close() {
+    closeAppender();
     logStorage.close();
   }
 
@@ -129,6 +130,10 @@ public class LogStreamService implements LogStream, AutoCloseable {
 
   @Override
   public ActorFuture<Void> closeAppender() {
+    if (appender == null) {
+      return CompletableActorFuture.completed(null);
+    }
+
     appenderFuture = null;
     writeBufferFuture = null;
 
@@ -160,6 +165,8 @@ public class LogStreamService implements LogStream, AutoCloseable {
             logStorage,
             subscription,
             (int) maxFrameLength.toBytes());
+
+    actorScheduler.submitActor(appender).join();
     appenderFuture = CompletableActorFuture.completed(appender);
     return appenderFuture;
   }

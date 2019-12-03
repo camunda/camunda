@@ -197,6 +197,11 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
+  public V join(long timeout, TimeUnit timeUnit) {
+    return FutureUtil.join(this, timeout, timeUnit);
+  }
+
+  @Override
   public void block(ActorTask onCompletion) {
     blockedTasks.add(onCompletion);
   }
