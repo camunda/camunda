@@ -207,11 +207,11 @@ public class AsyncSnapshotDirector extends Actor {
                         (processedPosition, ex2) -> {
                           if (ex2 == null) {
                             enforceSnapshotCreation(writtenPosition, processedPosition);
-                            close();
+                            super.closeAsync();
                             future.complete(null);
                           } else {
                             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, ex2);
-                            close();
+                            super.closeAsync();
                             future.completeExceptionally(ex2);
                           }
                         });
