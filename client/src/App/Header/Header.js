@@ -299,7 +299,7 @@ class Header extends React.Component {
             label={Header.labels['brand']}
           />
           <LinkElement
-            data-test={dashboard.dataTest}
+            dataTest={dashboard.dataTest}
             to="/"
             isActive={dashboard.isActive}
             title={dashboard.title}
