@@ -17,6 +17,9 @@
 }
 
 .djs-shape.ClickBehavior__node--selected .djs-outline {
+  visibility: visible;
+  shape-rendering: initial !important;
+  stroke-dasharray: none !important;
   stroke-width: 2px !important;
   stroke: #276e8c !important;
   fill: rgba(48, 116, 142, 0.6) !important;
