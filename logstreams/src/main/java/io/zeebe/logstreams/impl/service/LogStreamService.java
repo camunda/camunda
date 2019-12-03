@@ -160,17 +160,36 @@ public class LogStreamService implements LogStream, AutoCloseable {
             .actorScheduler(actorScheduler)
             .build();
 
-    final var subscription = writeBuffer.openSubscription(APPENDER_SUBSCRIPTION_NAME);
-    appender =
-        new LogStorageAppender(
-            logName + "-appender",
-            partitionId,
-            logStorage,
-            subscription,
-            (int) maxFrameLength.toBytes());
+    appenderFuture = new CompletableActorFuture<>();
+    writeBuffer
+        .openSubscriptionAsync(APPENDER_SUBSCRIPTION_NAME)
+        .onComplete(
+            (subscription, throwable) -> {
+              if (throwable == null) {
 
-    actorScheduler.submitActor(appender).join();
-    appenderFuture = CompletableActorFuture.completed(appender);
+                appender =
+                    new LogStorageAppender(
+                        logName + "-appender",
+                        partitionId,
+                        logStorage,
+                        subscription,
+                        (int) maxFrameLength.toBytes());
+
+                actorScheduler
+                    .submitActor(appender)
+                    .onComplete(
+                        (v, t) -> {
+                          if (t != null) {
+                            appenderFuture.completeExceptionally(t);
+                          } else {
+                            appenderFuture.complete(appender);
+                          }
+                        });
+              } else {
+                appenderFuture.completeExceptionally(throwable);
+              }
+            });
+
     return appenderFuture;
   }
 

@@ -114,7 +114,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  public void before() {
     newTemporaryFolder = Files.newTemporaryFolder();
     startTime = System.currentTimeMillis();
     startBroker();
@@ -123,7 +123,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   @Override
-  protected void after() {
+  public void after() {
     try {
       LOG.info("Test execution time: " + (System.currentTimeMillis() - startTime));
       startTime = System.currentTimeMillis();

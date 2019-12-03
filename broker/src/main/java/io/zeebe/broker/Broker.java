@@ -56,6 +56,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -116,6 +117,7 @@ public class Broker implements AutoCloseable {
     // core components
 
     final ActorScheduler scheduler = brokerContext.getScheduler();
+    scheduler.start();
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
 
     final ClusterCfg clusterCfg = brokerCfg.getCluster();
@@ -210,7 +212,8 @@ public class Broker implements AutoCloseable {
     //////////////////////////////////// START PARTITIONS /////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
     final RaftPartitionGroup partitionGroup =
-        (RaftPartitionGroup) atomix.getPartitionService().getPartitionGroup("raft-atomix");
+        (RaftPartitionGroup)
+            atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
 
     final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
     final List<RaftPartition> owningPartitions =
@@ -271,7 +274,7 @@ public class Broker implements AutoCloseable {
   }
 
   private void scheduleActor(Actor actor) {
-    brokerContext.getScheduler().submitActor(actor).join();
+    brokerContext.getScheduler().submitActor(actor).join(10, TimeUnit.SECONDS);
     closeables.add(actor);
   }
 

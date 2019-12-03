@@ -109,9 +109,6 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
             .withActorScheduler(scheduler)
             .buildAsync();
 
-    atomixRaftPartition.addRoleChangeListener(this);
-    onRoleChange(atomixRaftPartition.getRole());
-
     // load and validate exporters
     for (final ExporterCfg exporterCfg : brokerCfg.getExporters()) {
       try {
@@ -173,6 +170,8 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
           if (error == null) {
             this.logStream = log;
             atomixRaftPartition.getServer().addCommitListener(this);
+            atomixRaftPartition.addRoleChangeListener(this);
+            onRoleChange(atomixRaftPartition.getRole());
           } else {
             LOG.error(
                 "Failed to install log stream service for partition {}",
@@ -336,6 +335,10 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
   }
 
   private void tearDownBaseInstallation() {
+    if (stateReplication == null) {
+      return;
+    }
+
     try {
       stateReplication.close();
     } catch (final Exception e) {
