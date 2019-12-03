@@ -7,7 +7,6 @@ package org.camunda.operate.zeebeimport;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.exceptions.PersistenceException;
@@ -30,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import io.micrometer.core.annotation.Timed;
 import io.zeebe.protocol.record.Record;
 
 @Component
@@ -63,9 +63,6 @@ public class ElasticsearchBulkProcessor {
 
   @Autowired
   private SequenceFlowZeebeRecordProcessor sequenceFlowZeebeRecordProcessor;
-
-  @Autowired
-  private Metrics metrics;
 
   public void persistZeebeRecords(ImportBatch importBatch) throws PersistenceException {
     List<Record> zeebeRecords = importBatch.getRecords();
@@ -126,18 +123,13 @@ public class ElasticsearchBulkProcessor {
       break;
     }
 
-    try {
-      withTimer(() -> {
-            ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
-            return null;
-          });
-    } catch (Exception e) {
-      throw new PersistenceException(e);
-    }
+    processBulkRequest(bulkRequest);
+    return;
   }
 
-  private void withTimer(Callable<Void> callable) throws Exception {
-    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_INDEX_QUERY).recordCallable(callable);
+  @Timed(value = Metrics.TIMER_NAME_IMPORT_INDEX_QUERY, description = "Importer: bulk import query latency")
+  public void processBulkRequest(BulkRequest bulkRequest) throws PersistenceException {
+    ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
   }
 
 }

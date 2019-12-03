@@ -42,28 +42,40 @@ public class MetricAssert {
     }
   }
 
-  public static class MetricsMatcher extends BaseMatcher {
+  public static class ValueMatcher extends BaseMatcher {
 
     private final String metricName;
-    private final Predicate<Double> countMatcher;
+    private final Predicate<Double> valueMatcher;
 
-    public MetricsMatcher(String metricName, Predicate<Double> countMatcher) {
+    public ValueMatcher(String metricName, Predicate<Double> valueMatcher) {
       this.metricName = metricName.toLowerCase();
-      this.countMatcher = countMatcher;
+      this.valueMatcher = valueMatcher;
     }
 
     @Override
     public boolean matches(Object o) {
-      String s = (String) o;
-      String[] strings = s.split("\\n");
-      Optional<String> first = Arrays.stream(strings).filter(str -> str.toLowerCase().contains(metricName) && !str.startsWith("#")).findFirst();
-      if (first.isPresent()) {
-        String[] oneMetric = first.get().split(" ");
-        if (oneMetric.length > 1) {
-          return countMatcher.test(Double.valueOf(oneMetric[1]));
-        }
+      Double metricValue = getMetricValue(o);
+      if (metricValue != null) {
+        return valueMatcher.test(metricValue);
       }
       return false;
+    }
+
+    public Double getMetricValue(Object o) {
+      Optional<String> metricString = getMetricString(o);
+      if (metricString.isPresent()) {
+        String[] oneMetric = metricString.get().split(" ");
+        if (oneMetric.length > 1) {
+          return Double.valueOf(oneMetric[1]);
+        }
+      }
+      return null;
+    }
+
+    public Optional<String> getMetricString(Object o) {
+      String s = (String)o;
+      String[] strings = s.split("\\n");
+      return Arrays.stream(strings).filter(str -> str.toLowerCase().contains(metricName) && !str.startsWith("#")).findFirst();
     }
 
     @Override

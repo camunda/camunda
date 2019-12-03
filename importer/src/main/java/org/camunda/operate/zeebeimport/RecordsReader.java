@@ -42,6 +42,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.annotation.Timed;
 import io.zeebe.protocol.record.Record;
 import static org.camunda.operate.util.ElasticsearchUtil.QUERY_MAX_SIZE;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -109,9 +110,6 @@ public class RecordsReader {
   @Autowired
   private BeanFactory beanFactory;
 
-  @Autowired
-  private Metrics metrics;
-  
   public RecordsReader(int partitionId, ImportValueType importValueType, int queueSize) {
     this.partitionId = partitionId;
     this.importValueType = importValueType;
@@ -146,41 +144,12 @@ public class RecordsReader {
     String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
     try {
 
-      RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);
-      if (positionTo != null) {
-        positionQ = positionQ.lte(positionTo);
-      }
-      final QueryBuilder queryBuilder = joinWithAnd(positionQ,
-          termQuery(PARTITION_ID_FIELD_NAME, partitionId));
+      final SearchRequest searchRequest = createSearchQuery(aliasName, positionFrom, positionTo);
 
-      SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).sort(ImportPositionIndex.POSITION, SortOrder.ASC);
-      if (positionTo == null) {
-        searchSourceBuilder = searchSourceBuilder.size(operateProperties.getZeebeElasticsearch().getBatchSize());
-      } else {
-        logger.debug("Import batch reread was called. Data type {}, partitionId {}, positionFrom {}, positionTo {}.", importValueType, partitionId, positionFrom, positionTo);
-        int size = (int)(positionTo - positionFrom);
-        searchSourceBuilder = searchSourceBuilder.size(size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size); //this size will be bigger than needed
-      }
-      final SearchRequest searchRequest = new SearchRequest(aliasName)
-          .source(searchSourceBuilder)
-          .routing(String.valueOf(partitionId))
-          .requestCache(false);
+      final SearchResponse searchResponse = runSearch(searchRequest);
 
-      final SearchResponse searchResponse =
-          withTimer(() -> zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT));
+      return createImportBatch(searchResponse);
 
-      JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
-      SearchHit[] hits = searchResponse.getHits().getHits();
-      final List<Record> result = ElasticsearchUtil.mapSearchHits(hits, objectMapper, valueType);
-      String indexName = null;
-      if (hits.length > 0) {
-        indexName = hits[hits.length - 1].getIndex();
-      }
-      return new ImportBatch(partitionId, importValueType, result, indexName);
-    } catch (IOException e) {
-      final String message = String.format("Exception occurred, while obtaining next Zeebe records batch: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
     } catch (ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
         logger.debug("No index found for alias {}", aliasName);
@@ -197,8 +166,42 @@ public class RecordsReader {
     }
   }
 
-  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_IMPORT_QUERY).recordCallable(callable);
+  private ImportBatch createImportBatch(SearchResponse searchResponse) {
+    JavaType valueType = objectMapper.getTypeFactory().constructParametricType(RecordImpl.class, importValueType.getRecordValueClass());
+    SearchHit[] hits = searchResponse.getHits().getHits();
+    final List<Record> result = ElasticsearchUtil.mapSearchHits(hits, objectMapper, valueType);
+    String indexName = null;
+    if (hits.length > 0) {
+      indexName = hits[hits.length - 1].getIndex();
+    }
+    return new ImportBatch(partitionId, importValueType, result, indexName);
+  }
+
+  private SearchRequest createSearchQuery(String aliasName, long positionFrom, Long positionTo) {
+    RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);
+    if (positionTo != null) {
+      positionQ = positionQ.lte(positionTo);
+    }
+    final QueryBuilder queryBuilder = joinWithAnd(positionQ,
+        termQuery(PARTITION_ID_FIELD_NAME, partitionId));
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder().query(queryBuilder).sort(ImportPositionIndex.POSITION, SortOrder.ASC);
+    if (positionTo == null) {
+      searchSourceBuilder = searchSourceBuilder.size(operateProperties.getZeebeElasticsearch().getBatchSize());
+    } else {
+      logger.debug("Import batch reread was called. Data type {}, partitionId {}, positionFrom {}, positionTo {}.", importValueType, partitionId, positionFrom, positionTo);
+      int size = (int)(positionTo - positionFrom);
+      searchSourceBuilder = searchSourceBuilder.size(size <= 0 || size > QUERY_MAX_SIZE ? QUERY_MAX_SIZE : size); //this size will be bigger than needed
+    }
+    return new SearchRequest(aliasName)
+        .source(searchSourceBuilder)
+        .routing(String.valueOf(partitionId))
+        .requestCache(false);
+  }
+
+  @Timed(value = Metrics.TIMER_NAME_IMPORT_QUERY, description = "Importer: read batch query latency")
+  public SearchResponse runSearch(SearchRequest searchRequest) throws IOException {
+    return zeebeEsClient.search(searchRequest, RequestOptions.DEFAULT);
   }
 
   public boolean isActive() {

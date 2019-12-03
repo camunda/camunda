@@ -6,8 +6,8 @@
 package org.camunda.operate.archiver;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.Callable;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
@@ -20,6 +20,7 @@ import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.reindex.AbstractBulkByScrollRequest;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
@@ -32,6 +33,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Component;
+import io.micrometer.core.annotation.Timed;
 import static org.camunda.operate.util.ElasticsearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
@@ -136,30 +138,18 @@ public class Archiver {
 
   }
 
-  private BulkByScrollResponse deleteWithTimer(Callable<BulkByScrollResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY)
-        .recordCallable(callable);
-  }
-
-  private BulkByScrollResponse reindexWithTimer(Callable<BulkByScrollResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY)
-        .recordCallable(callable);
-  }
-
   public String getDestinationIndexName(String sourceIndexName, String finishDate) {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 
   private long deleteDocuments(String sourceIndexName, String idFieldName, List<Long> workflowInstanceKeys) throws ReindexException {
-    final DeleteByQueryRequest request =
+    DeleteByQueryRequest request =
         new DeleteByQueryRequest(sourceIndexName)
             .setBatchSize(workflowInstanceKeys.size())
-            .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
-            .setQuery(termsQuery(idFieldName, workflowInstanceKeys))
-            .setAbortOnVersionConflict(false)
-            .setSlices(AUTO_SLICES);
+            .setQuery(termsQuery(idFieldName, workflowInstanceKeys));
+    request = applyDefaultSettings(request);
     try {
-      final BulkByScrollResponse response = deleteWithTimer(()->esClient.deleteByQuery(request, RequestOptions.DEFAULT));
+      final BulkByScrollResponse response = runDelete(request);
       return checkResponse(response, sourceIndexName, "delete");
     } catch (ReindexException ex) {
       throw ex;
@@ -170,20 +160,30 @@ public class Archiver {
     }
   }
 
+  @Timed(value = Metrics.TIMER_NAME_ARCHIVER_DELETE_QUERY, description = "Archiver: delete query latency")
+  private BulkByScrollResponse runDelete(DeleteByQueryRequest request) throws IOException {
+    return esClient.deleteByQuery(request, RequestOptions.DEFAULT);
+  }
+
+  private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(T request) {
+    return request.setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
+            .setAbortOnVersionConflict(false)
+            .setSlices(AUTO_SLICES);
+  }
+
   private long reindexDocuments(String sourceIndexName, String destinationIndexName, String idFieldName, List<Long> workflowInstanceKeys)
       throws ReindexException {
 
-    final ReindexRequest reindexRequest = new ReindexRequest()
+    ReindexRequest reindexRequest = new ReindexRequest()
         .setSourceIndices(sourceIndexName)
         .setSourceBatchSize(workflowInstanceKeys.size())
-        .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
-        .setAbortOnVersionConflict(false)
-        .setSlices(AUTO_SLICES)
         .setDestIndex(destinationIndexName)
         .setSourceQuery(termsQuery(idFieldName, workflowInstanceKeys));
 
+    reindexRequest = applyDefaultSettings(reindexRequest);
+
     try {
-      BulkByScrollResponse response = reindexWithTimer(() -> esClient.reindex(reindexRequest, RequestOptions.DEFAULT));
+      BulkByScrollResponse response = runReindex(reindexRequest);
 
       return checkResponse(response, sourceIndexName, "reindex");
     } catch (ReindexException ex) {
@@ -193,6 +193,11 @@ public class Archiver {
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
+  }
+
+  @Timed(value = Metrics.TIMER_NAME_ARCHIVER_REINDEX_QUERY, description = "Archiver: reindex query latency")
+  private BulkByScrollResponse runReindex(ReindexRequest reindexRequest) throws IOException {
+    return esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
   }
 
   private long checkResponse(BulkByScrollResponse response, String sourceIndexName, String operation) throws ReindexException {

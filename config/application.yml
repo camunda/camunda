@@ -15,5 +15,6 @@ logging:
   level:
     ROOT: INFO
     org.camunda.operate: DEBUG
-management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,env
-health.elasticsearch.enabled: false    #if true, ElasticsearchHealthIndicator will be enabled and can fail the health check for Importer
+management:
+  endpoints.web.exposure.include: health,info,conditions,configprops,prometheus,env
+  health.elasticsearch.enabled: false    #if true, ElasticsearchHealthIndicator will be enabled and can fail the health check for Importer

@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.Callable;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -43,6 +42,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
+import io.micrometer.core.annotation.Timed;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -73,9 +73,6 @@ public class ArchiverJob implements Runnable {
 
   @Autowired
   private RestHighLevelClient esClient;
-
-  @Autowired
-  private Metrics metrics;
 
   @Autowired
   @Qualifier("archiverThreadPoolExecutor")
@@ -113,34 +110,47 @@ public class ArchiverJob implements Runnable {
   }
 
   public ArchiveBatch queryFinishedWorkflowInstances() {
-    final QueryBuilder endDateQ =
-        rangeQuery(ListViewTemplate.END_DATE)
-            .lte("now-1h");
-    final TermQueryBuilder isWorkflowInstanceQ = termQuery(ListViewTemplate.JOIN_RELATION, ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
-    final TermsQueryBuilder partitionQ = termsQuery(ListViewTemplate.PARTITION_ID, partitionIds);
-    final ConstantScoreQueryBuilder q = constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isWorkflowInstanceQ, partitionQ));
 
     final String datesAgg = "datesAgg";
     final String instancesAgg = "instancesAgg";
 
-    AggregationBuilder agg =
-        dateHistogram(datesAgg)
-            .field(ListViewTemplate.END_DATE)
-            .dateHistogramInterval(new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
-            .format(operateProperties.getArchiver().getElsRolloverDateFormat())
-            .keyed(true)      //get result as a map (not an array)
-            //we want to get only one bucket at a time
-            .subAggregation(
-                bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key")))
-                    .size(1)
-            )
-            //we need workflow instance ids, also taking into account batch size
-            .subAggregation(
-                topHits(instancesAgg)
-                    .size(operateProperties.getArchiver().getRolloverBatchSize())
-                    .sort(ListViewTemplate.ID, SortOrder.ASC)
-                    .fetchSource(ListViewTemplate.ID, null)
-            );
+    final AggregationBuilder agg = createFinishedInstancesAggregation(datesAgg, instancesAgg);
+
+    final SearchRequest searchRequest = createFinishedInstancesSearchRequest(agg);
+
+    try {
+      final SearchResponse searchResponse = runSearch(searchRequest);
+
+      return createArchiveBatch(searchResponse, datesAgg, instancesAgg);
+    } catch (Exception e) {
+      final String message = String.format("Exception occurred, while obtaining finished workflow instances: %s", e.getMessage());
+      logger.error(message, e);
+      throw new OperateRuntimeException(message, e);
+    }
+  }
+
+  private ArchiveBatch createArchiveBatch(SearchResponse searchResponse, String datesAggName, String instancesAgg) {
+    final List<? extends Histogram.Bucket> buckets =
+        ((Histogram) searchResponse.getAggregations().get(datesAggName))
+            .getBuckets();
+
+    if (buckets.size() > 0) {
+      final Histogram.Bucket bucket = buckets.get(0);
+      final String finishDate = bucket.getKeyAsString();
+      SearchHits hits = ((TopHits)bucket.getAggregations().get(instancesAgg)).getHits();
+      final ArrayList<Long> ids = Arrays.stream(hits.getHits())
+          .collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
+      return new ArchiveBatch(finishDate, ids);
+    } else {
+      return null;
+    }
+  }
+
+  private SearchRequest createFinishedInstancesSearchRequest(AggregationBuilder agg) {
+    final QueryBuilder endDateQ = rangeQuery(ListViewTemplate.END_DATE).lte("now-1h");
+    final TermQueryBuilder isWorkflowInstanceQ = termQuery(ListViewTemplate.JOIN_RELATION, ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
+    final TermsQueryBuilder partitionQ = termsQuery(ListViewTemplate.PARTITION_ID, partitionIds);
+    final ConstantScoreQueryBuilder q = constantScoreQuery(ElasticsearchUtil.joinWithAnd(endDateQ, isWorkflowInstanceQ, partitionQ));
 
     final SearchRequest searchRequest = new SearchRequest(workflowInstanceTemplate.getMainIndexName())
         .source(new SearchSourceBuilder()
@@ -152,33 +162,32 @@ public class ArchiverJob implements Runnable {
         .requestCache(false);  //we don't need to cache this, as each time we need new data
 
     logger.debug("Finished workflow instances for archiving request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
-
-    try {
-      final SearchResponse searchResponse = withTimer(() -> esClient.search(searchRequest, RequestOptions.DEFAULT));
-      final List<? extends Histogram.Bucket> buckets =
-          ((Histogram) searchResponse.getAggregations().get(datesAgg))
-              .getBuckets();
-
-      if (buckets.size() > 0) {
-        final Histogram.Bucket bucket = buckets.get(0);
-        final String finishDate = bucket.getKeyAsString();
-        SearchHits hits = ((TopHits)bucket.getAggregations().get(instancesAgg)).getHits();
-        final ArrayList<Long> ids = Arrays.stream(hits.getHits())
-            .collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
-        return new ArchiveBatch(finishDate, ids);
-      } else {
-        return null;
-      }
-    } catch (Exception e) {
-      final String message = String.format("Exception occurred, while obtaining finished workflow instances: %s", e.getMessage());
-      logger.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
+    return searchRequest;
   }
 
-  private SearchResponse withTimer(Callable<SearchResponse> callable) throws Exception {
-    return metrics.getTimer(Metrics.TIMER_NAME_ARCHIVER_QUERY)
-        .recordCallable(callable);
+  private AggregationBuilder createFinishedInstancesAggregation(String datesAggName, String instancesAggName) {
+    return dateHistogram(datesAggName)
+        .field(ListViewTemplate.END_DATE)
+        .dateHistogramInterval(new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
+        .format(operateProperties.getArchiver().getElsRolloverDateFormat())
+        .keyed(true)      //get result as a map (not an array)
+        //we want to get only one bucket at a time
+        .subAggregation(
+            bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key")))
+                .size(1)
+        )
+        //we need workflow instance ids, also taking into account batch size
+        .subAggregation(
+            topHits(instancesAggName)
+                .size(operateProperties.getArchiver().getRolloverBatchSize())
+                .sort(ListViewTemplate.ID, SortOrder.ASC)
+                .fetchSource(ListViewTemplate.ID, null)
+        );
+  }
+
+  @Timed(value = Metrics.TIMER_NAME_ARCHIVER_QUERY, description = "Archiver: search query latency")
+  private SearchResponse runSearch(SearchRequest searchRequest) throws IOException {
+    return esClient.search(searchRequest, RequestOptions.DEFAULT);
   }
 
   @PreDestroy
