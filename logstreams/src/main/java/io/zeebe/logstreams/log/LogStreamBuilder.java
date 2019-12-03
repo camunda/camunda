@@ -7,11 +7,9 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 
 import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
@@ -58,7 +56,8 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
     applyDefaults();
     validate();
 
-    return CompletableActorFuture.completed(new LogStreamService(
+    return CompletableActorFuture.completed(
+        new LogStreamService(
             actorScheduler,
             new ActorConditions(),
             logName,

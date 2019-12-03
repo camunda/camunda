@@ -7,17 +7,12 @@
  */
 package io.zeebe.broker.clustering.base;
 
-import io.atomix.cluster.AtomixCluster;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.gateway.Gateway;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.util.function.Function;
@@ -25,11 +20,11 @@ import java.util.function.Function;
 public class EmbeddedGatewayService implements AutoCloseable {
   private Gateway gateway;
 
-  public EmbeddedGatewayService(BrokerCfg configuration, ActorScheduler actorScheduler, Atomix atomix) {
+  public EmbeddedGatewayService(
+      BrokerCfg configuration, ActorScheduler actorScheduler, Atomix atomix) {
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
         cfg -> new BrokerClientImpl(cfg, atomix, actorScheduler, false);
-    gateway =
-        new Gateway(configuration.getGateway(), brokerClientFactory, actorScheduler);
+    gateway = new Gateway(configuration.getGateway(), brokerClientFactory, actorScheduler);
     startGateway();
   }
 

@@ -41,7 +41,7 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   protected void onActorStarting() {
-    SubscriptionCommandMessageHandler messageHandler =
+    final SubscriptionCommandMessageHandler messageHandler =
         new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
     atomix.getCommunicationService().subscribe("subscription", messageHandler);
   }

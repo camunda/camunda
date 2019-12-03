@@ -7,33 +7,21 @@
  */
 package io.zeebe.logstreams.impl.service;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferSubscriptionServiceName;
 
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.Subscription;
 import io.zeebe.dispatcher.impl.PositionUtil;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.CompositeServiceBuilder;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -164,16 +152,21 @@ public class LogStreamService implements LogStream, AutoCloseable {
 
     final int partitionId = determineInitialPartitionId();
     writeBuffer =
-      Dispatchers.create(logWriteBufferServiceName.getName()).maxFragmentLength(maxFrameLength)
-        .initialPartitionId(partitionId + 1)
-        .name(logName+"-write-buffer")
-        .actorScheduler(actorScheduler)
-        .build();
+        Dispatchers.create(logWriteBufferServiceName.getName())
+            .maxFragmentLength(maxFrameLength)
+            .initialPartitionId(partitionId + 1)
+            .name(logName + "-write-buffer")
+            .actorScheduler(actorScheduler)
+            .build();
 
     final var subscription = writeBuffer.openSubscription(APPENDER_SUBSCRIPTION_NAME);
     appender =
-      new LogStorageAppender(
-        logStorageAppenderServiceName.getName(), partitionId, logStorage, subscription, (int) maxFrameLength.toBytes());
+        new LogStorageAppender(
+            logStorageAppenderServiceName.getName(),
+            partitionId,
+            logStorage,
+            subscription,
+            (int) maxFrameLength.toBytes());
     appenderFuture = CompletableActorFuture.completed(appender);
     return appenderFuture;
   }
@@ -195,7 +188,6 @@ public class LogStreamService implements LogStream, AutoCloseable {
       return partitionId;
     }
   }
-
 
   @Override
   public void delete(final long position) {
