@@ -86,6 +86,7 @@ public class LogStreamService implements LogStream, AutoCloseable {
   @Override
   public void close() {
     closeAppender();
+    LOG.info("Close log storage");
     logStorage.close();
   }
 
@@ -137,7 +138,9 @@ public class LogStreamService implements LogStream, AutoCloseable {
     appenderFuture = null;
     writeBufferFuture = null;
 
+    LOG.info("Close appender");
     appender.close();
+    LOG.info("Close write buffer");
     writeBuffer.close();
     appender = null;
     writeBuffer = null;

@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.util;
 
+import static io.zeebe.logstreams.impl.LogStorageAppender.LOG;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -118,6 +119,7 @@ public class TestStreams {
   }
 
   public LogStream createLogStream(final String name, final int partitionId) {
+    LOG.warn("Create log stream {}", name, new Throwable());
     final File segments;
     try {
       segments = dataDirectory.newFolder(name, "segments");
@@ -208,6 +210,7 @@ public class TestStreams {
 
     final ActorFuture<Void> openFuture = new CompletableActorFuture<>();
 
+    LOG.warn("Start stream processor log stream {}", logName, new Throwable());
     try {
       currentSnapshotController.recover();
     } catch (final Exception e) {
@@ -260,7 +263,8 @@ public class TestStreams {
   }
 
   public void closeProcessor(final String streamName) throws Exception {
-    streamContextMap.get(streamName).close();
+    streamContextMap.remove(streamName).close();
+    LOG.info("Closed stream {}", streamName);
   }
 
   public long writeBatch(final String logName, final RecordToWrite[] recordToWrites) {

@@ -48,7 +48,7 @@ public class CallableActionsTest {
     final CloseableActor actor = new CloseableActor();
     schedulerRule.submitActor(actor);
 
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -68,7 +68,7 @@ public class CallableActionsTest {
     final CloseableActor actor = new CloseableActor();
     schedulerRule.submitActor(actor);
 
-    actor.close();
+    actor.closeAsync();
     final ActorFuture<Void> future = actor.doCall();
 
     // when

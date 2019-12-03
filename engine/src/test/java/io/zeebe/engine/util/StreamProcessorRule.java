@@ -298,6 +298,11 @@ public class StreamProcessorRule implements TestRule {
         streams.createLogStream(getLogName(partitionId), partitionId++);
       }
     }
+
+    @Override
+    protected void after() {
+      streams = null;
+    }
   }
 
   private class FailedTestRecordPrinter extends TestWatcher {

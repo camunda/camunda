@@ -241,7 +241,7 @@ public class ActorLifecyclePhasesTest {
 
     TestUtil.waitUntil(() -> invocations.get() >= 10);
 
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then

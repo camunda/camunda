@@ -28,13 +28,13 @@ public class ActorRecyclingTest {
     // given
     final LifecycleRecordingActor actor = new LifecycleRecordingActor();
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
     actor.phases.clear();
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -46,7 +46,7 @@ public class ActorRecyclingTest {
     // given
     final LifecycleRecordingActor actor = new LifecycleRecordingActor();
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -67,7 +67,7 @@ public class ActorRecyclingTest {
           }
         };
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
     actor.control().run(action); // submit during close requested phase
 

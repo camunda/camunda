@@ -100,6 +100,7 @@ public class Dispatcher extends Actor implements AutoCloseable {
 
     logBuffer.close();
     isClosed = true;
+    LOG.info("Dispatcher closed");
   }
 
   private void runBackgroundTask() {

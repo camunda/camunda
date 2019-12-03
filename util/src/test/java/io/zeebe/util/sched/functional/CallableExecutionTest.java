@@ -42,7 +42,7 @@ public class CallableExecutionTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     barrier.await(); // wait for actor to reach onActorClosed callback
 
     final ActorFuture<Void> future = actor.doCall();
