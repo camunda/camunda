@@ -60,4 +60,9 @@ public class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchReco
     responseDto.wrap(buffer);
     return responseDto;
   }
+
+  @Override
+  public String toString() {
+    return "BrokerActivateJobsRequest{" + "requestDto=" + requestDto + '}';
+  }
 }
