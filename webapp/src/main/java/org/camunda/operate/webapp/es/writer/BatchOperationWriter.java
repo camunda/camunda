@@ -308,8 +308,8 @@ public class BatchOperationWriter {
     Map<String,Object> paramsMap = new HashMap<>();
     paramsMap.put("operationsCount", operationsCount);
     paramsMap.put("instancesCount", instancesCount);
-    String scriptCode = "ctx._source." + BatchOperationTemplate.OPERATIONS_COUNT
-        + " = ctx._source." + BatchOperationTemplate.OPERATIONS_COUNT + " + params.operationsCount;"
+    String scriptCode = "ctx._source." + BatchOperationTemplate.OPERATIONS_TOTAL_COUNT
+        + " = ctx._source." + BatchOperationTemplate.OPERATIONS_TOTAL_COUNT + " + params.operationsCount;"
         + "ctx._source." + BatchOperationTemplate.INSTANCES_COUNT
         + " = ctx._source." + BatchOperationTemplate.INSTANCES_COUNT + " + params.instancesCount;";
     Script script = new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, scriptCode, paramsMap);

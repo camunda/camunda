@@ -17,8 +17,8 @@ public class BatchOperationEntity extends OperateEntity {
   private String username;
 
   private Integer instancesCount = 0;
-  private Integer operationsCount = 0;
-  private Integer finishedCount = 0;
+  private Integer operationsTotalCount = 0;
+  private Integer operationsFinishedCount = 0;
 
   public String getName() {
     return name;
@@ -68,20 +68,20 @@ public class BatchOperationEntity extends OperateEntity {
     this.instancesCount = instancesCount;
   }
 
-  public Integer getOperationsCount() {
-    return operationsCount;
+  public Integer getOperationsTotalCount() {
+    return operationsTotalCount;
   }
 
-  public void setOperationsCount(Integer operationsCount) {
-    this.operationsCount = operationsCount;
+  public void setOperationsTotalCount(Integer operationsTotalCount) {
+    this.operationsTotalCount = operationsTotalCount;
   }
 
-  public Integer getFinishedCount() {
-    return finishedCount;
+  public Integer getOperationsFinishedCount() {
+    return operationsFinishedCount;
   }
 
-  public void setFinishedCount(Integer finishedCount) {
-    this.finishedCount = finishedCount;
+  public void setOperationsFinishedCount(Integer operationsFinishedCount) {
+    this.operationsFinishedCount = operationsFinishedCount;
   }
 
   public void generateId() {
@@ -111,9 +111,9 @@ public class BatchOperationEntity extends OperateEntity {
       return false;
     if (instancesCount != null ? !instancesCount.equals(that.instancesCount) : that.instancesCount != null)
       return false;
-    if (operationsCount != null ? !operationsCount.equals(that.operationsCount) : that.operationsCount != null)
+    if (operationsTotalCount != null ? !operationsTotalCount.equals(that.operationsTotalCount) : that.operationsTotalCount != null)
       return false;
-    return finishedCount != null ? finishedCount.equals(that.finishedCount) : that.finishedCount == null;
+    return operationsFinishedCount != null ? operationsFinishedCount.equals(that.operationsFinishedCount) : that.operationsFinishedCount == null;
 
   }
 
@@ -126,8 +126,8 @@ public class BatchOperationEntity extends OperateEntity {
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (username != null ? username.hashCode() : 0);
     result = 31 * result + (instancesCount != null ? instancesCount.hashCode() : 0);
-    result = 31 * result + (operationsCount != null ? operationsCount.hashCode() : 0);
-    result = 31 * result + (finishedCount != null ? finishedCount.hashCode() : 0);
+    result = 31 * result + (operationsTotalCount != null ? operationsTotalCount.hashCode() : 0);
+    result = 31 * result + (operationsFinishedCount != null ? operationsFinishedCount.hashCode() : 0);
     return result;
   }
 }

@@ -60,8 +60,8 @@ public class OperationsManager {
       Map<String,Object> paramsMap = new HashMap<>();
       paramsMap.put("now", OffsetDateTime.now());
       Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(paramsMap), HashMap.class);
-      String script = "ctx._source." + BatchOperationTemplate.FINISHED_COUNT + " += 1;"
-          + "if (ctx._source." + BatchOperationTemplate.FINISHED_COUNT + " == ctx._source." + BatchOperationTemplate.OPERATIONS_COUNT + ") "
+      String script = "ctx._source." + BatchOperationTemplate.OPERATIONS_FINISHED_COUNT + " += 1;"
+          + "if (ctx._source." + BatchOperationTemplate.OPERATIONS_FINISHED_COUNT + " == ctx._source." + BatchOperationTemplate.OPERATIONS_TOTAL_COUNT + ") "
           + "   ctx._source." + BatchOperationTemplate.END_DATE + " = params.now;";
       return new Script(ScriptType.INLINE, Script.DEFAULT_SCRIPT_LANG, script, jsonMap);
     } catch (JsonProcessingException e) {

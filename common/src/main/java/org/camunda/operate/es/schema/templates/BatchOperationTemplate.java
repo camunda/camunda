@@ -23,8 +23,8 @@ public class BatchOperationTemplate extends AbstractTemplateCreator {
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String INSTANCES_COUNT = "instancesCount";
-  public static final String OPERATIONS_COUNT = "operationsCount";
-  public static final String FINISHED_COUNT = "finishedCount";
+  public static final String OPERATIONS_TOTAL_COUNT = "operationsTotalCount";
+  public static final String OPERATIONS_FINISHED_COUNT = "operationsFinishedCount";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -60,10 +60,10 @@ public class BatchOperationTemplate extends AbstractTemplateCreator {
       .startObject(INSTANCES_COUNT)
         .field("type", "long")
       .endObject()
-      .startObject(OPERATIONS_COUNT)
+      .startObject(OPERATIONS_TOTAL_COUNT)
         .field("type", "long")
       .endObject()
-      .startObject(FINISHED_COUNT)
+      .startObject(OPERATIONS_FINISHED_COUNT)
         .field("type", "long")
       .endObject();
     return newBuilder;

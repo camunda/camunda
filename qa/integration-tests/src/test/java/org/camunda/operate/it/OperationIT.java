@@ -131,8 +131,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.CANCEL_WORKFLOW_INSTANCE);
     assertThat(batchOperationEntity.getName()).isEqualTo(batchOperationName);
     assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(10);
-    assertThat(batchOperationEntity.getOperationsCount()).isEqualTo(10);
-    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(0);
+    assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(10);
+    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
     assertThat(batchOperationEntity.getUsername()).isEqualTo(USERNAME);
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
@@ -167,8 +167,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.CANCEL_WORKFLOW_INSTANCE);
     assertThat(batchOperationEntity.getName()).isNull();
     assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getOperationsCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(0);
+    assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
     assertThat(batchOperationEntity.getUsername()).isEqualTo(USERNAME);
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
@@ -204,8 +204,8 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
     assertThat(batchOperationEntity.getName()).isNull();
     assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getOperationsCount()).isEqualTo(2);
-    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(0);
+    assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(2);
+    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
     assertThat(batchOperationEntity.getUsername()).isEqualTo(USERNAME);
     assertThat(batchOperationEntity.getStartDate()).isNotNull();
     assertThat(batchOperationEntity.getEndDate()).isNull();
@@ -369,7 +369,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     BatchOperationEntity batchOperationEntity = batchOperations.get(0);
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
-    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getEndDate()).isNotNull();
   }
 
@@ -563,7 +563,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
     BatchOperationEntity batchOperationEntity = batchOperations.get(0);
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.CANCEL_WORKFLOW_INSTANCE);
-    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getEndDate()).isNotNull();
   }
 
@@ -600,11 +600,11 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperations).hasSize(2);
     BatchOperationEntity batchOperationEntity = batchOperations.get(0);
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
-    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getEndDate()).isNotNull();
     batchOperationEntity = batchOperations.get(1);
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
-    assertThat(batchOperationEntity.getFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getEndDate()).isNotNull();
 
   }
