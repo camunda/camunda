@@ -8,8 +8,15 @@ package org.camunda.optimize.test.optimize;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+
+import javax.ws.rs.core.Response;
+import java.util.List;
+
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 @AllArgsConstructor
 public class AlertClient {
@@ -18,6 +25,40 @@ public class AlertClient {
 
   public String createAlertForReport(String reportId) {
     return addAlertToOptimizeAsUser(createSimpleAlert(reportId));
+  }
+
+  public Response editAlertAsUser(final String alertId, final AlertCreationDto updatedAlertDto,
+                                     final String username, final String password) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(username, password)
+      .buildUpdateAlertRequest(alertId, updatedAlertDto)
+      .execute();
+  }
+
+  public Response createAlertAsUser(final AlertCreationDto alertCreationDto,
+                                       final String username, final String password) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(username, password)
+      .buildCreateAlertRequest(alertCreationDto)
+      .execute();
+  }
+
+  public Response deleteAlertAsUser(final String alertId, final String username, final String password) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(username, password)
+      .buildDeleteAlertRequest(alertId)
+      .execute();
+  }
+
+  public List<AlertDefinitionDto> getAlertsForCollectionAsDefaultUser(final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAlertsForCollectionRequest(collectionId)
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
+      .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
   private String addAlertToOptimizeAsUser(final AlertCreationDto creationDto) {

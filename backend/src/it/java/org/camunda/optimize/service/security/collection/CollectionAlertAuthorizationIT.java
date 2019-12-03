@@ -6,11 +6,13 @@
 package org.camunda.optimize.service.security.collection;
 
 import com.google.common.collect.ImmutableMap;
+import org.assertj.core.api.SoftAssertions;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -27,7 +29,6 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.hamcrest.CoreMatchers.is;
@@ -36,11 +37,15 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
+  private static final String KERMIT_USER = "kermit";
+  private static final String MISS_PIGGY_USER = "MissPiggy";
+
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   private static Stream<DefinitionType> definitionTypes() {
     return Stream.of(PROCESS, DefinitionType.DECISION);
   }
+
 
   private static Stream<List<DefinitionType>> definitionTypePairs() {
     return Stream.of(
@@ -135,6 +140,78 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     assertThat(response.getStatus(), is(403));
   }
 
+  @ParameterizedTest(name = "viewers of a collection are not allowed to edit, delete or create alerts for reports of " +
+    "definition type {0}")
+  @MethodSource("definitionTypes")
+  public void viewersNotAllowedToUpdateOrDeleteOrCreateAlerts(final DefinitionType definitionType) {
+    // given
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    final String reportId = createNumberReportForCollection(collectionId, definitionType);
+    final String alertId = createAlertForReport(reportId);
+    final AlertCreationDto alertCreationDto = createSimpleAlert(reportId);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
+
+    // when
+    Response createResponse = alertClient.createAlertAsUser(alertCreationDto, KERMIT_USER, KERMIT_USER);
+    Response editResponse = alertClient.editAlertAsUser(alertId, alertCreationDto, KERMIT_USER, KERMIT_USER);
+    Response deleteResponse = alertClient.deleteAlertAsUser(alertId, KERMIT_USER, KERMIT_USER);
+
+    // then
+    SoftAssertions softly = new SoftAssertions();
+    softly.assertThat(createResponse.getStatus()).isEqualTo(403);
+    softly.assertThat(editResponse.getStatus()).isEqualTo(403);
+    softly.assertThat(deleteResponse.getStatus()).isEqualTo(403);
+  }
+
+  @ParameterizedTest(name = "Editors and managers of a collection are allowed to edit, delete and create alerts for " +
+    "reports of definition type {0}")
+  @MethodSource("definitionTypes")
+  public void nonViewersAllowedToUpdateOrDeleteOrCreateAlerts(final DefinitionType definitionType) {
+    // given
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
+    final String reportId = createNumberReportForCollection(collectionId, definitionType);
+    final String alertId1 = createAlertForReport(reportId);
+    final String alertId2 = createAlertForReport(reportId);
+    final AlertCreationDto alertCreationDto = createSimpleAlert(reportId);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addUserAndGrantOptimizeAccess(MISS_PIGGY_USER);
+    authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+    addRoleToCollectionAsDefaultUser(
+      new CollectionRoleDto(new UserDto(MISS_PIGGY_USER), RoleType.EDITOR),
+      collectionId
+    );
+
+    // when
+    Response managerCreateResponse = alertClient.createAlertAsUser(alertCreationDto, KERMIT_USER, KERMIT_USER);
+    Response managerEditResponse = alertClient.editAlertAsUser(alertId1, alertCreationDto, KERMIT_USER, KERMIT_USER);
+    Response managerDeleteResponse = alertClient.deleteAlertAsUser(alertId1, KERMIT_USER, KERMIT_USER);
+
+    Response editorCreateResponse = alertClient.createAlertAsUser(alertCreationDto, MISS_PIGGY_USER, MISS_PIGGY_USER);
+    Response editorEditResponse = alertClient.editAlertAsUser(
+      alertId2,
+      alertCreationDto,
+      MISS_PIGGY_USER,
+      MISS_PIGGY_USER
+    );
+    Response editorDeleteResponse = alertClient.deleteAlertAsUser(alertId2, MISS_PIGGY_USER, MISS_PIGGY_USER);
+
+    // then
+    SoftAssertions softly = new SoftAssertions();
+
+    softly.assertThat(managerCreateResponse.getStatus()).isEqualTo(200);
+    softly.assertThat(managerEditResponse.getStatus()).isEqualTo(204);
+    softly.assertThat(managerDeleteResponse.getStatus()).isEqualTo(204);
+
+    softly.assertThat(editorCreateResponse.getStatus()).isEqualTo(200);
+    softly.assertThat(editorEditResponse.getStatus()).isEqualTo(204);
+    softly.assertThat(editorDeleteResponse.getStatus()).isEqualTo(204);
+  }
+
   private void addRoleToCollectionAsDefaultUser(final CollectionRoleDto roleDto,
                                                 final String collectionId) {
     embeddedOptimizeExtension
@@ -142,4 +219,5 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
       .buildAddRoleToCollectionRequest(collectionId, roleDto)
       .execute(IdDto.class, 200);
   }
+
 }

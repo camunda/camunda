@@ -45,7 +45,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     createAlertForReport(reportId3);
 
     // when
-    List<String> allAlertIds = getAlertsForCollectionAsDefaultUser(collectionId1).stream()
+    List<String> allAlertIds = alertClient.getAlertsForCollectionAsDefaultUser(collectionId1).stream()
       .map(AlertDefinitionDto::getId)
       .collect(toList());
 
@@ -64,18 +64,10 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     createAlertForReport(reportId1);
 
     // when
-    List<AlertDefinitionDto> allAlerts = getAlertsForCollectionAsDefaultUser(collectionId2);
+    List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId2);
 
     // then
     assertThat(allAlerts.size(), is(0));
-  }
-
-  private List<AlertDefinitionDto> getAlertsForCollectionAsDefaultUser(final String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAlertsForCollectionRequest(collectionId)
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
   @ParameterizedTest(name = "deleting a collection with reports of definition type {0} also deletes associated alerts")

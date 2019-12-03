@@ -18,6 +18,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedSimpleCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.AlertReader;
@@ -25,6 +27,7 @@ import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
+import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.JobDetail;
@@ -64,6 +67,7 @@ public class AlertService implements ReportReferencingService {
   private final AlertReminderJobFactory alertReminderJobFactory;
   private final AlertCheckJobFactory alertCheckJobFactory;
   private final ReportService reportService;
+  private final AuthorizedCollectionService authorizedCollectionService;
 
   private SchedulerFactoryBean schedulerFactoryBean;
 
@@ -206,12 +210,13 @@ public class AlertService implements ReportReferencingService {
     return alertReader.findFirstAlertsForReport(reportId);
   }
 
-  public AlertDefinitionDto getAlert(String alertId){
+  public AlertDefinitionDto getAlert(String alertId) {
     return alertReader.getAlert(alertId);
   }
 
   public IdDto createAlert(AlertCreationDto toCreate, String userId) {
     validateAlert(toCreate, userId);
+    verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
     String alertId = this.createAlertForUser(toCreate, userId).getId();
     return new IdDto(alertId);
   }
@@ -282,6 +287,8 @@ public class AlertService implements ReportReferencingService {
   }
 
   private void updateAlertForUser(String alertId, AlertCreationDto toCreate, String userId) {
+    verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
+
     AlertDefinitionDto toUpdate = alertReader.getAlert(alertId);
     unscheduleJob(toUpdate);
     AlertUtil.updateFromUser(userId, toUpdate);
@@ -290,7 +297,9 @@ public class AlertService implements ReportReferencingService {
     scheduleAlert(toUpdate);
   }
 
-  public void deleteAlert(String alertId) {
+  public void deleteAlert(String alertId, String userId) {
+    verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
+
     AlertDefinitionDto toDelete = alertReader.getAlert(alertId);
     alertWriter.deleteAlert(alertId);
     unscheduleJob(toDelete);
@@ -372,7 +381,6 @@ public class AlertService implements ReportReferencingService {
     return this.alertCheckJobFactory.createTrigger(fakeReportAlert, jobDetail);
   }
 
-
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
     return mapAlertsToConflictingItems(findFirstAlertsForReport(reportDefinition.getId()));
@@ -408,10 +416,22 @@ public class AlertService implements ReportReferencingService {
     deleteAlertsIfNeeded(id, updateDefinition);
   }
 
-
   private Set<ConflictedItemDto> mapAlertsToConflictingItems(List<AlertDefinitionDto> alertsForReport) {
     return alertsForReport.stream()
       .map(alertDto -> new ConflictedItemDto(alertDto.getId(), ConflictedItemType.ALERT, alertDto.getName()))
       .collect(Collectors.toSet());
+  }
+
+  private void verifyUserAuthorizedToEditAlertOrFail(
+    final AlertCreationDto alertDto, final String userId) {
+    AuthorizedReportDefinitionDto reportDefinitionDto = reportService.getReportDefinition(
+      alertDto.getReportId(),
+      userId
+    );
+    authorizedCollectionService.verifyUserAuthorizedToEditCollectionResources(
+      userId,
+      reportDefinitionDto.getDefinitionDto()
+        .getCollectionId()
+    );
   }
 }

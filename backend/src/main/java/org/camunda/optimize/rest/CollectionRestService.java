@@ -202,7 +202,11 @@ public class CollectionRestService {
                        @PathParam("id") String collectionId,
                        @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    CollectionRoleDto collectionRoleDto = collectionRoleService.addRoleToCollection(userId, collectionId, roleDtoRequest);
+    CollectionRoleDto collectionRoleDto = collectionRoleService.addRoleToCollection(
+      userId,
+      collectionId,
+      roleDtoRequest
+    );
     return new IdDto(collectionRoleDto.getId());
   }
 
