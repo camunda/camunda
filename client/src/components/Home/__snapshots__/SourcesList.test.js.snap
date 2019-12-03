@@ -65,11 +65,11 @@ Object {
       "text": "Delete",
     },
   ],
-  "className": "process",
-  "icon": <ForwardRef(SvgProcess) />,
+  "className": "decision",
+  "icon": <ForwardRef(SvgDecision) />,
   "meta1": false,
-  "name": "definition name",
-  "type": "Process",
+  "name": "decision report",
+  "type": "Decision Table",
 }
 `;
 
@@ -93,11 +93,6 @@ exports[`should match snapshot 1`] = `
               "action": [Function],
               "icon": "edit",
               "text": "Edit",
-            },
-            Object {
-              "action": [Function],
-              "icon": "delete",
-              "text": "Delete",
             },
           ],
           "className": "process",

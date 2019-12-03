@@ -127,11 +127,13 @@ export default withErrorHandling(
                 const {definitionKey, definitionName, definitionType, tenants} = source;
                 const actions = [];
                 if (!readOnly) {
-                  actions.push({
-                    icon: 'delete',
-                    text: t('common.delete'),
-                    action: () => this.setState({deleting: source})
-                  });
+                  if (!hasUnauthorized(tenants)) {
+                    actions.push({
+                      icon: 'delete',
+                      text: t('common.delete'),
+                      action: () => this.setState({deleting: source})
+                    });
+                  }
 
                   if (tenantsAvailable) {
                     actions.unshift({
@@ -191,6 +193,10 @@ export default withErrorHandling(
     }
   }
 );
+
+function hasUnauthorized(tenants) {
+  return tenants.some(({id}) => id === '__unauthorizedTenantId__');
+}
 
 function getSourceIcon(type) {
   switch (type) {

@@ -77,10 +77,10 @@ it('should pass entity to Deleter', async () => {
 
   node
     .find(EntityList)
-    .prop('data')[0]
+    .prop('data')[1]
     .actions[1].action();
 
-  expect(node.find(Deleter).prop('entity').id).toBe('process:defKey');
+  expect(node.find(Deleter).prop('entity').id).toBe('decision:defKey2');
 });
 
 it('should delete source', () => {
@@ -136,7 +136,7 @@ it('should hide edit and tenants in source items if there are not tenants availa
   areTenantsAvailable.mockReturnValueOnce(false);
   const node = shallow(<SourcesList {...props} />);
   await node.update();
-  expect(node.find('EntityList').props().data[0]).toMatchSnapshot();
+  expect(node.find('EntityList').props().data[1]).toMatchSnapshot();
 });
 
 it('should pass conflict to confirmation modal if update failed', async () => {
