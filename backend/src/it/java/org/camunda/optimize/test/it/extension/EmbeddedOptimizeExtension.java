@@ -326,6 +326,10 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
     getOptimize().reloadConfiguration();
   }
 
+  public void reloadTenantCache() {
+    getTenantService().reloadConfiguration(null);
+  }
+
   public void stopOptimize() {
     try {
       this.getElasticsearchImportJobExecutor().stopExecutingImportJobs();

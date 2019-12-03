@@ -175,6 +175,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     // given
     final String unauthorizedTenant = "unauthorizedTenant";
     engineIntegrationExtension.createTenant(unauthorizedTenant);
+    // import tenant so he's available in the tenant cache
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
     final List<String> tenants = newArrayList(null, unauthorizedTenant);
 
     // the collection is created to make sure that there are no side effects

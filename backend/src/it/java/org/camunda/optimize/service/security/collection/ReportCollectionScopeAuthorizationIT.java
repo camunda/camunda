@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -20,16 +21,20 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
@@ -37,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
+import static org.camunda.optimize.service.collection.CollectionScopeService.SCOPE_NOT_AUTHORIZED_MESSAGE;
 import static org.camunda.optimize.service.collection.CollectionScopeService.UNAUTHORIZED_TENANT_MASK;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -44,6 +50,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 
 public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
@@ -55,7 +63,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
                     RESOURCE_TYPE_DECISION_DEFINITION, DECISION
     );
 
-  private static Stream<Integer> definitionTypes() {
+  private static Stream<Integer> definitionResourceTypes() {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
@@ -67,7 +75,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   }
 
   @ParameterizedTest(name = "get scope for collection where user is authorized for key of type {0}")
-  @MethodSource("definitionTypes")
+  @MethodSource("definitionResourceTypes")
   public void getScopesForAuthorizedCollection_keySpecific(final int definitionType) {
     // given
     final String collectionId = collectionClient.createNewCollection();
@@ -140,7 +148,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   }
 
   @ParameterizedTest(name = "get scope for collection where user is authorized for at least one tenant and type {0}")
-  @MethodSource("definitionTypes")
+  @MethodSource("definitionResourceTypes")
   public void getOnlyScopesWhereUserIsAuthorizedToAtLeastOneTenant(final int definitionType) {
     // given
     final String authorizedTenant = "authorizedTenant";
@@ -189,7 +197,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   }
 
   @ParameterizedTest(name = "unauthorized tenants get masked for type {0}")
-  @MethodSource("definitionTypes")
+  @MethodSource("definitionResourceTypes")
   public void unauthorizedTenantsAreMasked(final int definitionType) {
     // given
     final String authorizedTenant = "authorizedTenant";
@@ -231,7 +239,7 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   }
 
   @ParameterizedTest(name = "remove tenant with masked tenants does not distort scope for type {0}")
-  @MethodSource("definitionTypes")
+  @MethodSource("definitionResourceTypes")
   public void removeTenantWithMaskedTenantsDoesNotDistortScope(final int definitionType) {
     // given
     final String authorizedTenant = "authorizedTenant";
@@ -338,8 +346,8 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
   }
 
   @ParameterizedTest(name = "add tenant with masked tenants does not distort scope for type {0}")
-  @MethodSource("definitionTypes")
-  public void addTenantWithMaskedTenantsDoesNotDistortScope(final int definitionType) {
+  @MethodSource("definitionResourceTypes")
+  public void addTenantWithMaskedTenantsDoesNotDistortScope(final int definitionResourceType) {
     // given
     final String authorizedTenant = "authorizedTenant";
     engineIntegrationExtension.createTenant(authorizedTenant);
@@ -351,16 +359,16 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, authorizedTenant, RESOURCE_TYPE_TENANT);
-    authorizationClient.grantAllResourceAuthorizationsForKermit(definitionType);
+    authorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
 
-    deployAndImportDefinition(definitionType, "KEY_1", authorizedTenant);
+    deployAndImportDefinition(definitionResourceType, "KEY_1", authorizedTenant);
 
     final String collectionId = collectionClient.createNewCollection();
     createScopeWithTenants(
       collectionId,
       "KEY_1",
       asList(unauthorizedTenant1, null, unauthorizedTenant2),
-      definitionType
+      definitionResourceType
     );
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
 
@@ -386,6 +394,64 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .flatExtracting(CollectionScopeEntryRestDto::getTenants)
       .extracting(TenantDto::getId)
       .containsExactlyInAnyOrder(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2);
+  }
+
+  @ParameterizedTest(name = "add scope throws error on unauthorized key for definition resource type {0}")
+  @MethodSource("definitionResourceTypes")
+  public void addScope_unauthorizedKeyThrowsError(final int definitionResourceType) {
+    // given
+    deployAndImportDefinition(definitionResourceType, "KEY", DEFAULT_TENANT);
+    final String collectionId = collectionClient.createNewCollection();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+
+    // when
+    final DefinitionType definitionType = resourceTypeToDefinitionType.get(definitionResourceType);
+    List<CollectionScopeEntryDto> unauthorizedScope =
+      singletonList(new CollectionScopeEntryDto(definitionType, "KEY", DEFAULT_TENANTS));
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildAddScopeEntriesToCollectionRequest(collectionId, unauthorizedScope)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response)
+      .satisfies(r -> assertThat(r.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN))
+      .extracting(r -> r.readEntity(ErrorResponseDto.class))
+      .extracting(ErrorResponseDto::getDetailedMessage)
+      .isEqualTo(String.format(SCOPE_NOT_AUTHORIZED_MESSAGE, KERMIT_USER, unauthorizedScope.get(0).getId()));
+  }
+
+  @ParameterizedTest(name = "add scope throws error on unauthorized tenant for definition resource type {0}")
+  @MethodSource("definitionResourceTypes")
+  public void addScope_unauthorizedTenantThrowsError(final int definitionResourceType) {
+    // given
+    deployAndImportDefinition(definitionResourceType, "KEY", DEFAULT_TENANT);
+    final String unauthorizedTenant = "unauthorizedTenant";
+    engineIntegrationExtension.createTenant(unauthorizedTenant);
+    // import tenant so he's available in the tenant cache
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    final String collectionId = collectionClient.createNewCollection();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.grantSingleResourceAuthorizationForKermit("KEY", definitionResourceType);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+
+    // when
+    final DefinitionType definitionType = resourceTypeToDefinitionType.get(definitionResourceType);
+    final CollectionScopeEntryDto scopeToAdd =
+      new CollectionScopeEntryDto(definitionType, "KEY", newArrayList(DEFAULT_TENANT, unauthorizedTenant));
+    List<CollectionScopeEntryDto> unauthorizedScope = singletonList(scopeToAdd);
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildAddScopeEntriesToCollectionRequest(collectionId, unauthorizedScope)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response)
+      .satisfies(r -> assertThat(r.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN))
+      .extracting(r -> r.readEntity(ErrorResponseDto.class))
+      .extracting(ErrorResponseDto::getDetailedMessage)
+      .isEqualTo(String.format(SCOPE_NOT_AUTHORIZED_MESSAGE, KERMIT_USER, scopeToAdd.getId()));
   }
 
   private void deployAndImportDefinition(int definitionResourceType, final String definitionKey,

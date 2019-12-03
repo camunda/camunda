@@ -32,6 +32,7 @@ import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -54,6 +55,8 @@ public class CollectionScopeService {
   private static final String UNAUTHORIZED_TENANT_MASK_ID = "__unauthorizedTenantId__";
   public static final TenantDto UNAUTHORIZED_TENANT_MASK =
     new TenantDto(UNAUTHORIZED_TENANT_MASK_ID, UNAUTHORIZED_TENANT_MASK_NAME, "unknownEngine");
+  public static final String SCOPE_NOT_AUTHORIZED_MESSAGE = "User [%s] is not authorized to add scope [%s]. Either he" +
+    " isn't allowed to access the definition or the provided tenants.";
 
   private final TenantService tenantService;
   private final DefinitionService definitionService;
@@ -115,7 +118,26 @@ public class CollectionScopeService {
                                           final String collectionId,
                                           final List<CollectionScopeEntryDto> scopeUpdates) {
     authorizedCollectionService.getAuthorizedCollectionAndVerifyUserAuthorizedToManageOrFail(userId, collectionId);
+    verifyUserIsAuthorizedToAccessScopesOrFail(userId, scopeUpdates);
     collectionWriter.addScopeEntriesToCollection(userId, collectionId, scopeUpdates);
+  }
+
+  private void verifyUserIsAuthorizedToAccessScopesOrFail(final String userId,
+                                                          final List<CollectionScopeEntryDto> scopeEntries) {
+    scopeEntries.forEach(scopeEntry -> {
+      boolean isAuthorized = definitionAuthorizationService.isAuthorizedToSeeDefinition(
+        userId,
+        IdentityType.USER,
+        scopeEntry.getDefinitionKey(),
+        scopeEntry.getDefinitionType(),
+        scopeEntry.getTenants()
+      );
+      if (!isAuthorized) {
+        String message = String.format(
+          SCOPE_NOT_AUTHORIZED_MESSAGE, userId, scopeEntry.getId());
+        throw new ForbiddenException(message);
+      }
+    });
   }
 
   public void deleteScopeEntry(String userId, String collectionId, String scopeEntryId, boolean force)

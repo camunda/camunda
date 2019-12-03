@@ -524,5 +524,6 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
   private void addTenantToElasticsearch(final String tenantId) {
     TenantDto tenantDto = new TenantDto(tenantId, "ATenantName", DEFAULT_ENGINE_ALIAS);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenantId, tenantDto);
+    embeddedOptimizeExtension.reloadTenantCache();
   }
 }

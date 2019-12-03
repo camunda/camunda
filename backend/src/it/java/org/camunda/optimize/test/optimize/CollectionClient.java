@@ -37,7 +37,8 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 public class CollectionClient {
 
   public static final String DEFAULT_DEFINITION_KEY = "defaultScopeDefinitionKey";
-  public static final List<String> DEFAULT_TENANTS = singletonList(null);
+  public static final String DEFAULT_TENANT = null;
+  public static final List<String> DEFAULT_TENANTS = singletonList(DEFAULT_TENANT);
   public static final String PRIVATE_COLLECTION_ID = null;
 
   private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
