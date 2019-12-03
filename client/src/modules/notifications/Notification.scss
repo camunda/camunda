@@ -15,20 +15,29 @@
 }
 
 .Notification {
+  position: relative;
   pointer-events: auto;
   margin: auto;
   width: 731px;
   border-radius: 3px;
   background-color: darken($cam-blue, 10%);
   box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.5);
-  padding: 20px;
+  padding: 20px 50px;
   margin-top: 34px;
   color: #fff;
   animation: appear 0.35s ease-in-out;
 
+  > .Icon {
+    position: absolute;
+    left: 20px;
+    top: 21px;
+  }
+
   .Button.close {
+    position: absolute;
+    right: 20px;
+    top: 20px;
     background: transparent;
-    float: right;
     border: none;
     color: #fff;
     padding: 1px;
