@@ -14,14 +14,9 @@ import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.junit.rules.ExternalResource;
@@ -33,9 +28,7 @@ public final class LogStreamRule extends ExternalResource {
   private final boolean shouldStartByDefault;
 
   private Consumer<LogStreamBuilder> streamBuilder;
-  private UnaryOperator<Builder> storageBuilder;
-  private ActorScheduler actorScheduler;
-  private ServiceContainer serviceContainer;
+  private final UnaryOperator<Builder> storageBuilder;
   private LogStream logStream;
   private BufferedLogStreamReader logStreamReader;
   private LogStreamBuilder builder;
@@ -111,10 +104,7 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   public void startLogStream() {
-    actorScheduler = actorSchedulerRule.get();
-
-    serviceContainer = new ServiceContainerImpl(actorScheduler);
-    serviceContainer.start();
+    final ActorScheduler actorScheduler = actorSchedulerRule.get();
 
     if (logStorageRule == null) {
       logStorageRule = new AtomixLogStorageRule(temporaryFolder);
@@ -123,7 +113,7 @@ public final class LogStreamRule extends ExternalResource {
 
     builder =
         new AtomixLogStreamBuilder()
-            .withServiceContainer(serviceContainer)
+            .withActorScheduler(actorScheduler)
             .withPartitionId(0)
             .withLogName("0")
             .withLogStorage(logStorageRule.getStorage());
@@ -147,12 +137,6 @@ public final class LogStreamRule extends ExternalResource {
     if (logStorageRule != null) {
       logStorageRule.close();
       logStorageRule = null;
-    }
-
-    try {
-      serviceContainer.close(5, TimeUnit.SECONDS);
-    } catch (final TimeoutException | ExecutionException | InterruptedException e) {
-      e.printStackTrace();
     }
   }
 

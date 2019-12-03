@@ -225,8 +225,4 @@ public class AsyncSnapshotDirector extends Actor {
 
     return future;
   }
-
-  private void close() {
-    actor.close();
-  }
 }

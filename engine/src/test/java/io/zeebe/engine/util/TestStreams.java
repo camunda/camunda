@@ -142,7 +142,7 @@ public class TestStreams {
                 .withLogName(name)
                 .withLogStorage(logStorageRule.getStorage())
                 .withPartitionId(partitionId)
-                .withServiceContainer(serviceContainer)
+                .withActorScheduler(actorScheduler)
                 .build());
     logStorageRule.setPositionListener(logStream::setCommitPosition);
     logStream.openAppender().join();

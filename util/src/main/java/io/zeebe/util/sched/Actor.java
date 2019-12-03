@@ -7,6 +7,7 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Consumer;
 
 public abstract class Actor implements AutoCloseable {
@@ -53,5 +54,9 @@ public abstract class Actor implements AutoCloseable {
   @Override
   public void close() {
     actor.close().join();
+  }
+
+  public ActorFuture<Void> closeAsync() {
+    return actor.close();
   }
 }

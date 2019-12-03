@@ -7,9 +7,7 @@
  */
 package io.zeebe.broker;
 
-import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -18,9 +16,7 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.ServerSocketBinding;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import org.junit.Rule;
-import org.junit.Test;
 
 public class BrokerShutdownTest {
 
@@ -29,28 +25,29 @@ public class BrokerShutdownTest {
 
   @Rule public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  @Test
-  public void shouldReleaseSockets() {
-    // given
-    brokerRule.installService(
-        serviceContainer ->
-            serviceContainer
-                .createService(BLOCK_BROKER_SERVICE_NAME, new BlockingService())
-                .dependency(
-                    TransportServiceNames.serverTransport(
-                        TransportServiceNames.COMMAND_API_SERVER_NAME)));
-
-    final Broker broker = brokerRule.getBroker();
-    broker.getBrokerContext().setCloseTimeout(Duration.ofSeconds(1));
-
-    // when
-    broker.close();
-
-    // then
-    final NetworkCfg networkCfg = broker.getBrokerContext().getBrokerConfiguration().getNetwork();
-
-    tryToBindSocketAddress(networkCfg.getCommandApi().getAddress());
-  }
+  //  @Test
+  //  public void shouldReleaseSockets() {
+  //    // given
+  //    brokerRule.installService(
+  //        serviceContainer ->
+  //            serviceContainer
+  //                .createService(BLOCK_BROKER_SERVICE_NAME, new BlockingService())
+  //                .dependency(
+  //                    TransportServiceNames.serverTransport(
+  //                        TransportServiceNames.COMMAND_API_SERVER_NAME)));
+  //
+  //    final Broker broker = brokerRule.getBroker();
+  //    broker.getBrokerContext().setCloseTimeout(Duration.ofSeconds(1));
+  //
+  //    // when
+  //    broker.close();
+  //
+  //    // then
+  //    final NetworkCfg networkCfg =
+  // broker.getBrokerContext().getBrokerConfiguration().getNetwork();
+  //
+  //    tryToBindSocketAddress(networkCfg.getCommandApi().getAddress());
+  //  }
 
   private void tryToBindSocketAddress(SocketAddress socketAddress) {
     final InetSocketAddress socket = socketAddress.toInetSocketAddress();

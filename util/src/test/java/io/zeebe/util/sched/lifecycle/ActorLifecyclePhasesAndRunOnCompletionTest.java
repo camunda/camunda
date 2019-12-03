@@ -94,7 +94,7 @@ public class ActorLifecyclePhasesAndRunOnCompletionTest {
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -116,7 +116,7 @@ public class ActorLifecyclePhasesAndRunOnCompletionTest {
           }
         };
     schedulerRule.submitActor(actor);
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
 
     // when
     schedulerRule.workUntilDone();

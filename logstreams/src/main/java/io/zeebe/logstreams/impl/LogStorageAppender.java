@@ -23,7 +23,6 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorage.AppendListener;
 import io.zeebe.util.Environment;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -119,10 +118,6 @@ public class LogStorageAppender extends Actor {
   private void appendToStorage(
       final ByteBuffer buffer, final Positions positions, final Listener listener) {
     logStorage.append(positions.lowest, positions.highest, buffer, listener);
-  }
-
-  public ActorFuture<Void> close() {
-    return actor.close();
   }
 
   @Override

@@ -9,15 +9,8 @@ package io.zeebe.broker.engine.impl;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
@@ -37,28 +30,19 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   @Override
-  public void onBecomingFollower(Partition partition) {
-    removePartition(partition);
+  public void onBecomingFollower(int partitionId) {
+    actor.submit(() -> leaderPartitions.remove(partitionId));
   }
 
   @Override
-  public void onBecomingLeader(Partition partition) {
-    addPartition(partition);
+  public void onBecomingLeader(int partitionId, LogStream logStream) {
+    actor.submit(() -> leaderPartitions.put(partitionId, logStream));
   }
 
   @Override
   protected void onActorStarting() {
-    SubscriptionCommandMessageHandler messageHandler = new SubscriptionCommandMessageHandler(
-      actor::call, leaderPartitions::get);
+    SubscriptionCommandMessageHandler messageHandler =
+        new SubscriptionCommandMessageHandler(actor::call, leaderPartitions::get);
     atomix.getCommunicationService().subscribe("subscription", messageHandler);
   }
-
-  private void addPartition(final Partition partition) {
-    actor.submit(() -> leaderPartitions.put(partition.getPartitionId(), partition.getLogStream()));
-  }
-
-  private void removePartition(final Partition partition) {
-    actor.submit(() -> leaderPartitions.remove(partition.getPartitionId()));
-  }
-
 }

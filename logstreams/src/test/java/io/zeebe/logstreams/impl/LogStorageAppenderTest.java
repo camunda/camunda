@@ -80,7 +80,7 @@ public class LogStorageAppenderTest {
 
   @After
   public void tearDown() throws Exception {
-    appender.close().join();
+    appender.close();
     dispatcher.close();
     logStorageRule.close();
   }

@@ -97,9 +97,5 @@ public class CallableActionsTest {
     ActorFuture<Void> doCall() {
       return actor.call(() -> {});
     }
-
-    void close() {
-      actor.close();
-    }
   }
 }

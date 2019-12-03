@@ -14,12 +14,11 @@ import io.atomix.cluster.Member;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -48,15 +47,15 @@ public class TopologyManagerImpl extends Actor
   }
 
   @Override
-  public void onBecomingFollower(Partition partition) {
-    setFollower(partition.getPartitionId());
+  public void onBecomingFollower(int partitionId) {
+    setFollower(partitionId);
   }
 
   @Override
-  public void onBecomingLeader(Partition partition) {
-    setLeader(partition.getTerm(), partition.getPartitionId());
-
+  public void onBecomingLeader(int partitionId, int term, LogStream logStream) {
+    setLeader(term, partitionId);
   }
+
   @Override
   public String getName() {
     return "topology";
@@ -195,10 +194,6 @@ public class TopologyManagerImpl extends Actor
   private void publishTopologyChanges() {
     final Properties memberProperties = atomix.getMembershipService().getLocalMember().properties();
     localBroker.writeIntoProperties(memberProperties);
-  }
-
-  public ActorFuture<Void> close() {
-    return actor.close();
   }
 
   @Override

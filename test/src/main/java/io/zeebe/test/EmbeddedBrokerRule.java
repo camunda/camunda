@@ -8,13 +8,9 @@
 package io.zeebe.test;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.base.partitions.PartitionServiceNames;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -194,31 +190,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public void startBroker() {
     startTime = System.currentTimeMillis();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
-
-    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
-
-    try {
-      // Hack: block until the system stream processor is available
-      // this is required in the broker-test suite, because the client rule does not perform request
-      // retries
-      // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
-      final String partitionName = Partition.getPartitionName(Protocol.DEPLOYMENT_PARTITION);
-
-      serviceContainer
-          .createService(TestService.NAME, new TestService())
-          .dependency(PartitionServiceNames.leaderPartitionServiceName(partitionName))
-          .dependency(
-              TransportServiceNames.serverTransport(TransportServiceNames.COMMAND_API_SERVER_NAME))
-          .install()
-          .get(timeout, TimeUnit.SECONDS);
-
-    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      stopBroker();
-      throw new RuntimeException(
-          String.format(
-              "System partition not installed into the container withing %d seconds.", timeout),
-          e);
-    }
 
     dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
   }

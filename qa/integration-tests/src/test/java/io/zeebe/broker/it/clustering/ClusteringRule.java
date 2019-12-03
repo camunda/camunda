@@ -8,7 +8,6 @@
 package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.broker.Broker.LOG;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_JOIN_SERVICE;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DISABLE_EMBEDDED_GATEWAY;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
@@ -208,18 +207,18 @@ public class ClusteringRule extends ExternalResource {
 
   private void waitUntilBrokersStarted() {
     // A hack to see if Atomix cluster has started
-    brokers.forEach(
-        (i, b) -> {
-          b.getBrokerContext()
-              .getServiceContainer()
-              .createService(ServiceName.newServiceName("test", Void.class), () -> null)
-              .dependency(ATOMIX_JOIN_SERVICE)
-              .install()
-              .join();
-          b.getBrokerContext()
-              .getServiceContainer()
-              .removeService(ServiceName.newServiceName("test", Void.class));
-        });
+    //    brokers.forEach(
+    //        (i, b) -> {
+    //          b.getBrokerContext()
+    //              .getServiceContainer()
+    //              .createService(ServiceName.newServiceName("test", Void.class), () -> null)
+    //              .dependency(ATOMIX_JOIN_SERVICE)
+    //              .install()
+    //              .join();
+    //          b.getBrokerContext()
+    //              .getServiceContainer()
+    //              .removeService(ServiceName.newServiceName("test", Void.class));
+    //        });
   }
 
   private Broker createBroker(int nodeId) {

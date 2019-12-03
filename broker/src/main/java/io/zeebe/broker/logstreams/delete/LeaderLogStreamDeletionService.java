@@ -8,32 +8,20 @@
 package io.zeebe.broker.logstreams.delete;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.exporter.ExporterDirectorService;
+import io.zeebe.broker.exporter.stream.ExporterDirector;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
-public class LeaderLogStreamDeletionService implements SnapshotDeletionListener, Service<Void> {
-  private final Injector<ExporterDirectorService> exporterDirectorInjector = new Injector<>();
+public class LeaderLogStreamDeletionService implements SnapshotDeletionListener {
   private final LogStream logStream;
-  private ExporterDirectorService exporterDirector;
+  private final ExporterDirector exporterDirector;
 
-  public LeaderLogStreamDeletionService(final LogStream logStream) {
+  public LeaderLogStreamDeletionService(
+      final LogStream logStream, final ExporterDirector exporterDirector) {
     this.logStream = logStream;
-  }
-
-  @Override
-  public void start(final ServiceStartContext startContext) {
-    exporterDirector = exporterDirectorInjector.getValue();
-  }
-
-  @Override
-  public Void get() {
-    return null;
+    this.exporterDirector = exporterDirector;
   }
 
   @Override
@@ -50,9 +38,5 @@ public class LeaderLogStreamDeletionService implements SnapshotDeletionListener,
                 exception);
           }
         });
-  }
-
-  public Injector<ExporterDirectorService> getExporterDirectorInjector() {
-    return exporterDirectorInjector;
   }
 }

@@ -15,7 +15,6 @@ import io.zeebe.gateway.Loggers;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -31,10 +30,6 @@ public class BrokerTopologyManagerImpl extends Actor
   public BrokerTopologyManagerImpl(final BiConsumer<Integer, SocketAddress> registerEndpoint) {
     this.registerEndpoint = registerEndpoint;
     this.topology = new AtomicReference<>(null);
-  }
-
-  public ActorFuture<Void> close() {
-    return actor.close();
   }
 
   /** @return the current known cluster state or null if the topology was not fetched yet */

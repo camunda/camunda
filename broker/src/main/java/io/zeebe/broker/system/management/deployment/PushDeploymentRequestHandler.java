@@ -9,11 +9,11 @@ package io.zeebe.broker.system.management.deployment;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
 import io.zeebe.engine.processor.workflow.DeploymentResponder;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
@@ -44,12 +44,12 @@ public class PushDeploymentRequestHandler
   private final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
   private final RecordMetadata recordMetadata = new RecordMetadata();
 
-  private final Int2ObjectHashMap<Partition> leaderPartitions;
+  private final Int2ObjectHashMap<LogStream> leaderPartitions;
   private final ActorControl actor;
   private final Atomix atomix;
 
   public PushDeploymentRequestHandler(
-      final Int2ObjectHashMap<Partition> leaderPartitions,
+      final Int2ObjectHashMap<LogStream> leaderPartitions,
       final ActorControl actor,
       final Atomix atomix) {
     this.leaderPartitions = leaderPartitions;
@@ -110,8 +110,8 @@ public class PushDeploymentRequestHandler
     final int partitionId = pushDeploymentRequest.partitionId();
     final DirectBuffer deployment = pushDeploymentRequest.deployment();
 
-    final Partition partition = leaderPartitions.get(partitionId);
-    if (partition != null) {
+    final LogStream logStream = leaderPartitions.get(partitionId);
+    if (logStream != null) {
       LOG.debug("Handling deployment {} for partition {} as leader", deploymentKey, partitionId);
       handlePushDeploymentRequest(responseFuture, deployment, deploymentKey, partitionId);
     } else {
@@ -132,15 +132,15 @@ public class PushDeploymentRequestHandler
 
     actor.runUntilDone(
         () -> {
-          final Partition partition = leaderPartitions.get(partitionId);
-          if (partition == null) {
+          final LogStream logStream = leaderPartitions.get(partitionId);
+          if (logStream == null) {
             LOG.debug("Leader change on partition {}, ignore push deployment request", partitionId);
             actor.done();
             return;
           }
 
           final boolean success =
-              writeCreatingDeployment(partition, deploymentKey, deploymentRecord);
+              writeCreatingDeployment(logStream, deploymentKey, deploymentRecord);
           if (success) {
             LOG.debug(
                 "Deployment CREATE command for deployment {} was written on partition {}",
@@ -178,12 +178,12 @@ public class PushDeploymentRequestHandler
   }
 
   private boolean writeCreatingDeployment(
-      final Partition partition, final long key, final UnpackedObject event) {
+      final LogStream logStream, final long key, final UnpackedObject event) {
     final RecordType recordType = RecordType.COMMAND;
     final ValueType valueType = ValueType.DEPLOYMENT;
     final Intent intent = DeploymentIntent.CREATE;
 
-    logStreamWriter.wrap(partition.getLogStream());
+    logStreamWriter.wrap(logStream);
 
     recordMetadata.reset().recordType(recordType).valueType(valueType).intent(intent);
 

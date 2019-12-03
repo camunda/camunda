@@ -25,7 +25,7 @@ public abstract class ActorContext {
   }
 
   public ActorFuture<Void> onClose() {
-    return conductor.close();
+    return conductor.closeAsync();
   }
 
   public ActorFuture<Void> closeAllOpenChannels() {
@@ -37,7 +37,7 @@ public abstract class ActorContext {
   }
 
   public ActorFuture<Void> closeReceiver() {
-    return receiver.close();
+    return receiver.closeAsync();
   }
 
   public Conductor getConductor() {
@@ -73,6 +73,6 @@ public abstract class ActorContext {
   }
 
   public ActorFuture<Void> closeSender() {
-    return sender.close();
+    return sender.closeAsync();
   }
 }

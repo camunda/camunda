@@ -30,7 +30,6 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
@@ -63,15 +62,12 @@ public class CommandApiMessageHandlerTest {
     JOB_EVENT = buffer.byteArray();
   }
 
-  private TemporaryFolder tempFolder = new TemporaryFolder();
-  private ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
-  private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(agentRunnerService);
+  private final TemporaryFolder tempFolder = new TemporaryFolder();
+  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(tempFolder).around(agentRunnerService).around(serviceContainerRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(actorSchedulerRule);
 
-  private AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(tempFolder);
+  private final AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(tempFolder);
   private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ExecuteCommandRequestEncoder commandRequestEncoder =
@@ -92,7 +88,7 @@ public class CommandApiMessageHandlerTest {
         LogStreams.createLogStream()
             .withPartitionId(LOG_STREAM_PARTITION_ID)
             .withLogName(logName)
-            .withServiceContainer(serviceContainerRule.get())
+            .withActorScheduler(actorSchedulerRule.get())
             .withLogName(logName)
             .withLogStorage(logStorageRule.getStorage())
             .build();

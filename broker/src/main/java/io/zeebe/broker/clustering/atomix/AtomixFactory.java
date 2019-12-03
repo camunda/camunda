@@ -20,27 +20,22 @@ import io.atomix.protocols.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotStoreFactory;
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.ByteValue;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
 public final class AtomixFactory {
+  public static final String GROUP_NAME = "raft-partition";
+
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private AtomixFactory() {}
@@ -91,17 +86,19 @@ public final class AtomixFactory {
             .withFlushOnCommit()
             .build();
 
-    final String raftPartitionGroupName = Partition.GROUP_NAME;
     final RaftPartitionGroup partitionGroup =
-        createRaftPartitionGroup(configuration, rootDirectory, raftPartitionGroupName);
+        createRaftPartitionGroup(configuration, rootDirectory);
 
-    return atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup).build();
+    return atomixBuilder
+        .withManagementGroup(systemGroup)
+        .withPartitionGroups(partitionGroup)
+        .build();
   }
 
-  private static RaftPartitionGroup createRaftPartitionGroup(final BrokerCfg configuration,
-      final String rootDirectory, final String raftPartitionGroupName) {
+  private static RaftPartitionGroup createRaftPartitionGroup(
+      final BrokerCfg configuration, final String rootDirectory) {
 
-    final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
+    final File raftDirectory = new File(rootDirectory, AtomixFactory.GROUP_NAME);
     IoUtil.ensureDirectoryExists(raftDirectory, "Raft data directory");
 
     final ClusterCfg clusterCfg = configuration.getCluster();
@@ -109,7 +106,7 @@ public final class AtomixFactory {
     final NetworkCfg networkCfg = configuration.getNetwork();
 
     final Builder partitionGroupBuilder =
-        RaftPartitionGroup.builder(raftPartitionGroupName)
+        RaftPartitionGroup.builder(AtomixFactory.GROUP_NAME)
             .withNumPartitions(clusterCfg.getPartitionsCount())
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
