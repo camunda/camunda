@@ -12,8 +12,6 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -43,7 +41,6 @@ public class SystemContext implements AutoCloseable {
   protected final List<Component> components = new ArrayList<>();
   protected final BrokerCfg brokerCfg;
   protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
-  protected ServiceContainer serviceContainer;
   protected Map<String, String> diagnosticContext;
   protected ActorScheduler scheduler;
   private final List<Closeable> closeablesToReleaseResources = new ArrayList<>();
@@ -87,8 +84,6 @@ public class SystemContext implements AutoCloseable {
 
     // TODO: submit diagnosticContext to actor scheduler once supported
     this.scheduler = initScheduler(clock, brokerId);
-    this.serviceContainer = new ServiceContainerImpl(this.scheduler);
-    this.scheduler.start();
 
     setCloseTimeout(CLOSE_TIMEOUT);
   }
@@ -132,20 +127,7 @@ public class SystemContext implements AutoCloseable {
     return scheduler;
   }
 
-  public ServiceContainer getServiceContainer() {
-    return serviceContainer;
-  }
-
-  public void addComponent(final Component component) {
-    this.components.add(component);
-  }
-
-  public List<Component> getComponents() {
-    return components;
-  }
-
   public void init() {
-    serviceContainer.start();
 
     for (final Component brokerComponent : components) {
       try {
@@ -172,12 +154,7 @@ public class SystemContext implements AutoCloseable {
     LOG.info("Broker shutting down...");
 
     try {
-      serviceContainer.close(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
-    } catch (final TimeoutException e) {
-      LOG.error("Failed to close broker within {} seconds.", CLOSE_TIMEOUT, e);
-    } catch (final ExecutionException | InterruptedException e) {
-      LOG.error("Exception while closing broker", e);
-      Thread.currentThread().interrupt();
+      // todo closing?
     } finally {
 
       for (final Closeable delegate : closeablesToReleaseResources) {
@@ -201,14 +178,6 @@ public class SystemContext implements AutoCloseable {
 
   public BrokerCfg getBrokerConfiguration() {
     return brokerCfg;
-  }
-
-  public void addRequiredStartAction(final ActorFuture<?> future) {
-    requiredStartActions.add(future);
-  }
-
-  public void addResourceReleasingDelegate(final Closeable delegate) {
-    closeablesToReleaseResources.add(delegate);
   }
 
   public Map<String, String> getDiagnosticContext() {

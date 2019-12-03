@@ -45,7 +45,6 @@ import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler;
@@ -76,7 +75,6 @@ public class TestStreams {
 
   private final TemporaryFolder dataDirectory;
   private final AutoCloseableRule closeables;
-  private final ServiceContainer serviceContainer;
   private final ActorScheduler actorScheduler;
 
   private final CommandResponseWriter mockCommandResponseWriter;
@@ -88,11 +86,9 @@ public class TestStreams {
   public TestStreams(
       final TemporaryFolder dataDirectory,
       final AutoCloseableRule closeables,
-      final ServiceContainer serviceContainer,
       final ActorScheduler actorScheduler) {
     this.dataDirectory = dataDirectory;
     this.closeables = closeables;
-    this.serviceContainer = serviceContainer;
     this.actorScheduler = actorScheduler;
 
     mockCommandResponseWriter = mock(CommandResponseWriter.class);
@@ -439,8 +435,6 @@ public class TestStreams {
       }
 
       asyncSnapshotDirector.closeAsync().join();
-      final String streamName = logContext.getLogStream().getLogName();
-
       Loggers.IO_LOGGER.debug("Close stream processor");
       streamProcessor.closeAsync().join();
       zeebeDb.close();

@@ -7,7 +7,6 @@
  */
 package io.zeebe.logstreams.log;
 
-
 import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.ByteValue;

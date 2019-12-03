@@ -16,10 +16,6 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.ReflectUtil;
 import java.util.EnumMap;
 import java.util.Map;
@@ -27,9 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class LogStreamPrinter {
-
-  private static final ServiceName<Object> PRINTER_SERVICE_NAME =
-      ServiceName.newServiceName("printer", Object.class);
 
   private static final String HEADER_INDENTATION = "\t\t\t";
   private static final String ENTRY_INDENTATION = HEADER_INDENTATION + "\t";
@@ -87,26 +80,5 @@ public class LogStreamPrinter {
 
   private static void writeMetadata(final RecordMetadata metadata, final StringBuilder sb) {
     sb.append(metadata.toString());
-  }
-
-  private static class PrinterService implements Service<Object> {
-
-    private final Injector<LogStream> logStreamInjector = new Injector<>();
-
-    @Override
-    public void start(final ServiceStartContext startContext) {
-      final LogStream logStream = logStreamInjector.getValue();
-
-      printRecords(logStream);
-    }
-
-    @Override
-    public Object get() {
-      return this;
-    }
-
-    public Injector<LogStream> getLogStreamInjector() {
-      return logStreamInjector;
-    }
   }
 }

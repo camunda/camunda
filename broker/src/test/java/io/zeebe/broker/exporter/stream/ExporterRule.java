@@ -21,7 +21,6 @@ import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -46,8 +45,6 @@ public class ExporterRule implements TestRule {
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ControlledActorClock clock = new ControlledActorClock();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
-  private final ServiceContainerRule serviceContainerRule =
-      new ServiceContainerRule(actorSchedulerRule);
   private final RuleChain chain;
 
   private final ZeebeDbFactory zeebeDbFactory;
@@ -65,11 +62,7 @@ public class ExporterRule implements TestRule {
 
     zeebeDbFactory = dbFactory;
     chain =
-        RuleChain.outerRule(tempFolder)
-            .around(actorSchedulerRule)
-            .around(serviceContainerRule)
-            .around(closeables)
-            .around(rule);
+        RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables).around(rule);
   }
 
   @Override
@@ -151,9 +144,7 @@ public class ExporterRule implements TestRule {
 
     @Override
     protected void before() {
-      streams =
-          new TestStreams(
-              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
+      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
       streams.createLogStream(STREAM_NAME, partitionId);
     }
   }

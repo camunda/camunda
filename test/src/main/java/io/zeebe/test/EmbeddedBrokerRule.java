@@ -11,12 +11,6 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
@@ -30,9 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
@@ -223,53 +214,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
           deleteSnapshots(stateDirectory);
         }
       }
-    }
-  }
-
-  public <S> S getService(final ServiceName<S> serviceName) {
-    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
-
-    final Injector<S> injector = new Injector<>();
-
-    final ServiceName<TestService> accessorServiceName =
-        ServiceName.newServiceName("serviceAccess" + serviceName.getName(), TestService.class);
-    try {
-      serviceContainer
-          .createService(accessorServiceName, new TestService())
-          .dependency(serviceName, injector)
-          .install()
-          .get();
-    } catch (final InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
-
-    serviceContainer.removeService(accessorServiceName);
-
-    return injector.getValue();
-  }
-
-  public <T> void removeService(final ServiceName<T> name) {
-    try {
-      broker.getBrokerContext().getServiceContainer().removeService(name).get(10, TimeUnit.SECONDS);
-    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-      throw new RuntimeException("Could not remove service " + name.getName() + " in 10 seconds.");
-    }
-  }
-
-  static class TestService implements Service<TestService> {
-
-    static final ServiceName<TestService> NAME =
-        ServiceName.newServiceName("testService", TestService.class);
-
-    @Override
-    public void start(final ServiceStartContext startContext) {}
-
-    @Override
-    public void stop(final ServiceStopContext stopContext) {}
-
-    @Override
-    public TestService get() {
-      return this;
     }
   }
 }

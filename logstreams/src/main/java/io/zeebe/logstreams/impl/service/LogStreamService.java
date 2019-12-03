@@ -7,9 +7,6 @@
  */
 package io.zeebe.logstreams.impl.service;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
@@ -18,7 +15,6 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -43,8 +39,8 @@ public class LogStreamService implements LogStream, AutoCloseable {
   private final Position commitPosition;
   private final ActorScheduler actorScheduler;
 
-  private BufferedLogStreamReader reader;
-  private LogStorage logStorage;
+  private final BufferedLogStreamReader reader;
+  private final LogStorage logStorage;
   private ActorFuture<Dispatcher> writeBufferFuture;
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
@@ -146,13 +142,10 @@ public class LogStreamService implements LogStream, AutoCloseable {
   @Override
   public ActorFuture<LogStorageAppender> openAppender() {
     final String logName = getLogName();
-    final ServiceName<Dispatcher> logWriteBufferServiceName = logWriteBufferServiceName(logName);
-    final ServiceName<LogStorageAppender> logStorageAppenderServiceName =
-        logStorageAppenderServiceName(logName);
 
     final int partitionId = determineInitialPartitionId();
     writeBuffer =
-        Dispatchers.create(logWriteBufferServiceName.getName())
+        Dispatchers.create(logName + "-write-buffer")
             .maxFragmentLength(maxFrameLength)
             .initialPartitionId(partitionId + 1)
             .name(logName + "-write-buffer")
@@ -162,7 +155,7 @@ public class LogStreamService implements LogStream, AutoCloseable {
     final var subscription = writeBuffer.openSubscription(APPENDER_SUBSCRIPTION_NAME);
     appender =
         new LogStorageAppender(
-            logStorageAppenderServiceName.getName(),
+            logName + "-appender",
             partitionId,
             logStorage,
             subscription,

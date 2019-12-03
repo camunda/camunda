@@ -8,21 +8,12 @@
 package io.zeebe.broker;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.ServerSocketBinding;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.net.InetSocketAddress;
 import org.junit.Rule;
 
 public class BrokerShutdownTest {
-
-  private static final ServiceName<Void> BLOCK_BROKER_SERVICE_NAME =
-      ServiceName.newServiceName("blockService", Void.class);
-
   @Rule public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   //  @Test
@@ -54,21 +45,5 @@ public class BrokerShutdownTest {
     final ServerSocketBinding binding = new ServerSocketBinding(socket);
     binding.doBind();
     binding.close();
-  }
-
-  private class BlockingService implements Service<Void> {
-    @Override
-    public void start(ServiceStartContext startContext) {}
-
-    @Override
-    public void stop(ServiceStopContext stopContext) {
-      final CompletableActorFuture<Void> neverCompletingFuture = new CompletableActorFuture<>();
-      stopContext.async(neverCompletingFuture);
-    }
-
-    @Override
-    public Void get() {
-      return null;
-    }
   }
 }

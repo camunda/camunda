@@ -35,9 +35,6 @@ import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
@@ -54,7 +51,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -586,31 +582,5 @@ public class ClusteringRule extends ExternalResource {
         .filter(id -> id != leaderNodeId)
         .map(brokers::get)
         .collect(Collectors.toList());
-  }
-
-  public <S> S getService(final ServiceName<S> serviceName, int nodeId) {
-    final Broker broker = getBroker(nodeId);
-    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
-
-    final Injector<S> injector = new Injector<>();
-
-    final ServiceName<Void> accessorServiceName =
-        ServiceName.newServiceName("serviceAccess" + serviceName.getName(), Void.class);
-    try {
-      serviceContainer
-          .createService(accessorServiceName, () -> null)
-          .dependency(serviceName, injector)
-          .install()
-          .get();
-    } catch (final InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
-    }
-
-    // need to extract value before removing the service, as once stopped we will
-    // uninject the value
-    final var injected = injector.getValue();
-    serviceContainer.removeService(accessorServiceName);
-
-    return injected;
   }
 }
