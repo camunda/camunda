@@ -38,7 +38,7 @@ public class AtomixJoinService implements Service<Atomix> {
               }
             });
 
-    startContext.async(started);
+    startContext.async(started, true);
   }
 
   @Override
