@@ -7,9 +7,9 @@ package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.EventBasedProcessService;
+import org.camunda.optimize.service.EventProcessMappingService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +17,7 @@ import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -33,49 +34,75 @@ import java.util.List;
 @Secured
 public class EventBasedProcessRestService {
 
-  private final EventBasedProcessService eventBasedProcessService;
+  private final EventProcessMappingService eventProcessMappingService;
   private final SessionService sessionService;
 
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public EventBasedProcessDto getEventBasedProcess(@PathParam("id") String eventBasedProcessId) {
-    return eventBasedProcessService.getEventBasedProcess(eventBasedProcessId);
+  public EventProcessMappingDto getEventProcessMapping(@PathParam("id") String eventProcessId) {
+    return eventProcessMappingService.getEventProcessMapping(eventProcessId);
   }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EventBasedProcessDto> getAllEventBasedProcessesOmitXml() {
-    return eventBasedProcessService.getAllEventBasedProcessOmitXml();
+  public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
+    return eventProcessMappingService.getAllEventProcessMappingsOmitXml();
   }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createEventBasedProcess(@Context final ContainerRequestContext requestContext,
-                                       @Valid EventBasedProcessDto eventBasedProcessDto) {
+  public IdDto createEventProcessMapping(@Context final ContainerRequestContext requestContext,
+                                         @Valid final EventProcessMappingDto eventProcessMappingDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    eventBasedProcessDto.setLastModifier(userId);
-    return eventBasedProcessService.createEventBasedProcess(eventBasedProcessDto);
+    eventProcessMappingDto.setLastModifier(userId);
+    return eventProcessMappingService.createEventProcessMapping(eventProcessMappingDto);
   }
 
   @PUT
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateEventBasedProcess(@PathParam("id") String eventBasedProcessId,
-                                      @Context final ContainerRequestContext requestContext,
-                                      @Valid EventBasedProcessDto eventBasedProcessDto) {
+  public void updateEventProcessMapping(@PathParam("id") String eventProcessId,
+                                        @Context final ContainerRequestContext requestContext,
+                                        @Valid final EventProcessMappingDto eventProcessMappingDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    eventBasedProcessDto.setLastModifier(userId);
-    eventBasedProcessDto.setId(eventBasedProcessId);
-    eventBasedProcessService.updateEventBasedProcess(eventBasedProcessDto);
+    eventProcessMappingDto.setId(eventProcessId);
+    eventProcessMappingDto.setLastModifier(userId);
+    eventProcessMappingService.updateEventProcessMapping(eventProcessMappingDto);
+  }
+
+  @POST
+  @Path("/{id}/_publish")
+  @Produces(MediaType.APPLICATION_JSON)
+  public void publishEventProcessMapping(@PathParam("id") String eventProcessId,
+                                         @Context final ContainerRequestContext requestContext) {
+    eventProcessMappingService.publishEventProcessMapping(eventProcessId);
+  }
+
+  @POST
+  @Path("/{id}/_cancelPublish")
+  @Produces(MediaType.APPLICATION_JSON)
+  public void cancelEventProcessPublish(@PathParam("id") String eventProcessId,
+                                        @Context final ContainerRequestContext requestContext) {
+    eventProcessMappingService.cancelPublish(eventProcessId);
   }
 
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteEventBasedProcess(@PathParam("id") String eventBasedProcessId) {
-    eventBasedProcessService.deleteEventBasedProcess(eventBasedProcessId);
+  public void deleteEventProcess(@PathParam("id") String eventProcessId) {
+    final boolean wasFoundAndDeleted = eventProcessMappingService.deleteEventProcessMapping(eventProcessId);
+
+    if (!wasFoundAndDeleted) {
+      final String errorMessage = String.format(
+        "Could not delete event based process with id [%s]. Event based process does not exist." +
+          "Maybe it was already deleted by someone else?",
+        eventProcessId
+      );
+      throw new NotFoundException(errorMessage);
+    }
   }
+
 }

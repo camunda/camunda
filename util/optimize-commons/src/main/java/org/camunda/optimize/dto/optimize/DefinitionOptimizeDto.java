@@ -16,7 +16,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants
 public abstract class DefinitionOptimizeDto implements Serializable, OptimizeDto {
   private String id;
   private String key;

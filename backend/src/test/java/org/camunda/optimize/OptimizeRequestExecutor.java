@@ -10,8 +10,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -22,6 +20,8 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -918,35 +918,47 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCreateEventBasedProcessRequest(EventBasedProcessDto eventBasedProcessDto) {
+  public OptimizeRequestExecutor buildCreateEventProcessMappingRequest(EventProcessMappingDto eventProcessMappingDto) {
     this.path = "eventBasedProcess/";
-    this.body = getBody(eventBasedProcessDto);
+    this.body = getBody(eventProcessMappingDto);
     this.requestType = POST;
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetEventBasedProcessRequest(String eventBasedProcessId) {
-    this.path = "eventBasedProcess/" + eventBasedProcessId;
+  public OptimizeRequestExecutor buildGetEventProcessMappingRequest(String eventProcessId) {
+    this.path = "eventBasedProcess/" + eventProcessId;
     this.requestType = GET;
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetAllEventBasedProcessRequests() {
+  public OptimizeRequestExecutor buildGetAllEventProcessMappingsRequests() {
     this.path = "eventBasedProcess";
     this.requestType = GET;
     return this;
   }
 
-  public OptimizeRequestExecutor buildUpdateEventBasedProcessRequest(String eventBasedProcessId,
-                                                                     EventBasedProcessDto eventBasedProcessDto) {
-    this.path = "eventBasedProcess/" + eventBasedProcessId;
-    this.body = getBody(eventBasedProcessDto);
+  public OptimizeRequestExecutor buildUpdateEventProcessMappingRequest(String eventProcessId,
+                                                                       EventProcessMappingDto eventProcessMappingDto) {
+    this.path = "eventBasedProcess/" + eventProcessId;
+    this.body = getBody(eventProcessMappingDto);
     this.requestType = PUT;
     return this;
   }
 
-  public OptimizeRequestExecutor buildDeleteEventBasedProcessRequest(String eventBasedProcessId) {
-    this.path = "eventBasedProcess/" + eventBasedProcessId;
+  public OptimizeRequestExecutor buildPublishEventProcessMappingRequest(String eventProcessId) {
+    this.path = "eventBasedProcess/" + eventProcessId + "/_publish";
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCancelPublishEventProcessMappingRequest(String eventProcessId) {
+    this.path = "eventBasedProcess/" + eventProcessId + "/_cancelPublish";
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteEventProcessMappingRequest(String eventProcessId) {
+    this.path = "eventBasedProcess/" + eventProcessId;
     this.requestType = DELETE;
     return this;
   }

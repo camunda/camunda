@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security.util;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 
 public class LocalDateUtil {
 
@@ -21,14 +22,19 @@ public class LocalDateUtil {
   }
 
   public static OffsetDateTime getCurrentDateTime() {
-    if (CURRENT_TIME != null) {
-      return CURRENT_TIME;
+    OffsetDateTime value = CURRENT_TIME;
+    if (value == null) {
+      return OffsetDateTime.now();
     }
-    return OffsetDateTime.now();
+    return normalize(value);
   }
 
   public static LocalDateTime getCurrentLocalDateTime() {
     return getCurrentDateTime().toLocalDateTime();
+  }
+
+  private static OffsetDateTime normalize(final OffsetDateTime dateTime) {
+    return dateTime.truncatedTo(ChronoUnit.MILLIS);
   }
 
 }

@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventBasedProcessDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -18,16 +18,16 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
-public class EventBasedProcessIndex extends StrictIndexMappingCreator {
+public class EventProcessMappingIndex extends StrictIndexMappingCreator {
 
   public static final int VERSION = 1;
 
-  public static final String ID = IndexableEventBasedProcessDto.Fields.id;
-  public static final String NAME = IndexableEventBasedProcessDto.Fields.name;
-  public static final String XML = IndexableEventBasedProcessDto.Fields.xml;
-  public static final String LAST_MODIFIED = IndexableEventBasedProcessDto.Fields.lastModified;
-  public static final String LAST_MODIFIER = IndexableEventBasedProcessDto.Fields.lastModifier;
-  public static final String MAPPINGS = IndexableEventBasedProcessDto.Fields.mappings;
+  public static final String ID = IndexableEventProcessMappingDto.Fields.id;
+  public static final String NAME = IndexableEventProcessMappingDto.Fields.name;
+  public static final String XML = IndexableEventProcessMappingDto.Fields.xml;
+  public static final String LAST_MODIFIED = IndexableEventProcessMappingDto.Fields.lastModified;
+  public static final String LAST_MODIFIER = IndexableEventProcessMappingDto.Fields.lastModifier;
+  public static final String MAPPINGS = IndexableEventProcessMappingDto.Fields.mappings;
 
   public static final String FLOWNODE_ID = IndexableEventMappingDto.Fields.flowNodeId;
   public static final String START = IndexableEventMappingDto.Fields.start;
@@ -39,7 +39,7 @@ public class EventBasedProcessIndex extends StrictIndexMappingCreator {
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.EVENT_BASED_PROCESS_INDEX_NAME;
+    return ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
   }
 
   @Override
@@ -80,7 +80,7 @@ public class EventBasedProcessIndex extends StrictIndexMappingCreator {
   }
 
   private XContentBuilder addNestedFlowNodeMappingsFields(XContentBuilder xContentBuilder) throws IOException {
-      // @formatter:off
+    // @formatter:off
     XContentBuilder newXContentBuilder = xContentBuilder
       .startObject(FLOWNODE_ID)
         .field("type", "keyword")

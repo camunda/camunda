@@ -740,6 +740,7 @@
     "notFoundError": "The server could not find the requested resource.",
     "badRequestError": "The server was unable to process the request.",
     "invalidLicenseError": "Invalid license provided.",
-    "nonCompliantConflict": "Could not apply action due to conflicts with collection data source."
+    "nonCompliantConflict": "Could not apply action due to conflicts with collection data source.",
+    "invalidEventProcessState": "This operation is cannot be performed in the current state of the event based process."
   }
 }

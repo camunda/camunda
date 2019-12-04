@@ -19,7 +19,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode(callSuper = true)
-@FieldNameConstants(asEnum = true)
+@FieldNameConstants
 public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
   private String bpmn20Xml;
   private Map<String, String> flowNodeNames = new HashMap<>();

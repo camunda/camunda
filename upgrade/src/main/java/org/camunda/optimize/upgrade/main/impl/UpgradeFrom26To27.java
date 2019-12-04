@@ -26,8 +26,9 @@ import org.camunda.optimize.service.es.schema.index.DashboardIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.EventBasedProcessIndex;
 import org.camunda.optimize.service.es.schema.index.EventIndex;
+import org.camunda.optimize.service.es.schema.index.EventProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.LicenseIndex;
@@ -116,7 +117,8 @@ public class UpgradeFrom26To27 extends UpgradeProcedure {
       .toVersion(TO_VERSION)
       .addUpgradeStep(new CreateIndexStep(new OnboardingStateIndex()))
       .addUpgradeStep(new CreateIndexStep(new EventIndex()))
-      .addUpgradeStep(new CreateIndexStep(new EventBasedProcessIndex()))
+      .addUpgradeStep(new CreateIndexStep(new EventProcessMappingIndex()))
+      .addUpgradeStep(new CreateIndexStep(new EventProcessDefinitionIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new DecisionInstanceIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new CollectionIndex()))
       .addUpgradeStep(updateTypeForDocumentsInIndex(new TimestampBasedImportIndex()))

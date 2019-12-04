@@ -40,9 +40,10 @@ public class ElasticsearchConstants {
   public static final String TERMINATED_USER_SESSION_INDEX_NAME = "terminated-user-session";
   public static final String TENANT_INDEX_NAME = "tenant";
   public static final String EVENT_INDEX_NAME = "event";
-  public static final String EVENT_BASED_PROCESS_INDEX_NAME = "event-based-process";
+  public static final String EVENT_PROCESS_MAPPING_INDEX_NAME = "event-process-mapping";
   public static final String EVENT_SEQUENCE_COUNT_INDEX_NAME = "event-sequence-count";
   public static final String EVENT_TRACE_STATE_INDEX_NAME = "event-trace-state";
+  public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
   public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";

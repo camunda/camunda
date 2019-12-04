@@ -57,7 +57,7 @@ import static org.camunda.optimize.service.es.schema.index.report.AbstractReport
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_BASED_PROCESS_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -233,7 +233,7 @@ public class EntitiesReader {
     addGetEntityToRequest(request, requestDto.getReportId(), COMBINED_REPORT_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getDashboardId(), DASHBOARD_INDEX_NAME);
     addGetEntityToRequest(request, requestDto.getCollectionId(), COLLECTION_INDEX_NAME);
-    addGetEntityToRequest(request, requestDto.getEventBasedProcessId(), EVENT_BASED_PROCESS_INDEX_NAME);
+    addGetEntityToRequest(request, requestDto.getEventBasedProcessId(), EVENT_PROCESS_MAPPING_INDEX_NAME);
     if (request.getItems().isEmpty()) {
       throw new BadRequestException("No ids for entity name request provided");
     }

@@ -12,13 +12,13 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import java.io.IOException;
 
 public abstract class AbstractDefinitionIndex extends StrictIndexMappingCreator {
-  public static final String DEFINITION_ID = DefinitionOptimizeDto.Fields.id.name();
-  public static final String DEFINITION_KEY = DefinitionOptimizeDto.Fields.key.name();
-  public static final String DEFINITION_VERSION = DefinitionOptimizeDto.Fields.version.name();
-  public static final String DEFINITION_VERSION_TAG = DefinitionOptimizeDto.Fields.versionTag.name();
-  public static final String DEFINITION_NAME = DefinitionOptimizeDto.Fields.name.name();
-  public static final String DEFINITION_ENGINE = DefinitionOptimizeDto.Fields.engine.name();
-  public static final String DEFINITION_TENANT_ID = DefinitionOptimizeDto.Fields.tenantId.name();
+  public static final String DEFINITION_ID = DefinitionOptimizeDto.Fields.id;
+  public static final String DEFINITION_KEY = DefinitionOptimizeDto.Fields.key;
+  public static final String DEFINITION_VERSION = DefinitionOptimizeDto.Fields.version;
+  public static final String DEFINITION_VERSION_TAG = DefinitionOptimizeDto.Fields.versionTag;
+  public static final String DEFINITION_NAME = DefinitionOptimizeDto.Fields.name;
+  public static final String DEFINITION_ENGINE = DefinitionOptimizeDto.Fields.engine;
+  public static final String DEFINITION_TENANT_ID = DefinitionOptimizeDto.Fields.tenantId;
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {

@@ -25,7 +25,7 @@ import java.util.Map;
 @Builder
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @FieldNameConstants
-public class EventBasedProcessDto implements OptimizeDto {
+public class EventProcessMappingDto implements OptimizeDto {
   @EqualsAndHashCode.Include
   private String id;
   @NotBlank
@@ -41,5 +41,9 @@ public class EventBasedProcessDto implements OptimizeDto {
   @JsonInclude(JsonInclude.Include.NON_NULL)
   @Valid
   private Map<String, EventMappingDto> mappings;
+
+  private EventProcessState state;
+
+  private Double publishingProgress;
 
 }

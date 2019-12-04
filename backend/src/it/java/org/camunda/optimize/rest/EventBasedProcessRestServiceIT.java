@@ -5,19 +5,30 @@
  */
 package org.camunda.optimize.rest;
 
-import org.apache.commons.io.IOUtils;
+import lombok.NonNull;
+import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.util.FileReaderUtil;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -26,36 +37,36 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 
 public class EventBasedProcessRestServiceIT extends AbstractIT {
 
-  private static final String FULL_PROCESS_DEFINITION_XML = "bpmn/leadQualification.bpmn";
+  private static final String FULL_PROCESS_DEFINITION_XML_PATH = "/bpmn/leadQualification.bpmn";
   private static final String VALID_SCRIPT_TASK_ID = "ScriptTask_1";
   private static final String VALID_USER_TASK_ID = "UserTask_1d75hsy";
   private static final String VALID_SERVICE_TASK_ID = "ServiceTask_0j2w5af";
 
   @Test
-  public void createEventBasedProcessWithoutAuthorization() throws IOException {
+  public void createEventProcessMappingWithoutAuthorization() {
     // when
-    Response response = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      FULL_PROCESS_DEFINITION_XML))
+    Response response = eventProcessClient
+      .createCreateEventProcessMappingRequest(createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH))
       .withoutAuthentication()
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
   }
 
   @Test
-  public void createEventBasedProcess() throws IOException {
+  public void createEventProcessMapping() {
     // when
-    Response response = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      FULL_PROCESS_DEFINITION_XML))
+    Response response = eventProcessClient
+      .createCreateEventProcessMappingRequest(createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH))
       .execute();
 
     // then
@@ -63,347 +74,636 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void createEventBasedProcessWithEventMappingCombinations() throws IOException {
+  public void createEventProcessMappingWithEventMappingCombinations() {
     // given event mappings with IDs existing in XML
     Map<String, EventMappingDto> eventMappings = new HashMap<>();
     eventMappings.put(VALID_SCRIPT_TASK_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto()));
     eventMappings.put(VALID_USER_TASK_ID, createEventMappingsDto(createMappedEventDto(), null));
     eventMappings.put(VALID_SERVICE_TASK_ID, createEventMappingsDto(null, createMappedEventDto()));
-    EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
       eventMappings,
       "process name",
-      FULL_PROCESS_DEFINITION_XML
+      FULL_PROCESS_DEFINITION_XML_PATH
     );
 
     // when
-    Response response = createCreateEventProcessDtoRequest(eventBasedProcessDto)
-      .execute();
+    Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(200);
   }
 
   @Test
-  public void createEventBasedProcessWithEventMappingIdNotExistInXml() throws IOException {
+  public void createEventProcessMappingWithEventMappingIdNotExistInXml() {
     // given event mappings with ID does not exist in XML
-    EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("invalid_Id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "process name",
-      FULL_PROCESS_DEFINITION_XML
+      FULL_PROCESS_DEFINITION_XML_PATH
     );
 
     // when
-    Response response = createCreateEventProcessDtoRequest(eventBasedProcessDto)
-      .execute();
+    Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
 
   @Test
-  public void createEventBasedProcessWithEventMappingsAndXmlNotPresent() throws IOException {
+  public void createEventProcessMappingWithEventMappingsAndXmlNotPresent() {
     // given event mappings but no XML provided
-    EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("some_task_id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "process name",
       null
     );
 
     // when
-    Response response = createCreateEventProcessDtoRequest(eventBasedProcessDto)
-      .execute();
+    Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
 
   @ParameterizedTest(name = "Invalid mapped event: {0}")
   @MethodSource("createInvalidMappedEventDtos")
-  public void createEventBasedProcessWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) throws IOException {
+  public void createEventProcessMappingWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) {
     // given event mappings but mapped events have fields missing
     invalidEventTypeDto.setGroup(null);
-    EventBasedProcessDto eventBasedProcessDto = createEventBasedProcessDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("some_task_id", createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())),
       "process name",
-      FULL_PROCESS_DEFINITION_XML
+      FULL_PROCESS_DEFINITION_XML_PATH
     );
 
     // when
-    Response response = createCreateEventProcessDtoRequest(eventBasedProcessDto)
-      .execute();
+    Response response = eventProcessClient.createCreateEventProcessMappingRequest(eventProcessMappingDto).execute();
 
     // then a bad request exception is thrown
-    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
 
   @Test
-  public void getEventBasedProcessWithoutAuthorization() {
+  public void getEventProcessMappingWithoutAuthorization() {
     // when
-    Response response = createGetEventBasedProcessRequest(UUID.randomUUID().toString())
+    Response response = eventProcessClient.createGetEventProcessMappingRequest(IdGenerator.getNextId())
       .withoutAuthentication()
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
   }
 
   @Test
-  public void getEventBasedProcessWithId() throws IOException {
+  public void getEventProcessMappingWithId() {
     // given
-    EventBasedProcessDto eventBasedProcessDto =  createEventBasedProcessDtoWithMappings(
-      Collections.singletonMap(VALID_SERVICE_TASK_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
-      "process name",
-      FULL_PROCESS_DEFINITION_XML
-    );
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
     OffsetDateTime now = OffsetDateTime.parse("2019-11-25T10:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
-    String expectedId = createCreateEventProcessDtoRequest(eventBasedProcessDto).execute(IdDto.class, 200).getId();
+    String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
 
     // when
-    EventBasedProcessDto actual = createGetEventBasedProcessRequest(expectedId).execute(
-      EventBasedProcessDto.class,
-      200
-    );
+    EventProcessMappingDto actual = eventProcessClient.getEventProcessMapping(expectedId);
 
     // then the report is returned with expect
     assertThat(actual.getId()).isEqualTo(expectedId);
-    assertThat(actual).isEqualToIgnoringGivenFields(eventBasedProcessDto, EventBasedProcessDto.Fields.id,
-                                                    EventBasedProcessDto.Fields.lastModified, EventBasedProcessDto.Fields.lastModifier);
+    assertThat(actual).isEqualToIgnoringGivenFields(
+      eventProcessMappingDto,
+      EventProcessMappingDto.Fields.id,
+      EventProcessMappingDto.Fields.lastModified,
+      EventProcessMappingDto.Fields.lastModifier,
+      EventProcessMappingDto.Fields.state
+    );
     assertThat(actual.getLastModified()).isEqualTo(now);
     assertThat(actual.getLastModifier()).isEqualTo("demo");
+    assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);
   }
 
   @Test
-  public void getEventBasedProcessWithIdNotExists() {
+  public void getEventProcessMappingWithId_unmappedState() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+      null, "process name", FULL_PROCESS_DEFINITION_XML_PATH
+    );
+    String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
     // when
-    Response response = createGetEventBasedProcessRequest(UUID.randomUUID().toString()).execute();
+    EventProcessMappingDto actual = eventProcessClient.getEventProcessMapping(expectedId);
+
+    // then the report is returned in state unmapped
+    assertThat(actual.getState()).isEqualTo(EventProcessState.UNMAPPED);
+  }
+
+  @Test
+  public void getEventProcessMappingWithIdNotExists() {
+    // when
+    Response response = eventProcessClient
+      .createGetEventProcessMappingRequest(IdGenerator.getNextId()).execute();
 
     // then the report is returned with expect
-    assertThat(response.getStatus()).isEqualTo(404);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
   }
 
   @Test
-  public void getAllEventBasedProcessWithoutAuthorization() {
+  public void getAllEventProcessMappingWithoutAuthorization() {
     // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
-      .buildGetAllEventBasedProcessRequests()
+      .buildGetAllEventProcessMappingsRequests()
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
   }
 
   @Test
-  public void getAllEventBasedProcess() throws IOException {
+  public void getAllEventProcessMappinges() {
     // given
-    EventBasedProcessDto firstExpectedDto = createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML);
+    final Map<String, EventMappingDto> firstProcessMappings = Collections.singletonMap(
+      VALID_SERVICE_TASK_ID,
+      createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
+    );
+    EventProcessMappingDto firstExpectedDto = createEventProcessMappingDtoWithMappings(
+      firstProcessMappings,
+      "process name",
+      FULL_PROCESS_DEFINITION_XML_PATH
+    );
     OffsetDateTime now = OffsetDateTime.parse("2019-11-25T10:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
-    String firstExpectedId = createCreateEventProcessDtoRequest(firstExpectedDto).execute(IdDto.class, 200).getId();
-    EventBasedProcessDto secondExpectedDto = createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML);
-    String secondExpectedId = createCreateEventProcessDtoRequest(secondExpectedDto).execute(IdDto.class, 200).getId();
+    String firstExpectedId = eventProcessClient.createEventProcessMapping(firstExpectedDto);
+    EventProcessMappingDto secondExpectedDto = createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH);
+    String secondExpectedId = eventProcessClient.createEventProcessMapping(secondExpectedDto);
 
     // when
-    List<EventBasedProcessDto> response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetAllEventBasedProcessRequests()
-      .executeAndReturnList(EventBasedProcessDto.class, 200);
+    List<EventProcessMappingDto> response = eventProcessClient.getAllEventProcessMappings();
 
     // then the response contains expected processes with xml omitted
-    assertThat(response).extracting(EventBasedProcessDto.Fields.id, EventBasedProcessDto.Fields.name,
-                                    EventBasedProcessDto.Fields.xml, EventBasedProcessDto.Fields.lastModified,
-                                    EventBasedProcessDto.Fields.lastModifier, EventBasedProcessDto.Fields.mappings)
+    assertThat(response).extracting(
+      EventProcessMappingDto.Fields.id, EventProcessMappingDto.Fields.name,
+      EventProcessMappingDto.Fields.xml, EventProcessMappingDto.Fields.lastModified,
+      EventProcessMappingDto.Fields.lastModifier, EventProcessMappingDto.Fields.mappings,
+      EventProcessMappingDto.Fields.state
+    )
       .containsExactlyInAnyOrder(
-        tuple(firstExpectedId, firstExpectedDto.getName(), null, now, "demo", null),
-        tuple(secondExpectedId, secondExpectedDto.getName(), null, now, "demo", null)
+        tuple(
+          firstExpectedId,
+          firstExpectedDto.getName(),
+          null,
+          now,
+          "demo",
+          firstProcessMappings,
+          EventProcessState.MAPPED
+        ),
+        tuple(secondExpectedId, secondExpectedDto.getName(), null, now, "demo", null, EventProcessState.UNMAPPED)
       );
   }
 
   @Test
-  public void updateEventBasedProcessWithoutAuthorization() throws IOException {
+  public void updateEventProcessMappingWithoutAuthorization() {
     // when
-    EventBasedProcessDto updateDto = createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML);
-    Response response = createUpdateEventBasedProcessRequest(UUID.randomUUID().toString(), updateDto)
+    EventProcessMappingDto updateDto = createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH);
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest("doesNotMatter", updateDto)
       .withoutAuthentication()
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
   }
 
   @Test
-  public void updateEventBasedProcessWithMappingsAdded() throws IOException {
+  public void updateEventProcessMappingWithMappingsAdded() {
     // given
     OffsetDateTime createdTime = OffsetDateTime.parse("2019-11-24T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(createdTime);
-    String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(createEventProcessMappingDto(
+      FULL_PROCESS_DEFINITION_XML_PATH));
 
     // when
-    EventBasedProcessDto updateDto =  createEventBasedProcessDtoWithMappings(
-      Collections.singletonMap(VALID_SERVICE_TASK_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
+    EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
+      Collections.singletonMap(
+        VALID_SERVICE_TASK_ID,
+        createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
+      ),
       "new process name",
-      FULL_PROCESS_DEFINITION_XML
+      FULL_PROCESS_DEFINITION_XML_PATH
     );
     OffsetDateTime updatedTime = OffsetDateTime.parse("2019-11-25T10:00:00+01:00");
     LocalDateUtil.setCurrentTime(updatedTime);
-    Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto).execute();
 
     // then the update response code is correct
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
 
     // then the fields have been updated
-    EventBasedProcessDto storedDto = createGetEventBasedProcessRequest(storedEventBasedProcessId)
-      .execute(EventBasedProcessDto.class, 200);
+    EventProcessMappingDto storedDto = eventProcessClient.getEventProcessMapping(storedEventProcessMappingId);
     assertThat(storedDto)
-      .isEqualToIgnoringGivenFields(updateDto, EventBasedProcessDto.Fields.id,
-                                    EventBasedProcessDto.Fields.lastModified, EventBasedProcessDto.Fields.lastModifier)
-      .extracting("id").isEqualTo(storedEventBasedProcessId);
+      .isEqualToIgnoringGivenFields(
+        updateDto,
+        EventProcessMappingDto.Fields.id,
+        EventProcessMappingDto.Fields.lastModified,
+        EventProcessMappingDto.Fields.lastModifier,
+        EventProcessMappingDto.Fields.state
+      )
+      .extracting("id").isEqualTo(storedEventProcessMappingId);
     assertThat(storedDto.getLastModified()).isEqualTo(updatedTime);
     assertThat(storedDto.getLastModifier()).isEqualTo("demo");
   }
 
   @Test
-  public void updateEventBasedProcessWithIdNotExists() throws IOException {
+  public void updateEventProcessMappingWithIdNotExists() {
     // when
-    Response response = createUpdateEventBasedProcessRequest(
-      UUID.randomUUID().toString(),
-      createEventBasedProcessDto(FULL_PROCESS_DEFINITION_XML)
+    Response response = eventProcessClient.createUpdateEventProcessMappingRequest(
+      "doesNotExist",
+      createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
     ).execute();
 
     // then the report is returned with expect
-    assertThat(response.getStatus()).isEqualTo(404);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
   }
 
   @Test
-  public void updateEventBasedProcessWithEventMappingIdNotExistInXml() throws IOException {
+  public void updateEventProcessMappingWithEventMappingIdNotExistInXml() {
     // given
-    String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
+      createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+    );
 
     // when update event mappings with ID does not exist in XML
-    EventBasedProcessDto updateDto = createEventBasedProcessDtoWithMappings(
+    EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("invalid_Id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "process name",
-      FULL_PROCESS_DEFINITION_XML
+      FULL_PROCESS_DEFINITION_XML_PATH
     );
-    Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto).execute();
 
     // then the update response code is correct
-    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
 
   @ParameterizedTest(name = "Invalid mapped event: {0}")
   @MethodSource("createInvalidMappedEventDtos")
-  public void updateEventBasedProcessWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) throws IOException {
+  public void updateEventProcessMappingWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) {
     // given existing event based process
-    String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
+      createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+    );
 
     // when update event mappings with a mapped event with missing fields
-    EventBasedProcessDto updateDto = createEventBasedProcessDtoWithMappings(
-      Collections.singletonMap(VALID_SERVICE_TASK_ID, createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())),
+    EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
+      Collections.singletonMap(
+        VALID_SERVICE_TASK_ID,
+        createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())
+      ),
       "process name",
-      FULL_PROCESS_DEFINITION_XML
+      FULL_PROCESS_DEFINITION_XML_PATH
     );
-    Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto)
+      .execute();
 
     // then a bad request exception is thrown
-    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
 
   @Test
-  public void updateEventBasedProcessWithEventMappingAndNoXmlPresent() throws IOException {
+  public void updateEventProcessMappingWithEventMappingAndNoXmlPresent() {
     // given
-    String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      null)).execute(IdDto.class, 200).getId();
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
+      createEventProcessMappingDto(null)
+    );
 
     // when update event mappings and no XML present
-    EventBasedProcessDto updateDto = createEventBasedProcessDtoWithMappings(
+    EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("some_task_id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "process name",
       null
     );
-    Response response = createUpdateEventBasedProcessRequest(storedEventBasedProcessId, updateDto).execute();
+    Response response = eventProcessClient
+      .createUpdateEventProcessMappingRequest(storedEventProcessMappingId, updateDto)
+      .execute();
 
     // then the update response code is correct
-    assertThat(response.getStatus()).isEqualTo(400);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_BAD_REQUEST);
   }
 
   @Test
-  public void deleteEventBasedProcessWithoutAuthorization() {
+  public void publishMappedEventProcessMapping() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
     // when
-    Response response = createDeleteEventBasedProcessRequest(UUID.randomUUID().toString())
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now());
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+
+    final EventProcessMappingDto storedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+      eventProcessId
+    );
+
+    // then
+    assertThat(storedEventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
+    assertThat(storedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
+
+    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).get()
+      .isEqualToIgnoringGivenFields(
+        EventProcessDefinitionDto.eventProcessBuilder()
+          .id(storedEventProcessMapping.getId())
+          .key(storedEventProcessMapping.getId())
+          .name(storedEventProcessMapping.getName())
+          .version("1")
+          .bpmn20Xml(storedEventProcessMapping.getXml())
+          .flowNodeNames(Collections.emptyMap())
+          .userTaskNames(Collections.emptyMap())
+          .createdDateTime(LocalDateUtil.getCurrentDateTime())
+          .build(),
+        ProcessDefinitionOptimizeDto.Fields.flowNodeNames,
+        ProcessDefinitionOptimizeDto.Fields.userTaskNames
+      )
+      .satisfies(definitionDto -> {
+        assertThat(definitionDto.getFlowNodeNames()).isNotEmpty();
+        assertThat(definitionDto.getUserTaskNames()).isNotEmpty();
+      });
+  }
+
+  @Test
+  public void publishUnpublishedChangesEventProcessMapping() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+
+    final EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
+      eventProcessMappingDto.getMappings(),
+      "new process name",
+      FULL_PROCESS_DEFINITION_XML_PATH
+    );
+    eventProcessClient.updateEventProcessMapping(eventProcessId, updateDto);
+
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusSeconds(1));
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+
+    final EventProcessMappingDto republishedEventProcessMapping = eventProcessClient.getEventProcessMapping(
+      eventProcessId
+    );
+
+    // then
+    assertThat(republishedEventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
+    assertThat(republishedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
+
+    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).get()
+      .hasFieldOrPropertyWithValue(DefinitionOptimizeDto.Fields.name, updateDto.getName())
+      .hasFieldOrPropertyWithValue(DefinitionOptimizeDto.Fields.version, "1")
+      .hasFieldOrPropertyWithValue(ProcessDefinitionOptimizeDto.Fields.bpmn20Xml, updateDto.getXml())
+      .hasFieldOrPropertyWithValue(
+        EventProcessDefinitionDto.Fields.createdDateTime,
+        LocalDateUtil.getCurrentDateTime()
+      )
+      .satisfies(definitionDto -> {
+        assertThat(definitionDto.getFlowNodeNames()).isNotEmpty();
+        assertThat(definitionDto.getUserTaskNames()).isNotEmpty();
+      });
+  }
+
+  @NonNull
+  private OffsetDateTime getPublishedDateForEventProcessMappingOrFail(final String eventProcessId) {
+    return getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Failed reading first publish date"))
+      .getCreatedDateTime();
+  }
+
+  @Test
+  public void publishUnmappedEventProcessMapping_fails() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+      null, "unmapped", FULL_PROCESS_DEFINITION_XML_PATH
+    );
+    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    final ErrorResponseDto errorResponse = eventProcessClient
+      .createPublishEventProcessMappingRequest(eventProcessId)
+      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+
+    final EventProcessMappingDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
+
+    // then
+    assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
+
+    assertThat(actual.getState()).isEqualTo(EventProcessState.UNMAPPED);
+    assertThat(actual.getPublishingProgress()).isEqualTo(null);
+
+    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).isEmpty();
+  }
+
+  @Test
+  public void publishPublishPendingEventProcessMapping_fails() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    final OffsetDateTime firstPublishDate = getPublishedDateForEventProcessMappingOrFail(eventProcessId);
+
+    // when
+    final ErrorResponseDto errorResponse = eventProcessClient
+      .createPublishEventProcessMappingRequest(eventProcessId)
+      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+
+    final EventProcessMappingDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
+
+    // then
+    assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
+
+    assertThat(actual.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
+    assertThat(actual.getPublishingProgress()).isEqualTo(0.0D);
+
+    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).get()
+      .hasFieldOrPropertyWithValue(EventProcessDefinitionDto.Fields.createdDateTime, firstPublishDate);
+  }
+
+  @Test
+  public void publishedEventProcessMapping_failsIfNotExists() {
+    // given
+
+    // when
+    final ErrorResponseDto errorResponse = eventProcessClient
+      .createPublishEventProcessMappingRequest("notExistingId")
+      .execute(ErrorResponseDto.class, HttpServletResponse.SC_NOT_FOUND);
+
+    // then
+    assertThat(errorResponse.getErrorCode()).isEqualTo("notFoundError");
+  }
+
+  @Test
+  public void cancelPublishPendingEventProcessMapping() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+
+    // when
+    eventProcessClient.cancelPublishEventProcessMapping(eventProcessId);
+
+    final EventProcessMappingDto actual = eventProcessClient.getEventProcessMapping(eventProcessId);
+
+    // then
+    assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);
+    assertThat(actual.getPublishingProgress()).isEqualTo(null);
+
+    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).isEmpty();
+  }
+
+  @Test
+  public void cancelPublishUnmappedEventProcessMapping_fails() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+      null, "unmapped", FULL_PROCESS_DEFINITION_XML_PATH
+    );
+    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    final ErrorResponseDto errorResponse = eventProcessClient
+      .createPublishEventProcessMappingRequest(eventProcessId)
+      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+
+    // then
+    assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
+  }
+
+  @Test
+  public void cancelPublishMappedEventProcessMapping_fails() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    final ErrorResponseDto errorResponse = eventProcessClient
+      .createCancelPublishEventProcessMappingRequest(eventProcessId)
+      .execute(ErrorResponseDto.class, HttpServletResponse.SC_BAD_REQUEST);
+
+    // then
+    assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
+  }
+
+  @Test
+  public void cancelPublishedEventProcessMapping_failsIfNotExists() {
+    // given
+
+    // when
+    final ErrorResponseDto errorResponse = eventProcessClient
+      .createCancelPublishEventProcessMappingRequest("notExistingId")
+      .execute(ErrorResponseDto.class, HttpServletResponse.SC_NOT_FOUND);
+
+    // then
+    assertThat(errorResponse.getErrorCode()).isEqualTo("notFoundError");
+  }
+
+  @Test
+  public void deleteEventProcessMappingWithoutAuthorization() {
+    // when
+    Response response = eventProcessClient
+      .createDeleteEventProcessMappingRequest("doesNotMatter")
       .withoutAuthentication()
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus()).isEqualTo(401);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
   }
 
   @Test
-  public void deleteEventBasedProcess() throws IOException {
+  public void deleteEventProcessMapping() {
     // given
-    String storedEventBasedProcessId = createCreateEventProcessDtoRequest(createEventBasedProcessDto(
-      FULL_PROCESS_DEFINITION_XML)).execute(IdDto.class, 200).getId();
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(createEventProcessMappingDto(
+      FULL_PROCESS_DEFINITION_XML_PATH));
 
     // when
-    Response response = createDeleteEventBasedProcessRequest(storedEventBasedProcessId).execute();
+    Response response = eventProcessClient
+      .createDeleteEventProcessMappingRequest(storedEventProcessMappingId).execute();
 
     // then the delete response code is correct
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
 
     // then the process no longer exists
-    Response getResponse = createGetEventBasedProcessRequest(storedEventBasedProcessId).execute();
-    assertThat(getResponse.getStatus()).isEqualTo(404);
+    Response getResponse = eventProcessClient
+      .createGetEventProcessMappingRequest(storedEventProcessMappingId).execute();
+    assertThat(getResponse.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
   }
 
   @Test
-  public void deleteEventBasedProcessNotExists() {
+  public void deletePublishedEventProcessMapping() {
+    // given
+    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithSimpleMappings();
+    String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    eventProcessClient.publishEventProcessMapping(eventProcessId);
+
     // when
-    Response response = createDeleteEventBasedProcessRequest(UUID.randomUUID().toString()).execute();
+    eventProcessClient.deleteEventProcessMapping(eventProcessId);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(404);
+    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).isEmpty();
   }
 
-  private OptimizeRequestExecutor createCreateEventProcessDtoRequest(final EventBasedProcessDto eventBasedProcessDto) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildCreateEventBasedProcessRequest(eventBasedProcessDto);
+  @Test
+  public void deleteEventProcessMappingNotExists() {
+    // when
+    Response response = eventProcessClient
+      .createDeleteEventProcessMappingRequest("doesNotMatter")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
   }
 
-  private OptimizeRequestExecutor createGetEventBasedProcessRequest(final String eventBasedProcessId) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildGetEventBasedProcessRequest(eventBasedProcessId);
+  @SneakyThrows
+  private Optional<EventProcessDefinitionDto> getEventProcessMappingDefinitionFromElasticsearch(final String eventProcessId) {
+    final GetResponse getEventProcessDefinitionResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(eventProcessId), RequestOptions.DEFAULT);
+    return Optional.ofNullable(getEventProcessDefinitionResponse.getSourceAsString())
+      .map(value -> {
+        try {
+          return embeddedOptimizeExtension.getObjectMapper().readValue(value, EventProcessDefinitionDto.class);
+        } catch (IOException e) {
+          throw new OptimizeIntegrationTestException(e);
+        }
+      });
   }
 
-  private OptimizeRequestExecutor createUpdateEventBasedProcessRequest(final String eventBasedProcessId,
-                                                                       final EventBasedProcessDto eventBasedProcessDto) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateEventBasedProcessRequest(eventBasedProcessId, eventBasedProcessDto);
+  private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappings() {
+    return createEventProcessMappingDtoWithMappings(
+      Collections.singletonMap(
+        VALID_SERVICE_TASK_ID,
+        createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
+      ),
+      "process name",
+      FULL_PROCESS_DEFINITION_XML_PATH
+    );
   }
 
-  private OptimizeRequestExecutor createDeleteEventBasedProcessRequest(final String eventBasedProcessId) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildDeleteEventBasedProcessRequest(eventBasedProcessId);
+  public EventProcessMappingDto createEventProcessMappingDto(final String xmlPath) {
+    return createEventProcessMappingDto(null, xmlPath);
   }
 
-  private EventBasedProcessDto createEventBasedProcessDto(final String xmlPath) throws IOException {
-    return createEventBasedProcessDto(null, xmlPath);
+  public EventProcessMappingDto createEventProcessMappingDto(final String name, final String xmlPath) {
+    return createEventProcessMappingDtoWithMappings(null, name, xmlPath);
   }
 
-  private EventBasedProcessDto createEventBasedProcessDto(final String name, final String xmlPath) throws IOException {
-    return createEventBasedProcessDtoWithMappings(null, name, xmlPath);
-  }
-
-  private EventBasedProcessDto createEventBasedProcessDtoWithMappings(final Map<String, EventMappingDto> flowNodeEventMappingsDto,
-                                                                      final String name, final String xmlPath) throws
-                                                                                                               IOException {
-    EventBasedProcessDto eventBasedProcessDto = new EventBasedProcessDto();
-    eventBasedProcessDto.setMappings(flowNodeEventMappingsDto);
-    eventBasedProcessDto.setName(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)));
-    String xml = xmlPath == null ? xmlPath : IOUtils.toString(getClass().getClassLoader().getResourceAsStream(xmlPath), "UTF-8");
-    eventBasedProcessDto.setXml(xml);
-    return eventBasedProcessDto;
+  @SneakyThrows
+  public EventProcessMappingDto createEventProcessMappingDtoWithMappings(
+    final Map<String, EventMappingDto> flowNodeEventMappingsDto,
+    final String name, final String xmlPath) {
+    return EventProcessMappingDto.builder()
+      .name(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)))
+      .mappings(flowNodeEventMappingsDto)
+      .xml(Optional.ofNullable(xmlPath).map(FileReaderUtil::readFile).orElse(null))
+      .build();
   }
 
   private EventMappingDto createEventMappingsDto(EventTypeDto startEventDto, EventTypeDto endEventDto) {
@@ -415,17 +715,29 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
 
   private static Stream<EventTypeDto> createInvalidMappedEventDtos() {
     return Stream.of(
-      EventTypeDto.builder().group(null).source(UUID.randomUUID().toString()).eventName(UUID.randomUUID().toString()).build(),
-      EventTypeDto.builder().group(UUID.randomUUID().toString()).source(null).eventName(UUID.randomUUID().toString()).build(),
-      EventTypeDto.builder().group(UUID.randomUUID().toString()).source(UUID.randomUUID().toString()).eventName(null).build()
+      EventTypeDto.builder()
+        .group(null)
+        .source(IdGenerator.getNextId())
+        .eventName(IdGenerator.getNextId())
+        .build(),
+      EventTypeDto.builder()
+        .group(IdGenerator.getNextId())
+        .source(null)
+        .eventName(IdGenerator.getNextId())
+        .build(),
+      EventTypeDto.builder()
+        .group(IdGenerator.getNextId())
+        .source(IdGenerator.getNextId())
+        .eventName(null)
+        .build()
     );
   }
 
   private static EventTypeDto createMappedEventDto() {
     return EventTypeDto.builder()
-      .group(UUID.randomUUID().toString())
-      .source(UUID.randomUUID().toString())
-      .eventName(UUID.randomUUID().toString())
+      .group(IdGenerator.getNextId())
+      .source(IdGenerator.getNextId())
+      .eventName(IdGenerator.getNextId())
       .build();
   }
 

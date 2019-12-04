@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
@@ -21,9 +22,9 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
   public static final String PROCESS_DEFINITION_VERSION = DEFINITION_VERSION;
   public static final String PROCESS_DEFINITION_VERSION_TAG = DEFINITION_VERSION_TAG;
   public static final String PROCESS_DEFINITION_NAME = DEFINITION_NAME;
-  public static final String PROCESS_DEFINITION_XML = "bpmn20Xml";
-  public static final String FLOW_NODE_NAMES = "flowNodeNames";
-  public static final String USER_TASK_NAMES = "userTaskNames";
+  public static final String PROCESS_DEFINITION_XML = ProcessDefinitionOptimizeDto.Fields.bpmn20Xml;
+  public static final String FLOW_NODE_NAMES = ProcessDefinitionOptimizeDto.Fields.flowNodeNames;
+  public static final String USER_TASK_NAMES = ProcessDefinitionOptimizeDto.Fields.userTaskNames;
   public static final String ENGINE = DEFINITION_ENGINE;
   public static final String TENANT_ID = DEFINITION_TENANT_ID;
 

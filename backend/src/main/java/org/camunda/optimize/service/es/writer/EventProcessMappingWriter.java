@@ -10,10 +10,10 @@ import com.google.common.collect.Sets;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventBasedProcessDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.EventBasedProcessIndex;
+import org.camunda.optimize.service.es.schema.index.EventProcessMappingIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -32,29 +32,31 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_BASED_PROCESS_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @AllArgsConstructor
 @Component
 @Slf4j
-public class EventBasedProcessWriter {
+public class EventProcessMappingWriter {
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public IdDto createEventBasedProcess(final EventBasedProcessDto eventBasedProcessDto) {
+  public IdDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     String id = IdGenerator.getNextId();
-    eventBasedProcessDto.setId(id);
-    eventBasedProcessDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    eventProcessMappingDto.setId(id);
+    eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     log.debug("Writing event based process [{}] to elasticsearch", id);
     IndexResponse indexResponse;
     try {
-      IndexRequest request = new IndexRequest(EVENT_BASED_PROCESS_INDEX_NAME)
+      final IndexRequest request = new IndexRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
         .id(id)
-        .source(objectMapper.writeValueAsString(IndexableEventBasedProcessDto.fromEventBasedProcessDto(
-          eventBasedProcessDto)), XContentType.JSON)
+        .source(
+          objectMapper.writeValueAsString(IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto)),
+          XContentType.JSON
+        )
         .setRefreshPolicy(IMMEDIATE);
       indexResponse = esClient.index(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -64,27 +66,28 @@ public class EventBasedProcessWriter {
     }
 
     if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)) {
-      final String errorMessage = String.format("Could not write event based process [%s] to Elasticsearch.", id);
-      log.error(errorMessage);
+      final String errorMessage = String.format("Could not write event based process [%s].", id);
       throw new OptimizeRuntimeException(errorMessage);
     }
     return new IdDto(id);
   }
 
-  public void updateEventBasedProcess(final EventBasedProcessDto eventBasedProcessDto) {
-    String id = eventBasedProcessDto.getId();
-    log.debug("Updating event based process [{}] in elasticsearch", id);
-    eventBasedProcessDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+  public void updateEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
+    String id = eventProcessMappingDto.getId();
+    log.debug("Updating event based process [{}] in elasticsearch.", id);
+    eventProcessMappingDto.setLastModified(LocalDateUtil.getCurrentDateTime());
     UpdateResponse updateResponse;
     try {
       Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
-        Sets.newHashSet(EventBasedProcessIndex.NAME, EventBasedProcessIndex.XML, EventBasedProcessIndex.LAST_MODIFIED,
-                        EventBasedProcessIndex.LAST_MODIFIER, EventBasedProcessIndex.MAPPINGS),
-        IndexableEventBasedProcessDto.fromEventBasedProcessDto(eventBasedProcessDto),
+        Sets.newHashSet(
+          EventProcessMappingIndex.NAME, EventProcessMappingIndex.XML, EventProcessMappingIndex.LAST_MODIFIED,
+          EventProcessMappingIndex.LAST_MODIFIER, EventProcessMappingIndex.MAPPINGS
+        ),
+        IndexableEventProcessMappingDto.fromEventProcessMappingDto(eventProcessMappingDto),
         objectMapper
       );
       final UpdateRequest request = new UpdateRequest()
-        .index(EVENT_BASED_PROCESS_INDEX_NAME)
+        .index(EVENT_PROCESS_MAPPING_INDEX_NAME)
         .id(id)
         .script(updateScript)
         .setRefreshPolicy(IMMEDIATE)
@@ -108,30 +111,22 @@ public class EventBasedProcessWriter {
     }
   }
 
-  public void deleteEventBasedProcess(final String eventBasedProcessId) {
-    log.debug("Deleting event based process with id [{}]", eventBasedProcessId);
-    DeleteRequest request = new DeleteRequest(EVENT_BASED_PROCESS_INDEX_NAME)
-      .id(eventBasedProcessId)
+  public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
+    log.debug("Deleting event based process with id [{}].", eventProcessMappingId);
+    final DeleteRequest request = new DeleteRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
+      .id(eventProcessMappingId)
       .setRefreshPolicy(IMMEDIATE);
 
-    DeleteResponse deleteResponse;
+    final DeleteResponse deleteResponse;
     try {
       deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String errorMessage = String.format("Could not delete event based process with id [%s]. ", eventBasedProcessId);
+      String errorMessage = String.format("Could not delete event based process with id [%s]. ", eventProcessMappingId);
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
 
-    if (!deleteResponse.getResult().equals(DeleteResponse.Result.DELETED)) {
-      String errorMessage = String.format(
-        "Could not delete event based process with id [%s]. Event based process does not exist." +
-          "Maybe it was already deleted by someone else?",
-        eventBasedProcessId
-      );
-      log.error(errorMessage);
-      throw new NotFoundException(errorMessage);
-    }
+    return deleteResponse.getResult().equals(DeleteResponse.Result.DELETED);
   }
 
 }

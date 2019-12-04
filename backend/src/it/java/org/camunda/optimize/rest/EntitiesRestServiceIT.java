@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.event.EventBasedProcessDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -358,17 +358,17 @@ public class EntitiesRestServiceIT extends AbstractIT {
     String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
-    String eventBasedProcessId = addEventBasedProcessToOptimize("anEventBasedProcessName");
+    String eventProcessId = addEventProcessMappingToOptimize("anEventProcessName");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    EntityNameDto result = getEntityNames(collectionId, dashboardId, reportId, eventBasedProcessId);
+    EntityNameDto result = getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
 
     // then
     assertThat(result.getCollectionName(), is("aCollectionName"));
     assertThat(result.getDashboardName(), is("aDashboardName"));
     assertThat(result.getReportName(), is("aReportName"));
-    assertThat(result.getEventBasedProcessName(), is("anEventBasedProcessName"));
+    assertThat(result.getEventBasedProcessName(), is("anEventProcessName"));
   }
 
   @Test
@@ -533,12 +533,11 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .execute(IdDto.class, 200).getId();
   }
 
-  private String addEventBasedProcessToOptimize(String name) {
-    EventBasedProcessDto eventBasedProcessDto = new EventBasedProcessDto();
-    eventBasedProcessDto.setName(name);
+  private String addEventProcessMappingToOptimize(String name) {
+    EventProcessMappingDto eventBasedProcessDto = EventProcessMappingDto.builder().name(name).build();
     return embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildCreateEventBasedProcessRequest(eventBasedProcessDto)
+      .buildCreateEventProcessMappingRequest(eventBasedProcessDto)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .execute(IdDto.class, 200).getId();
   }
@@ -550,10 +549,11 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .executeAndReturnList(EntityDto.class, 200);
   }
 
-  private EntityNameDto getEntityNames(String collectionId, String dashboardId, String reportId, String eventBasedProcessId) {
+  private EntityNameDto getEntityNames(String collectionId, String dashboardId, String reportId,
+                                       String eventProcessId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventBasedProcessId))
+      .buildGetEntityNamesRequest(new EntityNameRequestDto(collectionId, dashboardId, reportId, eventProcessId))
       .execute(EntityNameDto.class, 200);
   }
 

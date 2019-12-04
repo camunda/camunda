@@ -1,0 +1,83 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.test.optimize;
+
+import lombok.AllArgsConstructor;
+import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+
+import javax.servlet.http.HttpServletResponse;
+import java.util.List;
+
+@AllArgsConstructor
+public class EventProcessClient {
+
+  private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
+
+  public OptimizeRequestExecutor createCreateEventProcessMappingRequest(final EventProcessMappingDto eventProcessMappingDto) {
+    return embeddedOptimizeExtension.getRequestExecutor().buildCreateEventProcessMappingRequest(eventProcessMappingDto);
+  }
+
+  public String createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
+    return createCreateEventProcessMappingRequest(eventProcessMappingDto).execute(IdDto.class, 200).getId();
+  }
+
+  public OptimizeRequestExecutor createGetEventProcessMappingRequest(final String eventProcessMappingId) {
+    return embeddedOptimizeExtension.getRequestExecutor().buildGetEventProcessMappingRequest(eventProcessMappingId);
+  }
+
+  public EventProcessMappingDto getEventProcessMapping(final String eventProcessMappingId) {
+    return createGetEventProcessMappingRequest(eventProcessMappingId).execute(EventProcessMappingDto.class, 200);
+  }
+
+  public OptimizeRequestExecutor createGetAllEventProcessMappingsRequest() {
+    return embeddedOptimizeExtension.getRequestExecutor().buildGetAllEventProcessMappingsRequests();
+  }
+
+  public List<EventProcessMappingDto> getAllEventProcessMappings() {
+    return createGetAllEventProcessMappingsRequest()
+      .executeAndReturnList(EventProcessMappingDto.class, HttpServletResponse.SC_OK);
+  }
+
+
+  public OptimizeRequestExecutor createUpdateEventProcessMappingRequest(final String eventProcessMappingId,
+                                                                        final EventProcessMappingDto eventProcessMappingDto) {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMappingDto);
+  }
+
+  public void updateEventProcessMapping(final String eventProcessMappingId, final EventProcessMappingDto updateDto) {
+    createUpdateEventProcessMappingRequest(eventProcessMappingId, updateDto).execute(HttpServletResponse.SC_NO_CONTENT);
+  }
+
+  public OptimizeRequestExecutor createPublishEventProcessMappingRequest(final String eventProcessMappingId) {
+    return embeddedOptimizeExtension.getRequestExecutor().buildPublishEventProcessMappingRequest(eventProcessMappingId);
+  }
+
+  public void publishEventProcessMapping(final String eventProcessMappingId) {
+    createPublishEventProcessMappingRequest(eventProcessMappingId).execute(HttpServletResponse.SC_NO_CONTENT);
+  }
+
+  public OptimizeRequestExecutor createCancelPublishEventProcessMappingRequest(final String eventProcessMappingId) {
+    return embeddedOptimizeExtension.getRequestExecutor().buildCancelPublishEventProcessMappingRequest(eventProcessMappingId);
+  }
+
+  public void cancelPublishEventProcessMapping(final String eventProcessMappingId) {
+    createCancelPublishEventProcessMappingRequest(eventProcessMappingId).execute(HttpServletResponse.SC_NO_CONTENT);
+  }
+
+  public OptimizeRequestExecutor createDeleteEventProcessMappingRequest(final String eventProcessMappingId) {
+    return embeddedOptimizeExtension.getRequestExecutor().buildDeleteEventProcessMappingRequest(eventProcessMappingId);
+  }
+
+  public void deleteEventProcessMapping(final String eventProcessMappingId) {
+    createDeleteEventProcessMappingRequest(eventProcessMappingId).execute(HttpServletResponse.SC_NO_CONTENT);
+  }
+
+
+}
