@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.reader;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
@@ -13,16 +14,20 @@ import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.index.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms.Bucket;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -38,7 +43,9 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.multiMatchQuery;
 import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
+import static org.elasticsearch.search.sort.SortOrder.ASC;
 
 @RequiredArgsConstructor
 @Component
@@ -49,11 +56,33 @@ public class EventReader {
   private static final String SOURCE = EventDto.Fields.source;
   private static final String GROUP = EventDto.Fields.group;
   private static final String KEYWORD_ANALYZER = "keyword";
-  private static final Comparator DEFAULT_COMPARATOR = Comparator.comparing(EventCountDto::getGroup, String.CASE_INSENSITIVE_ORDER)
+  private static final Comparator DEFAULT_COMPARATOR = Comparator.comparing(
+    EventCountDto::getGroup,
+    String.CASE_INSENSITIVE_ORDER
+  )
     .thenComparing(EventCountDto::getSource, String.CASE_INSENSITIVE_ORDER)
     .thenComparing(EventCountDto::getEventName, String.CASE_INSENSITIVE_ORDER);
 
   private final OptimizeElasticsearchClient esClient;
+  private final ObjectMapper objectMapper;
+
+  public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
+    log.debug("Fetching events that where ingested after {}", ingestTimestamp);
+
+    final RangeQueryBuilder timestampQuery = rangeQuery(EventIndex.INGESTION_TIMESTAMP).gt(ingestTimestamp);
+
+    return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, limit);
+  }
+
+  public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
+    log.debug("Fetching events that where ingested at {}", ingestTimestamp);
+
+    final RangeQueryBuilder timestampQuery = rangeQuery(EventIndex.INGESTION_TIMESTAMP)
+      .lte(ingestTimestamp)
+      .gte(ingestTimestamp);
+
+    return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
+  }
 
   public List<EventCountDto> getEventCounts(final EventCountRequestDto eventCountRequestDto) {
     log.debug("Fetching event counts with filter [{}}]", eventCountRequestDto);
@@ -75,6 +104,23 @@ public class EventReader {
       throw new OptimizeRuntimeException("Was not able to get event counts!", e);
     }
     return sortEventCountsUsingWithRequestParameters(eventCountRequestDto, eventCountDtos);
+  }
+
+  private List<EventDto> getPageOfEventsSortedByIngestionTimestamp(final QueryBuilder query, final int limit) {
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .sort(SortBuilders.fieldSort(EventIndex.INGESTION_TIMESTAMP).order(ASC))
+      .size(limit);
+
+    final SearchRequest searchRequest = new SearchRequest(EVENT_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    try {
+      final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+      return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventDto.class, objectMapper);
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Was not able to retrieve ingested events!", e);
+    }
   }
 
   private AbstractQueryBuilder buildQuery(final EventCountRequestDto eventCountRequestDto) {

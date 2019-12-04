@@ -7,9 +7,9 @@ package org.camunda.optimize.service.cleanup;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
@@ -17,18 +17,14 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.concurrent.ScheduledFuture;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class OptimizeCleanupScheduler {
+public class OptimizeCleanupScheduler extends AbstractScheduledService {
 
   private final ConfigurationService configurationService;
   private final List<OptimizeCleanupService> cleanupServices;
-
-  private ThreadPoolTaskScheduler taskScheduler;
-  private ScheduledFuture<?> scheduledTrigger;
 
   @PostConstruct
   public void init() {
@@ -41,30 +37,18 @@ public class OptimizeCleanupScheduler {
 
   public synchronized void startCleanupScheduling() {
     log.info("Starting cleanup scheduling");
-    if (this.taskScheduler == null) {
-      this.taskScheduler = new ThreadPoolTaskScheduler();
-      this.taskScheduler.initialize();
-    }
-    if (this.scheduledTrigger == null) {
-      this.scheduledTrigger = this.taskScheduler.schedule(this::runCleanup, getCronTrigger());
-    }
-  }
-
-  public boolean isScheduledToRun() {
-    return this.scheduledTrigger != null;
+    startScheduling();
   }
 
   @PreDestroy
   public synchronized void stopCleanupScheduling() {
     log.info("Stopping cleanup scheduling");
-    if (scheduledTrigger != null) {
-      this.scheduledTrigger.cancel(true);
-      this.scheduledTrigger = null;
-    }
-    if (this.taskScheduler != null) {
-      this.taskScheduler.destroy();
-      this.taskScheduler = null;
-    }
+    stopScheduling();
+  }
+
+  @Override
+  public void run() {
+    runCleanup();
   }
 
   public void runCleanup() {
@@ -75,7 +59,7 @@ public class OptimizeCleanupScheduler {
       try {
         optimizeCleanupService.doCleanup(startTime);
       } catch (Exception e) {
-        log.error("Exceution of cleanupService {} failed", optimizeCleanupService.getClass().getSimpleName(), e);
+        log.error("Execution of cleanupService {} failed", optimizeCleanupService.getClass().getSimpleName(), e);
       }
     });
 
@@ -91,7 +75,8 @@ public class OptimizeCleanupScheduler {
     return this.configurationService.getCleanupServiceConfiguration();
   }
 
-  private CronTrigger getCronTrigger() {
+  @Override
+  protected CronTrigger getScheduleTrigger() {
     return new CronTrigger(getCleanupConfiguration().getCronTrigger());
   }
 }

@@ -14,12 +14,11 @@ import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.AuthorizedIdentitiesResult;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.springframework.context.ApplicationContext;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
@@ -29,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ScheduledFuture;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -38,7 +36,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 
 @Slf4j
 @Component
-public class SyncedIdentityCacheService implements ConfigurationReloadable {
+public class SyncedIdentityCacheService extends AbstractScheduledService implements ConfigurationReloadable {
 
   private static final String ERROR_INCREASE_CACHE_LIMIT = String.format(
     "Please increase %s.%s in the configuration.",
@@ -50,9 +48,6 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
 
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
-
-  private ThreadPoolTaskScheduler taskScheduler;
-  private ScheduledFuture<?> scheduledTrigger;
 
   private List<SyncedIdentityCacheListener> syncedIdentityCacheListeners;
 
@@ -80,31 +75,21 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
 
   public synchronized void startSchedulingUserSync() {
     log.info("Scheduling User Sync");
-    if (this.taskScheduler == null) {
-      this.taskScheduler = new ThreadPoolTaskScheduler();
-      this.taskScheduler.initialize();
+    final boolean wasScheduled = startScheduling();
+    if (wasScheduled) {
       this.taskScheduler.submit(this::synchronizeIdentities);
-    }
-    if (this.scheduledTrigger == null) {
-      this.scheduledTrigger = this.taskScheduler.schedule(this::synchronizeIdentities, getCronTrigger());
     }
   }
 
   @PreDestroy
   public synchronized void stopSchedulingUserSync() {
     log.info("Stop scheduling user sync.");
-    if (scheduledTrigger != null) {
-      this.scheduledTrigger.cancel(true);
-      this.scheduledTrigger = null;
-    }
-    if (this.taskScheduler != null) {
-      this.taskScheduler.destroy();
-      this.taskScheduler = null;
-    }
+    stopScheduling();
   }
 
-  public boolean isScheduledToRun() {
-    return this.scheduledTrigger != null;
+  @Override
+  protected void run() {
+    synchronizeIdentities();
   }
 
   public synchronized void synchronizeIdentities() {
@@ -290,7 +275,8 @@ public class SyncedIdentityCacheService implements ConfigurationReloadable {
     return this.configurationService.getIdentitySyncConfiguration();
   }
 
-  private CronTrigger getCronTrigger() {
+  @Override
+  protected Trigger getScheduleTrigger() {
     return new CronTrigger(getIdentitySyncConfiguration().getCronTrigger());
   }
 

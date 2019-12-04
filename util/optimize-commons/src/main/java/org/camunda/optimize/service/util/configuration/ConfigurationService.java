@@ -34,6 +34,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.INGESTED_EVENT_IMPORT_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.INGESTION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
@@ -166,6 +167,8 @@ public class ConfigurationService {
   private IdentitySyncConfiguration identitySyncConfiguration;
 
   private IngestionConfiguration ingestionConfiguration;
+
+  private IngestedEventImportConfiguration ingestedEventImportConfiguration;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -876,4 +879,12 @@ public class ConfigurationService {
     return ingestionConfiguration;
   }
 
+  public IngestedEventImportConfiguration getIngestedEventImportConfiguration() {
+    if (ingestedEventImportConfiguration == null) {
+      ingestedEventImportConfiguration = configJsonContext.read(
+        INGESTED_EVENT_IMPORT_CONFIGURATION, IngestedEventImportConfiguration.class
+      );
+    }
+    return ingestedEventImportConfiguration;
+  }
 }

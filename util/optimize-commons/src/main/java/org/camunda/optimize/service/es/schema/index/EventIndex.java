@@ -16,8 +16,19 @@ import java.io.IOException;
 @Component
 public class EventIndex extends StrictIndexMappingCreator {
 
+  public static final String ID = EventDto.Fields.id;
+  public static final String EVENT_NAME = EventDto.Fields.eventName;
+  public static final String TRACE_ID = EventDto.Fields.traceId;
+  public static final String TIMESTAMP = EventDto.Fields.timestamp;
+  public static final String INGESTION_TIMESTAMP = EventDto.Fields.ingestionTimestamp;
+  public static final String DURATION = EventDto.Fields.duration;
+  public static final String GROUP = EventDto.Fields.group;
+  public static final String SOURCE = EventDto.Fields.source;
+  public static final String DATA = EventDto.Fields.data;
+
   public static final String N_GRAM_FIELD = "nGramField";
   public static final String LOWERCASE_FIELD = "lowercase";
+
   public static final int VERSION = 1;
 
   @Override
@@ -34,10 +45,10 @@ public class EventIndex extends StrictIndexMappingCreator {
   public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     return xContentBuilder
-      .startObject(EventDto.Fields.id)
+      .startObject(ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(EventDto.Fields.eventName)
+      .startObject(EVENT_NAME)
         .field("type", "keyword")
         .startObject("fields")
           .startObject(N_GRAM_FIELD)
@@ -50,19 +61,19 @@ public class EventIndex extends StrictIndexMappingCreator {
           .endObject()
         .endObject()
       .endObject()
-      .startObject(EventDto.Fields.traceId)
+      .startObject(TRACE_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(EventDto.Fields.timestamp)
+      .startObject(TIMESTAMP)
         .field("type", "date")
       .endObject()
-      .startObject(EventDto.Fields.ingestionTimestamp)
+      .startObject(INGESTION_TIMESTAMP)
         .field("type", "date")
       .endObject()
-      .startObject(EventDto.Fields.duration)
+      .startObject(DURATION)
         .field("type", "long")
       .endObject()
-      .startObject(EventDto.Fields.group)
+      .startObject(GROUP)
         .field("type", "keyword")
         .startObject("fields")
           .startObject(N_GRAM_FIELD)
@@ -75,7 +86,7 @@ public class EventIndex extends StrictIndexMappingCreator {
           .endObject()
         .endObject()
       .endObject()
-      .startObject(EventDto.Fields.source)
+      .startObject(SOURCE)
         .field("type", "keyword")
         .startObject("fields")
           .startObject(N_GRAM_FIELD)
@@ -88,7 +99,7 @@ public class EventIndex extends StrictIndexMappingCreator {
           .endObject()
         .endObject()
       .endObject()
-      .startObject(EventDto.Fields.data)
+      .startObject(DATA)
         .field("enabled", false)
       .endObject()
       ;

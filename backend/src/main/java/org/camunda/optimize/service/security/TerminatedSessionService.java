@@ -8,61 +8,52 @@ package org.camunda.optimize.service.security;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
+import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.es.reader.TerminatedUserSessionReader;
 import org.camunda.optimize.service.es.writer.TerminatedUserSessionWriter;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
+import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class TerminatedSessionService {
-
+public class TerminatedSessionService extends AbstractScheduledService {
   private static final int CLEANUP_INTERVAL_HOURS = 8;
 
   private final TerminatedUserSessionReader terminatedUserSessionReader;
   private final TerminatedUserSessionWriter terminatedUserSessionWriter;
   private final ConfigurationService configurationService;
 
-  private ThreadPoolTaskScheduler cleanupTaskExecutor;
-  private ScheduledFuture<?> scheduledCleanup;
-
   @PostConstruct
-  public synchronized void initScheduledCleanup() {
-    if (cleanupTaskExecutor == null) {
-      this.cleanupTaskExecutor = new ThreadPoolTaskScheduler();
-      this.cleanupTaskExecutor.initialize();
-    }
-    if (this.scheduledCleanup == null) {
-      this.scheduledCleanup = this.cleanupTaskExecutor.schedule(
-        this::cleanup, new PeriodicTrigger(CLEANUP_INTERVAL_HOURS, TimeUnit.HOURS)
-      );
-    }
+  public void initScheduledCleanup() {
+    startScheduling();
   }
 
   @PreDestroy
-  public synchronized void stopScheduledCleanup() {
-    if (this.scheduledCleanup != null) {
-      this.scheduledCleanup.cancel(true);
-      this.scheduledCleanup = null;
-    }
-    if (this.cleanupTaskExecutor != null) {
-      this.cleanupTaskExecutor.destroy();
-      this.cleanupTaskExecutor = null;
-    }
+  public void stopScheduledCleanup() {
+    stopScheduling();
+  }
+
+  @Override
+  protected Trigger getScheduleTrigger() {
+    return new PeriodicTrigger(CLEANUP_INTERVAL_HOURS, TimeUnit.HOURS);
+  }
+
+  @Override
+  protected void run() {
+    cleanup();
   }
 
   public boolean isCleanupScheduled() {
-    return this.scheduledCleanup != null;
+    return isScheduledToRun();
   }
 
   public void terminateUserSession(final String sessionId) {

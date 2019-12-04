@@ -102,4 +102,6 @@ public interface ConfigurationServiceConstants {
   String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
 
   String INGESTION_CONFIGURATION = "$.ingestion";
+
+  String INGESTED_EVENT_IMPORT_CONFIGURATION = "$.import.ingestedEventImport";
 }

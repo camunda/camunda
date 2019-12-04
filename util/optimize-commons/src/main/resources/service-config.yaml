@@ -179,6 +179,9 @@ import:
     # When increasing the limit, keep in mind to account for that by increasing the JVM heap memory as well.
     # Please refer to the technical guide on how to configure the heap size.
     maxEntryLimit: 100000
+  ingestedEventImport:
+    enabled: true
+    importIntervalInSec: 5
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.
