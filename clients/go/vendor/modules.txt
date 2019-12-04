@@ -3,8 +3,6 @@ github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 # github.com/Microsoft/hcsshim v0.8.6
 github.com/Microsoft/hcsshim/osversion
-# github.com/asaskevich/govalidator v0.0.0-20180315120708-ccb8e960c48f
-github.com/asaskevich/govalidator
 # github.com/cenkalti/backoff v2.2.1+incompatible
 github.com/cenkalti/backoff
 # github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6
@@ -51,9 +49,9 @@ github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
-# github.com/go-ozzo/ozzo-validation v3.6.0+incompatible
-github.com/go-ozzo/ozzo-validation
-github.com/go-ozzo/ozzo-validation/is
+# github.com/go-ozzo/ozzo-validation/v3 v3.7.0
+github.com/go-ozzo/ozzo-validation/v3
+github.com/go-ozzo/ozzo-validation/v3/is
 # github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/proto
 # github.com/golang/mock v1.3.1
@@ -161,5 +159,7 @@ google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
+# gopkg.in/asaskevich/govalidator.v9 v9.0.0-20180315120708-ccb8e960c48f
+gopkg.in/asaskevich/govalidator.v9
 # gopkg.in/yaml.v2 v2.2.7
 gopkg.in/yaml.v2

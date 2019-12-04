@@ -21,7 +21,7 @@ It has the following features:
 
 ## Requirements
 
-Go 1.8 or above.
+Go 1.13 or above.
 
 
 ## Getting Started
@@ -36,8 +36,8 @@ or `validation.ValidateStruct()` to validate the value.
 Run the following command to install the package:
 
 ```
-go get github.com/go-ozzo/ozzo-validation
-go get github.com/go-ozzo/ozzo-validation/is
+go get github.com/go-ozzo/ozzo-validation/v3
+go get github.com/go-ozzo/ozzo-validation/v3/is
 ```
 
 ### Validating a Simple Value
@@ -50,8 +50,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/go-ozzo/ozzo-validation"
-	"github.com/go-ozzo/ozzo-validation/is"
+	"github.com/go-ozzo/ozzo-validation/v3"
+	"github.com/go-ozzo/ozzo-validation/v3/is"
 )
 
 func main() {
@@ -87,8 +87,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/go-ozzo/ozzo-validation"
-	"github.com/go-ozzo/ozzo-validation/is"
+	"github.com/go-ozzo/ozzo-validation/v3"
+	"github.com/go-ozzo/ozzo-validation/v3/is"
 )
 
 type Address struct {

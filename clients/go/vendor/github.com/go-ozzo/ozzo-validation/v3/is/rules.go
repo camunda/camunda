@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"unicode"
 
-	"github.com/asaskevich/govalidator"
-	"github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/v3"
+	"gopkg.in/asaskevich/govalidator.v9"
 )
 
 var (
