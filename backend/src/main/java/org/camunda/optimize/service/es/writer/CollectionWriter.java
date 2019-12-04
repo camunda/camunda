@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -77,7 +79,7 @@ public class CollectionWriter {
                                             .orElse(DEFAULT_COLLECTION_NAME));
 
     final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
-    newCollectionDataDto.getRoles().add(new CollectionRoleDto(new UserDto(userId), RoleType.MANAGER));
+    newCollectionDataDto.getRoles().add(new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
     if (partialCollectionDefinitionDto.getData() != null) {
       newCollectionDataDto.setConfiguration(partialCollectionDefinitionDto.getData().getConfiguration());
     }

@@ -7,6 +7,8 @@ package org.camunda.optimize.service;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -313,10 +315,22 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       final String collectionId1 = collectionClient.createNewCollection();
       final String collectionId2 = collectionClient.createNewCollection();
 
-      CollectionRoleDto testGroupRole = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
-      CollectionRoleDto testGroupBRole = new CollectionRoleDto(new GroupDto(TEST_GROUP_B), RoleType.EDITOR);
-      CollectionRoleDto userKermitRole = new CollectionRoleDto(new UserDto(USER_KERMIT), RoleType.EDITOR);
-      CollectionRoleDto userDemoRole = new CollectionRoleDto(new UserDto(DEFAULT_USERNAME), RoleType.MANAGER);
+      CollectionRoleDto testGroupRole = new CollectionRoleDto(
+        new IdentityDto(TEST_GROUP, IdentityType.GROUP),
+        RoleType.EDITOR
+      );
+      CollectionRoleDto testGroupBRole = new CollectionRoleDto(
+        new IdentityDto(TEST_GROUP_B, IdentityType.GROUP),
+        RoleType.EDITOR
+      );
+      CollectionRoleDto userKermitRole = new CollectionRoleDto(
+        new IdentityDto(USER_KERMIT, IdentityType.USER),
+        RoleType.EDITOR
+      );
+      CollectionRoleDto userDemoRole = new CollectionRoleDto(
+        new IdentityDto(DEFAULT_USERNAME, IdentityType.USER),
+        RoleType.MANAGER
+      );
 
       collectionClient.addRoleToCollection(collectionId1, testGroupRole);
       collectionClient.addRoleToCollection(collectionId1, testGroupBRole);

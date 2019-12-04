@@ -9,11 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -110,7 +108,9 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
   }
 
   protected static IdentityDto getDefaultIdentityDtoForType(final IdentityType identityType) {
-    return identityType.equals(IdentityType.USER) ? new UserDto(KERMIT_USER) : new GroupDto(GROUP_ID);
+    return identityType.equals(IdentityType.USER)
+      ? new IdentityDto(KERMIT_USER, identityType)
+      : new IdentityDto(GROUP_ID, identityType);
   }
 
   protected RoleType getExpectedResourceRoleForCollectionRole(final IdentityAndRole identityAndRole) {
@@ -124,7 +124,10 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
   }
 
   protected void addKermitGroupRoleToCollectionAsDefaultUser(final RoleType roleType, final String collectionId) {
-    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new GroupDto(GROUP_ID), roleType));
+    addRoleToCollectionAsDefaultUser(
+      collectionId,
+      new CollectionRoleDto(new IdentityDto(GROUP_ID, IdentityType.GROUP), roleType)
+    );
   }
 
   protected void addRoleToCollectionAsDefaultUser(final RoleType roleType,

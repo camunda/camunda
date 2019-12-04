@@ -24,7 +24,7 @@ import static java.util.stream.Collectors.collectingAndThen;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
-public class UserDto extends IdentityDto {
+public class UserDto extends IdentityRestDto {
   private String firstName;
   private String lastName;
   private String name;

@@ -9,8 +9,9 @@ import com.google.common.collect.ImmutableMap;
 import org.assertj.core.api.SoftAssertions;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -76,7 +77,10 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId1);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId1);
 
     // when
     List<String> allAlertIds = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1)
@@ -106,7 +110,11 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(typePair.get(0)));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId1);
+    addRoleToCollectionAsDefaultUser(
+      new CollectionRoleDto(
+        new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER),
+      collectionId1
+    );
 
     // when
     List<String> allAlertIds = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1)
@@ -152,7 +160,10 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId);
 
     // when
     Response createResponse = alertClient.createAlertAsUser(alertCreationDto, KERMIT_USER, KERMIT_USER);
@@ -180,9 +191,15 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addUserAndGrantOptimizeAccess(MISS_PIGGY_USER);
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.MANAGER
+    ), collectionId);
     addRoleToCollectionAsDefaultUser(
-      new CollectionRoleDto(new UserDto(MISS_PIGGY_USER), RoleType.EDITOR),
+      new CollectionRoleDto(
+        new IdentityDto(MISS_PIGGY_USER, IdentityType.USER),
+        RoleType.EDITOR
+      ),
       collectionId
     );
 

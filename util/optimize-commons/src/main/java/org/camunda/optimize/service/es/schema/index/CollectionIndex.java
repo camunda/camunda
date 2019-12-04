@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
-import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.BaseCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDataDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -120,10 +120,10 @@ public class CollectionIndex extends StrictIndexMappingCreator {
           .startObject(CollectionRoleDto.Fields.identity.name())
             .field("type", "object")
             .startObject("properties")
-              .startObject(IdentityDto.Fields.id.name())
+              .startObject(IdentityRestDto.Fields.id.name())
                 .field("type", "keyword")
               .endObject()
-              .startObject(IdentityDto.Fields.type.name())
+              .startObject(IdentityRestDto.Fields.type.name())
                 .field("type", "keyword")
               .endObject()
             .endObject()

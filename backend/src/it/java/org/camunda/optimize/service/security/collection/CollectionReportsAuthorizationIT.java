@@ -7,8 +7,9 @@ package org.camunda.optimize.service.security.collection;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -71,7 +72,10 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionType);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId1);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId1);
 
     // when
     List<AuthorizedReportDefinitionDto> reports =
@@ -98,7 +102,10 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(typePair.get(0));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId1);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId1);
 
     // when
     List<AuthorizedReportDefinitionDto> allAlerts =

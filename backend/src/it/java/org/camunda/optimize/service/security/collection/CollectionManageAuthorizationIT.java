@@ -6,6 +6,9 @@
 package org.camunda.optimize.service.security.collection;
 
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityRestDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -37,7 +40,11 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
 
-    addRoleToCollectionAsDefaultUser(identityAndRole.roleType, identityAndRole.identityDto, collectionId);
+    addRoleToCollectionAsDefaultUser(
+      identityAndRole.roleType,
+      identityAndRole.identityDto,
+      collectionId
+    );
 
     // when
     final PartialCollectionDefinitionDto collectionRenameDto = new PartialCollectionDefinitionDto("Test");
@@ -478,10 +485,10 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   public void onlyManagerCanCopyACollection() {
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new UserDto("kermit"), RoleType.VIEWER));
+    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new IdentityDto("kermit", IdentityType.USER), RoleType.VIEWER));
 
     authorizationClient.addUserAndGrantOptimizeAccess("gonzo");
-    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new UserDto("gonzo"), RoleType.MANAGER));
+    addRoleToCollectionAsDefaultUser(collectionId, new CollectionRoleDto(new IdentityDto("gonzo", IdentityType.USER), RoleType.MANAGER));
 
     embeddedOptimizeExtension
       .getRequestExecutor()
@@ -505,7 +512,7 @@ public class CollectionManageAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private CollectionRoleDto createJohnEditorRoleDto() {
-    return new CollectionRoleDto(new UserDto(USER_ID_JOHN), RoleType.EDITOR);
+    return new CollectionRoleDto(new IdentityDto(USER_ID_JOHN, IdentityType.USER), RoleType.EDITOR);
   }
 
 }

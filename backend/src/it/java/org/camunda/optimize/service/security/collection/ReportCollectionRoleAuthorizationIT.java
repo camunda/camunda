@@ -9,10 +9,10 @@ import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
@@ -930,9 +930,18 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
       RESOURCE_TYPE_PROCESS_DEFINITION
     );
 
-    final CollectionRoleDto testGroupRole = new CollectionRoleDto(new GroupDto(TEST_GROUP), RoleType.EDITOR);
-    final CollectionRoleDto missPiggyUserRole = new CollectionRoleDto(new UserDto(USER_MISS_PIGGY), RoleType.EDITOR);
-    final CollectionRoleDto kermitUserRole = new CollectionRoleDto(new UserDto(USER_KERMIT), kermitRoleType);
+    final CollectionRoleDto testGroupRole = new CollectionRoleDto(
+      new IdentityDto(TEST_GROUP, IdentityType.GROUP),
+      RoleType.EDITOR
+    );
+    final CollectionRoleDto missPiggyUserRole = new CollectionRoleDto(
+      new IdentityDto(USER_MISS_PIGGY, IdentityType.USER),
+      RoleType.EDITOR
+    );
+    final CollectionRoleDto kermitUserRole = new CollectionRoleDto(
+      new IdentityDto(USER_KERMIT, IdentityType.USER),
+      kermitRoleType
+    );
 
     collectionClient.addRoleToCollection(collectionId, testGroupRole);
     collectionClient.addRoleToCollection(collectionId, missPiggyUserRole);

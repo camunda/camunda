@@ -15,7 +15,7 @@ import lombok.experimental.FieldNameConstants;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants(asEnum = true)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = true)
-public class GroupDto extends IdentityDto {
+public class GroupDto extends IdentityRestDto {
   private String name;
   private Long memberCount;
 

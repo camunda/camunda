@@ -8,9 +8,10 @@ package org.camunda.optimize.service.es.retrieval;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -491,7 +492,10 @@ public class CollectionHandlingIT extends AbstractIT {
     String collectionId = createNewCollection();
     embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, new CollectionRoleDto(new UserDto("kermit"), RoleType.EDITOR))
+      .buildAddRoleToCollectionRequest(collectionId, new CollectionRoleDto(
+        new IdentityDto("kermit", IdentityType.USER),
+        RoleType.EDITOR
+      ))
       .execute();
 
     embeddedOptimizeExtension

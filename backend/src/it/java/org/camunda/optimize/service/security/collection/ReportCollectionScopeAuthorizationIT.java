@@ -16,8 +16,9 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -84,7 +85,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationForKermit("KEY_1", definitionType);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId);
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
@@ -109,7 +113,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantAllResourceAuthorizationsForKermit(typePair.get(0));
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId);
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = embeddedOptimizeExtension.getRequestExecutor()
@@ -136,7 +143,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantKermitGroupOptimizeAccess();
     authorizationClient.grantSingleResourceAuthorizationsForGroup(GROUP_ID, "KEY_1", RESOURCE_TYPE_PROCESS_DEFINITION);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId);
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
@@ -185,7 +195,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     );
     createScopeWithTenants(collectionId, "KEY_5", asList(unauthorizedTenant1), definitionType);
     createScopeWithTenants(collectionId, "KEY_6", asList(authorizedTenant), definitionType);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId);
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
@@ -221,7 +234,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       asList(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2),
       definitionType
     );
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.VIEWER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.VIEWER
+    ), collectionId);
 
     // when
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
@@ -263,7 +279,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       asList(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2),
       definitionType
     );
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.MANAGER
+    ), collectionId);
 
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)
@@ -313,7 +332,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       asList(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2),
       RESOURCE_TYPE_PROCESS_DEFINITION
     );
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.MANAGER
+    ), collectionId);
     reportClient.createSingleReport(collectionId, PROCESS, "KEY_1", singletonList(authorizedTenant));
 
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
@@ -370,7 +392,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       asList(unauthorizedTenant1, null, unauthorizedTenant2),
       definitionResourceType
     );
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.MANAGER
+    ), collectionId);
 
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)
@@ -403,7 +428,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     deployAndImportDefinition(definitionResourceType, "KEY", DEFAULT_TENANT);
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.MANAGER
+    ), collectionId);
 
     // when
     final DefinitionType definitionType = resourceTypeToDefinitionType.get(definitionResourceType);
@@ -434,7 +462,10 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationForKermit("KEY", definitionResourceType);
-    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(new UserDto(KERMIT_USER), RoleType.MANAGER), collectionId);
+    addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
+      new IdentityDto(KERMIT_USER, IdentityType.USER),
+      RoleType.MANAGER
+    ), collectionId);
 
     // when
     final DefinitionType definitionType = resourceTypeToDefinitionType.get(definitionResourceType);

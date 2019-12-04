@@ -6,11 +6,10 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
@@ -462,7 +461,9 @@ public class EntitiesRestServiceIT extends AbstractIT {
                                    final IdentityType identityType) {
 
     final CollectionRoleDto roleDto = new CollectionRoleDto(
-      identityType.equals(IdentityType.USER) ? new UserDto(identityId) : new GroupDto(identityId),
+      identityType.equals(IdentityType.USER)
+        ? new IdentityDto(identityId, identityType.USER)
+        : new IdentityDto(identityId, IdentityType.GROUP),
       RoleType.EDITOR
     );
     embeddedOptimizeExtension

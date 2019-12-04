@@ -8,7 +8,7 @@ package org.camunda.optimize.service;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityRestDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -50,7 +50,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
     initUserGroupCache();
   }
 
-  public void addIdentity(final IdentityDto identity) {
+  public void addIdentity(final IdentityRestDto identity) {
 
     syncedIdentityCache.addIdentity(identity);
   }

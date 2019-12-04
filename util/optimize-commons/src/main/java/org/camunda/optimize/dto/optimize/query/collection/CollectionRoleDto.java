@@ -10,12 +10,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
-import org.apache.commons.lang3.StringUtils;
-import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.UserDto;
 
 import java.util.Optional;
 
@@ -37,21 +33,9 @@ public class CollectionRoleDto {
   }
 
   public CollectionRoleDto(CollectionRoleDto oldRole) {
-    if (oldRole.getIdentity().getType().equals(IdentityType.USER)) {
-      UserDto oldUserDto = (UserDto) oldRole.getIdentity();
-      this.identity = new UserDto(
-        oldUserDto.getId(),
-        oldUserDto.getFirstName(),
-        oldUserDto.getLastName(),
-        oldUserDto.getEmail()
-      );
-    } else {
-      GroupDto oldGroupDto = (GroupDto) oldRole.getIdentity();
-      this.identity = new GroupDto(oldGroupDto.getId(), oldGroupDto.getName(), oldGroupDto.getMemberCount());
-    }
-
-    this.role = oldRole.role;
     this.id = convertIdentityToRoleId(this.identity);
+    this.identity = new IdentityDto(oldRole.getIdentity().getId(), oldRole.getIdentity().getType());
+    this.role = oldRole.role;
   }
 
   public String getId() {

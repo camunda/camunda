@@ -12,12 +12,10 @@ import lombok.Setter;
 import lombok.experimental.FieldNameConstants;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.GroupDto;
-import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityRestDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
-
-import java.util.Optional;
 
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -27,11 +25,11 @@ public class CollectionRoleRestDto implements Comparable<CollectionRoleRestDto> 
 
   @Setter(value = AccessLevel.PROTECTED)
   private String id;
-  private IdentityDto identity;
+  private IdentityRestDto identity;
   private RoleType role;
   private Boolean hasFullScopeAuthorizations;
 
-  public CollectionRoleRestDto(CollectionRoleDto oldRole) {
+  public CollectionRoleRestDto(CollectionRoleRestDto oldRole) {
     if (oldRole.getIdentity().getType().equals(IdentityType.USER)) {
       UserDto oldUserDto = (UserDto) oldRole.getIdentity();
       this.identity = new UserDto(
@@ -45,8 +43,14 @@ public class CollectionRoleRestDto implements Comparable<CollectionRoleRestDto> 
       this.identity = new GroupDto(oldGroupDto.getId(), oldGroupDto.getName(), oldGroupDto.getMemberCount());
     }
 
-    this.role = oldRole.getRole();
-    this.id = oldRole.getId();
+    this.role = oldRole.role;
+    this.id = convertIdentityToRoleId(this.identity);
+  }
+
+  public CollectionRoleRestDto(IdentityRestDto identity, RoleType role) {
+    this.identity = identity;
+    this.id = convertIdentityToRoleId(this.identity);
+    this.role = role;
   }
 
   @Override
@@ -58,5 +62,9 @@ public class CollectionRoleRestDto implements Comparable<CollectionRoleRestDto> 
     } else {
       return StringUtils.compareIgnoreCase(this.identity.getName(), other.getIdentity().getName());
     }
+  }
+
+  private String convertIdentityToRoleId(final IdentityRestDto identity) {
+    return identity.getType().name() + ID_SEGMENT_SEPARATOR + identity.getId();
   }
 }
