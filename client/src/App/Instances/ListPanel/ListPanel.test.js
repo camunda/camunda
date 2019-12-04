@@ -131,12 +131,12 @@ describe('ListPanel', () => {
       expect(TBodyNode).toHaveLength(1);
     });
 
-    it('should not contain a Footer when list is empty', () => {
+    it('should render Footer  when list is empty', () => {
       // given
       const node = shallow(Component);
 
       // then
-      expect(node.find(ListFooter)).not.toExist();
+      expect(node.find(ListFooter)).toExist();
     });
 
     it('should display the list and footer after the data is loaded', async () => {

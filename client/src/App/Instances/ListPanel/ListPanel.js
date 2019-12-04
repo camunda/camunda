@@ -197,15 +197,13 @@ class ListPanel extends React.Component {
           </List>
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
-          {!isListEmpty && (
-            <ListFooter
-              filterCount={filterCount}
-              perPage={this.state.entriesPerPage}
-              firstElement={this.props.firstElement}
-              onFirstElementChange={this.props.onFirstElementChange}
-              hasContent={isExpanded}
-            />
-          )}
+          <ListFooter
+            filterCount={filterCount}
+            perPage={this.state.entriesPerPage}
+            firstElement={this.props.firstElement}
+            onFirstElementChange={this.props.onFirstElementChange}
+            hasContent={isExpanded && !isListEmpty}
+          />
         </SplitPane.Pane.Footer>
       </SplitPane.Pane>
     );
