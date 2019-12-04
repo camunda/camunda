@@ -38,34 +38,6 @@ public class CollectionRoleService {
   private final CollectionWriter collectionWriter;
   private final IdentityService identityService;
 
-  @SuppressWarnings("Convert2MethodRef")
-  private void enrichRoleIdentityMetaData(final CollectionDefinitionDto collectionDefinitionDto) {
-    final CollectionDataDto collectionData = collectionDefinitionDto.getData();
-    collectionData.setRoles(
-      collectionData.getRoles().stream()
-        .peek(roleDto -> {
-          final IdentityDto roleIdentity = roleDto.getIdentity();
-          switch (roleIdentity.getType()) {
-            case GROUP:
-              // Note: Method reference cannot be used here as it might trigger
-              // a compilation AssertionError on newer JDK's.
-              // See https://bugs.openjdk.java.net/browse/JDK-8210734
-              identityService.getGroupById(roleIdentity.getId()).ifPresent(groupDto -> roleDto.setIdentity(groupDto));
-              break;
-            case USER:
-              // Note: Method reference cannot be used here as it might trigger
-              // a compilation AssertionError on newer JDK's.
-              // See https://bugs.openjdk.java.net/browse/JDK-8210734
-              identityService.getUserById(roleIdentity.getId()).ifPresent(userDto -> roleDto.setIdentity(userDto));
-              break;
-            default:
-              throw new OptimizeRuntimeException("Unsupported identity type " + roleIdentity.getType());
-          }
-        })
-        .collect(Collectors.toList())
-    );
-  }
-
   public CollectionRoleDto addRoleToCollection(final String userId,
                                                final String collectionId,
                                                final CollectionRoleDto roleDto) throws
@@ -118,7 +90,7 @@ public class CollectionRoleService {
     authCollectionDto.getDefinitionDto()
       .getData()
       .getRoles()
-      .forEach(role -> roles.add(new CollectionRoleRestDto(role)));
+      .forEach(role -> mapRoleDtoToRoleRestDto(role));
 
     if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {
       for (CollectionRoleRestDto role : roles) {
@@ -139,15 +111,33 @@ public class CollectionRoleService {
     return roles;
   }
 
-  AuthorizedCollectionDefinitionDto getCollectionDefinitionWithRoleMetadata(final String userId,
-                                                                            final String collectionId) {
-    final AuthorizedCollectionDefinitionDto collectionDefinition =
-      authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(
+  private AuthorizedCollectionDefinitionDto getCollectionDefinitionWithRoleMetadata(final String userId,
+                                                                                    final String collectionId) {
+    return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(
       userId,
       collectionId
     );
+  }
 
-    enrichRoleIdentityMetaData(collectionDefinition.getDefinitionDto());
-    return collectionDefinition;
+  private CollectionRoleRestDto mapRoleDtoToRoleRestDto(final CollectionRoleDto roleDto) {
+    CollectionRoleRestDto collectionRoleRestDto = new CollectionRoleRestDto(roleDto);
+    final IdentityDto roleIdentity = roleDto.getIdentity();
+    switch (roleIdentity.getType()) {
+      case GROUP:
+        // Note: Method reference cannot be used here as it might trigger
+        // a compilation AssertionError on newer JDK's.
+        // See https://bugs.openjdk.java.net/browse/JDK-8210734
+        identityService.getGroupById(roleIdentity.getId()).ifPresent(groupDto -> collectionRoleRestDto.setIdentity(groupDto));
+        break;
+      case USER:
+        // Note: Method reference cannot be used here as it might trigger
+        // a compilation AssertionError on newer JDK's.
+        // See https://bugs.openjdk.java.net/browse/JDK-8210734
+        identityService.getUserById(roleIdentity.getId()).ifPresent(userDto -> collectionRoleRestDto.setIdentity(userDto));
+        break;
+      default:
+        throw new OptimizeRuntimeException("Unsupported identity type " + roleIdentity.getType());
+    }
+    return collectionRoleRestDto;
   }
 }

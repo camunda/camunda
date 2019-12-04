@@ -68,7 +68,10 @@ public class CollectionService {
     log.debug("Fetching resolved collection with id [{}]", collectionId);
 
     final AuthorizedCollectionDefinitionDto collectionDefinition =
-      collectionRoleService.getCollectionDefinitionWithRoleMetadata(userId, collectionId);
+      authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(
+        userId,
+        collectionId
+      );
 
     final List<EntityDto> collectionEntities = entitiesService.getAuthorizedCollectionEntities(userId, collectionId);
 

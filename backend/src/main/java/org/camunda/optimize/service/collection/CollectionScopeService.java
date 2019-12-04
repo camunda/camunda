@@ -73,7 +73,7 @@ public class CollectionScopeService {
     final Map<String, TenantDto> tenantsForUserById = tenantService.getTenantsForUser(identityId)
       .stream()
       .collect(Collectors.toMap(TenantDto::getId, tenantDto -> tenantDto));
-    return collectionRoleService.getCollectionDefinitionWithRoleMetadata(identityId, collectionId)
+    return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(identityId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
@@ -343,7 +343,7 @@ public class CollectionScopeService {
   private List<CollectionScopeEntryDto> getAuthorizedCollectionScopeEntries(final String identityId,
                                                                             final IdentityType identityType,
                                                                             final String collectionId) {
-    return collectionRoleService.getCollectionDefinitionWithRoleMetadata(identityId, collectionId)
+    return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(identityId, collectionId)
       .getDefinitionDto()
       .getData()
       .getScope()
