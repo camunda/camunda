@@ -127,7 +127,7 @@ public class CollectionRestServiceRoleIT extends AbstractIT {
     List<CollectionRoleRestDto> roles = getRoles(collectionId);
 
     // then
-    // expected oder(groups first, user second, then by name ascending):
+    // expected order(groups first, user second, then by name ascending):
     // anotherTestGroupRole, testGroupRole, demoManagerRole, kermitRole, missPiggyRole
     assertThat(roles.size(), is(identities.size() + 1)); // +1 for demo manager role
     assertThat(roles.get(0).getIdentity(), is(anotherTestGroupDto));
