@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {createRef, useState, useEffect} from 'react';
+import React, {useRef, useState} from 'react';
 import PropTypes from 'prop-types';
 
 import {isValidJSON} from 'modules/utils';
@@ -27,7 +27,40 @@ export default function Variables({
   const [key, setKey] = useState('');
   const [value, setValue] = useState('');
 
-  const variablesContentRef = createRef();
+  const variablesContentRef = useRef(null);
+  const editInputTDRef = useRef(null);
+
+  /**
+   * Determine, if bottom of currently opened edit textarea is
+   * out of bottom bounds of visible scroll area.
+   *
+   * @return boolean
+   */
+  function isTextareaOutOfBounds() {
+    const inputTD = editInputTDRef.current;
+    let container = variablesContentRef.current;
+
+    const theadHeight = 45;
+
+    if (inputTD && container) {
+      container = container.children[0];
+
+      // distance from top edge of container to bottom edge of td
+      const tdPosition =
+        inputTD.offsetTop -
+        theadHeight -
+        container.scrollTop +
+        inputTD.offsetHeight;
+
+      return tdPosition > container.offsetHeight;
+    }
+  }
+
+  function handleHeightChange() {
+    if (isTextareaOutOfBounds()) {
+      scrollToBottom();
+    }
+  }
 
   function closeEdit() {
     setEditMode('');
@@ -54,13 +87,6 @@ export default function Variables({
     const scrollableElement = variablesContentRef.current.children[0];
     scrollableElement.scrollTop = scrollableElement.scrollHeight;
   }
-
-  // scroll to the bottom of the table if the variables inputs got added
-  useEffect(() => {
-    if (editMode === MODE.ADD) {
-      scrollToBottom();
-    }
-  }, [editMode]);
 
   function renderEditButtons({isDisabled}) {
     return (
@@ -91,7 +117,7 @@ export default function Variables({
     const valueHasntChanged = propValue === value;
     return (
       <>
-        <Styled.EditInputTD>
+        <Styled.EditInputTD ref={editInputTDRef}>
           <Styled.EditTextarea
             autoFocus
             hasAutoSize
@@ -101,6 +127,7 @@ export default function Variables({
             placeholder="Value"
             value={value}
             onChange={e => setValue(e.target.value)}
+            onHeightChange={handleHeightChange}
           />
         </Styled.EditInputTD>
         <Styled.EditButtonsTD>
