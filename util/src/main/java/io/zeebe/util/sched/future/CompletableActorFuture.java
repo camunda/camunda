@@ -24,7 +24,7 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Completable future implementation that is garbage free and reusable */
 @SuppressWarnings("restriction")
-public class CompletableActorFuture<V> implements ActorFuture<V> {
+public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, Throwable> {
   private static final long STATE_OFFSET;
 
   private static final int AWAITING_RESULT = 1;
@@ -225,6 +225,15 @@ public class CompletableActorFuture<V> implements ActorFuture<V> {
     }
 
     return failureCause;
+  }
+
+  @Override
+  public void accept(V value, Throwable throwable) {
+    if (throwable != null) {
+      completeExceptionally(throwable);
+    } else {
+      complete(value);
+    }
   }
 
   private void notifyBlockedTasks() {

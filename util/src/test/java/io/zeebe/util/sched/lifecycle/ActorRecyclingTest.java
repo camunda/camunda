@@ -67,14 +67,16 @@ public class ActorRecyclingTest {
           }
         };
     schedulerRule.submitActor(actor);
-    actor.closeAsync();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
     actor.control().run(action); // submit during close requested phase
 
     future.complete(null); // allow the actor to close
     schedulerRule.workUntilDone();
+    schedulerRule.workUntilDone();
 
     // when
+    closeFuture.join();
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
 

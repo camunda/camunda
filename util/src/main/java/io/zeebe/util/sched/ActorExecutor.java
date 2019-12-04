@@ -8,6 +8,7 @@
 package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
+import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +46,9 @@ public class ActorExecutor {
   }
 
   private ActorFuture<Void> submitTask(ActorTask task, ActorThreadGroup threadGroup) {
+    if (task.getLifecyclePhase() != ActorLifecyclePhase.CLOSED) {
+      throw new IllegalStateException("ActorTask was already submitted!");
+    }
     final ActorFuture<Void> startingFuture = task.onTaskScheduled(this, threadGroup);
 
     threadGroup.submit(task);

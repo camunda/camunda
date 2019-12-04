@@ -12,7 +12,7 @@ import io.zeebe.logstreams.log.LogStream;
 public interface PartitionListener {
 
   default void onBecomingFollower(
-      final int partitionId, final int term, final LogStream logStream) {
+      final int partitionId, final long term, final LogStream logStream) {
     onBecomingFollower(partitionId, logStream);
   }
 
@@ -22,7 +22,7 @@ public interface PartitionListener {
 
   default void onBecomingFollower(final int partitionId) {}
 
-  default void onBecomingLeader(final int partitionId, final int term, final LogStream logStream) {
+  default void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     onBecomingLeader(partitionId, logStream);
   }
 

@@ -63,10 +63,6 @@ class LifecycleRecordingActor extends Actor {
     blockPhase(new CompletableActorFuture<>(), consumer);
   }
 
-  protected void blockPhase(ActorFuture<Void> future) {
-    blockPhase(future, mock(BiConsumer.class));
-  }
-
   @SuppressWarnings("unchecked")
   protected void blockPhase(ActorFuture<Void> future, BiConsumer consumer) {
     actor.runOnCompletionBlockingCurrentPhase(future, consumer);
@@ -80,11 +76,6 @@ class LifecycleRecordingActor extends Actor {
   @SuppressWarnings("unchecked")
   protected void runOnCompletion(ActorFuture<Void> future, BiConsumer consumer) {
     actor.runOnCompletion(future, consumer);
-  }
-
-  @SuppressWarnings("unchecked")
-  protected void runOnCompletion(BiConsumer consumer) {
-    actor.runOnCompletion(new CompletableActorFuture<>(), consumer);
   }
 
   @SuppressWarnings("unchecked")

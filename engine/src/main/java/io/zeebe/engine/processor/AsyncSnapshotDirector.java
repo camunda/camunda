@@ -218,7 +218,7 @@ public class AsyncSnapshotDirector extends Actor {
 
                   } else {
                     LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, ex1);
-                    close();
+                    super.closeAsync();
                     future.completeExceptionally(ex1);
                   }
                 }));

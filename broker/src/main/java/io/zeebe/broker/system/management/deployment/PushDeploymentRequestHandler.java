@@ -59,6 +59,7 @@ public class PushDeploymentRequestHandler
 
   @Override
   public CompletableFuture<byte[]> apply(byte[] bytes) {
+    LOG.error("Got request");
     final CompletableFuture<byte[]> responseFuture = new CompletableFuture<>();
 
     actor.call(
@@ -112,10 +113,10 @@ public class PushDeploymentRequestHandler
 
     final LogStream logStream = leaderPartitions.get(partitionId);
     if (logStream != null) {
-      LOG.debug("Handling deployment {} for partition {} as leader", deploymentKey, partitionId);
+      LOG.error("Handling deployment {} for partition {} as leader", deploymentKey, partitionId);
       handlePushDeploymentRequest(responseFuture, deployment, deploymentKey, partitionId);
     } else {
-      LOG.debug(
+      LOG.error(
           "Rejecting deployment {} for partition {} as not leader", deploymentKey, partitionId);
       sendNotLeaderRejection(responseFuture, partitionId);
     }

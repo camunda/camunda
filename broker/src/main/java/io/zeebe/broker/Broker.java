@@ -114,34 +114,17 @@ public class Broker implements AutoCloseable {
       LOG.info("Starting broker with configuration {}", brokerCfg.toJson());
     }
 
-    // core components
-
     final ActorScheduler scheduler = brokerContext.getScheduler();
     scheduler.start();
+    LOG.info("Broker startup phase: Step 1 Scheduler started.");
+
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
+    LOG.info("Broker startup phase: Step 2 membership and replication protocol created.");
 
     final ClusterCfg clusterCfg = brokerCfg.getCluster();
     final BrokerInfo localMember =
         new BrokerInfo(
             clusterCfg.getNodeId(), networkCfg.getCommandApi().getAdvertisedAddress().toString());
-
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// METRICS AND READY CHECK ////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-
-    final BrokerHealthCheckService healthCheckService = new BrokerHealthCheckService(atomix);
-    partitionListeners.add(healthCheckService);
-    scheduleActor(healthCheckService);
-
-    final SocketBindingCfg monitoringApi = networkCfg.getMonitoringApi();
-    final BrokerHttpServer httpServer =
-        new BrokerHttpServer(
-            monitoringApi.getHost(), monitoringApi.getPort(), METRICS_REGISTRY, healthCheckService);
-    closeables.add(httpServer);
-
-    final LeaderManagementRequestHandler requestHandler =
-        new LeaderManagementRequestHandler(atomix);
-    scheduleActor(requestHandler);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// COMMAND API //////////////////////////////////////////////
@@ -171,11 +154,10 @@ public class Broker implements AutoCloseable {
             .build(commandApiMessageHandler, commandApiMessageHandler);
     closeables.add(serverTransport);
 
-    LOG.info("Bound {} to {}", COMMAND_API_SERVER_NAME, bindAddress);
-
     final CommandApiService commandHandler =
         new CommandApiService(serverTransport.getOutput(), commandApiMessageHandler, limiter);
     partitionListeners.add(commandHandler);
+    LOG.info("Broker startup phase: Step 4 command api bound to {}.", bindAddress);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// SUBSCRIPTION API /////////////////////////////////////////
@@ -185,6 +167,24 @@ public class Broker implements AutoCloseable {
     partitionListeners.add(messageHandlerService);
     scheduleActor(messageHandlerService);
 
+    LOG.info("Broker startup phase: Step 5 message subscription api started.");
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// GATEWAY /////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    if (brokerCfg.getGateway().isEnable()) {
+      closeables.add(new EmbeddedGatewayService(brokerCfg, scheduler, atomix));
+      LOG.info("Broker startup phase: Step 7 embedded gateway started.");
+    }
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////// ATOMIX JOIN /////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    // after topology mgr is created
+    atomix.start().join();
+    LOG.info("Broker startup phase: Step 8 joined cluster successfully.");
+
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// TOPOLOGY /////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -193,20 +193,27 @@ public class Broker implements AutoCloseable {
         new TopologyManagerImpl(atomix, localMember, clusterCfg);
     partitionListeners.add(topologyManager);
     scheduleActor(topologyManager);
+    LOG.info("Broker startup phase: Step 6 topology manager started.");
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////// GATEWAY /////////////////////////////////////////
+    ////////////////////////////// METRICS AND READY CHECK ////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    if (brokerCfg.getGateway().isEnable()) {
-      closeables.add(new EmbeddedGatewayService(brokerCfg, scheduler, atomix));
-    }
+    final BrokerHealthCheckService healthCheckService = new BrokerHealthCheckService(atomix);
+    partitionListeners.add(healthCheckService);
+    scheduleActor(healthCheckService);
 
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    //////////////////////////////////// ATOMIX JOIN /////////////////////////////////////////
-    ///////////////////////////////////////////////////////////////////////////////////////////////
-    // after topology mgr is created
-    atomix.start().join();
+    final SocketBindingCfg monitoringApi = networkCfg.getMonitoringApi();
+    final BrokerHttpServer httpServer =
+        new BrokerHttpServer(
+            monitoringApi.getHost(), monitoringApi.getPort(), METRICS_REGISTRY, healthCheckService);
+    closeables.add(httpServer);
+    LOG.info("Broker startup phase: Step 8 metric's server started.");
+
+    final LeaderManagementRequestHandler requestHandler =
+        new LeaderManagementRequestHandler(atomix);
+    scheduleActor(requestHandler);
+    partitionListeners.add(requestHandler);
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// START PARTITIONS /////////////////////////////////////////
@@ -233,7 +240,12 @@ public class Broker implements AutoCloseable {
               commandHandler,
               createFactory(topologyManager, clusterCfg, atomix, requestHandler));
       scheduleActor(partitionInstallService);
+      LOG.info(
+          "Broker startup phase: Step 9 partition {} successfully installed.",
+          owningPartition.id().id());
     }
+
+    LOG.info("Broker started successfully!");
   }
 
   private TypedRecordProcessorsFactory createFactory(

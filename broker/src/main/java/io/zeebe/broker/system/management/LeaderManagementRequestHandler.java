@@ -8,6 +8,7 @@
 package io.zeebe.broker.system.management;
 
 import io.atomix.core.Atomix;
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.logstreams.log.LogStream;
@@ -24,11 +25,15 @@ public class LeaderManagementRequestHandler extends Actor implements PartitionLi
     this.atomix = atomix;
   }
 
+  @Override
   public void onBecomingFollower(final int partitionId) {
+    Loggers.SYSTEM_LOGGER.info("onBecomingFollower({})", partitionId);
     actor.submit(() -> leaderForPartitions.remove(partitionId));
   }
 
+  @Override
   public void onBecomingLeader(final int partitionId, final LogStream logStream) {
+    Loggers.SYSTEM_LOGGER.info("onBecomingLeader({})", partitionId);
     actor.submit(() -> leaderForPartitions.put(partitionId, logStream));
   }
 
@@ -39,6 +44,7 @@ public class LeaderManagementRequestHandler extends Actor implements PartitionLi
 
   @Override
   protected void onActorStarting() {
+    Loggers.SYSTEM_LOGGER.error("Starting handler");
     pushDeploymentRequestHandler =
         new PushDeploymentRequestHandler(leaderForPartitions, actor, atomix);
     atomix.getCommunicationService().subscribe("deployment", pushDeploymentRequestHandler);

@@ -79,13 +79,13 @@ public class ActorLifecyclePhasesAndBlockPhaseTest {
   public void shouldWaitOnFutureInCloseRequested() {
     // given
     final BiConsumer<Void, Throwable> callback = mock(BiConsumer.class);
-
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final LifecycleRecordingActor actor =
         new LifecycleRecordingActor() {
           @Override
           public void onActorStarted() {
             super.onActorStarted();
-            blockPhase(callback);
+            blockPhase(future, callback);
           }
         };
     schedulerRule.submitActor(actor);

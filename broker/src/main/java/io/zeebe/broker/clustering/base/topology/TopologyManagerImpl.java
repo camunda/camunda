@@ -48,11 +48,14 @@ public class TopologyManagerImpl extends Actor
 
   @Override
   public void onBecomingFollower(int partitionId) {
+
+    LOG.error("On Becoming Follower {}", partitionId);
     setFollower(partitionId);
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, int term, LogStream logStream) {
+  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+    LOG.error("On Becoming Leader {}", partitionId);
     setLeader(term, partitionId);
   }
 
@@ -192,6 +195,7 @@ public class TopologyManagerImpl extends Actor
 
   // Propagate local partition info to other nodes through Atomix member properties
   private void publishTopologyChanges() {
+    LOG.error("Publish topology changes {}", localBroker);
     final Properties memberProperties = atomix.getMembershipService().getLocalMember().properties();
     localBroker.writeIntoProperties(memberProperties);
   }
@@ -216,7 +220,9 @@ public class TopologyManagerImpl extends Actor
   }
 
   private void notifyPartitionLeaderUpdated(int partitionId, BrokerInfo member) {
+    LOG.error("notifyPartitionLeaderUpdated({}, {})", partitionId, member);
     for (TopologyPartitionListener listener : topologyPartitionListeners) {
+      LOG.error("call listener for ({}, {})", partitionId, member);
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
     }
   }

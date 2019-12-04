@@ -11,6 +11,7 @@ import io.zeebe.util.sched.ActorTask.TaskSchedulingState;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 public class ActorJob {
@@ -44,6 +45,7 @@ public class ActorJob {
       }
 
     } catch (Throwable e) {
+      LoggerFactory.getLogger(ActorJob.class).error("FAILED!", e);
       task.onFailure(e);
     } finally {
       this.actorThread = null;

@@ -85,15 +85,24 @@ public class LogStreamService implements LogStream, AutoCloseable {
 
   @Override
   public void close() {
-    closeAppender();
-    LOG.info("Close log storage");
-    logStorage.close();
+    closeAsync().join();
   }
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    close();
-    return CompletableActorFuture.completed(null);
+    final var closeFuture = new CompletableActorFuture<Void>();
+    closeAppender()
+        .onComplete(
+            (v, t) -> {
+              if (t == null) {
+                LOG.info("Close log storage with name {}", logName);
+                logStorage.close();
+                closeFuture.complete(null);
+              } else {
+                closeFuture.completeExceptionally(t);
+              }
+            });
+    return closeFuture;
   }
 
   @Override
@@ -138,13 +147,23 @@ public class LogStreamService implements LogStream, AutoCloseable {
     appenderFuture = null;
     writeBufferFuture = null;
 
-    LOG.info("Close appender");
-    appender.close();
-    LOG.info("Close write buffer");
-    writeBuffer.close();
-    appender = null;
-    writeBuffer = null;
-    return CompletableActorFuture.completed(null);
+    final var closeAppenderFuture = new CompletableActorFuture<Void>();
+
+    LOG.info("Close appender for log stream {}", logName);
+    appender
+        .closeAsync()
+        .onComplete(
+            (v, t) -> {
+              if (t == null) {
+                writeBuffer.closeAsync().onComplete(closeAppenderFuture);
+                appender = null;
+                writeBuffer = null;
+              } else {
+                closeAppenderFuture.completeExceptionally(t);
+              }
+            });
+
+    return closeAppenderFuture;
   }
 
   @Override
