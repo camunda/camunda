@@ -1,0 +1,8 @@
+{
+  "source": {
+    "index": ["operate-list-view_"]
+  },
+  "dest": {
+    "index": "operate-list-view-${project.version}_"
+  }
+}

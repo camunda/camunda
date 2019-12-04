@@ -1,0 +1,81 @@
+{
+    "aliases" : {
+      "operate-workflow-${project.version}_alias" : { }
+    },
+    "mappings" : {
+      "_doc" : {
+        "dynamic" : "strict",
+        "dynamic_templates" : [
+          {
+            "string_template" : {
+              "path_match" : "*",
+              "match_mapping_type" : "string",
+              "mapping" : {
+                "index_options" : "docs",
+                "norms" : {
+                  "enabled" : false
+                },
+                "type" : "string"
+              }
+            }
+          }
+        ],
+        "properties" : {
+          "activities" : {
+            "type" : "nested",
+            "properties" : {
+              "id" : {
+                "type" : "keyword"
+              },
+              "name" : {
+                "type" : "keyword"
+              },
+              "type" : {
+                "type" : "keyword"
+              }
+            }
+          },
+          "bpmnProcessId" : {
+            "type" : "keyword",
+            "eager_global_ordinals" : true
+          },
+          "bpmnXml" : {
+            "type" : "text",
+            "index" : false
+          },
+          "id" : {
+            "type" : "keyword"
+          },
+          "key" : {
+            "type" : "keyword"
+          },
+          "name" : {
+            "type" : "keyword"
+          },
+          "partitionId" : {
+            "type" : "integer"
+          },
+          "resourceName" : {
+            "type" : "keyword"
+          },
+          "version" : {
+            "type" : "long"
+          }
+        }
+      }
+    },
+    "settings" : {
+      "index" : {
+        "refresh_interval" : "2s",
+        "number_of_shards" : "1",
+        "analysis" : {
+          "normalizer" : {
+            "case_insensitive" : {
+              "filter" : "lowercase"
+            }
+          }
+        },
+        "number_of_replicas" : "0"
+      }
+    }
+  }

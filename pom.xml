@@ -11,6 +11,7 @@
   <modules>
     <module>client</module>
     <module>common</module>
+    <module>els-schema</module>
     <module>data-generator</module>
     <module>importer</module>
     <module>archiver</module>
@@ -220,6 +221,17 @@
               </goals>
             </execution>
           </executions>
+        </plugin>
+        <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+          </archive>
+        </configuration>
         </plugin>
       </plugins>
 

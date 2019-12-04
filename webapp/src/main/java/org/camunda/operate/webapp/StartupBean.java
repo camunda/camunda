@@ -9,6 +9,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchConnector;
+import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.security.es.ElasticSearchUserDetailsService;
 import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -43,6 +44,7 @@ public class StartupBean {
 
   @PostConstruct
   public void initApplication() {
+    logger.info("Operate Version: "+OperateProperties.getSchemaVersion());
     if (elasticsearchUserDetailsService != null) {
       logger.info("INIT: Create users in elasticsearch if not exists ...");
       elasticsearchUserDetailsService.initializeUsers();

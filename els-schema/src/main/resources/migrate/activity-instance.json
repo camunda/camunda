@@ -1,0 +1,8 @@
+{
+  "source": {
+    "index": ["operate-activity-instance_"]
+  },
+  "dest": {
+    "index": "operate-activity-instance-${project.version}_"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "source": {
+    "index": ["operate-workflow_"]
+  },
+  "dest": {
+    "index": "operate-workflow-${project.version}_"
+  }
+}

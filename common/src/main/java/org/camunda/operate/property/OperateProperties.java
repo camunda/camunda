@@ -18,6 +18,7 @@ public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 10000L;
+  private static final String DEFAULT_VERSION = "1.2.0";
 
   private boolean importerEnabled = true;
   private boolean archiverEnabled = true;
@@ -170,7 +171,9 @@ public class OperateProperties {
     this.clusterNode = clusterNode;
   }
   
-  public String getSchemaVersion() {
-	  return "1.2.0";
+  public static String getSchemaVersion() {
+    String versionFromManifest = OperateProperties.class.getPackage().getImplementationVersion();
+    String version = versionFromManifest==null?DEFAULT_VERSION:versionFromManifest;
+    return version.toLowerCase();
   }
 }

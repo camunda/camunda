@@ -1,4 +1,4 @@
-# Migration 
+# Migration for ${project.version}
 
 ## Introduction 
 
@@ -7,12 +7,12 @@ For every version to version migration exists a directory that contains all nece
 
 The migration is organized in several steps:
 
- 1. Create a backup of current indices (only until version 1.2.0 needed)
- 2. Delete current templates and indices (only until version 1.2.0 needed)
+ 1. Create a backup of current indices (only until version ${project.version} needed)
+ 2. Delete current templates and indices (only until version ${project.version} needed)
  3. Create new templates and indices
  4. Create pipelines that defines the migration from current/old index to new index
  5. Reindex from current/old index into new index with usage of pipelines
- 6. Delete backup of current/old index (only until version 1.2.0 needed)
+ 6. Delete backup of current/old index (only until version ${project.version} needed)
 
 For each step exists a directory and a shell script. These directories contains for every index/template a json request payload file.
 Every shell script execute one step. The scripts use 'curl' as http client. They read json request payload files and execute the requests to elasticsearch. 
@@ -41,7 +41,7 @@ The schema/format of the json files is according to [Elasticsearch REST API](htt
 
 * Add for each index/template that should be added a create index/template request payload as json file in create/index 
   and create/template folder.
-* The index/template names are derived from the json files. From version 1.2.0 on the schema version will be added as suffix by the script.
+* The index/template names are derived from the json files. From version ${project.version} on the schema version will be added as suffix by the script.
 * The function createNewTemplates takes every file in folder create/template to execute a PUT template request.
 * The function createNewIndex takes every file in folder create/index to execute a PUT index request.
 * The script *create.sh* executes the put template and put index request.

@@ -1,0 +1,90 @@
+{
+    "order" : 30,
+    "index_patterns" : [
+      "operate-operation-${project.version}_*"
+    ],
+    "settings" : {
+      "index" : {
+        "refresh_interval" : "2s",
+        "analysis" : {
+          "normalizer" : {
+            "case_insensitive" : {
+              "filter" : "lowercase"
+            }
+          }
+        },
+        "number_of_shards" : "1",
+        "number_of_replicas" : "0"
+      }
+    },
+    "mappings" : {
+      "_doc" : {
+        "dynamic" : "strict",
+        "dynamic_templates" : [
+          {
+            "string_template" : {
+              "path_match" : "*",
+              "mapping" : {
+                "norms" : {
+                  "enabled" : false
+                },
+                "type" : "string",
+                "index_options" : "docs"
+              },
+              "match_mapping_type" : "string"
+            }
+          }
+        ],
+        "properties" : {
+          "variableName" : {
+            "type" : "keyword"
+          },
+          "variableValue" : {
+            "type" : "keyword"
+          },
+          "endDate" : {
+            "format" : "date_time",
+            "type" : "date"
+          },
+          "lockExpirationTime" : {
+            "format" : "date_time",
+            "type" : "date"
+          },
+          "errorMessage" : {
+            "type" : "keyword"
+          },
+          "type" : {
+            "type" : "keyword"
+          },
+          "incidentKey" : {
+            "type" : "long"
+          },
+          "scopeKey" : {
+            "type" : "long"
+          },
+          "lockOwner" : {
+            "type" : "keyword"
+          },
+          "workflowInstanceKey" : {
+            "type" : "long"
+          },
+          "id" : {
+            "type" : "keyword"
+          },
+          "state" : {
+            "type" : "keyword"
+          },
+          "batchOperationId": {
+            "type": "keyword"
+          },
+          "startDate" : {
+            "format" : "date_time",
+            "type" : "date"
+          }
+        }
+      }
+    },
+    "aliases" : {
+      "operate-operation-${project.version}_alias" : { }
+    }
+  }
