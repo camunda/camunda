@@ -14,6 +14,7 @@ import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -143,7 +144,16 @@ public final class LogStreamRule extends ExternalResource {
   public void openLogStream() {
     logStream = builder.build();
     logStorageRule.setPositionListener(logStream::setCommitPosition);
-    logStream.openAppender().join();
+
+    actorSchedulerRule
+        .submitActor(
+            new Actor() {
+              @Override
+              protected void onActorStarting() {
+                actor.runOnCompletionBlockingCurrentPhase(logStream.openAppender(), (v, t) -> {});
+              }
+            })
+        .join();
   }
 
   public LogStreamReader getLogStreamReader() {
