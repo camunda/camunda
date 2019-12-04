@@ -162,11 +162,11 @@ public class AtomixSnapshotStorageTest {
 
     // when - then
     final var first = newCommittedSnapshot(1);
-    verify(listener, never()).onSnapshotDeleted(any());
+    verify(listener, never()).onSnapshotsDeleted(any());
 
     // when - then
     final var second = newCommittedSnapshot(2);
-    verify(listener, times(1)).onSnapshotDeleted(eq(first));
+    verify(listener, times(1)).onSnapshotsDeleted(eq(first));
     assertThat(storage.getSnapshots()).hasSize(maxCount).containsExactly(first, second);
   }
 

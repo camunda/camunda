@@ -77,15 +77,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
       throw new IllegalStateException("Iterator not initialized");
     }
 
-    final long seekAddress =
-        storageReader.lookUpApproximateAddress(
-            position,
-            blockAddress -> {
-              invalidateBufferAndOffsets();
-              readBlockIntoBuffer(blockAddress);
-              readNextEvent();
-              return nextEvent.getPosition();
-            });
+    final long seekAddress = storageReader.lookUpApproximateAddress(position);
 
     invalidateBufferAndOffsets();
     return seekFrom(seekAddress, position);

@@ -42,19 +42,6 @@ public class StatePositionSupplier {
     return Math.min(processedPosition, exportedPosition);
   }
 
-  public long getMinimumExportedPosition(final Path directory) {
-    try (var db = open(directory)) {
-      return getMinimumExportedPosition(db);
-    } catch (final Exception e) {
-      logger.error(
-          "Unexpected error occurred while obtaining the minimum exported position at broker {} for partition {}.",
-          partitionId,
-          e);
-    }
-
-    return -1;
-  }
-
   private long getMinimumExportedPosition(final ZeebeDb<ZbColumnFamilies> zeebeDb) {
     final ExportersState exporterState = new ExportersState(zeebeDb, zeebeDb.createContext());
 

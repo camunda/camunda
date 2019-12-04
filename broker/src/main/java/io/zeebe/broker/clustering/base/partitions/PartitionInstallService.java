@@ -17,6 +17,7 @@ import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.f
 import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.leaderOpenLogStreamServiceName;
 import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.leaderPartitionServiceName;
 import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.partitionLeaderElectionServiceName;
+import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.snapshotStorageServiceName;
 import static io.zeebe.broker.exporter.ExporterServiceNames.exporterDirectorServiceName;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 import static io.zeebe.broker.transport.TransportServiceNames.COMMAND_API_SERVICE_NAME;
@@ -28,6 +29,7 @@ import io.atomix.protocols.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.clustering.atomix.storage.snapshot.AtomixSnapshotStorageService;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.engine.AsyncSnapshotingDirectorService;
 import io.zeebe.broker.engine.StreamProcessorService;
@@ -147,6 +149,14 @@ public class PartitionInstallService extends Actor
             .withServiceContainer(serviceContainer)
             .buildAsync();
 
+    // install snapshot storage
+    partitionInstall
+        .createService(
+            snapshotStorageServiceName(partitionId),
+            new AtomixSnapshotStorageService(partition, brokerCfg.getData().getMaxSnapshots()))
+        .dependency(ATOMIX_SERVICE)
+        .install();
+
     leaderInstallRootServiceName = PartitionServiceNames.leaderInstallServiceRootName(logName);
     leaderElection = new PartitionLeaderElection(partition);
     final ServiceName<PartitionLeaderElection> partitionLeaderElectionServiceName =
@@ -249,7 +259,7 @@ public class PartitionInstallService extends Actor
 
   private ActorFuture<Void> installLeaderPartition() {
     LOG.debug("Installing leader partition service for partition {}", partition.id());
-    final Partition partition =
+    final Partition partitionService =
         new Partition(brokerCfg, this.partition, clusterEventService, RaftState.LEADER);
 
     final CompositeServiceBuilder leaderInstallService =
@@ -264,9 +274,12 @@ public class PartitionInstallService extends Actor
         .install();
 
     leaderInstallService
-        .createService(leaderPartitionServiceName, partition)
+        .createService(leaderPartitionServiceName, partitionService)
         .dependency(openLogStreamServiceName)
-        .dependency(logStreamServiceName, partition.getLogStreamInjector())
+        .dependency(logStreamServiceName, partitionService.getLogStreamInjector())
+        .dependency(
+            snapshotStorageServiceName(partition.id().id()),
+            partitionService.getSnapshotStorageInjector())
         .group(LEADER_PARTITION_GROUP_NAME)
         .install();
 
@@ -326,12 +339,15 @@ public class PartitionInstallService extends Actor
 
   private ActorFuture<Partition> installFollowerPartition() {
     LOG.debug("Installing follower partition service for partition {}", partition.id());
-    final Partition partition =
+    final Partition partitionService =
         new Partition(brokerCfg, this.partition, clusterEventService, RaftState.FOLLOWER);
 
     return startContext
-        .createService(followerPartitionServiceName, partition)
-        .dependency(logStreamServiceName, partition.getLogStreamInjector())
+        .createService(followerPartitionServiceName, partitionService)
+        .dependency(logStreamServiceName, partitionService.getLogStreamInjector())
+        .dependency(
+            snapshotStorageServiceName(partition.id().id()),
+            partitionService.getSnapshotStorageInjector())
         .group(FOLLOWER_PARTITION_GROUP_NAME)
         .install();
   }
