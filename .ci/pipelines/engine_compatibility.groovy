@@ -224,26 +224,6 @@ pipeline {
     stage('IT') {
       failFast false
       parallel {
-        stage('IT 7.9') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.9_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.9.12', env.ES_VERSION)
-            }
-          }
-          steps {
-            retry(2) {
-              integrationTestSteps('7.9')
-            }
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage('IT 7.10') {
           agent {
             kubernetes {
@@ -256,6 +236,26 @@ pipeline {
           steps {
             retry(2) {
               integrationTestSteps('7.10')
+            }
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage('IT 7.11') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-7.11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec('7.11.0', env.ES_VERSION)
+            }
+          }
+          steps {
+            retry(2) {
+              integrationTestSteps('7.11')
             }
           }
           post {

@@ -82,7 +82,7 @@ spec:
             mountPath: /optimize/environment/OptimizeLicense.txt
             subPath: OptimizeLicense.txt
       - name: cambpm
-        image: camunda/camunda-bpm-platform:7.11.0
+        image: camunda/camunda-bpm-platform:7.12.0
         command: ["/camunda/configure-and-run.sh"]
         env:
         - name: JAVA_OPTS

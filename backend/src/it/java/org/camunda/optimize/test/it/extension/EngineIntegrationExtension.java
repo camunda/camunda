@@ -1049,7 +1049,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback {
   @SneakyThrows
   public void unlockUser(String username) {
     final HttpUriRequest request;
-    if (IntegrationTestConfigurationUtil.getEngineVersion().matches("7\\.11\\..*")) {
+    if (IntegrationTestConfigurationUtil.getEngineVersion().matches("7\\.1[1-9]\\..*")) {
       request = new HttpPost(getEngineUrl() + "/user/" + username + "/unlock");
     } else {
       request = new HttpGet(getEngineUrl() + "/user/" + username + "/unlock");

@@ -28,9 +28,9 @@ public class EngineVersionChecker {
   private static List<String> supportedEngines = new ArrayList<>();
 
   static {
-    supportedEngines.add("7.9.12");
     supportedEngines.add("7.10.6");
     supportedEngines.add("7.11.0");
+    supportedEngines.add("7.12.0");
   }
 
   public static void checkEngineVersionSupport(String engineRestPath, EngineContext engineContext) {

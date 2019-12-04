@@ -26,7 +26,8 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
     <camunda.engine-7.10>7.10.6</camunda.engine-7.10>
-    <camunda.engine.version>7.11.0</camunda.engine.version>
+    <camunda.engine.version>7.12.0</camunda.engine.version>
+    <!-- Will be increased with OPT-3012 -->
     <camunda.model.version>7.11.0</camunda.model.version>
 
     <surefire-plugin.version>3.0.0-M4</surefire-plugin.version>
@@ -91,8 +92,16 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <camunda.engine.version>7.11.0</camunda.engine.version>
+        <camunda.engine.version>7.12.0</camunda.engine.version>
         <engine.profile.id>engine-latest</engine.profile.id>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>engine-7.11</id>
+      <properties>
+        <camunda.engine.version>7.11.0</camunda.engine.version>
+        <engine.profile.id>engine-7.11</engine.profile.id>
       </properties>
     </profile>
 
@@ -101,14 +110,6 @@
       <properties>
         <camunda.engine.version>${camunda.engine-7.10}</camunda.engine.version>
         <engine.profile.id>engine-7.10</engine.profile.id>
-      </properties>
-    </profile>
-
-    <profile>
-      <id>engine-7.9</id>
-      <properties>
-        <camunda.engine.version>7.9.12</camunda.engine.version>
-        <engine.profile.id>engine-7.9</engine.profile.id>
       </properties>
     </profile>
 

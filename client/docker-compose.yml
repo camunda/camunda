@@ -25,7 +25,7 @@ services:
       timeout: 5s
       retries: 3
   cambpm:
-    image: camunda/camunda-bpm-platform:${CAMBPM_VERSION:-7.11.0}
+    image: camunda/camunda-bpm-platform:${CAMBPM_VERSION:-7.12.0}
     container_name: cambpm
     environment:
       - TZ=Europe/Berlin
