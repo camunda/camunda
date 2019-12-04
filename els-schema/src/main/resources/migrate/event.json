@@ -1,8 +1,10 @@
 {
-  "source": {
-    "index": ["operate-event_"]
-  },
-  "dest": {
-    "index": "operate-event-${project.version}_"
-  }
+	"source": {
+		"index": [
+			"operate-event_"
+		]
+	},
+	"dest": {
+		"index": "operate-event-${project.version}_"
+	}
 }

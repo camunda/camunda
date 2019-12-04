@@ -1,83 +1,84 @@
 {
-    "order" : 30,
-    "index_patterns" : [
-      "operate-incident-${project.version}_*"
-    ],
-    "settings" : {
-      "index" : {
-        "refresh_interval" : "2s",
-        "analysis" : {
-          "normalizer" : {
-            "case_insensitive" : {
-              "filter" : "lowercase"
-            }
-          }
-        },
-        "number_of_shards" : "1",
-        "number_of_replicas" : "0"
-      }
-    },
-    "mappings" : {
-      "_doc" : {
-        "dynamic" : "strict",
-        "dynamic_templates" : [
-          {
-            "string_template" : {
-              "path_match" : "*",
-              "mapping" : {
-                "norms" : {
-                  "enabled" : false
-                },
-                "type" : "string",
-                "index_options" : "docs"
-              },
-              "match_mapping_type" : "string"
-            }
-          }
-        ],
-        "properties" : {
-          "creationTime" : {
-            "format" : "date_time",
-            "type" : "date"
-          },
-          "flowNodeId" : {
-            "type" : "keyword"
-          },
-          "partitionId" : {
-            "type" : "integer"
-          },
-          "errorType" : {
-            "type" : "keyword"
-          },
-          "flowNodeInstanceKey" : {
-            "type" : "long"
-          },
-          "errorMessage" : {
-            "eager_global_ordinals" : true,
-            "type" : "keyword"
-          },
-          "workflowKey" : {
-            "type" : "long"
-          },
-          "jobKey" : {
-            "type" : "long"
-          },
-          "workflowInstanceKey" : {
-            "type" : "long"
-          },
-          "id" : {
-            "type" : "keyword"
-          },
-          "state" : {
-            "type" : "keyword"
-          },
-          "key" : {
-            "type" : "long"
-          }
-        }
-      }
-    },
-    "aliases" : {
-      "operate-incident-${project.version}_alias" : { }
-    }
-  }
+	"order": 30,
+	"index_patterns": [
+		"operate-incident-${project.version}_*"
+	],
+	"settings": {
+		"index": {
+			"refresh_interval": "2s",
+			"analysis": {
+				"normalizer": {
+					"case_insensitive": {
+						"filter": "lowercase"
+					}
+				}
+			},
+			"number_of_shards": "1",
+			"number_of_replicas": "0"
+		}
+	},
+	"mappings": {
+		"_doc": {
+			"dynamic": "strict",
+			"dynamic_templates": [
+				{
+					"string_template": {
+						"path_match": "*",
+						"mapping": {
+							"norms": {
+								"enabled": false
+							},
+							"type": "string",
+							"index_options": "docs"
+						},
+						"match_mapping_type": "string"
+					}
+				}
+			],
+			"properties": {
+				"creationTime": {
+					"format": "date_time",
+					"type": "date"
+				},
+				"flowNodeId": {
+					"type": "keyword"
+				},
+				"partitionId": {
+					"type": "integer"
+				},
+				"errorType": {
+					"type": "keyword"
+				},
+				"flowNodeInstanceKey": {
+					"type": "long"
+				},
+				"errorMessage": {
+					"eager_global_ordinals": true,
+					"type": "keyword"
+				},
+				"workflowKey": {
+					"type": "long"
+				},
+				"jobKey": {
+					"type": "long"
+				},
+				"workflowInstanceKey": {
+					"type": "long"
+				},
+				"id": {
+					"type": "keyword"
+				},
+				"state": {
+					"type": "keyword"
+				},
+				"key": {
+					"type": "long"
+				}
+			}
+		}
+	},
+	"aliases": {
+		"operate-incident-${project.version}_alias": {
+		}
+	}
+}

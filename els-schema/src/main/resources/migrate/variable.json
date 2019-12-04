@@ -1,8 +1,10 @@
 {
-  "source": {
-    "index": ["operate-variable_"]
-  },
-  "dest": {
-    "index": "operate-variable-${project.version}_"
-  }
+	"source": {
+		"index": [
+			"operate-variable_"
+		]
+	},
+	"dest": {
+		"index": "operate-variable-${project.version}_"
+	}
 }

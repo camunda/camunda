@@ -1,8 +1,10 @@
 {
-  "source": {
-    "index": ["operate-incident_"]
-  },
-  "dest": {
-    "index": "operate-incident-${project.version}_"
-  }
+	"source": {
+		"index": [
+			"operate-incident_"
+		]
+	},
+	"dest": {
+		"index": "operate-incident-${project.version}_"
+	}
 }

@@ -1,8 +1,10 @@
 {
-  "source": {
-    "index": ["operate-operation_"]
-  },
-  "dest": {
-    "index": "operate-operation-${project.version}_"
-  }
+	"source": {
+		"index": [
+			"operate-operation_"
+		]
+	},
+	"dest": {
+		"index": "operate-operation-${project.version}_"
+	}
 }

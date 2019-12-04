@@ -1,66 +1,67 @@
 {
-    "order" : 30,
-    "index_patterns" : [
-      "operate-variable-${project.version}_*"
-    ],
-    "settings" : {
-      "index" : {
-        "refresh_interval" : "2s",
-        "analysis" : {
-          "normalizer" : {
-            "case_insensitive" : {
-              "filter" : "lowercase"
-            }
-          }
-        },
-        "number_of_shards" : "1",
-        "number_of_replicas" : "0"
-      }
-    },
-    "mappings" : {
-      "_doc" : {
-        "dynamic" : "strict",
-        "dynamic_templates" : [
-          {
-            "string_template" : {
-              "path_match" : "*",
-              "mapping" : {
-                "norms" : {
-                  "enabled" : false
-                },
-                "type" : "string",
-                "index_options" : "docs"
-              },
-              "match_mapping_type" : "string"
-            }
-          }
-        ],
-        "properties" : {
-          "partitionId" : {
-            "type" : "integer"
-          },
-          "name" : {
-            "type" : "keyword"
-          },
-          "scopeKey" : {
-            "type" : "long"
-          },
-          "workflowInstanceKey" : {
-            "type" : "long"
-          },
-          "id" : {
-            "type" : "keyword"
-          },
-          "value" : {
-            "type" : "keyword"
-          },
-          "key" : {
-            "type" : "long"
-          }
-        }
-      }
-    },
-    "aliases" : {
-      "operate-variable-${project.version}_alias" : { }
-    }
-  }
+	"order": 30,
+	"index_patterns": [
+		"operate-variable-${project.version}_*"
+	],
+	"settings": {
+		"index": {
+			"refresh_interval": "2s",
+			"analysis": {
+				"normalizer": {
+					"case_insensitive": {
+						"filter": "lowercase"
+					}
+				}
+			},
+			"number_of_shards": "1",
+			"number_of_replicas": "0"
+		}
+	},
+	"mappings": {
+		"_doc": {
+			"dynamic": "strict",
+			"dynamic_templates": [
+				{
+					"string_template": {
+						"path_match": "*",
+						"mapping": {
+							"norms": {
+								"enabled": false
+							},
+							"type": "string",
+							"index_options": "docs"
+						},
+						"match_mapping_type": "string"
+					}
+				}
+			],
+			"properties": {
+				"partitionId": {
+					"type": "integer"
+				},
+				"name": {
+					"type": "keyword"
+				},
+				"scopeKey": {
+					"type": "long"
+				},
+				"workflowInstanceKey": {
+					"type": "long"
+				},
+				"id": {
+					"type": "keyword"
+				},
+				"value": {
+					"type": "keyword"
+				},
+				"key": {
+					"type": "long"
+				}
+			}
+		}
+	},
+	"aliases": {
+		"operate-variable-${project.version}_alias": {
+		}
+	}
+}
