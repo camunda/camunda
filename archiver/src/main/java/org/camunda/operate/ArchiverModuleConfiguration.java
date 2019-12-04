@@ -5,6 +5,9 @@
  */
 package org.camunda.operate;
 
+import javax.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -13,4 +16,12 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(basePackages = "org.camunda.operate.archiver")
 @ConditionalOnProperty(name = "camunda.operate.archiverEnabled", havingValue = "true", matchIfMissing = true)
 public class ArchiverModuleConfiguration {
+
+  private static final Logger logger = LoggerFactory.getLogger(ArchiverModuleConfiguration.class);
+
+  @PostConstruct
+  public void logModule(){
+    logger.info("Starting module: archiver");
+  }
+
 }

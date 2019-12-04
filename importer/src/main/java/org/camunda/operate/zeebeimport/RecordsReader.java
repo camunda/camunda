@@ -260,14 +260,14 @@ public class RecordsReader {
     if ((active = importJobs.poll()) != null) {
       Future<Boolean> result = importExecutor.submit(active);
       //TODO what to do with failing jobs
-      logger.debug("Submitted active Job as Future {}", result);
+      logger.debug("Submitted next job");
     }
   }
 
   private void execute(Callable<Boolean> job) {
     Future<Boolean> result = importExecutor.submit(job);
     //TODO what to do with failing jobs
-    logger.debug("Submitted Job as Future {}", result);
+    logger.debug("Submitted the same job");
   }
 
   public int getPartitionId() {

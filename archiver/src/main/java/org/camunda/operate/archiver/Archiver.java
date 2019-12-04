@@ -77,6 +77,7 @@ public class Archiver {
 
       //split the list of partitionIds to parallelize
       List<Integer> partitionIds = partitionHolder.getPartitionIds();
+      logger.info("Starting archiver for partitions: {}", partitionIds);
       int threadsCount = operateProperties.getArchiver().getThreadsCount();
       if (threadsCount > partitionIds.size()) {
         logger.warn("Too many archiver threads are configured, not all of them will be in use. Number of threads: {}, number of partitions to parallelize by: {}",

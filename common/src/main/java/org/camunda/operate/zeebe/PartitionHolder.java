@@ -100,7 +100,9 @@ public class PartitionHolder {
               operateProperties.getClusterNode().getCurrentNodeId() != null){
       Integer nodeCount = operateProperties.getClusterNode().getNodeCount();
       Integer nodeId = operateProperties.getClusterNode().getCurrentNodeId();
-
+      if (nodeId >= nodeCount) {
+        logger.warn("Misconfiguration: nodeId [{}] must be strictly less than nodeCount [{}]. No partitions will be selected.", nodeId, nodeCount);
+      }
       partitionIds = CollectionUtil.splitAndGetSublist(partitionIds, nodeCount, nodeId);
     }
     return partitionIds;
