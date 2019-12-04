@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+// ThresholdRule is a validation rule that checks if a value satisfies the specified threshold requirement.
 type ThresholdRule struct {
 	threshold interface{}
 	operator  int
@@ -24,7 +25,7 @@ const (
 	lessEqualThan
 )
 
-// Min is a validation rule that checks if a value is greater or equal than the specified value.
+// Min returns a validation rule that checks if a value is greater or equal than the specified value.
 // By calling Exclusive, the rule will check if the value is strictly greater than the specified value.
 // Note that the value being checked and the threshold value must be of the same type.
 // Only int, uint, float and time.Time types are supported.
@@ -37,7 +38,7 @@ func Min(min interface{}) *ThresholdRule {
 	}
 }
 
-// Max is a validation rule that checks if a value is less or equal than the specified value.
+// Max returns a validation rule that checks if a value is less or equal than the specified value.
 // By calling Exclusive, the rule will check if the value is strictly less than the specified value.
 // Note that the value being checked and the threshold value must be of the same type.
 // Only int, uint, float and time.Time types are supported.

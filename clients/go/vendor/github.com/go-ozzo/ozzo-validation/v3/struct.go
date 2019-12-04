@@ -5,6 +5,7 @@
 package validation
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"reflect"
@@ -59,6 +60,18 @@ func (e ErrFieldNotFound) Error() string {
 //
 // An error will be returned if validation fails.
 func ValidateStruct(structPtr interface{}, fields ...*FieldRules) error {
+	return validateStruct(nil, structPtr, fields...)
+}
+
+// ValidateStructWithContext validates a struct with the given context.
+// The only difference between ValidateStructWithContext and ValidateStruct is that the former will
+// validate struct fields with the provided context.
+// Please refer to ValidateStruct for the detailed instructions on how to use this function.
+func ValidateStructWithContext(ctx context.Context, structPtr interface{}, fields ...*FieldRules) error {
+	return validateStruct(ctx, structPtr, fields...)
+}
+
+func validateStruct(ctx context.Context, structPtr interface{}, fields ...*FieldRules) error {
 	value := reflect.ValueOf(structPtr)
 	if value.Kind() != reflect.Ptr || !value.IsNil() && value.Elem().Kind() != reflect.Struct {
 		// must be a pointer to a struct
@@ -81,7 +94,13 @@ func ValidateStruct(structPtr interface{}, fields ...*FieldRules) error {
 		if ft == nil {
 			return NewInternalError(ErrFieldNotFound(i))
 		}
-		if err := Validate(fv.Elem().Interface(), fr.rules...); err != nil {
+		var err error
+		if ctx == nil {
+			err = Validate(fv.Elem().Interface(), fr.rules...)
+		} else {
+			err = ValidateWithContext(ctx, fv.Elem().Interface(), fr.rules...)
+		}
+		if err != nil {
 			if ie, ok := err.(InternalError); ok && ie.InternalError() != nil {
 				return err
 			}

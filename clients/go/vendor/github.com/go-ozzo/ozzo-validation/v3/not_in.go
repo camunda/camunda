@@ -8,7 +8,7 @@ import (
 	"errors"
 )
 
-// NotIn returns a validation rule that checks if a value os absent from, the given list of values.
+// NotIn returns a validation rule that checks if a value is absent from the given list of values.
 // Note that the value being checked and the possible range of values must be of the same type.
 // An empty value is considered valid. Use the Required rule to make sure a value is not empty.
 func NotIn(values ...interface{}) *NotInRule {
@@ -18,6 +18,7 @@ func NotIn(values ...interface{}) *NotInRule {
 	}
 }
 
+// NotInRule is a validation rule that checks if a value is absent from the given list of values.
 type NotInRule struct {
 	elements []interface{}
 	message  string
