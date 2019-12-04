@@ -25,7 +25,7 @@ const TextareaStyles = css`
 
   width: 100%;
   height: 52px;
-  padding: 4px 13px 6px 8px;
+  padding: 6px 13px 4px 8px;
 
   border: solid 1px
     ${themeStyle({
