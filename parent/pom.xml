@@ -71,7 +71,7 @@
     <version.rocksdbjni>6.4.6</version.rocksdbjni>
     <version.sbe>1.15.0</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
-    <version.scala>2.13.0</version.scala>
+    <version.scala>2.13.1</version.scala>
     <version.slf4j>1.7.29</version.slf4j>
     <version.snakeyaml>1.25</version.snakeyaml>
     <version.toml>0.7.2</version.toml>
