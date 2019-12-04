@@ -1,35 +1,109 @@
 <a name="0.22.0-alpha2"></a>
-## 0.22.0-alpha2 (2019-12-04)
-
-
-#### Bug Fixes
-
-* **broker:**
-  *  increase start up timeo out ([a7494a7f](https://github.com/zeebe-io/zeebe/commit/a7494a7f378cf778b9e8e54583030ccc6c70c8f3))
-  *  don't correlate a message after it TTL is reached ([ed05f4a3](https://github.com/zeebe-io/zeebe/commit/ed05f4a3b7055db9feddbac3a9f135ae919ec903))
-  *  fix dependency usage ([cb71b7eb](https://github.com/zeebe-io/zeebe/commit/cb71b7ebc2eaedb6ceed60cadbeaf50969522ee9))
-  *  fix sigseg on replication thread ([7b7371cd](https://github.com/zeebe-io/zeebe/commit/7b7371cddb0198472ada4675ac29ec5ea4f3d360))
-  *  add null check when no exporter is configured ([01fa1817](https://github.com/zeebe-io/zeebe/commit/01fa18179854abe8b12389fc4f93f3292149de31))
-* **clients/java:**  omit polling exception if closing ([3d399296](https://github.com/zeebe-io/zeebe/commit/3d39929674c374dc50b711e81328c73800422c78))
-* **engine:**  lastWrittenPos is resetted ([b2cac15f](https://github.com/zeebe-io/zeebe/commit/b2cac15fb7f90e36e365b45ba3bd7e5d9d27a55b))
-* **exporter:**
-  *  enable variable document export by default ([ed3557fd](https://github.com/zeebe-io/zeebe/commit/ed3557fdcd529f320aa0370d83e45c4db5c20bc8), closes [#3450](https://github.com/zeebe-io/zeebe/issues/3450))
-  *  allow multiple shards for Elasticsearch indices ([d2eb0bf6](https://github.com/zeebe-io/zeebe/commit/d2eb0bf6d966a44988b59a4178fde6f83acb5614), closes [#3329](https://github.com/zeebe-io/zeebe/issues/3329))
-* **logstreams:**  retry append on failure ([33675c04](https://github.com/zeebe-io/zeebe/commit/33675c04840faec7fef2ba98823584c40c1036e8))
-* **zbc:**  not refetch credentials if cache is present on second request ([81e4505a](https://github.com/zeebe-io/zeebe/commit/81e4505a6ce9aaedb1c21d3f9751d43d4406d280))
-
-#### Features
-
-* **broker:**
-  *  message creates only once instance per correlation key ([14a0e470](https://github.com/zeebe-io/zeebe/commit/14a0e47056908848e1aa1935bd8f49fdc20aa536))
-  *  correlate only once per workflow ([cc526220](https://github.com/zeebe-io/zeebe/commit/cc5262201691463015c6e299083157e1173f1b51))
-  *  allow process with multiple start events ([aaa5b7ac](https://github.com/zeebe-io/zeebe/commit/aaa5b7ac45bf5ebd4dcec2072221c7649efef3c9))
-  *  support message event subprocess ([d6b6ec58](https://github.com/zeebe-io/zeebe/commit/d6b6ec58ba7759ef1ed1602fbc77480c53da6383))
-* **clients/go:**  expose key from set variables response ([9eb82b5f](https://github.com/zeebe-io/zeebe/commit/9eb82b5fa85965cde4909eab0babc0c58ff4ab45))
-* **clients/java:**  expose key from set variables response ([2a74fddd](https://github.com/zeebe-io/zeebe/commit/2a74fddd9e9b27f0ef3e763e5df8231adbb4554c))
-* **gateway:**  map set variables broker response key to gRPC response key ([4eb0ef03](https://github.com/zeebe-io/zeebe/commit/4eb0ef0368c12b0a545b2cc8e230496f120ef9b6))
-* **gateway-protocol:**  add key to set variables response ([21a242df](https://github.com/zeebe-io/zeebe/commit/21a242dfa788dffdf4124a2f9bd62dfe811fc786))
-
+# Release: 0.22.0-alpha2
+## Enhancements
+### Broker
+* A message creates only one workflow instance per correlation-key ([#3337](https://github.com/zeebe-io/zeebe/issues/3337))
+* Correlate a message only once per workflow ([#3334](https://github.com/zeebe-io/zeebe/issues/3334))
+* Support workflows with multiple start events ([#3317](https://github.com/zeebe-io/zeebe/issues/3317))
+* Use Raft directly ([#3169](https://github.com/zeebe-io/zeebe/issues/3169))
+### Java Client
+* Return command key for set variables command ([#3423](https://github.com/zeebe-io/zeebe/issues/3423))
+### Go Client
+* Return command key for set variables command ([#3423](https://github.com/zeebe-io/zeebe/issues/3423))
+### Misc
+* Event subprocess with non-interrupting message start ([#3209](https://github.com/zeebe-io/zeebe/issues/3209))
+## Bug Fixes
+### Broker
+* Restarting a broker with many segments causes broker timeout ([#3456](https://github.com/zeebe-io/zeebe/issues/3456))
+* Message is correlated after TTL is reached ([#3396](https://github.com/zeebe-io/zeebe/issues/3396))
+* Topology manager receives events in different order resulting in wrong leader info  ([#3364](https://github.com/zeebe-io/zeebe/issues/3364))
+### Java Client
+* False warning/exceptions due to race condition when closing JobWorker ([#3318](https://github.com/zeebe-io/zeebe/issues/3318))
+### Go Client
+* Go job worker is constantly requesting access tokens ([#3372](https://github.com/zeebe-io/zeebe/issues/3372))
+### Misc
+* Zeebe distribution does not contain zbctl ([#3458](https://github.com/zeebe-io/zeebe/issues/3458))
+* Processing stops because sessions of the DistributedLogStreamClient are closed ([#3370](https://github.com/zeebe-io/zeebe/issues/3370))
+* Snapshots are marked as valid too early ([#3348](https://github.com/zeebe-io/zeebe/issues/3348))
+* Replication thread access DB and causes SIGSEG ([#3338](https://github.com/zeebe-io/zeebe/issues/3338))
+* Log restoring failed due to invalid offset ([#3239](https://github.com/zeebe-io/zeebe/issues/3239))
+## Documentation
+* Document event subprocess ([#3363](https://github.com/zeebe-io/zeebe/issues/3363))
+## Merged Pull Requests
+* chore(deps): update golang.org/x/net commit hash to 5ee1b9f ([#3477](https://github.com/zeebe-io/zeebe/pull/3477))
+* chore(deps): update module go-ozzo/ozzo-validation to v3.7.0 ([#3476](https://github.com/zeebe-io/zeebe/pull/3476))
+* chore(deps): update version.protobuf to v3.11.1 ([#3471](https://github.com/zeebe-io/zeebe/pull/3471))
+* chore(deps): update dependency com.google.errorprone:error_prone_annotations to v2.3.4 ([#3469](https://github.com/zeebe-io/zeebe/pull/3469))
+* chore(broker): fix race conditions related to snapshot storage ([#3468](https://github.com/zeebe-io/zeebe/pull/3468))
+* chore(dist): enable default metrics for standalone gateway ([#3467](https://github.com/zeebe-io/zeebe/pull/3467))
+* chore(logstreams): remove retry mechanism ([#3465](https://github.com/zeebe-io/zeebe/pull/3465))
+* fix(broker): increase start up time out ([#3464](https://github.com/zeebe-io/zeebe/pull/3464))
+* chore(dist): update golang version ([#3461](https://github.com/zeebe-io/zeebe/pull/3461))
+* docs(glossary): add the glossary to SUMMARY ([#3459](https://github.com/zeebe-io/zeebe/pull/3459))
+* chore(deps): update dependency org.mockito:mockito-core to v3.2.0 ([#3455](https://github.com/zeebe-io/zeebe/pull/3455))
+* fix(exporter): enable variable document export by default ([#3451](https://github.com/zeebe-io/zeebe/pull/3451))
+* chore(deps): update dependency org.camunda.bpm.model:camunda-xml-model to v7.12.0 ([#3446](https://github.com/zeebe-io/zeebe/pull/3446))
+* docs(timer): fix infinite timer example ([#3442](https://github.com/zeebe-io/zeebe/pull/3442))
+* chore(deps): update version.msgpack to v0.8.20 ([#3441](https://github.com/zeebe-io/zeebe/pull/3441))
+* fix(broker): don't correlate a message after its TTL is reached ([#3440](https://github.com/zeebe-io/zeebe/pull/3440))
+* chore(deps): update version.protobuf to v3.11.0 ([#3437](https://github.com/zeebe-io/zeebe/pull/3437))
+* chore(deps): update module golang/mock to v1.3.1 ([#3435](https://github.com/zeebe-io/zeebe/pull/3435))
+* chore(deps): update docker.elastic.co/kibana/kibana-oss docker tag to v6.8.5 ([#3434](https://github.com/zeebe-io/zeebe/pull/3434))
+* chore(deps): update docker.elastic.co/elasticsearch/elasticsearch-oss docker tag to v6.8.5 ([#3433](https://github.com/zeebe-io/zeebe/pull/3433))
+* chore(deps): update dependency org.scala-lang:scala-library to v2.13.1 ([#3432](https://github.com/zeebe-io/zeebe/pull/3432))
+* chore(deps): update dependency org.camunda.bpm.model:camunda-xml-model to v7.11.0 ([#3430](https://github.com/zeebe-io/zeebe/pull/3430))
+* chore(deps): update dependency org.apache.maven.plugins:maven-enforcer-plugin to v3.0.0-m3 ([#3428](https://github.com/zeebe-io/zeebe/pull/3428))
+* chore(deps): update golang.org/x/net commit hash to ef20fe5 ([#3427](https://github.com/zeebe-io/zeebe/pull/3427))
+* chore(deps): bump rocksdbjni from 6.3.6 to 6.4.6 ([#3426](https://github.com/zeebe-io/zeebe/pull/3426))
+* chore(deps): bump maven-enforcer-plugin from 3.0.0-M2 to 3.0.0-M3 ([#3425](https://github.com/zeebe-io/zeebe/pull/3425))
+* Add key to set variables response ([#3424](https://github.com/zeebe-io/zeebe/pull/3424))
+* chore(pom): update surefire and failsaife to M4 ([#3422](https://github.com/zeebe-io/zeebe/pull/3422))
+* chore(deps): bump version.sbe from 1.14.1 to 1.15.0 ([#3421](https://github.com/zeebe-io/zeebe/pull/3421))
+* Configure Renovate ([#3418](https://github.com/zeebe-io/zeebe/pull/3418))
+* Go client interface improvements ([#3415](https://github.com/zeebe-io/zeebe/pull/3415))
+* chore(Nexus cache): Use jenkins configfile instead of local settings.xml ([#3413](https://github.com/zeebe-io/zeebe/pull/3413))
+* chore(ci): Fix cron trigger for chaos tests pipeline ([#3411](https://github.com/zeebe-io/zeebe/pull/3411))
+* feat(broker): message creates only once instance per correlation key ([#3408](https://github.com/zeebe-io/zeebe/pull/3408))
+* docs(introduction): section on nomenclature ([#3407](https://github.com/zeebe-io/zeebe/pull/3407))
+* chore(deps): bump gopkg.in/yaml.v2 from 2.2.4 to 2.2.7 in /clients/go ([#3406](https://github.com/zeebe-io/zeebe/pull/3406))
+* chore(deps): bump github.com/testcontainers/testcontainers-go from 0.0.8 to 0.0.9 in /clients/go ([#3405](https://github.com/zeebe-io/zeebe/pull/3405))
+* test(gateway): fix flaky BrokerClientTest ([#3403](https://github.com/zeebe-io/zeebe/pull/3403))
+* chore(deps): bump version.elasticsearch from 6.8.4 to 6.8.5 ([#3402](https://github.com/zeebe-io/zeebe/pull/3402))
+* chore(logstreams): do not append more events until retries are success ([#3399](https://github.com/zeebe-io/zeebe/pull/3399))
+* Migrate to go modules ([#3395](https://github.com/zeebe-io/zeebe/pull/3395))
+* chore(deps): bump agrona from 1.0.11 to 1.1.0 ([#3394](https://github.com/zeebe-io/zeebe/pull/3394))
+* chore(deps): bump version.msgpack from 0.8.16 to 0.8.19 ([#3393](https://github.com/zeebe-io/zeebe/pull/3393))
+* Improve Go project layout ([#3391](https://github.com/zeebe-io/zeebe/pull/3391))
+* chore(deps): bump plugin.version.surefire from 3.0.0-M3 to 3.0.0-M4 ([#3387](https://github.com/zeebe-io/zeebe/pull/3387))
+* chore(deps): bump maven-failsafe-plugin from 3.0.0-M3 to 3.0.0-M4 ([#3386](https://github.com/zeebe-io/zeebe/pull/3386))
+* fix(logstreams): retry append on failure ([#3385](https://github.com/zeebe-io/zeebe/pull/3385))
+* Merge zbctl with the Go client ([#3384](https://github.com/zeebe-io/zeebe/pull/3384))
+* docs(bpmn-workflows): allow multiple start events ([#3381](https://github.com/zeebe-io/zeebe/pull/3381))
+* chore(deps): bump github.com/docker/docker from 19.03.4 to 19.03.5 in /clients/go ([#3380](https://github.com/zeebe-io/zeebe/pull/3380))
+* chore(protocol): include leader term in distributed topology info ([#3375](https://github.com/zeebe-io/zeebe/pull/3375))
+* docs(bpmn-workflows): document event subprocess ([#3374](https://github.com/zeebe-io/zeebe/pull/3374))
+* Not refetch credentials if cache is present on second request ([#3373](https://github.com/zeebe-io/zeebe/pull/3373))
+* test(engine): test variables in event subproc ([#3365](https://github.com/zeebe-io/zeebe/pull/3365))
+* Fix stream processor dependencies ([#3362](https://github.com/zeebe-io/zeebe/pull/3362))
+* feat(broker): correlate only once per workflow ([#3360](https://github.com/zeebe-io/zeebe/pull/3360))
+* fix(broker): add null check when no exporter is configured ([#3356](https://github.com/zeebe-io/zeebe/pull/3356))
+* fix(engine): pending snapshot is set after write position is received ([#3354](https://github.com/zeebe-io/zeebe/pull/3354))
+* fix(broker): fix sigseg on replication thread ([#3353](https://github.com/zeebe-io/zeebe/pull/3353))
+* chore(deps): bump jackson-bom from 2.10.0 to 2.10.1 ([#3350](https://github.com/zeebe-io/zeebe/pull/3350))
+* chore(deps): bump google.golang.org/grpc from 1.24.0 to 1.25.1 in /clients/go ([#3349](https://github.com/zeebe-io/zeebe/pull/3349))
+* Update docs to support latest mdbook version ([#3345](https://github.com/zeebe-io/zeebe/pull/3345))
+* Fix failing QA tests and reduce qa execution time ([#3336](https://github.com/zeebe-io/zeebe/pull/3336))
+* chore(broker): use Atomix Raft directly ([#3332](https://github.com/zeebe-io/zeebe/pull/3332))
+* chore(deps): bump netty-tcnative-boringssl-static from 2.0.26.Final to 2.0.27.Final ([#3331](https://github.com/zeebe-io/zeebe/pull/3331))
+* fix(exporter): allow multiple shards for Elasticsearch indices ([#3330](https://github.com/zeebe-io/zeebe/pull/3330))
+* feat(broker): allow process with multiple start events ([#3328](https://github.com/zeebe-io/zeebe/pull/3328))
+* chore(deps): bump agrona from 1.0.10 to 1.0.11 ([#3325](https://github.com/zeebe-io/zeebe/pull/3325))
+* chore(deps): bump version.sbe from 1.14.0 to 1.14.1 ([#3323](https://github.com/zeebe-io/zeebe/pull/3323))
+* chore(deps): bump version.grpc from 1.24.1 to 1.25.0 ([#3322](https://github.com/zeebe-io/zeebe/pull/3322))
+* fix(clients/java): omit polling exception if closing ([#3321](https://github.com/zeebe-io/zeebe/pull/3321))
+* chore(deps): bump maven-jar-plugin from 3.1.2 to 3.2.0 ([#3313](https://github.com/zeebe-io/zeebe/pull/3313))
+* feat(broker): support message start event subprocess ([#3312](https://github.com/zeebe-io/zeebe/pull/3312))
+* chore(ci): New pipeline to run chaos tests ([#3304](https://github.com/zeebe-io/zeebe/pull/3304))
 
 
 <a name="0.22.0-alpha1"></a>
