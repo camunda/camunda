@@ -16,6 +16,7 @@ public class ConfigurationDefaults {
   public static final int DEFAULT_CONTACT_POINT_PORT = 26502;
 
   public static final String DEFAULT_MAX_MESSAGE_SIZE = "4M";
+  public static final int DEFAULT_MAX_MESSAGE_COUNT = 16;
   public static final String DEFAULT_REQUEST_TIMEOUT = "15s";
   public static final boolean DEFAULT_TLS_ENABLED = false;
 

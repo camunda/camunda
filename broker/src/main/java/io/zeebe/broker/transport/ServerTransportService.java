@@ -24,14 +24,11 @@ import org.slf4j.Logger;
 public class ServerTransportService implements Service<ServerTransport> {
   public static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-  // max message size * factor = transport buffer size
-  // - note that this factor is randomly chosen, feel free to change it
-  private static final int TRANSPORT_BUFFER_FACTOR = 16;
-
   private final String readableName;
   private final InetSocketAddress bindAddress;
 
   private final ByteValue maxMessageSize;
+  private final int maxMessageCount;
   private CommandApiMessageHandler commandApiMessageHandler;
   private ServerTransport serverTransport;
 
@@ -39,10 +36,12 @@ public class ServerTransportService implements Service<ServerTransport> {
       final String readableName,
       final InetSocketAddress bindAddress,
       final ByteValue maxMessageSize,
+      int maxMessageCount,
       final CommandApiMessageHandler commandApiMessageHandler) {
     this.readableName = readableName;
     this.bindAddress = bindAddress;
     this.maxMessageSize = maxMessageSize;
+    this.maxMessageCount = maxMessageCount;
     this.commandApiMessageHandler = commandApiMessageHandler;
   }
 
@@ -51,7 +50,7 @@ public class ServerTransportService implements Service<ServerTransport> {
     final ActorScheduler scheduler = serviceContext.getScheduler();
 
     final ByteValue transportBufferSize =
-        ByteValue.ofBytes(maxMessageSize.toBytes() * TRANSPORT_BUFFER_FACTOR);
+        ByteValue.ofBytes(maxMessageSize.toBytes() * maxMessageCount);
 
     serverTransport =
         Transports.newServerTransport()

@@ -37,7 +37,9 @@ public class EmbeddedGatewayCfg extends GatewayCfg implements ConfigurationEntry
     // configure embedded gateway based on broker config
     getNetwork().setPort(getNetwork().getPort() + (networkCfg.getPortOffset() * 10));
 
-    getCluster().setMaxMessageSize(networkCfg.getMaxMessageSize().toString());
+    getCluster()
+        .setMaxMessageSize(networkCfg.getMaxMessageSize().toString())
+        .setMaxMessageCount(networkCfg.getMaxMessageCount());
   }
 
   public boolean isEnable() {

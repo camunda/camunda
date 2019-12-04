@@ -83,6 +83,7 @@ public class TransportComponent implements Component {
         name,
         bindAddr.toInetSocketAddress(),
         networkCfg.getMaxMessageSize(),
+        networkCfg.getMaxMessageCount(),
         commandApiMessageHandler);
   }
 
@@ -92,9 +93,11 @@ public class TransportComponent implements Component {
       final String name,
       final InetSocketAddress bindAddress,
       final ByteValue maxMessageSize,
+      final int maxMessageCount,
       final CommandApiMessageHandler commandApiMessageHandler) {
     final ServerTransportService service =
-        new ServerTransportService(name, bindAddress, maxMessageSize, commandApiMessageHandler);
+        new ServerTransportService(
+            name, bindAddress, maxMessageSize, maxMessageCount, commandApiMessageHandler);
 
     systemContext.addResourceReleasingDelegate(service.getReleasingResourcesDelegate());
 
