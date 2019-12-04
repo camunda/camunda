@@ -22,6 +22,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 
 public class RejectMessageCorrelationProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
@@ -50,19 +51,20 @@ public class RejectMessageCorrelationProcessor
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
     final long messageKey = subscriptionRecord.getMessageKey();
     final long workflowInstanceKey = subscriptionRecord.getWorkflowInstanceKey();
+    final DirectBuffer bpmnProcessId = subscriptionRecord.getBpmnProcessIdBuffer();
 
-    if (!messageState.existMessageCorrelation(messageKey, workflowInstanceKey)) {
+    if (!messageState.existMessageCorrelation(messageKey, bpmnProcessId)) {
       streamWriter.appendRejection(
           record,
           RejectionType.INVALID_STATE,
           String.format(
-              "Expected message %d to be correlated in workflow instance %d but no correlation was found",
-              messageKey, workflowInstanceKey));
+              "Expected message '%d' to be correlated for workflow with BPMN process id '%s' but no correlation was found",
+              messageKey, subscriptionRecord.getBpmnProcessId()));
       return;
     }
-    messageState.removeMessageCorrelation(messageKey, workflowInstanceKey);
+    messageState.removeMessageCorrelation(messageKey, bpmnProcessId);
 
-    findSubscriptionToCorrelate(sideEffect, subscriptionRecord, messageKey, workflowInstanceKey);
+    findSubscriptionToCorrelate(sideEffect, subscriptionRecord, messageKey);
 
     streamWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.REJECTED, record.getValue());
@@ -71,8 +73,7 @@ public class RejectMessageCorrelationProcessor
   private void findSubscriptionToCorrelate(
       final Consumer<SideEffectProducer> sideEffect,
       final MessageSubscriptionRecord subscriptionRecord,
-      final long messageKey,
-      final long workflowInstanceKey) {
+      final long messageKey) {
 
     // the message TTL may expire after the previous correlation attempt
     final Message message = messageState.getMessage(messageKey);
@@ -84,7 +85,7 @@ public class RejectMessageCorrelationProcessor
         subscriptionRecord.getMessageNameBuffer(),
         subscriptionRecord.getCorrelationKeyBuffer(),
         subscription -> {
-          if (subscription.getWorkflowInstanceKey() == workflowInstanceKey
+          if (subscription.getBpmnProcessId().equals(subscriptionRecord.getBpmnProcessIdBuffer())
               && !subscription.isCorrelating()) {
             subscription.setMessageKey(messageKey);
             subscription.setMessageVariables(message.getVariables());
@@ -98,15 +99,17 @@ public class RejectMessageCorrelationProcessor
 
   private void correlateMessage(
       final MessageSubscription subscription, final Consumer<SideEffectProducer> sideEffect) {
+
     subscriptionState.updateToCorrelatingState(
         subscription,
         subscription.getMessageVariables(),
         ActorClock.currentTimeMillis(),
         subscription.getMessageKey());
-    messageState.putMessageCorrelation(
-        subscription.getMessageKey(), subscription.getWorkflowInstanceKey());
-    this.subscription = subscription;
 
+    messageState.putMessageCorrelation(
+        subscription.getMessageKey(), subscription.getBpmnProcessId());
+
+    this.subscription = subscription;
     sideEffect.accept(this::sendCorrelateCommand);
   }
 
@@ -114,6 +117,7 @@ public class RejectMessageCorrelationProcessor
     return commandSender.correlateWorkflowInstanceSubscription(
         subscription.getWorkflowInstanceKey(),
         subscription.getElementInstanceKey(),
+        subscription.getBpmnProcessId(),
         subscription.getMessageName(),
         subscription.getMessageKey(),
         subscription.getMessageVariables());

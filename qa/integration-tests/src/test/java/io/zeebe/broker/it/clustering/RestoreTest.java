@@ -7,16 +7,12 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.ATOMIX_SERVICE;
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.core.Atomix;
-import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.util.GrpcClientRule;
-import io.zeebe.distributedlog.impl.LogstreamConfig;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.ByteValue;
@@ -48,7 +44,13 @@ public class RestoreTest {
             cfg.getData().setRaftSegmentSize(ByteValue.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
             cfg.getNetwork().setMaxMessageSize(ByteValue.ofBytes(ATOMIX_SEGMENT_SIZE).toString());
           });
-  private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  private final GrpcClientRule clientRule =
+      new GrpcClientRule(
+          config ->
+              config
+                  .brokerContactPoint(clusteringRule.getGatewayAddress().toString())
+                  .defaultRequestTimeout(Duration.ofMinutes(1))
+                  .usePlaintext());
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
@@ -74,10 +76,10 @@ public class RestoreTest {
     final long secondWorkflowKey = clientRule.deployWorkflow(secondWorkflow);
 
     writeManyEventsUntilAtomixLogIsCompactable();
-    waitUntilAtomixBackup(clusteringRule.getLeaderForPartition(1).getNodeId());
+    waitForValidSnapshotAtBroker(
+        clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(2);
-    waitUntil(() -> !LogstreamConfig.isRestoring("2", 1));
     waitForValidSnapshotAtBroker(clusteringRule.getBroker(2));
 
     clusteringRule.stopBroker(1);
@@ -85,11 +87,10 @@ public class RestoreTest {
     final long thirdWorkflowKey = clientRule.deployWorkflow(thirdWorkflow);
 
     writeManyEventsUntilAtomixLogIsCompactable();
-    waitUntilAtomixBackup(clusteringRule.getLeaderForPartition(1).getNodeId());
+    waitForValidSnapshotAtBroker(
+        clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(1);
-    waitUntil(() -> !LogstreamConfig.isRestoring("1", 1));
-
     clusteringRule.stopBroker(0);
 
     // then
@@ -120,27 +121,9 @@ public class RestoreTest {
     return Base64.getEncoder().encodeToString(bytes);
   }
 
-  private void waitUntilAtomixBackup(final int nodeId) {
-    final Atomix atomix = clusteringRule.getService(ATOMIX_SERVICE, nodeId);
-    atomix.getPartitionService().getPartitionGroup("raft-atomix").getPartitions().stream()
-        .map(RaftPartition.class::cast)
-        .forEach(p -> p.snapshot().join());
-
-    final File atomixBackupDirectory = getAtomixBackupDirectory(clusteringRule.getBroker(nodeId));
-    waitUntil(
-        () ->
-            Arrays.stream(atomixBackupDirectory.listFiles())
-                .anyMatch(f -> f.getName().contains(".snapshot")));
-  }
-
-  private File getAtomixBackupDirectory(final Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "raft-atomix/partitions/1/");
-  }
-
   private File getSnapshotsDirectory(final Broker broker) {
     final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "partition-1/state/snapshots");
+    return new File(dataDir, "raft-atomix/partitions/1/snapshots");
   }
 
   private void waitForValidSnapshotAtBroker(final Broker broker) {

@@ -64,6 +64,7 @@ public class MessageStartEventSubscriptionState {
     subscriptionRecord.setStartEventId(subscription.getStartEventIdBuffer());
     subscriptionRecord.setMessageName(subscription.getMessageNameBuffer());
     subscriptionRecord.setWorkflowKey(subscription.getWorkflowKey());
+    subscriptionRecord.setBpmnProcessId(subscription.getBpmnProcessIdBuffer());
 
     messageName.wrapBuffer(subscription.getMessageNameBuffer());
     workflowKey.wrapLong(subscription.getWorkflowKey());

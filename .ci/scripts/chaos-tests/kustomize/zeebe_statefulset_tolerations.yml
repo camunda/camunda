@@ -1,0 +1,16 @@
+# Zeebe cluster has large CPU and RAM requirements, we need to make sure they can be run
+# on powerful enough nodes in the CI cluster
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: zeebe
+spec:
+  template:
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: slaves
+      tolerations:
+        - key: "slaves"
+          operator: "Exists"
+          effect: "NoSchedule"

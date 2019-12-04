@@ -40,7 +40,7 @@ public class OpenMessageSubscriptionProcessor
       final SubscriptionCommandSender commandSender) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
-    this.messageCorrelator = new MessageCorrelator(messageState, subscriptionState, commandSender);
+    messageCorrelator = new MessageCorrelator(messageState, subscriptionState, commandSender);
   }
 
   @Override
@@ -76,6 +76,7 @@ public class OpenMessageSubscriptionProcessor
         new MessageSubscription(
             subscriptionRecord.getWorkflowInstanceKey(),
             subscriptionRecord.getElementInstanceKey(),
+            subscriptionRecord.getBpmnProcessIdBuffer(),
             subscriptionRecord.getMessageNameBuffer(),
             subscriptionRecord.getCorrelationKeyBuffer(),
             subscriptionRecord.shouldCloseOnCorrelate());

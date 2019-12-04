@@ -10,7 +10,7 @@ package io.zeebe.logstreams.state;
 public interface SnapshotConsumer {
   boolean consumeSnapshotChunk(SnapshotChunk chunk);
 
-  boolean completeSnapshot(long snapshotPosition);
+  boolean completeSnapshot(String snapshotId);
 
-  void invalidateSnapshot(long snapshotPosition);
+  void invalidateSnapshot(String snapshotId);
 }

@@ -133,7 +133,7 @@ public class ServiceController extends Actor {
         fireEvent(ServiceEventType.SERVICE_STOPPED);
       }
     } catch (Throwable t) {
-      LOG.error("Exception while stopping service {}: {}", this, t);
+      LOG.error("Exception while stopping service {}", this, t);
       fireEvent(ServiceEventType.SERVICE_STOPPED);
     }
   }

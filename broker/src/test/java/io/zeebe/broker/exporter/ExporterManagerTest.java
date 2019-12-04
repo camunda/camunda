@@ -121,7 +121,7 @@ public class ExporterManagerTest {
     public void export(final Record record) {
       controller.updateLastExportedRecordPosition(record.getPosition());
 
-      records.add(record);
+      records.add(record.clone());
     }
   }
 }

@@ -77,5 +77,18 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
                 0, "Start events in event subprocesses must of type message or timer");
           }
         });
+
+    if (start.isInterrupting() && hasTimeCycle(start)) {
+      validationResultCollector.addError(
+          0, "Interrupting timer start events in event subprocesses can't have time cycles");
+    }
+  }
+
+  private boolean hasTimeCycle(StartEvent start) {
+    return start.getEventDefinitions().stream()
+        .anyMatch(
+            def ->
+                TimerEventDefinition.class.isAssignableFrom(def.getClass())
+                    && ((TimerEventDefinition) def).getTimeCycle() != null);
   }
 }

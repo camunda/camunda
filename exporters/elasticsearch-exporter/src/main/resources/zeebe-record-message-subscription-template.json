@@ -26,6 +26,12 @@
             },
             "correlationKey": {
               "type": "text"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "messageKey": {
+              "type": "long"
             }
           }
         }

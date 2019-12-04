@@ -12,6 +12,7 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.prometheus.client.exporter.HTTPServer;
+import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -73,6 +74,7 @@ public class StandaloneGateway {
       monitoringServer =
           new HTTPServer(
               gatewayCfg.getMonitoring().getHost(), gatewayCfg.getMonitoring().getPort());
+      DefaultExports.initialize();
     }
 
     gateway.listenAndServe();

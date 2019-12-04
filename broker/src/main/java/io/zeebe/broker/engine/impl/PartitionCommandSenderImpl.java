@@ -9,14 +9,13 @@ package io.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class PartitionCommandSenderImpl implements PartitionCommandSender {
@@ -34,12 +33,11 @@ public class PartitionCommandSenderImpl implements PartitionCommandSender {
 
   public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {
 
-    final Int2ObjectHashMap<NodeInfo> partitionLeaders = partitionListener.getPartitionLeaders();
-    final NodeInfo partitionLeader = partitionLeaders.get(receiverPartitionId);
-    if (partitionLeader == null) {
-      // retry when no leader is known
+    final Int2IntHashMap partitionLeaders = partitionListener.getPartitionLeaders();
+    if (!partitionLeaders.containsKey(receiverPartitionId)) {
       return true;
     }
+    final int partitionLeader = partitionLeaders.get(receiverPartitionId);
 
     final byte bytes[] = new byte[command.getLength()];
     final MutableDirectBuffer buffer = new UnsafeBuffer(bytes);
@@ -47,7 +45,7 @@ public class PartitionCommandSenderImpl implements PartitionCommandSender {
 
     atomix
         .getCommunicationService()
-        .send("subscription", bytes, MemberId.from("" + partitionLeader.getNodeId()));
+        .send("subscription", bytes, MemberId.from("" + partitionLeader));
     return true;
   }
 }

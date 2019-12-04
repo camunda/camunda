@@ -31,9 +31,15 @@ public interface MessageSubscriptionRecordValue extends RecordValue {
   /** @return the element instance key tied to the subscription */
   long getElementInstanceKey();
 
+  /** @return the BPMN process id tied to the subscription */
+  String getBpmnProcessId();
+
   /** @return the name of the message */
   String getMessageName();
 
   /** @return the correlation key */
   String getCorrelationKey();
+
+  /** @return the key of the correlated message */
+  long getMessageKey();
 }

@@ -66,13 +66,14 @@ public class SubscriptionCommandMessageHandler
   private final Function<Integer, LogStream> logstreamSupplier;
 
   public SubscriptionCommandMessageHandler(
-      Consumer<Runnable> enviromentToRun, Function<Integer, LogStream> logstreamSupplier) {
+      final Consumer<Runnable> enviromentToRun,
+      final Function<Integer, LogStream> logstreamSupplier) {
     this.enviromentToRun = enviromentToRun;
     this.logstreamSupplier = logstreamSupplier;
   }
 
   @Override
-  public CompletableFuture<Void> apply(byte[] bytes) {
+  public CompletableFuture<Void> apply(final byte[] bytes) {
     final CompletableFuture<Void> future = new CompletableFuture<>();
     enviromentToRun.accept(
         () -> {
@@ -114,12 +115,14 @@ public class SubscriptionCommandMessageHandler
     return future;
   }
 
-  private boolean onOpenMessageSubscription(DirectBuffer buffer, int offset, int length) {
+  private boolean onOpenMessageSubscription(
+      final DirectBuffer buffer, final int offset, final int length) {
     openMessageSubscriptionCommand.wrap(buffer, offset, length);
 
     messageSubscriptionRecord
         .setWorkflowInstanceKey(openMessageSubscriptionCommand.getWorkflowInstanceKey())
         .setElementInstanceKey(openMessageSubscriptionCommand.getElementInstanceKey())
+        .setBpmnProcessId(openMessageSubscriptionCommand.getBpmnProcessId())
         .setMessageKey(-1)
         .setMessageName(openMessageSubscriptionCommand.getMessageName())
         .setCorrelationKey(openMessageSubscriptionCommand.getCorrelationKey())
@@ -132,7 +135,8 @@ public class SubscriptionCommandMessageHandler
         messageSubscriptionRecord);
   }
 
-  private boolean onOpenWorkflowInstanceSubscription(DirectBuffer buffer, int offset, int length) {
+  private boolean onOpenWorkflowInstanceSubscription(
+      final DirectBuffer buffer, final int offset, final int length) {
     openWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
     final long workflowInstanceKey =
@@ -157,7 +161,7 @@ public class SubscriptionCommandMessageHandler
   }
 
   private boolean onCorrelateWorkflowInstanceSubscription(
-      DirectBuffer buffer, int offset, int length) {
+      final DirectBuffer buffer, final int offset, final int length) {
     correlateWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
     final long workflowInstanceKey =
@@ -169,6 +173,7 @@ public class SubscriptionCommandMessageHandler
             correlateWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
         .setWorkflowInstanceKey(workflowInstanceKey)
         .setElementInstanceKey(correlateWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
+        .setBpmnProcessId(correlateWorkflowInstanceSubscriptionCommand.getBpmnProcessId())
         .setMessageKey(correlateWorkflowInstanceSubscriptionCommand.getMessageKey())
         .setMessageName(correlateWorkflowInstanceSubscriptionCommand.getMessageName())
         .setVariables(correlateWorkflowInstanceSubscriptionCommand.getVariables());
@@ -180,13 +185,15 @@ public class SubscriptionCommandMessageHandler
         workflowInstanceSubscriptionRecord);
   }
 
-  private boolean onCorrelateMessageSubscription(DirectBuffer buffer, int offset, int length) {
+  private boolean onCorrelateMessageSubscription(
+      final DirectBuffer buffer, final int offset, final int length) {
     correlateMessageSubscriptionCommand.wrap(buffer, offset, length);
 
     messageSubscriptionRecord.reset();
     messageSubscriptionRecord
         .setWorkflowInstanceKey(correlateMessageSubscriptionCommand.getWorkflowInstanceKey())
         .setElementInstanceKey(correlateMessageSubscriptionCommand.getElementInstanceKey())
+        .setBpmnProcessId(correlateMessageSubscriptionCommand.getBpmnProcessId())
         .setMessageKey(-1)
         .setMessageName(correlateMessageSubscriptionCommand.getMessageName());
 
@@ -197,7 +204,8 @@ public class SubscriptionCommandMessageHandler
         messageSubscriptionRecord);
   }
 
-  private boolean onCloseMessageSubscription(DirectBuffer buffer, int offset, int length) {
+  private boolean onCloseMessageSubscription(
+      final DirectBuffer buffer, final int offset, final int length) {
     closeMessageSubscriptionCommand.wrap(buffer, offset, length);
 
     messageSubscriptionRecord.reset();
@@ -214,7 +222,8 @@ public class SubscriptionCommandMessageHandler
         messageSubscriptionRecord);
   }
 
-  private boolean onCloseWorkflowInstanceSubscription(DirectBuffer buffer, int offset, int length) {
+  private boolean onCloseWorkflowInstanceSubscription(
+      final DirectBuffer buffer, final int offset, final int length) {
     closeWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
     final long workflowInstanceKey =
@@ -238,7 +247,7 @@ public class SubscriptionCommandMessageHandler
   }
 
   private boolean onRejectCorrelateMessageSubscription(
-      DirectBuffer buffer, int offset, int length) {
+      final DirectBuffer buffer, final int offset, final int length) {
     resetMessageCorrelationCommand.wrap(buffer, offset, length);
 
     final long workflowInstanceKey = resetMessageCorrelationCommand.getWorkflowInstanceKey();
@@ -247,6 +256,7 @@ public class SubscriptionCommandMessageHandler
     messageSubscriptionRecord
         .setWorkflowInstanceKey(workflowInstanceKey)
         .setElementInstanceKey(-1L)
+        .setBpmnProcessId(resetMessageCorrelationCommand.getBpmnProcessId())
         .setMessageName(resetMessageCorrelationCommand.getMessageName())
         .setCorrelationKey(resetMessageCorrelationCommand.getCorrelationKey())
         .setMessageKey(resetMessageCorrelationCommand.getMessageKey())
@@ -260,7 +270,10 @@ public class SubscriptionCommandMessageHandler
   }
 
   private boolean writeCommand(
-      int partitionId, ValueType valueType, Intent intent, UnpackedObject command) {
+      final int partitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final UnpackedObject command) {
 
     final LogStream logStream = logstreamSupplier.apply(partitionId);
     if (logStream == null) {

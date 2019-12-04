@@ -222,6 +222,7 @@ public class WorkflowInstanceStreamProcessorTest {
             START_PARTITION_ID,
             catchEvent.getValue().getWorkflowInstanceKey(),
             catchEvent.getKey(),
+            catchEvent.getValue().getBpmnProcessIdBuffer(),
             wrapString("order canceled"),
             wrapString("order-123"),
             true);
@@ -292,13 +293,14 @@ public class WorkflowInstanceStreamProcessorTest {
             eq(subscription.getSubscriptionPartitionId()),
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getElementInstanceKey()),
+            eq(subscription.getBpmnProcessIdBuffer()),
             captor.capture());
     BufferUtil.equals(captor.getValue(), subscription.getMessageNameBuffer());
 
     verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000))
         .rejectCorrelateMessageSubscription(
             eq(subscription.getWorkflowInstanceKey()),
-            eq(subscription.getElementInstanceKey()),
+            eq(subscription.getBpmnProcessIdBuffer()),
             eq(subscription.getMessageKey()),
             captor.capture(),
             any());

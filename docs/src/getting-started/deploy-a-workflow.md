@@ -6,7 +6,7 @@ _We offer Operate free of charge for unrestricted **non-production** use because
 
 Before we run the Zeebe broker, we need to configure an Elasticsearch exporter in the Zeebe configuration file. Which leads to the question: what's an exporter, and why is Elasticsearch a part of this tutorial?
 
-The answer is that Zeebe itself doesn't store historic data related to your workflow instances. If you want to keep this data for auditing or for analysis, you need to export to another storage system. Zeebe _does_ provide an easy-to-use exporter interface, and it also offers an Elasticsearch exporter out of the box. (_[See: Exporters](https://docs.zeebe.io/basics/exporters.html)_)
+The answer is that Zeebe itself doesn't store historic data related to your workflow instances. If you want to keep this data for auditing or for analysis, you need to export to another storage system. Zeebe _does_ provide an easy-to-use exporter interface, and it also offers an Elasticsearch exporter out of the box. (_[See: Exporters](/basics/exporters.html)_)
 
 Elasticsearch is also what Camunda Operate uses to store data, so to run Operate, you need to enable the Elasticsearch exporter in Zeebe and run an instance of Elasticsearch. In this section and the next section of the tutorial, we'll use Operate to visualize what's going on in Zeebe with each step we take.
 
@@ -188,6 +188,6 @@ You should see the workflow model we just deployed – the same model we built i
 
 ![Zeebe Configuration File](/getting-started/img/tutorial-4.0-workflow-in-operate.png)
 
-[**Next Page: Create and Complete Instances >>**](getting-started/create-workflow-instance.html)
+[**Next Page: Create and Complete Instances >>**](/getting-started/create-workflow-instance.html)
 
-[**<< Previous Page: Create a Workflow**](getting-started/create-a-workflow.html)
+[**<< Previous Page: Create a Workflow**](/getting-started/create-a-workflow.html)

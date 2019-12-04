@@ -2,10 +2,10 @@
 
 The following activities can be marked as multi-instance: 
 
-* [Service Tasks](bpmn-workflows/service-tasks/service-tasks.html) 
-* [Receive Tasks](bpmn-workflows/receive-tasks/receive-tasks.html) 
-* [Embedded Subprocesses](bpmn-workflows/embedded-subprocesses/embedded-subprocesses.html)
-* [Call Activities](bpmn-workflows/call-activities/call-activities.html) 
+* [Service Tasks](/bpmn-workflows/service-tasks/service-tasks.html) 
+* [Receive Tasks](/bpmn-workflows/receive-tasks/receive-tasks.html) 
+* [Embedded Subprocesses](/bpmn-workflows/embedded-subprocesses/embedded-subprocesses.html)
+* [Call Activities](/bpmn-workflows/call-activities/call-activities.html) 
 
 A multi-instance activity is executed multiple times - once for each element of a given collection (like a _foreach_ loop in a programming language). 
 
@@ -173,5 +173,5 @@ The output mappings can be used to update the `outputElement` variable. For exam
 </details>
 
 References:
-* [Variable Scopes](reference/variables.html#variable-scopes)
-* [Variable Mappings](reference/variables.html#inputoutput-variable-mappings)
+* [Variable Scopes](/reference/variables.html#variable-scopes)
+* [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)

@@ -57,6 +57,7 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
         subscription.getSubscriptionPartitionId(),
         subscription.getWorkflowInstanceKey(),
         subscription.getElementInstanceKey(),
+        subscription.getBpmnProcessId(),
         subscription.getMessageName(),
         subscription.getCorrelationKey(),
         subscription.shouldCloseOnCorrelate());

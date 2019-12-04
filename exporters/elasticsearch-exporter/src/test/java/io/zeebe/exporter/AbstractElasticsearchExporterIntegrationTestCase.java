@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.exporter.util.ElasticsearchContainer;
 import io.zeebe.exporter.util.ElasticsearchNode;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.ValueType;
 import io.zeebe.test.exporter.ExporterIntegrationRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ZbLogger;
@@ -67,18 +68,22 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
   protected void assertIndexSettings() {
     final ImmutableOpenMap<String, Settings> settingsForIndices = esClient.getSettingsForIndices();
     for (ObjectCursor<String> key : settingsForIndices.keys()) {
-      final Settings settings = settingsForIndices.get(key.value);
+      final String indexName = key.value;
+      final Settings settings = settingsForIndices.get(indexName);
       final Integer numberOfShards = settings.getAsInt("index.number_of_shards", -1);
       final Integer numberOfReplicas = settings.getAsInt("index.number_of_replicas", -1);
 
+      final int expectedNumberOfShards = numberOfShardsForIndex(indexName);
+
       assertThat(numberOfShards)
           .withFailMessage(
-              "Expected number of shards of index %s to be 1 but was %d", key.value, numberOfShards)
-          .isEqualTo(1);
+              "Expected number of shards of index %s to be %d but was %d",
+              indexName, expectedNumberOfShards, numberOfShards)
+          .isEqualTo(expectedNumberOfShards);
       assertThat(numberOfReplicas)
           .withFailMessage(
               "Expected number of replicas of index %s to be 0 but was %d",
-              key.value, numberOfReplicas)
+              indexName, numberOfReplicas)
           .isEqualTo(0);
     }
   }
@@ -107,6 +112,16 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     }
 
     return MAPPER.convertValue(jsonNode, Map.class);
+  }
+
+  private int numberOfShardsForIndex(String indexName) {
+    if (indexName.startsWith(
+            esClient.indexPrefixForValueTypeWithDelimiter(ValueType.WORKFLOW_INSTANCE))
+        || indexName.startsWith(esClient.indexPrefixForValueTypeWithDelimiter(ValueType.JOB))) {
+      return 3;
+    } else {
+      return 1;
+    }
   }
 
   protected ElasticsearchExporterConfiguration getDefaultConfiguration() {
@@ -158,7 +173,9 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     }
 
     Map<String, Object> get(Record<?> record) {
-      final GetRequest request = new GetRequest(indexFor(record), typeFor(record), idFor(record));
+      final GetRequest request =
+          new GetRequest(indexFor(record), typeFor(record), idFor(record))
+              .routing(String.valueOf(record.getPartitionId()));
       try {
         final GetResponse response = client.get(request, RequestOptions.DEFAULT);
         if (response.isExists()) {

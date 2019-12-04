@@ -101,7 +101,8 @@ public class BrokerTopologyManagerImpl extends Actor
 
     distributedBrokerInfo.consumePartitions(
         newTopology::addPartitionIfAbsent,
-        leaderPartitionId -> newTopology.setPartitionLeader(leaderPartitionId, nodeId),
+        (leaderPartitionId, term) ->
+            newTopology.setPartitionLeader(leaderPartitionId, nodeId, term),
         followerPartitionId -> newTopology.addPartitionFollower(followerPartitionId, nodeId));
 
     final String clientAddress = distributedBrokerInfo.getCommandApiAddress();

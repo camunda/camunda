@@ -52,6 +52,9 @@ public class EmbeddedBrokerConfigurator {
       cluster.setReplicationFactor(replicationFactor);
       cluster.setClusterSize(clusterSize);
       cluster.setClusterName(clusterName);
+      cluster.setGossipFailureTimeout(2000);
+      cluster.setGossipInterval(150);
+      cluster.setGossipProbeInterval(250);
     };
   }
 

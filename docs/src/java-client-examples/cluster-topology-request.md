@@ -4,8 +4,8 @@ Shows which broker is leader and follower for which partition. Particularly usef
 
 ## Related Resources
 
-* [Clustering Basics](basics/clustering.html)
-* [Setting up a Cluster](operations/setting-up-a-cluster.html)
+* [Clustering Basics](/basics/clustering.html)
+* [Setting up a Cluster](/operations/setting-up-a-cluster.html)
 
 ## Prerequisites
 

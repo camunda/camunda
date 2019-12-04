@@ -7,7 +7,7 @@ Business Process Model And Notation 2.0 (BPMN) is an industry standard for workf
 <details>
   <summary>The corresponding XML</summary>
   <p>
-  
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.1.0">
@@ -123,7 +123,7 @@ The best tool for modeling BPMN diagrams for Zeebe is the **Zeebe Modeler**.
 A core concept of BPMN is a *sequence flow* that defines the order in which steps in the workflow happen. In BPMN's visual representation, a sequence flow is an arrow connecting two elements. The direction of the arrow indicates their order of execution.
 
 <center>
-![workflow](/bpmn-workflows/sequenceflow.png)
+<img src="/bpmn-workflows/sequenceflow.png" alt="workflow">
 </center>
 
 You can think of workflow execution as tokens running through the workflow model. When a workflow is started, a token is spawned at the beginning of the model. It advances with every completed step. When the token reaches the end of the workflow, it is consumed and the workflow instance ends. Zeebe's task is to drive the token and to make sure that the job workers are invoked whenever necessary.
@@ -191,4 +191,4 @@ See the [Sub Processes](/bpmn-workflows/subprocesses.html) section on which type
 * [BPMN Specification](http://www.bpmn.org/)
 * [BPMN Tutorial](https://camunda.com/bpmn/)
 * [Full BPMN Reference](https://camunda.com/bpmn/reference/)
-* [BPMN Book](https://www.amazon.com/Real-Life-BPMN-3rd-introductions-CMMN-ebook/dp/B01NAL67J8)
+* [BPMN Book](https://www.amazon.com/Real-Life-BPMN-introductions-CMMN-DMN/dp/1541163443)

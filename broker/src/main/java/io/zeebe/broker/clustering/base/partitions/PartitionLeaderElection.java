@@ -34,7 +34,6 @@ public class PartitionLeaderElection extends Actor
   private final RaftPartition partition;
   private final List<PartitionRoleChangeListener> leaderElectionListeners;
   private Role raftRole;
-  private long leaderTerm; // current term if this node is the leader.
   private CompletableActorFuture<Void> startFuture;
 
   public PartitionLeaderElection(RaftPartition partition) {
@@ -56,11 +55,6 @@ public class PartitionLeaderElection extends Actor
   }
 
   @Override
-  public String getName() {
-    return "partition-" + partitionId + "-leader-election";
-  }
-
-  @Override
   public void stop(ServiceStopContext stopContext) {
     partition.removeRoleChangeListener(this);
     actor.close();
@@ -69,6 +63,11 @@ public class PartitionLeaderElection extends Actor
   @Override
   public PartitionLeaderElection get() {
     return this;
+  }
+
+  @Override
+  public String getName() {
+    return "partition-" + partitionId + "-leader-election";
   }
 
   @Override
@@ -87,7 +86,7 @@ public class PartitionLeaderElection extends Actor
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
-          transitionToLeader(partition.term());
+          transitionToLeader();
         }
         break;
       case INACTIVE:
@@ -110,9 +109,8 @@ public class PartitionLeaderElection extends Actor
     leaderElectionListeners.forEach(l -> l.onTransitionToFollower(partitionId));
   }
 
-  private void transitionToLeader(long term) {
-    leaderTerm = term;
-    leaderElectionListeners.forEach(l -> l.onTransitionToLeader(partitionId, term));
+  private void transitionToLeader() {
+    leaderElectionListeners.forEach(l -> l.onTransitionToLeader(partitionId));
   }
 
   public int getPartitionId() {
@@ -132,7 +130,7 @@ public class PartitionLeaderElection extends Actor
         () -> {
           leaderElectionListeners.add(listener);
           if (raftRole == Role.LEADER) {
-            listener.onTransitionToLeader(partitionId, leaderTerm);
+            listener.onTransitionToLeader(partitionId);
           } else {
             listener.onTransitionToFollower(partitionId);
           }

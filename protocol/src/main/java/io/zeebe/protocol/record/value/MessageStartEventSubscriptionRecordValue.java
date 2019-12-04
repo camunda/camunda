@@ -28,6 +28,9 @@ public interface MessageStartEventSubscriptionRecordValue extends RecordValue {
   /** @return the workflow key tied to the subscription */
   long getWorkflowKey();
 
+  /** @return the BPMN process id tied to the subscription */
+  String getBpmnProcessId();
+
   /** @return the id of the start event tied to the subscription */
   String getStartEventId();
 

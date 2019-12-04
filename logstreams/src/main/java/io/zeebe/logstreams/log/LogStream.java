@@ -12,7 +12,6 @@ import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.nio.ByteBuffer;
 
 /**
  * Represents a stream of events from a log storage.
@@ -47,13 +46,8 @@ public interface LogStream extends AutoCloseable {
   /** @return the current commit position, or a negative value if no entry is committed. */
   long getCommitPosition();
 
-  /**
-   * Appends the given block of events to the logstream and updates the commit position.
-   *
-   * @param commitPosition the new commit position (position of the last event in the given buffer)
-   * @param buffer the events to append
-   */
-  long append(long commitPosition, ByteBuffer buffer);
+  /** sets the new commit position * */
+  void setCommitPosition(long position);
 
   /**
    * Returns the log storage, which is accessed by the LogStream.

@@ -31,18 +31,18 @@ public class MessageCorrelator {
   private long messageKey;
 
   public MessageCorrelator(
-      MessageState messageState,
-      MessageSubscriptionState subscriptionState,
-      SubscriptionCommandSender commandSender) {
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
+      final SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
   }
 
   public void correlateNextMessage(
-      MessageSubscription subscription,
-      MessageSubscriptionRecord subscriptionRecord,
-      Consumer<SideEffectProducer> sideEffect) {
+      final MessageSubscription subscription,
+      final MessageSubscriptionRecord subscriptionRecord,
+      final Consumer<SideEffectProducer> sideEffect) {
     this.subscription = subscription;
     this.subscriptionRecord = subscriptionRecord;
     this.sideEffect = sideEffect;
@@ -54,11 +54,13 @@ public class MessageCorrelator {
   private boolean correlateMessage(final Message message) {
     // correlate the first message which is not correlated to the workflow instance yet
     messageKey = message.getKey();
-    final boolean isCorrelatedBefore =
-        messageState.existMessageCorrelation(
-            messageKey, subscriptionRecord.getWorkflowInstanceKey());
 
-    if (!isCorrelatedBefore) {
+    final boolean correlateMessage =
+        message.getDeadline() > ActorClock.currentTimeMillis()
+            && !messageState.existMessageCorrelation(
+                messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
+
+    if (correlateMessage) {
       subscriptionState.updateToCorrelatingState(
           subscription, message.getVariables(), ActorClock.currentTimeMillis(), messageKey);
 
@@ -66,16 +68,17 @@ public class MessageCorrelator {
       messageVariables.wrap(message.getVariables());
       sideEffect.accept(this::sendCorrelateCommand);
 
-      messageState.putMessageCorrelation(messageKey, subscriptionRecord.getWorkflowInstanceKey());
+      messageState.putMessageCorrelation(messageKey, subscriptionRecord.getBpmnProcessIdBuffer());
     }
 
-    return isCorrelatedBefore;
+    return !correlateMessage;
   }
 
   private boolean sendCorrelateCommand() {
     return commandSender.correlateWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getElementInstanceKey(),
+        subscriptionRecord.getBpmnProcessIdBuffer(),
         subscriptionRecord.getMessageNameBuffer(),
         messageKey,
         messageVariables);

@@ -7,11 +7,12 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
+import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class PartitionServiceNames {
 
-  public static ServiceName<Void> leaderOpenLogStreamServiceName(String raftName) {
+  public static ServiceName<Void> leaderOpenLogStreamServiceName(final String raftName) {
     return ServiceName.newServiceName(
         String.format("raft.leader.%s.openLogStream", raftName), Void.class);
   }
@@ -21,17 +22,16 @@ public class PartitionServiceNames {
         String.format("cluster.base.partition.%s.leader", partitionName), Partition.class);
   }
 
-  public static final ServiceName<PartitionLeaderElection> partitionLeaderElectionServiceName(
-      String logName) {
+  public static ServiceName<SnapshotStorage> snapshotStorageServiceName(final int partitionId) {
+    return ServiceName.newServiceName(
+        String.format("cluster.base.partition.%d.snapshots", partitionId), SnapshotStorage.class);
+  }
+
+  public static ServiceName<PartitionLeaderElection> partitionLeaderElectionServiceName(
+      final String logName) {
     return ServiceName.newServiceName(
         String.format("cluster.base.partition.%s.leader.election", logName),
         PartitionLeaderElection.class);
-  }
-
-  public static final ServiceName<Void> partitionLeadershipEventListenerServiceName(
-      String logName) {
-    return ServiceName.newServiceName(
-        String.format("cluster.base.partition.%s.role.listener", logName), Void.class);
   }
 
   public static ServiceName<Partition> followerPartitionServiceName(final String partitionName) {

@@ -23,7 +23,7 @@ Once an exporter is configured, the next time Zeebe is started, the exporter
 will start receiving records. Note that it is only guaranteed to see records
 produced from that point on.
 
-For more information, you can read the [reference information page](reference/exporters.html),
+For more information, you can read the [reference information page](/reference/exporters.html),
 and you can find a reference implementation in the form of the Zeebe-maintained
 [ElasticSearch exporter](https://github.com/zeebe-io/zeebe/tree/{{commit}}/exporters/elasticsearch-exporter).
 

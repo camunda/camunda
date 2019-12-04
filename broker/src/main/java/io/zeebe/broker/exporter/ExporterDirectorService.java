@@ -50,8 +50,10 @@ public class ExporterDirectorService implements Service<ExporterDirectorService>
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
-    stopContext.async(director.stopAsync());
+  public void stop(final ServiceStopContext stopContext) {
+    if (director != null) {
+      stopContext.async(director.stopAsync());
+    }
   }
 
   @Override
@@ -72,6 +74,7 @@ public class ExporterDirectorService implements Service<ExporterDirectorService>
               .id(EXPORTER_PROCESSOR_ID)
               .name(String.format(EXPORTER_NAME, partition.getPartitionId()))
               .logStream(partition.getLogStream())
+              .logStorage(partition.getLogStream().getLogStorage())
               .zeebeDb(zeebeDb)
               .maxSnapshots(dataCfg.getMaxSnapshots())
               .descriptors(exporterRepository.getExporters().values())

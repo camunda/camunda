@@ -258,6 +258,12 @@ public class RecordingGatewayService extends GatewayImplBase {
             ActivateJobsResponse.newBuilder().addAllJobs(Arrays.asList(activatedJobs)).build());
   }
 
+  public void onSetVariablesRequest(final long key) {
+    addRequestHandler(
+        SetVariablesRequest.class,
+        request -> SetVariablesResponse.newBuilder().setKey(key).build());
+  }
+
   public void errorOnRequest(
       Class<? extends GeneratedMessageV3> requestClass, Supplier<Exception> errorSupplier) {
     addRequestHandler(

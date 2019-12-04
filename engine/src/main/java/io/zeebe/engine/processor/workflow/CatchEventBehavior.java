@@ -140,6 +140,7 @@ public class CatchEventBehavior {
     final ExecutableMessage message = handler.getMessage();
 
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
+    final DirectBuffer bpmnProcessId = cloneBuffer(context.getValue().getBpmnProcessIdBuffer());
     final long elementInstanceKey = context.getKey();
     final DirectBuffer messageName = cloneBuffer(message.getMessageName());
     final DirectBuffer correlationKey = extractedKey;
@@ -152,6 +153,7 @@ public class CatchEventBehavior {
     subscription.setElementInstanceKey(elementInstanceKey);
     subscription.setCommandSentTime(ActorClock.currentTimeMillis());
     subscription.setWorkflowInstanceKey(workflowInstanceKey);
+    subscription.setBpmnProcessId(bpmnProcessId);
     subscription.setCorrelationKey(correlationKey);
     subscription.setTargetElementId(handler.getId());
     subscription.setCloseOnCorrelate(closeOnCorrelate);
@@ -165,6 +167,7 @@ public class CatchEventBehavior {
                     subscriptionPartitionId,
                     workflowInstanceKey,
                     elementInstanceKey,
+                    bpmnProcessId,
                     messageName,
                     correlationKey,
                     closeOnCorrelate));
@@ -242,6 +245,7 @@ public class CatchEventBehavior {
       int subscriptionPartitionId,
       long workflowInstanceKey,
       long elementInstanceKey,
+      DirectBuffer bpmnProcessId,
       DirectBuffer messageName,
       DirectBuffer correlationKey,
       boolean closeOnCorrelate) {
@@ -249,6 +253,7 @@ public class CatchEventBehavior {
         subscriptionPartitionId,
         workflowInstanceKey,
         elementInstanceKey,
+        bpmnProcessId,
         messageName,
         correlationKey,
         closeOnCorrelate);

@@ -83,11 +83,11 @@ public class StreamProcessorRule implements TestRule {
     chain =
         RuleChain.outerRule(tempFolder)
             .around(actorSchedulerRule)
-            .around(new CleanUpRule(() -> tempFolder.getRoot()))
+            .around(new CleanUpRule(tempFolder::getRoot))
             .around(serviceContainerRule)
             .around(closeables)
-            .around(new FailedTestRecordPrinter())
-            .around(rule);
+            .around(rule)
+            .around(new FailedTestRecordPrinter());
   }
 
   @Override

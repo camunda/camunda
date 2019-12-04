@@ -53,10 +53,10 @@ public class LeaderRoleChangeTest {
         BROKER_RULE.getService(partitionInstallServiceName(getPartitionName(1)));
 
     partitionInstallService.onTransitionToFollower(1);
-    partitionInstallService.onTransitionToLeader(1, 4);
+    partitionInstallService.onTransitionToLeader(1);
 
     partitionInstallService.onTransitionToFollower(1);
-    partitionInstallService.onTransitionToLeader(1, 7);
+    partitionInstallService.onTransitionToLeader(1);
 
     // when
 

@@ -7,6 +7,8 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
+
 public interface TopologyPartitionListener {
-  void onPartitionUpdated(int partitionId, NodeInfo member);
+  void onPartitionLeaderUpdated(int partitionId, BrokerInfo member);
 }

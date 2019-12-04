@@ -2,7 +2,7 @@
 
 _New to BPMN and want to learn more before moving forward? [This blog post](https://zeebe.io/blog/2018/08/bpmn-for-microservices-orchestration-a-primer-part-1/) helps to explain the standard and why it's a good fit for microservices orchestration._
 
-_In case you're already familiar with BPMN and how to create a BPMN model in Zeebe Modeler, you can find the finished model that we create during the tutorial here: [Zeebe Getting Started Tutorial Workflow Model](getting-started/img/order-process.bpmn)._ 
+_In case you're already familiar with BPMN and how to create a BPMN model in Zeebe Modeler, you can find the finished model that we create during the tutorial here: [Zeebe Getting Started Tutorial Workflow Model](/getting-started/img/order-process.bpmn)._ 
 
 _If you're using the finished model we provide rather than building your own, you can also move ahead to [section 3.3: Deploy a Workflow](/getting-started/deploy-a-workflow.html)._
 
@@ -56,8 +56,8 @@ This is what you should see in your Modeler now.
 
 This _Type_ field represents the _job type_ in Zeebe. A couple of concepts that are important to understand at this point:
 
-*   A _job_ is simply a work item in a workflow that needs to be completed before a workflow instance can proceed to the next step. (_[See: Job Workers](https://docs.zeebe.io/basics/job-workers.html)_)
-*   A _workflow instance_ is one running instance of a workflow model--in our case, an individual order to be fulfilled. (_[See: Workflows](https://docs.zeebe.io/basics/workflows.html)_)
+*   A _job_ is simply a work item in a workflow that needs to be completed before a workflow instance can proceed to the next step. (_[See: Job Workers](/basics/job-workers.html)_)
+*   A _workflow instance_ is one running instance of a workflow model--in our case, an individual order to be fulfilled. (_[See: Workflows](/basics/workflows.html)_)
 
 For every workflow instance that arrives at the "Initiate Payment" Service Task, Zeebe will create a job with type `initiate-payment`. The external worker service responsible for payment processing--the so-called job worker--will poll Zeebe intermittently to ask if any jobs of type `initiate-payment` are available.
 
@@ -74,7 +74,7 @@ Next, we'll add a Message Event to the workflow:
 
 
 
-We use message catch events in Zeebe when the workflow engine needs to receive a message from an external system before the workflow instance can advance. (_[See: Message Events](https://docs.zeebe.io/bpmn-workflows/message-events/message-events.html)_)
+We use message catch events in Zeebe when the workflow engine needs to receive a message from an external system before the workflow instance can advance. (_[See: Message Events](/bpmn-workflows/message-events/message-events.html)_)
 
 In the scenario we're modeling, we _initiate_ a payment with our Service Task, but we need to wait for some other external system to actually confirm that the payment was received. This confirmation comes in the form of a message that will be sent to Zeebe - asynchronously - by an external service.
 
@@ -193,6 +193,6 @@ Here's what you should see in the Modeler after these last few updates:
 
 That's all for our modeling step. Remember to save the file one more time to prepare to deploy the workflow to Zeebe, create workflow instances, and complete them.
 
-[**Next Page: Deploy a Workflow >>**](getting-started/deploy-a-workflow.html)
+[**Next Page: Deploy a Workflow >>**](/getting-started/deploy-a-workflow.html)
 
-[**<< Previous Page: Tutorial Setup**](getting-started/tutorial-setup.html)
+[**<< Previous Page: Tutorial Setup**](/getting-started/tutorial-setup.html)

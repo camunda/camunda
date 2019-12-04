@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.api.command;
 
+import io.zeebe.client.api.response.SetVariablesResponse;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -55,7 +56,7 @@ public interface SetVariablesCommandStep1 {
    */
   SetVariablesCommandStep2 variables(Object variables);
 
-  interface SetVariablesCommandStep2 extends FinalCommandStep<Void> {
+  interface SetVariablesCommandStep2 extends FinalCommandStep<SetVariablesResponse> {
     // the place for new optional parameters
 
     /**

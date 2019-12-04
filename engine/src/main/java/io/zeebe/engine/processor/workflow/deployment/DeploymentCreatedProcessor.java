@@ -102,6 +102,7 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
         subscriptionRecord
             .setMessageName(startEvent.getMessage().getMessageName())
             .setWorkflowKey(workflowKey)
+            .setBpmnProcessId(workflow.getId())
             .setStartEventId(startEvent.getId());
         streamWriter.appendNewCommand(MessageStartEventSubscriptionIntent.OPEN, subscriptionRecord);
       }

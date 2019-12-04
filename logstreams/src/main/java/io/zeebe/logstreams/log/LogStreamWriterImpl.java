@@ -29,16 +29,25 @@ import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
 public class LogStreamWriterImpl implements LogStreamRecordWriter {
-  protected final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
-  protected final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
-  protected final ClaimedFragment claimedFragment = new ClaimedFragment();
-  protected long key;
-  protected long sourceRecordPosition = -1L;
-  protected BufferWriter metadataWriter;
-  protected BufferWriter valueWriter;
-  private LogStream logStream;
+  private final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
+  private final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
+  private final ClaimedFragment claimedFragment = new ClaimedFragment();
+
+  private Dispatcher logWriteBuffer;
+  private int partitionId;
+  private long key;
+  private long sourceRecordPosition = -1L;
+  private BufferWriter metadataWriter;
+  private BufferWriter valueWriter;
 
   public LogStreamWriterImpl() {}
+
+  public LogStreamWriterImpl(final Dispatcher logWriteBuffer, final int partitionId) {
+    this.logWriteBuffer = logWriteBuffer;
+    this.partitionId = partitionId;
+
+    reset();
+  }
 
   public LogStreamWriterImpl(final LogStream log) {
     wrap(log);
@@ -46,7 +55,9 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public void wrap(final LogStream log) {
-    this.logStream = log;
+    logWriteBuffer = log.getWriteBuffer();
+    partitionId = log.getPartitionId();
+
     reset();
   }
 
@@ -61,6 +72,7 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
     return this;
   }
 
+  @Override
   public LogStreamRecordWriter sourceRecordPosition(final long position) {
     this.sourceRecordPosition = position;
     return this;
@@ -162,12 +174,10 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
     final int framedLength = valueLength + headerLength(metadataLength);
 
     long claimedPosition = -1;
-    final Dispatcher logWriteBuffer = logStream.getWriteBuffer();
-    final int logId = logStream.getPartitionId();
 
     do {
 
-      claimedPosition = logWriteBuffer.claim(claimedFragment, framedLength, logId);
+      claimedPosition = logWriteBuffer.claim(claimedFragment, framedLength, partitionId);
     } while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
     return claimedPosition - DataFrameDescriptor.alignedFramedLength(framedLength);

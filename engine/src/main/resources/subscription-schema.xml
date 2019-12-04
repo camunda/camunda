@@ -14,6 +14,7 @@
     <field name="closeOnCorrelate" id="3" type="BooleanType"/>
     <data name="messageName" id="4" type="varDataEncoding"/>
     <data name="correlationKey" id="5" type="varDataEncoding"/>
+    <data name="bpmnProcessId" id="6" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="OpenWorkflowInstanceSubscription" id="1">
@@ -31,6 +32,7 @@
     <field name="messageKey" id="3" type="uint64"/>
     <data name="messageName" id="4" type="varDataEncoding"/>
     <data name="variables" id="5" type="varDataEncoding"/>
+    <data name="bpmnProcessId" id="6" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="CorrelateMessageSubscription" id="3">
@@ -38,6 +40,7 @@
     <field name="workflowInstanceKey" id="1" type="uint64"/>
     <field name="elementInstanceKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
+    <data name="bpmnProcessId" id="4" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="CloseMessageSubscription" id="4">
@@ -60,5 +63,6 @@
     <field name="messageKey" id="2" type="uint64"/>
     <data name="messageName" id="3" type="varDataEncoding"/>
     <data name="correlationKey" id="4" type="varDataEncoding"/>
+    <data name="bpmnProcessId" id="5" type="varDataEncoding"/>
   </sbe:message>
 </sbe:messageSchema>

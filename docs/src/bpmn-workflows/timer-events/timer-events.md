@@ -6,7 +6,7 @@ Timer events are events which are triggered by a defined timer.
 
 ## Timer Start Events
 
-A workflow can have one or more timer start events. Each of the timer events must have either a **time date or time cycle** definition. If the workflow has at least one timer start event then it must not have a none start event. Other types of start events are allowed.
+A workflow can have one or more timer start events (besides other types of start events). Each of the timer events must have either a **time date or time cycle** definition. 
 
 When a workflow is deployed then it schedules a timer for each timer start event. Scheduled timers of the previous version of the workflow (based on the BPMN process id) are canceled.
 
@@ -51,7 +51,7 @@ If the duration is zero or negative then the timer will fire immediately.
 A cycle defined as ISO 8601 repeating intervals format. It contains the duration and the number of repetitions. If the repetitions are not defined then the timer will be repeated infinitely until it is canceled.
 
 * `R5/PT10S` - every 10 seconds, up to 5 times
-* `R/PT1D` - every day, infinitely
+* `R/P1D` - every day, infinitely
 
 ## Additional Resources
 

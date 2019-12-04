@@ -7,6 +7,8 @@
  */
 package io.zeebe.protocol.impl.record.value.message;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.msgpack.property.BooleanProperty;
 import io.zeebe.msgpack.property.DocumentProperty;
@@ -17,7 +19,6 @@ import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.protocol.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -28,53 +29,71 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
       new IntegerProperty("subscriptionPartitionId");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
-  private final LongProperty messageKeyProp = new LongProperty("messageKey");
+  private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
+  private final LongProperty messageKeyProp = new LongProperty("messageKey", -1L);
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final DocumentProperty variablesProp = new DocumentProperty("variables");
   private final BooleanProperty closeOnCorrelateProp =
       new BooleanProperty("closeOnCorrelate", true);
 
   public WorkflowInstanceSubscriptionRecord() {
-    this.declareProperty(subscriptionPartitionIdProp)
+    declareProperty(subscriptionPartitionIdProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(variablesProp)
-        .declareProperty(closeOnCorrelateProp);
+        .declareProperty(closeOnCorrelateProp)
+        .declareProperty(bpmnProcessIdProp);
   }
 
   public boolean shouldCloseOnCorrelate() {
     return closeOnCorrelateProp.getValue();
   }
 
+  @Override
   public long getElementInstanceKey() {
     return elementInstanceKeyProp.getValue();
   }
 
-  @Override
-  public String getMessageName() {
-    return BufferUtil.bufferAsString(messageNameProp.getValue());
-  }
-
-  public WorkflowInstanceSubscriptionRecord setMessageName(DirectBuffer messageName) {
-    messageNameProp.setValue(messageName);
-    return this;
-  }
-
-  public WorkflowInstanceSubscriptionRecord setElementInstanceKey(long key) {
+  public WorkflowInstanceSubscriptionRecord setElementInstanceKey(final long key) {
     elementInstanceKeyProp.setValue(key);
     return this;
   }
 
-  @JsonIgnore
+  @Override
+  public String getBpmnProcessId() {
+    return bufferAsString(bpmnProcessIdProp.getValue());
+  }
+
+  public WorkflowInstanceSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
+  @Override
   public long getMessageKey() {
     return messageKeyProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setMessageKey(long messageKey) {
+  @Override
+  public String getMessageName() {
+    return bufferAsString(messageNameProp.getValue());
+  }
+
+  public WorkflowInstanceSubscriptionRecord setMessageName(final DirectBuffer messageName) {
+    messageNameProp.setValue(messageName);
+    return this;
+  }
+
+  public WorkflowInstanceSubscriptionRecord setMessageKey(final long messageKey) {
     messageKeyProp.setValue(messageKey);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBpmnProcessIdBuffer() {
+    return bpmnProcessIdProp.getValue();
   }
 
   @JsonIgnore
@@ -87,7 +106,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return subscriptionPartitionIdProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setSubscriptionPartitionId(int partitionId) {
+  public WorkflowInstanceSubscriptionRecord setSubscriptionPartitionId(final int partitionId) {
     subscriptionPartitionIdProp.setValue(partitionId);
     return this;
   }
@@ -97,7 +116,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 
-  public WorkflowInstanceSubscriptionRecord setVariables(DirectBuffer variables) {
+  public WorkflowInstanceSubscriptionRecord setVariables(final DirectBuffer variables) {
     variablesProp.setValue(variables);
     return this;
   }
@@ -107,17 +126,18 @@ public class WorkflowInstanceSubscriptionRecord extends UnifiedRecordValue
     return variablesProp.getValue();
   }
 
+  @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKeyProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setWorkflowInstanceKey(long key) {
+  public WorkflowInstanceSubscriptionRecord setWorkflowInstanceKey(final long key) {
     workflowInstanceKeyProp.setValue(key);
     return this;
   }
 
-  public WorkflowInstanceSubscriptionRecord setCloseOnCorrelate(boolean closeOnCorrelate) {
-    this.closeOnCorrelateProp.setValue(closeOnCorrelate);
+  public WorkflowInstanceSubscriptionRecord setCloseOnCorrelate(final boolean closeOnCorrelate) {
+    closeOnCorrelateProp.setValue(closeOnCorrelate);
     return this;
   }
 }

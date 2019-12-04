@@ -15,8 +15,13 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.command.ClientException;
+import io.zeebe.client.api.response.SetVariablesResponse;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.VariableDocumentIntent;
+import io.zeebe.protocol.record.value.VariableDocumentRecordValue;
 import io.zeebe.test.util.BrokerClassRuleHelper;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -54,17 +59,22 @@ public class SetVariablesTest {
     final long workflowInstanceKey = CLIENT_RULE.createWorkflowInstance(workflowKey);
 
     // when
-    CLIENT_RULE
-        .getClient()
-        .newSetVariablesCommand(workflowInstanceKey)
-        .variables(Map.of("foo", "bar"))
-        .send()
-        .join();
+    final SetVariablesResponse response =
+        CLIENT_RULE
+            .getClient()
+            .newSetVariablesCommand(workflowInstanceKey)
+            .variables(Map.of("foo", "bar"))
+            .send()
+            .join();
 
     // then
     assertVariableDocumentUpdated(
         (variableDocument) ->
             assertThat(variableDocument.getVariables()).containsOnly(entry("foo", "bar")));
+
+    final Record<VariableDocumentRecordValue> record =
+        RecordingExporter.variableDocumentRecords(VariableDocumentIntent.UPDATED).getFirst();
+    assertThat(response.getKey()).isEqualTo(record.getKey());
   }
 
   @Test

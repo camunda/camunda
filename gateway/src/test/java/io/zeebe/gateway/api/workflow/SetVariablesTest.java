@@ -45,6 +45,7 @@ public class SetVariablesTest extends GatewayTest {
 
     // then
     assertThat(response).isNotNull();
+    assertThat(response.getKey()).isEqualTo(stub.getKey());
 
     final BrokerSetVariablesRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getKey()).isEqualTo(-1);

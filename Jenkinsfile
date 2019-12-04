@@ -39,7 +39,9 @@ pipeline {
         stage('Build (Java)') {
             steps {
                 container('maven') {
-                    sh '.ci/scripts/distribution/build-java.sh'
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh '.ci/scripts/distribution/build-java.sh'
+                    }
                 }
             }
         }
@@ -49,18 +51,18 @@ pipeline {
                 IMAGE = "camunda/zeebe"
                 VERSION = readMavenPom(file: 'parent/pom.xml').getVersion()
                 TAG = 'current-test'
-            }         
+            }
 
             steps {
                 container('golang') {
                     sh '.ci/scripts/distribution/build-go.sh'
                 }
 
-                container('maven') {         
+                container('maven') {
                     sh '.ci/scripts/docker/prepare.sh'
                 }
 
-                container('docker') {         
+                container('docker') {
                     sh '.ci/scripts/docker/build.sh'
                 }
             }
@@ -79,7 +81,9 @@ pipeline {
                 stage('Analyse (Java)') {
                       steps {
                           container('maven') {
-                              sh '.ci/scripts/distribution/analyse-java.sh'
+                               configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                    sh '.ci/scripts/distribution/analyse-java.sh'
+                               }
                           }
                       }
                 }
@@ -87,14 +91,18 @@ pipeline {
                 stage('Unit (Java)') {
                     steps {
                         container('maven') {
-                            sh '.ci/scripts/distribution/test-java.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/test-java.sh'
+                            }
                         }
                     }
                 }
                 stage('Unit 8 (Java 8)') {
                     steps {
                         container('maven-jdk8') {
-                            sh '.ci/scripts/distribution/test-java8.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/test-java8.sh'
+                            }
                         }
                     }
                 }
@@ -102,10 +110,21 @@ pipeline {
                 stage('IT (Java)') {
                     steps {
                         container('maven') {
-                            sh '.ci/scripts/distribution/it-java.sh'
+                            configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                                sh '.ci/scripts/distribution/it-java.sh'
+                            }
                         }
                     }
-                }     
+                }
+
+                stage('Build Docs') {
+                    steps {
+                        container('maven') {
+                            sh '.ci/scripts/docs/prepare.sh'
+                            sh '.ci/scripts/docs/build.sh'
+                        }
+                    }
+                }
             }
 
             post {
@@ -119,7 +138,9 @@ pipeline {
             when { branch 'develop' }
             steps {
                 container('maven') {
-                    sh '.ci/scripts/distribution/upload.sh'
+                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                        sh '.ci/scripts/distribution/upload.sh'
+                    }
                 }
             }
         }
@@ -168,5 +189,5 @@ pipeline {
 }
 
 boolean connectionProblem() {
-  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|Connection reset).*/
+  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|Connection reset|ProtocolException).*/
 }

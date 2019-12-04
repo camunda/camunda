@@ -16,6 +16,7 @@
 package io.zeebe.model.bpmn.validation;
 
 import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
@@ -26,6 +27,7 @@ import io.zeebe.model.bpmn.instance.SignalEventDefinition;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.model.bpmn.instance.SubProcess;
 import java.util.Arrays;
+import java.util.Collections;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
@@ -60,19 +62,46 @@ public class ZeebeStartEventValidationTest extends AbstractZeebeValidationTest {
             expect(SubProcess.class, "Must have exactly one start event"))
       },
       {
-        getProcessWithMultipleNoneStartEvents(),
-        singletonList(
-            expect(
-                Process.class,
-                "Must be either one none start event or multiple message/timer start events"))
+        processWithMultipleNoneStartEvents(),
+        singletonList(expect(Process.class, "Multiple none start events are not allowed"))
       },
+      {
+        cycleTimerStartEventSubprocess(false), emptyList(),
+      },
+      {
+        cycleTimerStartEventSubprocess(true),
+        Collections.singletonList(
+            expect(
+                SubProcess.class,
+                "Interrupting timer start events in event subprocesses can't have time cycles")),
+      },
+      {processWithNoneStartEventAndMultipleOtherStartEvents(), valid()},
     };
   }
 
-  private static BpmnModelInstance getProcessWithMultipleNoneStartEvents() {
+  private static BpmnModelInstance processWithMultipleNoneStartEvents() {
     final ProcessBuilder process = Bpmn.createExecutableProcess();
     process.startEvent().endEvent();
+    return process.startEvent().endEvent().done();
+  }
+
+  private static BpmnModelInstance cycleTimerStartEventSubprocess(boolean interrupting) {
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess();
+    processBuilder.startEvent().serviceTask("task", b -> b.zeebeTaskType("type")).endEvent();
+    return processBuilder
+        .eventSubProcess()
+        .startEvent()
+        .interrupting(interrupting)
+        .timerWithCycle("R/PT60S")
+        .endEvent()
+        .done();
+  }
+
+  private static BpmnModelInstance processWithNoneStartEventAndMultipleOtherStartEvents() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess();
     process.startEvent().endEvent();
+    process.startEvent().timerWithCycle("R/PT1H");
+    process.startEvent().message("start");
     return process.done();
   }
 }

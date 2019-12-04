@@ -14,6 +14,7 @@ import io.zeebe.logstreams.state.SnapshotChunk;
 import io.zeebe.logstreams.state.SnapshotReplication;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -32,22 +33,22 @@ public class StateReplication implements SnapshotReplication {
   private ExecutorService executorService;
   private Subscription subscription;
 
-  public StateReplication(ClusterEventService eventService, int partitionId) {
+  public StateReplication(final ClusterEventService eventService, final int partitionId) {
     this.eventService = eventService;
     this.replicationTopic = String.format(REPLICATION_TOPIC_FORMAT, partitionId);
   }
 
   @Override
-  public void replicate(SnapshotChunk snapshot) {
+  public void replicate(final SnapshotChunk snapshot) {
     eventService.broadcast(
         replicationTopic,
         snapshot,
         (s) -> {
           LOG.trace(
-              "Replicate on topic {} snapshot chunk {} for snapshot pos {}.",
+              "Replicate on topic {} snapshot chunk {} for snapshot {}.",
               replicationTopic,
               s.getChunkName(),
-              s.getSnapshotPosition());
+              s.getSnapshotId());
 
           final SnapshotChunkImpl chunkImpl = new SnapshotChunkImpl(s);
           return chunkImpl.toBytes();
@@ -55,7 +56,7 @@ public class StateReplication implements SnapshotReplication {
   }
 
   @Override
-  public void consume(Consumer<SnapshotChunk> consumer) {
+  public void consume(final Consumer<SnapshotChunk> consumer) {
     executorService = Executors.newSingleThreadExecutor((r) -> new Thread(r, replicationTopic));
 
     subscription =
@@ -67,10 +68,10 @@ public class StateReplication implements SnapshotReplication {
                   final SnapshotChunkImpl chunk = new SnapshotChunkImpl();
                   chunk.wrap(readBuffer, 0, bytes.length);
                   LOG.trace(
-                      "Received on topic {} replicated snapshot chunk {} for snapshot pos {}.",
+                      "Received on topic {} replicated snapshot chunk {} for snapshot {}.",
                       replicationTopic,
                       chunk.getChunkName(),
-                      chunk.getSnapshotPosition());
+                      chunk.getSnapshotId());
                   return chunk;
                 }),
                 consumer,
@@ -79,13 +80,15 @@ public class StateReplication implements SnapshotReplication {
   }
 
   @Override
-  public void close() {
+  public void close() throws Exception {
     if (subscription != null) {
       subscription.close().join();
       subscription = null;
     }
+
     if (executorService != null) {
       executorService.shutdownNow();
+      executorService.awaitTermination(10, TimeUnit.SECONDS);
       executorService = null;
     }
   }

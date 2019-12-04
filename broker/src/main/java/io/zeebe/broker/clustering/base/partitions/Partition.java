@@ -7,31 +7,27 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
+import static io.zeebe.broker.clustering.base.partitions.PartitionServiceNames.snapshotStorageServiceName;
+
 import io.atomix.cluster.messaging.ClusterEventService;
+import io.atomix.protocols.raft.partition.RaftPartition;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.engine.EngineServiceNames;
 import io.zeebe.broker.engine.impl.StateReplication;
-import io.zeebe.broker.exporter.ExporterServiceNames;
-import io.zeebe.broker.logstreams.delete.FollowerLogStreamDeletionService;
-import io.zeebe.broker.logstreams.delete.LeaderLogStreamDeletionService;
-import io.zeebe.broker.logstreams.restore.BrokerRestoreServer;
+import io.zeebe.broker.logstreams.LogStreamDeletionService;
 import io.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.distributedlog.StorageConfiguration;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.zeebe.engine.state.StateStorageFactory;
-import io.zeebe.logstreams.impl.delete.DeletionService;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotReplication;
+import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.slf4j.Logger;
 
 /** Service representing a partition. */
@@ -39,31 +35,28 @@ public class Partition implements Service<Partition> {
   public static final String GROUP_NAME = "raft-atomix";
   public static final Logger LOG = Loggers.CLUSTERING_LOGGER;
   private static final String PARTITION_NAME_FORMAT = "raft-atomix-partition-%d";
-  private final Injector<LogStream> logStreamInjector = new Injector<>();
+  private Injector<LogStream> logStreamInjector = new Injector<>();
+  private Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
   private final ClusterEventService clusterEventService;
-  private final int partitionId;
   private final RaftState state;
-  private final StorageConfiguration configuration;
   private final BrokerCfg brokerCfg;
-  private final BrokerRestoreServer restoreServer;
+  private final RaftPartition partition;
+
+  private SnapshotStorage snapshotStorage;
   private StateSnapshotController snapshotController;
   private SnapshotReplication stateReplication;
   private LogStream logStream;
   private ZeebeDb zeebeDb;
 
   public Partition(
-      final StorageConfiguration configuration,
-      BrokerCfg brokerCfg,
-      ClusterEventService clusterEventService,
-      int partitionId,
-      RaftState state,
-      BrokerRestoreServer restoreServer) {
-    this.configuration = configuration;
+      final BrokerCfg brokerCfg,
+      final RaftPartition partition,
+      final ClusterEventService clusterEventService,
+      final RaftState state) {
     this.brokerCfg = brokerCfg;
     this.clusterEventService = clusterEventService;
-    this.partitionId = partitionId;
     this.state = state;
-    this.restoreServer = restoreServer;
+    this.partition = partition;
   }
 
   public static String getPartitionName(final int partitionId) {
@@ -72,62 +65,50 @@ public class Partition implements Service<Partition> {
 
   @Override
   public void start(final ServiceStartContext startContext) {
-    final CompletableActorFuture<Void> startedFuture = new CompletableActorFuture<>();
     logStream = logStreamInjector.getValue();
+    snapshotStorage = snapshotStorageInjector.getValue();
     snapshotController = createSnapshotController();
 
-    final DeletionService deletionService;
-    if (state == RaftState.FOLLOWER) {
-      final StatePositionSupplier positionSupplier =
-          new StatePositionSupplier(
-              snapshotController,
-              partitionId,
-              String.valueOf(brokerCfg.getCluster().getNodeId()),
-              LOG);
-      deletionService = new FollowerLogStreamDeletionService(logStream, positionSupplier);
+    final var positionSupplier = new StatePositionSupplier(getPartitionId(), LOG);
+    final var deletionService = new LogStreamDeletionService(logStream, positionSupplier);
+    startContext
+        .createService(
+            EngineServiceNames.logStreamDeletionService(getPartitionId()), deletionService)
+        .dependency(
+            snapshotStorageServiceName(getPartitionId()),
+            deletionService.getSnapshotStorageInjector())
+        .install();
 
-      snapshotController.setDeletionService(deletionService);
+    if (state == RaftState.FOLLOWER) {
       snapshotController.consumeReplicatedSnapshots();
     } else {
-      final LeaderLogStreamDeletionService leaderDeletionService =
-          new LeaderLogStreamDeletionService(logStream);
-      startContext
-          .createService(
-              EngineServiceNames.leaderLogStreamDeletionService(partitionId), leaderDeletionService)
-          .dependency(
-              ExporterServiceNames.exporterDirectorServiceName(partitionId),
-              leaderDeletionService.getExporterDirectorInjector())
-          .install();
-      deletionService = leaderDeletionService;
-      snapshotController.setDeletionService(deletionService);
-
       try {
         snapshotController.recover();
         zeebeDb = snapshotController.openDb();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new IllegalStateException(
             String.format(
                 "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
-                partitionId),
+                partition.id().id()),
             e);
       }
     }
-
-    startRestoreServer(startedFuture);
-    startContext.async(startedFuture, true);
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
-    stateReplication.close();
-    restoreServer.close();
+  public void stop(final ServiceStopContext stopContext) {
+    try {
+      stateReplication.close();
+    } catch (final Exception e) {
+      LOG.error("Unexpected error closing state replication for partition {}", partition.id(), e);
+    }
 
     try {
       snapshotController.close();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.error(
           "Unexpected error occurred while closing the state snapshot controller for partition {}.",
-          partitionId,
+          partition.id().id(),
           e);
     }
   }
@@ -137,39 +118,14 @@ public class Partition implements Service<Partition> {
     return this;
   }
 
-  private void startRestoreServer(CompletableActorFuture<Void> startedFuture) {
-    restoreServer
-        .start(logStream, snapshotController)
-        .whenComplete(
-            (nothing, error) -> {
-              if (error != null) {
-                startedFuture.completeExceptionally(error);
-              } else {
-                startedFuture.complete(null);
-              }
-            });
-  }
-
-  public StorageConfiguration getConfiguration() {
-    return configuration;
-  }
-
   private StateSnapshotController createSnapshotController() {
-
-    final StateStorageFactory storageFactory =
-        new StateStorageFactory(configuration.getStatesDirectory());
-    final StateStorage stateStorage = storageFactory.create();
-
     stateReplication =
         shouldReplicateSnapshots()
-            ? new StateReplication(clusterEventService, partitionId)
+            ? new StateReplication(clusterEventService, getPartitionId())
             : new NoneSnapshotReplication();
 
     return new StateSnapshotController(
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-        stateStorage,
-        stateReplication,
-        brokerCfg.getData().getMaxSnapshots());
+        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, snapshotStorage, stateReplication);
   }
 
   private boolean shouldReplicateSnapshots() {
@@ -177,7 +133,7 @@ public class Partition implements Service<Partition> {
   }
 
   public int getPartitionId() {
-    return partitionId;
+    return partition.id().id();
   }
 
   public StateSnapshotController getSnapshotController() {
@@ -186,6 +142,15 @@ public class Partition implements Service<Partition> {
 
   public RaftState getState() {
     return state;
+  }
+
+  /**
+   * Return the current raft term of this partition
+   *
+   * @return current raft term
+   */
+  public long getTerm() {
+    return partition.term();
   }
 
   public LogStream getLogStream() {
@@ -198,5 +163,9 @@ public class Partition implements Service<Partition> {
 
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
+  }
+
+  public Injector<SnapshotStorage> getSnapshotStorageInjector() {
+    return snapshotStorageInjector;
   }
 }

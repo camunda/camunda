@@ -36,6 +36,8 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
     if (triggeredEvent == null) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error("No triggered event for key {}", context.getKey());
       return false;
+    } else if (context.getFlowScopeInstance().getInterruptingEventKey() != -1) {
+      return false;
     }
 
     final ExecutableStartEvent startEvent = context.getElement();
@@ -66,9 +68,8 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
 
   private long handleInterrupting(
       BpmnStepContext<T> context, EventTrigger triggeredEvent, long scopeKey) {
-    final boolean waitForTermination = terminatableChildrenExist(context);
+    final boolean waitForTermination = interruptParentScope(context);
 
-    interruptParentProcess(context);
     if (waitForTermination) {
       return deferEvent(context, context.getKey(), scopeKey, containerRecord, triggeredEvent);
     } else {
@@ -78,12 +79,14 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
     }
   }
 
-  private void interruptParentProcess(BpmnStepContext<T> context) {
+  private boolean interruptParentScope(BpmnStepContext<T> context) {
     final long scopeKey = context.getValue().getFlowScopeKey();
     final List<ElementInstance> children = context.getElementInstanceState().getChildren(scopeKey);
+    boolean waitForTermination = false;
 
     for (final ElementInstance child : children) {
       if (child.canTerminate()) {
+        waitForTermination = true;
         context
             .getOutput()
             .appendFollowUpEvent(
@@ -92,12 +95,8 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
         context.getElementInstanceState().consumeToken(scopeKey);
       }
     }
-  }
 
-  private boolean terminatableChildrenExist(BpmnStepContext<T> context) {
-    return context.getElementInstanceState().getChildren(context.getValue().getFlowScopeKey())
-        .stream()
-        .anyMatch(ElementInstance::canTerminate);
+    return waitForTermination;
   }
 
   private void prepareActivateContainer(

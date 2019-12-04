@@ -97,7 +97,7 @@ public class MessageStateTest {
     messageState.put(message);
 
     // when
-    final List<Message> messages = new ArrayList<Message>();
+    final List<Message> messages = new ArrayList<>();
     messageState.visitMessages(wrapString("name"), wrapString("correlationKey"), messages::add);
 
     // then
@@ -239,8 +239,8 @@ public class MessageStateTest {
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "id", 1234);
     messageState.put(message);
 
-    messageState.putMessageCorrelation(1L, 2L);
-    messageState.putMessageCorrelation(1L, 3L);
+    messageState.putMessageCorrelation(1L, wrapString("a"));
+    messageState.putMessageCorrelation(1L, wrapString("b"));
 
     // when
     messageState.remove(message.getKey());
@@ -265,8 +265,8 @@ public class MessageStateTest {
     assertThat(exist).isFalse();
 
     // and
-    assertThat(messageState.existMessageCorrelation(1L, 2L)).isFalse();
-    assertThat(messageState.existMessageCorrelation(1L, 3L)).isFalse();
+    assertThat(messageState.existMessageCorrelation(1L, wrapString("a"))).isFalse();
+    assertThat(messageState.existMessageCorrelation(1L, wrapString("b"))).isFalse();
   }
 
   @Test
@@ -332,8 +332,8 @@ public class MessageStateTest {
 
     messageState.put(message);
 
-    messageState.putMessageCorrelation(1L, 3L);
-    messageState.putMessageCorrelation(2L, 4L);
+    messageState.putMessageCorrelation(1L, wrapString("a"));
+    messageState.putMessageCorrelation(2L, wrapString("b"));
 
     // when
     messageState.remove(message2.getKey());
@@ -358,19 +358,19 @@ public class MessageStateTest {
     assertThat(exist).isTrue();
 
     // and
-    assertThat(messageState.existMessageCorrelation(1L, 3L)).isTrue();
+    assertThat(messageState.existMessageCorrelation(1L, wrapString("a"))).isTrue();
   }
 
   @Test
   public void shouldExistCorrelatedMessage() {
     // when
-    messageState.putMessageCorrelation(1L, 2L);
+    messageState.putMessageCorrelation(1L, wrapString("a"));
 
     // then
-    assertThat(messageState.existMessageCorrelation(1L, 2L)).isTrue();
+    assertThat(messageState.existMessageCorrelation(1L, wrapString("a"))).isTrue();
 
-    assertThat(messageState.existMessageCorrelation(3L, 2L)).isFalse();
-    assertThat(messageState.existMessageCorrelation(1L, 3L)).isFalse();
+    assertThat(messageState.existMessageCorrelation(3L, wrapString("a"))).isFalse();
+    assertThat(messageState.existMessageCorrelation(1L, wrapString("b"))).isFalse();
   }
 
   @Test
@@ -378,16 +378,75 @@ public class MessageStateTest {
     // given
     final long messageKey = 6L;
     final long workflowInstanceKey = 9L;
-    messageState.putMessageCorrelation(messageKey, workflowInstanceKey);
+    messageState.putMessageCorrelation(messageKey, wrapString("a"));
 
     // when
-    messageState.removeMessageCorrelation(messageKey, workflowInstanceKey);
+    messageState.removeMessageCorrelation(messageKey, wrapString("a"));
 
     // then
-    assertThat(messageState.existMessageCorrelation(messageKey, workflowInstanceKey)).isFalse();
+    assertThat(messageState.existMessageCorrelation(messageKey, wrapString("a"))).isFalse();
   }
 
-  private Message createMessage(long key, String name, String correlationKey) {
+  @Test
+  public void shouldExistActiveWorkflowInstance() {
+    // when
+    messageState.putActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1"));
+
+    // then
+    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1")))
+        .isTrue();
+
+    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-2"), wrapString("key-1")))
+        .isFalse();
+    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-2")))
+        .isFalse();
+  }
+
+  @Test
+  public void shouldRemoveActiveWorkflowInstance() {
+    // given
+    messageState.putActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1"));
+    messageState.putActiveWorkflowInstance(wrapString("wf-2"), wrapString("key-1"));
+    messageState.putActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-2"));
+
+    // when
+    messageState.removeActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1"));
+
+    // then
+    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-1")))
+        .isFalse();
+    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-2"), wrapString("key-1")))
+        .isTrue();
+    assertThat(messageState.existActiveWorkflowInstance(wrapString("wf-1"), wrapString("key-2")))
+        .isTrue();
+  }
+
+  @Test
+  public void shouldGetWorkflowInstanceCorrelationKey() {
+    // when
+    messageState.putWorkflowInstanceCorrelationKey(1L, wrapString("key-1"));
+
+    // then
+    assertThat(messageState.getWorkflowInstanceCorrelationKey(1L)).isEqualTo(wrapString("key-1"));
+
+    assertThat(messageState.getWorkflowInstanceCorrelationKey(2L)).isNull();
+  }
+
+  @Test
+  public void shouldRemoveWorkflowInstanceCorrelationKey() {
+    // given
+    messageState.putWorkflowInstanceCorrelationKey(1L, wrapString("key-1"));
+    messageState.putWorkflowInstanceCorrelationKey(2L, wrapString("key-2"));
+
+    // when
+    messageState.removeWorkflowInstanceCorrelationKey(1L);
+
+    // then
+    assertThat(messageState.getWorkflowInstanceCorrelationKey(1L)).isNull();
+    assertThat(messageState.getWorkflowInstanceCorrelationKey(2L)).isEqualTo(wrapString("key-2"));
+  }
+
+  private Message createMessage(final long key, final String name, final String correlationKey) {
     return new Message(
         key,
         wrapString(name),
@@ -399,7 +458,11 @@ public class MessageStateTest {
   }
 
   private Message createMessage(
-      long key, String name, String correlationKey, String variables, String id) {
+      final long key,
+      final String name,
+      final String correlationKey,
+      final String variables,
+      final String id) {
     return new Message(
         key,
         wrapString(name),
@@ -411,7 +474,12 @@ public class MessageStateTest {
   }
 
   private Message createMessage(
-      long key, String name, String correlationKey, String variables, String id, long deadline) {
+      final long key,
+      final String name,
+      final String correlationKey,
+      final String variables,
+      final String id,
+      final long deadline) {
     return new Message(
         key,
         wrapString(name),

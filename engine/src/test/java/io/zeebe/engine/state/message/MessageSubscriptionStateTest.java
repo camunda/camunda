@@ -336,6 +336,11 @@ public class MessageSubscriptionStateTest {
   private MessageSubscription subscription(
       String name, String correlationKey, long elementInstanceKey) {
     return new MessageSubscription(
-        1L, elementInstanceKey, wrapString(name), wrapString(correlationKey), true);
+        1L,
+        elementInstanceKey,
+        wrapString("workflow"),
+        wrapString(name),
+        wrapString(correlationKey),
+        true);
   }
 }
