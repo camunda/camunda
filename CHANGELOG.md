@@ -6,12 +6,11 @@
 * Correlate a message only once per workflow ([#3334](https://github.com/zeebe-io/zeebe/issues/3334))
 * Support workflows with multiple start events ([#3317](https://github.com/zeebe-io/zeebe/issues/3317))
 * Use Raft directly ([#3169](https://github.com/zeebe-io/zeebe/issues/3169))
+* Event subprocess with non-interrupting message start ([#3209](https://github.com/zeebe-io/zeebe/issues/3209))
 ### Java Client
 * Return command key for set variables command ([#3423](https://github.com/zeebe-io/zeebe/issues/3423))
 ### Go Client
 * Return command key for set variables command ([#3423](https://github.com/zeebe-io/zeebe/issues/3423))
-### Misc
-* Event subprocess with non-interrupting message start ([#3209](https://github.com/zeebe-io/zeebe/issues/3209))
 ## Bug Fixes
 ### Broker
 * Restarting a broker with many segments causes broker timeout ([#3456](https://github.com/zeebe-io/zeebe/issues/3456))
