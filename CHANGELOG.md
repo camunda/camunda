@@ -1,3 +1,37 @@
+<a name="0.22.0-alpha2"></a>
+## 0.22.0-alpha2 (2019-12-04)
+
+
+#### Bug Fixes
+
+* **broker:**
+  *  increase start up timeo out ([a7494a7f](https://github.com/zeebe-io/zeebe/commit/a7494a7f378cf778b9e8e54583030ccc6c70c8f3))
+  *  don't correlate a message after it TTL is reached ([ed05f4a3](https://github.com/zeebe-io/zeebe/commit/ed05f4a3b7055db9feddbac3a9f135ae919ec903))
+  *  fix dependency usage ([cb71b7eb](https://github.com/zeebe-io/zeebe/commit/cb71b7ebc2eaedb6ceed60cadbeaf50969522ee9))
+  *  fix sigseg on replication thread ([7b7371cd](https://github.com/zeebe-io/zeebe/commit/7b7371cddb0198472ada4675ac29ec5ea4f3d360))
+  *  add null check when no exporter is configured ([01fa1817](https://github.com/zeebe-io/zeebe/commit/01fa18179854abe8b12389fc4f93f3292149de31))
+* **clients/java:**  omit polling exception if closing ([3d399296](https://github.com/zeebe-io/zeebe/commit/3d39929674c374dc50b711e81328c73800422c78))
+* **engine:**  lastWrittenPos is resetted ([b2cac15f](https://github.com/zeebe-io/zeebe/commit/b2cac15fb7f90e36e365b45ba3bd7e5d9d27a55b))
+* **exporter:**
+  *  enable variable document export by default ([ed3557fd](https://github.com/zeebe-io/zeebe/commit/ed3557fdcd529f320aa0370d83e45c4db5c20bc8), closes [#3450](https://github.com/zeebe-io/zeebe/issues/3450))
+  *  allow multiple shards for Elasticsearch indices ([d2eb0bf6](https://github.com/zeebe-io/zeebe/commit/d2eb0bf6d966a44988b59a4178fde6f83acb5614), closes [#3329](https://github.com/zeebe-io/zeebe/issues/3329))
+* **logstreams:**  retry append on failure ([33675c04](https://github.com/zeebe-io/zeebe/commit/33675c04840faec7fef2ba98823584c40c1036e8))
+* **zbc:**  not refetch credentials if cache is present on second request ([81e4505a](https://github.com/zeebe-io/zeebe/commit/81e4505a6ce9aaedb1c21d3f9751d43d4406d280))
+
+#### Features
+
+* **broker:**
+  *  message creates only once instance per correlation key ([14a0e470](https://github.com/zeebe-io/zeebe/commit/14a0e47056908848e1aa1935bd8f49fdc20aa536))
+  *  correlate only once per workflow ([cc526220](https://github.com/zeebe-io/zeebe/commit/cc5262201691463015c6e299083157e1173f1b51))
+  *  allow process with multiple start events ([aaa5b7ac](https://github.com/zeebe-io/zeebe/commit/aaa5b7ac45bf5ebd4dcec2072221c7649efef3c9))
+  *  support message event subprocess ([d6b6ec58](https://github.com/zeebe-io/zeebe/commit/d6b6ec58ba7759ef1ed1602fbc77480c53da6383))
+* **clients/go:**  expose key from set variables response ([9eb82b5f](https://github.com/zeebe-io/zeebe/commit/9eb82b5fa85965cde4909eab0babc0c58ff4ab45))
+* **clients/java:**  expose key from set variables response ([2a74fddd](https://github.com/zeebe-io/zeebe/commit/2a74fddd9e9b27f0ef3e763e5df8231adbb4554c))
+* **gateway:**  map set variables broker response key to gRPC response key ([4eb0ef03](https://github.com/zeebe-io/zeebe/commit/4eb0ef0368c12b0a545b2cc8e230496f120ef9b6))
+* **gateway-protocol:**  add key to set variables response ([21a242df](https://github.com/zeebe-io/zeebe/commit/21a242dfa788dffdf4124a2f9bd62dfe811fc786))
+
+
+
 <a name="0.22.0-alpha1"></a>
 ## 0.22.0-alpha1 (2019-11-05)
 
