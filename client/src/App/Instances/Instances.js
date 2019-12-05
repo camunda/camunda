@@ -20,7 +20,6 @@ import {
 import {getInstancesIdsFromSelections} from 'modules/contexts/SelectionContext/service';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 
-import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 import ListPanel from './ListPanel';
 import Filters from './Filters';
@@ -91,12 +90,6 @@ export default class Instances extends Component {
                 selections.selections
               )}
             >
-              <Header
-                active="instances"
-                filter={this.props.filter}
-                filterCount={this.props.filterCount}
-                onFilterReset={this.props.onFilterReset}
-              />
               <Styled.Instances>
                 <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
                 <Styled.Content>

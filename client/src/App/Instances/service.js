@@ -5,28 +5,10 @@
  */
 
 import {isEmpty} from 'lodash';
-import {isValidJSON} from 'modules/utils';
+
 import {parseDiagramXML} from 'modules/utils/bpmn';
 
 import {getWorkflowByVersion} from 'modules/utils/filter';
-
-export function parseQueryString(queryString = '') {
-  var params = {};
-
-  const queries = queryString
-    .replace(/%22/g, '"')
-    .substring(1)
-    .split('&');
-
-  queries.forEach((item, index) => {
-    const [paramKey, paramValue] = queries[index].split('=');
-    const decodedValue = decodeURIComponent(paramValue);
-    if (isValidJSON(decodedValue)) {
-      params[paramKey] = JSON.parse(decodedValue);
-    }
-  });
-  return params;
-}
 
 export function getStateUpdateForAddSelection(
   selection,

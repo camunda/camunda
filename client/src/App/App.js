@@ -11,12 +11,14 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import Authentication from './Authentication';
+import Header from './Header';
 import Login from './Login';
 import Dashboard from './Dashboard';
 import InstancesContainer from './Instances/InstancesContainer';
 import Instance from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {DataManagerProvider} from 'modules/DataManager';
+import {DataStoreProvider} from 'modules/contexts/StoreContext';
 
 export default function App(props) {
   return (
@@ -28,9 +30,16 @@ export default function App(props) {
             <Switch>
               <Route path="/login" component={Login} />
               <Authentication>
-                <Route exact path="/" component={Dashboard} />
-                <Route exact path="/instances" component={InstancesContainer} />
-                <Route exact path="/instances/:id" component={Instance} />
+                <DataStoreProvider>
+                  <Header />
+                  <Route exact path="/" component={Dashboard} />
+                  <Route
+                    exact
+                    path="/instances"
+                    component={InstancesContainer}
+                  />
+                  <Route exact path="/instances/:id" component={Instance} />
+                </DataStoreProvider>
               </Authentication>
             </Switch>
           </Router>

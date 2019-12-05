@@ -25,8 +25,6 @@ import {formatDate} from 'modules/utils/date';
 import {withData} from 'modules/DataManager';
 
 import FlowNodeInstanceLog from './FlowNodeInstanceLog';
-import InstanceDetail from './InstanceDetail';
-import Header from '../Header';
 import TopPanel from './TopPanel';
 import BottomPanel from './BottomPanel';
 import VariablePanel from './BottomPanel/VariablePanel';
@@ -499,53 +497,42 @@ class Instance extends Component {
     } = this.state;
 
     return (
-      <Fragment>
-        <Header
-          detail={
-            instance ? (
-              <InstanceDetail instance={instance} />
-            ) : (
-              <Styled.SkeletonBlock />
-            )
-          }
-        />
-        <Styled.Instance>
-          <VisuallyHiddenH1>
-            {instance && `Camunda Operate Instance ${instance.id}`}
-          </VisuallyHiddenH1>
-          <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
-            <TopPanel
-              instance={instance}
-              selection={selection}
-              incidents={incidents}
-              nodeMetaDataMap={nodeMetaDataMap}
+      <Styled.Instance>
+        <VisuallyHiddenH1>
+          {instance && `Camunda Operate Instance ${instance.id}`}
+        </VisuallyHiddenH1>
+        <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
+          <TopPanel
+            instance={instance}
+            selection={selection}
+            incidents={incidents}
+            nodeMetaDataMap={nodeMetaDataMap}
+            diagramDefinitions={diagramDefinitions}
+            activityIdToActivityInstanceMap={activityIdToActivityInstanceMap}
+            getCurrentMetadata={this.getCurrentMetadata}
+            onFlowNodeSelection={this.handleFlowNodeSelection}
+            onInstanceOperation={this.handleInstanceOperation}
+            onTreeRowSelection={this.handleTreeRowSelection}
+          />
+          <BottomPanel>
+            <FlowNodeInstanceLog
               diagramDefinitions={diagramDefinitions}
-              activityIdToActivityInstanceMap={activityIdToActivityInstanceMap}
-              getCurrentMetadata={this.getCurrentMetadata}
-              onFlowNodeSelection={this.handleFlowNodeSelection}
-              onInstanceOperation={this.handleInstanceOperation}
+              activityInstancesTree={activityInstancesTree}
+              getNodeWithMetaData={this.getNodeWithMetaData}
+              selectedTreeRowIds={this.state.selection.treeRowIds}
               onTreeRowSelection={this.handleTreeRowSelection}
             />
-            <BottomPanel>
-              <FlowNodeInstanceLog
-                diagramDefinitions={diagramDefinitions}
-                activityInstancesTree={activityInstancesTree}
-                getNodeWithMetaData={this.getNodeWithMetaData}
-                selectedTreeRowIds={this.state.selection.treeRowIds}
-                onTreeRowSelection={this.handleTreeRowSelection}
-              />
-              <VariablePanel
-                instance={instance}
-                variables={variables}
-                editMode={editMode}
-                isEditable={this.areVariablesEditable()}
-                onVariableUpdate={this.handleVariableUpdate}
-                setEditMode={this.setEditMode}
-              />
-            </BottomPanel>
-          </SplitPane>
-        </Styled.Instance>
-      </Fragment>
+            <VariablePanel
+              instance={instance}
+              variables={variables}
+              editMode={editMode}
+              isEditable={this.areVariablesEditable()}
+              onVariableUpdate={this.handleVariableUpdate}
+              setEditMode={this.setEditMode}
+            />
+          </BottomPanel>
+        </SplitPane>
+      </Styled.Instance>
     );
   }
 }

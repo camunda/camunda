@@ -7,7 +7,7 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
 
 import {compactObject} from '../index';
-
+import {isValidJSON} from 'modules/utils';
 import {trimValue} from 'modules/utils';
 import {trimVariable} from 'modules/utils/variable';
 
@@ -18,6 +18,24 @@ import {trimVariable} from 'modules/utils/variable';
 export function getFilterQueryString(filter = {}) {
   const cleanedFilter = compactObject(filter);
   return `?filter=${encodeURIComponent(JSON.stringify(cleanedFilter))}`;
+}
+
+export function parseQueryString(queryString = '') {
+  var params = {};
+
+  const queries = queryString
+    .replace(/%22/g, '"')
+    .substring(1)
+    .split('&');
+
+  queries.forEach((item, index) => {
+    const [paramKey, paramValue] = queries[index].split('=');
+    const decodedValue = decodeURIComponent(paramValue);
+    if (isValidJSON(decodedValue)) {
+      params[paramKey] = JSON.parse(decodedValue);
+    }
+  });
+  return params;
 }
 
 /**

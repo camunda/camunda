@@ -5,14 +5,13 @@
  */
 
 import React, {Component, Fragment} from 'react';
+import PropTypes from 'prop-types';
 
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 
-import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
-import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {
   fetchInstancesByWorkflow,
   fetchIncidentsByError
@@ -21,9 +20,18 @@ import {PAGE_TITLE} from 'modules/constants';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import Copyright from 'modules/components/Copyright';
 import * as Styled from './styled.js';
+import {withStore} from 'modules/contexts/StoreContext';
 import {MESSAGES, INCIDENTS_BY_ERROR, INSTANCES_BY_WORKFLOW} from './constants';
 
 class Dashboard extends Component {
+  static propTypes = {
+    dataStore: PropTypes.shape({
+      running: PropTypes.number,
+      active: PropTypes.number,
+      withIncidents: PropTypes.number
+    })
+  };
+
   state = {
     counts: {
       data: {
@@ -42,11 +50,9 @@ class Dashboard extends Component {
 
   componentDidMount = async () => {
     document.title = PAGE_TITLE.DASHBOARD;
-    const counts = await fetchWorkflowCoreStatistics();
     const incidents = await this.fetchIncidents();
 
     this.setState({
-      counts: {data: counts.coreStatistics},
       incidents,
       isDataLoaded: true
     });
@@ -74,19 +80,12 @@ class Dashboard extends Component {
   render() {
     const {
       incidents: {byError, byWorkflow},
-      counts: {
-        data: {active, running, withIncidents},
-        error: countsError
-      }
+      counts: {error: countsError}
     } = this.state;
+    const {running, active, withIncidents} = this.props.dataStore;
 
     return (
       <Fragment>
-        <Header
-          active="dashboard"
-          runningInstancesCount={running}
-          incidentsCount={withIncidents}
-        />
         <Styled.Dashboard>
           <VisuallyHiddenH1>Camunda Operate Dashboard</VisuallyHiddenH1>
           <Styled.MetricPanelWrapper>
@@ -131,4 +130,4 @@ class Dashboard extends Component {
   }
 }
 
-export default Dashboard;
+export default withStore(Dashboard);

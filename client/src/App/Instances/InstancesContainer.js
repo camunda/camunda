@@ -31,7 +31,8 @@ import {
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 
 import Instances from './Instances';
-import {parseQueryString, decodeFields} from './service';
+import {parseQueryString} from 'modules/utils/filter';
+import {decodeFields} from './service';
 
 class InstancesContainer extends Component {
   static propTypes = {
@@ -145,7 +146,6 @@ class InstancesContainer extends Component {
     );
 
     const hasURLChanged = !isEqual(filterFromURL, prevFilterFromURL);
-
     const hasFilterChanged = !isEqual(prevState.filter, filter);
 
     // caused by browser backwards/forward btn or manual URL manipulation
@@ -204,7 +204,6 @@ class InstancesContainer extends Component {
 
   fetchWorkflowInstances = async (filter, groupedWorkflows) => {
     const {sorting, firstElement} = this.state;
-
     this.props.dataManager.getWorkflowInstances({
       queries: [
         parseFilterForRequest(
