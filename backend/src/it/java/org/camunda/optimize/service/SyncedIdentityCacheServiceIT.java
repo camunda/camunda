@@ -11,7 +11,9 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
@@ -333,7 +335,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       );
 
       collectionClient.addRoleToCollection(collectionId1, testGroupRole);
-      collectionClient.addRoleToCollection(collectionId1, testGroupBRole);
+      final IdDto testGroupBIdDto = collectionClient.addRoleToCollection(collectionId1, testGroupBRole);
       collectionClient.addRoleToCollection(collectionId1, userKermitRole);
 
       collectionClient.addRoleToCollection(collectionId2, testGroupRole);
@@ -355,10 +357,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       syncedIdentityCacheService.synchronizeIdentities();
 
       // then users/groups no longer existing in identityCache have been removed from the collection's permissions
-      List<CollectionRoleDto> roles1 = collectionClient.getCollectionRoles(collectionId1);
-      List<CollectionRoleDto> roles2 = collectionClient.getCollectionRoles(collectionId2);
-      assertThat(roles1.containsAll(roles2) && roles1.size() == roles2.size(), is(true));
-      assertThat(roles1).containsExactlyInAnyOrder(testGroupBRole, userDemoRole);
+      List<IdDto> roleIds1 = collectionClient.getCollectionRoleIdDtos(collectionId1);
+      List<IdDto> roleIds2 = collectionClient.getCollectionRoleIdDtos(collectionId2);
+      assertThat(roleIds1.containsAll(roleIds2) && roleIds1.size() == roleIds2.size(), is(true));
+      assertThat(roleIds1).containsExactlyInAnyOrder(testGroupBIdDto,new IdDto(userDemoRole.getId()));
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();
     }
@@ -389,7 +391,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       syncedIdentityCacheService.synchronizeIdentities();
 
       // then
-      List<CollectionRoleDto> roles = collectionClient.getCollectionRoles(collectionId);
+      List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
       assertThat(roles.isEmpty(), is(true));
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();

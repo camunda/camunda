@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
@@ -208,11 +209,19 @@ public class CollectionClient {
   }
 
 
-  public List<CollectionRoleDto> getCollectionRoles(final String collectionId) {
+  public List<CollectionRoleRestDto> getCollectionRoles(final String collectionId) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)
       .buildGetRolesToCollectionRequest(collectionId)
-      .executeAndReturnList(CollectionRoleDto.class, 200);
+      .executeAndReturnList(CollectionRoleRestDto.class, 200);
+  }
+
+  public List<IdDto> getCollectionRoleIdDtos(final String collectionId) {
+    return embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_USERNAME)
+      .buildGetRolesToCollectionRequest(collectionId)
+      .executeAndReturnList(IdDto.class, 200);
   }
 }
