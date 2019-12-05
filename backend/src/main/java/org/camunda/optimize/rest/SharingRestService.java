@@ -143,8 +143,8 @@ public class SharingRestService {
   @GET
   @Path("/dashboard/{dashboardId}/isAuthorizedToShare")
   @Produces(MediaType.APPLICATION_JSON)
-  public Response evaluateDashboard(@Context ContainerRequestContext requestContext,
-                                    @PathParam("dashboardId") String dashboardId) {
+  public Response isAuthorizedToShareDashboard(@Context ContainerRequestContext requestContext,
+                                               @PathParam("dashboardId") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     sharingService.validateAndCheckAuthorization(dashboardId, userId);
     // if no error was thrown

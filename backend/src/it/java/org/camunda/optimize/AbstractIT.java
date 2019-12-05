@@ -13,6 +13,7 @@ import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.DashboardClient;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.test.optimize.ReportClient;
+import org.camunda.optimize.test.optimize.SharingClient;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -34,4 +35,5 @@ public abstract class AbstractIT {
   protected AlertClient alertClient = new AlertClient(embeddedOptimizeExtension);
   protected DashboardClient dashboardClient = new DashboardClient(embeddedOptimizeExtension);
   protected EventProcessClient eventProcessClient = new EventProcessClient(embeddedOptimizeExtension);
+  protected SharingClient sharingClient = new SharingClient(embeddedOptimizeExtension);
 }

@@ -55,9 +55,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
       sharingReader.findShareForReport(createSharingDto.getReportId());
 
     return existing
-      .map(share -> {
-        return new IdDto(share.getId());
-      })
+      .map(share -> new IdDto(share.getId()))
       .orElseGet(() -> createNewReportShare(createSharingDto));
   }
 
@@ -85,26 +83,18 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   }
 
   @Override
-  public Set<ConflictedItemDto> getConflictedItemsForDashboardDelete(final DashboardDefinitionDto definition) {
-    //NOOP
-    return Collections.emptySet();
-  }
-
-  @Override
   public void handleDashboardDeleted(final DashboardDefinitionDto definition) {
     deleteShareForDashboard(definition.getId());
   }
 
   @Override
-  public Set<ConflictedItemDto> getConflictedItemsForDashboardUpdate(final DashboardDefinitionDto currentDefinition,
-                                                                     final DashboardDefinitionDto updateDefinition) {
-    //NOOP
-    return Collections.emptySet();
-  }
+  public void handleDashboardUpdated(final DashboardDefinitionDto updatedDashboard) {
+    Optional<DashboardShareDto> dashboardShare = findShareForDashboard(updatedDashboard.getId());
 
-  @Override
-  public void handleDashboardUpdated(final String id, final DashboardDefinitionDto updateDefinition) {
-    adjustDashboardShares(updateDefinition);
+    dashboardShare.ifPresent(share -> {
+      share.setReportShares(updatedDashboard.getReports());
+      sharingWriter.updateDashboardShare(share);
+    });
   }
 
   private IdDto createNewReportShare(ReportShareDto createSharingDto) {
@@ -199,7 +189,9 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     Optional<DashboardShareDto> sharedDashboard = sharingReader.findDashboardShare(dashboardShareId);
     AuthorizedReportEvaluationResult result;
 
-    DashboardShareDto share = sharedDashboard.get();
+    DashboardShareDto share = sharedDashboard.orElseThrow(
+      () -> new OptimizeRuntimeException(String.format("Could not find dashboard share for id [%s]", dashboardShareId))
+    );
     boolean hasGivenReport = share.getReportShares().stream().anyMatch(r -> r.getId().equals(reportId));
     if (hasGivenReport) {
       result = evaluateReport(reportId);
@@ -215,8 +207,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
 
   public AuthorizedReportEvaluationResult evaluateReport(String reportId) {
     try {
-      AuthorizedReportEvaluationResult reportResult = reportEvaluationHandler.evaluateSavedReport(reportId);
-      return reportResult;
+      return reportEvaluationHandler.evaluateSavedReport(reportId);
     } catch (ReportEvaluationException e) {
       throw e;
     } catch (Exception e) {
@@ -243,12 +234,12 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     return Optional.of(result);
   }
 
-  public void deleteShareForReport(String reportId) {
+  private void deleteShareForReport(String reportId) {
     findShareForReport(reportId)
       .ifPresent(dto -> this.deleteReportShare(dto.getId()));
   }
 
-  public void deleteShareForDashboard(String dashboardId) {
+  private void deleteShareForDashboard(String dashboardId) {
     findShareForDashboard(dashboardId)
       .ifPresent(dto -> this.deleteDashboardShare(dto.getId()));
   }
@@ -259,17 +250,6 @@ public class SharingService implements ReportReferencingService, DashboardRefere
 
   public Optional<DashboardShareDto> findShareForDashboard(String resourceId) {
     return sharingReader.findShareForDashboard(resourceId);
-  }
-
-  public void adjustDashboardShares(DashboardDefinitionDto updatedDashboard) {
-    Optional<DashboardShareDto> dashboardShare =
-      findShareForDashboard(
-        updatedDashboard.getId());
-
-    dashboardShare.ifPresent(share -> {
-      share.setReportShares(updatedDashboard.getReports());
-      sharingWriter.updateDashboardShare(share);
-    });
   }
 
   public ShareSearchResultDto checkShareStatus(ShareSearchDto searchRequest) {

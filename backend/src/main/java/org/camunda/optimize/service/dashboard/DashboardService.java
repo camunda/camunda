@@ -22,6 +22,7 @@ import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
+import org.camunda.optimize.service.relations.DashboardRelationService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
@@ -50,7 +51,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   private final ReportService reportService;
   private final AuthorizedCollectionService collectionService;
   private final IdentityService identityService;
-  private ReportReader reportReader;
+  private final ReportReader reportReader;
+  private final DashboardRelationService dashboardRelationService;
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
@@ -203,9 +205,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   public void updateDashboard(final DashboardDefinitionDto updatedDashboard, final String userId) {
     final String dashboardId = updatedDashboard.getId();
-    final AuthorizedDashboardDefinitionDto dashboardWithEditAuthorization = getDashboardWithEditAuthorization(
-      dashboardId, userId
-    );
+    final AuthorizedDashboardDefinitionDto dashboardWithEditAuthorization =
+      getDashboardWithEditAuthorization(dashboardId, userId);
 
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDto(updatedDashboard, userId);
     final String dashboardCollectionId = dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
@@ -223,12 +224,15 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       }
     });
 
+    dashboardRelationService.handleUpdated(updatedDashboard);
     dashboardWriter.updateDashboard(updateDto, dashboardId);
   }
 
   public void deleteDashboard(final String dashboardId, final String userId) {
-    getDashboardWithEditAuthorization(dashboardId, userId);
+    final DashboardDefinitionDto dashboardDefinitionDto =
+      getDashboardWithEditAuthorization(dashboardId, userId).getDefinitionDto();
 
+    dashboardRelationService.handleDeleted(dashboardDefinitionDto);
     dashboardWriter.deleteDashboard(dashboardId);
   }
 

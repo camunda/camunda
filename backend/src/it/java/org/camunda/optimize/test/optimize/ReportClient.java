@@ -117,4 +117,11 @@ public class ReportClient {
     decisionReportDefinition.setCollectionId(collectionId);
     return createSingleDecisionReport(decisionReportDefinition);
   }
+
+  public void deleteReport(final String reportId) {
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDeleteReportRequest(reportId)
+      .execute();
+  }
 }

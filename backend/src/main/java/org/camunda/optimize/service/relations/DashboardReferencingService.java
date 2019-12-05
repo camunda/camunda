@@ -6,18 +6,9 @@
 package org.camunda.optimize.service.relations;
 
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
-
-import java.util.Set;
 
 public interface DashboardReferencingService {
-  Set<ConflictedItemDto> getConflictedItemsForDashboardDelete(DashboardDefinitionDto definition);
-
   void handleDashboardDeleted(DashboardDefinitionDto definition);
 
-
-  Set<ConflictedItemDto> getConflictedItemsForDashboardUpdate(DashboardDefinitionDto currentDefinition,
-                                                              DashboardDefinitionDto updateDefinition);
-
-  void handleDashboardUpdated(final String id, final DashboardDefinitionDto updateDefinition);
+  void handleDashboardUpdated(final DashboardDefinitionDto updateDefinition);
 }
