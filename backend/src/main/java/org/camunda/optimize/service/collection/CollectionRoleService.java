@@ -60,36 +60,15 @@ public class CollectionRoleService {
     collectionWriter.removeRoleFromCollectionUnlessIsLastManager(collectionId, roleEntryId, userId);
   }
 
-  private void verifyIdentityExists(final IdentityDto identity) {
-    final boolean identityFound;
-    switch (identity.getType()) {
-      case USER:
-        identityFound = identityService.getUserById(identity.getId()).isPresent();
-        break;
-      case GROUP:
-        identityFound = identityService.getGroupById(identity.getId()).isPresent();
-        break;
-      default:
-        throw new OptimizeRuntimeException("Unsupported identity type: " + identity.getType());
-    }
-    if (!identityFound) {
-      throw new BadRequestException(
-        String.format("%s with id %s does not exist in Optimize", identity.getType(), identity.getId())
-      );
-    }
-  }
-
   public List<CollectionRoleRestDto> getAllRolesOfCollectionSorted(String userId, String collectionId) {
-    AuthorizedCollectionDefinitionDto authCollectionDto = getCollectionDefinitionWithRoleMetadata(
-      userId,
-      collectionId
-    );
+    AuthorizedCollectionDefinitionDto authCollectionDto =
+      authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
 
     List<CollectionRoleRestDto> roles = new ArrayList<>();
     authCollectionDto.getDefinitionDto()
       .getData()
       .getRoles()
-      .forEach(role -> mapRoleDtoToRoleRestDto(role));
+      .forEach(role -> roles.add(mapRoleDtoToRoleRestDto(role)));
 
     if (authCollectionDto.getCurrentUserRole().equals(RoleType.MANAGER)) {
       for (CollectionRoleRestDto role : roles) {
@@ -110,12 +89,23 @@ public class CollectionRoleService {
     return roles;
   }
 
-  private AuthorizedCollectionDefinitionDto getCollectionDefinitionWithRoleMetadata(final String userId,
-                                                                                    final String collectionId) {
-    return authorizedCollectionService.getAuthorizedCollectionDefinitionOrFail(
-      userId,
-      collectionId
-    );
+  private void verifyIdentityExists(final IdentityDto identity) {
+    final boolean identityFound;
+    switch (identity.getType()) {
+      case USER:
+        identityFound = identityService.getUserById(identity.getId()).isPresent();
+        break;
+      case GROUP:
+        identityFound = identityService.getGroupById(identity.getId()).isPresent();
+        break;
+      default:
+        throw new OptimizeRuntimeException("Unsupported identity type: " + identity.getType());
+    }
+    if (!identityFound) {
+      throw new BadRequestException(
+        String.format("%s with id %s does not exist in Optimize", identity.getType(), identity.getId())
+      );
+    }
   }
 
   private CollectionRoleRestDto mapRoleDtoToRoleRestDto(final CollectionRoleDto roleDto) {
