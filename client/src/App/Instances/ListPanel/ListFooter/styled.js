@@ -18,8 +18,7 @@ export const Footer = styled.div`
   margin-bottom: 1px;
 
   div {
-    flex-grow: 1;
-    flex-basis: 0;
+    flex: 1 0 0;
   }
 `;
 
