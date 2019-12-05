@@ -1,11 +1,15 @@
 # Install
 
-This page guides you through the initial installation of a Zeebe broker for development purposes. In case you are looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/) as well.
+This page guides you through the initial installation of the Zeebe broker and Zeebe Modeler for development purposes. 
 
-There are different ways to install Zeebe:
+If you're looking for more detailed information on how to set up and operate Zeebe, make sure to check out the [Operations Guide](/operations/) as well.
 
+There are two different ways to install the Zeebe broker:
 * [Using Docker](#using-docker) (Recommended)
 * [Download a distribution](#download-a-distribution)
+
+You'll likely also need the Zeebe Modeler for your project:
+* [Download the Zeebe Modeler](#install-the-zeebe-modeler)
 
 ## Using Docker
 
@@ -154,10 +158,16 @@ tar -xzf zeebe-distribution-X.Y.Z.tar.gz -C zeebe/
 
 Once the Zeebe broker has started, it should produce the following output:
 
-```bash
+```
+bash
 23:39:13.167 [] [main] INFO  io.zeebe.util.config - Reading configuration for class class io.zeebe.broker.system.configuration.BrokerCfg from file conf/zeebe.cfg.toml
 23:39:13.246 [] [main] INFO  io.zeebe.broker.system - Scheduler configuration: Threads{cpu-bound: 2, io-bound: 2}.
 23:39:13.270 [] [main] INFO  io.zeebe.broker.system - Version: X.Y.Z
 23:39:13.273 [] [main] INFO  io.zeebe.broker.system - Starting broker with configuration {
 ```
 
+## Install the Zeebe Modeler
+
+The Zeebe Modeler is an open-source desktop BPMN modeling application created specifically for Zeebe. 
+
+[You can download the most recent Zeebe Modeler release here.](https://github.com/zeebe-io/zeebe-modeler/releases)
