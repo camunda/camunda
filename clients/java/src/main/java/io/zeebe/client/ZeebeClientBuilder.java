@@ -83,6 +83,9 @@ public interface ZeebeClientBuilder {
    */
   ZeebeClientBuilder credentialsProvider(CredentialsProvider credentialsProvider);
 
+  /** Time interval between keep alive messages sent to the gateway. The default is 45 seconds. */
+  ZeebeClientBuilder keepAlive(Duration keepAlive);
+
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
 }

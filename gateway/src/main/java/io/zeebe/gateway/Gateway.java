@@ -18,10 +18,12 @@ import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import me.dinowernli.grpc.prometheus.Configuration;
@@ -117,32 +119,14 @@ public class Gateway {
   }
 
   private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
+    final Duration minKeepAliveInterval = DurationUtil.parse(cfg.getMinKeepAliveInterval());
 
-    final String keepAlive = cfg.getMinKeepAliveInterval();
-    if (keepAlive == null || keepAlive.length() < 2) {
-      throw new IllegalArgumentException(String.format(ILLEGAL_KEEP_ALIVE_FMT, keepAlive));
-    }
-
-    final int timeValue;
-    try {
-      timeValue = Integer.parseUnsignedInt(keepAlive.substring(0, keepAlive.length() - 1));
-    } catch (NumberFormatException e) {
-      throw new IllegalArgumentException(String.format(ILLEGAL_KEEP_ALIVE_FMT, keepAlive));
-    }
-
-    final TimeUnit timeUnit;
-    if (keepAlive.endsWith("s")) {
-      timeUnit = TimeUnit.SECONDS;
-    } else if (keepAlive.endsWith("m")) {
-      timeUnit = TimeUnit.MINUTES;
-    } else if (keepAlive.endsWith("h")) {
-      timeUnit = TimeUnit.HOURS;
-    } else {
-      throw new IllegalArgumentException(String.format(ILLEGAL_KEEP_ALIVE_FMT, keepAlive));
+    if (minKeepAliveInterval.isNegative() || minKeepAliveInterval.isZero()) {
+      throw new IllegalArgumentException("Minimum keep alive interval must be positive.");
     }
 
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
-        .permitKeepAliveTime(timeValue, timeUnit)
+        .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
         .permitKeepAliveWithoutCalls(false);
   }
 
