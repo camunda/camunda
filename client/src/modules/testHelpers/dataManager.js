@@ -8,6 +8,7 @@ import {DataManager} from 'modules/DataManager/core';
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
 jest.mock('modules/DataManager/core');
+jest.mock('modules/utils/bpmn');
 
 const mockDataManager = () => {
   return {
@@ -15,6 +16,8 @@ const mockDataManager = () => {
       ({subscription, state = LOADING_STATE.LOADED, response, staticContent}) =>
         subscription({state, response, staticContent})
     ),
+    // THIS IS A TEMPORARY ENDPOINT,
+    publishing: jest.fn(),
     poll: {clear: jest.fn(), start: jest.fn().mockImplementation(cb => cb())},
     update: jest.fn(),
     subscribe: jest.fn(),

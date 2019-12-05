@@ -51,6 +51,11 @@ export class DataManager {
     this.publisher.unsubscribe(subscriptions);
   }
 
+  // THIS IS A TEMPORARY ENDPOINT, to hack the outdated selections badge.
+  publishing(topic, value) {
+    this.publisher.publish(topic, value);
+  }
+
   /** Wrapped API calls */
   applyOperation(id, payload) {
     const typeStrings = payload.operationType.split('_');

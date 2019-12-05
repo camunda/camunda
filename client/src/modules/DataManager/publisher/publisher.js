@@ -36,6 +36,9 @@ export default class Publisher {
 
   unsubscribe(subscriptions) {
     Object.entries(subscriptions).forEach(([topic, callback]) => {
+      // if (!callback || !this.subscriptions[topic]) {
+      //   return;
+      // }
       const callbackIndex = this.subscriptions[topic].indexOf(callback);
       this.subscriptions[topic].splice(callbackIndex, callbackIndex + 1);
 

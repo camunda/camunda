@@ -112,7 +112,7 @@ class BasicSelectionProvider extends React.Component {
     }
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps, prevState) {
     if (this.state.selectedInstances === DEFAULT_SELECTED_INSTANCES) {
       return;
     }
@@ -235,6 +235,12 @@ class BasicSelectionProvider extends React.Component {
       selectedInstances: DEFAULT_SELECTED_INSTANCES
     });
 
+    //TEMPORARY SOLUTION, to hack the outdated selections badge.
+    this.props.dataManager.publishing('SELECTION_CHANGED', {
+      selectionCount,
+      instancesInSelectionsCount
+    });
+
     // store the updated data in the local storage
     this.props.storeStateLocally({
       selections: serializeInstancesMaps(selections),
@@ -337,6 +343,12 @@ class BasicSelectionProvider extends React.Component {
           selections: serializeInstancesMaps(selections),
           instancesInSelectionsCount: this.state.instancesInSelectionsCount,
           selectionCount: this.state.selectionCount
+        });
+
+        //TEMPORARY SOLUTION, to hack the outdated selections badge.
+        this.props.dataManager.publishing('SELECTION_CHANGED', {
+          selectionCount: this.state.selectionCount,
+          instancesInSelectionsCount: this.state.instancesInSelectionsCount
         });
       }
     );

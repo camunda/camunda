@@ -42,4 +42,4 @@ DataManagerProvider.propTypes = {
   children: PropTypes.object
 };
 
-export {DataManagerProvider, withData};
+export {DataManagerProvider, withData, DataContext};
