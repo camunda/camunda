@@ -296,12 +296,11 @@ public class ReportService implements CollectionReferencingService {
       checkForUpdateConflictsOnSingleProcessDefinition(currentReportVersion, updatedReport);
     }
 
-    reportWriter.updateSingleProcessReport(reportUpdate);
     reportRelationService.handleUpdated(reportId, updatedReport);
-
     if (semanticsForCombinedReportChanged(currentReportVersion, updatedReport)) {
       reportWriter.removeSingleReportFromCombinedReports(reportId);
     }
+    reportWriter.updateSingleProcessReport(reportUpdate);
   }
 
   public void updateSingleDecisionReport(String reportId,
@@ -322,8 +321,8 @@ public class ReportService implements CollectionReferencingService {
       checkForUpdateConflictsOnSingleDecisionDefinition(currentReportVersion, updatedReport);
     }
 
-    reportWriter.updateSingleDecisionReport(reportUpdate);
     reportRelationService.handleUpdated(reportId, updatedReport);
+    reportWriter.updateSingleDecisionReport(reportUpdate);
   }
 
   public void deleteReport(String userId, String reportId, boolean force) {
@@ -339,14 +338,13 @@ public class ReportService implements CollectionReferencingService {
       }
     }
 
-    if (!reportDefinition.getCombined()) {
+    reportRelationService.handleDeleted(reportDefinition);
+    if (reportDefinition.getCombined()) {
+      reportWriter.deleteCombinedReport(reportId);
+    } else {
       reportWriter.removeSingleReportFromCombinedReports(reportId);
       reportWriter.deleteSingleReport(reportId);
-    } else {
-      reportWriter.deleteCombinedReport(reportId);
     }
-
-    reportRelationService.handleDeleted(reportDefinition);
   }
 
   private <T extends ReportDefinitionDto<RD>, RD extends ReportDataDto> IdDto createReport(
