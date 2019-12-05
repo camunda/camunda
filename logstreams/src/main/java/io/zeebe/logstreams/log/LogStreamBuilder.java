@@ -10,6 +10,7 @@ package io.zeebe.logstreams.log;
 import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -55,19 +56,50 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
     applyDefaults();
     validate();
 
-    return CompletableActorFuture.completed(
-        new LogStreamService(
-            actorScheduler,
-            new ActorConditions(),
-            logName,
-            partitionId,
-            ByteValue.ofBytes(maxFragmentSize),
-            new AtomicLongPosition(),
-            logStorage));
+    final var logStreamService = new LogStreamService(
+      actorScheduler,
+      new ActorConditions(),
+      logName,
+      partitionId,
+      ByteValue.ofBytes(maxFragmentSize),
+      new AtomicLongPosition(),
+      logStorage);
+
+    final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
+    actorScheduler.submitActor(logStreamService).onComplete((v, t) ->
+    {
+      if (t == null) {
+        logstreamInstallFuture.complete(logStreamService);
+      }
+      else {
+        logstreamInstallFuture.completeExceptionally(t);
+      }
+    });
+
+    return logstreamInstallFuture;
   }
 
   public LogStream build() {
-    return buildAsync().join();
+    // this is only called from out test's, but not to implement it multiple times we add the sync build here
+    final var buildFuture = new CompletableActorFuture<LogStream>();
+
+    actorScheduler.submitActor(new Actor() {
+      @Override
+      protected void onActorStarting() {
+        actor.runOnCompletionBlockingCurrentPhase(buildAsync(), (logStream, t)
+          -> {
+            if (t == null)
+            {
+              buildFuture.complete(logStream);
+            }
+            else
+            {
+              buildFuture.completeExceptionally(t);
+            }
+        });
+      }
+    });
+    return buildFuture.join();
   }
 
   protected void applyDefaults() {}

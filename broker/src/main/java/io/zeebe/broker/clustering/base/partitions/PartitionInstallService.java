@@ -38,6 +38,7 @@ import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.LogStreams;
+import io.zeebe.logstreams.impl.service.LogStreamService;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
@@ -163,10 +164,11 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
 
   @Override
   protected void onActorStarting() {
+
     LogStreams.createAtomixLogStream(atomixRaftPartition)
-        .withMaxFragmentSize(maxFragmentSize)
-        .withActorScheduler(scheduler)
-        .buildAsync()
+      .withMaxFragmentSize(maxFragmentSize)
+      .withActorScheduler(scheduler)
+      .buildAsync()
         .onComplete(
             (log, error) -> {
               if (error == null) {
@@ -189,7 +191,16 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
 
     // this is called from outside so it is safe to call join
     final var closeFuture = new CompletableActorFuture<Void>();
-    actor.call(() -> closePartition().onComplete(closeFuture));
+    actor.call(() -> closePartition().onComplete((v, t) ->
+      {
+        if (t == null)
+        {
+          logStream.closeAsync().onComplete(closeFuture);
+        }
+        else {
+          closeFuture.completeExceptionally(t);
+        }
+    }));
     closeFuture.join();
 
     super.close();
@@ -206,7 +217,7 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
         (v, t) -> {
           if (t == null) {
             tearDownBaseInstallation();
-            logStream.closeAsync().onComplete(closingPartitionFuture);
+            closingPartitionFuture.complete(null);
           } else {
             closingPartitionFuture.completeExceptionally(t);
           }

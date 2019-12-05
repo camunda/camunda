@@ -31,12 +31,10 @@ public class LogStreamTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder).around(logStreamRule);
 
   private LogStream logStream;
-  private LogStorage logStorageSpy;
 
   @Before
   public void setup() {
     logStream = logStreamRule.getLogStream();
-    logStorageSpy = logStream.getLogStorage();
   }
 
   @Test
@@ -78,12 +76,13 @@ public class LogStreamTest {
   public void shouldCloseLogStream() {
     // given
     final Dispatcher writeBuffer = logStream.getWriteBuffer();
+    final LogStorage logStorage = logStream.getLogStorage();
 
     // when
     logStream.close();
 
     // then
-    assertThat(logStream.getLogStorage().isClosed()).isTrue();
+    assertThat(logStorage.isClosed()).isTrue();
     assertThat(writeBuffer.isClosed()).isTrue();
   }
 

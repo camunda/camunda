@@ -7,6 +7,8 @@
  */
 package io.zeebe.logstreams.impl.service;
 
+import static io.zeebe.util.sched.future.CompletableActorFuture.completed;
+
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
@@ -72,7 +74,6 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
     commitPosition.setVolatile(INVALID_ADDRESS);
     this.reader = new BufferedLogStreamReader(logStorage);
     setCommitPosition(reader.seekToEnd());
-    actorScheduler.submitActor(this);
   }
 
   @Override
@@ -92,6 +93,11 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
 
   @Override
   public ActorFuture<Void> closeAsync() {
+    if (actor.isClosed())
+    {
+      return CompletableActorFuture.completed(null);
+    }
+
     final var closeFuture = new CompletableActorFuture<Void>();
     actor.call(
         () -> {

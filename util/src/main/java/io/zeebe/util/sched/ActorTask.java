@@ -49,7 +49,7 @@ public class ActorTask {
   private ActorExecutor actorExecutor;
   private ActorThreadGroup actorThreadGroup;
   private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
-  private ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
+  private volatile ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
   private ActorSubscription[] subscriptions = new ActorSubscription[0];
   /**
    * the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound
