@@ -8,8 +8,8 @@ import (
 
 // MultipleOf returns a validation rule that checks if a value is a multiple of the "base" value.
 // Note that "base" should be of integer type.
-func MultipleOf(base interface{}) *MultipleOfRule {
-	return &MultipleOfRule{
+func MultipleOf(base interface{}) MultipleOfRule {
+	return MultipleOfRule{
 		base,
 		fmt.Sprintf("must be multiple of %v", base),
 	}
@@ -22,13 +22,13 @@ type MultipleOfRule struct {
 }
 
 // Error sets the error message for the rule.
-func (r *MultipleOfRule) Error(message string) *MultipleOfRule {
+func (r MultipleOfRule) Error(message string) MultipleOfRule {
 	r.message = message
 	return r
 }
 
 // Validate checks if the value is a multiple of the "base" value.
-func (r *MultipleOfRule) Validate(value interface{}) error {
+func (r MultipleOfRule) Validate(value interface{}) error {
 	rv := reflect.ValueOf(r.base)
 	switch rv.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:

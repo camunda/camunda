@@ -225,7 +225,12 @@ When `validation.Validate` is used to validate a validatable value, if it does n
 given validation rules, it will further call the value's `Validate()` method. 
 
 Similarly, when `validation.ValidateStruct` is validating a struct field whose type is validatable, it will call 
-the field's `Validate` method after it passes the listed rules. 
+the field's `Validate` method after it passes the listed rules.
+
+> Note: When implementing `validation.Validatable`, do not call `validation.Validate()` to validate the value in its
+> original type because this will cause infinite loops. For example, if you define a new type `MyString` as `string`
+> and implement `validation.Validatable` for `MyString`, within the `Validate()` function you should cast the value 
+> to `string` first before calling `validation.Validate()` to validate it.
 
 In the following example, the `Address` field of `Customer` is validatable because `Address` implements 
 `validation.Validatable`. Therefore, when validating a `Customer` struct with `validation.ValidateStruct`,

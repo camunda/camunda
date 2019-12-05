@@ -49,7 +49,7 @@ github.com/docker/go-connections/sockets
 github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
-# github.com/go-ozzo/ozzo-validation/v3 v3.8.0
+# github.com/go-ozzo/ozzo-validation/v3 v3.8.1
 github.com/go-ozzo/ozzo-validation/v3
 github.com/go-ozzo/ozzo-validation/v3/is
 # github.com/gogo/protobuf v1.3.1

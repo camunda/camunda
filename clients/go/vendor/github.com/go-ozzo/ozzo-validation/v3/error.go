@@ -27,11 +27,11 @@ type (
 
 // NewInternalError wraps a given error into an InternalError.
 func NewInternalError(err error) InternalError {
-	return &internalError{error: err}
+	return internalError{error: err}
 }
 
 // InternalError returns the actual error that it wraps around.
-func (e *internalError) InternalError() error {
+func (e internalError) InternalError() error {
 	return e.error
 }
 
