@@ -18,6 +18,7 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -31,6 +32,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -199,7 +201,23 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
 
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+
+    final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
+    broker.addPartitionListener(
+        new PartitionListener() {
+          @Override
+          public void onBecomingLeader(int partitionId) {
+            latch.countDown();
+          }
+        });
     broker.start();
+
+    try {
+      latch.await(15, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      LOG.info("Broker was not started in 15 seconds", e);
+      Thread.interrupted();
+    }
     // todo add listener for partition
 
     //    try {

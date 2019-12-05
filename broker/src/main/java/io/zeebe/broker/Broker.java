@@ -86,6 +86,8 @@ public class Broker implements AutoCloseable {
   private final List<PartitionListener> partitionListeners;
   private Atomix atomix;
 
+  private volatile CompletableFuture<Broker> startFuture = null;
+
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
   }
@@ -104,21 +106,19 @@ public class Broker implements AutoCloseable {
     this.closeables = new ArrayList<>();
   }
 
-  private volatile CompletableFuture<Broker> startFuture = null;
+  public void addPartitionListener(PartitionListener listener) {
+    partitionListeners.add(listener);
+  }
 
-  public void start()
-  {
-    if (startFuture == null)
-    {
+  public void start() {
+    if (startFuture == null) {
       startFuture = new CompletableFuture<>();
       LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), this::startInternal);
     }
   }
 
-  public Broker awaitStarting()
-  {
-    if (startFuture == null)
-    {
+  public Broker awaitStarting() {
+    if (startFuture == null) {
       start();
     }
     return startFuture.join();
@@ -138,7 +138,7 @@ public class Broker implements AutoCloseable {
     LOG.info("Broker startup phase: Step 1 Scheduler started.");
 
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
-    closeables.add(atomix::stop);
+    closeables.add(() -> atomix.stop().join());
     LOG.info("Broker startup phase: Step 2 membership and replication protocol created.");
 
     final ClusterCfg clusterCfg = brokerCfg.getCluster();
@@ -317,18 +317,27 @@ public class Broker implements AutoCloseable {
         brokerContext.getDiagnosticContext(),
         () -> {
           if (!isClosed) {
-            Collections.reverse(closeables);
-            closeables.forEach(
-                c -> {
-                  try {
-                    c.close();
-                  } catch (Exception e) {
-                    LOG.error("Failed to close {}", c, e);
-                  }
-                });
-            brokerContext.close();
-            isClosed = true;
-            LOG.info("Broker shut down.");
+
+            if (startFuture != null) {
+              startFuture
+                  .thenAccept(
+                      b -> {
+                        Collections.reverse(closeables);
+                        closeables.forEach(
+                            c -> {
+                              try {
+                                LOG.info("Close {}", c);
+                                c.close();
+                              } catch (Exception e) {
+                                LOG.error("Failed to close {}", c, e);
+                              }
+                            });
+                        brokerContext.close();
+                        isClosed = true;
+                        LOG.info("Broker shut down.");
+                      })
+                  .join();
+            }
           }
         });
   }

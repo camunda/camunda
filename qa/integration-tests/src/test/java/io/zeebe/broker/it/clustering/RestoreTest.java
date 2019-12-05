@@ -130,6 +130,9 @@ public class RestoreTest {
     final File snapshotsDir = getSnapshotsDirectory(broker);
 
     waitUntil(
-        () -> Arrays.stream(snapshotsDir.listFiles()).anyMatch(f -> !f.getName().contains("tmp")));
+        () -> {
+          final File[] files = snapshotsDir.listFiles();
+          return files != null && Arrays.stream(files).anyMatch(f -> !f.getName().contains("tmp"));
+        });
   }
 }

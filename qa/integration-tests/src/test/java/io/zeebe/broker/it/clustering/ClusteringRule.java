@@ -202,6 +202,10 @@ public class ClusteringRule extends ExternalResource {
   }
 
   private void waitUntilBrokersStarted() {
+
+    for (Broker broker : brokers.values()) {
+      broker.awaitStarting();
+    }
     // A hack to see if Atomix cluster has started
     //    brokers.forEach(
     //        (i, b) -> {
