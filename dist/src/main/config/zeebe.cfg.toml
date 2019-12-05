@@ -49,6 +49,11 @@
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_PORT.
 # port = 26500
 
+# Sets the minimum keep alive interval
+# This setting specifies the minimum accepted interval between keep alive pings. This value must be specified as a positive integer followed by 's' for seconds, 'm' for minutes or 'h' for hours. 
+# This setting can also be overriden using the environment variable ZEEBE_GATEWAY_KEEP_ALIVE_INTERVAL.
+# minKeepAliveInterval = "30s"
+
 [gateway.cluster]
 # Sets the broker the gateway should initial contact.
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CONTACT_POINT.

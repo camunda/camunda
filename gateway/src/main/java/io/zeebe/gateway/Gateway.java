@@ -15,25 +15,26 @@ import io.grpc.netty.NettyServerBuilder;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringServerInterceptor;
 import org.slf4j.Logger;
 
 public class Gateway {
-
   public static final String VERSION;
+  private static final String ILLEGAL_KEEP_ALIVE_FMT =
+      "Keep alive must be expressed as a positive integer followed by either s (seconds), m (minutes) or h (hours) but got instead '%s' instead.";
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private static final Function<GatewayCfg, ServerBuilder> DEFAULT_SERVER_BUILDER_FACTORY =
-      cfg ->
-          NettyServerBuilder.forAddress(
-              new InetSocketAddress(cfg.getNetwork().getHost(), cfg.getNetwork().getPort()));
+      cfg -> setNetworkConfig(cfg.getNetwork());
 
   static {
     final String version = Gateway.class.getPackage().getImplementationVersion();
@@ -106,7 +107,6 @@ public class Gateway {
     }
 
     final SecurityCfg securityCfg = gatewayCfg.getSecurity();
-
     if (securityCfg.isEnabled()) {
       setSecurityConfig(serverBuilder, securityCfg);
     }
@@ -114,6 +114,36 @@ public class Gateway {
     server = serverBuilder.build();
 
     server.start();
+  }
+
+  private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
+
+    final String keepAlive = cfg.getMinKeepAliveInterval();
+    if (keepAlive == null || keepAlive.length() < 2) {
+      throw new IllegalArgumentException(String.format(ILLEGAL_KEEP_ALIVE_FMT, keepAlive));
+    }
+
+    final int timeValue;
+    try {
+      timeValue = Integer.parseUnsignedInt(keepAlive.substring(0, keepAlive.length() - 1));
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(String.format(ILLEGAL_KEEP_ALIVE_FMT, keepAlive));
+    }
+
+    final TimeUnit timeUnit;
+    if (keepAlive.endsWith("s")) {
+      timeUnit = TimeUnit.SECONDS;
+    } else if (keepAlive.endsWith("m")) {
+      timeUnit = TimeUnit.MINUTES;
+    } else if (keepAlive.endsWith("h")) {
+      timeUnit = TimeUnit.HOURS;
+    } else {
+      throw new IllegalArgumentException(String.format(ILLEGAL_KEEP_ALIVE_FMT, keepAlive));
+    }
+
+    return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
+        .permitKeepAliveTime(timeValue, timeUnit)
+        .permitKeepAliveWithoutCalls(false);
   }
 
   private void setSecurityConfig(final ServerBuilder serverBuilder, final SecurityCfg security) {

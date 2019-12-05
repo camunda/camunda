@@ -14,6 +14,7 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CLUSTER_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_KEEP_ALIVE_INTERVAL;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MANAGEMENT_THREADS;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_COUNT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MAX_MESSAGE_SIZE;
@@ -119,9 +120,10 @@ public class GatewayCfgTest {
             .getClassLoader()
             .getResource("security/test-chain.cert.pem")
             .getPath());
+    setEnv(ENV_GATEWAY_KEEP_ALIVE_INTERVAL, "30s");
 
     final GatewayCfg expected = new GatewayCfg();
-    expected.getNetwork().setHost("zeebe").setPort(5432);
+    expected.getNetwork().setHost("zeebe").setPort(5432).setMinKeepAliveInterval("30s");
     expected
         .getCluster()
         .setContactPoint("broker:432")
