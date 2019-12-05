@@ -13,8 +13,9 @@ import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 import org.camunda.bpm.licensecheck.LicenseType;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.license.OptimizeInvalidLicenseException;
+import org.camunda.optimize.service.exceptions.license.OptimizeNoLicenseStoredException;
 import org.camunda.optimize.service.metadata.Version;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -51,7 +52,7 @@ public class LicenseManager {
   private final OptimizeElasticsearchClient esClient;
 
   private String optimizeLicense;
-  Map<String, String> requiredUnifiedKeyMap = Collections.singletonMap("optimize", "true");
+  private Map<String, String> requiredUnifiedKeyMap = Collections.singletonMap("optimize", "true");
 
   @PostConstruct
   public void init() {
@@ -59,7 +60,9 @@ public class LicenseManager {
     if (optimizeLicense == null) {
       try {
         optimizeLicense = readFileToString();
-        storeLicense(optimizeLicense);
+        if (optimizeLicense != null) {
+          storeLicense(optimizeLicense);
+        }
       } catch (Exception ignored) {
         // nothing to do here
       }
@@ -70,6 +73,10 @@ public class LicenseManager {
     InputStream inputStream = this.getClass()
       .getClassLoader()
       .getResourceAsStream(LicenseManager.OPTIMIZE_LICENSE_FILE);
+    if (inputStream == null) {
+      return null;
+    }
+
     ByteArrayOutputStream result = new ByteArrayOutputStream();
     byte[] buffer = new byte[1024];
     int length;
@@ -79,7 +86,7 @@ public class LicenseManager {
     return result.toString(StandardCharsets.UTF_8.name());
   }
 
-  public void storeLicense(String licenseAsString) throws OptimizeException {
+  public void storeLicense(String licenseAsString) {
     XContentBuilder builder;
     try {
       builder = jsonBuilder()
@@ -87,7 +94,7 @@ public class LicenseManager {
         .field(LICENSE, licenseAsString)
         .endObject();
     } catch (IOException exception) {
-      throw new OptimizeException("Could not parse given license. Please check the encoding!");
+      throw new OptimizeInvalidLicenseException("Could not parse given license. Please check the encoding!");
     }
 
     IndexRequest request = new IndexRequest(LICENSE_INDEX_NAME)
@@ -114,11 +121,11 @@ public class LicenseManager {
       }
       String errorMessage = String.format("Could not store license to Elasticsearch. Reason: %s", reason.toString());
       log.error(errorMessage);
-      throw new OptimizeException(errorMessage);
+      throw new OptimizeRuntimeException(errorMessage);
     }
   }
 
-  private String retrieveLicense() throws InvalidLicenseException {
+  private String retrieveLicense() {
     if (optimizeLicense == null) {
       log.info("\n############### Heads up ################\n" +
                  "You tried to access Optimize, but no valid license could be\n" +
@@ -133,7 +140,7 @@ public class LicenseManager {
                  "https://camunda.com/contact/\n" +
                  "\n" +
                  "You will now be redirected to the license page...");
-      throw new InvalidLicenseException("No license stored in Optimize. Please provide a valid Optimize license");
+      throw new OptimizeNoLicenseStoredException("No license stored in Optimize. Please provide a valid Optimize license");
     }
     return optimizeLicense;
   }
@@ -158,18 +165,24 @@ public class LicenseManager {
     return licenseAsString;
   }
 
-  public LicenseInformationDto validateOptimizeLicense(String licenseAsString) throws InvalidLicenseException {
+  public LicenseInformationDto validateOptimizeLicense(String licenseAsString) {
     if (licenseAsString == null) {
-      throw new InvalidLicenseException("Could not validate given license. Please try to provide another license!");
+      throw new OptimizeInvalidLicenseException(
+        "Could not validate given license. Please try to provide another license!");
     }
-    LicenseKey licenseKey = new LicenseKeyImpl(licenseAsString);
-    // check that the license key is a legacy key
-    if (licenseKey.getLicenseType() == LicenseType.OPTIMIZE) {
-      licenseKey.validate();
-    } else {
-      licenseKey.validate(requiredUnifiedKeyMap);
+
+    try {
+      LicenseKey licenseKey = new LicenseKeyImpl(licenseAsString);
+      // check that the license key is a legacy key
+      if (licenseKey.getLicenseType() == LicenseType.OPTIMIZE) {
+        licenseKey.validate();
+      } else {
+        licenseKey.validate(requiredUnifiedKeyMap);
+      }
+      return licenseKeyToDto(licenseKey);
+    } catch (InvalidLicenseException e) {
+      throw new OptimizeInvalidLicenseException(e);
     }
-    return licenseKeyToDto(licenseKey);
   }
 
   private LicenseInformationDto licenseKeyToDto(LicenseKey licenseKey) {
@@ -182,7 +195,7 @@ public class LicenseManager {
     return dto;
   }
 
-  public LicenseInformationDto validateLicenseStoredInOptimize() throws InvalidLicenseException {
+  public LicenseInformationDto validateLicenseStoredInOptimize() {
     String license = retrieveLicense();
     return validateOptimizeLicense(license);
   }

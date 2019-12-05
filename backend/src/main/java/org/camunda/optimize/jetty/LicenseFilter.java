@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.jetty;
 
-import org.camunda.bpm.licensecheck.InvalidLicenseException;
+import org.camunda.optimize.service.exceptions.license.OptimizeLicenseException;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,7 @@ public class LicenseFilter implements Filter {
     if (indexOrLogin && !isErrorPage(requestPath)) {
       try {
         licenseManager.validateLicenseStoredInOptimize();
-      } catch (InvalidLicenseException e) {
+      } catch (OptimizeLicenseException e) {
         logger.warn("Given License is invalid or not available, redirecting to license page!");
         servletResponse.sendRedirect(LICENSE_PAGE);
         return;

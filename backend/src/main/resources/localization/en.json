@@ -739,8 +739,9 @@
     "notAuthorizedError": "Could not authenticate you, please check your credentials.",
     "notFoundError": "The server could not find the requested resource.",
     "badRequestError": "The server was unable to process the request.",
-    "invalidLicenseError": "Invalid license provided.",
     "nonCompliantConflict": "Could not apply action due to conflicts with collection data source.",
+    "invalidLicenseError": "Invalid license provided.",
+    "noLicenseStoredError": "No license stored in Optimize. Please provide a valid Optimize license.",
     "invalidEventProcessState": "This operation is cannot be performed in the current state of the event based process."
   }
 }
