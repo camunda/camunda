@@ -19,11 +19,12 @@ func Each(rules ...Rule) *EachRule {
 	}
 }
 
+// EachRule is a validation rule that validates elements in a map/slice/array using the specified list of rules.
 type EachRule struct {
 	rules []Rule
 }
 
-// Loops through the given iterable and calls the Ozzo Validate() method for each value.
+// Validate loops through the given iterable and calls the Ozzo Validate() method for each value.
 func (r *EachRule) Validate(value interface{}) error {
 	errs := Errors{}
 

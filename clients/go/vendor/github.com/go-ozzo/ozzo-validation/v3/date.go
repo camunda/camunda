@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// DateRule is a validation rule that validates date/time string values.
 type DateRule struct {
 	layout       string
 	min, max     time.Time

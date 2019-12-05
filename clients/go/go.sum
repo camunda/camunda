@@ -38,6 +38,8 @@ github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/go-ozzo/ozzo-validation/v3 v3.7.0 h1:PdDvmzvX6DOL8dzB7GyAx6X9MbviVeHRXN/S4hB1aig=
 github.com/go-ozzo/ozzo-validation/v3 v3.7.0/go.mod h1:Bf9HRAgaSCiSPUJ6ueMChbSdCWKeAH4pyW3jctEGwGU=
+github.com/go-ozzo/ozzo-validation/v3 v3.8.0 h1:cClt/igmZM86TPKepX4M9NUF75VFCStnWTj6FR6l1XU=
+github.com/go-ozzo/ozzo-validation/v3 v3.8.0/go.mod h1:Bf9HRAgaSCiSPUJ6ueMChbSdCWKeAH4pyW3jctEGwGU=
 github.com/go-redis/redis v6.15.6+incompatible h1:H9evprGPLI8+ci7fxQx6WNZHJSb7be8FqJQRhdQZ5Sg=
 github.com/go-redis/redis v6.15.6+incompatible/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
 github.com/go-sql-driver/mysql v1.4.1 h1:g24URVg0OFbNUTx9qqY1IRZ9D9z3iPyi5zKhQZpNwpA=

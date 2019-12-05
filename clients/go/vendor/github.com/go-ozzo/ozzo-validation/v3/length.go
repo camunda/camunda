@@ -45,6 +45,7 @@ func RuneLength(min, max int) *LengthRule {
 	return r
 }
 
+// LengthRule is a validation rule that checks if a value's length is within the specified range.
 type LengthRule struct {
 	min, max int
 	message  string

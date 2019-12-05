@@ -16,6 +16,7 @@ func In(values ...interface{}) *InRule {
 	}
 }
 
+// InRule is a validation rule that validates if a value can be found in the given list of values.
 type InRule struct {
 	elements []interface{}
 	message  string

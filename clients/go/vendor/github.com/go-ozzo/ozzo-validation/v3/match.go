@@ -19,6 +19,7 @@ func Match(re *regexp.Regexp) *MatchRule {
 	}
 }
 
+// MatchRule is a validation rule that checks if a value matches the specified regular expression.
 type MatchRule struct {
 	re      *regexp.Regexp
 	message string
