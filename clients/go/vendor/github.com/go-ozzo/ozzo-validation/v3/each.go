@@ -13,8 +13,8 @@ import (
 // Each returns a validation rule that loops through an iterable (map, slice or array)
 // and validates each value inside with the provided rules.
 // An empty iterable is considered valid. Use the Required rule to make sure the iterable is not empty.
-func Each(rules ...Rule) *EachRule {
-	return &EachRule{
+func Each(rules ...Rule) EachRule {
+	return EachRule{
 		rules: rules,
 	}
 }
@@ -25,7 +25,7 @@ type EachRule struct {
 }
 
 // Validate loops through the given iterable and calls the Ozzo Validate() method for each value.
-func (r *EachRule) Validate(value interface{}) error {
+func (r EachRule) Validate(value interface{}) error {
 	errs := Errors{}
 
 	v := reflect.ValueOf(value)
@@ -54,7 +54,7 @@ func (r *EachRule) Validate(value interface{}) error {
 	return nil
 }
 
-func (r *EachRule) getInterface(value reflect.Value) interface{} {
+func (r EachRule) getInterface(value reflect.Value) interface{} {
 	switch value.Kind() {
 	case reflect.Ptr, reflect.Interface:
 		if value.IsNil() {
@@ -66,7 +66,7 @@ func (r *EachRule) getInterface(value reflect.Value) interface{} {
 	}
 }
 
-func (r *EachRule) getString(value reflect.Value) string {
+func (r EachRule) getString(value reflect.Value) string {
 	switch value.Kind() {
 	case reflect.Ptr, reflect.Interface:
 		if value.IsNil() {

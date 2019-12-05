@@ -9,7 +9,7 @@ require (
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/go-ozzo/ozzo-validation/v3 v3.8.0
+	github.com/go-ozzo/ozzo-validation/v3 v3.8.1
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
