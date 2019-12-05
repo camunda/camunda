@@ -5,29 +5,60 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
+import {render, unmountComponentAtNode} from 'react-dom';
+import {act} from 'react-dom/test-utils';
+import {shallow, mount} from 'enzyme';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import User from './User';
-import * as Styled from './styled.js';
+import {
+  mockResolvedAsyncFn,
+  mockRejectedAsyncFn,
+  flushPromises
+} from 'modules/testUtils';
 
-const user = {
-  firstname: 'Jonny',
-  lastname: 'Prosciutto',
-  canLogout: true
+import User from './User';
+import * as api from 'modules/api/header/header';
+
+import * as Styled from './styled';
+
+jest.mock('modules/utils/bpmn');
+
+let defaultConsoleError = console.error;
+
+const mockUser = {
+  firstname: 'foo',
+  lastname: 'bar'
 };
 
-describe('Userarea', () => {
-  it('should show Skeleton till data is available', () => {
-    const mockProps = {
-      firstname: null,
-      lastname: null,
-      canLogout: user.canLogout,
-      handleLangout: jest.fn()
-    };
+describe('User', () => {
+  beforeEach(() => {
+    console.error = jest.fn();
+  });
+
+  afterEach(() => {
+    console.error = defaultConsoleError;
+  });
+
+  it('renders with User data', async () => {
+    api.fetchUser = mockResolvedAsyncFn(mockUser);
     const node = mount(
       <ThemeProvider>
-        <User {...mockProps} />
+        <User />
+      </ThemeProvider>
+    );
+
+    await flushPromises();
+    node.update();
+
+    expect(node.find(Styled.Dropdown).text()).toContain(mockUser.firstname);
+    expect(node.find(Styled.Dropdown).text()).toContain(mockUser.lastname);
+  });
+
+  it('renders without User data', async () => {
+    api.fetchUser = mockRejectedAsyncFn();
+
+    const node = mount(
+      <ThemeProvider>
+        <User />
       </ThemeProvider>
     );
 
@@ -35,20 +66,26 @@ describe('Userarea', () => {
     expect(node.find(Styled.Circle)).toExist();
   });
 
-  it('should show user data when available', () => {
-    const mockProps = {
-      firstname: user.firstname,
-      lastname: user.lastname,
-      canLogout: user.canLogout,
-      handleLangout: jest.fn()
-    };
+  it('should handle logout', async () => {
+    api.fetchUser = mockResolvedAsyncFn(mockUser);
+    api.logout = mockResolvedAsyncFn();
+
     const node = mount(
       <ThemeProvider>
-        <User {...mockProps} />
+        <User />
       </ThemeProvider>
     );
-    const DropdownLabel = node.find('Dropdown').prop('label');
-    expect(DropdownLabel).toContain(user.firstname);
-    expect(DropdownLabel).toContain(user.lastname);
+
+    await flushPromises();
+    node.update();
+
+    node.find('button').simulate('click');
+    node.update();
+
+    expect(node.find('[data-test="logout-button"]')).toExist();
+    node.find('[data-test="logout-button"]').simulate('click');
+    node.update();
+
+    expect(api.logout).toHaveBeenCalled();
   });
 });

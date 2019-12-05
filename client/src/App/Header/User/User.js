@@ -4,40 +4,58 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import {ThemeConsumer} from 'modules/theme';
 import Dropdown from 'modules/components/Dropdown';
 import PropTypes from 'prop-types';
 
+import * as api from 'modules/api/header';
 import * as Styled from './styled';
 
 User.propTypes = {
-  firstname: PropTypes.string,
-  lastname: PropTypes.string,
-  canLogout: PropTypes.bool,
-  handleLogout: PropTypes.func
+  handleRedirect: PropTypes.func
 };
 
-export default function User({firstname, lastname, canLogout, handleLogout}) {
+export default function User({handleRedirect}) {
+  const [user, setUser] = useState({
+    firstname: null,
+    lastname: null
+  });
+
+  useEffect(() => {
+    getUser();
+  }, []);
+
+  const getUser = async () => {
+    try {
+      setUser(await api.fetchUser());
+    } catch (e) {
+      console.log('user could not be loaded');
+    }
+  };
+
+  const handleLogout = async () => {
+    await api.logout();
+    handleRedirect({forceRedirect: true});
+  };
+
   return (
     <Styled.ProfileDropdown>
       <ThemeConsumer>
         {({toggleTheme}) =>
-          firstname && lastname ? (
-            <Styled.Dropdown label={`${firstname} ${lastname}`}>
+          user.firstname && user.lastname ? (
+            <Styled.Dropdown label={`${user.firstname} ${user.lastname}`}>
               <Dropdown.Option
                 label="Toggle Theme"
                 data-test="toggle-theme-button"
                 onClick={toggleTheme}
               />
 
-              {canLogout && (
-                <Dropdown.Option
-                  label="Logout"
-                  data-test="logout-button"
-                  onClick={handleLogout}
-                />
-              )}
+              <Dropdown.Option
+                label="Logout"
+                data-test="logout-button"
+                onClick={handleLogout}
+              />
             </Styled.Dropdown>
           ) : (
             <>
