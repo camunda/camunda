@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
@@ -98,3 +98,20 @@ export const Menu = styled.ul`
   display: flex;
   flex-wrap: wrap;
 `;
+
+const colors = css`
+  background: ${themeStyle({
+    dark: 'rgba(136, 136, 141)',
+    light: Colors.uiLight06
+  })};
+  opacity: ${themeStyle({
+    dark: 0.2,
+    light: 0.09
+  })};
+`;
+
+export const SkeletonBlock = themed(styled.div`
+  height: 12px;
+  width: 120px;
+  ${colors};
+`);

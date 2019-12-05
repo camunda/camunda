@@ -69,7 +69,7 @@ NavElement.propTypes = {
   linkProps: PropTypes.object,
   type: PropTypes.string,
   label: PropTypes.string,
-  count: PropTypes.number
+  count: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
 };
 
 export const DoubleBadgeNavElement = memo(props => (
@@ -98,7 +98,10 @@ DoubleBadgeNavElement.propTypes = {
   isActive: PropTypes.bool,
   type: PropTypes.string,
   label: PropTypes.string,
-  selectionCount: PropTypes.number,
-  instancesInSelectionsCount: PropTypes.number,
+  selectionCount: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+  instancesInSelectionsCount: PropTypes.oneOfType([
+    PropTypes.number,
+    PropTypes.string
+  ]),
   expandSelections: PropTypes.func
 };

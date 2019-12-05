@@ -32,3 +32,9 @@ export const createTitle = (type, count) => {
   };
   return titles[type];
 };
+
+export const PATHNAME = {
+  INSTANCES: '/instances',
+  INSTANCE: '/instances/',
+  DASHBOAD: '/'
+};

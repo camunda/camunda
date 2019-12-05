@@ -8,25 +8,27 @@ import React from 'react';
 import {Redirect} from 'react-router-dom';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
-
-import * as api from 'modules/api/header';
-import withSharedState from 'modules/components/withSharedState';
-import {getFilterQueryString} from 'modules/utils/filter';
-import {
-  LOADING_STATE,
-  FILTER_SELECTION,
-  BADGE_TYPE,
-  COMBO_BADGE_TYPE,
-  DEFAULT_FILTER,
-  SUBSCRIPTION_TOPIC
-} from 'modules/constants';
+import {withCountStore} from 'modules/contexts/CountContext';
+import {withRouter} from 'react-router';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {withSelection} from 'modules/contexts/SelectionContext';
 
-import {isEqual} from 'lodash';
+import {wrapWithContexts} from 'modules/contexts/contextHelpers';
+import withSharedState from 'modules/components/withSharedState';
+import {getFilterQueryString, parseQueryString} from 'modules/utils/filter';
+import {
+  FILTER_SELECTION,
+  BADGE_TYPE,
+  COMBO_BADGE_TYPE,
+  LOADING_STATE,
+  DEFAULT_FILTER
+} from 'modules/constants';
 
-import {localStateKeys, labels, createTitle} from './constants';
+import {isEqual} from 'lodash';
+import {labels, createTitle, PATHNAME} from './constants';
+
 import User from './User';
+import InstanceDetail from './InstanceDetail';
 import {
   DoubleBadgeNavElement,
   NavElement,
@@ -38,14 +40,17 @@ import * as Styled from './styled.js';
 class Header extends React.Component {
   static propTypes = {
     dataManager: PropTypes.object,
-    active: PropTypes.oneOf(['dashboard', 'instances']),
-    runningInstancesCount: PropTypes.number,
-    filter: PropTypes.object,
-    filterCount: PropTypes.number,
+    dataStore: PropTypes.shape({
+      running: PropTypes.number,
+      active: PropTypes.number,
+      filterCount: PropTypes.number,
+      withIncidents: PropTypes.number,
+      instancesInSelectionsCount: PropTypes.number,
+      selectionCount: PropTypes.number
+    }),
+    location: PropTypes.object,
     selectionCount: PropTypes.number,
     instancesInSelectionsCount: PropTypes.number,
-    incidentsCount: PropTypes.number,
-    detail: PropTypes.element,
     getStateLocally: PropTypes.func.isRequired,
     isFiltersCollapsed: PropTypes.bool.isRequired,
     isSelectionsCollapsed: PropTypes.bool.isRequired,
@@ -54,63 +59,53 @@ class Header extends React.Component {
     onFilterReset: PropTypes.func
   };
   static labels = labels;
+
   constructor(props) {
     super(props);
+
     this.subscriptions = {
-      LOAD_CORE_STATS: ({state, response}) => {
+      LOAD_INSTANCE: ({state, response}) => {
         if (state === LOADING_STATE.LOADED) {
-          this.updateCounts(response.coreStatistics);
-        }
-      },
-      REFRESH_AFTER_OPERATION: ({state, response}) => {
-        if (state === LOADING_STATE.LOADED) {
-          this.updateCounts(
-            response[SUBSCRIPTION_TOPIC.LOAD_CORE_STATS].coreStatistics
-          );
+          this.setState({
+            instance: response
+          });
         }
       }
     };
+    this.state = {
+      forceRedirect: false,
+      user: {},
+      instance: null,
+      filter: null,
+      isLoaded: false
+    };
   }
-
-  state = {
-    forceRedirect: false,
-    user: {},
-    runningInstancesCount: 0,
-    selectionCount: 0,
-    filterCount: 0,
-    filter: null,
-    instancesInSelectionsCount: 0,
-    incidentsCount: 0
-  };
 
   componentDidMount = () => {
     this.props.dataManager.subscribe(this.subscriptions);
 
-    this.setUser();
-    this.localState = this.props.getStateLocally();
-    localStateKeys.forEach(this.setValueFromPropsOrLocalState);
-
-    this.setValuesFromPropsOrApi();
-
-    // set static labels.
+    const isLoaded = this.areCountsLoaded();
+    if (isLoaded) {
+      this.setState({isLoaded});
+    }
   };
 
   componentDidUpdate = (prevProps, prevState) => {
-    localStateKeys.forEach(key => {
-      if (this.props[key] !== prevProps[key]) {
-        this.setValueFromPropsOrLocalState(key);
-      }
-    });
+    const {location} = this.props;
+    const isLoaded = this.areCountsLoaded();
 
-    if (
-      this.props.incidentsCount !== prevProps.incidentsCount ||
-      this.props.runningInstancesCount !== prevProps.runningInstancesCount
-    ) {
-      this.setValuesFromPropsOrApi();
+    if (prevState.isLoaded !== isLoaded) {
+      this.setState({isLoaded});
     }
 
-    // set default filter when no filter is found in localState
-    if (!this.state.filter) {
+    // Instances View: Set filter count from URL
+    if (
+      this.currentView().isInstances() &&
+      prevProps.location.search !== location.search
+    ) {
+      const filterFromURL = parseQueryString(location.search).filter;
+      this.setState({filter: filterFromURL});
+    } else if (!this.state.filter) {
       this.setState({filter: DEFAULT_FILTER});
     }
   };
@@ -119,53 +114,30 @@ class Header extends React.Component {
     this.props.dataManager.unsubscribe(this.subscriptions);
   }
 
-  updateCounts({running, withIncidents}) {
-    const {runningInstancesCount, incidentsCount} = this.props;
-    const counts = {runningInstancesCount, incidentsCount};
+  currentView() {
+    const {DASHBOAD, INSTANCES, INSTANCE} = PATHNAME;
+    const {pathname} = this.props.location;
 
-    counts.runningInstancesCount = running || 0;
-    counts.incidentsCount = withIncidents || 0;
-
-    this.setState(counts);
+    return {
+      isDashboard: () => pathname === DASHBOAD,
+      isInstances: () => pathname === INSTANCES,
+      isInstance: () => pathname.includes(INSTANCE)
+    };
   }
 
-  setUser = async () => {
-    const user = await api.fetchUser();
-    this.setState({user});
-  };
+  areCountsLoaded() {
+    const {
+      filterCount,
+      selectionCount,
+      instancesInSelectionsCount,
+      ...includedCounts
+    } = this.props.dataStore;
 
-  /**
-   * Sets value in the state by getting it from the props or falling back to the local storage.
-   * @param {string} key: key for which to set the value
-   */
-  setValueFromPropsOrLocalState = key => {
-    const value =
-      typeof this.props[key] === 'undefined'
-        ? this.localState[key]
-        : this.props[key];
+    const isLoaded = counts => Object.values(counts).every(count => count > 0);
+    return isLoaded(includedCounts);
+  }
 
-    if (typeof value !== 'undefined') {
-      this.setState({[key]: value});
-    }
-  };
-
-  /**
-   * Sets values in the state by getting it from the props or falling back to the api.
-   */
-  setValuesFromPropsOrApi = async () => {
-    const {runningInstancesCount, incidentsCount} = this.props;
-    if (
-      typeof runningInstancesCount === 'undefined' ||
-      typeof incidentsCount === 'undefined'
-    ) {
-      this.props.dataManager.getWorkflowCoreStatistics();
-    } else {
-      this.setState({runningInstancesCount, incidentsCount});
-    }
-  };
-
-  handleLogout = async () => {
-    await api.logout();
+  handleRedirect = () => {
     this.setState({forceRedirect: true});
   };
 
@@ -179,7 +151,6 @@ class Header extends React.Component {
       onClick: e => {
         e.preventDefault();
         this.props.expandFilters();
-        // TODO: empty default
         this.props.onFilterReset(filters[type]);
       },
       to: ' '
@@ -204,38 +175,41 @@ class Header extends React.Component {
   };
 
   selectTitle(type) {
+    const {running, withIncidents, selectionCount} = this.props.dataStore;
+
     const titles = {
       brand: 'View Dashboard',
       dashboard: 'View Dashboard',
-      instances: `View ${this.state.runningInstancesCount} Running Instances`,
-      filters: `View ${this.state.filterCount} Instances in Filters`,
-      incidents: `View ${this.state.incidentsCount} Incidents`,
-      selections: `View ${this.state.selectionCount} Selections`
+      instances: `View ${running} Running Instances`,
+      filters: `View ${this.selectFilterCount()} Instances in Filters`,
+      incidents: `View ${withIncidents} Incidents`,
+      selections: `View ${selectionCount} Selections`
     };
     return titles[type];
   }
 
   selectActiveCondition(type) {
-    const {active} = this.props;
+    const currentView = this.currentView();
     const {filter} = this.state;
 
+    // Is 'running instances' or 'incidents badge' active;
     if (type === 'instances' || type === 'incidents') {
       const isRunningInstanceFilter = isEqual(filter, FILTER_SELECTION.running);
-
-      const isIncidentsFilter =
-        !isRunningInstanceFilter && isEqual(filter, {incidents: true});
-
       const conditions = {
-        instances: active === 'instances' && isRunningInstanceFilter,
-        incidents: active === 'instances' && isIncidentsFilter
+        instances: currentView.isInstances() && isRunningInstanceFilter,
+        incidents:
+          currentView.isInstances() &&
+          !isRunningInstanceFilter &&
+          isEqual(filter, {incidents: true})
       };
       return conditions[type];
     }
 
+    // Is 'dashboard', 'filters' or 'selections' active;
     const conditions = {
-      dashboard: active === 'dashboard',
-      filters: active === 'instances' && !this.props.isFiltersCollapsed,
-      selections: active === 'instances' && !this.props.isSelectionsCollapsed
+      dashboard: currentView.isDashboard(),
+      filters: currentView.isInstances() && !this.props.isFiltersCollapsed,
+      selections: currentView.isInstances() && !this.props.isSelectionsCollapsed
     };
 
     return conditions[type];
@@ -243,20 +217,21 @@ class Header extends React.Component {
 
   selectCount(type) {
     const {
-      runningInstancesCount,
-      filterCount,
-      filter,
+      running,
+      withIncidents,
       instancesInSelectionsCount,
       selectionCount,
-      incidentsCount
-    } = this.state;
+      filterCount
+    } = this.props.dataStore;
+
+    if (!this.state.isLoaded) {
+      return '';
+    }
 
     const conditions = {
-      instances: runningInstancesCount,
-      filters: isEqual(filter, FILTER_SELECTION.running)
-        ? runningInstancesCount
-        : filterCount,
-      incidents: incidentsCount,
+      instances: running,
+      filters: filterCount === null ? running : filterCount,
+      incidents: withIncidents,
       selections: {instancesInSelectionsCount, selectionCount}
     };
 
@@ -274,13 +249,20 @@ class Header extends React.Component {
     };
   }
 
+  renderInstanceDetails() {
+    if (this.state.instance) {
+      return <InstanceDetail instance={this.state.instance} />;
+    } else {
+      return <Styled.SkeletonBlock />;
+    }
+  }
+
   render() {
     if (this.state.forceRedirect) {
       return <Redirect to="/login" />;
     }
-    const {detail} = this.props;
+
     const {filter} = this.state;
-    const {firstname, lastname, canLogout = true} = this.state.user || {};
 
     const brand = this.getLinkProperties('brand');
     const dashboard = this.getLinkProperties('dashboard');
@@ -305,7 +287,6 @@ class Header extends React.Component {
             title={dashboard.title}
             label={Header.labels['dashboard']}
           />
-
           <NavElement
             dataTest={instance.dataTest}
             isActive={instance.isActive}
@@ -320,7 +301,7 @@ class Header extends React.Component {
             isActive={filters.isActive}
             title={filters.title}
             label={Header.labels['filters']}
-            count={this.props.filterCount || filters.count}
+            count={filters.count}
             linkProps={filters.linkProps}
             type={BADGE_TYPE.FILTERS}
           />
@@ -333,7 +314,6 @@ class Header extends React.Component {
             linkProps={incidents.linkProps}
             type={BADGE_TYPE.INCIDENTS}
           />
-
           <DoubleBadgeNavElement
             to={`/instances${filter ? getFilterQueryString(filter) : ''}`}
             dataTest={selections.dataTest}
@@ -341,31 +321,34 @@ class Header extends React.Component {
             label={Header.labels['selections']}
             isActive={selections.isActive}
             expandSelections={this.props.expandSelections}
-            selectionCount={
-              this.props.selectionCount || selections.count.selectionCount
-            }
+            selectionCount={selections.count.selectionCount}
             instancesInSelectionsCount={
-              this.props.instancesInSelectionsCount ||
               selections.count.instancesInSelectionsCount
             }
             type={COMBO_BADGE_TYPE.SELECTIONS}
           />
         </Styled.Menu>
-        <Styled.Detail>{detail}</Styled.Detail>
-        <User
-          handleLogout={this.handleLogout}
-          firstname={firstname}
-          lastname={lastname}
-          canLogout={canLogout}
-        />
+        <Styled.Detail>
+          {this.currentView().isInstance() && this.renderInstanceDetails()}
+        </Styled.Detail>
+        <User handleRedirect={this.handleRedirect} />
       </Styled.Header>
     );
   }
 }
 
-const WrappedHeader = withData(
-  withSelection(withCollapsablePanel(withSharedState(Header)))
-);
+const contexts = [
+  withCountStore,
+  withData,
+  withSelection,
+  withCollapsablePanel,
+  withSharedState,
+  withRouter,
+  withData
+];
+
+const WrappedHeader = wrapWithContexts(contexts, Header);
+
 WrappedHeader.WrappedComponent = Header;
 
 export default WrappedHeader;

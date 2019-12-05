@@ -5,9 +5,7 @@
  */
 
 import React from 'react';
-import {render, unmountComponentAtNode} from 'react-dom';
-import {act} from 'react-dom/test-utils';
-import {shallow, mount} from 'enzyme';
+import {mount} from 'enzyme';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {
   mockResolvedAsyncFn,
@@ -22,8 +20,8 @@ import * as Styled from './styled';
 
 jest.mock('modules/utils/bpmn');
 
-let defaultConsoleError = console.error;
-
+const defaultConsoleError = console.error;
+const defaultConsoleLog = console.log;
 const mockUser = {
   firstname: 'foo',
   lastname: 'bar'
@@ -32,10 +30,12 @@ const mockUser = {
 describe('User', () => {
   beforeEach(() => {
     console.error = jest.fn();
+    console.log = jest.fn();
   });
 
   afterEach(() => {
     console.error = defaultConsoleError;
+    console.log = defaultConsoleLog;
   });
 
   it('renders with User data', async () => {
