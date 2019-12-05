@@ -20,6 +20,8 @@ import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.util.SyncLogStream;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
@@ -41,7 +43,7 @@ import org.mockito.MockitoAnnotations;
 
 public class TypedStreamProcessorTest {
   private static final String STREAM_NAME = "foo";
-  protected LogStream stream;
+  protected SynchronousLogStream stream;
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();

@@ -49,18 +49,6 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
     reset();
   }
 
-  public LogStreamWriterImpl(final LogStream log) {
-    wrap(log);
-  }
-
-  @Override
-  public void wrap(final LogStream log) {
-    logWriteBuffer = log.getWriteBuffer();
-    partitionId = log.getPartitionId();
-
-    reset();
-  }
-
   @Override
   public LogStreamRecordWriter keyNull() {
     return key(LogEntryDescriptor.KEY_NULL_VALUE);

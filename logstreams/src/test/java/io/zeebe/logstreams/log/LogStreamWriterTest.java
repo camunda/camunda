@@ -14,6 +14,7 @@ import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -54,7 +55,8 @@ public class LogStreamWriterTest {
 
   @Before
   public void setUp() {
-    writer = new LogStreamWriterImpl(logStreamRule.getLogStream());
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    writer = new LogStreamWriterImpl(logStream.getWriteBuffer(), logStream.getPartitionId());
   }
 
   private LoggedEvent getWrittenEvent(final long position) {

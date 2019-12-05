@@ -56,6 +56,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -103,9 +104,24 @@ public class Broker implements AutoCloseable {
     this.closeables = new ArrayList<>();
   }
 
+  private volatile CompletableFuture<Broker> startFuture = null;
+
   public void start()
   {
-    LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), this::startInternal);
+    if (startFuture == null)
+    {
+      startFuture = new CompletableFuture<>();
+      LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), this::startInternal);
+    }
+  }
+
+  public Broker awaitStarting()
+  {
+    if (startFuture == null)
+    {
+      start();
+    }
+    return startFuture.join();
   }
 
   private void startInternal() {
@@ -250,6 +266,7 @@ public class Broker implements AutoCloseable {
     }
 
     LOG.info("Broker started successfully!");
+    startFuture.complete(this);
   }
 
   private TypedRecordProcessorsFactory createFactory(

@@ -33,7 +33,7 @@ public class LogStreamReaderRule extends ExternalResource {
 
   @Override
   protected void before() {
-    final LogStream logStream = logStreamRule.getLogStream();
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
     logStreamReader.wrap(logStream.getLogStorage());
   }
 
@@ -76,41 +76,5 @@ public class LogStreamReaderRule extends ExternalResource {
   private DirectBuffer eventValue(final LoggedEvent event) {
     assertThat(event).isNotNull();
     return new UnsafeBuffer(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
-  }
-
-  public List<LoggedEvent> readEvents() {
-    return readEvents(-1, -1);
-  }
-
-  public List<LoggedEvent> readEvents(long from, long to) {
-    final List<LoggedEvent> events = new ArrayList<>();
-
-    if (from > 0) {
-      logStreamReader.seek(from);
-    } else {
-      logStreamReader.seekToFirstEvent();
-    }
-
-    while (logStreamReader.hasNext()) {
-      final LoggedEvent event = logStreamReader.next();
-      if (to > 0 && event.getPosition() > to) {
-        break;
-      }
-
-      if (event.getPosition() >= from) {
-        events.add(copyEvent(event));
-      }
-    }
-
-    return events;
-  }
-
-  private LoggedEvent copyEvent(LoggedEvent event) {
-    final LoggedEventImpl copy = new LoggedEventImpl();
-    final MutableDirectBuffer copyBuffer = new UnsafeBuffer(new byte[event.getLength()]);
-    event.write(copyBuffer, 0);
-    copy.wrap(copyBuffer, 0);
-
-    return copy;
   }
 }

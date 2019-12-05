@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.processor.workflow.message.command;
 
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
@@ -53,7 +52,6 @@ public class SubscriptionCommandMessageHandler
   private final RejectCorrelateMessageSubscriptionCommand resetMessageCorrelationCommand =
       new RejectCorrelateMessageSubscriptionCommand();
 
-  private final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
   private final RecordMetadata recordMetadata = new RecordMetadata();
 
   private final MessageSubscriptionRecord messageSubscriptionRecord =
@@ -63,13 +61,13 @@ public class SubscriptionCommandMessageHandler
       new WorkflowInstanceSubscriptionRecord();
 
   private final Consumer<Runnable> enviromentToRun;
-  private final Function<Integer, LogStream> logstreamSupplier;
+  private final Function<Integer, LogStreamRecordWriter> logstreamRecordWriterSupplier;
 
   public SubscriptionCommandMessageHandler(
       final Consumer<Runnable> enviromentToRun,
-      final Function<Integer, LogStream> logstreamSupplier) {
+      final Function<Integer, LogStreamRecordWriter> logstreamRecordWriterSupplier) {
     this.enviromentToRun = enviromentToRun;
-    this.logstreamSupplier = logstreamSupplier;
+    this.logstreamRecordWriterSupplier = logstreamRecordWriterSupplier;
   }
 
   @Override
@@ -275,18 +273,17 @@ public class SubscriptionCommandMessageHandler
       final Intent intent,
       final UnpackedObject command) {
 
-    final LogStream logStream = logstreamSupplier.apply(partitionId);
-    if (logStream == null) {
+    final LogStreamRecordWriter logStreamRecordWriter = logstreamRecordWriterSupplier.apply(partitionId);
+    if (logStreamRecordWriter == null) {
       // ignore message if you are not the leader of the partition
       return true;
     }
 
-    logStreamWriter.wrap(logStream);
-
+    logStreamRecordWriter.reset();
     recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
 
     final long position =
-        logStreamWriter.key(-1).metadataWriter(recordMetadata).valueWriter(command).tryWrite();
+      logStreamRecordWriter.key(-1).metadataWriter(recordMetadata).valueWriter(command).tryWrite();
 
     return position > 0;
   }

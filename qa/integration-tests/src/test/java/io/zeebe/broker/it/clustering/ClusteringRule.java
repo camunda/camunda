@@ -418,7 +418,7 @@ public class ClusteringRule extends ExternalResource {
    */
   public void restartBroker(final int nodeId) {
     stopBroker(nodeId);
-    final Broker broker = getBroker(nodeId);
+    final Broker broker = getBroker(nodeId).awaitStarting();
     final SocketAddress commandApi = broker.getConfig().getNetwork().getCommandApi().getAddress();
     waitUntilBrokerIsAddedToTopology(commandApi);
     waitForPartitionReplicationFactor();

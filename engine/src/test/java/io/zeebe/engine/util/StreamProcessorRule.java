@@ -18,7 +18,11 @@ import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.util.SyncLogStream;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
@@ -91,8 +95,9 @@ public class StreamProcessorRule implements TestRule {
     return chain.apply(base, description);
   }
 
-  public LogStream getLogStream(final int partitionId) {
-    return streams.getLogStream(getLogName(partitionId));
+  public LogStreamRecordWriter getLogStreamRecordWriter(final int partitionId) {
+    final String logName = getLogName(partitionId);
+    return streams.getLogStreamRecordWriter(logName);
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
@@ -130,10 +135,6 @@ public class StreamProcessorRule implements TestRule {
     closeStreamProcessor(startPartitionId);
   }
 
-  public long getCommitPosition() {
-    return streams.getLogStream(getLogName(startPartitionId)).getCommitPosition();
-  }
-
   public StateSnapshotController getStateSnapshotController(final int partitionId) {
     return streams.getStateSnapshotController(getLogName(partitionId));
   }
@@ -165,7 +166,7 @@ public class StreamProcessorRule implements TestRule {
   public void printAllRecords() {
     int partitionId = startPartitionId;
     for (int i = 0; i < partitionCount; i++) {
-      final LogStream logStream = streams.getLogStream(getLogName(partitionId++));
+      final SynchronousLogStream logStream = streams.getLogStream(getLogName(partitionId++));
       LogStreamPrinter.printRecords(logStream);
     }
   }

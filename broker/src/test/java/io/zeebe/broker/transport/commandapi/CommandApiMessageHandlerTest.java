@@ -20,6 +20,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
+import io.zeebe.logstreams.util.SyncLogStream;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -74,7 +76,7 @@ public class CommandApiMessageHandlerTest {
   private final ExecuteCommandRequestEncoder commandRequestEncoder =
       new ExecuteCommandRequestEncoder();
   private BufferingServerOutput serverOutput;
-  private LogStream logStream;
+  private SynchronousLogStream logStream;
   private CommandApiMessageHandler messageHandler;
   private final RequestLimiter noneLimiter = new NoopRequestLimiter();
 
@@ -85,14 +87,14 @@ public class CommandApiMessageHandlerTest {
 
     logStorageRule.open();
     serverOutput = new BufferingServerOutput();
-    logStream =
+    logStream = new SyncLogStream(
         LogStreams.createLogStream()
             .withPartitionId(LOG_STREAM_PARTITION_ID)
             .withLogName(logName)
             .withActorScheduler(actorSchedulerRule.get())
             .withLogName(logName)
             .withLogStorage(logStorageRule.getStorage())
-            .build();
+            .build());
     logStorageRule.setPositionListener(logStream::setCommitPosition);
     logStream.openAppender().join();
 

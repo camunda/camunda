@@ -76,7 +76,7 @@ public class AsyncSnapshotingTest {
     snapshotController = spy(snapshotController);
 
     logStream = mock(LogStream.class);
-    when(logStream.getCommitPosition()).thenReturn(25L);
+    when(logStream.getCommitPositionAsync()).thenReturn(CompletableActorFuture.completed(25L));
     conditionList = new ArrayList<>();
     doAnswer(
             invocationOnMock -> {
@@ -93,7 +93,7 @@ public class AsyncSnapshotingTest {
   }
 
   private void setCommitPosition(final long commitPosition) {
-    when(logStream.getCommitPosition()).thenReturn(commitPosition);
+    when(logStream.getCommitPositionAsync()).thenReturn(CompletableActorFuture.completed(commitPosition));
     conditionList.forEach(c -> c.signal());
   }
 
@@ -125,9 +125,9 @@ public class AsyncSnapshotingTest {
     // then
     final InOrder inOrder = Mockito.inOrder(snapshotController, logStream);
     inOrder.verify(logStream, TIMEOUT.times(1)).registerOnCommitPositionUpdatedCondition(any());
-    inOrder.verify(logStream, TIMEOUT.times(1)).getCommitPosition();
+    inOrder.verify(logStream, TIMEOUT.times(1)).getCommitPositionAsync();
     inOrder.verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
-    inOrder.verify(logStream, TIMEOUT.times(1)).getCommitPosition();
+    inOrder.verify(logStream, TIMEOUT.times(1)).getCommitPositionAsync();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -186,9 +186,9 @@ public class AsyncSnapshotingTest {
     // then
     final InOrder inOrder = Mockito.inOrder(snapshotController, logStream);
     inOrder.verify(logStream, TIMEOUT.times(1)).registerOnCommitPositionUpdatedCondition(any());
-    inOrder.verify(logStream, TIMEOUT.times(1)).getCommitPosition();
+    inOrder.verify(logStream, TIMEOUT.times(1)).getCommitPositionAsync();
     inOrder.verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
-    inOrder.verify(logStream, TIMEOUT.times(1)).getCommitPosition();
+    inOrder.verify(logStream, TIMEOUT.times(1)).getCommitPositionAsync();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -275,7 +275,7 @@ public class AsyncSnapshotingTest {
     // when
     lastProcessedPosition = 26L;
     lastWrittenPosition = 27L;
-    asyncSnapshotDirector.enforceSnapshotCreation(lastWrittenPosition, lastProcessedPosition);
+    asyncSnapshotDirector.enforceSnapshotCreation(commitPosition, lastWrittenPosition, lastProcessedPosition);
 
     // then
     verify(snapshotController, TIMEOUT).takeSnapshot(lastProcessedPosition);
@@ -299,7 +299,7 @@ public class AsyncSnapshotingTest {
         .commitSnapshot(argThat(s -> s.getPosition() == lastProcessedPosition));
 
     // when
-    asyncSnapshotDirector.enforceSnapshotCreation(lastWrittenPosition, lastProcessedPosition);
+    asyncSnapshotDirector.enforceSnapshotCreation(commitPosition, lastWrittenPosition, lastProcessedPosition);
 
     // then
     verify(snapshotController, never()).takeSnapshot(lastProcessedPosition);
@@ -319,7 +319,7 @@ public class AsyncSnapshotingTest {
     setCommitPosition(commitPosition);
 
     // when
-    asyncSnapshotDirector.enforceSnapshotCreation(lastWrittenPosition, lastProcessedPosition);
+    asyncSnapshotDirector.enforceSnapshotCreation(commitPosition, lastWrittenPosition, lastProcessedPosition);
 
     // then
     verify(snapshotController, never()).takeSnapshot(lastProcessedPosition);

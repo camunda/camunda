@@ -27,6 +27,8 @@ import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.TestStreams;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.util.SyncLogStream;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -71,7 +73,7 @@ public class SkipFailingEventsTest {
       RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
 
   protected TestStreams streams;
-  protected LogStream stream;
+  protected SynchronousLogStream stream;
 
   @Mock protected CommandResponseWriter commandResponseWriter;
   private KeyGenerator keyGenerator;

@@ -8,16 +8,19 @@
 package io.zeebe.broker.engine.impl;
 
 import io.atomix.core.Atomix;
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
 public class SubscriptionApiCommandMessageHandlerService extends Actor
     implements PartitionListener {
 
-  private final Int2ObjectHashMap<LogStream> leaderPartitions = new Int2ObjectHashMap<>();
+  private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions = new Int2ObjectHashMap<>();
   private final Atomix atomix;
 
   public SubscriptionApiCommandMessageHandlerService(Atomix atomix) {
@@ -36,7 +39,21 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   public void onBecomingLeader(int partitionId, LogStream logStream) {
-    actor.submit(() -> leaderPartitions.put(partitionId, logStream));
+    actor.submit(() -> {
+
+      logStream.getWriteBufferAsync().onComplete((writebuffer, error) ->
+      {
+        if (error == null)
+        {
+          leaderPartitions.put(partitionId, new LogStreamWriterImpl(writebuffer, partitionId));
+        }
+        else
+        {
+          // todo ideally we should step down
+          Loggers.SYSTEM_LOGGER.error("Unexpected error on retrieving write buffer for partition {}", partitionId, error);
+        }
+      });
+    });
   }
 
   @Override

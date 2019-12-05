@@ -373,8 +373,14 @@ public final class ProcessingStateMachine {
               // so no other ActorJob can interfere between commit and update the positions
               if (onErrorHandling) {
                 errorRecordPosition = writtenEventPosition;
-                LOG.info(
-                    LOG_ERROR_EVENT_WRITTEN, errorRecordPosition, logStream.getCommitPosition());
+                logStream.getCommitPositionAsync().onComplete((commitPosition, error) ->
+                {
+                  if (error == null)
+                  {
+                    LOG.info(
+                      LOG_ERROR_EVENT_WRITTEN, errorRecordPosition, commitPosition);
+                  }
+                });
               }
               lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
               lastWrittenEventPosition = writtenEventPosition;

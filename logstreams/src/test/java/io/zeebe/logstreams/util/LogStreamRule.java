@@ -30,7 +30,7 @@ public final class LogStreamRule extends ExternalResource {
 
   private Consumer<LogStreamBuilder> streamBuilder;
   private final UnaryOperator<Builder> storageBuilder;
-  private LogStream logStream;
+  private SynchronousLogStream logStream;
   private BufferedLogStreamReader logStreamReader;
   private LogStreamBuilder builder;
   private ActorSchedulerRule actorSchedulerRule;
@@ -74,13 +74,13 @@ public final class LogStreamRule extends ExternalResource {
     return new LogStreamRule(temporaryFolder, false, b -> {});
   }
 
-  public LogStream startLogStreamWithConfiguration(final Consumer<LogStreamBuilder> streamBuilder) {
+  public SynchronousLogStream startLogStreamWithConfiguration(final Consumer<LogStreamBuilder> streamBuilder) {
     this.streamBuilder = streamBuilder;
     startLogStream();
     return logStream;
   }
 
-  public LogStream startLogStreamWithStorageConfiguration(final UnaryOperator<Builder> builder) {
+  public SynchronousLogStream startLogStreamWithStorageConfiguration(final UnaryOperator<Builder> builder) {
     logStorageRule = new AtomixLogStorageRule(temporaryFolder);
     this.logStorageRule.open(builder);
     startLogStream();
@@ -142,7 +142,7 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   public void openLogStream() {
-    logStream = builder.build();
+    logStream = new SyncLogStream(builder.build());
     logStorageRule.setPositionListener(logStream::setCommitPosition);
 
     actorSchedulerRule
@@ -168,7 +168,7 @@ public final class LogStreamRule extends ExternalResource {
     return logStreamReader;
   }
 
-  public LogStream getLogStream() {
+  public SynchronousLogStream getLogStream() {
     return logStream;
   }
 

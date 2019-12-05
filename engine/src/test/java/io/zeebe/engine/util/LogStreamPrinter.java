@@ -13,6 +13,8 @@ import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.util.SyncLogStream;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.ValueType;
@@ -29,7 +31,7 @@ public class LogStreamPrinter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.broker.test");
 
-  public static void printRecords(final LogStream logStream) {
+  public static void printRecords(final SynchronousLogStream logStream) {
     final StringBuilder sb = new StringBuilder();
     sb.append("Records on partition ");
     sb.append(logStream.getPartitionId());

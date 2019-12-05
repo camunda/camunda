@@ -85,7 +85,7 @@ public class ExporterRule implements TestRule {
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
-            .logStream(stream)
+            .logStream(stream.getAsyncLogStream())
             .logStorage(stream.getLogStorage())
             .zeebeDb(capturedZeebeDb)
             .maxSnapshots(1)

@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,7 +31,7 @@ public class LogStreamTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder).around(logStreamRule);
 
-  private LogStream logStream;
+  private SynchronousLogStream logStream;
 
   @Before
   public void setup() {
@@ -86,12 +87,12 @@ public class LogStreamTest {
     assertThat(writeBuffer.isClosed()).isTrue();
   }
 
-  static long writeEvent(final LogStream logStream) {
+  static long writeEvent(final SynchronousLogStream logStream) {
     return writeEvent(logStream, wrapString("event"));
   }
 
-  static long writeEvent(final LogStream logStream, final DirectBuffer value) {
-    final LogStreamWriterImpl writer = new LogStreamWriterImpl(logStream);
+  static long writeEvent(final SynchronousLogStream logStream, final DirectBuffer value) {
+    final LogStreamWriterImpl writer = new LogStreamWriterImpl(logStream.getWriteBuffer(), logStream.getPartitionId());
 
     long position = -1L;
 

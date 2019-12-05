@@ -15,6 +15,7 @@ import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -61,7 +62,7 @@ public class LogStreamBatchWriterTest {
 
   @Before
   public void setUp() {
-    final LogStream logStream = logStreamRule.getLogStream();
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
     writer = new LogStreamBatchWriterImpl(logStream.getPartitionId(), logStream.getWriteBuffer());
   }
 

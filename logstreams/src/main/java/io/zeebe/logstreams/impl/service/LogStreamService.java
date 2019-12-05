@@ -116,11 +116,11 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
         });
     return closeFuture;
   }
-
-  @Override
-  public long getCommitPosition() {
-    return getCommitPositionAsync().join();
-  }
+//
+//  @Override
+//  public long getCommitPosition() {
+//    return getCommitPositionAsync().join();
+//  }
 
   @Override
   public ActorFuture<Long> getCommitPositionAsync() {
@@ -136,23 +136,23 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
           onCommitPositionUpdatedConditions.signalConsumers();
         });
   }
-
-  @Override
-  public LogStorage getLogStorage() {
-    return actor.call(() -> logStorage).join();
-  }
+//
+//  @Override
+//  public LogStorage getLogStorage() {
+//    return actor.call(() -> logStorage).join();
+//  }
 
 
   @Override
   public ActorFuture<LogStorage> getLogStorageAsync() {
     return actor.call(() -> logStorage);
   }
-
-
-  @Override
-  public Dispatcher getWriteBuffer() {
-    return getWriteBufferAsync().join();
-  }
+//
+//
+//  @Override
+//  public Dispatcher getWriteBuffer() {
+//    return getWriteBufferAsync().join();
+//  }
 
   @Override
   public ActorFuture<Dispatcher> getWriteBufferAsync() {
