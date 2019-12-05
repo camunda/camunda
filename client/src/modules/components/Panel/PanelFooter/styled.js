@@ -9,7 +9,8 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Footer = themed(styled.div`
   z-index: 1;
-  height: 38px;
+  min-height: 38px;
+  max-height: 38px;
   width: 100%;
 
   display: flex;
