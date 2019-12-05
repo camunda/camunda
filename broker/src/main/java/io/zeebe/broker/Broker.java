@@ -101,11 +101,14 @@ public class Broker implements AutoCloseable {
     this.brokerContext = systemContext;
     this.partitionListeners = new ArrayList<>();
     this.closeables = new ArrayList<>();
-
-    LogUtil.doWithMDC(systemContext.getDiagnosticContext(), () -> start());
   }
 
-  protected void start() {
+  public void start()
+  {
+    LogUtil.doWithMDC(brokerContext.getDiagnosticContext(), this::startInternal);
+  }
+
+  private void startInternal() {
     final BrokerCfg brokerCfg = getConfig();
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
 

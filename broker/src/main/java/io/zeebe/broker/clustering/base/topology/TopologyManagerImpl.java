@@ -101,7 +101,7 @@ public class TopologyManagerImpl extends Actor
         brokerInfo);
 
     if (brokerInfo != null && brokerInfo.getNodeId() != localBroker.getNodeId()) {
-      actor.call(
+      actor.run(
           () -> {
             switch (clusterMembershipEvent.type()) {
               case METADATA_CHANGED:

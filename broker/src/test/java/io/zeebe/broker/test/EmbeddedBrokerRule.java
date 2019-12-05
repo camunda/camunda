@@ -199,6 +199,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
 
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+    broker.start();
     // todo add listener for partition
 
     //    try {

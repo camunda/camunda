@@ -221,6 +221,9 @@ public class ClusteringRule extends ExternalResource {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
+
+    new Thread(broker::start).start();
+
     closeables.manage(broker);
     return broker;
   }

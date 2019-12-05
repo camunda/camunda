@@ -181,7 +181,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public void startBroker() {
     startTime = System.currentTimeMillis();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
-
+    broker.start();
     dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
   }
 
