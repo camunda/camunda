@@ -157,24 +157,25 @@ public class AsyncSnapshotDirector extends Actor {
   }
 
   private void onCommitCheck() {
-    final long currentCommitPosition = logStream.getCommitPosition();
-
-    if (pendingSnapshot != null
+    logStream.getCommitPositionAsync().onComplete((currentCommitPosition, error) ->
+    {
+      if (pendingSnapshot != null
         && lastWrittenEventPosition != null
         && currentCommitPosition >= lastWrittenEventPosition) {
-      try {
-        lastValidSnapshotPosition = lowerBoundSnapshotPosition;
-        snapshotController.commitSnapshot(pendingSnapshot);
-        snapshotController.replicateLatestSnapshot(actor::submit);
+        try {
+          lastValidSnapshotPosition = lowerBoundSnapshotPosition;
+          snapshotController.commitSnapshot(pendingSnapshot);
+          snapshotController.replicateLatestSnapshot(actor::submit);
 
-      } catch (final Exception ex) {
-        LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
-      } finally {
-        lastWrittenEventPosition = null;
-        takingSnapshot = false;
-        pendingSnapshot = null;
+        } catch (final Exception ex) {
+          LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
+        } finally {
+          lastWrittenEventPosition = null;
+          takingSnapshot = false;
+          pendingSnapshot = null;
+        }
       }
-    }
+    });
   }
 
   protected void enforceSnapshotCreation(
@@ -206,9 +207,31 @@ public class AsyncSnapshotDirector extends Actor {
                         streamProcessor.getLastProcessedPositionAsync(),
                         (processedPosition, ex2) -> {
                           if (ex2 == null) {
-                            enforceSnapshotCreation(writtenPosition, processedPosition);
-                            super.closeAsync();
-                            future.complete(null);
+                            logStream.getCommitPositionAsync().onComplete((commitPosition, errorOnRetrieveCommitPos) ->
+                            {
+                              if (errorOnRetrieveCommitPos == null)
+                              {
+                                if (commitPosition >= writtenPosition
+                                  && writtenPosition > lastValidSnapshotPosition) {
+                                  LOG.debug(LOG_MSG_ENFORCE_SNAPSHOT, processedPosition);
+                                  try {
+                                    createSnapshot(() -> snapshotController.takeSnapshot(processedPosition));
+                                  } catch (final Exception ex) {
+                                    LOG.error(ERROR_MSG_ENFORCED_SNAPSHOT, ex);
+                                    future.completeExceptionally(ex);
+                                    return;
+                                  }
+                                }
+                                super.closeAsync();
+                                future.complete(null);
+                              }
+                              else
+                              {
+                                LOG.error("Unexpected error on retrieving commit position", ex2);
+                                future.completeExceptionally(errorOnRetrieveCommitPos);
+                                super.closeAsync();
+                              }
+                            });
                           } else {
                             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, ex2);
                             super.closeAsync();

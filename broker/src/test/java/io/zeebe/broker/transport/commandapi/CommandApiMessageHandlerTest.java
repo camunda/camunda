@@ -17,6 +17,7 @@ import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.zeebe.protocol.Protocol;
@@ -96,7 +97,7 @@ public class CommandApiMessageHandlerTest {
     logStream.openAppender().join();
 
     messageHandler = new CommandApiMessageHandler();
-    messageHandler.addPartition(logStream, noneLimiter);
+    messageHandler.addPartition(1, new LogStreamWriterImpl(logStream.getWriteBuffer(), 1), noneLimiter);
   }
 
   @After
@@ -257,7 +258,9 @@ public class CommandApiMessageHandlerTest {
     final CommandRateLimiter settableLimiter =
         CommandRateLimiter.builder().limit(new SettableLimit(1)).build(logStream.getPartitionId());
     messageHandler = new CommandApiMessageHandler();
-    messageHandler.addPartition(logStream, settableLimiter);
+    final int partitionId = 1;
+    final LogStreamWriterImpl logStreamWriter = new LogStreamWriterImpl(logStream.getWriteBuffer(), partitionId);
+    messageHandler.addPartition(partitionId, logStreamWriter, settableLimiter);
     settableLimiter.tryAcquire(0, 1, null);
 
     // when
@@ -284,7 +287,9 @@ public class CommandApiMessageHandlerTest {
     final CommandRateLimiter settableLimiter =
         CommandRateLimiter.builder().limit(new SettableLimit(1)).build(logStream.getPartitionId());
     messageHandler = new CommandApiMessageHandler();
-    messageHandler.addPartition(logStream, settableLimiter);
+    final int partitionId = 1;
+    final LogStreamWriterImpl logStreamWriter = new LogStreamWriterImpl(logStream.getWriteBuffer(), partitionId);
+    messageHandler.addPartition(partitionId, logStreamWriter, settableLimiter);
     settableLimiter.tryAcquire(0, 1, null);
 
     // when

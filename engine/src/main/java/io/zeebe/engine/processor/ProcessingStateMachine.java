@@ -165,16 +165,38 @@ public final class ProcessingStateMachine {
   }
 
   void readNextEvent() {
+    if (onErrorHandling)
+    {
+      logStream.getCommitPositionAsync().onComplete((commitPosition, error) ->
+      {
+        if (error == null)
+        {
+          if (commitPosition >= errorRecordPosition)
+          {
+            if (onErrorHandling) {
+              LOG.info(LOG_ERROR_EVENT_COMMITTED);
+              onErrorHandling = false;
+            }
+
+            tryToReadNextEvent();
+          }
+        }
+        else
+        {
+          LOG.error("Error on retrieving commit position", error);
+        }
+      });
+    }
+    else
+    {
+      tryToReadNextEvent();
+    }
+  }
+
+  private void tryToReadNextEvent() {
     if (shouldProcessNext.getAsBoolean()
-        && logStreamReader.hasNext()
-        && currentProcessor == null
-        && logStream.getCommitPosition() >= errorRecordPosition) {
-
-      if (onErrorHandling) {
-        LOG.info(LOG_ERROR_EVENT_COMMITTED);
-        onErrorHandling = false;
-      }
-
+      && logStreamReader.hasNext()
+      && currentProcessor == null) {
       currentEvent = logStreamReader.next();
 
       if (eventFilter == null || eventFilter.applies(currentEvent)) {

@@ -42,11 +42,9 @@ public class MessageObserver implements StreamProcessorLifecycleAware {
 
     final ActorControl actor = processingContext.getActor();
 
-    final LogStream logStream = processingContext.getLogStream();
-    final TypedStreamWriterImpl typedStreamWriter =
-        new TypedStreamWriterImpl(logStream.getPartitionId(), logStream.getWriteBuffer());
+    // it is safe to reuse the write because we running in the same actor/thread
     final MessageTimeToLiveChecker timeToLiveChecker =
-        new MessageTimeToLiveChecker(typedStreamWriter, messageState);
+        new MessageTimeToLiveChecker(processingContext.getLogStreamWriter(), messageState);
     processingContext
         .getActor()
         .runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);

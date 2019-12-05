@@ -51,6 +51,11 @@ public class StreamProcessorBuilder {
     return this;
   }
 
+  public StreamProcessorBuilder maxFragmentSize(int maxFragmentSize) {
+    processingContext.maxFragmentSize(maxFragmentSize);
+    return this;
+  }
+
   public StreamProcessorBuilder writeBuffer(Dispatcher writeBuffer) {
     this.writeBuffer = writeBuffer;
     return this;

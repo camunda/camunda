@@ -41,15 +41,14 @@ public class PushDeploymentRequestHandler
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
 
-  private final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
   private final RecordMetadata recordMetadata = new RecordMetadata();
 
-  private final Int2ObjectHashMap<LogStream> leaderPartitions;
+  private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions;
   private final ActorControl actor;
   private final Atomix atomix;
 
   public PushDeploymentRequestHandler(
-      final Int2ObjectHashMap<LogStream> leaderPartitions,
+      final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions,
       final ActorControl actor,
       final Atomix atomix) {
     this.leaderPartitions = leaderPartitions;
@@ -59,7 +58,6 @@ public class PushDeploymentRequestHandler
 
   @Override
   public CompletableFuture<byte[]> apply(byte[] bytes) {
-    LOG.error("Got request");
     final CompletableFuture<byte[]> responseFuture = new CompletableFuture<>();
 
     actor.call(
@@ -111,9 +109,9 @@ public class PushDeploymentRequestHandler
     final int partitionId = pushDeploymentRequest.partitionId();
     final DirectBuffer deployment = pushDeploymentRequest.deployment();
 
-    final LogStream logStream = leaderPartitions.get(partitionId);
-    if (logStream != null) {
-      LOG.error("Handling deployment {} for partition {} as leader", deploymentKey, partitionId);
+    final LogStreamRecordWriter logStreamWriter = leaderPartitions.get(partitionId);
+    if (logStreamWriter != null) {
+      LOG.trace("Handling deployment {} for partition {} as leader", deploymentKey, partitionId);
       handlePushDeploymentRequest(responseFuture, deployment, deploymentKey, partitionId);
     } else {
       LOG.error(
@@ -133,7 +131,7 @@ public class PushDeploymentRequestHandler
 
     actor.runUntilDone(
         () -> {
-          final LogStream logStream = leaderPartitions.get(partitionId);
+          final LogStreamRecordWriter logStream = leaderPartitions.get(partitionId);
           if (logStream == null) {
             LOG.debug("Leader change on partition {}, ignore push deployment request", partitionId);
             actor.done();
@@ -179,13 +177,12 @@ public class PushDeploymentRequestHandler
   }
 
   private boolean writeCreatingDeployment(
-      final LogStream logStream, final long key, final UnpackedObject event) {
+      final LogStreamRecordWriter logStreamWriter, final long key, final UnpackedObject event) {
     final RecordType recordType = RecordType.COMMAND;
     final ValueType valueType = ValueType.DEPLOYMENT;
     final Intent intent = DeploymentIntent.CREATE;
 
-    logStreamWriter.wrap(logStream);
-
+    logStreamWriter.reset();
     recordMetadata.reset().recordType(recordType).valueType(valueType).intent(intent);
 
     final long position =

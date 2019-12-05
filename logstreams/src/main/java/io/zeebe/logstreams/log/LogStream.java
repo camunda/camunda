@@ -46,6 +46,8 @@ public interface LogStream extends AutoCloseable {
   /** @return the current commit position, or a negative value if no entry is committed. */
   long getCommitPosition();
 
+  ActorFuture<Long> getCommitPositionAsync();
+
   /** sets the new commit position * */
   void setCommitPosition(long position);
 
@@ -56,6 +58,8 @@ public interface LogStream extends AutoCloseable {
    */
   LogStorage getLogStorage();
 
+  ActorFuture<LogStorage> getLogStorageAsync();
+
   /**
    * Returns the writeBuffer, which is used by the LogStreamController to stream the content into
    * the log storage.
@@ -63,6 +67,8 @@ public interface LogStream extends AutoCloseable {
    * @return the writebuffer, which is used by the LogStreamController
    */
   Dispatcher getWriteBuffer();
+
+  ActorFuture<Dispatcher> getWriteBufferAsync();
 
   /**
    * Returns the log stream controller, which streams the logged events from the write buffer into

@@ -7,12 +7,16 @@
  */
 package io.zeebe.broker.transport.commandapi;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.transport.ServerOutput;
@@ -42,7 +46,22 @@ public class CommandApiService implements PartitionListener {
   @Override
   public void onBecomingLeader(int partitionId, LogStream logStream) {
     limiter.addPartition(partitionId);
-    service.addPartition(logStream, limiter.getLimiter(partitionId));
+
+    logStream.getWriteBufferAsync().onComplete((writeBuffer, error) ->
+    {
+      if (error == null)
+      {
+        final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl(writeBuffer,
+          partitionId);
+        service.addPartition(partitionId, logStreamWriter, limiter.getLimiter(partitionId));
+      }
+      else {
+        // todo the best would be to return a future onBecomingLeader
+        // when one of these futures failed we need to stop the partition installation and step down
+        // because then otherwise we are not correctly installed
+        Loggers.SYSTEM_LOGGER.error("Error on retrieving write buffer from log stream {}", partitionId, error);
+      }
+    });
   }
 
   public CommandResponseWriter newCommandResponseWriter() {

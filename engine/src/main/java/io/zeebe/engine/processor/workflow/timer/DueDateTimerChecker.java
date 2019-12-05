@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.timer;
 
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
+import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.TypedStreamWriterImpl;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.TimerInstance;
@@ -28,7 +29,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;
   private ActorControl actor;
-  private TypedStreamWriterImpl streamWriter;
+  private TypedStreamWriter streamWriter;
 
   private ScheduledTimer scheduledTimer;
   private long nextDueDate = -1L;
@@ -88,6 +89,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
         .setRepetitions(timer.getRepetitions())
         .setWorkflowKey(timer.getWorkflowKey());
 
+    streamWriter.reset();
     streamWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
 
     return streamWriter.flush() > 0;
@@ -96,9 +98,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   @Override
   public void onOpen(final ReadonlyProcessingContext processingContext) {
     this.actor = processingContext.getActor();
-    final LogStream logStream = processingContext.getLogStream();
-    streamWriter =
-        new TypedStreamWriterImpl(logStream.getPartitionId(), logStream.getWriteBuffer());
+    streamWriter = processingContext.getLogStreamWriter();
   }
 
   @Override

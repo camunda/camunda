@@ -29,23 +29,22 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-  private final LogStreamWriterImpl logStreamWriter;
   private final DeploymentsState deploymentsState;
   private final DeploymentDistributor deploymentDistributor;
   private ActorControl actor;
+  private TypedStreamWriter logStreamWriter;
 
   public DeploymentDistributeProcessor(
       final DeploymentsState deploymentsState,
-      final LogStreamWriterImpl logStreamWriter,
       final DeploymentDistributor deploymentDistributor) {
     this.deploymentsState = deploymentsState;
-    this.logStreamWriter = logStreamWriter;
     this.deploymentDistributor = deploymentDistributor;
   }
 
   @Override
   public void onOpen(final ReadonlyProcessingContext processingContext) {
     actor = processingContext.getActor();
+    logStreamWriter = processingContext.getLogStreamWriter();
     actor.submit(this::reprocessPendingDeployments);
   }
 
@@ -105,13 +104,12 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
     actor.runUntilDone(
         () -> {
-          final long position =
-              logStreamWriter
-                  .key(deploymentKey)
-                  .sourceRecordPosition(sourcePosition)
-                  .valueWriter(deploymentRecord)
-                  .metadataWriter(recordMetadata)
-                  .tryWrite();
+          // we can re-use the write because we are running in the same actor/thread
+          logStreamWriter.reset();
+          logStreamWriter.configureSourceContext(sourcePosition);
+          logStreamWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentRecord);
+
+          final long position = logStreamWriter.flush();
           if (position < 0) {
             actor.yield();
           } else {
