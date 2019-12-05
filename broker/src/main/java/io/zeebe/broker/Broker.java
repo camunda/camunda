@@ -119,6 +119,7 @@ public class Broker implements AutoCloseable {
     LOG.info("Broker startup phase: Step 1 Scheduler started.");
 
     atomix = AtomixFactory.fromConfiguration(brokerCfg);
+    closeables.add(atomix::stop);
     LOG.info("Broker startup phase: Step 2 membership and replication protocol created.");
 
     final ClusterCfg clusterCfg = brokerCfg.getCluster();
