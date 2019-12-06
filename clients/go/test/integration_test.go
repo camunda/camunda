@@ -15,23 +15,48 @@ package test
 
 import (
 	"github.com/stretchr/testify/suite"
+	"github.com/zeebe-io/zeebe/clients/go/internal/containerSuite"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"testing"
 	"time"
 )
 
 type integrationTestSuite struct {
-	*containerSuite
+	*containerSuite.ContainerSuite
+	client zbc.Client
 }
 
 func TestIntegration(t *testing.T) {
 	suite.Run(t, &integrationTestSuite{
-		&containerSuite{
-			timeout:        time.Second,
-			containerImage: "camunda/zeebe:current-test",
+		ContainerSuite: &containerSuite.ContainerSuite{
+			WaitTime:       time.Second,
+			ContainerImage: "camunda/zeebe:current-test",
 		},
 	})
 }
 
+func (s *integrationTestSuite) SetupSuite() {
+	var err error
+	s.ContainerSuite.SetupSuite()
+
+	s.client, err = zbc.NewClient(&zbc.ClientConfig{
+
+		GatewayAddress:         s.GatewayAddress,
+		UsePlaintextConnection: true,
+	})
+	if err != nil {
+		s.T().Fatal(err)
+	}
+}
+
+func (s *integrationTestSuite) TearDownSuite() {
+	err := s.client.Close()
+	if err != nil {
+		s.T().Fatal(err)
+	}
+
+	s.ContainerSuite.TearDownSuite()
+}
 func (s *integrationTestSuite) TestTopology() {
 	// when
 	response, err := s.client.NewTopologyCommand().Send()
