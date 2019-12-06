@@ -7,16 +7,13 @@ package org.camunda.operate.archiver;
 
 import javax.annotation.PreDestroy;
 import java.io.IOException;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.List;
 import org.camunda.operate.Metrics;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
+import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
+import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
-import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.search.SearchRequest;
@@ -27,20 +24,15 @@ import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
-import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.metrics.tophits.TopHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
-import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
 import io.micrometer.core.annotation.Timed;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -54,11 +46,11 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class ArchiverJob implements Runnable {
+public class WorkflowInstancesArchiverJob extends AbstractArchiverJob {
 
-  private static final Logger logger = LoggerFactory.getLogger(ArchiverJob.class);
+  private static final Logger logger = LoggerFactory.getLogger(WorkflowInstancesArchiverJob.class);
 
-  private boolean shutdown = false;
+  protected boolean shutdown = false;
 
   private List<Integer> partitionIds;
 
@@ -75,41 +67,19 @@ public class ArchiverJob implements Runnable {
   private RestHighLevelClient esClient;
 
   @Autowired
-  @Qualifier("archiverThreadPoolExecutor")
-  private TaskScheduler archiverExecutor;
+  private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
 
-  public ArchiverJob(List<Integer> partitionIds) {
+  @Autowired
+  private Metrics metrics;
+
+  protected WorkflowInstancesArchiverJob() {
+  }
+
+  public WorkflowInstancesArchiverJob(List<Integer> partitionIds) {
     this.partitionIds = partitionIds;
   }
 
-  @Override
-  public void run() {
-    long delay = 1;
-    try {
-      int entitiesCount = archiveNextBatch();
-      delay = 1000;    //to wait till refresh
-
-      if (entitiesCount == 0) {
-        //TODO we can implement backoff strategy, if there is not enough data
-        delay = 60000;
-      }
-
-    } catch (Exception ex) {
-      //retry
-      logger.error("Error occurred while archiving data. Will be retried.", ex);
-      delay = 2000;
-    }
-    if (!shutdown) {
-      archiverExecutor.schedule(this, Date.from(Instant.now().plus(delay, ChronoUnit.MILLIS)));
-    }
-  }
-
-
-  public int archiveNextBatch() throws ReindexException {
-    return archiver.archiveNextBatch(queryFinishedWorkflowInstances());
-  }
-
-  public ArchiveBatch queryFinishedWorkflowInstances() {
+  public ArchiveBatch getNextBatch() {
 
     final String datesAgg = "datesAgg";
     final String instancesAgg = "instancesAgg";
@@ -126,23 +96,6 @@ public class ArchiverJob implements Runnable {
       final String message = String.format("Exception occurred, while obtaining finished workflow instances: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private ArchiveBatch createArchiveBatch(SearchResponse searchResponse, String datesAggName, String instancesAgg) {
-    final List<? extends Histogram.Bucket> buckets =
-        ((Histogram) searchResponse.getAggregations().get(datesAggName))
-            .getBuckets();
-
-    if (buckets.size() > 0) {
-      final Histogram.Bucket bucket = buckets.get(0);
-      final String finishDate = bucket.getKeyAsString();
-      SearchHits hits = ((TopHits)bucket.getAggregations().get(instancesAgg)).getHits();
-      final ArrayList<Long> ids = Arrays.stream(hits.getHits())
-          .collect(ArrayList::new, (list, hit) -> list.add(Long.valueOf(hit.getId())), (list1, list2) -> list1.addAll(list2));
-      return new ArchiveBatch(finishDate, ids);
-    } else {
-      return null;
     }
   }
 
@@ -190,41 +143,36 @@ public class ArchiverJob implements Runnable {
     return esClient.search(searchRequest, RequestOptions.DEFAULT);
   }
 
+
+  public int archiveBatch(WorkflowInstancesArchiverJob.ArchiveBatch archiveBatch) throws ArchiverException {
+    if (archiveBatch != null) {
+      logger.debug("Following workflow instances are found for archiving: {}", archiveBatch);
+      try {
+        //1st remove dependent data
+        for (WorkflowInstanceDependant template: workflowInstanceDependantTemplates) {
+          archiver.moveDocuments(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, archiveBatch.getFinishDate(),
+              archiveBatch.getIds());
+        }
+
+        //then remove workflow instances themselves
+        archiver.moveDocuments(workflowInstanceTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_KEY, archiveBatch.getFinishDate(),
+            archiveBatch.getIds());
+        metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, archiveBatch.getIds().size());
+        return archiveBatch.getIds().size();
+      } catch (ArchiverException e) {
+        logger.error(e.getMessage(), e);
+        throw e;
+      }
+    } else {
+      logger.debug("Nothing to archive");
+      return 0;
+    }
+  }
+
   @PreDestroy
   public void shutdown() {
     logger.info("Shutdown archiver for partitions: {}", partitionIds);
     shutdown = true;
   }
 
-  public static class ArchiveBatch {
-
-    private String finishDate;
-    private List<Long> workflowInstanceKeys;
-
-    public ArchiveBatch(String finishDate, List<Long> workflowInstanceKeys) {
-      this.finishDate = finishDate;
-      this.workflowInstanceKeys = workflowInstanceKeys;
-    }
-
-    public String getFinishDate() {
-      return finishDate;
-    }
-
-    public void setFinishDate(String finishDate) {
-      this.finishDate = finishDate;
-    }
-
-    public List<Long> getWorkflowInstanceKeys() {
-      return workflowInstanceKeys;
-    }
-
-    public void setWorkflowInstanceKeys(List<Long> workflowInstanceKeys) {
-      this.workflowInstanceKeys = workflowInstanceKeys;
-    }
-
-    @Override
-    public String toString() {
-      return "ArchiveBatch{" + "finishDate='" + finishDate + '\'' + ", workflowInstanceKeys=" + workflowInstanceKeys + '}';
-    }
-  }
 }

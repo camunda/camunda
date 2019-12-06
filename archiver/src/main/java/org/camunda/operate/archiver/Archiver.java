@@ -9,10 +9,8 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.List;
 import org.camunda.operate.Metrics;
-import org.camunda.operate.es.schema.templates.ListViewTemplate;
-import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
+import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.exceptions.OperateRuntimeException;
-import org.camunda.operate.exceptions.ReindexException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.zeebe.PartitionHolder;
@@ -58,15 +56,6 @@ public class Archiver {
   private RestHighLevelClient esClient;
 
   @Autowired
-  private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
-
-  @Autowired
-  private Metrics metrics;
-
-  @Autowired
-  private ListViewTemplate workflowInstanceTemplate;
-
-  @Autowired
   @Qualifier("archiverThreadPoolExecutor")
   private ThreadPoolTaskScheduler archiverExecutor;
 
@@ -87,8 +76,12 @@ public class Archiver {
       for (int i=0; i < threadsCount; i++) {
         List<Integer> partitionIdsSubset = CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
         if (!partitionIdsSubset.isEmpty()) {
-          ArchiverJob archiverJob = beanFactory.getBean(ArchiverJob.class, partitionIdsSubset);
+          WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, partitionIdsSubset);
           archiverExecutor.execute(archiverJob);
+        }
+        if (partitionIdsSubset.contains(1)) {
+          BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
+          archiverExecutor.execute(batchOperationArchiverJob);
         }
       }
     }
@@ -103,39 +96,13 @@ public class Archiver {
     return scheduler;
   }
 
-
-  public int archiveNextBatch(ArchiverJob.ArchiveBatch archiveBatch) throws ReindexException {
-    if (archiveBatch != null) {
-      logger.debug("Following workflow instances are found for archiving: {}", archiveBatch);
-      try {
-        //1st remove dependent data
-        for (WorkflowInstanceDependant template: workflowInstanceDependantTemplates) {
-          moveDocuments(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, archiveBatch.getFinishDate(),
-              archiveBatch.getWorkflowInstanceKeys());
-        }
-
-        //then remove workflow instances themselves
-        moveDocuments(workflowInstanceTemplate.getMainIndexName(), ListViewTemplate.WORKFLOW_INSTANCE_KEY, archiveBatch.getFinishDate(),
-            archiveBatch.getWorkflowInstanceKeys());
-        metrics.recordCounts(Metrics.COUNTER_NAME_ARCHIVED, archiveBatch.getWorkflowInstanceKeys().size());
-        return archiveBatch.getWorkflowInstanceKeys().size();
-      } catch (ReindexException e) {
-        logger.error(e.getMessage(), e);
-        throw e;
-      }
-    } else {
-      logger.debug("Nothing to archive");
-      return 0;
-    }
-  }
-
-  private void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<Long> workflowInstanceKeys) throws ReindexException {
+  public void moveDocuments(String sourceIndexName, String idFieldName, String finishDate, List<Object> ids) throws ArchiverException {
 
     String destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
 
-    reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, workflowInstanceKeys);
+    reindexDocuments(sourceIndexName, destinationIndexName, idFieldName, ids);
 
-    deleteDocuments(sourceIndexName, idFieldName, workflowInstanceKeys);
+    deleteDocuments(sourceIndexName, idFieldName, ids);
 
   }
 
@@ -143,7 +110,7 @@ public class Archiver {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 
-  private long deleteDocuments(String sourceIndexName, String idFieldName, List<Long> workflowInstanceKeys) throws ReindexException {
+  private long deleteDocuments(String sourceIndexName, String idFieldName, List<Object> workflowInstanceKeys) throws ArchiverException {
     DeleteByQueryRequest request =
         new DeleteByQueryRequest(sourceIndexName)
             .setBatchSize(workflowInstanceKeys.size())
@@ -152,7 +119,7 @@ public class Archiver {
     try {
       final BulkByScrollResponse response = runDelete(request);
       return checkResponse(response, sourceIndexName, "delete");
-    } catch (ReindexException ex) {
+    } catch (ArchiverException ex) {
       throw ex;
     } catch (Exception e) {
       final String message = String.format("Exception occurred, while deleting the documents: %s", e.getMessage());
@@ -168,12 +135,12 @@ public class Archiver {
 
   private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(T request) {
     return request.setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
-            .setAbortOnVersionConflict(false)
-            .setSlices(AUTO_SLICES);
+        .setAbortOnVersionConflict(false)
+        .setSlices(AUTO_SLICES);
   }
 
-  private long reindexDocuments(String sourceIndexName, String destinationIndexName, String idFieldName, List<Long> workflowInstanceKeys)
-      throws ReindexException {
+  private long reindexDocuments(String sourceIndexName, String destinationIndexName, String idFieldName, List<Object> workflowInstanceKeys)
+      throws ArchiverException {
 
     ReindexRequest reindexRequest = new ReindexRequest()
         .setSourceIndices(sourceIndexName)
@@ -187,7 +154,7 @@ public class Archiver {
       BulkByScrollResponse response = runReindex(reindexRequest);
 
       return checkResponse(response, sourceIndexName, "reindex");
-    } catch (ReindexException ex) {
+    } catch (ArchiverException ex) {
       throw ex;
     } catch (Exception e) {
       final String message = String.format("Exception occurred, while reindexing the documents: %s", e.getMessage());
@@ -201,12 +168,12 @@ public class Archiver {
     return esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
   }
 
-  private long checkResponse(BulkByScrollResponse response, String sourceIndexName, String operation) throws ReindexException {
+  private long checkResponse(BulkByScrollResponse response, String sourceIndexName, String operation) throws ArchiverException {
     final List<BulkItemResponse.Failure> bulkFailures = response.getBulkFailures();
     if (bulkFailures.size() > 0) {
       logger.error("Failures occurred when performing operation: {} on source index {}. See details below.", operation, sourceIndexName);
       bulkFailures.stream().forEach(f -> logger.error(f.toString()));
-      throw new ReindexException(String.format("Operation %s failed", operation));
+      throw new ArchiverException(String.format("Operation %s failed", operation));
     } else {
       logger.debug("Operation {} succeded on source index {}. Response: {}", operation, sourceIndexName, response.toString());
       return response.getTotal();

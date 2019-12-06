@@ -5,16 +5,6 @@
  */
 package org.camunda.operate.it;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
-import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -22,30 +12,35 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
-import org.camunda.operate.archiver.ArchiverJob;
+import org.camunda.operate.archiver.Archiver;
+import org.camunda.operate.archiver.BatchOperationArchiverJob;
+import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
-import org.camunda.operate.archiver.Archiver;
-import org.camunda.operate.webapp.es.reader.ListViewReader;
+import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
-import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
-import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.exceptions.ReindexException;
-import org.camunda.operate.util.MetricAssert;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
+import org.camunda.operate.util.MetricAssert;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.webapp.es.reader.ListViewReader;
+import org.camunda.operate.webapp.es.reader.OperationReader;
+import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.operation.OperationRequestDto;
+import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -56,13 +51,22 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.es.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 public class ArchiverIT extends OperateZeebeIntegrationTest {
 
@@ -82,6 +86,9 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   private ListViewTemplate workflowInstanceTemplate;
 
   @Autowired
+  private BatchOperationTemplate batchOperationTemplate;
+
+  @Autowired
   private BatchOperationWriter batchOperationWriter;
 
   @Autowired
@@ -90,7 +97,13 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   @Autowired
   private List<WorkflowInstanceDependant> workflowInstanceDependantTemplates;
 
-  private ArchiverJob archiverJob;
+  @Autowired
+  private OperationReader operationReader;
+
+  @Autowired
+  private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
+
+  private WorkflowInstancesArchiverJob archiverJob;
 
   private Random random = new Random();
 
@@ -100,12 +113,17 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   public void before() {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
-    archiverJob = beanFactory.getBean(ArchiverJob.class, partitionHolder.getPartitionIds());
+    archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, partitionHolder.getPartitionIds());
+    try {
+      FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), super.getClient());
+    } catch (NoSuchFieldException e) {
+      fail("Failed to inject ZeebeClient into some of the beans");
+    }
     clearMetrics();
   }
 
   @Test
-  public void testArchiving() throws ReindexException, PersistenceException, IOException {
+  public void testArchivingWorkflowInstances() throws ArchiverException, IOException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
 
@@ -177,7 +195,76 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testArchivingOnlyOneHourOldData() throws ReindexException, PersistenceException, IOException {
+  public void testArchivingBatchOperations() throws Exception {
+    //having
+    //create batch operations
+    OffsetDateTime now = OffsetDateTime.now();
+    OffsetDateTime twoHoursAgo = now.minus(2, ChronoUnit.HOURS);
+    BatchOperationEntity bo1 = createBatchOperationEntity(now);
+    elasticsearchTestRule.persistNew(bo1);
+    BatchOperationEntity bo2 = createBatchOperationEntity(twoHoursAgo);
+    elasticsearchTestRule.persistNew(bo2);
+    BatchOperationEntity bo3 = createBatchOperationEntity(twoHoursAgo);
+    elasticsearchTestRule.persistNew(bo3);
+
+    //when
+    BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
+    int count = batchOperationArchiverJob.archiveNextBatch();
+    assertThat(count).isEqualTo(2);
+    elasticsearchTestRule.refreshOperateESIndices();
+
+    //then
+    assertBatchOperationsInCorrectIndex(2, Arrays.asList(bo2.getId(), bo3.getId()), twoHoursAgo.toInstant());
+    assertBatchOperationsInCorrectIndex(1, Arrays.asList(bo1.getId()), null);
+  }
+
+  private BatchOperationEntity createBatchOperationEntity(OffsetDateTime endDate) {
+    BatchOperationEntity batchOperationEntity1 = new BatchOperationEntity();
+    batchOperationEntity1.generateId();
+    batchOperationEntity1.setStartDate(endDate.minus(5, ChronoUnit.MINUTES));
+    batchOperationEntity1.setEndDate(endDate);
+    return batchOperationEntity1;
+  }
+
+  @Test
+  public void testArchivingBatchOperationsDel() throws Exception {
+    brokerRule.getClock().pinCurrentTime();
+    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+    brokerRule.getClock().setCurrentTime(currentTime.minus(2, ChronoUnit.HOURS));
+
+    String processId = "demoProcess";
+    final String activityId = "taskA";
+    deployProcessWithOneActivity(processId, activityId);
+
+    // given
+    final Long workflowInstanceKey1 = startDemoWorkflowInstance();
+    final Long workflowInstanceKey2 = startDemoWorkflowInstance();
+
+    //we create batch operations to cancel the instances
+    ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey1.toString()));
+    postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
+    workflowInstanceQuery = ListViewQueryDto.createAll();
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey2.toString()));
+    postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
+
+    //and execute the operations
+    executeOneBatch();
+
+    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey2);
+    List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    assertThat(batchOperations).hasSize(2);
+    assertThat(batchOperations).allMatch(bo -> bo.getEndDate() != null);
+
+    brokerRule.getClock().setCurrentTime(currentTime);
+
+    BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
+    int count = batchOperationArchiverJob.archiveNextBatch();
+    assertThat(count).isEqualTo(2);
+  }
+
+  @Test
+  public void testArchivingOnlyOneHourOldData() throws ArchiverException, IOException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
 
@@ -229,6 +316,28 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, processId + ".bpmn");
   }
 
+  private void assertBatchOperationsInCorrectIndex(int instancesCount, List<String> ids, Instant endDate) throws IOException {
+    final String destinationIndexName;
+    if (endDate != null) {
+      destinationIndexName = archiver.getDestinationIndexName(batchOperationTemplate.getMainIndexName(), dateTimeFormatter.format(endDate));
+    } else {
+      destinationIndexName = archiver.getDestinationIndexName(batchOperationTemplate.getMainIndexName(), "");
+    }
+    final IdsQueryBuilder idsQ = idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
+
+    final SearchRequest searchRequest = new SearchRequest(destinationIndexName)
+        .source(new SearchSourceBuilder()
+            .query(constantScoreQuery(idsQ))
+            .size(100));
+
+    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    final List<BatchOperationEntity> bos = ElasticsearchUtil
+        .mapSearchHits(response.getHits().getHits(), objectMapper, BatchOperationEntity.class);
+    assertThat(bos).hasSize(instancesCount);
+    assertThat(bos).extracting(BatchOperationTemplate.ID).containsExactlyInAnyOrderElementsOf(ids);
+  }
+
   private void assertInstancesInCorrectIndex(int instancesCount, List<Long> ids, Instant endDate) throws IOException {
     assertWorkflowInstanceIndex(instancesCount, ids, endDate);
     for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
@@ -264,6 +373,8 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     }
     //TODO assert children records - activities
   }
+
+
 
   private void assertDependentIndex(String mainIndexName, String idFieldName, List<Long> ids, Instant endDate) throws IOException {
     final String destinationIndexName;

@@ -14,11 +14,11 @@ import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.Validate;
 import org.apache.http.HttpStatus;
+import org.camunda.operate.archiver.AbstractArchiverJob;
 import org.camunda.operate.archiver.Archiver;
-import org.camunda.operate.archiver.ArchiverJob;
-import org.camunda.operate.archiver.ArchiverJob.ArchiveBatch;
+import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.exceptions.ReindexException;
+import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.util.ConversionUtils;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
@@ -31,6 +31,7 @@ import org.camunda.operate.zeebeimport.RecordsReader;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -49,6 +50,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class OperateTester {
 
   protected static final Logger logger = LoggerFactory.getLogger(OperateTester.class);
+
+  @Autowired
+  private BeanFactory beanFactory;
 
   private ZeebeClient zeebeClient;
   private MockMvcTestRule mockMvcTestRule;
@@ -262,9 +266,10 @@ public class OperateTester {
 
   public OperateTester archive() {
     try {
-      ArchiverJob.ArchiveBatch finishedAtDateIds = new ArchiveBatch("_test_archived", Arrays.asList(workflowInstanceKey));
-      archiver.archiveNextBatch(finishedAtDateIds);
-    } catch (ReindexException e) {
+      WorkflowInstancesArchiverJob.ArchiveBatch finishedAtDateIds = new AbstractArchiverJob.ArchiveBatch("_test_archived", Arrays.asList(workflowInstanceKey));
+      WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, null);
+      archiverJob.archiveBatch(finishedAtDateIds);
+    } catch (ArchiverException e) {
       return this;
     }
     return this;

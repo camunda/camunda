@@ -5,7 +5,7 @@
  */
 package org.camunda.operate.es;
 
-import org.camunda.operate.archiver.ArchiverJob;
+import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,7 +36,7 @@ public class WorkflowStatisticsAfterArchivingIT extends WorkflowStatisticsIT {
   protected void createData(Long workflowKey) {
     super.createData(workflowKey);
     mockPartitionHolder(partitionHolder);
-    ArchiverJob archiverJob = beanFactory.getBean(ArchiverJob.class, partitionHolder.getPartitionIds());
+    WorkflowInstancesArchiverJob archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, partitionHolder.getPartitionIds());
     runArchiving(archiverJob);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
   }

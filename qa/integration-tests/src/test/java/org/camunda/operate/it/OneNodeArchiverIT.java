@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import org.camunda.operate.archiver.Archiver;
-import org.camunda.operate.archiver.ArchiverJob;
+import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
@@ -23,8 +23,7 @@ import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.es.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.webapp.es.writer.BatchOperationWriter;
-import org.camunda.operate.exceptions.PersistenceException;
-import org.camunda.operate.exceptions.ReindexException;
+import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.CollectionUtil;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -61,7 +60,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
     OperateProperties.PREFIX + ".clusterNode.currentNodeId = 0" })
 public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
 
-  private ArchiverJob archiverJob;
+  private WorkflowInstancesArchiverJob archiverJob;
 
   @Autowired
   private BeanFactory beanFactory;
@@ -95,11 +94,11 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
   public void before() {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
-    archiverJob = beanFactory.getBean(ArchiverJob.class, partitionHolder.getPartitionIds());
+    archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, partitionHolder.getPartitionIds());
   }
 
   @Test
-  public void testArchiving() throws ReindexException, PersistenceException, IOException {
+  public void testArchiving() throws ArchiverException, IOException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
 
@@ -132,7 +131,7 @@ public class OneNodeArchiverIT extends OperateZeebeIntegrationTest {
     assertInstancesInCorrectIndex(expectedCount, endDate);
   }
 
-  protected void createOperations(List<Long> ids1) throws PersistenceException {
+  protected void createOperations(List<Long> ids1) {
     final ListViewQueryDto query = TestUtil.createGetAllWorkflowInstancesQuery().getQueries().get(0);
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
     OperationRequestDto batchOperationRequest = new OperationRequestDto(query, OperationType.CANCEL_WORKFLOW_INSTANCE);  //the type does not matter

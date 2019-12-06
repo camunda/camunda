@@ -16,6 +16,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import org.camunda.operate.TestImportListener;
+import org.camunda.operate.entities.BatchOperationEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationEntity;
@@ -26,6 +27,7 @@ import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.es.ElasticsearchConnector;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
+import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
@@ -75,6 +77,9 @@ public class ElasticsearchTestRule extends TestWatcher {
 
   @Autowired
   private OperationTemplate operationTemplate;
+
+  @Autowired
+  private BatchOperationTemplate batchOperationTemplate;
 
   @Autowired
   private IncidentTemplate incidentTemplate;
@@ -288,6 +293,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getAlias());
       entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getAlias());
       entityToESAliasMap.put(OperationEntity.class, operationTemplate.getAlias());
+      entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getAlias());
     }
     return entityToESAliasMap;
   }

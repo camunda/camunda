@@ -5,12 +5,12 @@
  */
 package org.camunda.operate.exceptions;
 
-public class ReindexException extends Exception {
+public class ArchiverException extends Exception {
 
-  public ReindexException() {
+  public ArchiverException() {
   }
 
-  public ReindexException(String message) {
+  public ArchiverException(String message) {
     super(message);
   }
 }

@@ -16,8 +16,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.camunda.operate.TestApplication;
-import org.camunda.operate.archiver.ArchiverJob;
-import org.camunda.operate.exceptions.ReindexException;
+import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.junit.Before;
@@ -108,7 +108,7 @@ public abstract class OperateIntegrationTest {
     assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo(message);  
   }
 
-  protected void runArchiving(ArchiverJob archiverJob) {
+  protected void runArchiving(WorkflowInstancesArchiverJob archiverJob) {
     try {
       int archived;
       int archivedTotal = 0;
@@ -117,7 +117,7 @@ public abstract class OperateIntegrationTest {
         archivedTotal += archived;
       } while (archived > 0);
       assertThat(archivedTotal).isGreaterThan(0);
-    } catch (ReindexException e) {
+    } catch (ArchiverException e) {
       throw new RuntimeException("Error while archiving");
     }
   }
