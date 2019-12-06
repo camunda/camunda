@@ -56,7 +56,7 @@ public class LogStreamWriterTest {
   @Before
   public void setUp() {
     final SynchronousLogStream logStream = logStreamRule.getLogStream();
-    writer = new LogStreamWriterImpl(logStream.getWriteBuffer(), logStream.getPartitionId());
+    writer = logStream.newLogStreamRecordWriter();
   }
 
   private LoggedEvent getWrittenEvent(final long position) {

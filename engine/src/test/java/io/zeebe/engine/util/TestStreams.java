@@ -29,10 +29,9 @@ import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.state.SnapshotStorage;
 import io.zeebe.logstreams.state.StateSnapshotController;
@@ -227,7 +226,7 @@ public class TestStreams {
             .actorScheduler(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
-            .writeBuffer(stream.getWriteBuffer())
+            .batchWriter(stream.newLogStreamBatchWriter())
             .logStorage(stream.getLogStorage())
             .streamProcessorFactory(
                 (context) -> {
@@ -275,8 +274,7 @@ public class TestStreams {
 
   public long writeBatch(final String logName, final RecordToWrite[] recordToWrites) {
     final SynchronousLogStream logStream = getLogStream(logName);
-    final LogStreamBatchWriterImpl logStreamBatchWriter =
-        new LogStreamBatchWriterImpl(logStream.getPartitionId(), logStream.getWriteBuffer());
+    final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
 
     for (final RecordToWrite recordToWrite : recordToWrites) {
       logStreamBatchWriter
@@ -373,13 +371,12 @@ public class TestStreams {
   private static final class LogContext implements AutoCloseable {
     private final SynchronousLogStream logStream;
     private final AtomixLogStorageRule logStorageRule;
-    private final LogStreamWriterImpl logStreamWriter;
+    private final LogStreamRecordWriter logStreamWriter;
 
     private LogContext(
         final SynchronousLogStream logStream, final AtomixLogStorageRule logStorageRule) {
       this.logStream = logStream;
-      logStreamWriter =
-          new LogStreamWriterImpl(logStream.getWriteBuffer(), logStream.getPartitionId());
+      logStreamWriter = logStream.newLogStreamRecordWriter();
       this.logStorageRule = logStorageRule;
     }
 

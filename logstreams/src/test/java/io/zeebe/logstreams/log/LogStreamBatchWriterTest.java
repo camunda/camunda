@@ -63,7 +63,7 @@ public class LogStreamBatchWriterTest {
   @Before
   public void setUp() {
     final SynchronousLogStream logStream = logStreamRule.getLogStream();
-    writer = new LogStreamBatchWriterImpl(logStream.getPartitionId(), logStream.getWriteBuffer());
+    writer = logStream.newLogStreamBatchWriter();
   }
 
   private List<LoggedEvent> getWrittenEvents(final long position) {

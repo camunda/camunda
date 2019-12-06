@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processor;
 
-import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.RecordType;
@@ -17,8 +17,8 @@ import java.util.function.Consumer;
 
 public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements TypedStreamWriter {
 
-  public TypedStreamWriterImpl(int partitionId, Dispatcher dispatcher) {
-    super(partitionId, dispatcher);
+  public TypedStreamWriterImpl(LogStreamBatchWriter batchWriter) {
+    super(batchWriter);
   }
 
   @Override

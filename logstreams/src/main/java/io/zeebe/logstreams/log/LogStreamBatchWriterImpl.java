@@ -50,8 +50,8 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   private int eventLength;
   private int eventCount;
 
-  private Dispatcher logWriteBuffer;
-  private int logId;
+  private final Dispatcher logWriteBuffer;
+  private final int logId;
 
   private long key;
 
@@ -79,6 +79,11 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     copyExistingEventToBuffer();
     resetEvent();
     return this;
+  }
+
+  @Override
+  public int getMaxFragmentLength() {
+    return logWriteBuffer.getMaxFragmentLength();
   }
 
   @Override

@@ -42,7 +42,7 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   public LogStreamWriterImpl() {}
 
-  public LogStreamWriterImpl(final Dispatcher logWriteBuffer, final int partitionId) {
+  public LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
     this.logWriteBuffer = logWriteBuffer;
     this.partitionId = partitionId;
 

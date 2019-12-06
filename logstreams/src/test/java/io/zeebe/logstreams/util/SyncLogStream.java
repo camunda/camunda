@@ -7,9 +7,10 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -25,6 +26,16 @@ public class SyncLogStream implements SynchronousLogStream {
   @Override
   public LogStorageAppender getLogStorageAppender() {
     return logStream.getLogStorageAppender();
+  }
+
+  @Override
+  public LogStreamRecordWriter newLogStreamRecordWriter() {
+    return logStream.newLogStreamRecordWriter().join();
+  }
+
+  @Override
+  public LogStreamBatchWriter newLogStreamBatchWriter() {
+    return logStream.newLogStreamBatchWriter().join();
   }
 
   @Override
@@ -60,10 +71,6 @@ public class SyncLogStream implements SynchronousLogStream {
   @Override
   public LogStorage getLogStorage() {
     return logStream.getLogStorageAsync().join();
-  }
-
-  public Dispatcher getWriteBuffer() {
-    return logStream.getWriteBufferAsync().join();
   }
 
   @Override

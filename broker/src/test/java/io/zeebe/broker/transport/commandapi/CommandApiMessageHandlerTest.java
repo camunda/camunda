@@ -16,7 +16,7 @@ import io.zeebe.broker.transport.backpressure.NoopRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import io.zeebe.logstreams.util.SyncLogStream;
@@ -99,8 +99,7 @@ public class CommandApiMessageHandlerTest {
     logStream.openAppender().join();
 
     messageHandler = new CommandApiMessageHandler();
-    messageHandler.addPartition(
-        1, new LogStreamWriterImpl(logStream.getWriteBuffer(), 1), noneLimiter);
+    messageHandler.addPartition(1, logStream.newLogStreamRecordWriter(), noneLimiter);
   }
 
   @After
@@ -262,8 +261,7 @@ public class CommandApiMessageHandlerTest {
         CommandRateLimiter.builder().limit(new SettableLimit(1)).build(logStream.getPartitionId());
     messageHandler = new CommandApiMessageHandler();
     final int partitionId = 1;
-    final LogStreamWriterImpl logStreamWriter =
-        new LogStreamWriterImpl(logStream.getWriteBuffer(), partitionId);
+    final LogStreamRecordWriter logStreamWriter = logStream.newLogStreamRecordWriter();
     messageHandler.addPartition(partitionId, logStreamWriter, settableLimiter);
     settableLimiter.tryAcquire(0, 1, null);
 
@@ -292,8 +290,7 @@ public class CommandApiMessageHandlerTest {
         CommandRateLimiter.builder().limit(new SettableLimit(1)).build(logStream.getPartitionId());
     messageHandler = new CommandApiMessageHandler();
     final int partitionId = 1;
-    final LogStreamWriterImpl logStreamWriter =
-        new LogStreamWriterImpl(logStream.getWriteBuffer(), partitionId);
+    final LogStreamRecordWriter logStreamWriter = logStream.newLogStreamRecordWriter();
     messageHandler.addPartition(partitionId, logStreamWriter, settableLimiter);
     settableLimiter.tryAcquire(0, 1, null);
 

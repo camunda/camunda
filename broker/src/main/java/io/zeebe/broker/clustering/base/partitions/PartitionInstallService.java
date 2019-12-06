@@ -35,7 +35,6 @@ import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -43,6 +42,7 @@ import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
@@ -319,12 +319,12 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
                       (logStorage, errorOnReceiveLogStorage) -> {
                         if (errorOnReceiveLogStorage == null) {
                           logStream
-                              .getWriteBufferAsync()
+                              .newLogStreamBatchWriter()
                               .onComplete(
-                                  (writeBuffer, errorOnReceiveWriteBuffer) -> {
+                                  (batchWriter, errorOnReceiveWriteBuffer) -> {
                                     if (errorOnReceiveWriteBuffer == null) {
                                       final StreamProcessor streamProcessor =
-                                          createStreamProcessor(zeebeDb, logStorage, writeBuffer);
+                                          createStreamProcessor(zeebeDb, logStorage, batchWriter);
                                       streamProcessor
                                           .openAsync()
                                           .onComplete(
@@ -391,14 +391,13 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
   }
 
   private StreamProcessor createStreamProcessor(
-      ZeebeDb zeebeDb, LogStorage logStorage, Dispatcher writeBuffer) {
+      ZeebeDb zeebeDb, LogStorage logStorage, LogStreamBatchWriter batchWriter) {
     return StreamProcessor.builder()
         .logStream(logStream)
         // for the reader
         .logStorage(logStorage)
-        // for the writer
-        .writeBuffer(writeBuffer)
-        .maxFragmentSize(writeBuffer.getMaxFragmentLength())
+        .batchWriter(batchWriter)
+        .maxFragmentSize(batchWriter.getMaxFragmentLength())
         .actorScheduler(scheduler)
         .zeebeDb(zeebeDb)
         .commandResponseWriter(commandApiService.newCommandResponseWriter())

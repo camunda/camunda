@@ -8,9 +8,9 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.protocol.Protocol;
@@ -28,7 +28,7 @@ public class StreamProcessorBuilder {
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
-  private Dispatcher writeBuffer;
+  private LogStreamBatchWriter batchWriter;
   private LogStorage logStorage;
 
   public StreamProcessorBuilder() {
@@ -56,8 +56,8 @@ public class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder writeBuffer(Dispatcher writeBuffer) {
-    this.writeBuffer = writeBuffer;
+  public StreamProcessorBuilder batchWriter(LogStreamBatchWriter batchWriter) {
+    this.batchWriter = batchWriter;
     return this;
   }
 
@@ -104,11 +104,9 @@ public class StreamProcessorBuilder {
   public StreamProcessor build() {
     validate();
 
-    final LogStream logStream = processingContext.getLogStream();
-
     processingContext
         .logStreamReader(new BufferedLogStreamReader(logStorage))
-        .logStreamWriter(new TypedStreamWriterImpl(logStream.getPartitionId(), writeBuffer));
+        .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
 
     final MetadataFilter metadataFilter = new VersionFilter();
     final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
@@ -125,7 +123,7 @@ public class StreamProcessorBuilder {
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
     Objects.requireNonNull(logStorage, "No log storage provided.");
-    Objects.requireNonNull(writeBuffer, "No write buffer provided.");
+    Objects.requireNonNull(batchWriter, "No batcher writer provided.");
   }
 
   private static class MetadataEventFilter implements EventFilter {

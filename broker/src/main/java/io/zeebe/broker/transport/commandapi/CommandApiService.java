@@ -14,8 +14,6 @@ import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.transport.ServerOutput;
@@ -47,13 +45,11 @@ public class CommandApiService implements PartitionListener {
     limiter.addPartition(partitionId);
 
     logStream
-        .getWriteBufferAsync()
+        .newLogStreamRecordWriter()
         .onComplete(
-            (writeBuffer, error) -> {
+            (recordWriter, error) -> {
               if (error == null) {
-                final LogStreamRecordWriter logStreamWriter =
-                    new LogStreamWriterImpl(writeBuffer, partitionId);
-                service.addPartition(partitionId, logStreamWriter, limiter.getLimiter(partitionId));
+                service.addPartition(partitionId, recordWriter, limiter.getLimiter(partitionId));
               } else {
                 // todo the best would be to return a future onBecomingLeader
                 // when one of these futures failed we need to stop the partition installation and

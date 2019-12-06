@@ -15,7 +15,6 @@ import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -43,13 +42,11 @@ public class LeaderManagementRequestHandler extends Actor implements PartitionLi
     actor.submit(
         () ->
             logStream
-                .getWriteBufferAsync()
+                .newLogStreamRecordWriter()
                 .onComplete(
-                    (writeBuffer, error) -> {
+                    (recordWriter, error) -> {
                       if (error == null) {
-                        final LogStreamRecordWriter logStreamWriter =
-                            new LogStreamWriterImpl(writeBuffer, partitionId);
-                        leaderForPartitions.put(partitionId, logStreamWriter);
+                        leaderForPartitions.put(partitionId, recordWriter);
                       } else {
                         Loggers.CLUSTERING_LOGGER.error(
                             "Unexpected error on retrieving write buffer for partition {}",

@@ -7,9 +7,10 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -54,13 +55,11 @@ public interface SynchronousLogStream extends AutoCloseable {
    */
   LogStorage getLogStorage();
 
-  /**
-   * Returns the writeBuffer, which is used by the LogStreamController to stream the content into
-   * the log storage.
-   *
-   * @return the writebuffer, which is used by the LogStreamController
-   */
-  Dispatcher getWriteBuffer();
+  /** @return a new created log stream record writer */
+  LogStreamRecordWriter newLogStreamRecordWriter();
+
+  /** @return a new created log stream batch writer */
+  LogStreamBatchWriter newLogStreamBatchWriter();
 
   /**
    * Returns the log stream controller, which streams the logged events from the write buffer into

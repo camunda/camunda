@@ -15,7 +15,6 @@ import io.zeebe.broker.PartitionListener;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -48,12 +47,11 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
     actor.submit(
         () -> {
           logStream
-              .getWriteBufferAsync()
+              .newLogStreamRecordWriter()
               .onComplete(
-                  (writebuffer, error) -> {
+                  (recordWriter, error) -> {
                     if (error == null) {
-                      leaderPartitions.put(
-                          partitionId, new LogStreamWriterImpl(writebuffer, partitionId));
+                      leaderPartitions.put(partitionId, recordWriter);
                     } else {
                       // todo ideally we should step down
                       Loggers.SYSTEM_LOGGER.error(

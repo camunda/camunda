@@ -10,9 +10,9 @@ package io.zeebe.logstreams.log;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.Assert.assertNotNull;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.SynchronousLogStream;
 import org.agrona.DirectBuffer;
@@ -54,37 +54,61 @@ public class LogStreamTest {
     assertThat(logStream.getCommitPosition()).isEqualTo(-1L);
 
     assertThat(logStream.getLogStorageAppender()).isNotNull();
-    assertThat(logStream.getWriteBuffer()).isNotNull();
+    assertThat(logStream.newLogStreamBatchWriter()).isNotNull();
+    assertThat(logStream.newLogStreamRecordWriter()).isNotNull();
+  }
+
+  @Test
+  public void shouldCreateNewLogStreamRecordWriter() {
+    // given
+    final LogStreamRecordWriter logStreamRecordWriter = logStream.newLogStreamRecordWriter();
+
+    // when
+    final var otherWriter = logStream.newLogStreamRecordWriter();
+
+    // then
+    assertNotNull(logStreamRecordWriter);
+    assertThat(otherWriter).isNotNull().isNotEqualTo(logStreamRecordWriter);
+  }
+
+  @Test
+  public void shouldCreateNewLogStreamBatchWriter() {
+    // given
+    final var logStreamBatchWriter = logStream.newLogStreamBatchWriter();
+
+    // when
+    final var otherWriter = logStream.newLogStreamBatchWriter();
+
+    // then
+    assertNotNull(logStreamBatchWriter);
+    assertThat(otherWriter).isNotNull().isNotEqualTo(logStreamBatchWriter);
   }
 
   @Test
   public void shouldCloseLogStorageAppender() {
     // given
 
-    final Dispatcher writeBuffer = logStream.getWriteBuffer();
-
     // when
     logStream.closeAppender().join();
 
     // then
     assertThat(logStream.getLogStorageAppender()).isNull();
-    assertThat(logStream.getWriteBuffer()).isNull();
 
-    assertThat(writeBuffer.isClosed()).isTrue();
+    assertThatThrownBy(() -> logStream.newLogStreamBatchWriter())
+        .hasCauseInstanceOf(IllegalStateException.class);
+    assertThatThrownBy(() -> logStream.newLogStreamRecordWriter())
+        .hasCauseInstanceOf(IllegalStateException.class);
   }
 
   @Test
   public void shouldCloseLogStream() {
     // given
-    final Dispatcher writeBuffer = logStream.getWriteBuffer();
-    final LogStorage logStorage = logStream.getLogStorage();
 
     // when
     logStream.close();
 
     // then
-    assertThat(logStorage.isClosed()).isTrue();
-    assertThat(writeBuffer.isClosed()).isTrue();
+    assertThatThrownBy(() -> logStream.newLogStreamRecordWriter()).hasMessage("Actor is closed");
   }
 
   static long writeEvent(final SynchronousLogStream logStream) {
@@ -92,8 +116,7 @@ public class LogStreamTest {
   }
 
   static long writeEvent(final SynchronousLogStream logStream, final DirectBuffer value) {
-    final LogStreamWriterImpl writer =
-        new LogStreamWriterImpl(logStream.getWriteBuffer(), logStream.getPartitionId());
+    final LogStreamRecordWriter writer = logStream.newLogStreamRecordWriter();
 
     long position = -1L;
 

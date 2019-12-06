@@ -37,11 +37,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-dispatcher</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>zeebe-workflow-engine</artifactId>
     </dependency>
 
