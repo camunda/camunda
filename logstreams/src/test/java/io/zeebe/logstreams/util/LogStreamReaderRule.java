@@ -9,15 +9,10 @@ package io.zeebe.logstreams.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import java.util.ArrayList;
-import java.util.List;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 

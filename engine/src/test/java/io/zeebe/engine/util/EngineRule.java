@@ -276,18 +276,18 @@ public final class EngineRule extends ExternalResource {
           actor.onCondition("on-commit", this::onNewEventCommitted);
       final LogStream logStream = context.getLogStream();
       logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
-      logStream.getLogStorageAsync().onComplete(((logStorage, throwable) ->
-      {
-        if (throwable == null)
-        {
-          logStreamReader = new BufferedLogStreamReader(logStorage);
-        }
-      }));
+      logStream
+          .getLogStorageAsync()
+          .onComplete(
+              ((logStorage, throwable) -> {
+                if (throwable == null) {
+                  logStreamReader = new BufferedLogStreamReader(logStorage);
+                }
+              }));
     }
 
     private void onNewEventCommitted() {
-      if (logStreamReader == null)
-      {
+      if (logStreamReader == null) {
         return;
       }
 
@@ -341,7 +341,8 @@ public final class EngineRule extends ExternalResource {
   private class PartitionCommandSenderImpl implements PartitionCommandSender {
 
     private final SubscriptionCommandMessageHandler handler =
-        new SubscriptionCommandMessageHandler(Runnable::run, environmentRule::getLogStreamRecordWriter);
+        new SubscriptionCommandMessageHandler(
+            Runnable::run, environmentRule::getLogStreamRecordWriter);
 
     @Override
     public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {

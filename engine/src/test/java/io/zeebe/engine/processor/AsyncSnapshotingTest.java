@@ -93,7 +93,8 @@ public class AsyncSnapshotingTest {
   }
 
   private void setCommitPosition(final long commitPosition) {
-    when(logStream.getCommitPositionAsync()).thenReturn(CompletableActorFuture.completed(commitPosition));
+    when(logStream.getCommitPositionAsync())
+        .thenReturn(CompletableActorFuture.completed(commitPosition));
     conditionList.forEach(c -> c.signal());
   }
 
@@ -275,7 +276,8 @@ public class AsyncSnapshotingTest {
     // when
     lastProcessedPosition = 26L;
     lastWrittenPosition = 27L;
-    asyncSnapshotDirector.enforceSnapshotCreation(commitPosition, lastWrittenPosition, lastProcessedPosition);
+    asyncSnapshotDirector.enforceSnapshotCreation(
+        commitPosition, lastWrittenPosition, lastProcessedPosition);
 
     // then
     verify(snapshotController, TIMEOUT).takeSnapshot(lastProcessedPosition);
@@ -299,7 +301,8 @@ public class AsyncSnapshotingTest {
         .commitSnapshot(argThat(s -> s.getPosition() == lastProcessedPosition));
 
     // when
-    asyncSnapshotDirector.enforceSnapshotCreation(commitPosition, lastWrittenPosition, lastProcessedPosition);
+    asyncSnapshotDirector.enforceSnapshotCreation(
+        commitPosition, lastWrittenPosition, lastProcessedPosition);
 
     // then
     verify(snapshotController, never()).takeSnapshot(lastProcessedPosition);
@@ -319,7 +322,8 @@ public class AsyncSnapshotingTest {
     setCommitPosition(commitPosition);
 
     // when
-    asyncSnapshotDirector.enforceSnapshotCreation(commitPosition, lastWrittenPosition, lastProcessedPosition);
+    asyncSnapshotDirector.enforceSnapshotCreation(
+        commitPosition, lastWrittenPosition, lastProcessedPosition);
 
     // then
     verify(snapshotController, never()).takeSnapshot(lastProcessedPosition);

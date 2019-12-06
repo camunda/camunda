@@ -14,7 +14,6 @@ import io.zeebe.engine.processor.TypedRecordProcessor;
 import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.state.deployment.DeploymentsState;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.RecordType;
@@ -35,8 +34,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
   private TypedStreamWriter logStreamWriter;
 
   public DeploymentDistributeProcessor(
-      final DeploymentsState deploymentsState,
-      final DeploymentDistributor deploymentDistributor) {
+      final DeploymentsState deploymentsState, final DeploymentDistributor deploymentDistributor) {
     this.deploymentsState = deploymentsState;
     this.deploymentDistributor = deploymentDistributor;
   }
@@ -107,7 +105,8 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
           // we can re-use the write because we are running in the same actor/thread
           logStreamWriter.reset();
           logStreamWriter.configureSourceContext(sourcePosition);
-          logStreamWriter.appendFollowUpEvent(deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentRecord);
+          logStreamWriter.appendFollowUpEvent(
+              deploymentKey, DeploymentIntent.DISTRIBUTED, deploymentRecord);
 
           final long position = logStreamWriter.flush();
           if (position < 0) {

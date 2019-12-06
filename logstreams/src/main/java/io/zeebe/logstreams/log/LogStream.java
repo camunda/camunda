@@ -37,14 +37,14 @@ public interface LogStream extends AutoCloseable {
   String getLogName();
 
   /** Closes the log stream synchronously. This blocks until the log stream is closed. */
-//  @Override
-//  void close();
+  //  @Override
+  //  void close();
 
   /** Closes the log stream asynchronous. */
   ActorFuture<Void> closeAsync();
 
   /** @return the current commit position, or a negative value if no entry is committed. */
-//  long getCommitPosition();
+  //  long getCommitPosition();
 
   ActorFuture<Long> getCommitPositionAsync();
 
@@ -56,7 +56,7 @@ public interface LogStream extends AutoCloseable {
    *
    * @return the log storage
    */
-//  LogStorage getLogStorage();
+  //  LogStorage getLogStorage();
 
   ActorFuture<LogStorage> getLogStorageAsync();
 
@@ -66,7 +66,7 @@ public interface LogStream extends AutoCloseable {
    *
    * @return the writebuffer, which is used by the LogStreamController
    */
-//  Dispatcher getWriteBuffer();
+  //  Dispatcher getWriteBuffer();
 
   ActorFuture<Dispatcher> getWriteBufferAsync();
 

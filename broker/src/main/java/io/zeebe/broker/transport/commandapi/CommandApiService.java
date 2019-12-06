@@ -15,7 +15,6 @@ import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
@@ -47,21 +46,23 @@ public class CommandApiService implements PartitionListener {
   public void onBecomingLeader(int partitionId, LogStream logStream) {
     limiter.addPartition(partitionId);
 
-    logStream.getWriteBufferAsync().onComplete((writeBuffer, error) ->
-    {
-      if (error == null)
-      {
-        final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl(writeBuffer,
-          partitionId);
-        service.addPartition(partitionId, logStreamWriter, limiter.getLimiter(partitionId));
-      }
-      else {
-        // todo the best would be to return a future onBecomingLeader
-        // when one of these futures failed we need to stop the partition installation and step down
-        // because then otherwise we are not correctly installed
-        Loggers.SYSTEM_LOGGER.error("Error on retrieving write buffer from log stream {}", partitionId, error);
-      }
-    });
+    logStream
+        .getWriteBufferAsync()
+        .onComplete(
+            (writeBuffer, error) -> {
+              if (error == null) {
+                final LogStreamRecordWriter logStreamWriter =
+                    new LogStreamWriterImpl(writeBuffer, partitionId);
+                service.addPartition(partitionId, logStreamWriter, limiter.getLimiter(partitionId));
+              } else {
+                // todo the best would be to return a future onBecomingLeader
+                // when one of these futures failed we need to stop the partition installation and
+                // step down
+                // because then otherwise we are not correctly installed
+                Loggers.SYSTEM_LOGGER.error(
+                    "Error on retrieving write buffer from log stream {}", partitionId, error);
+              }
+            });
   }
 
   public CommandResponseWriter newCommandResponseWriter() {

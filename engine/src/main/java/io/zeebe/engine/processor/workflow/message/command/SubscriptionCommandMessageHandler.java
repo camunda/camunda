@@ -8,7 +8,6 @@
 package io.zeebe.engine.processor.workflow.message.command;
 
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -273,7 +272,8 @@ public class SubscriptionCommandMessageHandler
       final Intent intent,
       final UnpackedObject command) {
 
-    final LogStreamRecordWriter logStreamRecordWriter = logstreamRecordWriterSupplier.apply(partitionId);
+    final LogStreamRecordWriter logStreamRecordWriter =
+        logstreamRecordWriterSupplier.apply(partitionId);
     if (logStreamRecordWriter == null) {
       // ignore message if you are not the leader of the partition
       return true;
@@ -283,7 +283,11 @@ public class SubscriptionCommandMessageHandler
     recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
 
     final long position =
-      logStreamRecordWriter.key(-1).metadataWriter(recordMetadata).valueWriter(command).tryWrite();
+        logStreamRecordWriter
+            .key(-1)
+            .metadataWriter(recordMetadata)
+            .valueWriter(command)
+            .tryWrite();
 
     return position > 0;
   }

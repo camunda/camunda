@@ -42,8 +42,7 @@ public class EngineProcessors {
     final int partitionId = stream.getPartitionId();
     final int maxFragmentSize = processingContext.getMaxFragmentSize();
 
-    addDistributeDeploymentProcessors(
-        zeebeState, typedRecordProcessors, deploymentDistributor);
+    addDistributeDeploymentProcessors(zeebeState, typedRecordProcessors, deploymentDistributor);
 
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(zeebeState, subscriptionCommandSender, partitionsCount);
@@ -62,14 +61,12 @@ public class EngineProcessors {
   }
 
   private static void addDistributeDeploymentProcessors(
-    ZeebeState zeebeState,
-    TypedRecordProcessors typedRecordProcessors,
-    DeploymentDistributor deploymentDistributor) {
+      ZeebeState zeebeState,
+      TypedRecordProcessors typedRecordProcessors,
+      DeploymentDistributor deploymentDistributor) {
 
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
-        new DeploymentDistributeProcessor(
-            zeebeState.getDeploymentState(),
-            deploymentDistributor);
+        new DeploymentDistributeProcessor(zeebeState.getDeploymentState(), deploymentDistributor);
 
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);

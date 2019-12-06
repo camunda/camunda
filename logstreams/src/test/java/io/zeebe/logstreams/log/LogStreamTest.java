@@ -92,7 +92,8 @@ public class LogStreamTest {
   }
 
   static long writeEvent(final SynchronousLogStream logStream, final DirectBuffer value) {
-    final LogStreamWriterImpl writer = new LogStreamWriterImpl(logStream.getWriteBuffer(), logStream.getPartitionId());
+    final LogStreamWriterImpl writer =
+        new LogStreamWriterImpl(logStream.getWriteBuffer(), logStream.getPartitionId());
 
     long position = -1L;
 

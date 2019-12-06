@@ -135,13 +135,14 @@ public class TestStreams {
                 .withMaxEntrySize(4 * 1024 * 1024)
                 .withMaxSegmentSize(128 * 1024 * 1024));
     final var logStream =
-        spy(new SyncLogStream(
-            LogStreams.createLogStream()
-                .withLogName(name)
-                .withLogStorage(logStorageRule.getStorage())
-                .withPartitionId(partitionId)
-                .withActorScheduler(actorScheduler)
-                .build()));
+        spy(
+            new SyncLogStream(
+                LogStreams.createLogStream()
+                    .withLogName(name)
+                    .withLogStorage(logStorageRule.getStorage())
+                    .withPartitionId(partitionId)
+                    .withActorScheduler(actorScheduler)
+                    .build()));
     logStorageRule.setPositionListener(logStream::setCommitPosition);
     logStream.openAppender().join();
 
@@ -159,7 +160,6 @@ public class TestStreams {
   public LogStreamRecordWriter getLogStreamRecordWriter(final String name) {
     return logContextMap.get(name).getLogStreamWriter();
   }
-
 
   public Stream<LoggedEvent> events(final String logName) {
     final SynchronousLogStream logStream = getLogStream(logName);
@@ -247,7 +247,10 @@ public class TestStreams {
 
     final var asyncSnapshotDirector =
         new AsyncSnapshotDirector(
-            streamProcessor, currentSnapshotController, stream.getAsyncLogStream(), snapshotInterval);
+            streamProcessor,
+            currentSnapshotController,
+            stream.getAsyncLogStream(),
+            snapshotInterval);
     actorScheduler.submitActor(asyncSnapshotDirector);
 
     final LogContext context = logContextMap.get(logName);
@@ -372,10 +375,11 @@ public class TestStreams {
     private final AtomixLogStorageRule logStorageRule;
     private final LogStreamWriterImpl logStreamWriter;
 
-    private LogContext(final SynchronousLogStream logStream, final AtomixLogStorageRule logStorageRule) {
+    private LogContext(
+        final SynchronousLogStream logStream, final AtomixLogStorageRule logStorageRule) {
       this.logStream = logStream;
-      logStreamWriter = new LogStreamWriterImpl(
-        logStream.getWriteBuffer(), logStream.getPartitionId());
+      logStreamWriter =
+          new LogStreamWriterImpl(logStream.getWriteBuffer(), logStream.getPartitionId());
       this.logStorageRule = logStorageRule;
     }
 

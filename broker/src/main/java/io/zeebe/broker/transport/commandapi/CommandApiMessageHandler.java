@@ -12,8 +12,6 @@ import io.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -187,7 +185,8 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
     return eventPosition >= 0;
   }
 
-  public void addPartition(int partitionId, LogStreamRecordWriter logStreamWriter, RequestLimiter<Intent> limiter) {
+  public void addPartition(
+      int partitionId, LogStreamRecordWriter logStreamWriter, RequestLimiter<Intent> limiter) {
     cmdQueue.add(
         () -> {
           leadingStreams.put(partitionId, logStreamWriter);

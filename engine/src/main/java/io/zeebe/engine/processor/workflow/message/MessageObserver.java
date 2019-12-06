@@ -9,11 +9,9 @@ package io.zeebe.engine.processor.workflow.message;
 
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processor.TypedStreamWriterImpl;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 

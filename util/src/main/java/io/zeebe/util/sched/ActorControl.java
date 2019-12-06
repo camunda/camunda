@@ -481,7 +481,8 @@ public class ActorControl {
   public boolean isClosed() {
     // for that lifecycle phase needs to be volatile
     final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
-    return !(lifecyclePhase == ActorLifecyclePhase.STARTING || lifecyclePhase == ActorLifecyclePhase.STARTED);
+    return !(lifecyclePhase == ActorLifecyclePhase.STARTING
+        || lifecyclePhase == ActorLifecyclePhase.STARTED);
   }
 
   public void setPriority(ActorPriority priority) {
