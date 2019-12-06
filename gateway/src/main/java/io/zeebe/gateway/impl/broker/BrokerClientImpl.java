@@ -113,7 +113,9 @@ public class BrokerClientImpl implements BrokerClient {
 
     transport = transportBuilder.build();
 
-    topologyManager = new BrokerTopologyManagerImpl(this::registerEndpoint);
+    topologyManager =
+        new BrokerTopologyManagerImpl(
+            () -> atomixCluster.getMembershipService().getMembers(), this::registerEndpoint);
     actorScheduler.submitActor(topologyManager);
     atomixCluster.getMembershipService().addListener(topologyManager);
     atomixCluster

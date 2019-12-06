@@ -15,8 +15,11 @@ import io.zeebe.gateway.Loggers;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
+import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public class BrokerTopologyManagerImpl extends Actor
@@ -26,8 +29,12 @@ public class BrokerTopologyManagerImpl extends Actor
 
   protected final BiConsumer<Integer, SocketAddress> registerEndpoint;
   protected final AtomicReference<BrokerClusterStateImpl> topology;
+  private final Supplier<Set<Member>> membersSupplier;
 
-  public BrokerTopologyManagerImpl(final BiConsumer<Integer, SocketAddress> registerEndpoint) {
+  public BrokerTopologyManagerImpl(
+      Supplier<Set<Member>> membersSupplier,
+      final BiConsumer<Integer, SocketAddress> registerEndpoint) {
+    this.membersSupplier = membersSupplier;
     this.registerEndpoint = registerEndpoint;
     this.topology = new AtomicReference<>(null);
   }
@@ -39,6 +46,29 @@ public class BrokerTopologyManagerImpl extends Actor
 
     LOG.error("Current topology {}", brokerClusterState);
     return brokerClusterState;
+  }
+
+  private void checkForMissingEvents() {
+    final Set<Member> members = membersSupplier.get();
+    if (members == null || members.isEmpty()) {
+      return;
+    }
+
+    final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
+    for (Member member : members) {
+      final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
+      if (brokerInfo != null) {
+        newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
+        processProperties(brokerInfo, newTopology);
+      }
+    }
+    topology.set(newTopology);
+  }
+
+  @Override
+  protected void onActorStarted() {
+    // to make gateway topology more robust we need to check for missing events periodically
+    actor.runAtFixedRate(Duration.ofSeconds(5), this::checkForMissingEvents);
   }
 
   public void setTopology(BrokerClusterStateImpl topology) {
