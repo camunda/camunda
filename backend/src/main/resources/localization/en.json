@@ -95,7 +95,6 @@
         "label": "Definition",
         "label-plural": "Definitions"
       },
-      "noTenantFound": "No Tenants found",
       "unauthorizedTenant": "(Unauthorized Tenant)"
     },
     "data-hint": "Missing data? The last update introduced user permissions. Ask your administrator for access rights.",
@@ -349,7 +348,6 @@
     "createNew": "Create New Alert",
     "newAlert": "New Alert",
     "edit": "Edit Alert",
-    "delete": "Delete Alert",
     "description": "\"{name}\" has a value {aboveOrBelow} {thresholdValue}",
     "emailWarning": "The email notification service is not configured. Optimize won't be able to inform you about critical values. Please check out the <a href='{docsLink}'>Optimize documentation</a> on how to enable the notification service.",
     "form": {
@@ -368,7 +366,6 @@
     },
     "apply": "Apply Changes",
     "create": "Create Alert",
-    "cannotSave": "Alert \"{name}\" could not be saved.",
     "notCreated": "There are no Alerts created yet"
   },
   "analysis": {
@@ -471,18 +468,8 @@
       "empty": "No items found"
     },
     "entity": {
-      "empty": "There are no {label} configured.",
-      "create": {
-        "Report": "Create a new Report...",
-        "Dashboard": "Create a new Dashboard...",
-        "Alert": "Create a new Alert"
-      },
-      "created": "Created",
-      "changed": "Last changed",
       "modified": "Last modified",
       "by": "by",
-      "showAll": "Show all...",
-      "showLess": "Show less...",
       "namePlaceholder": {
         "Report": "Report name",
         "Dashboard": "Dashboard name",

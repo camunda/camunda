@@ -172,9 +172,9 @@ export default themed(
                     className="tool-button fullscreen-button"
                   >
                     <Icon type={fullScreenActive ? 'exit-fullscreen' : 'fullscreen'} />{' '}
-                    {t(
-                      fullScreenActive ? 'dashboard.leaveFullscreen' : 'dashboard.enterFullscreen'
-                    )}
+                    {fullScreenActive
+                      ? t('dashboard.leaveFullscreen')
+                      : t('dashboard.enterFullscreen')}
                   </Button>
                   <Dropdown
                     label={

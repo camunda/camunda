@@ -95,7 +95,6 @@
         "label": "Definition",
         "label-plural": "Definitionen"
       },
-      "noTenantFound": "Keine Mandanten gefunden",
       "unauthorizedTenant": "(nicht autorisierter Mandant)"
     },
     "data-hint": "Fehlen Daten? Mit dem letzten Update wurden Benutzerberechtigungen eingeführt. Fragen Sie Ihren Administrator nach Zugriffsrechten.",
@@ -349,7 +348,6 @@
     "createNew": "Neuen Alarm erstellen",
     "newAlert": "Neuer Alarm",
     "edit": "Alarm bearbeiten",
-    "delete": "Alarm löschen",
     "description": "\"{name}\" hat einen Wert {aboveOrBelow} {thresholdValue}",
     "emailWarning": "Der E-Mail-Benachrichtigungsdienst ist nicht konfiguriert. Optimize kann Sie nicht über kritische Werte informieren. Lesen Sie in der <a href='{docsLink}'>Optimize Dokumentation</a> nach, wie Sie den Benachrichtigungsdienst aktivieren.",
     "form": {
@@ -368,7 +366,6 @@
     },
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",
-    "cannotSave": "Alarm \"{name}\" konnte nicht gespeichert werden.",
     "notCreated": "Es wurden noch keine Alarme erstellt"
   },
   "analysis": {
@@ -471,18 +468,8 @@
       "empty": "Keine Elemente gefunden"
     },
     "entity": {
-      "empty": "Es sind keine {label} konfiguriert.",
-      "create": {
-        "Report": "Neuen Bericht erstellen ...",
-        "Dashboard": "Neues Dashboard erstellen ...",
-        "Alert": "Neuen Alarm erstellen"
-      },
-      "created": "Erstellt",
-      "changed": "Zuletzt geändert",
       "modified": "Zuletzt bearbeitet",
       "by": "durch",
-      "showAll": "Zeige alle ...",
-      "showLess": "Zeige weniger ...",
       "namePlaceholder": {
         "Report": "Berichtsname",
         "Dashboard": "Dashboard-Name",

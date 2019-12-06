@@ -40,10 +40,14 @@ export default withErrorHandling(
       const containedReports = data.subEntityCounts.report;
 
       if (containedReports) {
-        return t(containedReports > 1 ? 'home.copy.subEntities' : 'home.copy.subEntity', {
+        const params = {
           entityType: entityType === 'dashboard' ? t('dashboard.label') : t('home.types.combined'),
           number: containedReports
-        });
+        };
+        if (containedReports > 1) {
+          return t('home.copy.subEntities', params);
+        }
+        return t('home.copy.subEntity', params);
       }
     };
 
