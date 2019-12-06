@@ -43,7 +43,7 @@ A message is **not** correlated to a message start event subscription if an inst
 
 Messages can be buffered for a given time. Buffering can be useful in a situation when it is not guaranteed that the subscription is opened before the message is published.
 
-A message has a **time-to-live** (TTL) which specifies the time how long it is buffered. Within this time, the message can be correlated to a workflow instance.
+A message has a **time-to-live** (TTL) which specifies for how long it is buffered. Within this time, the message can be correlated to a workflow instance.
 
 When a subscription is opened then it polls the buffer for a proper message. If a proper message exists then it is correlated to the corresponding workflow instance. In case multiple messages match to the subscription then the first published message is correlated (like a FIFO queue).
 
