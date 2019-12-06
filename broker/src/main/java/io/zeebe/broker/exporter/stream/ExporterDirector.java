@@ -68,9 +68,11 @@ public class ExporterDirector extends Actor {
 
   private ActorCondition onCommitPositionUpdatedCondition;
   private boolean inExportingPhase;
+  private final int exporterCount;
 
   public ExporterDirector(ExporterDirectorContext context) {
     this.name = context.getName();
+    exporterCount = context.getDescriptors().size();
     this.containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
@@ -171,7 +173,13 @@ public class ExporterDirector extends Actor {
   }
 
   public ActorFuture<Long> getLowestExporterPosition() {
-    return actor.call(() -> state.getLowestPosition());
+    return actor.call(
+        () -> {
+          if (exporterCount == 0) {
+            return Long.MAX_VALUE;
+          }
+          return state.getLowestPosition();
+        });
   }
 
   private ExporterEventFilter createEventFilter(List<ExporterContainer> containers) {

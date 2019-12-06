@@ -42,10 +42,7 @@ public class BrokerTopologyManagerImpl extends Actor
   /** @return the current known cluster state or null if the topology was not fetched yet */
   @Override
   public BrokerClusterState getTopology() {
-    final BrokerClusterStateImpl brokerClusterState = topology.get();
-
-    LOG.error("Current topology {}", brokerClusterState);
-    return brokerClusterState;
+    return topology.get();
   }
 
   private void checkForMissingEvents() {
