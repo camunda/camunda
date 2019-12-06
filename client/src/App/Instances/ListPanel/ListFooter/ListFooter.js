@@ -39,9 +39,9 @@ export default class ListFooter extends React.Component {
       <Styled.Footer>
         {hasContent && (
           <>
-            <div>
+            <Styled.SelectionContainer>
               <AddSelection />
-            </div>
+            </Styled.SelectionContainer>
             <div>
               {this.isPaginationRequired(maxPage, filterCount) ? (
                 <Paginator
