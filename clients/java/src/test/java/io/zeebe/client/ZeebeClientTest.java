@@ -17,6 +17,7 @@ package io.zeebe.client;
 
 import static io.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.zeebe.client.impl.ZeebeClientBuilderImpl.CA_CERTIFICATE_VAR;
+import static io.zeebe.client.impl.ZeebeClientBuilderImpl.KEEP_ALIVE_VAR;
 import static io.zeebe.client.impl.ZeebeClientBuilderImpl.PLAINTEXT_CONNECTION_VAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -120,5 +121,55 @@ public class ZeebeClientTest extends ClientTest {
 
     // then
     assertThat(builder.getCaCertificatePath()).isEqualTo(certPath);
+  }
+
+  @Test
+  public void shouldSetKeepAlive() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.keepAlive(Duration.ofMinutes(2));
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofMinutes(2));
+  }
+
+  @Test
+  public void shouldOverrideKeepAliveWithEnvVar() {
+    // given
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    builder.keepAlive(Duration.ofMinutes(2));
+    Environment.system().put(KEEP_ALIVE_VAR, "15000");
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getKeepAlive()).isEqualTo(Duration.ofSeconds(15));
+  }
+
+  @Test
+  public void shouldRejectUnsupportedTimeUnitWithEnvVar() {
+    // when/then
+    Environment.system().put(KEEP_ALIVE_VAR, "30d");
+    assertThatThrownBy(() -> new ZeebeClientBuilderImpl().build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldRejectNegativeTime() {
+    // when/then
+    assertThatThrownBy(() -> new ZeebeClientBuilderImpl().keepAlive(Duration.ofSeconds(-2)).build())
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  public void shouldRejectNegativeTimeAsEnvVar() {
+    // when/then
+    Environment.system().put(KEEP_ALIVE_VAR, "-2s");
+    assertThatThrownBy(() -> new ZeebeClientBuilderImpl().build())
+        .isInstanceOf(IllegalArgumentException.class);
   }
 }

@@ -9,6 +9,7 @@ package io.zeebe.gateway.impl.configuration;
 
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_KEEP_ALIVE_INTERVAL;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
 
 import io.zeebe.transport.SocketAddress;
@@ -19,10 +20,12 @@ public class NetworkCfg {
 
   private String host;
   private int port = DEFAULT_PORT;
+  private String minKeepAliveInterval = "30s";
 
   public void init(Environment environment, String defaultHost) {
     environment.get(ENV_GATEWAY_HOST).ifPresent(this::setHost);
     environment.getInt(ENV_GATEWAY_PORT).ifPresent(this::setPort);
+    environment.get(ENV_GATEWAY_KEEP_ALIVE_INTERVAL).ifPresent(this::setMinKeepAliveInterval);
 
     if (host == null) {
       host = defaultHost;
@@ -44,6 +47,15 @@ public class NetworkCfg {
 
   public NetworkCfg setPort(int port) {
     this.port = port;
+    return this;
+  }
+
+  public String getMinKeepAliveInterval() {
+    return minKeepAliveInterval;
+  }
+
+  public NetworkCfg setMinKeepAliveInterval(String keepAlive) {
+    this.minKeepAliveInterval = keepAlive;
     return this;
   }
 
@@ -70,6 +82,14 @@ public class NetworkCfg {
 
   @Override
   public String toString() {
-    return "NetworkCfg{" + "host='" + host + '\'' + ", port=" + port + '}';
+    return "NetworkCfg{"
+        + "host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", minKeepAliveInterval="
+        + minKeepAliveInterval
+        + '}';
   }
 }

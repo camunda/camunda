@@ -119,6 +119,7 @@ public class ZeebeClientImpl implements ZeebeClient {
         NettyChannelBuilder.forAddress(address.getHost(), address.getPort());
 
     configureConnectionSecurity(config, channelBuilder);
+    channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
 
     return channelBuilder.build();
   }

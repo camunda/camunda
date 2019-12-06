@@ -29,4 +29,6 @@ public class ConfigurationDefaults {
   public static final int DEFAULT_MONITORING_PORT = 9600;
 
   public static final int DEFAULT_MANAGEMENT_THREADS = 1;
+
+  public static final String DEFAULT_KEEP_ALIVE_INTERVAL = "30s";
 }

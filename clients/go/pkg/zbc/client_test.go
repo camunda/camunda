@@ -24,8 +24,10 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 	"net"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 type clientTestSuite struct {
@@ -230,6 +232,72 @@ func (s *clientTestSuite) TestClientWithDefaultCredentialsProvider() {
 	}
 }
 
+func (s *clientTestSuite) TestKeepAlive() {
+	// given
+	keepAlive := 2 * time.Minute
+	config := &ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		UsePlaintextConnection: true,
+		KeepAlive:              keepAlive,
+	}
+
+	// when
+	_, err := NewClient(config)
+
+	// then
+	s.NoError(err)
+	s.Equal(keepAlive, config.KeepAlive)
+
+}
+
+func (s *clientTestSuite) TestOverrideKeepAliveWithEnvVar() {
+	// given
+	keepAlive := 2 * 60 * 1000
+
+	env.set(KeepAliveEnvVar, strconv.Itoa(keepAlive))
+	config := &ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		UsePlaintextConnection: true,
+		KeepAlive:              5 * time.Second,
+	}
+
+	// when
+	_, err := NewClient(config)
+
+	// then
+	s.NoError(err)
+	s.EqualValues(keepAlive, config.KeepAlive.Milliseconds())
+}
+
+func (s *clientTestSuite) TestRejectNegativeDuration() {
+	// given
+	config := &ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		UsePlaintextConnection: true,
+		KeepAlive:              -5 * time.Second,
+	}
+
+	// when
+	_, err := NewClient(config)
+
+	// then
+	s.Error(err)
+}
+
+func (s *clientTestSuite) TestRejectNegativeDurationAsEnvVar() {
+	// given
+	env.set(KeepAliveEnvVar, "-100")
+	config := &ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:0"),
+		UsePlaintextConnection: true,
+	}
+
+	// when
+	_, err := NewClient(config)
+
+	// then
+	s.Error(err)
+}
 func createSecureServer() (net.Listener, *grpc.Server) {
 	creds, _ := credentials.NewServerTLSFromFile("../../test/testdata/chain.cert.pem", "../../test/testdata/private.key.pem")
 	return createServer(grpc.Creds(creds))
