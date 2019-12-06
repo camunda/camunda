@@ -5,6 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-incident-${project.version}_"
+		"index": "operate-incident-${schema.version}_"
 	}
 }

@@ -1,7 +1,7 @@
 {
 	"order": 30,
 	"index_patterns": [
-		"operate-variable-${project.version}_*"
+		"operate-variable-${schema.version}_*"
 	],
 	"settings": {
 		"index": {
@@ -61,7 +61,7 @@
 		}
 	},
 	"aliases": {
-		"operate-variable-${project.version}_alias": {
+		"operate-variable-${schema.version}_alias": {
 		}
 	}
 }

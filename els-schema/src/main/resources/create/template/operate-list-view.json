@@ -1,7 +1,7 @@
 {
 	"order": 30,
 	"index_patterns": [
-		"operate-list-view-${project.version}_*"
+		"operate-list-view-${schema.version}_*"
 	],
 	"settings": {
 		"index": {
@@ -116,7 +116,7 @@
 		}
 	},
 	"aliases": {
-		"operate-list-view-${project.version}_alias": {
+		"operate-list-view-${schema.version}_alias": {
 		}
 	}
 }

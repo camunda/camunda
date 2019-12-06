@@ -1,7 +1,7 @@
 {
 	"order": 30,
 	"index_patterns": [
-		"operate-activity-instance-${project.version}_*"
+		"operate-activity-instance-${schema.version}_*"
 	],
 	"settings": {
 		"index": {
@@ -78,7 +78,7 @@
 		}
 	},
 	"aliases": {
-		"operate-activity-instance-${project.version}_alias": {
+		"operate-activity-instance-${schema.version}_alias": {
 		}
 	}
 }

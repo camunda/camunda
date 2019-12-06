@@ -5,6 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-event-${project.version}_"
+		"index": "operate-event-${schema.version}_"
 	}
 }

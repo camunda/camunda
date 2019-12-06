@@ -1,6 +1,6 @@
 {
 	"aliases": {
-		"operate-user-${project.version}_alias": {
+		"operate-user-${schema.version}_alias": {
 		}
 	},
 	"mappings": {

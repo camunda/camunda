@@ -1,6 +1,6 @@
 {
 	"aliases": {
-		"operate-import-position-${project.version}_alias": {
+		"operate-import-position-${schema.version}_alias": {
 		}
 	},
 	"mappings": {

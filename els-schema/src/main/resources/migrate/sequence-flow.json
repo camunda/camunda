@@ -5,6 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-sequence-flow-${project.version}_"
+		"index": "operate-sequence-flow-${schema.version}_"
 	}
 }

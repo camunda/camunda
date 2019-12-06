@@ -1,6 +1,6 @@
 {
 	"aliases": {
-		"operate-workflow-${project.version}_alias": {
+		"operate-workflow-${schema.version}_alias": {
 		}
 	},
 	"mappings": {

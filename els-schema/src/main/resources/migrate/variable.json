@@ -5,6 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-variable-${project.version}_"
+		"index": "operate-variable-${schema.version}_"
 	}
 }

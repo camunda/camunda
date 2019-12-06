@@ -1,7 +1,7 @@
 {
 	"order": 30,
 	"index_patterns": [
-		"operate-event-${project.version}_*"
+		"operate-event-${schema.version}_*"
 	],
 	"settings": {
 		"index": {
@@ -106,7 +106,7 @@
 		}
 	},
 	"aliases": {
-		"operate-event-${project.version}_alias": {
+		"operate-event-${schema.version}_alias": {
 		}
 	}
 }

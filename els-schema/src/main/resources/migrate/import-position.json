@@ -5,6 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-import-position-${project.version}_"
+		"index": "operate-import-position-${schema.version}_"
 	}
 }

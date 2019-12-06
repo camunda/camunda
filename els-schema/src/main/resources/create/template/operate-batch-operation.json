@@ -1,7 +1,7 @@
 {
 	"order": 30,
 	"index_patterns": [
-		"operate-batch-operation-${project.version}_*"
+		"operate-batch-operation-${schema.version}_*"
 	],
 	"settings": {
 		"index": {
@@ -69,7 +69,7 @@
 		}
 	},
 	"aliases": {
-		"operate-batch-operation-${project.version}_alias": {
+		"operate-batch-operation-${schema.version}_alias": {
 		}
 	}
 }

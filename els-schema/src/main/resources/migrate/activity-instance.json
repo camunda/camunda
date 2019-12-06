@@ -5,6 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-activity-instance-${project.version}_"
+		"index": "operate-activity-instance-${schema.version}_"
 	}
 }

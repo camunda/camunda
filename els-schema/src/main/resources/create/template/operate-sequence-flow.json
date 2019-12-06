@@ -1,7 +1,7 @@
 {
 	"order": 30,
 	"index_patterns": [
-		"operate-sequence-flow-${project.version}_*"
+		"operate-sequence-flow-${schema.version}_*"
 	],
 	"settings": {
 		"index": {
@@ -55,7 +55,7 @@
 		}
 	},
 	"aliases": {
-		"operate-sequence-flow-${project.version}_alias": {
+		"operate-sequence-flow-${schema.version}_alias": {
 		}
 	}
 }

@@ -1,7 +1,7 @@
 {
 	"order": 30,
 	"index_patterns": [
-		"operate-incident-${project.version}_*"
+		"operate-incident-${schema.version}_*"
 	],
 	"settings": {
 		"index": {
@@ -78,7 +78,7 @@
 		}
 	},
 	"aliases": {
-		"operate-incident-${project.version}_alias": {
+		"operate-incident-${schema.version}_alias": {
 		}
 	}
 }

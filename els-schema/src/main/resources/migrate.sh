@@ -1,16 +1,16 @@
 #!/bin/sh
 # Define migration functions
 ES=${1:-http://localhost:9200}
-VERSION=${project.version}
 # For testing prefix 'echo ' 
 RESTCLIENT="curl -K curl.config"
 
-createNewTemplates(){
+createNewTemplatesAndTheirIndexes(){
    for template in create/template/*.json; do
      templatename=`basename $template .json`
      echo "Create template $templatename"
      echo "-------------------------------"
- 	 $RESTCLIENT --request PUT --url $ES/_template/${templatename}-${version} --data @$template
+ 	 $RESTCLIENT --request PUT --url $ES/_template/${templatename}-${schema.version} --data @$template
+ 	 $RESTCLIENT --request PUT --url $ES/${templatename}-${schema.version}_ --data @$template
      echo
      echo "-------------------------------"
    done
@@ -21,7 +21,7 @@ createNewIndexes(){
      indexname=`basename $index .json`
      echo "Create index $indexname"
      echo "-------------------------------"
-     $RESTCLIENT --request PUT --url $ES/${indexname}-${version}_ --data @$index
+     $RESTCLIENT --request PUT --url $ES/${indexname}-${schema.version}_ --data @$index
      echo
      echo "-------------------------------"
    done
@@ -58,8 +58,8 @@ migrate(){
 
 
 ## main
-createNewTemplates
 createNewIndexes
+createNewTemplatesAndTheirIndexes
 #createPipelines
 migrate
 #removePipelines

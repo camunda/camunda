@@ -5,6 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-list-view-${project.version}_"
+		"index": "operate-list-view-${schema.version}_"
 	}
 }

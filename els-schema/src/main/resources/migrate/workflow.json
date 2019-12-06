@@ -5,6 +5,6 @@
 		]
 	},
 	"dest": {
-		"index": "operate-workflow-${project.version}_"
+		"index": "operate-workflow-${schema.version}_"
 	}
 }
