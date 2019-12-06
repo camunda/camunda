@@ -8,10 +8,8 @@
 package io.zeebe.logstreams.util;
 
 import io.atomix.protocols.raft.storage.RaftStorage.Builder;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -26,10 +24,10 @@ public final class LogStreamRule extends ExternalResource {
   private final ControlledActorClock clock = new ControlledActorClock();
   private final boolean shouldStartByDefault;
 
-  private Consumer<LogStreamBuilder> streamBuilder;
+  private final Consumer<LogStreamBuilder> streamBuilder;
   private final UnaryOperator<Builder> storageBuilder;
   private SynchronousLogStream logStream;
-  private BufferedLogStreamReader logStreamReader;
+  private LogStreamReader logStreamReader;
   private LogStreamBuilder builder;
   private ActorSchedulerRule actorSchedulerRule;
   private AtomixLogStorageRule logStorageRule;
@@ -53,11 +51,6 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   public static LogStreamRule startByDefault(
-      final TemporaryFolder temporaryFolder, final Consumer<LogStreamBuilder> streamBuilder) {
-    return new LogStreamRule(temporaryFolder, true, streamBuilder);
-  }
-
-  public static LogStreamRule startByDefault(
       final TemporaryFolder temporaryFolder,
       final Consumer<LogStreamBuilder> streamBuilder,
       final UnaryOperator<Builder> storageBuilder) {
@@ -70,13 +63,6 @@ public final class LogStreamRule extends ExternalResource {
 
   public static LogStreamRule createRuleWithoutStarting(final TemporaryFolder temporaryFolder) {
     return new LogStreamRule(temporaryFolder, false, b -> {});
-  }
-
-  public SynchronousLogStream startLogStreamWithConfiguration(
-      final Consumer<LogStreamBuilder> streamBuilder) {
-    this.streamBuilder = streamBuilder;
-    startLogStream();
-    return logStream;
   }
 
   public SynchronousLogStream startLogStreamWithStorageConfiguration(
@@ -146,24 +132,23 @@ public final class LogStreamRule extends ExternalResource {
     logStorageRule.setPositionListener(logStream::setCommitPosition);
   }
 
+  public LogStreamReader newLogStreamReader() {
+    return logStream.newLogStreamReader();
+  }
+
   public LogStreamReader getLogStreamReader() {
     if (logStream == null) {
       throw new IllegalStateException("Log stream is not open!");
     }
 
     if (logStreamReader == null) {
-      logStreamReader = new BufferedLogStreamReader();
+      logStreamReader = logStream.newLogStreamReader();
     }
-    logStreamReader.wrap(getLogStorage());
     return logStreamReader;
   }
 
   public SynchronousLogStream getLogStream() {
     return logStream;
-  }
-
-  public LogStorage getLogStorage() {
-    return logStream.getLogStorage();
   }
 
   public ControlledActorClock getClock() {

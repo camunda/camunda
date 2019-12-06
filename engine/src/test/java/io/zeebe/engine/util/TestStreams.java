@@ -28,7 +28,6 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -159,10 +158,14 @@ public class TestStreams {
     return logContextMap.get(name).getLogStreamWriter();
   }
 
+  public LogStreamRecordWriter newLogStreamRecordWriter(final String name) {
+    return logContextMap.get(name).newLogStreamRecordWriter();
+  }
+
   public Stream<LoggedEvent> events(final String logName) {
     final SynchronousLogStream logStream = getLogStream(logName);
 
-    final LogStreamReader reader = new BufferedLogStreamReader(logStream.getLogStorage());
+    final LogStreamReader reader = logStream.newLogStreamReader();
     closeables.manage(reader);
 
     reader.seekToFirstEvent();
@@ -172,8 +175,12 @@ public class TestStreams {
     return StreamSupport.stream(iterable.spliterator(), false);
   }
 
+  public FluentLogWriter newRecord(final LogStreamRecordWriter logStreamRecordWriter) {
+    return new FluentLogWriter(logStreamRecordWriter);
+  }
+
   public FluentLogWriter newRecord(final String logName) {
-    return new FluentLogWriter(getLogStreamRecordWriter(logName));
+    return new FluentLogWriter(newLogStreamRecordWriter(logName));
   }
 
   public SnapshotStorage createSnapshotStorage(final SynchronousLogStream stream) {
@@ -226,7 +233,7 @@ public class TestStreams {
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
             .batchWriter(stream.newLogStreamBatchWriter())
-            .logStorage(stream.getLogStorage())
+            .logStreamReader(stream.newLogStreamReader())
             .streamProcessorFactory(
                 (context) -> {
                   final TypedRecordProcessors processors = factory.createProcessors(context);
@@ -396,6 +403,10 @@ public class TestStreams {
 
     public SynchronousLogStream getLogStream() {
       return logStream;
+    }
+
+    public LogStreamRecordWriter newLogStreamRecordWriter() {
+      return logStream.newLogStreamRecordWriter();
     }
   }
 

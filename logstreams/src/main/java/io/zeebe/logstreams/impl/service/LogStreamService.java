@@ -16,6 +16,7 @@ import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.spi.LogStorage;
@@ -28,6 +29,8 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
@@ -43,7 +46,7 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
   private final ByteValue maxFrameLength;
   private final Position commitPosition;
   private final ActorScheduler actorScheduler;
-
+  private final List<LogStreamReader> readers = new ArrayList<>();
   private final BufferedLogStreamReader reader;
   private final LogStorage logStorage;
   private ActorFuture<LogStorageAppender> appenderFuture;
@@ -105,6 +108,9 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
               .onComplete(
                   (v, t) -> {
                     if (t == null) {
+                      LOG.info("On closing logstream {} close {} readers", logName, readers.size());
+                      readers.forEach(LogStreamReader::close);
+
                       LOG.info("Close log storage with name {}", logName);
                       logStorage.close();
                       closeFuture.complete(null);
@@ -152,29 +158,23 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
   }
 
   @Override
-  public ActorFuture<LogStreamRecordWriter> newLogStreamRecordWriter() {
+  public ActorFuture<LogStreamReader> newLogStreamReader() {
     return actor.call(
         () -> {
-          if (writeBuffer == null || writeBuffer.isClosed()) {
-            throw new IllegalStateException(
-                "Creating new log stream record writer failed, write buffer is not open.");
-          }
-
-          return new LogStreamWriterImpl(partitionId, writeBuffer);
+          final BufferedLogStreamReader reader = new BufferedLogStreamReader(logStorage);
+          readers.add(reader);
+          return reader;
         });
   }
 
   @Override
-  public ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter() {
-    return actor.call(
-        () -> {
-          if (writeBuffer == null || writeBuffer.isClosed()) {
-            throw new IllegalStateException(
-                "Creating new log stream batch writer failed, write buffer is not open.");
-          }
+  public ActorFuture<LogStreamRecordWriter> newLogStreamRecordWriter() {
+    return actor.call(() -> new LogStreamWriterImpl(partitionId, writeBuffer));
+  }
 
-          return new LogStreamBatchWriterImpl(partitionId, writeBuffer);
-        });
+  @Override
+  public ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter() {
+    return actor.call(() -> new LogStreamBatchWriterImpl(partitionId, writeBuffer));
   }
 
   private ActorFuture<Void> closeAppender() {

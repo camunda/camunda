@@ -11,7 +11,6 @@ import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.spi.LogStorage;
 import java.time.Duration;
 import java.util.Collection;
 
@@ -28,11 +27,6 @@ public class ExporterDirectorContext {
   private Duration snapshotPeriod;
   private ZeebeDb zeebeDb;
   private int maxSnapshots;
-  private LogStorage logStorage;
-
-  public LogStorage getLogStorage() {
-    return logStorage;
-  }
 
   public int getId() {
     return id;
@@ -78,11 +72,6 @@ public class ExporterDirectorContext {
 
   public ExporterDirectorContext logStream(LogStream logStream) {
     this.logStream = logStream;
-    return this;
-  }
-
-  public ExporterDirectorContext logStorage(LogStorage logStorage) {
-    this.logStorage = logStorage;
     return this;
   }
 

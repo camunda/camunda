@@ -9,8 +9,8 @@ package io.zeebe.logstreams.util;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 
 /**
@@ -46,12 +46,7 @@ public interface SynchronousLogStream extends AutoCloseable {
   /** sets the new commit position * */
   void setCommitPosition(long position);
 
-  /**
-   * Returns the log storage, which is accessed by the LogStream.
-   *
-   * @return the log storage
-   */
-  LogStorage getLogStorage();
+  LogStreamReader newLogStreamReader();
 
   /** @return a new created log stream record writer */
   LogStreamRecordWriter newLogStreamRecordWriter();

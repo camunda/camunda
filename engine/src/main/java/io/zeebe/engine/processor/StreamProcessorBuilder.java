@@ -8,11 +8,10 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.sched.ActorScheduler;
@@ -29,7 +28,7 @@ public class StreamProcessorBuilder {
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
   private LogStreamBatchWriter batchWriter;
-  private LogStorage logStorage;
+  private LogStreamReader logStreamReader;
 
   public StreamProcessorBuilder() {
     processingContext = new ProcessingContext();
@@ -51,18 +50,13 @@ public class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder maxFragmentSize(int maxFragmentSize) {
-    processingContext.maxFragmentSize(maxFragmentSize);
-    return this;
-  }
-
   public StreamProcessorBuilder batchWriter(LogStreamBatchWriter batchWriter) {
     this.batchWriter = batchWriter;
     return this;
   }
 
-  public StreamProcessorBuilder logStorage(LogStorage logStorage) {
-    this.logStorage = logStorage;
+  public StreamProcessorBuilder logStreamReader(LogStreamReader logStreamReader) {
+    this.logStreamReader = logStreamReader;
     return this;
   }
 
@@ -105,7 +99,8 @@ public class StreamProcessorBuilder {
     validate();
 
     processingContext
-        .logStreamReader(new BufferedLogStreamReader(logStorage))
+        .maxFragmentSize(batchWriter.getMaxFragmentLength())
+        .logStreamReader(logStreamReader)
         .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
 
     final MetadataFilter metadataFilter = new VersionFilter();
@@ -122,7 +117,7 @@ public class StreamProcessorBuilder {
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
-    Objects.requireNonNull(logStorage, "No log storage provided.");
+    Objects.requireNonNull(logStreamReader, "No log storage provided.");
     Objects.requireNonNull(batchWriter, "No batcher writer provided.");
   }
 

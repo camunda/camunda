@@ -9,7 +9,6 @@ package io.zeebe.engine.util;
 
 import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
 
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.SynchronousLogStream;
@@ -38,7 +37,7 @@ public class LogStreamPrinter {
     final EnumMap<ValueType, UnpackedObject> eventCache = new EnumMap<>(ValueType.class);
     EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
 
-    try (LogStreamReader streamReader = new BufferedLogStreamReader(logStream.getLogStorage())) {
+    try (LogStreamReader streamReader = logStream.newLogStreamReader()) {
       streamReader.seekToFirstEvent();
 
       while (streamReader.hasNext()) {

@@ -16,6 +16,7 @@ import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.RecordValues;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventImpl;
+import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processor.workflow.deployment.distribute.PendingDeploymentDistribution;
@@ -30,8 +31,8 @@ import io.zeebe.engine.util.client.JobClient;
 import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.engine.util.client.VariableClient;
 import io.zeebe.engine.util.client.WorkflowInstanceClient;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.Protocol;
@@ -139,6 +140,8 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(
         partitionId -> {
           final int currentPartitionId = partitionId;
+          //          final LogStreamRecordWriter deploymentRecordWriter =
+          //              environmentRule.newLogStreamRecordWriter(partitionId);
           environmentRule.startTypedStreamProcessor(
               partitionId,
               (processingContext) ->
@@ -147,7 +150,7 @@ public final class EngineRule extends ExternalResource {
                           partitionCount,
                           new SubscriptionCommandSender(
                               currentPartitionId, new PartitionCommandSenderImpl()),
-                          new DeploymentDistributionImpl(),
+                          new DeploymentDistributionImpl(processingContext.getLogStreamWriter()),
                           (key, partition) -> {},
                           jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor()));
@@ -263,7 +266,7 @@ public final class EngineRule extends ExternalResource {
     private final RecordValues recordValues = new RecordValues();
     private final RecordMetadata metadata = new RecordMetadata();
 
-    private BufferedLogStreamReader logStreamReader;
+    private LogStreamReader logStreamReader;
     private TypedEventImpl typedEvent;
 
     @Override
@@ -277,11 +280,11 @@ public final class EngineRule extends ExternalResource {
       final LogStream logStream = context.getLogStream();
       logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
       logStream
-          .getLogStorageAsync()
+          .newLogStreamReader()
           .onComplete(
-              ((logStorage, throwable) -> {
+              ((reader, throwable) -> {
                 if (throwable == null) {
-                  logStreamReader = new BufferedLogStreamReader(logStorage);
+                  logStreamReader = reader;
                 }
               }));
     }
@@ -305,9 +308,14 @@ public final class EngineRule extends ExternalResource {
     }
   }
 
-  private class DeploymentDistributionImpl implements DeploymentDistributor {
+  private final class DeploymentDistributionImpl implements DeploymentDistributor {
 
     private final Map<Long, PendingDeploymentDistribution> pendingDeployments = new HashMap<>();
+    private final TypedStreamWriter logStreamRecordWriter;
+
+    private DeploymentDistributionImpl(TypedStreamWriter logStreamRecordWriter) {
+      this.logStreamRecordWriter = logStreamRecordWriter;
+    }
 
     @Override
     public ActorFuture<Void> pushDeployment(
@@ -325,8 +333,11 @@ public final class EngineRule extends ExternalResource {
             final DeploymentRecord deploymentRecord = new DeploymentRecord();
             deploymentRecord.wrap(buffer);
 
-            environmentRule.writeCommandOnPartition(
-                partitionId, key, DeploymentIntent.CREATE, deploymentRecord);
+            logStreamRecordWriter.appendNewEvent(key, DeploymentIntent.CREATE, deploymentRecord);
+
+            //            environmentRule.writeCommandOnPartition(
+            //                logStreamRecordWriter, key, DeploymentIntent.CREATE,
+            // deploymentRecord);
           });
 
       return CompletableActorFuture.completed(null);

@@ -47,12 +47,9 @@ public class LogStreamTest {
     // then
     assertThat(logStream.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(logStream.getLogName()).isEqualTo("0");
-
-    assertThat(logStream.getLogStorage()).isNotNull();
-    assertThat(logStream.getLogStorage().isOpen()).isTrue();
-
     assertThat(logStream.getCommitPosition()).isEqualTo(-1L);
 
+    assertThat(logStream.newLogStreamReader()).isNotNull();
     assertThat(logStream.newLogStreamBatchWriter()).isNotNull();
     assertThat(logStream.newLogStreamRecordWriter()).isNotNull();
   }

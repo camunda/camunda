@@ -20,7 +20,6 @@ import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RecordType;
@@ -62,7 +61,6 @@ public class ExporterDirector extends Actor {
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
-  private final LogStorage logStorage;
   private EventFilter eventFilter;
   private ExportersState state;
 
@@ -77,7 +75,6 @@ public class ExporterDirector extends Actor {
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
     this.logStream = Objects.requireNonNull(context.getLogStream());
-    this.logStorage = Objects.requireNonNull(context.getLogStorage());
     final int partitionId = logStream.getPartitionId();
     this.recordExporter = new RecordExporter(containers, partitionId);
     this.logStreamReader = context.getLogStreamReader();
@@ -100,11 +97,6 @@ public class ExporterDirector extends Actor {
   @Override
   public String getName() {
     return name;
-  }
-
-  @Override
-  protected void onActorStarting() {
-    this.logStreamReader.wrap(logStorage);
   }
 
   @Override

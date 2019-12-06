@@ -16,7 +16,6 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
@@ -86,11 +85,10 @@ public class ExporterRule implements TestRule {
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
             .logStream(stream.getAsyncLogStream())
-            .logStorage(stream.getLogStorage())
+            .logStreamReader(stream.newLogStreamReader())
             .zeebeDb(capturedZeebeDb)
             .maxSnapshots(1)
             .descriptors(exporterDescriptors)
-            .logStreamReader(new BufferedLogStreamReader())
             .snapshotPeriod(Duration.ofMinutes(5));
 
     director = new ExporterDirector(context);

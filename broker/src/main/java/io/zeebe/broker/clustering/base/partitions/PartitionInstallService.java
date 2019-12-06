@@ -40,10 +40,9 @@ import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
 import io.zeebe.logstreams.state.SnapshotReplication;
@@ -89,6 +88,7 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
   private SnapshotReplication stateReplication;
   private SnapshotStorage snapshotStorage;
   private StateSnapshotController snapshotController;
+  private ZeebeDb zeebeDb;
 
   public PartitionInstallService(
       final BrokerInfo localBroker,
@@ -286,75 +286,83 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
 
     basePartitionInstallation();
 
-    final ZeebeDb zeebeDb;
-    try {
-      snapshotController.recover();
-      zeebeDb = snapshotController.openDb();
-    } catch (final Exception e) {
-      throw new IllegalStateException(
-          String.format(
-              "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
-              partitionId),
-          e);
-    }
     //    partition =
     //    new LeaderPartition(brokerCfg, this.atomixRaftPartition, clusterEventService,
     // logStream);
 
     logStream
-        .getLogStorageAsync()
+        .newLogStreamBatchWriter()
         .onComplete(
-            (logStorage, errorOnReceiveLogStorage) -> {
-              if (errorOnReceiveLogStorage == null) {
+            (batchWriter, errorOnReceiveWriteBuffer) -> {
+              if (errorOnReceiveWriteBuffer == null) {
                 logStream
-                    .newLogStreamBatchWriter()
+                    .newLogStreamReader()
                     .onComplete(
-                        (batchWriter, errorOnReceiveWriteBuffer) -> {
-                          if (errorOnReceiveWriteBuffer == null) {
+                        (processingReader, errorOnReceiveProcessingReader) -> {
+                          if (errorOnReceiveProcessingReader == null) {
+
                             final StreamProcessor streamProcessor =
-                                createStreamProcessor(zeebeDb, logStorage, batchWriter);
+                                createStreamProcessor(zeebeDb, processingReader, batchWriter);
                             streamProcessor
                                 .openAsync()
                                 .onComplete(
                                     (value, processorFail) -> {
-                                      if (processorFail != null) {
+                                      if (processorFail == null) {
+                                        closeables.add(streamProcessor);
+
+                                        final DataCfg dataCfg = brokerCfg.getData();
+                                        installSnapshotDirector(streamProcessor, dataCfg);
+
+                                        logStream
+                                            .newLogStreamReader()
+                                            .onComplete(
+                                                (exporterReader, errorOnReceiveExporterReader) -> {
+                                                  if (errorOnReceiveExporterReader == null) {
+                                                    installExporter(
+                                                        zeebeDb, exporterReader, dataCfg);
+                                                    installFuture.complete(null);
+                                                  } else {
+                                                    LOG.error(
+                                                        "Unexpected error on retrieving log stream reader.",
+                                                        errorOnReceiveExporterReader);
+                                                    installFuture.completeExceptionally(
+                                                        errorOnReceiveExporterReader);
+                                                  }
+                                                });
+                                      } else {
                                         LOG.error(
                                             "Failed to install stream processor!", processorFail);
                                         // todo step down
                                         installFuture.completeExceptionally(processorFail);
-                                        return;
                                       }
-                                      closeables.add(streamProcessor);
-
-                                      final DataCfg dataCfg = brokerCfg.getData();
-                                      installSnapshotDirector(streamProcessor, dataCfg);
-                                      installExporter(zeebeDb, logStorage, dataCfg);
-
-                                      installFuture.complete(null);
                                     });
                           } else {
-                            installFuture.completeExceptionally(errorOnReceiveWriteBuffer);
+                            LOG.error(
+                                "Unexpected error on retrieving log stream reader.",
+                                errorOnReceiveProcessingReader);
+                            installFuture.completeExceptionally(errorOnReceiveProcessingReader);
+                            // todo step down
                           }
                         });
+
               } else {
-                installFuture.completeExceptionally(errorOnReceiveLogStorage);
+                installFuture.completeExceptionally(errorOnReceiveWriteBuffer);
               }
             });
 
     return installFuture;
   }
 
-  private void installExporter(ZeebeDb zeebeDb, LogStorage logStorage, DataCfg dataCfg) {
+  private void installExporter(ZeebeDb zeebeDb, LogStreamReader logStreamReader, DataCfg dataCfg) {
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(String.format(EXPORTER_NAME, partitionId))
             .logStream(logStream)
-            .logStorage(logStorage)
             .zeebeDb(zeebeDb)
             .maxSnapshots(dataCfg.getMaxSnapshots())
             .descriptors(exporterRepository.getExporters().values())
-            .logStreamReader(new BufferedLogStreamReader())
+            .logStreamReader(logStreamReader)
             .snapshotPeriod(DurationUtil.parse(dataCfg.getSnapshotPeriod()));
 
     final var exporterDirector = new ExporterDirector(context);
@@ -375,13 +383,11 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
   }
 
   private StreamProcessor createStreamProcessor(
-      ZeebeDb zeebeDb, LogStorage logStorage, LogStreamBatchWriter batchWriter) {
+      ZeebeDb zeebeDb, LogStreamReader logStreamReader, LogStreamBatchWriter batchWriter) {
     return StreamProcessor.builder()
         .logStream(logStream)
-        // for the reader
-        .logStorage(logStorage)
+        .logStreamReader(logStreamReader)
         .batchWriter(batchWriter)
-        .maxFragmentSize(batchWriter.getMaxFragmentLength())
         .actorScheduler(scheduler)
         .zeebeDb(zeebeDb)
         .commandResponseWriter(commandApiService.newCommandResponseWriter())
@@ -413,32 +419,32 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
   private void basePartitionInstallation() {
     snapshotStorage = createSnapshotStorage();
     snapshotController = createSnapshotController();
+
+    try {
+      snapshotController.recover();
+      zeebeDb = snapshotController.openDb();
+    } catch (final Exception e) {
+      throw new IllegalStateException(
+          String.format(
+              "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
+              partitionId),
+          e);
+    }
   }
 
   private void tearDownBaseInstallation() {
-    if (stateReplication == null) {
+    if (closeStateReplication()) {
       return;
     }
 
-    try {
-      stateReplication.close();
-    } catch (final Exception e) {
-      LOG.error("Unexpected error closing state replication for partition {}", partitionId, e);
-    }
-
-    if (snapshotController == null) {
+    if (closeSnapshotController()) {
       return;
     }
 
-    try {
-      snapshotController.close();
-    } catch (final Exception e) {
-      LOG.error(
-          "Unexpected error occurred while closing the state snapshot controller for partition {}.",
-          partitionId,
-          e);
-    }
+    closeSnapshotStorage();
+  }
 
+  private void closeSnapshotStorage() {
     if (snapshotStorage == null) {
       return;
     }
@@ -448,7 +454,44 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
     } catch (final Exception e) {
       LOG.error(
           "Unexpected error occurred closing snapshot storage for partition {}", partitionId, e);
+    } finally {
+      snapshotStorage = null;
     }
+  }
+
+  private boolean closeSnapshotController() {
+    if (snapshotController == null) {
+      return true;
+    }
+
+    try {
+      snapshotController.close();
+      zeebeDb = null;
+    } catch (final Exception e) {
+      LOG.error(
+          "Unexpected error occurred while closing the state snapshot controller for partition {}.",
+          partitionId,
+          e);
+    } finally {
+      snapshotController = null;
+      zeebeDb = null;
+    }
+    return false;
+  }
+
+  private boolean closeStateReplication() {
+    if (stateReplication == null) {
+      return true;
+    }
+
+    try {
+      stateReplication.close();
+    } catch (final Exception e) {
+      LOG.error("Unexpected error closing state replication for partition {}", partitionId, e);
+    } finally {
+      stateReplication = null;
+    }
+    return false;
   }
 
   private StateSnapshotController createSnapshotController() {

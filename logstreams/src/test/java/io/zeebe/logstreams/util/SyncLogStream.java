@@ -9,8 +9,8 @@ package io.zeebe.logstreams.util;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 
 public class SyncLogStream implements SynchronousLogStream {
@@ -62,8 +62,8 @@ public class SyncLogStream implements SynchronousLogStream {
   }
 
   @Override
-  public LogStorage getLogStorage() {
-    return logStream.getLogStorageAsync().join();
+  public LogStreamReader newLogStreamReader() {
+    return logStream.newLogStreamReader().join();
   }
 
   @Override

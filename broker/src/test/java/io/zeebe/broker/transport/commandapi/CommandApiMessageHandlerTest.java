@@ -15,7 +15,7 @@ import io.zeebe.broker.transport.backpressure.CommandRateLimiter;
 import io.zeebe.broker.transport.backpressure.NoopRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
@@ -126,8 +126,7 @@ public class CommandApiMessageHandlerTest {
     // then
     assertThat(isHandled).isTrue();
 
-    final BufferedLogStreamReader logStreamReader =
-        new BufferedLogStreamReader(logStream.getLogStorage());
+    final LogStreamReader logStreamReader = logStream.newLogStreamReader();
     waitForAvailableEvent(logStreamReader);
 
     final LoggedEvent loggedEvent = logStreamReader.next();
@@ -339,7 +338,7 @@ public class CommandApiMessageHandlerTest {
     return headerEncoder.encodedLength() + commandRequestEncoder.encodedLength();
   }
 
-  protected void waitForAvailableEvent(final BufferedLogStreamReader logStreamReader) {
-    TestUtil.waitUntil(() -> logStreamReader.hasNext());
+  private void waitForAvailableEvent(final LogStreamReader logStreamReader) {
+    TestUtil.waitUntil(logStreamReader::hasNext);
   }
 }

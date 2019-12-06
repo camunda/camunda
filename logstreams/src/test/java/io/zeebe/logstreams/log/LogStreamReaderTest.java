@@ -154,7 +154,7 @@ public class LogStreamReaderTest {
     // given
     reader.close();
     final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
-    reader.wrap(logStreamRule.getLogStorage());
+    reader = readerRule.resetReader();
 
     // then
     final LoggedEvent loggedEvent = readerRule.nextEvent();
@@ -169,7 +169,8 @@ public class LogStreamReaderTest {
     final long secondPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
 
     // when
-    reader.wrap(logStreamRule.getLogStorage(), secondPos);
+    reader = logStreamRule.newLogStreamReader();
+    reader.seek(secondPos);
 
     // then
     final LoggedEvent loggedEvent = reader.next();

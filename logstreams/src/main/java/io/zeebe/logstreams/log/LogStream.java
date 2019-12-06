@@ -58,6 +58,8 @@ public interface LogStream extends AutoCloseable {
 
   ActorFuture<LogStorage> getLogStorageAsync();
 
+  ActorFuture<LogStreamReader> newLogStreamReader();
+
   /**
    * @return a future, when successfully completed it returns a newly created log stream record
    *     writer
