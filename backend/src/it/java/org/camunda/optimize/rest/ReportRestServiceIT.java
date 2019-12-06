@@ -59,7 +59,7 @@ public class ReportRestServiceIT extends AbstractIT {
   private static final String RANDOM_KEY = "someRandomKey";
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
-  
+
   @Test
   public void createNewReportWithoutAuthentication() {
     // when
@@ -86,7 +86,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @EnumSource(ReportType.class)
   public void createNewSingleReportFromDefinition(final ReportType reportType) {
     // when
-    String id = addReportToOptimizeWithDefinition(reportType);
+    String id = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
     // then
     assertThat(id, is(notNullValue()));
   }
@@ -323,6 +323,30 @@ public class ReportRestServiceIT extends AbstractIT {
     assertThat(response.contains("Report does not exist."), is(true));
   }
 
+  @ParameterizedTest
+  @EnumSource(ReportType.class)
+  public void getReportByIdContainsXml(ReportType reportType) {
+    // given
+    final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
+
+    // when
+    ReportDefinitionDto reportDefinition = getReport(reportId);
+
+    // then
+    String xmlString;
+    switch (reportType) {
+      case PROCESS:
+        xmlString = ((SingleProcessReportDefinitionDto) reportDefinition).getData().getConfiguration().getXml();
+        break;
+      case DECISION:
+        xmlString = ((SingleDecisionReportDefinitionDto) reportDefinition).getData().getConfiguration().getXml();
+        break;
+      default:
+        xmlString = "";
+    }
+    assertThat(xmlString.contains(RANDOM_STRING), is(true));
+  }
+
   @Test
   public void deleteReportWithoutAuthentication() {
     // when
@@ -382,29 +406,7 @@ public class ReportRestServiceIT extends AbstractIT {
   @EnumSource(ReportType.class)
   public void evaluateReportById(ReportType reportType) {
     //given
-    final String id;
-    switch (reportType) {
-      case PROCESS:
-        ProcessReportDataDto processReportDataD = ProcessReportDataBuilder
-          .createReportData()
-          .setProcessDefinitionKey(RANDOM_KEY)
-          .setProcessDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(ProcessReportDataType.RAW_DATA)
-          .build();
-        id = addSingleProcessReportWithDefinition(processReportDataD);
-        break;
-      case DECISION:
-        DecisionReportDataDto decisionReportData = DecisionReportDataBuilder
-          .create()
-          .setDecisionDefinitionKey(RANDOM_KEY)
-          .setDecisionDefinitionVersion(RANDOM_VERSION)
-          .setReportDataType(DecisionReportDataType.RAW_DATA)
-          .build();
-        id = addSingleDecisionReportWithDefinition(decisionReportData);
-        break;
-      default:
-        throw new IllegalStateException("Uncovered type: " + reportType);
-    }
+    final String id = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
 
     // then
     Response response = embeddedOptimizeExtension
@@ -854,11 +856,11 @@ public class ReportRestServiceIT extends AbstractIT {
       .execute(IdDto.class, 200);
   }
 
-  private String addReportToOptimizeWithDefinition(final ReportType reportType) {
-    return addReportToOptimizeWithDefinition(reportType, null);
+  private String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType) {
+    return addReportToOptimizeWithDefinitionAndRandomXml(reportType, null);
   }
 
-  private String addReportToOptimizeWithDefinition(final ReportType reportType, final String collectionId) {
+  private String addReportToOptimizeWithDefinitionAndRandomXml(final ReportType reportType, final String collectionId) {
     switch (reportType) {
       case PROCESS:
         ProcessReportDataDto processReportDataDto = ProcessReportDataBuilder
@@ -867,6 +869,7 @@ public class ReportRestServiceIT extends AbstractIT {
           .setProcessDefinitionVersion(RANDOM_VERSION)
           .setReportDataType(ProcessReportDataType.RAW_DATA)
           .build();
+        processReportDataDto.getConfiguration().setXml(RANDOM_STRING);
         return addSingleProcessReportWithDefinition(processReportDataDto, collectionId);
       case DECISION:
         DecisionReportDataDto decisionReportDataDto = DecisionReportDataBuilder
@@ -875,6 +878,7 @@ public class ReportRestServiceIT extends AbstractIT {
           .setDecisionDefinitionVersion(RANDOM_VERSION)
           .setReportDataType(DecisionReportDataType.RAW_DATA)
           .build();
+        decisionReportDataDto.getConfiguration().setXml(RANDOM_STRING);
         return addSingleDecisionReportWithDefinition(decisionReportDataDto, collectionId);
     }
     return null;

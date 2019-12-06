@@ -120,8 +120,8 @@ public class ProcessDefinitionReader {
     return Optional.ofNullable(processDefinitionOptimizeDto);
   }
 
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionByKeyAndEngine(final String processDefinitionKey,
-                                                                                   final String engineAlias) {
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionByKeyAndEngineOmitXml(final String processDefinitionKey,
+                                                                                          final String engineAlias) {
 
     if (processDefinitionKey == null) {
       return Optional.empty();
@@ -134,6 +134,7 @@ public class ProcessDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
+    searchSourceBuilder.fetchSource(null, PROCESS_DEFINITION_XML);
     SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 

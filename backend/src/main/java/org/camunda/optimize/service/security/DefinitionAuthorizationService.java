@@ -288,9 +288,9 @@ public class DefinitionAuthorizationService
                                             final String engineAlias) {
     switch (definitionType) {
       case PROCESS:
-        return processDefinitionReader.getProcessDefinitionByKeyAndEngine(definitionKey, engineAlias).isPresent();
+        return processDefinitionReader.getProcessDefinitionByKeyAndEngineOmitXml(definitionKey, engineAlias).isPresent();
       case DECISION:
-        return decisionDefinitionReader.getDecisionDefinitionByKeyAndEngine(definitionKey, engineAlias).isPresent();
+        return decisionDefinitionReader.getDecisionDefinitionByKeyAndEngineOmitXml(definitionKey, engineAlias).isPresent();
       default:
         throw new OptimizeRuntimeException("Unsupported definition type: " + definitionType);
     }

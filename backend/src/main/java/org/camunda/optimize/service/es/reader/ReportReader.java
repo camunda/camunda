@@ -32,6 +32,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
@@ -82,7 +83,7 @@ public class ReportReader {
    */
   public ReportDefinitionDto getReport(String reportId) {
     log.debug("Fetching report with id [{}]", reportId);
-    MultiGetResponse multiGetItemResponses = performGetReportRequest(reportId);
+    MultiGetResponse multiGetItemResponses = performMultiGetReportRequest(reportId);
 
     Optional<ReportDefinitionDto> result = Optional.empty();
     for (MultiGetItemResponse itemResponse : multiGetItemResponses) {
@@ -103,27 +104,9 @@ public class ReportReader {
     return result.get();
   }
 
-  private MultiGetResponse performGetReportRequest(String reportId) {
-    MultiGetRequest request = new MultiGetRequest();
-    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_INDEX_NAME, null, reportId));
-    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_INDEX_NAME, null, reportId));
-    request.add(new MultiGetRequest.Item(COMBINED_REPORT_INDEX_NAME, null, reportId));
-
-    MultiGetResponse multiGetItemResponses;
-    try {
-      multiGetItemResponses = esClient.mget(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      String reason = String.format("Could not fetch report with id [%s]", reportId);
-      log.error(reason, e);
-      throw new OptimizeRuntimeException(reason, e);
-    }
-    return multiGetItemResponses;
-  }
-
-  public SingleProcessReportDefinitionDto getSingleProcessReport(String reportId) {
+  public SingleProcessReportDefinitionDto getSingleProcessReportOmitXml(String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(SINGLE_PROCESS_REPORT_INDEX_NAME).id(reportId);
-
+    GetRequest getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
     GetResponse getResponse;
     try {
       getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
@@ -147,9 +130,9 @@ public class ReportReader {
     }
   }
 
-  public SingleDecisionReportDefinitionDto getSingleDecisionReport(String reportId) {
+  public SingleDecisionReportDefinitionDto getSingleDecisionReportOmitXml(String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
-    GetRequest getRequest = new GetRequest(SINGLE_DECISION_REPORT_INDEX_NAME).id(reportId);
+    GetRequest getRequest = getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
     GetResponse getResponse;
     try {
@@ -367,13 +350,21 @@ public class ReportReader {
         ReportDefinitionDto report = objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
         result = Optional.of(report);
       } catch (IOException e) {
-        String reason = "While retrieving report with id [" + reportId + "]"
+        String reason = "While retrieving report with id [" + reportId + "] "
           + "could not deserialize report from Elasticsearch!";
         log.error(reason, e);
         throw new OptimizeRuntimeException(reason);
       }
     }
     return result;
+  }
+
+  private GetRequest getGetRequestOmitXml(final String index, final String reportId) {
+    GetRequest getRequest = new GetRequest(index).id(reportId);
+    FetchSourceContext fetchSourceContext = new FetchSourceContext(true, null, REPORT_LIST_EXCLUDES);
+    getRequest.fetchSourceContext(fetchSourceContext);
+
+    return getRequest;
   }
 
   private SearchRequest getSearchRequestOmitXml(final QueryBuilder query, final String[] indices) {
@@ -404,5 +395,22 @@ public class ReportReader {
       log.error("Was not able to retrieve reports!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve reports!", e);
     }
+  }
+
+  private MultiGetResponse performMultiGetReportRequest(String reportId) {
+    MultiGetRequest request = new MultiGetRequest();
+    request.add(new MultiGetRequest.Item(SINGLE_PROCESS_REPORT_INDEX_NAME, null, reportId));
+    request.add(new MultiGetRequest.Item(SINGLE_DECISION_REPORT_INDEX_NAME, null, reportId));
+    request.add(new MultiGetRequest.Item(COMBINED_REPORT_INDEX_NAME, null, reportId));
+
+    MultiGetResponse multiGetItemResponses;
+    try {
+      multiGetItemResponses = esClient.mget(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not fetch report with id [%s]", reportId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return multiGetItemResponses;
   }
 }

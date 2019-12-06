@@ -117,8 +117,8 @@ public class DecisionDefinitionReader {
     return Optional.ofNullable(definitionOptimizeDto);
   }
 
-  public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionByKeyAndEngine(final String decisionDefinitionKey,
-                                                                                     final String engineAlias) {
+  public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionByKeyAndEngineOmitXml(final String decisionDefinitionKey,
+                                                                                            final String engineAlias) {
 
     if (decisionDefinitionKey == null) {
       return Optional.empty();
@@ -131,6 +131,7 @@ public class DecisionDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
+    searchSourceBuilder.fetchSource(null, DECISION_DEFINITION_XML);
     SearchRequest searchRequest = new SearchRequest(DECISION_DEFINITION_INDEX_NAME)
       .source(searchSourceBuilder);
 

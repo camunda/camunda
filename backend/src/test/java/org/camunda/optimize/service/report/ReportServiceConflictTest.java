@@ -77,7 +77,7 @@ public class ReportServiceConflictTest {
     // given
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
-    when(reportReader.getSingleProcessReport("test1")).thenReturn(updateDto);
+    when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(updateDto);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     // when
@@ -94,7 +94,7 @@ public class ReportServiceConflictTest {
     // given
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
-    when(reportReader.getSingleProcessReport("test1")).thenReturn(updateDto);
+    when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(updateDto);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
@@ -115,7 +115,7 @@ public class ReportServiceConflictTest {
     // given
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
-    when(reportReader.getSingleDecisionReport("test1")).thenReturn(updateDto);
+    when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(updateDto);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
     // when
     underTest.updateSingleDecisionReport("test1", updateDto, "user1", false);
@@ -131,7 +131,7 @@ public class ReportServiceConflictTest {
     // given
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
-    when(reportReader.getSingleDecisionReport("test1")).thenReturn(updateDto);
+    when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(updateDto);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(
