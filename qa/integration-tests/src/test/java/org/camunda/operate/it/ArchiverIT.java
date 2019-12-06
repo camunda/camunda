@@ -227,43 +227,6 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   @Test
-  public void testArchivingBatchOperationsDel() throws Exception {
-    brokerRule.getClock().pinCurrentTime();
-    final Instant currentTime = brokerRule.getClock().getCurrentTime();
-    brokerRule.getClock().setCurrentTime(currentTime.minus(2, ChronoUnit.HOURS));
-
-    String processId = "demoProcess";
-    final String activityId = "taskA";
-    deployProcessWithOneActivity(processId, activityId);
-
-    // given
-    final Long workflowInstanceKey1 = startDemoWorkflowInstance();
-    final Long workflowInstanceKey2 = startDemoWorkflowInstance();
-
-    //we create batch operations to cancel the instances
-    ListViewQueryDto workflowInstanceQuery = ListViewQueryDto.createAll();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey1.toString()));
-    postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
-    workflowInstanceQuery = ListViewQueryDto.createAll();
-    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceKey2.toString()));
-    postBatchOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL_WORKFLOW_INSTANCE);
-
-    //and execute the operations
-    executeOneBatch();
-
-    elasticsearchTestRule.processAllRecordsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceKey2);
-    List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
-    assertThat(batchOperations).hasSize(2);
-    assertThat(batchOperations).allMatch(bo -> bo.getEndDate() != null);
-
-    brokerRule.getClock().setCurrentTime(currentTime);
-
-    BatchOperationArchiverJob batchOperationArchiverJob = beanFactory.getBean(BatchOperationArchiverJob.class);
-    int count = batchOperationArchiverJob.archiveNextBatch();
-    assertThat(count).isEqualTo(2);
-  }
-
-  @Test
   public void testArchivingOnlyOneHourOldData() throws ArchiverException, IOException {
     brokerRule.getClock().pinCurrentTime();
     final Instant currentTime = brokerRule.getClock().getCurrentTime();
