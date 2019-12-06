@@ -7,13 +7,11 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
-import io.zeebe.util.sched.future.ActorFuture;
 
 public class SyncLogStream implements SynchronousLogStream {
 
@@ -21,11 +19,6 @@ public class SyncLogStream implements SynchronousLogStream {
 
   public SyncLogStream(LogStream logStream) {
     this.logStream = logStream;
-  }
-
-  @Override
-  public LogStorageAppender getLogStorageAppender() {
-    return logStream.getLogStorageAppender();
   }
 
   @Override
@@ -71,16 +64,6 @@ public class SyncLogStream implements SynchronousLogStream {
   @Override
   public LogStorage getLogStorage() {
     return logStream.getLogStorageAsync().join();
-  }
-
-  @Override
-  public ActorFuture<Void> closeAppender() {
-    return logStream.closeAppender();
-  }
-
-  @Override
-  public ActorFuture<LogStorageAppender> openAppender() {
-    return logStream.openAppender();
   }
 
   @Override

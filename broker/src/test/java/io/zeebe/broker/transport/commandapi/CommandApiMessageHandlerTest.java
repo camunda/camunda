@@ -96,7 +96,6 @@ public class CommandApiMessageHandlerTest {
                 .withLogStorage(logStorageRule.getStorage())
                 .build());
     logStorageRule.setPositionListener(logStream::setCommitPosition);
-    logStream.openAppender().join();
 
     messageHandler = new CommandApiMessageHandler();
     messageHandler.addPartition(1, logStream.newLogStreamRecordWriter(), noneLimiter);

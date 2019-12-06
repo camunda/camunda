@@ -143,7 +143,6 @@ public class TestStreams {
                     .withActorScheduler(actorScheduler)
                     .build()));
     logStorageRule.setPositionListener(logStream::setCommitPosition);
-    logStream.openAppender().join();
 
     final LogContext logContext = LogContext.createLogContext(logStream, logStorageRule);
     logContextMap.put(name, logContext);

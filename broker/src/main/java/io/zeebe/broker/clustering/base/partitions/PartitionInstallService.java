@@ -284,77 +284,61 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
     LOG.debug("Installing leader partition service for partition {}", atomixRaftPartition.id());
     final var installFuture = new CompletableActorFuture<Void>();
 
-    // Open logStreamAppender
+    basePartitionInstallation();
+
+    final ZeebeDb zeebeDb;
+    try {
+      snapshotController.recover();
+      zeebeDb = snapshotController.openDb();
+    } catch (final Exception e) {
+      throw new IllegalStateException(
+          String.format(
+              "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
+              partitionId),
+          e);
+    }
+    //    partition =
+    //    new LeaderPartition(brokerCfg, this.atomixRaftPartition, clusterEventService,
+    // logStream);
+
     logStream
-        .openAppender()
+        .getLogStorageAsync()
         .onComplete(
-            (appender, throwable) -> {
-              if (throwable != null) {
-                LOG.error("Problem on opening the log appender!", throwable);
-                // todo would be nice to step down now
-                installFuture.completeExceptionally(throwable);
-                return;
+            (logStorage, errorOnReceiveLogStorage) -> {
+              if (errorOnReceiveLogStorage == null) {
+                logStream
+                    .newLogStreamBatchWriter()
+                    .onComplete(
+                        (batchWriter, errorOnReceiveWriteBuffer) -> {
+                          if (errorOnReceiveWriteBuffer == null) {
+                            final StreamProcessor streamProcessor =
+                                createStreamProcessor(zeebeDb, logStorage, batchWriter);
+                            streamProcessor
+                                .openAsync()
+                                .onComplete(
+                                    (value, processorFail) -> {
+                                      if (processorFail != null) {
+                                        LOG.error(
+                                            "Failed to install stream processor!", processorFail);
+                                        // todo step down
+                                        installFuture.completeExceptionally(processorFail);
+                                        return;
+                                      }
+                                      closeables.add(streamProcessor);
+
+                                      final DataCfg dataCfg = brokerCfg.getData();
+                                      installSnapshotDirector(streamProcessor, dataCfg);
+                                      installExporter(zeebeDb, logStorage, dataCfg);
+
+                                      installFuture.complete(null);
+                                    });
+                          } else {
+                            installFuture.completeExceptionally(errorOnReceiveWriteBuffer);
+                          }
+                        });
+              } else {
+                installFuture.completeExceptionally(errorOnReceiveLogStorage);
               }
-
-              basePartitionInstallation();
-
-              final ZeebeDb zeebeDb;
-              try {
-                snapshotController.recover();
-                zeebeDb = snapshotController.openDb();
-              } catch (final Exception e) {
-                throw new IllegalStateException(
-                    String.format(
-                        "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",
-                        partitionId),
-                    e);
-              }
-              //    partition =
-              //    new LeaderPartition(brokerCfg, this.atomixRaftPartition, clusterEventService,
-              // logStream);
-
-              logStream
-                  .getLogStorageAsync()
-                  .onComplete(
-                      (logStorage, errorOnReceiveLogStorage) -> {
-                        if (errorOnReceiveLogStorage == null) {
-                          logStream
-                              .newLogStreamBatchWriter()
-                              .onComplete(
-                                  (batchWriter, errorOnReceiveWriteBuffer) -> {
-                                    if (errorOnReceiveWriteBuffer == null) {
-                                      final StreamProcessor streamProcessor =
-                                          createStreamProcessor(zeebeDb, logStorage, batchWriter);
-                                      streamProcessor
-                                          .openAsync()
-                                          .onComplete(
-                                              (value, processorFail) -> {
-                                                if (processorFail != null) {
-                                                  LOG.error(
-                                                      "Failed to install stream processor!",
-                                                      processorFail);
-                                                  // todo step down
-                                                  installFuture.completeExceptionally(
-                                                      processorFail);
-                                                  return;
-                                                }
-                                                closeables.add(streamProcessor);
-
-                                                final DataCfg dataCfg = brokerCfg.getData();
-                                                installSnapshotDirector(streamProcessor, dataCfg);
-                                                installExporter(zeebeDb, logStorage, dataCfg);
-
-                                                installFuture.complete(null);
-                                              });
-                                    } else {
-                                      installFuture.completeExceptionally(
-                                          errorOnReceiveWriteBuffer);
-                                    }
-                                  });
-                        } else {
-                          installFuture.completeExceptionally(errorOnReceiveLogStorage);
-                        }
-                      });
             });
 
     return installFuture;

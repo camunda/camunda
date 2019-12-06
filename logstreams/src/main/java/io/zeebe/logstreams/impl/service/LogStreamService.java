@@ -177,96 +177,84 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
         });
   }
 
-  @Override
-  public LogStorageAppender getLogStorageAppender() {
-    final var getAppenderFuture = new CompletableActorFuture<LogStorageAppender>();
-
-    actor.call(
-        () -> {
-          if (appender == null && appenderFuture != null) {
-            appenderFuture.onComplete(getAppenderFuture);
-            return;
-          }
-          getAppenderFuture.complete(appender);
-        });
-    return getAppenderFuture.join();
-  }
-
-  @Override
-  public ActorFuture<Void> closeAppender() {
+  private ActorFuture<Void> closeAppender() {
     final var closeAppenderFuture = new CompletableActorFuture<Void>();
-    actor.run(
-        () -> {
-          if (appender == null) {
-            closeAppenderFuture.complete(null);
-            return;
-          }
+    if (appender == null) {
+      closeAppenderFuture.complete(null);
+      return closeAppenderFuture;
+    }
 
-          appenderFuture = null;
-          LOG.info("Close appender for log stream {}", logName);
-          appender
-              .closeAsync()
-              .onComplete(
-                  (v, t) -> {
-                    if (t == null) {
-                      writeBuffer.closeAsync().onComplete(closeAppenderFuture);
-                      appender = null;
-                      writeBuffer = null;
-                    } else {
-                      closeAppenderFuture.completeExceptionally(t);
-                    }
-                  });
-        });
+    appenderFuture = null;
+    LOG.info("Close appender for log stream {}", logName);
+    appender
+        .closeAsync()
+        .onComplete(
+            (v, t) -> {
+              if (t == null) {
+                writeBuffer.closeAsync().onComplete(closeAppenderFuture);
+                appender = null;
+                writeBuffer = null;
+              } else {
+                closeAppenderFuture.completeExceptionally(t);
+              }
+            });
     return closeAppenderFuture;
   }
 
   @Override
-  public ActorFuture<LogStorageAppender> openAppender() {
+  protected void onActorStarting() {
+    actor.runOnCompletionBlockingCurrentPhase(
+        openAppender(),
+        (appender, errorOnOpeningAppender) -> {
+          if (errorOnOpeningAppender != null) {
+            actor.close();
+          }
+        });
+  }
+
+  private ActorFuture<LogStorageAppender> openAppender() {
     final var appenderOpenFuture = new CompletableActorFuture<LogStorageAppender>();
 
-    actor.call(
-        () -> {
-          appenderFuture = appenderOpenFuture;
-          final String logName = getLogName();
+    appenderFuture = appenderOpenFuture;
+    final String logName = getLogName();
 
-          final int partitionId = determineInitialPartitionId();
-          writeBuffer =
-              Dispatchers.create(logName + "-write-buffer")
-                  .maxFragmentLength(maxFrameLength)
-                  .initialPartitionId(partitionId + 1)
-                  .name(logName + "-write-buffer")
-                  .actorScheduler(actorScheduler)
-                  .build();
+    final int partitionId = determineInitialPartitionId();
+    writeBuffer =
+        Dispatchers.create(logName + "-write-buffer")
+            .maxFragmentLength(maxFrameLength)
+            .initialPartitionId(partitionId + 1)
+            .name(logName + "-write-buffer")
+            .actorScheduler(actorScheduler)
+            .build();
 
-          writeBuffer
-              .openSubscriptionAsync(APPENDER_SUBSCRIPTION_NAME)
-              .onComplete(
-                  (subscription, throwable) -> {
-                    if (throwable == null) {
+    writeBuffer
+        .openSubscriptionAsync(APPENDER_SUBSCRIPTION_NAME)
+        .onComplete(
+            (subscription, throwable) -> {
+              if (throwable == null) {
 
-                      appender =
-                          new LogStorageAppender(
-                              logName + "-appender",
-                              partitionId,
-                              logStorage,
-                              subscription,
-                              (int) maxFrameLength.toBytes());
+                appender =
+                    new LogStorageAppender(
+                        logName + "-appender",
+                        partitionId,
+                        logStorage,
+                        subscription,
+                        (int) maxFrameLength.toBytes());
 
-                      actorScheduler
-                          .submitActor(appender)
-                          .onComplete(
-                              (v, t) -> {
-                                if (t != null) {
-                                  appenderFuture.completeExceptionally(t);
-                                } else {
-                                  appenderFuture.complete(appender);
-                                }
-                              });
-                    } else {
-                      appenderFuture.completeExceptionally(throwable);
-                    }
-                  });
-        });
+                actorScheduler
+                    .submitActor(appender)
+                    .onComplete(
+                        (v, t) -> {
+                          if (t != null) {
+                            appenderFuture.completeExceptionally(t);
+                          } else {
+                            appenderFuture.complete(appender);
+                          }
+                        });
+              } else {
+                appenderFuture.completeExceptionally(throwable);
+              }
+            });
 
     return appenderOpenFuture;
   }

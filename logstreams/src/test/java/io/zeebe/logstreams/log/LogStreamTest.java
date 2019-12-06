@@ -53,7 +53,6 @@ public class LogStreamTest {
 
     assertThat(logStream.getCommitPosition()).isEqualTo(-1L);
 
-    assertThat(logStream.getLogStorageAppender()).isNotNull();
     assertThat(logStream.newLogStreamBatchWriter()).isNotNull();
     assertThat(logStream.newLogStreamRecordWriter()).isNotNull();
   }
@@ -85,22 +84,6 @@ public class LogStreamTest {
   }
 
   @Test
-  public void shouldCloseLogStorageAppender() {
-    // given
-
-    // when
-    logStream.closeAppender().join();
-
-    // then
-    assertThat(logStream.getLogStorageAppender()).isNull();
-
-    assertThatThrownBy(() -> logStream.newLogStreamBatchWriter())
-        .hasCauseInstanceOf(IllegalStateException.class);
-    assertThatThrownBy(() -> logStream.newLogStreamRecordWriter())
-        .hasCauseInstanceOf(IllegalStateException.class);
-  }
-
-  @Test
   public void shouldCloseLogStream() {
     // given
 
@@ -109,6 +92,7 @@ public class LogStreamTest {
 
     // then
     assertThatThrownBy(() -> logStream.newLogStreamRecordWriter()).hasMessage("Actor is closed");
+    assertThatThrownBy(() -> logStream.newLogStreamBatchWriter()).hasMessage("Actor is closed");
   }
 
   static long writeEvent(final SynchronousLogStream logStream) {

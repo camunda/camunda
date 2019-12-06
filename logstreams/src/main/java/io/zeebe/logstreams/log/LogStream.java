@@ -7,7 +7,6 @@
  */
 package io.zeebe.logstreams.log;
 
-import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -70,24 +69,6 @@ public interface LogStream extends AutoCloseable {
    *     writer
    */
   ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter();
-
-  /**
-   * Returns the log stream controller, which streams the logged events from the write buffer into
-   * the log storage.
-   *
-   * @return the log stream controller
-   */
-  LogStorageAppender getLogStorageAppender();
-
-  /** Stops the streaming to the log storage. New events are no longer append to the log storage. */
-  ActorFuture<Void> closeAppender();
-
-  /**
-   * This method installs and opens the log storage appender.
-   *
-   * @return the future which contains the log storage appender on completion
-   */
-  ActorFuture<LogStorageAppender> openAppender();
 
   /**
    * Triggers deletion of data from the log stream, where the given position is used as upper bound.
