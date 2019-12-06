@@ -87,6 +87,10 @@ public class Broker implements AutoCloseable {
   private Atomix atomix;
 
   private volatile CompletableFuture<Broker> startFuture = null;
+  private TopologyManagerImpl topologyManager;
+  private LeaderManagementRequestHandler managementRequestHandler;
+  private CommandApiService commandHandler;
+  private ActorScheduler scheduler;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -128,145 +132,184 @@ public class Broker implements AutoCloseable {
     final BrokerCfg brokerCfg = getConfig();
     final NetworkCfg networkCfg = brokerCfg.getNetwork();
 
-    if (LOG.isInfoEnabled()) {
-      LOG.info("Version: {}", VERSION);
-      LOG.info("Starting broker with configuration {}", brokerCfg.toJson());
-    }
-
-    final ActorScheduler scheduler = brokerContext.getScheduler();
-    scheduler.start();
-    LOG.info("Broker startup phase: Step 1 Scheduler started.");
-
-    atomix = AtomixFactory.fromConfiguration(brokerCfg);
-    closeables.add(() -> atomix.stop().join());
-    LOG.info("Broker startup phase: Step 2 membership and replication protocol created.");
-
     final ClusterCfg clusterCfg = brokerCfg.getCluster();
-    final BrokerInfo localMember =
+    final BrokerInfo localBroker =
         new BrokerInfo(
             clusterCfg.getNodeId(), networkCfg.getCommandApi().getAdvertisedAddress().toString());
 
+    if (LOG.isInfoEnabled()) {
+      LOG.info("Version: {}", VERSION);
+      LOG.info(
+          "Starting broker {} with configuration {}", localBroker.getNodeId(), brokerCfg.toJson());
+    }
+
+    final StartContext startContext = new StartContext(localBroker);
+
+    startContext.addStep(
+        "starting scheduler",
+        () -> {
+          scheduler = brokerContext.getScheduler();
+          scheduler.start();
+        });
+
+    startContext.addStep(
+        "creating membership and replication protocol",
+        () -> {
+          atomix = AtomixFactory.fromConfiguration(brokerCfg);
+          closeables.add(() -> atomix.stop().join());
+        });
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// COMMAND API //////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    final CommandApiMessageHandler commandApiMessageHandler = new CommandApiMessageHandler();
+    startContext.addStep(
+        "starting command api",
+        () -> {
+          final CommandApiMessageHandler commandApiMessageHandler = new CommandApiMessageHandler();
 
-    final BackpressureCfg backpressure = brokerCfg.getBackpressure();
-    PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
-    if (backpressure.isEnabled()) {
-      limiter =
-          PartitionAwareRequestLimiter.newLimiter(
-              backpressure.getAlgorithm(), backpressure.useWindowed());
-    }
+          final BackpressureCfg backpressure = brokerCfg.getBackpressure();
+          PartitionAwareRequestLimiter limiter = PartitionAwareRequestLimiter.newNoopLimiter();
+          if (backpressure.isEnabled()) {
+            limiter =
+                PartitionAwareRequestLimiter.newLimiter(
+                    backpressure.getAlgorithm(), backpressure.useWindowed());
+          }
 
-    final SocketAddress bindAddr = networkCfg.getCommandApi().getAddress();
-    final ByteValue transportBufferSize =
-        ByteValue.ofBytes(networkCfg.getMaxMessageSize().toBytes() * TRANSPORT_BUFFER_FACTOR);
+          final SocketAddress bindAddr = networkCfg.getCommandApi().getAddress();
+          final ByteValue transportBufferSize =
+              ByteValue.ofBytes(networkCfg.getMaxMessageSize().toBytes() * TRANSPORT_BUFFER_FACTOR);
 
-    final InetSocketAddress bindAddress = bindAddr.toInetSocketAddress();
-    final var serverTransport =
-        Transports.newServerTransport()
-            .name(COMMAND_API_SERVER_NAME)
-            .bindAddress(bindAddr.toInetSocketAddress())
-            .scheduler(scheduler)
-            .messageMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
-            .messageMaxLength(networkCfg.getMaxMessageSize())
-            .build(commandApiMessageHandler, commandApiMessageHandler);
-    closeables.add(serverTransport);
+          final InetSocketAddress bindAddress = bindAddr.toInetSocketAddress();
+          final var serverTransport =
+              Transports.newServerTransport()
+                  .name(actorNamePattern(localBroker, "commandApi"))
+                  .bindAddress(bindAddr.toInetSocketAddress())
+                  .scheduler(scheduler)
+                  .messageMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
+                  .messageMaxLength(networkCfg.getMaxMessageSize())
+                  .build(commandApiMessageHandler, commandApiMessageHandler);
+          closeables.add(serverTransport);
 
-    final CommandApiService commandHandler =
-        new CommandApiService(serverTransport.getOutput(), commandApiMessageHandler, limiter);
-    partitionListeners.add(commandHandler);
-    LOG.info("Broker startup phase: Step 4 command api bound to {}.", bindAddress);
+          commandHandler =
+              new CommandApiService(serverTransport.getOutput(), commandApiMessageHandler, limiter);
+          partitionListeners.add(commandHandler);
+          LOG.info("Command api bound to {}.", bindAddress);
+        });
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// SUBSCRIPTION API /////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    final SubscriptionApiCommandMessageHandlerService messageHandlerService =
-        new SubscriptionApiCommandMessageHandlerService(atomix);
-    partitionListeners.add(messageHandlerService);
-    scheduleActor(messageHandlerService);
-
-    LOG.info("Broker startup phase: Step 5 message subscription api started.");
+    startContext.addStep(
+        "starting subscription api",
+        () -> {
+          final SubscriptionApiCommandMessageHandlerService messageHandlerService =
+              new SubscriptionApiCommandMessageHandlerService(localBroker, atomix);
+          partitionListeners.add(messageHandlerService);
+          scheduleActor(messageHandlerService);
+        });
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// GATEWAY /////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
     if (brokerCfg.getGateway().isEnable()) {
-      closeables.add(new EmbeddedGatewayService(brokerCfg, scheduler, atomix));
-      LOG.info("Broker startup phase: Step 7 embedded gateway started.");
+      startContext.addStep(
+          "starting embedded gateway",
+          () -> {
+            closeables.add(new EmbeddedGatewayService(brokerCfg, scheduler, atomix));
+          });
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// ATOMIX JOIN /////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    // after topology mgr is created
-    atomix.start().join();
-    LOG.info("Broker startup phase: Step 8 joined cluster successfully.");
+    startContext.addStep("joining cluster", () -> atomix.start().join());
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// TOPOLOGY /////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    final TopologyManagerImpl topologyManager =
-        new TopologyManagerImpl(atomix, localMember, clusterCfg);
-    partitionListeners.add(topologyManager);
-    scheduleActor(topologyManager);
-    LOG.info("Broker startup phase: Step 6 topology manager started.");
+    startContext.addStep(
+        "starting topology manager",
+        () -> {
+          topologyManager = new TopologyManagerImpl(atomix, localBroker, clusterCfg);
+          partitionListeners.add(topologyManager);
+          scheduleActor(topologyManager);
+        });
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// METRICS AND READY CHECK ////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
 
-    final BrokerHealthCheckService healthCheckService = new BrokerHealthCheckService(atomix);
-    partitionListeners.add(healthCheckService);
-    scheduleActor(healthCheckService);
+    startContext.addStep(
+        "starting metric's server",
+        () -> {
+          final BrokerHealthCheckService healthCheckService =
+              new BrokerHealthCheckService(localBroker, atomix);
+          partitionListeners.add(healthCheckService);
+          scheduleActor(healthCheckService);
 
-    final SocketBindingCfg monitoringApi = networkCfg.getMonitoringApi();
-    final BrokerHttpServer httpServer =
-        new BrokerHttpServer(
-            monitoringApi.getHost(), monitoringApi.getPort(), METRICS_REGISTRY, healthCheckService);
-    closeables.add(httpServer);
-    LOG.info("Broker startup phase: Step 8 metric's server started.");
+          final SocketBindingCfg monitoringApi = networkCfg.getMonitoringApi();
+          final BrokerHttpServer httpServer =
+              new BrokerHttpServer(
+                  monitoringApi.getHost(),
+                  monitoringApi.getPort(),
+                  METRICS_REGISTRY,
+                  healthCheckService);
+          closeables.add(httpServer);
+        });
 
-    final LeaderManagementRequestHandler requestHandler =
-        new LeaderManagementRequestHandler(atomix);
-    scheduleActor(requestHandler);
-    partitionListeners.add(requestHandler);
+    startContext.addStep(
+        "starting leader management request handler",
+        () -> {
+          managementRequestHandler = new LeaderManagementRequestHandler(localBroker, atomix);
+          scheduleActor(managementRequestHandler);
+          partitionListeners.add(managementRequestHandler);
+        });
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////// START PARTITIONS /////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////////////////////////
-    final RaftPartitionGroup partitionGroup =
-        (RaftPartitionGroup)
-            atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
+    startContext.addStep(
+        "starting partitions",
+        () -> {
+          final RaftPartitionGroup partitionGroup =
+              (RaftPartitionGroup)
+                  atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
 
-    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
-    final List<RaftPartition> owningPartitions =
-        partitionGroup.getPartitions().stream()
-            .filter(partition -> partition.members().contains(nodeId))
-            .map(RaftPartition.class::cast)
-            .collect(Collectors.toList());
+          final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+          final List<RaftPartition> owningPartitions =
+              partitionGroup.getPartitions().stream()
+                  .filter(partition -> partition.members().contains(nodeId))
+                  .map(RaftPartition.class::cast)
+                  .collect(Collectors.toList());
 
-    for (final RaftPartition owningPartition : owningPartitions) {
-      final PartitionInstallService partitionInstallService =
-          new PartitionInstallService(
-              owningPartition,
-              partitionListeners,
-              atomix.getEventService(),
-              scheduler,
-              brokerCfg,
-              commandHandler,
-              createFactory(topologyManager, clusterCfg, atomix, requestHandler));
-      scheduleActor(partitionInstallService);
-      LOG.info(
-          "Broker startup phase: Step 9 partition {} successfully installed.",
-          owningPartition.id().id());
-    }
+          LOG.info("Broker {} Partitions {}", localBroker.getNodeId(), owningPartitions);
 
-    LOG.info("Broker started successfully!");
+          for (final RaftPartition owningPartition : owningPartitions) {
+            final PartitionInstallService partitionInstallService =
+                new PartitionInstallService(
+                    localBroker,
+                    owningPartition,
+                    partitionListeners,
+                    atomix.getEventService(),
+                    scheduler,
+                    brokerCfg,
+                    commandHandler,
+                    createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
+            scheduleActor(partitionInstallService);
+            LOG.info(
+                "Bootstrap {}: Partition {} successfully installed.",
+                localBroker.getNodeId(),
+                owningPartition.id().id());
+          }
+        });
+
+    startContext.start();
     startFuture.complete(this);
+  }
+
+  public static String actorNamePattern(BrokerInfo local, String name) {
+    return String.format("Broker-%d-%s", local.getNodeId(), name);
   }
 
   private TypedRecordProcessorsFactory createFactory(
@@ -352,5 +395,60 @@ public class Broker implements AutoCloseable {
 
   public Atomix getAtomix() {
     return atomix;
+  }
+
+  private static class StartContext {
+    private final BrokerInfo brokerInfo;
+    private final List<Step> startSteps;
+
+    StartContext(BrokerInfo brokerInfo) {
+      this.brokerInfo = brokerInfo;
+      this.startSteps = new ArrayList<>();
+    }
+
+    public void addStep(String name, Runnable runnable) {
+      startSteps.add(new Step(name, runnable));
+    }
+
+    public void start() {
+
+      final long startTime = System.currentTimeMillis();
+
+      int index = 1;
+      final int nodeId = brokerInfo.getNodeId();
+      for (Step step : startSteps) {
+        LOG.info("Bootstrap {} [{}/{}]: {}", nodeId, index, startSteps.size(), step.name);
+        final long startStepTime = System.currentTimeMillis();
+        step.runnable.run();
+        final long durationStepStarting = System.currentTimeMillis() - startStepTime;
+        LOG.info(
+            "Bootstrap {} [{}/{}]: {} succeeded in {} ms",
+            nodeId,
+            index,
+            startSteps.size(),
+            step.name,
+            durationStepStarting);
+        index++;
+      }
+
+      final long durationTime = System.currentTimeMillis() - startTime;
+
+      LOG.info(
+          "Bootstrap {} succeeded. Started {} steps in {} ms.",
+          nodeId,
+          startSteps.size(),
+          durationTime);
+    }
+  }
+
+  private static class Step {
+
+    private final String name;
+    private final Runnable runnable;
+
+    Step(String name, Runnable runnable) {
+      this.name = name;
+      this.runnable = runnable;
+    }
   }
 }

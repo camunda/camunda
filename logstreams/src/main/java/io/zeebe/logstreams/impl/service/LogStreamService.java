@@ -7,8 +7,6 @@
  */
 package io.zeebe.logstreams.impl.service;
 
-import static io.zeebe.util.sched.future.CompletableActorFuture.completed;
-
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
@@ -73,7 +71,7 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
 
     commitPosition.setVolatile(INVALID_ADDRESS);
     this.reader = new BufferedLogStreamReader(logStorage);
-    setCommitPosition(reader.seekToEnd());
+    internalSetCommitPosition(reader.seekToEnd());
   }
 
   @Override
@@ -93,8 +91,7 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
 
   @Override
   public ActorFuture<Void> closeAsync() {
-    if (actor.isClosed())
-    {
+    if (actor.isClosed()) {
       return CompletableActorFuture.completed(null);
     }
 
@@ -116,11 +113,11 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
         });
     return closeFuture;
   }
-//
-//  @Override
-//  public long getCommitPosition() {
-//    return getCommitPositionAsync().join();
-//  }
+  //
+  //  @Override
+  //  public long getCommitPosition() {
+  //    return getCommitPositionAsync().join();
+  //  }
 
   @Override
   public ActorFuture<Long> getCommitPositionAsync() {
@@ -131,41 +128,44 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
   public void setCommitPosition(final long commitPosition) {
     actor.call(
         () -> {
-          this.commitPosition.setOrdered(commitPosition);
-
-          onCommitPositionUpdatedConditions.signalConsumers();
+          internalSetCommitPosition(commitPosition);
         });
   }
-//
-//  @Override
-//  public LogStorage getLogStorage() {
-//    return actor.call(() -> logStorage).join();
-//  }
 
+  private void internalSetCommitPosition(long commitPosition) {
+    this.commitPosition.setOrdered(commitPosition);
+
+    onCommitPositionUpdatedConditions.signalConsumers();
+  }
+  //
+  //  @Override
+  //  public LogStorage getLogStorage() {
+  //    return actor.call(() -> logStorage).join();
+  //  }
 
   @Override
   public ActorFuture<LogStorage> getLogStorageAsync() {
     return actor.call(() -> logStorage);
   }
-//
-//
-//  @Override
-//  public Dispatcher getWriteBuffer() {
-//    return getWriteBufferAsync().join();
-//  }
+  //
+  //
+  //  @Override
+  //  public Dispatcher getWriteBuffer() {
+  //    return getWriteBufferAsync().join();
+  //  }
 
   @Override
   public ActorFuture<Dispatcher> getWriteBufferAsync() {
     final var getWriteBufferFuture = new CompletableActorFuture<Dispatcher>();
 
     actor.call(
-      () -> {
-        if (writeBuffer == null && writeBufferFuture != null) {
-          writeBufferFuture.onComplete(getWriteBufferFuture);
-          return;
-        }
-        getWriteBufferFuture.complete(writeBuffer);
-      });
+        () -> {
+          if (writeBuffer == null && writeBufferFuture != null) {
+            writeBufferFuture.onComplete(getWriteBufferFuture);
+            return;
+          }
+          getWriteBufferFuture.complete(writeBuffer);
+        });
     return getWriteBufferFuture;
   }
 

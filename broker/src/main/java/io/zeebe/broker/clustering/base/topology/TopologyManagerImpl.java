@@ -7,6 +7,8 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import static io.zeebe.broker.Broker.actorNamePattern;
+
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
 import io.atomix.cluster.ClusterMembershipEventListener;
@@ -42,8 +44,6 @@ public class TopologyManagerImpl extends Actor
         .setClusterSize(clusterCfg.getClusterSize())
         .setPartitionsCount(clusterCfg.getPartitionsCount())
         .setReplicationFactor(clusterCfg.getReplicationFactor());
-    // ensures that the first published event will contain the broker's info
-    publishTopologyChanges();
   }
 
   @Override
@@ -58,11 +58,13 @@ public class TopologyManagerImpl extends Actor
 
   @Override
   public String getName() {
-    return "topology";
+    return actorNamePattern(localBroker, "TopologyManager");
   }
 
   @Override
   protected void onActorStarted() {
+    // ensures that the first published event will contain the broker's info
+    publishTopologyChanges();
     atomix.getMembershipService().addListener(this);
     atomix
         .getMembershipService()
@@ -94,11 +96,6 @@ public class TopologyManagerImpl extends Actor
     final Member eventSource = clusterMembershipEvent.subject();
 
     final BrokerInfo brokerInfo = readBrokerInfo(eventSource);
-    LOG.debug(
-        "Broker {} received new event of type {} and subject {}",
-        localBroker.getNodeId(),
-        clusterMembershipEvent.type(),
-        brokerInfo);
 
     if (brokerInfo != null && brokerInfo.getNodeId() != localBroker.getNodeId()) {
       actor.run(
@@ -115,6 +112,10 @@ public class TopologyManagerImpl extends Actor
 
               case REACHABILITY_CHANGED:
               default:
+                LOG.debug(
+                    "Received {} from member {}, was not handled.",
+                    clusterMembershipEvent.type(),
+                    brokerInfo.getNodeId());
                 break;
             }
           });
@@ -123,6 +124,7 @@ public class TopologyManagerImpl extends Actor
 
   // Remove a member from the topology
   private void onMemberRemoved(BrokerInfo brokerInfo) {
+    LOG.debug("Received member removed {} ", brokerInfo);
     brokerInfo.consumePartitions(
         partition -> removeIfLeader(brokerInfo, partition),
         (leaderPartitionId, term) -> {},
@@ -138,6 +140,11 @@ public class TopologyManagerImpl extends Actor
 
   // Update local knowledge about the partitions of remote node
   private void onMetadataChanged(BrokerInfo brokerInfo) {
+    LOG.debug(
+        "Received metadata change for {}, partitions {} terms {}",
+        brokerInfo.getNodeId(),
+        brokerInfo.getPartitionRoles(),
+        brokerInfo.getPartitionLeaderTerms());
     brokerInfo.consumePartitions(
         (leaderPartitionId, term) -> {
           if (updatePartitionLeader(brokerInfo, leaderPartitionId, term)) {

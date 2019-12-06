@@ -23,6 +23,8 @@ import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.core.Atomix;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.PartitionListener;
+import io.zeebe.broker.clustering.atomix.AtomixFactory;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
@@ -40,10 +42,13 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.exception.UncheckedExecutionException;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +56,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -63,9 +70,10 @@ import org.junit.runners.model.Statement;
 
 public class ClusteringRule extends ExternalResource {
 
-  public static final int TOPOLOGY_RETRIES = 250;
+  public static final int TOPOLOGY_RETRIES = 50;
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
+  private static final String RAFT_PARTITION_PATH = AtomixFactory.GROUP_NAME + "/partitions/1";
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -89,6 +97,7 @@ public class ClusteringRule extends ExternalResource {
   private ZeebeClient client;
   private Gateway gateway;
   private AtomixCluster atomixCluster;
+  private LeaderListener leaderListener;
 
   public ClusteringRule() {
     this(3);
@@ -163,6 +172,7 @@ public class ClusteringRule extends ExternalResource {
 
   @Override
   protected void before() throws IOException {
+    leaderListener = new LeaderListener(partitionCount);
     // create brokers
     for (int nodeId = 0; nodeId < clusterSize; nodeId++) {
       getBroker(nodeId);
@@ -182,10 +192,10 @@ public class ClusteringRule extends ExternalResource {
       waitUntilBrokersInTopology();
       LOG.info("All brokers in topology {}", getTopologyFromClient());
 
-    } catch (Error e) {
+    } catch (Exception e) {
       // If the previous waits timeouts, the brokers are not closed automatically.
       closeables.after();
-      throw e;
+      throw new UncheckedExecutionException("Cluster start failed", e);
     }
   }
 
@@ -201,11 +211,12 @@ public class ClusteringRule extends ExternalResource {
     return brokers.computeIfAbsent(nodeId, this::createBroker);
   }
 
-  private void waitUntilBrokersStarted() {
-
+  private void waitUntilBrokersStarted() throws InterruptedException {
     for (Broker broker : brokers.values()) {
       broker.awaitStarting();
     }
+
+    leaderListener.awaitLeaders();
     // A hack to see if Atomix cluster has started
     //    brokers.forEach(
     //        (i, b) -> {
@@ -225,7 +236,7 @@ public class ClusteringRule extends ExternalResource {
     final File brokerBase = getBrokerBase(nodeId);
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledClock);
-
+    broker.addPartitionListener(leaderListener);
     new Thread(broker::start).start();
 
     closeables.manage(broker);
@@ -589,5 +600,38 @@ public class ClusteringRule extends ExternalResource {
         .filter(id -> id != leaderNodeId)
         .map(brokers::get)
         .collect(Collectors.toList());
+  }
+
+  public Path getSegmentsDirectory(Broker broker) {
+    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
+    return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
+  }
+
+  public File getSnapshotsDirectory(Broker broker) {
+    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
+    return new File(dataDir, RAFT_PARTITION_PATH + "/snapshots");
+  }
+
+  public void waitForValidSnapshotAtBroker(final Broker broker) {
+    final File snapshotsDir = getSnapshotsDirectory(broker);
+    waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
+  }
+
+  private static class LeaderListener implements PartitionListener {
+
+    final CountDownLatch latch;
+
+    LeaderListener(int partitionCount) {
+      this.latch = new CountDownLatch(partitionCount);
+    }
+
+    @Override
+    public void onBecomingLeader(int partitionId) {
+      latch.countDown();
+    }
+
+    public void awaitLeaders() throws InterruptedException {
+      latch.await(15, TimeUnit.SECONDS);
+    }
   }
 }

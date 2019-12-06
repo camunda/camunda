@@ -7,6 +7,8 @@
  */
 package io.zeebe.broker.engine.impl;
 
+import static io.zeebe.broker.Broker.actorNamePattern;
+
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
@@ -14,22 +16,26 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMes
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.sched.Actor;
 import org.agrona.collections.Int2ObjectHashMap;
 
 public class SubscriptionApiCommandMessageHandlerService extends Actor
     implements PartitionListener {
 
-  private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions = new Int2ObjectHashMap<>();
+  private final Int2ObjectHashMap<LogStreamRecordWriter> leaderPartitions =
+      new Int2ObjectHashMap<>();
   private final Atomix atomix;
+  private final BrokerInfo localBroker;
 
-  public SubscriptionApiCommandMessageHandlerService(Atomix atomix) {
+  public SubscriptionApiCommandMessageHandlerService(BrokerInfo localBroker, Atomix atomix) {
+    this.localBroker = localBroker;
     this.atomix = atomix;
   }
 
   @Override
   public String getName() {
-    return "subscription-api";
+    return actorNamePattern(localBroker, "SubscriptionApi");
   }
 
   @Override
@@ -39,21 +45,24 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
 
   @Override
   public void onBecomingLeader(int partitionId, LogStream logStream) {
-    actor.submit(() -> {
-
-      logStream.getWriteBufferAsync().onComplete((writebuffer, error) ->
-      {
-        if (error == null)
-        {
-          leaderPartitions.put(partitionId, new LogStreamWriterImpl(writebuffer, partitionId));
-        }
-        else
-        {
-          // todo ideally we should step down
-          Loggers.SYSTEM_LOGGER.error("Unexpected error on retrieving write buffer for partition {}", partitionId, error);
-        }
-      });
-    });
+    actor.submit(
+        () -> {
+          logStream
+              .getWriteBufferAsync()
+              .onComplete(
+                  (writebuffer, error) -> {
+                    if (error == null) {
+                      leaderPartitions.put(
+                          partitionId, new LogStreamWriterImpl(writebuffer, partitionId));
+                    } else {
+                      // todo ideally we should step down
+                      Loggers.SYSTEM_LOGGER.error(
+                          "Unexpected error on retrieving write buffer for partition {}",
+                          partitionId,
+                          error);
+                    }
+                  });
+        });
   }
 
   @Override

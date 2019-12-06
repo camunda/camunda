@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
@@ -29,7 +28,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.zip.CRC32;
 import java.util.zip.CheckedInputStream;
 import org.junit.Before;
@@ -76,11 +74,11 @@ public class SnapshotReplicationTest {
     clusteringRule.getClock().addTime(Duration.ofSeconds(SNAPSHOT_PERIOD_SECONDS));
 
     // when - snapshot
-    waitForValidSnapshotAtBroker(leader);
+    clusteringRule.waitForValidSnapshotAtBroker(leader);
 
     final List<Broker> otherBrokers = clusteringRule.getOtherBrokerObjects(leaderNodeId);
     for (final Broker broker : otherBrokers) {
-      waitForValidSnapshotAtBroker(broker);
+      clusteringRule.waitForValidSnapshotAtBroker(broker);
     }
 
     // then - replicated
@@ -97,7 +95,7 @@ public class SnapshotReplicationTest {
   }
 
   private Map<String, Long> createSnapshotDirectoryChecksums(Broker broker) {
-    final File snapshotsDir = getSnapshotsDirectory(broker);
+    final File snapshotsDir = clusteringRule.getSnapshotsDirectory(broker);
 
     final Map<String, Long> checksums = createChecksumsForSnapshotDirectory(snapshotsDir);
 
@@ -135,16 +133,6 @@ public class SnapshotReplicationTest {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private File getSnapshotsDirectory(Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectories().get(0);
-    return new File(dataDir, "raft-atomix/partitions/1/snapshots");
-  }
-
-  protected void waitForValidSnapshotAtBroker(final Broker broker) {
-    final File snapshotsDir = getSnapshotsDirectory(broker);
-    waitUntil(() -> Optional.ofNullable(snapshotsDir.listFiles()).map(f -> f.length).orElse(0) > 0);
   }
 
   private static void configureCustomExporter(final BrokerCfg brokerCfg) {
