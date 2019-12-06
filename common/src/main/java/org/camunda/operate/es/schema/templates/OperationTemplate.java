@@ -22,7 +22,6 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
   public static final String SCOPE_KEY = "scopeKey";
   public static final String VARIABLE_NAME = "variableName";
   public static final String VARIABLE_VALUE = "variableValue";
-  public static final String CREATION_DATE = "creationDate";
   public static final String START_DATE = "startDate";
   public static final String END_DATE = "endDate";
   public static final String STATE = "state";
@@ -66,10 +65,6 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
       .endObject()
       .startObject(STATE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(CREATION_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
       .endObject()
       .startObject(START_DATE)
         .field("type", "date")
