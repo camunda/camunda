@@ -35,7 +35,10 @@ public class BrokerTopologyManagerImpl extends Actor
   /** @return the current known cluster state or null if the topology was not fetched yet */
   @Override
   public BrokerClusterState getTopology() {
-    return topology.get();
+    final BrokerClusterStateImpl brokerClusterState = topology.get();
+
+    LOG.error("Current topology {}", brokerClusterState);
+    return brokerClusterState;
   }
 
   public void setTopology(BrokerClusterStateImpl topology) {
@@ -56,26 +59,34 @@ public class BrokerTopologyManagerImpl extends Actor
     if (brokerInfo != null) {
       actor.call(
           () -> {
-            Loggers.GATEWAY_LOGGER.debug(
-                "Gateway received new event of type: {} and subject {} ", event.type(), brokerInfo);
             final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
 
             switch (eventType) {
               case MEMBER_ADDED:
+                LOG.debug("Received new broker {}.", brokerInfo);
                 newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
                 processProperties(brokerInfo, newTopology);
                 break;
 
               case METADATA_CHANGED:
+                LOG.debug(
+                    "Received metadata change from Broker {}, partitions {} and terms {}.",
+                    brokerInfo.getNodeId(),
+                    brokerInfo.getPartitionRoles(),
+                    brokerInfo.getPartitionLeaderTerms());
+                newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
                 processProperties(brokerInfo, newTopology);
                 break;
 
               case MEMBER_REMOVED:
+                LOG.debug("Received broker was removed {}.", brokerInfo);
                 newTopology.removeBroker(brokerInfo.getNodeId());
                 break;
 
               case REACHABILITY_CHANGED:
               default:
+                LOG.debug(
+                    "Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
                 break;
             }
 
