@@ -12,6 +12,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.sched.Actor;
@@ -40,7 +41,7 @@ public class StreamProcessor extends Actor {
   // processing
   private final ProcessingContext processingContext;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
-  private final LogStreamReader logStreamReader;
+  private LogStreamReader logStreamReader;
   private ActorCondition onCommitPositionUpdatedCondition;
   private long snapshotPosition = -1L;
   private ProcessingStateMachine processingStateMachine;
@@ -62,7 +63,6 @@ public class StreamProcessor extends Actor {
             .eventCache(new RecordValues())
             .actor(actor)
             .abortCondition(this::isClosed);
-    this.logStreamReader = processingContext.getLogStreamReader();
     this.logStream = processingContext.getLogStream();
     this.partitionId = logStream.getPartitionId();
   }
@@ -74,6 +74,39 @@ public class StreamProcessor extends Actor {
   @Override
   public String getName() {
     return "partition-" + partitionId + "-processor";
+  }
+
+  @Override
+  protected void onActorStarting() {
+    actor.runOnCompletionBlockingCurrentPhase(
+        logStream.newLogStreamBatchWriter(), this::onRetrievingWriter);
+  }
+
+  private void onRetrievingWriter(
+      LogStreamBatchWriter batchWriter, Throwable errorOnReceivingWriter) {
+
+    if (errorOnReceivingWriter == null) {
+      processingContext
+          .maxFragmentSize(batchWriter.getMaxFragmentLength())
+          .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
+
+      actor.runOnCompletionBlockingCurrentPhase(
+          logStream.newLogStreamReader(), this::onRetrievingReader);
+    } else {
+      LOG.error(
+          "Unexpected error on retrieving batch writer from log stream.", errorOnReceivingWriter);
+      actor.close();
+    }
+  }
+
+  private void onRetrievingReader(LogStreamReader reader, Throwable errorOnReceivingReader) {
+    if (errorOnReceivingReader == null) {
+      this.logStreamReader = reader;
+      processingContext.logStreamReader(reader);
+    } else {
+      LOG.error("Unexpected error on retrieving reader from log stream.", errorOnReceivingReader);
+      actor.close();
+    }
   }
 
   @Override

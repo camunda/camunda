@@ -232,8 +232,6 @@ public class TestStreams {
             .actorScheduler(actorScheduler)
             .commandResponseWriter(mockCommandResponseWriter)
             .onProcessedListener(mockOnProcessedListener)
-            .batchWriter(stream.newLogStreamBatchWriter())
-            .logStreamReader(stream.newLogStreamReader())
             .streamProcessorFactory(
                 (context) -> {
                   final TypedRecordProcessors processors = factory.createProcessors(context);

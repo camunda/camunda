@@ -41,7 +41,6 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.state.NoneSnapshotReplication;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
@@ -290,65 +289,63 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
     //    new LeaderPartition(brokerCfg, this.atomixRaftPartition, clusterEventService,
     // logStream);
 
-    logStream
-        .newLogStreamBatchWriter()
+    //    logStream
+    //        .newLogStreamBatchWriter()
+    //        .onComplete(
+    //            (batchWriter, errorOnReceiveWriteBuffer) -> {
+    //              if (errorOnReceiveWriteBuffer == null) {
+    //                logStream
+    //                    .newLogStreamReader()
+    //                    .onComplete(
+    //                        (processingReader, errorOnReceiveProcessingReader) -> {
+    //                          if (errorOnReceiveProcessingReader == null) {
+
+    final StreamProcessor streamProcessor =
+        createStreamProcessor(zeebeDb); // , processingReader, batchWriter);
+    streamProcessor
+        .openAsync()
         .onComplete(
-            (batchWriter, errorOnReceiveWriteBuffer) -> {
-              if (errorOnReceiveWriteBuffer == null) {
+            (value, processorFail) -> {
+              if (processorFail == null) {
+                closeables.add(streamProcessor);
+
+                final DataCfg dataCfg = brokerCfg.getData();
+                installSnapshotDirector(streamProcessor, dataCfg);
+
                 logStream
                     .newLogStreamReader()
                     .onComplete(
-                        (processingReader, errorOnReceiveProcessingReader) -> {
-                          if (errorOnReceiveProcessingReader == null) {
-
-                            final StreamProcessor streamProcessor =
-                                createStreamProcessor(zeebeDb, processingReader, batchWriter);
-                            streamProcessor
-                                .openAsync()
-                                .onComplete(
-                                    (value, processorFail) -> {
-                                      if (processorFail == null) {
-                                        closeables.add(streamProcessor);
-
-                                        final DataCfg dataCfg = brokerCfg.getData();
-                                        installSnapshotDirector(streamProcessor, dataCfg);
-
-                                        logStream
-                                            .newLogStreamReader()
-                                            .onComplete(
-                                                (exporterReader, errorOnReceiveExporterReader) -> {
-                                                  if (errorOnReceiveExporterReader == null) {
-                                                    installExporter(
-                                                        zeebeDb, exporterReader, dataCfg);
-                                                    installFuture.complete(null);
-                                                  } else {
-                                                    LOG.error(
-                                                        "Unexpected error on retrieving log stream reader.",
-                                                        errorOnReceiveExporterReader);
-                                                    installFuture.completeExceptionally(
-                                                        errorOnReceiveExporterReader);
-                                                  }
-                                                });
-                                      } else {
-                                        LOG.error(
-                                            "Failed to install stream processor!", processorFail);
-                                        // todo step down
-                                        installFuture.completeExceptionally(processorFail);
-                                      }
-                                    });
+                        (exporterReader, errorOnReceiveExporterReader) -> {
+                          if (errorOnReceiveExporterReader == null) {
+                            installExporter(zeebeDb, exporterReader, dataCfg);
+                            installFuture.complete(null);
                           } else {
                             LOG.error(
                                 "Unexpected error on retrieving log stream reader.",
-                                errorOnReceiveProcessingReader);
-                            installFuture.completeExceptionally(errorOnReceiveProcessingReader);
-                            // todo step down
+                                errorOnReceiveExporterReader);
+                            installFuture.completeExceptionally(errorOnReceiveExporterReader);
                           }
                         });
-
               } else {
-                installFuture.completeExceptionally(errorOnReceiveWriteBuffer);
+                LOG.error("Failed to install stream processor!", processorFail);
+                // todo step down
+                installFuture.completeExceptionally(processorFail);
               }
             });
+    //                          } else {
+    //                            LOG.error(
+    //                                "Unexpected error on retrieving log stream reader.",
+    //                                errorOnReceiveProcessingReader);
+    //
+    // installFuture.completeExceptionally(errorOnReceiveProcessingReader);
+    //                            // todo step down
+    //                          }
+    //                        });
+    //
+    //              } else {
+    //                installFuture.completeExceptionally(errorOnReceiveWriteBuffer);
+    //              }
+    //            });
 
     return installFuture;
   }
@@ -382,12 +379,9 @@ public class PartitionInstallService extends Actor implements RaftCommitListener
     scheduler.submitActor(asyncSnapshotDirector);
   }
 
-  private StreamProcessor createStreamProcessor(
-      ZeebeDb zeebeDb, LogStreamReader logStreamReader, LogStreamBatchWriter batchWriter) {
+  private StreamProcessor createStreamProcessor(ZeebeDb zeebeDb) {
     return StreamProcessor.builder()
         .logStream(logStream)
-        .logStreamReader(logStreamReader)
-        .batchWriter(batchWriter)
         .actorScheduler(scheduler)
         .zeebeDb(zeebeDb)
         .commandResponseWriter(commandApiService.newCommandResponseWriter())

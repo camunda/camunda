@@ -9,8 +9,6 @@ package io.zeebe.engine.processor;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -27,8 +25,6 @@ public class StreamProcessorBuilder {
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
-  private LogStreamBatchWriter batchWriter;
-  private LogStreamReader logStreamReader;
 
   public StreamProcessorBuilder() {
     processingContext = new ProcessingContext();
@@ -47,16 +43,6 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder logStream(LogStream stream) {
     processingContext.logStream(stream);
-    return this;
-  }
-
-  public StreamProcessorBuilder batchWriter(LogStreamBatchWriter batchWriter) {
-    this.batchWriter = batchWriter;
-    return this;
-  }
-
-  public StreamProcessorBuilder logStreamReader(LogStreamReader logStreamReader) {
-    this.logStreamReader = logStreamReader;
     return this;
   }
 
@@ -98,11 +84,6 @@ public class StreamProcessorBuilder {
   public StreamProcessor build() {
     validate();
 
-    processingContext
-        .maxFragmentSize(batchWriter.getMaxFragmentLength())
-        .logStreamReader(logStreamReader)
-        .logStreamWriter(new TypedStreamWriterImpl(batchWriter));
-
     final MetadataFilter metadataFilter = new VersionFilter();
     final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
     processingContext.eventFilter(eventFilter);
@@ -117,8 +98,6 @@ public class StreamProcessorBuilder {
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
-    Objects.requireNonNull(logStreamReader, "No log storage provided.");
-    Objects.requireNonNull(batchWriter, "No batcher writer provided.");
   }
 
   private static class MetadataEventFilter implements EventFilter {
