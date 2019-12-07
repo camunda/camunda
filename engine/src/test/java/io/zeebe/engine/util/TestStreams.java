@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.util;
 
-import static io.zeebe.logstreams.impl.LogStorageAppender.LOG;
+import static io.zeebe.logstreams.impl.log.LogStorageAppender.LOG;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;

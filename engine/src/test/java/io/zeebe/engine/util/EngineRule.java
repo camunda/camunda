@@ -16,7 +16,6 @@ import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.RecordValues;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventImpl;
-import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
 import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributor;
 import io.zeebe.engine.processor.workflow.deployment.distribute.PendingDeploymentDistribution;
@@ -139,9 +138,6 @@ public final class EngineRule extends ExternalResource {
 
     forEachPartition(
         partitionId -> {
-          final int currentPartitionId = partitionId;
-          //          final LogStreamRecordWriter deploymentRecordWriter =
-          //              environmentRule.newLogStreamRecordWriter(partitionId);
           environmentRule.startTypedStreamProcessor(
               partitionId,
               (processingContext) ->
@@ -149,8 +145,8 @@ public final class EngineRule extends ExternalResource {
                           processingContext,
                           partitionCount,
                           new SubscriptionCommandSender(
-                              currentPartitionId, new PartitionCommandSenderImpl()),
-                          new DeploymentDistributionImpl(processingContext.getLogStreamWriter()),
+                              partitionId, new PartitionCommandSenderImpl()),
+                          new DeploymentDistributionImpl(),
                           (key, partition) -> {},
                           jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor()));
@@ -311,11 +307,6 @@ public final class EngineRule extends ExternalResource {
   private final class DeploymentDistributionImpl implements DeploymentDistributor {
 
     private final Map<Long, PendingDeploymentDistribution> pendingDeployments = new HashMap<>();
-    private final TypedStreamWriter logStreamRecordWriter;
-
-    private DeploymentDistributionImpl(TypedStreamWriter logStreamRecordWriter) {
-      this.logStreamRecordWriter = logStreamRecordWriter;
-    }
 
     @Override
     public ActorFuture<Void> pushDeployment(
@@ -333,11 +324,13 @@ public final class EngineRule extends ExternalResource {
             final DeploymentRecord deploymentRecord = new DeploymentRecord();
             deploymentRecord.wrap(buffer);
 
-            logStreamRecordWriter.appendNewEvent(key, DeploymentIntent.CREATE, deploymentRecord);
-
-            //            environmentRule.writeCommandOnPartition(
-            //                logStreamRecordWriter, key, DeploymentIntent.CREATE,
-            // deploymentRecord);
+            // we run in processor actor, we are not allowed to wait on futures
+            // which means we cant get new writer in sync way
+            new Thread(
+                    () ->
+                        environmentRule.writeCommandOnPartition(
+                            partitionId, key, DeploymentIntent.CREATE, deploymentRecord))
+                .start();
           });
 
       return CompletableActorFuture.completed(null);

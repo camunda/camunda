@@ -27,6 +27,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
+import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
@@ -350,6 +351,13 @@ public class StreamProcessorRule implements TestRule {
       try {
         LOG.debug("Clean up test files on path {}", root);
         FileUtil.deleteFolder(root.toPath());
+
+        final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
+        if (allocatedMemoryInKb > 0) {
+          LOG.warn(
+              "There are still allocated direct buffers of a total size of {}kB.",
+              allocatedMemoryInKb);
+        }
       } catch (IOException e) {
         LOG.error("Error on deleting root test folder", e);
       }

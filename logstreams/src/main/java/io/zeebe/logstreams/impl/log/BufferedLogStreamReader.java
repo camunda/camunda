@@ -20,7 +20,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
-import io.zeebe.util.Loggers;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocator;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -163,7 +162,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   @Override
   public void close() {
-    Loggers.IO_LOGGER.info("Close reader {}", allocatedBuffer);
     if (allocatedBuffer != null) {
       allocatedBuffer.close();
       allocatedBuffer = null;
