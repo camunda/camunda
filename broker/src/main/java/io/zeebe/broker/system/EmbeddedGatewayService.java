@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.clustering.base;
+package io.zeebe.broker.system;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.util.function.Function;
 
 public class EmbeddedGatewayService implements AutoCloseable {
-  private Gateway gateway;
+  private final Gateway gateway;
 
   public EmbeddedGatewayService(
       BrokerCfg configuration, ActorScheduler actorScheduler, Atomix atomix) {

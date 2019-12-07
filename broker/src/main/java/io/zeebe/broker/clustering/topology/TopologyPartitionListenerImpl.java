@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.clustering.base.topology;
+package io.zeebe.broker.clustering.topology;
 
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.protocol.record.PartitionRole;

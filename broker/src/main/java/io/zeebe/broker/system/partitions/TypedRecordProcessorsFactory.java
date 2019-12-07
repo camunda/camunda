@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.clustering.base.partitions;
+package io.zeebe.broker.system.partitions;
 
 import io.zeebe.engine.processor.ProcessingContext;
 import io.zeebe.engine.processor.TypedRecordProcessors;

@@ -33,7 +33,7 @@ public class LeaderRoleChangeTest {
   //
   //    CLIENT_RULE.createSingleJob(jobType);
   //
-  //    final PartitionInstallService partitionInstallService =
+  //    final ZeebePartition partitionInstallService =
   //        BROKER_RULE.getService(partitionInstallServiceName(getPartitionName(1)));
   //
   //    partitionInstallService.onTransitionToFollower(1);

@@ -14,15 +14,13 @@ import io.atomix.protocols.raft.partition.RaftPartitionGroup;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zeebe.broker.clustering.atomix.AtomixFactory;
-import io.zeebe.broker.clustering.base.EmbeddedGatewayService;
-import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
-import io.zeebe.broker.clustering.base.partitions.TypedRecordProcessorsFactory;
-import io.zeebe.broker.clustering.base.topology.TopologyManagerImpl;
-import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
+import io.zeebe.broker.clustering.topology.TopologyManagerImpl;
+import io.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.zeebe.broker.engine.impl.LongPollingJobNotification;
 import io.zeebe.broker.engine.impl.PartitionCommandSenderImpl;
 import io.zeebe.broker.engine.impl.SubscriptionApiCommandMessageHandlerService;
+import io.zeebe.broker.system.EmbeddedGatewayService;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BackpressureCfg;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -33,6 +31,8 @@ import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.zeebe.broker.system.monitoring.BrokerHttpServer;
+import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
+import io.zeebe.broker.system.partitions.ZeebePartition;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.commandapi.CommandApiMessageHandler;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
@@ -66,7 +66,6 @@ public class Broker implements AutoCloseable {
 
   private static final int TRANSPORT_BUFFER_FACTOR = 16;
   private static final String VERSION;
-  private static final String COMMAND_API_SERVER_NAME = "commandApi.server";
 
   private static final CollectorRegistry METRICS_REGISTRY = CollectorRegistry.defaultRegistry;
 
@@ -286,8 +285,8 @@ public class Broker implements AutoCloseable {
           LOG.info("Broker {} Partitions {}", localBroker.getNodeId(), owningPartitions);
 
           for (final RaftPartition owningPartition : owningPartitions) {
-            final PartitionInstallService partitionInstallService =
-                new PartitionInstallService(
+            final ZeebePartition zeebePartition =
+                new ZeebePartition(
                     localBroker,
                     owningPartition,
                     partitionListeners,
@@ -296,7 +295,7 @@ public class Broker implements AutoCloseable {
                     brokerCfg,
                     commandHandler,
                     createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
-            scheduleActor(partitionInstallService);
+            scheduleActor(zeebePartition);
             LOG.info(
                 "Bootstrap {}: Partition {} successfully installed.",
                 localBroker.getNodeId(),
