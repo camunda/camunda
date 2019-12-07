@@ -1,24 +1,29 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Copyright © 2019  camunda services GmbH (info@camunda.com)
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
  */
-package io.zeebe.logstreams.impl.service;
+package io.zeebe.logstreams.impl.log;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.impl.PositionUtil;
-import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.impl.Loggers;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.Actor;
@@ -34,7 +39,7 @@ import java.util.List;
 import org.agrona.concurrent.status.Position;
 import org.slf4j.Logger;
 
-public class LogStreamService extends Actor implements LogStream, AutoCloseable {
+public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
   public static final long INVALID_ADDRESS = -1L;
 
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -46,14 +51,14 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
   private final ByteValue maxFrameLength;
   private final Position commitPosition;
   private final ActorScheduler actorScheduler;
-  private final List<LogStreamReader> readers = new ArrayList<>();
+  private final List<LogStreamReader> readers;
   private final BufferedLogStreamReader reader;
   private final LogStorage logStorage;
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
   private LogStorageAppender appender;
 
-  public LogStreamService(
+  public LogStreamImpl(
       final ActorScheduler actorScheduler,
       final ActorConditions onCommitPositionUpdatedConditions,
       final String logName,
@@ -76,7 +81,9 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
     }
 
     commitPosition.setVolatile(INVALID_ADDRESS);
+    readers = new ArrayList<>();
     this.reader = new BufferedLogStreamReader(logStorage);
+    readers.add(reader);
     internalSetCommitPosition(reader.seekToEnd());
   }
 
@@ -122,11 +129,6 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
         });
     return closeFuture;
   }
-  //
-  //  @Override
-  //  public long getCommitPosition() {
-  //    return getCommitPositionAsync().join();
-  //  }
 
   @Override
   public ActorFuture<Long> getCommitPositionAsync() {
@@ -260,8 +262,7 @@ public class LogStreamService extends Actor implements LogStream, AutoCloseable 
   }
 
   private int determineInitialPartitionId() {
-    try (BufferedLogStreamReader logReader = new BufferedLogStreamReader()) {
-      logReader.wrap(logStorage);
+    try (BufferedLogStreamReader logReader = new BufferedLogStreamReader(logStorage)) {
 
       // Get position of last entry
       final long lastPosition = logReader.seekToEnd();

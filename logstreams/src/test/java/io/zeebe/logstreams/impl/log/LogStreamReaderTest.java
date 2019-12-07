@@ -1,11 +1,20 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Copyright © 2019  camunda services GmbH (info@camunda.com)
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
  */
-package io.zeebe.logstreams.log;
+package io.zeebe.logstreams.impl.log;
 
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,6 +23,8 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
@@ -57,33 +68,6 @@ public class LogStreamReaderTest {
   public void setUp() {
     eventKey = random.nextLong();
     reader = readerRule.getLogStreamReader();
-  }
-
-  @Test
-  public void shouldThrowExceptionIteratorNotInitialized() {
-    // given
-    final LogStreamReader reader = new BufferedLogStreamReader();
-
-    // expect
-    expectedException.expectMessage("Iterator not initialized");
-    expectedException.expect(IllegalStateException.class);
-
-    // when
-    reader.hasNext();
-  }
-
-  @Test
-  public void shouldThrowExceptionIteratorNotInitializedOnNext() {
-    // given
-    final LogStreamReader reader = new BufferedLogStreamReader();
-
-    // expect
-    expectedException.expectMessage("Iterator not initialized");
-    expectedException.expect(IllegalStateException.class);
-
-    // when
-    // then
-    reader.next();
   }
 
   @Test
@@ -329,9 +313,11 @@ public class LogStreamReaderTest {
   @Test
   public void shouldLimitAllocate() {
     // mock logStorage to always return insufficient capacity to increase buffer til max
+    final LogStorage logStorage = mock(LogStorage.class);
     final LogStorageReader logStorageReader = mock(LogStorageReader.class);
     when(logStorageReader.read(any(), anyLong(), any()))
         .thenReturn(LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+    when(logStorage.newReader()).thenReturn(logStorageReader);
 
     // then
     expectedException.expect(RuntimeException.class);
@@ -340,8 +326,7 @@ public class LogStreamReaderTest {
             + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
 
     // when
-    ((BufferedLogStreamReader) reader)
-        .wrap(logStorageReader, BufferedLogStreamReader.FIRST_POSITION);
+    new BufferedLogStreamReader(logStorage);
   }
 
   @Test

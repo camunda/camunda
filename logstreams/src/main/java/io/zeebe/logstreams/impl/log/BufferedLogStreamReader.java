@@ -1,17 +1,26 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Copyright © 2019  camunda services GmbH (info@camunda.com)
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
  */
-package io.zeebe.logstreams.log;
+package io.zeebe.logstreams.impl.log;
 
-import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
-import io.zeebe.logstreams.impl.LogEntryDescriptor;
-import io.zeebe.logstreams.impl.LoggedEventImpl;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
+import io.zeebe.util.Loggers;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocator;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -22,8 +31,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class BufferedLogStreamReader implements LogStreamReader {
-  public static final int DEFAULT_INITIAL_BUFFER_CAPACITY = 32 * 1024;
-  public static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; // 128MB
+  static final int DEFAULT_INITIAL_BUFFER_CAPACITY = 32 * 1024;
+  static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; // 128MB
   static final long FIRST_POSITION = Long.MIN_VALUE;
   private static final int UNINITIALIZED = -1;
   // configuration
@@ -45,13 +54,15 @@ public class BufferedLogStreamReader implements LogStreamReader {
   private ByteBuffer byteBuffer;
   private int bufferOffset;
 
-  public BufferedLogStreamReader(final LogStorage logStorage) {
-    this();
-    wrap(logStorage);
-  }
-
-  public BufferedLogStreamReader() {
+  BufferedLogStreamReader(final LogStorage logStorage) {
     state = IteratorState.WRAP_NOT_CALLED;
+    this.storageReader = logStorage.newReader();
+
+    if (isClosed()) {
+      allocateBuffer(DEFAULT_INITIAL_BUFFER_CAPACITY);
+    }
+
+    seek(FIRST_POSITION);
   }
 
   @Override
@@ -138,26 +149,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
     return allocatedBuffer == null;
   }
 
-  @Override
-  public void wrap(final LogStorage logStorage) {
-    wrap(logStorage, FIRST_POSITION);
-  }
-
-  @Override
-  public void wrap(final LogStorage logStorage, final long position) {
-    wrap(logStorage.newReader(), position);
-  }
-
-  public void wrap(final LogStorageReader reader, final long position) {
-    this.storageReader = reader;
-
-    if (isClosed()) {
-      allocateBuffer(DEFAULT_INITIAL_BUFFER_CAPACITY);
-    }
-
-    seek(position);
-  }
-
   private boolean seekFrom(final long blockAddress, final long position) {
     if (blockAddress < 0) {
       // no block found => empty log
@@ -172,6 +163,7 @@ public class BufferedLogStreamReader implements LogStreamReader {
 
   @Override
   public void close() {
+    Loggers.IO_LOGGER.info("Close reader {}", allocatedBuffer);
     if (allocatedBuffer != null) {
       allocatedBuffer.close();
       allocatedBuffer = null;

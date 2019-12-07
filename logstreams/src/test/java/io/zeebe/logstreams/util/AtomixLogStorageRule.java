@@ -20,7 +20,7 @@ import io.atomix.protocols.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
-import io.zeebe.logstreams.impl.LoggedEventImpl;
+import io.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixAppenderSupplier;
 import io.zeebe.logstreams.storage.atomix.AtomixLogCompactor;

@@ -8,7 +8,7 @@
 package io.zeebe.logstreams.util;
 
 import io.atomix.protocols.raft.storage.RaftStorage.Builder;
-import io.zeebe.logstreams.log.LogStreamBuilder;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
 import io.zeebe.util.sched.ActorScheduler;

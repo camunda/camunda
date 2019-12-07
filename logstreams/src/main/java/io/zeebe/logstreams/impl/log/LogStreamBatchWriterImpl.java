@@ -1,30 +1,39 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
- * one or more contributor license agreements. See the NOTICE file distributed
- * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.0. You may not use this file
- * except in compliance with the Zeebe Community License 1.0.
+ * Copyright © 2019  camunda services GmbH (info@camunda.com)
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
  */
-package io.zeebe.logstreams.log;
+package io.zeebe.logstreams.impl.log;
 
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setTimestamp;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.impl.LogEntryDescriptor;
+import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.util.buffer.BufferWriter;
@@ -61,7 +70,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
 
-  public LogStreamBatchWriterImpl(int partitionId, Dispatcher dispatcher) {
+  LogStreamBatchWriterImpl(int partitionId, Dispatcher dispatcher) {
     this.logWriteBuffer = dispatcher;
     this.logId = partitionId;
 
