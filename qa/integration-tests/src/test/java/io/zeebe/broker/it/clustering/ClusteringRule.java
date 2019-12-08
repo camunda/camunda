@@ -70,7 +70,7 @@ import org.junit.runners.model.Statement;
 
 public class ClusteringRule extends ExternalResource {
 
-  public static final int TOPOLOGY_RETRIES = 50;
+  public static final int TOPOLOGY_RETRIES = 250;
   private static final AtomicLong CLUSTER_COUNT = new AtomicLong(0);
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final String RAFT_PARTITION_PATH = AtomixFactory.GROUP_NAME + "/partitions/1";

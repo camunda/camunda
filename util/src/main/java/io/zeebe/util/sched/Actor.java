@@ -54,7 +54,7 @@ public abstract class Actor implements AutoCloseable {
 
   @Override
   public void close() {
-    actor.close().join(10, TimeUnit.SECONDS);
+    actor.close().join(30, TimeUnit.SECONDS);
   }
 
   public ActorFuture<Void> closeAsync() {
