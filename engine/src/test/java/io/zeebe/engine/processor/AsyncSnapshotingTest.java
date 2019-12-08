@@ -166,7 +166,7 @@ public class AsyncSnapshotingTest {
 
     // when
     clock.addTime(Duration.ofMinutes(1));
-    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
+    verify(snapshotController, TIMEOUT.times(2)).takeTempSnapshot(anyLong());
     setCommitPosition(100L);
 
     // then
@@ -204,7 +204,7 @@ public class AsyncSnapshotingTest {
 
     // when
     clock.addTime(Duration.ofMinutes(1));
-    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
+    verify(snapshotController, TIMEOUT.times(2)).takeTempSnapshot(anyLong());
     setCommitPosition(100L);
 
     // then
@@ -222,7 +222,7 @@ public class AsyncSnapshotingTest {
         .commitSnapshot(argThat(s -> s.getPosition() == 25L));
 
     clock.addTime(Duration.ofMinutes(1));
-    verify(snapshotController, TIMEOUT.times(1)).takeTempSnapshot(anyLong());
+    verify(snapshotController, TIMEOUT.times(2)).takeTempSnapshot(anyLong());
     setCommitPosition(100L);
     verify(snapshotController, TIMEOUT.times(1))
         .commitSnapshot(argThat(s -> s.getPosition() == 32L));
