@@ -349,7 +349,7 @@ public class Broker implements AutoCloseable {
   }
 
   private void scheduleActor(Actor actor) {
-    brokerContext.getScheduler().submitActor(actor).join(10, TimeUnit.SECONDS);
+    brokerContext.getScheduler().submitActor(actor).join(30, TimeUnit.SECONDS);
     closeables.add(actor);
   }
 
