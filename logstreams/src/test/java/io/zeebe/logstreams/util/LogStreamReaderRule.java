@@ -9,32 +9,25 @@ package io.zeebe.logstreams.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.logstreams.impl.LoggedEventImpl;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
-import java.util.ArrayList;
-import java.util.List;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.rules.ExternalResource;
 
 public class LogStreamReaderRule extends ExternalResource {
 
   private final LogStreamRule logStreamRule;
-  private final LogStreamReader logStreamReader;
+  private LogStreamReader logStreamReader;
 
   public LogStreamReaderRule(final LogStreamRule logStreamRule) {
     this.logStreamRule = logStreamRule;
-    logStreamReader = new BufferedLogStreamReader();
   }
 
   @Override
   protected void before() {
-    final LogStream logStream = logStreamRule.getLogStream();
-    logStreamReader.wrap(logStream.getLogStorage());
+    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    logStreamReader = logStream.newLogStreamReader();
   }
 
   @Override
@@ -78,39 +71,8 @@ public class LogStreamReaderRule extends ExternalResource {
     return new UnsafeBuffer(event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
   }
 
-  public List<LoggedEvent> readEvents() {
-    return readEvents(-1, -1);
-  }
-
-  public List<LoggedEvent> readEvents(long from, long to) {
-    final List<LoggedEvent> events = new ArrayList<>();
-
-    if (from > 0) {
-      logStreamReader.seek(from);
-    } else {
-      logStreamReader.seekToFirstEvent();
-    }
-
-    while (logStreamReader.hasNext()) {
-      final LoggedEvent event = logStreamReader.next();
-      if (to > 0 && event.getPosition() > to) {
-        break;
-      }
-
-      if (event.getPosition() >= from) {
-        events.add(copyEvent(event));
-      }
-    }
-
-    return events;
-  }
-
-  private LoggedEvent copyEvent(LoggedEvent event) {
-    final LoggedEventImpl copy = new LoggedEventImpl();
-    final MutableDirectBuffer copyBuffer = new UnsafeBuffer(new byte[event.getLength()]);
-    event.write(copyBuffer, 0);
-    copy.wrap(copyBuffer, 0);
-
-    return copy;
+  public LogStreamReader resetReader() {
+    logStreamReader = logStreamRule.newLogStreamReader();
+    return logStreamReader;
   }
 }

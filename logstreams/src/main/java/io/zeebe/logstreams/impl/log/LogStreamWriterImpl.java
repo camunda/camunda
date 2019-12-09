@@ -5,22 +5,22 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.log;
+package io.zeebe.logstreams.impl.log;
 
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.setTimestamp;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.metadataOffset;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setKey;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setMetadataLength;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setPosition;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setSourceEventPosition;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.setTimestamp;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
-import io.zeebe.logstreams.impl.LogEntryDescriptor;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -33,30 +33,16 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   private final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
   private final ClaimedFragment claimedFragment = new ClaimedFragment();
 
-  private Dispatcher logWriteBuffer;
-  private int partitionId;
+  private final Dispatcher logWriteBuffer;
+  private final int partitionId;
   private long key;
   private long sourceRecordPosition = -1L;
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
 
-  public LogStreamWriterImpl() {}
-
-  public LogStreamWriterImpl(final Dispatcher logWriteBuffer, final int partitionId) {
+  LogStreamWriterImpl(final int partitionId, final Dispatcher logWriteBuffer) {
     this.logWriteBuffer = logWriteBuffer;
     this.partitionId = partitionId;
-
-    reset();
-  }
-
-  public LogStreamWriterImpl(final LogStream log) {
-    wrap(log);
-  }
-
-  @Override
-  public void wrap(final LogStream log) {
-    logWriteBuffer = log.getWriteBuffer();
-    partitionId = log.getPartitionId();
 
     reset();
   }

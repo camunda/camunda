@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.log;
+package io.zeebe.logstreams.impl.log;
 
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -14,6 +14,8 @@ import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.util.LogStreamReaderRule;
@@ -57,33 +59,6 @@ public class LogStreamReaderTest {
   public void setUp() {
     eventKey = random.nextLong();
     reader = readerRule.getLogStreamReader();
-  }
-
-  @Test
-  public void shouldThrowExceptionIteratorNotInitialized() {
-    // given
-    final LogStreamReader reader = new BufferedLogStreamReader();
-
-    // expect
-    expectedException.expectMessage("Iterator not initialized");
-    expectedException.expect(IllegalStateException.class);
-
-    // when
-    reader.hasNext();
-  }
-
-  @Test
-  public void shouldThrowExceptionIteratorNotInitializedOnNext() {
-    // given
-    final LogStreamReader reader = new BufferedLogStreamReader();
-
-    // expect
-    expectedException.expectMessage("Iterator not initialized");
-    expectedException.expect(IllegalStateException.class);
-
-    // when
-    // then
-    reader.next();
   }
 
   @Test
@@ -154,7 +129,7 @@ public class LogStreamReaderTest {
     // given
     reader.close();
     final long position = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
-    reader.wrap(logStreamRule.getLogStorage());
+    reader = readerRule.resetReader();
 
     // then
     final LoggedEvent loggedEvent = readerRule.nextEvent();
@@ -169,7 +144,8 @@ public class LogStreamReaderTest {
     final long secondPos = writer.writeEvent(w -> w.key(eventKey).value(EVENT_VALUE));
 
     // when
-    reader.wrap(logStreamRule.getLogStorage(), secondPos);
+    reader = logStreamRule.newLogStreamReader();
+    reader.seek(secondPos);
 
     // then
     final LoggedEvent loggedEvent = reader.next();
@@ -328,9 +304,11 @@ public class LogStreamReaderTest {
   @Test
   public void shouldLimitAllocate() {
     // mock logStorage to always return insufficient capacity to increase buffer til max
+    final LogStorage logStorage = mock(LogStorage.class);
     final LogStorageReader logStorageReader = mock(LogStorageReader.class);
     when(logStorageReader.read(any(), anyLong(), any()))
         .thenReturn(LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY);
+    when(logStorage.newReader()).thenReturn(logStorageReader);
 
     // then
     expectedException.expect(RuntimeException.class);
@@ -339,8 +317,7 @@ public class LogStreamReaderTest {
             + BufferedLogStreamReader.MAX_BUFFER_CAPACITY);
 
     // when
-    ((BufferedLogStreamReader) reader)
-        .wrap(logStorageReader, BufferedLogStreamReader.FIRST_POSITION);
+    new BufferedLogStreamReader(logStorage);
   }
 
   @Test

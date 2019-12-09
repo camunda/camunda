@@ -7,9 +7,7 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.test.util.TestUtil;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -18,7 +16,7 @@ import org.junit.rules.ExternalResource;
 public class LogStreamWriterRule extends ExternalResource {
   private final LogStreamRule logStreamRule;
 
-  private LogStream logStream;
+  private SynchronousLogStream logStream;
   private LogStreamRecordWriter logStreamWriter;
 
   public LogStreamWriterRule(final LogStreamRule logStreamRule) {
@@ -28,18 +26,13 @@ public class LogStreamWriterRule extends ExternalResource {
   @Override
   protected void before() {
     this.logStream = logStreamRule.getLogStream();
-    this.logStreamWriter = new LogStreamWriterImpl(logStream);
+    this.logStreamWriter = logStream.newLogStreamRecordWriter();
   }
 
   @Override
   protected void after() {
     logStreamWriter = null;
     logStream = null;
-  }
-
-  public void wrap(LogStreamRule rule) {
-    this.logStream = rule.getLogStream();
-    this.logStreamWriter.wrap(logStream);
   }
 
   public long writeEvents(final int count, final DirectBuffer event) {
@@ -73,10 +66,6 @@ public class LogStreamWriterRule extends ExternalResource {
     } while (position == -1);
 
     return position;
-  }
-
-  public long tryWrite(final DirectBuffer value) {
-    return tryWrite(w -> w.keyNull().value(value));
   }
 
   public long tryWrite(final Consumer<LogStreamRecordWriter> writer) {

@@ -5,12 +5,13 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.impl;
+package io.zeebe.logstreams.impl.log;
 
 import com.netflix.concurrency.limits.limit.AbstractLimit;
 import com.netflix.concurrency.limits.limit.WindowedLimit;
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.Subscription;
+import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.impl.backpressure.AlgorithmCfg;
 import io.zeebe.logstreams.impl.backpressure.AppendBackpressureMetrics;
 import io.zeebe.logstreams.impl.backpressure.AppendEntryLimiter;
@@ -23,7 +24,6 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorage.AppendListener;
 import io.zeebe.util.Environment;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -119,10 +119,6 @@ public class LogStorageAppender extends Actor {
   private void appendToStorage(
       final ByteBuffer buffer, final Positions positions, final Listener listener) {
     logStorage.append(positions.lowest, positions.highest, buffer, listener);
-  }
-
-  public ActorFuture<Void> close() {
-    return actor.close();
   }
 
   @Override

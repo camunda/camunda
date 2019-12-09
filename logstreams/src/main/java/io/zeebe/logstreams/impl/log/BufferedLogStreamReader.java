@@ -5,11 +5,10 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.log;
+package io.zeebe.logstreams.impl.log;
 
-import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
-import io.zeebe.logstreams.impl.LogEntryDescriptor;
-import io.zeebe.logstreams.impl.LoggedEventImpl;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.util.allocation.AllocatedBuffer;
@@ -22,8 +21,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class BufferedLogStreamReader implements LogStreamReader {
-  public static final int DEFAULT_INITIAL_BUFFER_CAPACITY = 32 * 1024;
-  public static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; // 128MB
+  static final int DEFAULT_INITIAL_BUFFER_CAPACITY = 32 * 1024;
+  static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; // 128MB
   static final long FIRST_POSITION = Long.MIN_VALUE;
   private static final int UNINITIALIZED = -1;
   // configuration
@@ -45,13 +44,15 @@ public class BufferedLogStreamReader implements LogStreamReader {
   private ByteBuffer byteBuffer;
   private int bufferOffset;
 
-  public BufferedLogStreamReader(final LogStorage logStorage) {
-    this();
-    wrap(logStorage);
-  }
-
-  public BufferedLogStreamReader() {
+  BufferedLogStreamReader(final LogStorage logStorage) {
     state = IteratorState.WRAP_NOT_CALLED;
+    this.storageReader = logStorage.newReader();
+
+    if (isClosed()) {
+      allocateBuffer(DEFAULT_INITIAL_BUFFER_CAPACITY);
+    }
+
+    seek(FIRST_POSITION);
   }
 
   @Override
@@ -128,26 +129,6 @@ public class BufferedLogStreamReader implements LogStreamReader {
   @Override
   public boolean isClosed() {
     return allocatedBuffer == null;
-  }
-
-  @Override
-  public void wrap(final LogStorage logStorage) {
-    wrap(logStorage, FIRST_POSITION);
-  }
-
-  @Override
-  public void wrap(final LogStorage logStorage, final long position) {
-    wrap(logStorage.newReader(), position);
-  }
-
-  public void wrap(final LogStorageReader reader, final long position) {
-    this.storageReader = reader;
-
-    if (isClosed()) {
-      allocateBuffer(DEFAULT_INITIAL_BUFFER_CAPACITY);
-    }
-
-    seek(position);
   }
 
   private boolean seekFrom(final long blockAddress, final long position) {

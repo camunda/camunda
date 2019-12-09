@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.impl;
+package io.zeebe.logstreams.impl.log;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -16,8 +16,6 @@ import static org.mockito.Mockito.verify;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorage.AppendListener;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
@@ -73,14 +71,13 @@ public class LogStorageAppenderTest {
     appender =
         new LogStorageAppender(
             "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE);
-    writer = new LogStreamWriterImpl(dispatcher, PARTITION_ID);
-    reader = new BufferedLogStreamReader();
-    reader.wrap(logStorage, -1);
+    writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
+    reader = new BufferedLogStreamReader(logStorage);
   }
 
   @After
   public void tearDown() throws Exception {
-    appender.close().join();
+    appender.close();
     dispatcher.close();
     logStorageRule.close();
   }

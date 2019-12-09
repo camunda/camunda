@@ -12,8 +12,6 @@ import org.agrona.DirectBuffer;
 
 public interface LogStreamRecordWriter extends LogStreamWriter {
 
-  void wrap(LogStream log);
-
   LogStreamRecordWriter keyNull();
 
   LogStreamRecordWriter key(long key);

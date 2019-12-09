@@ -5,14 +5,20 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.impl.delete;
+package io.zeebe.logstreams.log;
 
-@FunctionalInterface
-public interface DeletionService {
-  /**
-   * Triggers deletion of data from the log stream, where the given position is used as upper bound.
-   *
-   * @param position the position as upper bound
-   */
-  void delete(long position);
+import org.agrona.DirectBuffer;
+
+public interface ReadableFragment {
+  int getStreamId();
+
+  int getType();
+
+  int getVersion();
+
+  int getMessageOffset();
+
+  int getMessageLength();
+
+  DirectBuffer getBuffer();
 }

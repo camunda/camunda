@@ -5,30 +5,30 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.logstreams.log;
+package io.zeebe.logstreams.impl;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamServiceName;
-
-import io.zeebe.logstreams.impl.service.LogStreamService;
+import io.zeebe.logstreams.impl.log.LogStreamImpl;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Objects;
-import org.agrona.concurrent.status.AtomicLongPosition;
 
 @SuppressWarnings("unchecked")
 public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
   private static final int MINIMUM_FRAGMENT_SIZE = 4 * 1024;
   protected int maxFragmentSize = 1024 * 1024 * 4;
   protected int partitionId = -1;
-  protected ServiceContainer serviceContainer;
+  protected ActorScheduler actorScheduler;
   protected LogStorage logStorage;
   protected String logName;
 
-  public SELF withServiceContainer(final ServiceContainer serviceContainer) {
-    this.serviceContainer = serviceContainer;
+  public SELF withActorScheduler(final ActorScheduler actorScheduler) {
+    this.actorScheduler = actorScheduler;
     return (SELF) this;
   }
 
@@ -56,26 +56,57 @@ public class LogStreamBuilder<SELF extends LogStreamBuilder<SELF>> {
     applyDefaults();
     validate();
 
-    final var service =
-        new LogStreamService(
-            serviceContainer,
+    final var logStreamService =
+        new LogStreamImpl(
+            actorScheduler,
             new ActorConditions(),
             logName,
             partitionId,
             ByteValue.ofBytes(maxFragmentSize),
-            new AtomicLongPosition(),
             logStorage);
-    return serviceContainer.createService(logStreamServiceName(logName), service).install();
+
+    final var logstreamInstallFuture = new CompletableActorFuture<LogStream>();
+    actorScheduler
+        .submitActor(logStreamService)
+        .onComplete(
+            (v, t) -> {
+              if (t == null) {
+                logstreamInstallFuture.complete(logStreamService);
+              } else {
+                logstreamInstallFuture.completeExceptionally(t);
+              }
+            });
+
+    return logstreamInstallFuture;
   }
 
   public LogStream build() {
-    return buildAsync().join();
+    // this is only called from out test's, but not to implement it multiple times we add the sync
+    // build here
+    final var buildFuture = new CompletableActorFuture<LogStream>();
+
+    actorScheduler.submitActor(
+        new Actor() {
+          @Override
+          protected void onActorStarting() {
+            actor.runOnCompletionBlockingCurrentPhase(
+                buildAsync(),
+                (logStream, t) -> {
+                  if (t == null) {
+                    buildFuture.complete(logStream);
+                  } else {
+                    buildFuture.completeExceptionally(t);
+                  }
+                });
+          }
+        });
+    return buildFuture.join();
   }
 
   protected void applyDefaults() {}
 
   protected void validate() {
-    Objects.requireNonNull(serviceContainer, "Must specify a service container");
+    Objects.requireNonNull(actorScheduler, "Must specify a actor scheduler");
     Objects.requireNonNull(logStorage, "Must specify a log storage");
 
     if (maxFragmentSize < MINIMUM_FRAGMENT_SIZE) {

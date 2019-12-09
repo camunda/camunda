@@ -11,12 +11,12 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLeng
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
 import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.getPosition;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.positionOffset;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.getPosition;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.positionOffset;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.logstreams.impl.CompleteEventsInBlockProcessor;
+import io.zeebe.logstreams.impl.log.CompleteEventsInBlockProcessor;
 import io.zeebe.logstreams.spi.LogStorage;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
