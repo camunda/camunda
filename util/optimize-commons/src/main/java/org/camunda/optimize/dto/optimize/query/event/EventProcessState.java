@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum EventProcessState {
   UNMAPPED,
   MAPPED,
@@ -12,4 +14,14 @@ public enum EventProcessState {
   PUBLISHED,
   UNPUBLISHED_CHANGES,
   ;
+
+  @JsonValue
+  public String getId() {
+    return name().toLowerCase();
+  }
+
+  @Override
+  public String toString() {
+    return getId();
+  }
 }
