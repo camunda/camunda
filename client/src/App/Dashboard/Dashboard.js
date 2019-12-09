@@ -20,7 +20,7 @@ import {PAGE_TITLE} from 'modules/constants';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import Copyright from 'modules/components/Copyright';
 import * as Styled from './styled.js';
-import {withStore} from 'modules/contexts/StoreContext';
+import {withCountStore} from 'modules/contexts/CountContext';
 import {MESSAGES, INCIDENTS_BY_ERROR, INSTANCES_BY_WORKFLOW} from './constants';
 
 class Dashboard extends Component {
@@ -34,11 +34,6 @@ class Dashboard extends Component {
 
   state = {
     counts: {
-      data: {
-        running: 0,
-        active: 0,
-        withIncidents: 0
-      },
       errors: null
     },
     incidents: {
@@ -130,4 +125,4 @@ class Dashboard extends Component {
   }
 }
 
-export default withStore(Dashboard);
+export default withCountStore(Dashboard);

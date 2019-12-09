@@ -18,7 +18,7 @@ import InstancesContainer from './Instances/InstancesContainer';
 import Instance from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {DataManagerProvider} from 'modules/DataManager';
-import {DataStoreProvider} from 'modules/contexts/StoreContext';
+import {CountStoreProvider} from 'modules/contexts/CountContext';
 
 export default function App(props) {
   return (
@@ -30,7 +30,7 @@ export default function App(props) {
             <Switch>
               <Route path="/login" component={Login} />
               <Authentication>
-                <DataStoreProvider>
+                <CountStoreProvider>
                   <Header />
                   <Route exact path="/" component={Dashboard} />
                   <Route
@@ -39,7 +39,7 @@ export default function App(props) {
                     component={InstancesContainer}
                   />
                   <Route exact path="/instances/:id" component={Instance} />
-                </DataStoreProvider>
+                </CountStoreProvider>
               </Authentication>
             </Switch>
           </Router>

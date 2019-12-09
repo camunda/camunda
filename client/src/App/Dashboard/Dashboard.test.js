@@ -5,22 +5,20 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {mount} from 'enzyme';
 import {
   mockResolvedAsyncFn,
   flushPromises,
-  createCoreStatistics,
   createInstancesByWorkflow,
   createIncidentsByError
 } from 'modules/testUtils';
-
+import {BrowserRouter as Router} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 
-import * as api from 'modules/api/instances/instances';
 import * as apiIncidents from 'modules/api/incidents/incidents';
 
 import Dashboard from './Dashboard';
-import Header from '../Header';
+
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
@@ -36,26 +34,26 @@ const mockIncidentsByError = {
   data: createIncidentsByError()
 };
 
-const mockWorkflowCoreStatistics = {
-  coreStatistics: createCoreStatistics()
-};
-
 const mockApi = (mockData = {}) => {
   const {
-    workflowCoreStatistics = mockWorkflowCoreStatistics,
     InstancesByWorkflow = mockInstancesByWorkflow,
     incidentsByError = mockIncidentsByError
   } = mockData;
 
-  api.fetchWorkflowCoreStatistics = mockResolvedAsyncFn(workflowCoreStatistics);
   apiIncidents.fetchInstancesByWorkflow = mockResolvedAsyncFn(
     InstancesByWorkflow
   );
   apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(incidentsByError);
 };
 
+const mockDataStore = {running: 120, active: 20, withIncidents: 100};
+
 const shallowRenderDashboard = async () => {
-  const node = shallow(<Dashboard />);
+  const node = mount(
+    <Router>
+      <Dashboard.WrappedComponent dataStore={mockDataStore} />
+    </Router>
+  );
 
   await flushPromises();
   await node.update();
@@ -82,13 +80,6 @@ describe('Dashboard', () => {
     expect(node.contains('Camunda Operate Dashboard')).toBe(true);
   });
 
-  it('should render Header component', async () => {
-    mockApi();
-    const node = await shallowRenderDashboard();
-
-    expect(node.find(Header)).toExist();
-  });
-
   it('should render MetricPanel component', async () => {
     mockApi();
     const node = await shallowRenderDashboard();
@@ -96,7 +87,9 @@ describe('Dashboard', () => {
     const MetricPanelNode = node.find(MetricPanel);
 
     expect(MetricPanelNode).toExist();
-    expect(MetricPanelNode.dive().text()).toContain('10 Running Instances');
+    expect(MetricPanelNode.text()).toContain(
+      `${mockDataStore.running} Running Instances`
+    );
   });
 
   describe('Incidents by Workflow', () => {
@@ -153,7 +146,7 @@ describe('Dashboard', () => {
         .find(EmptyPanel);
 
       expect(EmptyPanelNode).toExist();
-      expect(EmptyPanelNode.dive().text()).toBe(
+      expect(EmptyPanelNode.text()).toContain(
         'Incidents by Error Message could not be fetched.'
       );
     });
@@ -167,7 +160,7 @@ describe('Dashboard', () => {
         .find(EmptyPanel);
 
       expect(EmptyPanelNode).toExist();
-      expect(EmptyPanelNode.dive().text()).toBe(
+      expect(EmptyPanelNode.text()).toBe(
         'There are no Instances with Incident.'
       );
     });
