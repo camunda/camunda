@@ -2,9 +2,12 @@ module github.com/zeebe-io/zeebe/clients/go
 
 go 1.13
 
+replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20191113042239-ea84732a7725
+
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Microsoft/hcsshim v0.8.6 // indirect
+	github.com/containerd/containerd v1.3.2 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v0.7.3-0.20190506211059-b20a14b54661
