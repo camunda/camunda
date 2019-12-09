@@ -20,38 +20,27 @@ import io.atomix.protocols.raft.partition.RaftPartitionGroup.Builder;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotStoreFactory;
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.ByteValue;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
 import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
-public class AtomixService implements Service<Atomix> {
+public final class AtomixFactory {
+  public static final String GROUP_NAME = "raft-partition";
+
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
-  private final BrokerCfg configuration;
-  private Atomix atomix;
+  private AtomixFactory() {}
 
-  public AtomixService(final BrokerCfg configuration) {
-    this.configuration = configuration;
-  }
-
-  @Override
-  public void start(final ServiceStartContext startContext) {
+  public static Atomix fromConfiguration(BrokerCfg configuration) {
     final var clusterCfg = configuration.getCluster();
     final var nodeId = clusterCfg.getNodeId();
     final var localMemberId = Integer.toString(nodeId);
@@ -97,29 +86,19 @@ public class AtomixService implements Service<Atomix> {
             .withFlushOnCommit()
             .build();
 
-    final String raftPartitionGroupName = Partition.GROUP_NAME;
     final RaftPartitionGroup partitionGroup =
-        createRaftPartitionGroup(rootDirectory, raftPartitionGroupName);
+        createRaftPartitionGroup(configuration, rootDirectory);
 
-    atomix =
-        atomixBuilder.withManagementGroup(systemGroup).withPartitionGroups(partitionGroup).build();
+    return atomixBuilder
+        .withManagementGroup(systemGroup)
+        .withPartitionGroups(partitionGroup)
+        .build();
   }
 
-  @Override
-  public void stop(final ServiceStopContext stopContext) {
-    final CompletableFuture<Void> stopFuture = atomix.stop();
-    stopContext.async(mapCompletableFuture(stopFuture));
-  }
+  private static RaftPartitionGroup createRaftPartitionGroup(
+      final BrokerCfg configuration, final String rootDirectory) {
 
-  @Override
-  public Atomix get() {
-    return atomix;
-  }
-
-  private RaftPartitionGroup createRaftPartitionGroup(
-      final String rootDirectory, final String raftPartitionGroupName) {
-
-    final File raftDirectory = new File(rootDirectory, raftPartitionGroupName);
+    final File raftDirectory = new File(rootDirectory, AtomixFactory.GROUP_NAME);
     IoUtil.ensureDirectoryExists(raftDirectory, "Raft data directory");
 
     final ClusterCfg clusterCfg = configuration.getCluster();
@@ -127,7 +106,7 @@ public class AtomixService implements Service<Atomix> {
     final NetworkCfg networkCfg = configuration.getNetwork();
 
     final Builder partitionGroupBuilder =
-        RaftPartitionGroup.builder(raftPartitionGroupName)
+        RaftPartitionGroup.builder(AtomixFactory.GROUP_NAME)
             .withNumPartitions(clusterCfg.getPartitionsCount())
             .withPartitionSize(clusterCfg.getReplicationFactor())
             .withMembers(getRaftGroupMembers(clusterCfg))
@@ -157,7 +136,7 @@ public class AtomixService implements Service<Atomix> {
     return partitionGroupBuilder.build();
   }
 
-  private List<String> getRaftGroupMembers(final ClusterCfg clusterCfg) {
+  private static List<String> getRaftGroupMembers(final ClusterCfg clusterCfg) {
     final int clusterSize = clusterCfg.getClusterSize();
     // node ids are always 0 to clusterSize - 1
     final List<String> members = new ArrayList<>();
@@ -167,7 +146,7 @@ public class AtomixService implements Service<Atomix> {
     return members;
   }
 
-  private NodeDiscoveryProvider createDiscoveryProvider(
+  private static NodeDiscoveryProvider createDiscoveryProvider(
       final ClusterCfg clusterCfg, final String localMemberId) {
     final BootstrapDiscoveryBuilder builder = BootstrapDiscoveryProvider.builder();
     final List<String> initialContactPoints = clusterCfg.getInitialContactPoints();
@@ -184,18 +163,5 @@ public class AtomixService implements Service<Atomix> {
           nodes.add(node);
         });
     return builder.withNodes(nodes).build();
-  }
-
-  private ActorFuture<Void> mapCompletableFuture(final CompletableFuture<Void> atomixFuture) {
-    final ActorFuture<Void> mappedActorFuture = new CompletableActorFuture<>();
-
-    atomixFuture
-        .thenAccept(mappedActorFuture::complete)
-        .exceptionally(
-            t -> {
-              mappedActorFuture.completeExceptionally(t);
-              return null;
-            });
-    return mappedActorFuture;
   }
 }

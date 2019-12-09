@@ -15,10 +15,12 @@ import io.zeebe.broker.transport.backpressure.CommandRateLimiter;
 import io.zeebe.broker.transport.backpressure.NoopRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.logstreams.LogStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
+import io.zeebe.logstreams.util.SyncLogStream;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -30,7 +32,6 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.MessageIntent;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
@@ -63,21 +64,18 @@ public class CommandApiMessageHandlerTest {
     JOB_EVENT = buffer.byteArray();
   }
 
-  private TemporaryFolder tempFolder = new TemporaryFolder();
-  private ActorSchedulerRule agentRunnerService = new ActorSchedulerRule();
-  private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(agentRunnerService);
+  private final TemporaryFolder tempFolder = new TemporaryFolder();
+  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(tempFolder).around(agentRunnerService).around(serviceContainerRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(tempFolder).around(actorSchedulerRule);
 
-  private AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(tempFolder);
+  private final AtomixLogStorageRule logStorageRule = new AtomixLogStorageRule(tempFolder);
   private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024 * 1024]);
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final ExecuteCommandRequestEncoder commandRequestEncoder =
       new ExecuteCommandRequestEncoder();
   private BufferingServerOutput serverOutput;
-  private LogStream logStream;
+  private SynchronousLogStream logStream;
   private CommandApiMessageHandler messageHandler;
   private final RequestLimiter noneLimiter = new NoopRequestLimiter();
 
@@ -89,18 +87,18 @@ public class CommandApiMessageHandlerTest {
     logStorageRule.open();
     serverOutput = new BufferingServerOutput();
     logStream =
-        LogStreams.createLogStream()
-            .withPartitionId(LOG_STREAM_PARTITION_ID)
-            .withLogName(logName)
-            .withServiceContainer(serviceContainerRule.get())
-            .withLogName(logName)
-            .withLogStorage(logStorageRule.getStorage())
-            .build();
+        new SyncLogStream(
+            LogStreams.createLogStream()
+                .withPartitionId(LOG_STREAM_PARTITION_ID)
+                .withLogName(logName)
+                .withActorScheduler(actorSchedulerRule.get())
+                .withLogName(logName)
+                .withLogStorage(logStorageRule.getStorage())
+                .build());
     logStorageRule.setPositionListener(logStream::setCommitPosition);
-    logStream.openAppender().join();
 
     messageHandler = new CommandApiMessageHandler();
-    messageHandler.addPartition(logStream, noneLimiter);
+    messageHandler.addPartition(1, logStream.newLogStreamRecordWriter(), noneLimiter);
   }
 
   @After
@@ -128,8 +126,7 @@ public class CommandApiMessageHandlerTest {
     // then
     assertThat(isHandled).isTrue();
 
-    final BufferedLogStreamReader logStreamReader =
-        new BufferedLogStreamReader(logStream.getLogStorage());
+    final LogStreamReader logStreamReader = logStream.newLogStreamReader();
     waitForAvailableEvent(logStreamReader);
 
     final LoggedEvent loggedEvent = logStreamReader.next();
@@ -261,7 +258,9 @@ public class CommandApiMessageHandlerTest {
     final CommandRateLimiter settableLimiter =
         CommandRateLimiter.builder().limit(new SettableLimit(1)).build(logStream.getPartitionId());
     messageHandler = new CommandApiMessageHandler();
-    messageHandler.addPartition(logStream, settableLimiter);
+    final int partitionId = 1;
+    final LogStreamRecordWriter logStreamWriter = logStream.newLogStreamRecordWriter();
+    messageHandler.addPartition(partitionId, logStreamWriter, settableLimiter);
     settableLimiter.tryAcquire(0, 1, null);
 
     // when
@@ -288,7 +287,9 @@ public class CommandApiMessageHandlerTest {
     final CommandRateLimiter settableLimiter =
         CommandRateLimiter.builder().limit(new SettableLimit(1)).build(logStream.getPartitionId());
     messageHandler = new CommandApiMessageHandler();
-    messageHandler.addPartition(logStream, settableLimiter);
+    final int partitionId = 1;
+    final LogStreamRecordWriter logStreamWriter = logStream.newLogStreamRecordWriter();
+    messageHandler.addPartition(partitionId, logStreamWriter, settableLimiter);
     settableLimiter.tryAcquire(0, 1, null);
 
     // when
@@ -337,7 +338,7 @@ public class CommandApiMessageHandlerTest {
     return headerEncoder.encodedLength() + commandRequestEncoder.encodedLength();
   }
 
-  protected void waitForAvailableEvent(final BufferedLogStreamReader logStreamReader) {
-    TestUtil.waitUntil(() -> logStreamReader.hasNext());
+  private void waitForAvailableEvent(final LogStreamReader logStreamReader) {
+    TestUtil.waitUntil(logStreamReader::hasNext);
   }
 }

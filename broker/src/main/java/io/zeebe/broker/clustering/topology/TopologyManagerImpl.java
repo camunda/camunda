@@ -5,7 +5,9 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.clustering.base.topology;
+package io.zeebe.broker.clustering.topology;
+
+import static io.zeebe.broker.Broker.actorNamePattern;
 
 import io.atomix.cluster.ClusterMembershipEvent;
 import io.atomix.cluster.ClusterMembershipEvent.Type;
@@ -13,11 +15,12 @@ import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.Member;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -25,7 +28,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
 public class TopologyManagerImpl extends Actor
-    implements TopologyManager, ClusterMembershipEventListener {
+    implements TopologyManager, ClusterMembershipEventListener, PartitionListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final Int2ObjectHashMap<BrokerInfo> partitionLeaders = new Int2ObjectHashMap<>();
@@ -41,17 +44,27 @@ public class TopologyManagerImpl extends Actor
         .setClusterSize(clusterCfg.getClusterSize())
         .setPartitionsCount(clusterCfg.getPartitionsCount())
         .setReplicationFactor(clusterCfg.getReplicationFactor());
-    // ensures that the first published event will contain the broker's info
-    publishTopologyChanges();
+  }
+
+  @Override
+  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
+    setFollower(partitionId);
+  }
+
+  @Override
+  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+    setLeader(term, partitionId);
   }
 
   @Override
   public String getName() {
-    return "topology";
+    return actorNamePattern(localBroker, "TopologyManager");
   }
 
   @Override
   protected void onActorStarted() {
+    // ensures that the first published event will contain the broker's info
+    publishTopologyChanges();
     atomix.getMembershipService().addListener(this);
     atomix
         .getMembershipService()
@@ -83,14 +96,9 @@ public class TopologyManagerImpl extends Actor
     final Member eventSource = clusterMembershipEvent.subject();
 
     final BrokerInfo brokerInfo = readBrokerInfo(eventSource);
-    LOG.debug(
-        "Broker {} received new event of type {} and subject {}",
-        localBroker.getNodeId(),
-        clusterMembershipEvent.type(),
-        brokerInfo);
 
     if (brokerInfo != null && brokerInfo.getNodeId() != localBroker.getNodeId()) {
-      actor.call(
+      actor.run(
           () -> {
             switch (clusterMembershipEvent.type()) {
               case METADATA_CHANGED:
@@ -104,6 +112,10 @@ public class TopologyManagerImpl extends Actor
 
               case REACHABILITY_CHANGED:
               default:
+                LOG.debug(
+                    "Received {} from member {}, was not handled.",
+                    clusterMembershipEvent.type(),
+                    brokerInfo.getNodeId());
                 break;
             }
           });
@@ -112,6 +124,7 @@ public class TopologyManagerImpl extends Actor
 
   // Remove a member from the topology
   private void onMemberRemoved(BrokerInfo brokerInfo) {
+    LOG.debug("Received member removed {} ", brokerInfo);
     brokerInfo.consumePartitions(
         partition -> removeIfLeader(brokerInfo, partition),
         (leaderPartitionId, term) -> {},
@@ -127,6 +140,11 @@ public class TopologyManagerImpl extends Actor
 
   // Update local knowledge about the partitions of remote node
   private void onMetadataChanged(BrokerInfo brokerInfo) {
+    LOG.debug(
+        "Received metadata change for {}, partitions {} terms {}",
+        brokerInfo.getNodeId(),
+        brokerInfo.getPartitionRoles(),
+        brokerInfo.getPartitionLeaderTerms());
     brokerInfo.consumePartitions(
         (leaderPartitionId, term) -> {
           if (updatePartitionLeader(brokerInfo, leaderPartitionId, term)) {
@@ -183,10 +201,6 @@ public class TopologyManagerImpl extends Actor
   private void publishTopologyChanges() {
     final Properties memberProperties = atomix.getMembershipService().getLocalMember().properties();
     localBroker.writeIntoProperties(memberProperties);
-  }
-
-  public ActorFuture<Void> close() {
-    return actor.close();
   }
 
   @Override

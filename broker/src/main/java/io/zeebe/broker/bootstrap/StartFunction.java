@@ -5,12 +5,9 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.clustering.base.partitions;
+package io.zeebe.broker.bootstrap;
 
-public interface PartitionRoleChangeListener {
-  /* when this node becomes a follower for partition partitionId */
-  void onTransitionToFollower(int partitionId);
-
-  /* when this node becomes the leader for partition partitionId */
-  void onTransitionToLeader(int partitionId);
+@FunctionalInterface
+public interface StartFunction {
+  AutoCloseable start() throws Exception;
 }

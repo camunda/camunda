@@ -5,14 +5,9 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.broker.exporter;
+package io.zeebe.broker.bootstrap;
 
-import io.zeebe.servicecontainer.ServiceName;
-
-public class ExporterServiceNames {
-
-  public static ServiceName<ExporterDirectorService> exporterDirectorServiceName(int partitionId) {
-    final String name = String.format("io.zeebe.broker.exporter.%d", partitionId);
-    return ServiceName.newServiceName(name, ExporterDirectorService.class);
-  }
+@FunctionalInterface
+public interface CheckedRunnable {
+  void run() throws Exception;
 }

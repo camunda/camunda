@@ -7,75 +7,63 @@
  */
 package io.zeebe.broker.transport.commandapi;
 
-import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.Loggers;
+import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceGroupReference;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.ServerTransport;
 import java.util.function.Consumer;
 
-public class CommandApiService implements Service<CommandApiService> {
+public class CommandApiService implements PartitionListener {
 
-  private final ServiceGroupReference<Partition> leaderPartitionsGroupReference;
-  private final Injector<ServerTransport> serverTransportInjector = new Injector<>();
   private final CommandApiMessageHandler service;
   private final PartitionAwareRequestLimiter limiter;
-  private ServerOutput serverOutput;
+  private final ServerOutput serverOutput;
 
   public CommandApiService(
-      CommandApiMessageHandler commandApiMessageHandler, PartitionAwareRequestLimiter limiter) {
+      ServerOutput serverOutput,
+      CommandApiMessageHandler commandApiMessageHandler,
+      PartitionAwareRequestLimiter limiter) {
+    this.serverOutput = serverOutput;
     this.limiter = limiter;
     this.service = commandApiMessageHandler;
-    leaderPartitionsGroupReference =
-        ServiceGroupReference.<Partition>create()
-            .onAdd(this::addPartition)
-            .onRemove(this::removePartition)
-            .build();
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
-    serverOutput = serverTransportInjector.getValue().getOutput();
+  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
+    limiter.removePartition(partitionId);
+    service.removePartition(logStream);
   }
 
   @Override
-  public CommandApiService get() {
-    return this;
+  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+    limiter.addPartition(partitionId);
+
+    logStream
+        .newLogStreamRecordWriter()
+        .onComplete(
+            (recordWriter, error) -> {
+              if (error == null) {
+                service.addPartition(partitionId, recordWriter, limiter.getLimiter(partitionId));
+              } else {
+                // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                // the best would be to return a future onBecomingLeader
+                // when one of these futures failed we need to stop the partition installation and
+                // step down
+                // because then otherwise we are not correctly installed
+                Loggers.SYSTEM_LOGGER.error(
+                    "Error on retrieving write buffer from log stream {}", partitionId, error);
+              }
+            });
   }
 
   public CommandResponseWriter newCommandResponseWriter() {
     return new CommandResponseWriterImpl(serverOutput);
-  }
-
-  public ServiceGroupReference<Partition> getLeaderParitionsGroupReference() {
-    return leaderPartitionsGroupReference;
-  }
-
-  public Injector<ServerTransport> getServerTransportInjector() {
-    return serverTransportInjector;
-  }
-
-  public CommandApiMessageHandler getCommandApiMessageHandler() {
-    return service;
-  }
-
-  private void removePartition(ServiceName<Partition> partitionServiceName, Partition partition) {
-    limiter.removePartition(partition.getPartitionId());
-    service.removePartition(partition.getLogStream());
-  }
-
-  private void addPartition(ServiceName<Partition> partitionServiceName, Partition partition) {
-    limiter.addPartition(partition.getPartitionId());
-    service.addPartition(partition.getLogStream(), limiter.getLimiter(partition.getPartitionId()));
   }
 
   public Consumer<TypedRecord> getOnProcessedListener(int partitionId) {
