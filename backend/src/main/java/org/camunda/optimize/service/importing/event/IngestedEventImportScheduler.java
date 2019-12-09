@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.event;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
+import org.camunda.optimize.service.events.stateprocessing.EventStateProcessingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.IngestedEventImportConfiguration;
 import org.springframework.scheduling.Trigger;
@@ -22,7 +23,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class IngestedEventImportScheduler extends AbstractScheduledService {
+
   private final ConfigurationService configurationService;
+  private final EventStateProcessingService eventStateProcessingService;
 
   @PostConstruct
   public void init() {
@@ -44,7 +47,9 @@ public class IngestedEventImportScheduler extends AbstractScheduledService {
 
   @Override
   protected void run() {
-    // TODO call mediators
+    if (!eventStateProcessingService.isCurrentlyProcessingEvents()) {
+      eventStateProcessingService.processUncountedEvents();
+    }
   }
 
   @Override

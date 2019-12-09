@@ -33,6 +33,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.events.stateprocessing.EventStateProcessingService;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -129,7 +130,7 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
   }
 
   public void startContinuousImportScheduling() {
-    getOptimize().startImportSchedulers();
+    getOptimize().startEngineImportSchedulers();
   }
 
   public void importAllEngineData() {
@@ -446,6 +447,10 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public IdentityService getIdentityService() {
     return getApplicationContext().getBean(IdentityService.class);
+  }
+
+  public EventStateProcessingService getEventStateProcessingService() {
+    return getApplicationContext().getBean(EventStateProcessingService.class);
   }
 
   public ElasticSearchSchemaManager getElasticSearchSchemaManager() {

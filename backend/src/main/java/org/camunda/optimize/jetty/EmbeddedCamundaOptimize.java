@@ -186,7 +186,8 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     return jerseyCamundaOptimize.getApplicationContext().getBean(ElasticsearchImportJobExecutor.class);
   }
 
-  public void startImportSchedulers() {
+  @Override
+  public void startEngineImportSchedulers() {
     boolean oneStarted = false;
 
     while (!oneStarted) {
@@ -208,14 +209,14 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   @Override
-  public void disableImportSchedulers() {
+  public void disableEngineImportSchedulers() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler.disable();
     }
   }
 
   @Override
-  public void enableImportSchedulers() {
+  public void enableEngineImportSchedulers() {
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       scheduler.enable();
     }

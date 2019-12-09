@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.EventService;
+import org.camunda.optimize.service.events.EventService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BeanParam;

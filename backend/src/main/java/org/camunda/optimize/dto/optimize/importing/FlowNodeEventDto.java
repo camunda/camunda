@@ -18,7 +18,7 @@ import java.time.OffsetDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class FlowNodeEventDto implements Serializable,OptimizeDto {
+public class FlowNodeEventDto implements Serializable, OptimizeDto {
   private String id;
   private String activityId;
   private String activityInstanceId;

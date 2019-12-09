@@ -5,13 +5,18 @@
  */
 package org.camunda.optimize.dto.optimize.importing;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class OutputInstanceDto {
+
   private String id;
   private String clauseId;
   private String clauseName;
@@ -21,18 +26,4 @@ public class OutputInstanceDto {
   private VariableType type;
   private String value;
 
-  public OutputInstanceDto() {
-  }
-
-  public OutputInstanceDto(final String id, final String clauseId, final String clauseName, final String ruleId,
-                           final Integer ruleOrder, final String variableName, final VariableType type, final String value) {
-    this.id = id;
-    this.clauseId = clauseId;
-    this.clauseName = clauseName;
-    this.ruleId = ruleId;
-    this.ruleOrder = ruleOrder;
-    this.variableName = variableName;
-    this.type = type;
-    this.value = value;
-  }
 }

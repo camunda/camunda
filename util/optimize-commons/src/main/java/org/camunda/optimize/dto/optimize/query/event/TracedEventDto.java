@@ -24,4 +24,13 @@ public class TracedEventDto implements OptimizeDto {
   private String source;
   private String eventName;
 
+  public static TracedEventDto fromEventDto(EventDto eventDto) {
+    return TracedEventDto.builder()
+      .timestamp(eventDto.getTimestamp())
+      .group(eventDto.getGroup())
+      .source(eventDto.getSource())
+      .eventName(eventDto.getEventName())
+      .build();
+  }
+
 }

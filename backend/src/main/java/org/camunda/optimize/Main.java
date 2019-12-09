@@ -15,7 +15,7 @@ public class Main {
     jettyCamundaOptimize = new EmbeddedCamundaOptimize();
     try {
       jettyCamundaOptimize.startOptimize();
-      jettyCamundaOptimize.startImportSchedulers();
+      jettyCamundaOptimize.startEngineImportSchedulers();
       jettyCamundaOptimize.join();
     } finally {
       jettyCamundaOptimize.destroyOptimize();

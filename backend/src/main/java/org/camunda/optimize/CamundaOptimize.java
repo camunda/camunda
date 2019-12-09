@@ -12,10 +12,10 @@ public interface CamundaOptimize {
 
   ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor();
 
-  void startImportSchedulers();
+  void startEngineImportSchedulers();
 
-  void disableImportSchedulers();
+  void disableEngineImportSchedulers();
 
-  void enableImportSchedulers();
+  void enableEngineImportSchedulers();
 
 }

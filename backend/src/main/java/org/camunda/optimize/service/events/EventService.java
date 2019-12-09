@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service;
+package org.camunda.optimize.service.events;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
@@ -32,6 +32,14 @@ public class EventService {
 
   public List<EventCountDto> getEventCounts(EventCountRequestDto eventCountRequestDto) {
     return eventReader.getEventCounts(eventCountRequestDto);
+  }
+
+  public List<EventDto> getEventsIngestedAfter(final Long ingestTimestamp, final int limit) {
+    return eventReader.getEventsIngestedAfter(ingestTimestamp, limit);
+  }
+
+  public List<EventDto> getEventsIngestedAt(final Long ingestTimestamp) {
+    return eventReader.getEventsIngestedAt(ingestTimestamp);
   }
 
 }

@@ -10,7 +10,7 @@ import lombok.Data;
 import lombok.experimental.Delegate;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.service.EventService;
+import org.camunda.optimize.service.events.EventService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;

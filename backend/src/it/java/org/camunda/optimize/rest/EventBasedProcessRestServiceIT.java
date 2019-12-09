@@ -218,7 +218,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getAllEventProcessMappinges() {
+  public void getAllEventProcessMappings() {
     // given
     final Map<String, EventMappingDto> firstProcessMappings = Collections.singletonMap(
       VALID_SERVICE_TASK_ID,
@@ -687,11 +687,11 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     );
   }
 
-  public EventProcessMappingDto createEventProcessMappingDto(final String xmlPath) {
+  private EventProcessMappingDto createEventProcessMappingDto(final String xmlPath) {
     return createEventProcessMappingDto(null, xmlPath);
   }
 
-  public EventProcessMappingDto createEventProcessMappingDto(final String name, final String xmlPath) {
+  private EventProcessMappingDto createEventProcessMappingDto(final String name, final String xmlPath) {
     return createEventProcessMappingDtoWithMappings(null, name, xmlPath);
   }
 
