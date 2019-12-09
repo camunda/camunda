@@ -19,6 +19,11 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-logstreams</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zeebe-workflow-engine</artifactId>
     </dependency>
 
@@ -55,11 +60,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-service-container</artifactId>
     </dependency>
 
     <dependency>
