@@ -30,20 +30,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 
-public class SystemContext implements AutoCloseable {
+public class SystemContext {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
-  public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
-  public static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(20);
-  public static final String NODE_ID_ERROR_MSG =
+  private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
+  private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(20);
+  private static final String NODE_ID_ERROR_MSG =
       "Node id %s needs to be non negative and smaller then cluster size %s.";
-  public static final String REPLICATION_FACTOR_ERROR_MSG =
+  private static final String REPLICATION_FACTOR_ERROR_MSG =
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
-  protected final List<Component> components = new ArrayList<>();
   protected final BrokerCfg brokerCfg;
-  protected final List<ActorFuture<?>> requiredStartActions = new ArrayList<>();
-  protected Map<String, String> diagnosticContext;
-  protected ActorScheduler scheduler;
-  private final List<Closeable> closeablesToReleaseResources = new ArrayList<>();
+  private Map<String, String> diagnosticContext;
+  private ActorScheduler scheduler;
   private Duration closeTimeout;
 
   public SystemContext(String configFileLocation, final String basePath, final ActorClock clock) {
@@ -125,55 +122,6 @@ public class SystemContext implements AutoCloseable {
 
   public ActorScheduler getScheduler() {
     return scheduler;
-  }
-
-  public void init() {
-
-    for (final Component brokerComponent : components) {
-      try {
-        brokerComponent.init(this);
-      } catch (final RuntimeException e) {
-        close();
-        throw e;
-      }
-    }
-
-    try {
-      for (final ActorFuture<?> requiredStartAction : requiredStartActions) {
-        requiredStartAction.get(40, TimeUnit.SECONDS);
-      }
-    } catch (final Exception e) {
-      LOG.error("Could not start broker", e);
-      close();
-      throw new RuntimeException(e);
-    }
-  }
-
-  @Override
-  public void close() {
-    LOG.info("Broker shutting down...");
-
-    try {
-      // todo closing?
-    } finally {
-
-      for (final Closeable delegate : closeablesToReleaseResources) {
-        try {
-          delegate.close();
-        } catch (final IOException ioe) {
-          LOG.error("Exception while releasing resources", ioe);
-        }
-      }
-
-      try {
-        scheduler.stop().get(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
-      } catch (final TimeoutException e) {
-        LOG.error("Failed to close scheduler within {} seconds", CLOSE_TIMEOUT, e);
-      } catch (final ExecutionException | InterruptedException e) {
-        LOG.error("Exception while closing scheduler", e);
-        Thread.currentThread().interrupt();
-      }
-    }
   }
 
   public BrokerCfg getBrokerConfiguration() {
