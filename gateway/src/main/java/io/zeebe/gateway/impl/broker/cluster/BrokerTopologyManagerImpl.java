@@ -15,9 +15,11 @@ import io.zeebe.gateway.Loggers;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.function.Supplier;
+import org.agrona.collections.IntObjConsumer;
 import org.slf4j.Logger;
 
 public class BrokerTopologyManagerImpl extends Actor
@@ -25,22 +27,44 @@ public class BrokerTopologyManagerImpl extends Actor
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  protected final BiConsumer<Integer, SocketAddress> registerEndpoint;
+  protected final IntObjConsumer<SocketAddress> registerEndpoint;
   protected final AtomicReference<BrokerClusterStateImpl> topology;
+  private final Supplier<Set<Member>> membersSupplier;
 
-  public BrokerTopologyManagerImpl(final BiConsumer<Integer, SocketAddress> registerEndpoint) {
+  public BrokerTopologyManagerImpl(
+      Supplier<Set<Member>> membersSupplier, final IntObjConsumer<SocketAddress> registerEndpoint) {
+    this.membersSupplier = membersSupplier;
     this.registerEndpoint = registerEndpoint;
     this.topology = new AtomicReference<>(null);
-  }
-
-  public ActorFuture<Void> close() {
-    return actor.close();
   }
 
   /** @return the current known cluster state or null if the topology was not fetched yet */
   @Override
   public BrokerClusterState getTopology() {
     return topology.get();
+  }
+
+  private void checkForMissingEvents() {
+    final Set<Member> members = membersSupplier.get();
+    if (members == null || members.isEmpty()) {
+      return;
+    }
+
+    final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
+    for (Member member : members) {
+      final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
+      if (brokerInfo != null) {
+        newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
+        processProperties(brokerInfo, newTopology);
+      }
+    }
+    topology.set(newTopology);
+  }
+
+  @Override
+  protected void onActorStarted() {
+    // to make gateway topology more robust we need to check for missing events periodically
+    actor.runAtFixedRate(Duration.ofSeconds(5), this::checkForMissingEvents);
   }
 
   public void setTopology(BrokerClusterStateImpl topology) {
@@ -61,26 +85,34 @@ public class BrokerTopologyManagerImpl extends Actor
     if (brokerInfo != null) {
       actor.call(
           () -> {
-            Loggers.GATEWAY_LOGGER.debug(
-                "Gateway received new event of type: {} and subject {} ", event.type(), brokerInfo);
             final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
 
             switch (eventType) {
               case MEMBER_ADDED:
+                LOG.debug("Received new broker {}.", brokerInfo);
                 newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
                 processProperties(brokerInfo, newTopology);
                 break;
 
               case METADATA_CHANGED:
+                LOG.debug(
+                    "Received metadata change from Broker {}, partitions {} and terms {}.",
+                    brokerInfo.getNodeId(),
+                    brokerInfo.getPartitionRoles(),
+                    brokerInfo.getPartitionLeaderTerms());
+                newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
                 processProperties(brokerInfo, newTopology);
                 break;
 
               case MEMBER_REMOVED:
+                LOG.debug("Received broker was removed {}.", brokerInfo);
                 newTopology.removeBroker(brokerInfo.getNodeId());
                 break;
 
               case REACHABILITY_CHANGED:
               default:
+                LOG.debug(
+                    "Received {} for broker {}, do nothing.", eventType, brokerInfo.getNodeId());
                 break;
             }
 

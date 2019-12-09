@@ -110,7 +110,9 @@ public class BrokerClientImpl implements BrokerClient {
 
     transport = transportBuilder.build();
 
-    topologyManager = new BrokerTopologyManagerImpl(this::registerEndpoint);
+    topologyManager =
+        new BrokerTopologyManagerImpl(
+            () -> atomixCluster.getMembershipService().getMembers(), this::registerEndpoint);
     actorScheduler.submitActor(topologyManager);
     atomixCluster.getMembershipService().addListener(topologyManager);
     atomixCluster
@@ -150,7 +152,7 @@ public class BrokerClientImpl implements BrokerClient {
 
     LOG.debug("Closing gateway broker client ...");
 
-    doAndLogException(() -> topologyManager.close().join());
+    doAndLogException(() -> topologyManager.close());
     LOG.debug("topology manager closed");
     doAndLogException(transport::close);
     LOG.debug("transport closed");
