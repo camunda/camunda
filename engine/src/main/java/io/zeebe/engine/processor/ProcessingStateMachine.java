@@ -165,16 +165,29 @@ public final class ProcessingStateMachine {
   }
 
   void readNextEvent() {
-    if (shouldProcessNext.getAsBoolean()
-        && logStreamReader.hasNext()
-        && currentProcessor == null
-        && logStream.getCommitPosition() >= errorRecordPosition) {
+    if (onErrorHandling) {
+      logStream
+          .getCommitPositionAsync()
+          .onComplete(
+              (commitPosition, error) -> {
+                if (error == null) {
+                  if (commitPosition >= errorRecordPosition) {
+                    LOG.info(LOG_ERROR_EVENT_COMMITTED);
+                    onErrorHandling = false;
 
-      if (onErrorHandling) {
-        LOG.info(LOG_ERROR_EVENT_COMMITTED);
-        onErrorHandling = false;
-      }
+                    tryToReadNextEvent();
+                  }
+                } else {
+                  LOG.error("Error on retrieving commit position", error);
+                }
+              });
+    } else {
+      tryToReadNextEvent();
+    }
+  }
 
+  private void tryToReadNextEvent() {
+    if (shouldProcessNext.getAsBoolean() && logStreamReader.hasNext() && currentProcessor == null) {
       currentEvent = logStreamReader.next();
 
       if (eventFilter == null || eventFilter.applies(currentEvent)) {
@@ -351,8 +364,14 @@ public final class ProcessingStateMachine {
               // so no other ActorJob can interfere between commit and update the positions
               if (onErrorHandling) {
                 errorRecordPosition = writtenEventPosition;
-                LOG.info(
-                    LOG_ERROR_EVENT_WRITTEN, errorRecordPosition, logStream.getCommitPosition());
+                logStream
+                    .getCommitPositionAsync()
+                    .onComplete(
+                        (commitPosition, error) -> {
+                          if (error == null) {
+                            LOG.info(LOG_ERROR_EVENT_WRITTEN, errorRecordPosition, commitPosition);
+                          }
+                        });
               }
               lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
               lastWrittenEventPosition = writtenEventPosition;

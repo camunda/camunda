@@ -123,26 +123,38 @@ public class AsyncSnapshotDirector extends Actor {
 
   private void takeSnapshot() {
     final var tempSnapshotPosition = lowerBoundSnapshotPosition;
-    final var commitPosition = logStream.getCommitPosition();
 
-    pendingSnapshot =
-        createSnapshot(() -> snapshotController.takeTempSnapshot(tempSnapshotPosition));
-    LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, tempSnapshotPosition, commitPosition);
+    logStream
+        .getCommitPositionAsync()
+        .onComplete(
+            (commitPosition, errorOnRetrievingCommitPosition) -> {
+              if (errorOnRetrievingCommitPosition == null) {
+                pendingSnapshot =
+                    createSnapshot(() -> snapshotController.takeTempSnapshot(tempSnapshotPosition));
+                LOG.info(LOG_MSG_WAIT_UNTIL_COMMITTED, tempSnapshotPosition, commitPosition);
 
-    final ActorFuture<Long> lastWrittenPosition = streamProcessor.getLastWrittenPositionAsync();
-    actor.runOnCompletion(
-        lastWrittenPosition,
-        (endPosition, error) -> {
-          if (error == null) {
-            lastWrittenEventPosition = endPosition;
-            onCommitCheck();
-          } else {
-            lastWrittenEventPosition = null;
-            takingSnapshot = false;
-            pendingSnapshot = null;
-            LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
-          }
-        });
+                final ActorFuture<Long> lastWrittenPosition =
+                    streamProcessor.getLastWrittenPositionAsync();
+                actor.runOnCompletion(
+                    lastWrittenPosition,
+                    (endPosition, error) -> {
+                      if (error == null) {
+                        lastWrittenEventPosition = endPosition;
+                        onCommitCheck();
+                      } else {
+                        lastWrittenEventPosition = null;
+                        takingSnapshot = false;
+                        pendingSnapshot = null;
+                        LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, error);
+                      }
+                    });
+              } else {
+                takingSnapshot = false;
+                LOG.error(
+                    "Unexpected error on retrieving commit position",
+                    errorOnRetrievingCommitPosition);
+              }
+            });
   }
 
   private Snapshot createSnapshot(final Supplier<Snapshot> snapshotCreation) {
@@ -157,30 +169,31 @@ public class AsyncSnapshotDirector extends Actor {
   }
 
   private void onCommitCheck() {
-    final long currentCommitPosition = logStream.getCommitPosition();
+    logStream
+        .getCommitPositionAsync()
+        .onComplete(
+            (currentCommitPosition, error) -> {
+              if (pendingSnapshot != null
+                  && lastWrittenEventPosition != null
+                  && currentCommitPosition >= lastWrittenEventPosition) {
+                try {
+                  lastValidSnapshotPosition = lowerBoundSnapshotPosition;
+                  snapshotController.commitSnapshot(pendingSnapshot);
+                  snapshotController.replicateLatestSnapshot(actor::submit);
 
-    if (pendingSnapshot != null
-        && lastWrittenEventPosition != null
-        && currentCommitPosition >= lastWrittenEventPosition) {
-      try {
-        lastValidSnapshotPosition = lowerBoundSnapshotPosition;
-        snapshotController.commitSnapshot(pendingSnapshot);
-        snapshotController.replicateLatestSnapshot(actor::submit);
-
-      } catch (final Exception ex) {
-        LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
-      } finally {
-        lastWrittenEventPosition = null;
-        takingSnapshot = false;
-        pendingSnapshot = null;
-      }
-    }
+                } catch (final Exception ex) {
+                  LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
+                } finally {
+                  lastWrittenEventPosition = null;
+                  takingSnapshot = false;
+                  pendingSnapshot = null;
+                }
+              }
+            });
   }
 
   protected void enforceSnapshotCreation(
-      final long lastWrittenPosition, final long lastProcessedPosition) {
-    final long commitPosition = logStream.getCommitPosition();
-
+      final long commitPosition, final long lastWrittenPosition, final long lastProcessedPosition) {
     if (commitPosition >= lastWrittenPosition
         && lastProcessedPosition > lastValidSnapshotPosition) {
 
@@ -206,27 +219,38 @@ public class AsyncSnapshotDirector extends Actor {
                         streamProcessor.getLastProcessedPositionAsync(),
                         (processedPosition, ex2) -> {
                           if (ex2 == null) {
-                            enforceSnapshotCreation(writtenPosition, processedPosition);
-                            close();
-                            future.complete(null);
+
+                            logStream
+                                .getCommitPositionAsync()
+                                .onComplete(
+                                    (commitPosition, errorOnRetrieveCommitPos) -> {
+                                      if (errorOnRetrieveCommitPos == null) {
+                                        enforceSnapshotCreation(
+                                            commitPosition, writtenPosition, processedPosition);
+                                        super.closeAsync();
+                                        future.complete(null);
+                                      } else {
+                                        LOG.error(
+                                            "Unexpected error on retrieving commit position", ex2);
+                                        future.completeExceptionally(errorOnRetrieveCommitPos);
+                                        super.closeAsync();
+                                      }
+                                    });
+
                           } else {
                             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, ex2);
-                            close();
+                            super.closeAsync();
                             future.completeExceptionally(ex2);
                           }
                         });
 
                   } else {
                     LOG.error(ERROR_MSG_ON_RESOLVE_WRITTEN_POS, ex1);
-                    close();
+                    super.closeAsync();
                     future.completeExceptionally(ex1);
                   }
                 }));
 
     return future;
-  }
-
-  private void close() {
-    actor.close();
   }
 }

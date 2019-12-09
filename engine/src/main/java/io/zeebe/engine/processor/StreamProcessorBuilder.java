@@ -8,11 +8,8 @@
 package io.zeebe.engine.processor;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.sched.ActorScheduler;
@@ -28,8 +25,6 @@ public class StreamProcessorBuilder {
   private TypedRecordProcessorFactory typedRecordProcessorFactory;
   private ActorScheduler actorScheduler;
   private ZeebeDb zeebeDb;
-  private Dispatcher writeBuffer;
-  private LogStorage logStorage;
 
   public StreamProcessorBuilder() {
     processingContext = new ProcessingContext();
@@ -48,16 +43,6 @@ public class StreamProcessorBuilder {
 
   public StreamProcessorBuilder logStream(LogStream stream) {
     processingContext.logStream(stream);
-    return this;
-  }
-
-  public StreamProcessorBuilder writeBuffer(Dispatcher writeBuffer) {
-    this.writeBuffer = writeBuffer;
-    return this;
-  }
-
-  public StreamProcessorBuilder logStorage(LogStorage logStorage) {
-    this.logStorage = logStorage;
     return this;
   }
 
@@ -99,12 +84,6 @@ public class StreamProcessorBuilder {
   public StreamProcessor build() {
     validate();
 
-    final LogStream logStream = processingContext.getLogStream();
-
-    processingContext
-        .logStreamReader(new BufferedLogStreamReader(logStorage))
-        .logStreamWriter(new TypedStreamWriterImpl(logStream.getPartitionId(), writeBuffer));
-
     final MetadataFilter metadataFilter = new VersionFilter();
     final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
     processingContext.eventFilter(eventFilter);
@@ -119,8 +98,6 @@ public class StreamProcessorBuilder {
     Objects.requireNonNull(
         processingContext.getCommandResponseWriter(), "No command response writer provided.");
     Objects.requireNonNull(zeebeDb, "No database provided.");
-    Objects.requireNonNull(logStorage, "No log storage provided.");
-    Objects.requireNonNull(writeBuffer, "No write buffer provided.");
   }
 
   private static class MetadataEventFilter implements EventFilter {

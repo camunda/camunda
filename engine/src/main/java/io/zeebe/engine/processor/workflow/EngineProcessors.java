@@ -21,7 +21,6 @@ import io.zeebe.engine.processor.workflow.timer.DueDateTimerChecker;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -41,10 +40,9 @@ public class EngineProcessors {
     final TypedRecordProcessors typedRecordProcessors = TypedRecordProcessors.processors();
     final LogStream stream = processingContext.getLogStream();
     final int partitionId = stream.getPartitionId();
-    final int maxRecordSize = stream.getWriteBuffer().getMaxFragmentLength();
+    final int maxFragmentSize = processingContext.getMaxFragmentSize();
 
-    addDistributeDeploymentProcessors(
-        zeebeState, stream, typedRecordProcessors, deploymentDistributor);
+    addDistributeDeploymentProcessors(zeebeState, typedRecordProcessors, deploymentDistributor);
 
     final CatchEventBehavior catchEventBehavior =
         new CatchEventBehavior(zeebeState, subscriptionCommandSender, partitionsCount);
@@ -57,22 +55,18 @@ public class EngineProcessors {
         addWorkflowProcessors(
             zeebeState, typedRecordProcessors, subscriptionCommandSender, catchEventBehavior);
     addIncidentProcessors(zeebeState, stepProcessor, typedRecordProcessors);
-    addJobProcessors(zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxRecordSize);
+    addJobProcessors(zeebeState, typedRecordProcessors, onJobsAvailableCallback, maxFragmentSize);
 
     return typedRecordProcessors;
   }
 
   private static void addDistributeDeploymentProcessors(
       ZeebeState zeebeState,
-      LogStream stream,
       TypedRecordProcessors typedRecordProcessors,
       DeploymentDistributor deploymentDistributor) {
 
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
-        new DeploymentDistributeProcessor(
-            zeebeState.getDeploymentState(),
-            new LogStreamWriterImpl(stream),
-            deploymentDistributor);
+        new DeploymentDistributeProcessor(zeebeState.getDeploymentState(), deploymentDistributor);
 
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
@@ -125,9 +119,9 @@ public class EngineProcessors {
       ZeebeState zeebeState,
       TypedRecordProcessors typedRecordProcessors,
       Consumer<String> onJobsAvailableCallback,
-      int maxRecordSize) {
+      int maxFragmentSize) {
     JobEventProcessors.addJobProcessors(
-        typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxRecordSize);
+        typedRecordProcessors, zeebeState, onJobsAvailableCallback, maxFragmentSize);
   }
 
   private static void addMessageProcessors(

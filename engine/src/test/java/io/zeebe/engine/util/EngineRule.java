@@ -30,8 +30,8 @@ import io.zeebe.engine.util.client.JobClient;
 import io.zeebe.engine.util.client.PublishMessageClient;
 import io.zeebe.engine.util.client.VariableClient;
 import io.zeebe.engine.util.client.WorkflowInstanceClient;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.Protocol;
@@ -138,7 +138,6 @@ public final class EngineRule extends ExternalResource {
 
     forEachPartition(
         partitionId -> {
-          final int currentPartitionId = partitionId;
           environmentRule.startTypedStreamProcessor(
               partitionId,
               (processingContext) ->
@@ -146,7 +145,7 @@ public final class EngineRule extends ExternalResource {
                           processingContext,
                           partitionCount,
                           new SubscriptionCommandSender(
-                              currentPartitionId, new PartitionCommandSenderImpl()),
+                              partitionId, new PartitionCommandSenderImpl()),
                           new DeploymentDistributionImpl(),
                           (key, partition) -> {},
                           jobsAvailableCallback)
@@ -263,7 +262,7 @@ public final class EngineRule extends ExternalResource {
     private final RecordValues recordValues = new RecordValues();
     private final RecordMetadata metadata = new RecordMetadata();
 
-    private BufferedLogStreamReader logStreamReader;
+    private LogStreamReader logStreamReader;
     private TypedEventImpl typedEvent;
 
     @Override
@@ -276,11 +275,21 @@ public final class EngineRule extends ExternalResource {
           actor.onCondition("on-commit", this::onNewEventCommitted);
       final LogStream logStream = context.getLogStream();
       logStream.registerOnCommitPositionUpdatedCondition(onCommitCondition);
-
-      logStreamReader = new BufferedLogStreamReader(logStream.getLogStorage());
+      logStream
+          .newLogStreamReader()
+          .onComplete(
+              ((reader, throwable) -> {
+                if (throwable == null) {
+                  logStreamReader = reader;
+                }
+              }));
     }
 
     private void onNewEventCommitted() {
+      if (logStreamReader == null) {
+        return;
+      }
+
       while (logStreamReader.hasNext()) {
         final LoggedEvent rawEvent = logStreamReader.next();
         metadata.reset();
@@ -295,7 +304,7 @@ public final class EngineRule extends ExternalResource {
     }
   }
 
-  private class DeploymentDistributionImpl implements DeploymentDistributor {
+  private final class DeploymentDistributionImpl implements DeploymentDistributor {
 
     private final Map<Long, PendingDeploymentDistribution> pendingDeployments = new HashMap<>();
 
@@ -315,8 +324,13 @@ public final class EngineRule extends ExternalResource {
             final DeploymentRecord deploymentRecord = new DeploymentRecord();
             deploymentRecord.wrap(buffer);
 
-            environmentRule.writeCommandOnPartition(
-                partitionId, key, DeploymentIntent.CREATE, deploymentRecord);
+            // we run in processor actor, we are not allowed to wait on futures
+            // which means we cant get new writer in sync way
+            new Thread(
+                    () ->
+                        environmentRule.writeCommandOnPartition(
+                            partitionId, key, DeploymentIntent.CREATE, deploymentRecord))
+                .start();
           });
 
       return CompletableActorFuture.completed(null);
@@ -331,7 +345,8 @@ public final class EngineRule extends ExternalResource {
   private class PartitionCommandSenderImpl implements PartitionCommandSender {
 
     private final SubscriptionCommandMessageHandler handler =
-        new SubscriptionCommandMessageHandler(Runnable::run, environmentRule::getLogStream);
+        new SubscriptionCommandMessageHandler(
+            Runnable::run, environmentRule::getLogStreamRecordWriter);
 
     @Override
     public boolean sendCommand(final int receiverPartitionId, final BufferWriter command) {

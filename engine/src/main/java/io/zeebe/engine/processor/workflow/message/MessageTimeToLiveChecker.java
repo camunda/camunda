@@ -45,6 +45,7 @@ public class MessageTimeToLiveChecker implements Runnable {
       deleteMessageCommand.setMessageId(message.getId());
     }
 
+    writer.reset();
     writer.appendFollowUpCommand(message.getKey(), MessageIntent.DELETE, deleteMessageCommand);
 
     final long position = writer.flush();

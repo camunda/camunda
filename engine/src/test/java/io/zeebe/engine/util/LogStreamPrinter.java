@@ -9,17 +9,12 @@ package io.zeebe.engine.util;
 
 import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
 
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.ValueType;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.util.ReflectUtil;
 import java.util.EnumMap;
 import java.util.Map;
@@ -28,15 +23,12 @@ import org.slf4j.LoggerFactory;
 
 public class LogStreamPrinter {
 
-  private static final ServiceName<Object> PRINTER_SERVICE_NAME =
-      ServiceName.newServiceName("printer", Object.class);
-
   private static final String HEADER_INDENTATION = "\t\t\t";
   private static final String ENTRY_INDENTATION = HEADER_INDENTATION + "\t";
 
   private static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.broker.test");
 
-  public static void printRecords(final LogStream logStream) {
+  public static void printRecords(final SynchronousLogStream logStream) {
     final StringBuilder sb = new StringBuilder();
     sb.append("Records on partition ");
     sb.append(logStream.getPartitionId());
@@ -45,7 +37,7 @@ public class LogStreamPrinter {
     final EnumMap<ValueType, UnpackedObject> eventCache = new EnumMap<>(ValueType.class);
     EVENT_REGISTRY.forEach((t, c) -> eventCache.put(t, ReflectUtil.newInstance(c)));
 
-    try (LogStreamReader streamReader = new BufferedLogStreamReader(logStream.getLogStorage())) {
+    try (LogStreamReader streamReader = logStream.newLogStreamReader()) {
       streamReader.seekToFirstEvent();
 
       while (streamReader.hasNext()) {
@@ -87,26 +79,5 @@ public class LogStreamPrinter {
 
   private static void writeMetadata(final RecordMetadata metadata, final StringBuilder sb) {
     sb.append(metadata.toString());
-  }
-
-  private static class PrinterService implements Service<Object> {
-
-    private final Injector<LogStream> logStreamInjector = new Injector<>();
-
-    @Override
-    public void start(final ServiceStartContext startContext) {
-      final LogStream logStream = logStreamInjector.getValue();
-
-      printRecords(logStream);
-    }
-
-    @Override
-    public Object get() {
-      return this;
-    }
-
-    public Injector<LogStream> getLogStreamInjector() {
-      return logStreamInjector;
-    }
   }
 }
