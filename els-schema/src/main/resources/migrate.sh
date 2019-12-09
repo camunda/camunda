@@ -9,7 +9,7 @@ createNewTemplatesAndTheirIndexes(){
      templatename=`basename $template .json`
      echo "Create template $templatename"
      echo "-------------------------------"
- 	 $RESTCLIENT --request PUT --url $ES/_template/${templatename}-${schema.version} --data @$template
+ 	 $RESTCLIENT --request PUT --url $ES/_template/${templatename}-${schema.version}?include_type_name=false --data @$template
  	 $RESTCLIENT --request PUT --url $ES/${templatename}-${schema.version}_
      echo
      echo "-------------------------------"
@@ -21,7 +21,7 @@ createNewIndexes(){
      indexname=`basename $index .json`
      echo "Create index $indexname"
      echo "-------------------------------"
-     $RESTCLIENT --request PUT --url $ES/${indexname}-${schema.version}_ --data @$index
+     $RESTCLIENT --request PUT --url $ES/${indexname}-${schema.version}_?include_type_name=false --data @$index
      echo
      echo "-------------------------------"
    done
