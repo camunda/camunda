@@ -170,6 +170,23 @@ sender: {"name": "John",
   </tr>
 </table>
 
+The `source` on an input mapping MUST reference a variable or nested variable within the context of this task or subprocess.  The `source` cannot reference a previous `target` defined in the same mapping configuration.  For example, assuming the workflow instance has a variable named *customer*. The following mapping:
+
+```XML
+  <zeebe:ioMapping>
+        <zeebe:input source="customer" target="createdCustomer"/>
+        <zeebe:input source="createdCustomer.iban" target="iban"/>
+```
+
+is invalid given that there is currently no such variable named *createdCustomer* available in the workflow instance.  
+
+Instead the mapping should be:
+
+```XML
+  <zeebe:ioMapping>
+        <zeebe:input source="customer.iban" target="iban"/>
+```
+
 ### Output Mappings
 
 Output mappings can be used to customize how job/message variables are merged into the workflow instance. They can be defined on service tasks, receive tasks, message catch events and sub processes.
@@ -222,3 +239,18 @@ target: order.transactionId</pre></td>
 order: {"transactionId": "t-789"}</pre></td>
   </tr>
 </table>
+
+The `source` on an output mapping MUST reference a variable or nested property of a variable within context of this task or subprocess.  The `source` cannot reference a previous `target` defined in the same mapping configuration.  For example, if a service task creates a variable called *response*, with a nested property called *customer*, the following mapping will be considered invalid:
+
+```XML
+  <zeebe:ioMapping>
+        <zeebe:output source="response" target="customerCreatedResponse"/>
+        <zeebe:input source="customerCreatedResponse.customer" target="customerCreated"/>
+```
+
+Since `customerCreatedResponse` is not a variable returned from the associated task.  Instead, the mapping should be defined as follows:
+
+```XML
+  <zeebe:ioMapping>
+        <zeebe:output source="response.customer" target="customerCreated"/>
+```
