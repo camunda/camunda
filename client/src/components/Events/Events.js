@@ -6,30 +6,72 @@
 
 import React from 'react';
 import {Redirect} from 'react-router-dom';
+import moment from 'moment';
 
 import {EntityList, Deleter, Dropdown} from 'components';
 import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
+import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
 
 import {ReactComponent as ProcessIcon} from './icons/process.svg';
 
-import {loadProcesses, createProcess, removeProcess} from './service';
+import PublishModal from './PublishModal';
+import {loadProcesses, createProcess, removeProcess, cancelPublish} from './service';
 
 export default withErrorHandling(
   class Events extends React.Component {
     state = {
       processes: null,
       deleting: null,
+      publishing: null,
       redirect: null
     };
 
     componentDidMount() {
       this.loadList();
+      this.setupPoll();
     }
 
+    componentWillUnmount() {
+      this.teardownPoll();
+    }
+
+    setupPoll = () => {
+      this.poll = setInterval(this.loadIfNecessary, 5000);
+    };
+
+    teardownPoll = () => {
+      clearInterval(this.poll);
+    };
+
+    loadIfNecessary = async () => {
+      const {processes} = this.state;
+
+      const processesWaiting =
+        processes && processes.filter(({state}) => state === 'publish_pending');
+
+      if (processesWaiting && processesWaiting.length > 0) {
+        await this.loadList();
+        processesWaiting.forEach(process => {
+          const updatedProcess = this.state.processes.find(({id}) => process.id === id);
+          if (updatedProcess.state === 'published') {
+            addNotification({
+              type: 'success',
+              text: t('events.publishSuccess', {name: updatedProcess.name})
+            });
+          }
+        });
+      }
+    };
+
     loadList = () => {
-      this.props.mightFail(loadProcesses(), processes => this.setState({processes}), showError);
+      return new Promise((resolve, reject) => {
+        this.props.mightFail(
+          loadProcesses(),
+          processes => this.setState({processes}, resolve),
+          error => reject(showError(error))
+        );
+      });
     };
 
     upload = () => {
@@ -63,7 +105,7 @@ export default withErrorHandling(
     };
 
     render() {
-      const {processes, deleting, redirect} = this.state;
+      const {processes, deleting, redirect, publishing} = this.state;
 
       if (redirect) {
         return <Redirect to={redirect} />;
@@ -84,27 +126,49 @@ export default withErrorHandling(
             data={
               processes &&
               processes.map(process => {
-                const {id, name} = process;
+                const {id, name, lastModified, state, publishingProgress} = process;
 
                 const link = `/eventBasedProcess/${id}/`;
+
+                const actions = [
+                  {
+                    icon: 'edit',
+                    text: t('common.edit'),
+                    action: () => this.setState({redirect: link + 'edit'})
+                  },
+                  {
+                    icon: 'delete',
+                    text: t('common.delete'),
+                    action: () => this.setState({deleting: process})
+                  }
+                ];
+
+                if (state === 'mapped' || state === 'unpublished_changes') {
+                  actions.unshift({
+                    icon: 'publish',
+                    text: t('events.publish'),
+                    action: () => this.setState({publishing: process})
+                  });
+                }
+
+                if (state === 'publish_pending') {
+                  actions.unshift({
+                    icon: 'cancel',
+                    text: t('events.cancelPublish'),
+                    action: () => {
+                      this.props.mightFail(cancelPublish(id), this.loadList, showError);
+                    }
+                  });
+                }
 
                 return {
                   icon: <ProcessIcon />,
                   type: t('events.label'),
                   name,
                   link,
-                  actions: [
-                    {
-                      icon: 'edit',
-                      text: t('common.edit'),
-                      action: () => this.setState({redirect: link + 'edit'})
-                    },
-                    {
-                      icon: 'delete',
-                      text: t('common.delete'),
-                      action: () => this.setState({deleting: process})
-                    }
-                  ]
+                  meta2: moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                  meta3: t(`events.state.${state}`, {publishingProgress}),
+                  actions
                 };
               })
             }
@@ -118,6 +182,12 @@ export default withErrorHandling(
             onDelete={this.loadList}
             onClose={() => this.setState({deleting: null})}
             deleteEntity={({id}) => removeProcess(id)}
+          />
+          <PublishModal
+            id={publishing && publishing.id}
+            onPublish={this.loadList}
+            onClose={() => this.setState({publishing: null})}
+            republish={publishing && publishing.state === 'unpublished_changes'}
           />
         </div>
       );

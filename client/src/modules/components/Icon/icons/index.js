@@ -37,6 +37,8 @@ import {ReactComponent as collection} from './collection.svg';
 import {ReactComponent as search} from './search.svg';
 import {ReactComponent as clear} from './clear.svg';
 import {ReactComponent as hint} from './hint.svg';
+import {ReactComponent as publish} from './publish.svg';
+import {ReactComponent as cancel} from './cancel.svg';
 
 const icons = {
   autorefresh,
@@ -71,7 +73,9 @@ const icons = {
   'close-large': closeLarge,
   collection,
   search,
-  clear
+  clear,
+  publish,
+  cancel
 };
 
 export default icons;

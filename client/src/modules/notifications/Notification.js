@@ -21,6 +21,8 @@ export default class Notification extends React.Component {
         return 'warning';
       case 'error':
         return 'error';
+      case 'hint':
+        return 'hint';
       default:
         return null;
     }

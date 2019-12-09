@@ -10,7 +10,7 @@ exports[`should match snapshot 1`] = `
     <EntityNameForm
       entity="Process"
       isNew={false}
-      name="initial Name"
+      name="Process Name"
       onCancel={[MockFunction]}
       onChange={[Function]}
       onSave={[Function]}
@@ -18,12 +18,12 @@ exports[`should match snapshot 1`] = `
   </div>
   <Themed(BPMNDiagramErrorHandler)
     allowModeling={true}
-    xml="initial XML"
+    xml="Process XML"
   >
     <ProcessRenderer
       getXml={Object {}}
       mappings={Object {}}
-      name="initial Name"
+      name="Process Name"
       onChange={[Function]}
       onSelectNode={[Function]}
     />

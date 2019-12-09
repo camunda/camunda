@@ -4,51 +4,149 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React from 'react';
 import {Link} from 'react-router-dom';
 
-import {Button, Icon, Deleter, BPMNDiagram} from 'components';
+import {LoadingIndicator, Button, Icon, Deleter, BPMNDiagram} from 'components';
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
+import {showError, addNotification} from 'notifications';
 
 import ProcessRenderer from './ProcessRenderer';
-import {removeProcess} from './service';
+import PublishModal from './PublishModal';
+import {removeProcess, cancelPublish, loadProcess} from './service';
 
 import './ProcessView.scss';
 
-export default function ProcessView({id, name, xml, mappings, onDelete}) {
-  const [deleting, setDeleting] = useState(null);
+export default withErrorHandling(
+  class ProcessView extends React.Component {
+    state = {
+      data: null,
+      deleting: null,
+      publishing: null,
+      isPublishing: false
+    };
 
-  return (
-    <div className="ProcessView">
-      <div className="header">
-        <div className="head">
-          <div className="name-container">
-            <h1 className="name">{name}</h1>
+    componentDidMount() {
+      this.load();
+      this.setupPoll();
+    }
+
+    componentWillUnmount() {
+      this.teardownPoll();
+    }
+
+    setupPoll = () => {
+      this.poll = setInterval(this.loadIfNecessary, 5000);
+    };
+
+    teardownPoll = () => {
+      clearInterval(this.poll);
+    };
+
+    loadIfNecessary = async () => {
+      const {data} = this.state;
+      if (data && data.state === 'publish_pending') {
+        await this.load();
+        if (this.state.data.state === 'published') {
+          addNotification({
+            type: 'success',
+            text: t('events.publishSuccess', {name: this.state.data.name})
+          });
+        }
+      }
+    };
+
+    load = () => {
+      return new Promise((resolve, reject) => {
+        this.props.mightFail(
+          loadProcess(this.props.id),
+          data => this.setState({data}, resolve),
+          error => reject(showError(error))
+        );
+      });
+    };
+
+    cancelPublish = () => {
+      this.props.mightFail(cancelPublish(this.props.id), this.load, showError);
+    };
+
+    render() {
+      if (!this.state.data) {
+        return <LoadingIndicator />;
+      }
+
+      const {
+        deleting,
+        publishing,
+        data: {id, name, xml, mappings, state, publishingProgress}
+      } = this.state;
+
+      const isPublishing = state === 'publish_pending';
+      const canPublish = state === 'mapped' || state === 'unpublished_changes';
+
+      return (
+        <div className="ProcessView">
+          <div className="header">
+            <div className="head">
+              <div className="name-container">
+                <h1 className="name">{name}</h1>
+              </div>
+              <div className="tools">
+                {isPublishing && (
+                  <>
+                    <span className="progressLabel">
+                      {t('events.state.publish_pending', {publishingProgress})}
+                    </span>
+                    <Button onClick={this.cancelPublish} className="tool-button cancel-button">
+                      <Icon type="cancel" />
+                      {t('events.cancelPublish')}
+                    </Button>
+                  </>
+                )}
+                <Link className="tool-button edit-button" to="edit">
+                  <Button disabled={isPublishing}>
+                    <Icon type="edit" />
+                    {t('common.edit')}
+                  </Button>
+                </Link>
+                <Button
+                  disabled={isPublishing || !canPublish}
+                  onClick={() => this.setState({publishing: id})}
+                  className="tool-button publish-button"
+                >
+                  <Icon type="publish" />
+                  {t('events.publish')}
+                </Button>
+                <Button
+                  disabled={isPublishing}
+                  onClick={() => this.setState({deleting: {id, name}})}
+                  className="tool-button delete-button"
+                >
+                  <Icon type="delete" />
+                  {t('common.delete')}
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="tools">
-            <Link className="tool-button edit-button" to="edit">
-              <Button>
-                <Icon type="edit" />
-                {t('common.edit')}
-              </Button>
-            </Link>
-            <Button onClick={() => setDeleting({id, name})} className="tool-button delete-button">
-              <Icon type="delete" />
-              {t('common.delete')}
-            </Button>
-          </div>
+          <BPMNDiagram xml={xml}>
+            <ProcessRenderer mappings={mappings} />
+          </BPMNDiagram>
+          <Deleter
+            type="process"
+            entity={deleting}
+            onDelete={this.props.onDelete}
+            onClose={() => this.setState({deleting: null})}
+            deleteEntity={({id}) => removeProcess(id)}
+          />
+          <PublishModal
+            id={publishing}
+            onPublish={this.load}
+            onClose={() => this.setState({publishing: null})}
+            republish={state === 'unpublished_changes'}
+          />
         </div>
-      </div>
-      <BPMNDiagram xml={xml}>
-        <ProcessRenderer mappings={mappings} />
-      </BPMNDiagram>
-      <Deleter
-        type="process"
-        entity={deleting}
-        onDelete={onDelete}
-        onClose={() => setDeleting(null)}
-        deleteEntity={({id}) => removeProcess(id)}
-      />
-    </div>
-  );
-}
+      );
+    }
+  }
+);

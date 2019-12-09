@@ -2,4 +2,10 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+
+  .progressLabel {
+    margin-right: 15px;
+    font-size: 13px;
+    color: #757575;
+  }
 }

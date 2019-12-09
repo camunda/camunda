@@ -20,6 +20,14 @@ export async function removeProcess(id) {
   return await del(`api/eventBasedProcess/${id}`);
 }
 
+export async function publish(id) {
+  return await post(`/api/eventBasedProcess/${id}/_publish`);
+}
+
+export async function cancelPublish(id) {
+  return await post(`/api/eventBasedProcess/${id}/_cancelPublish`);
+}
+
 export async function createProcess(name, xml, mappings) {
   const response = await post('/api/eventBasedProcess', {name, xml, mappings});
   const json = await response.json();

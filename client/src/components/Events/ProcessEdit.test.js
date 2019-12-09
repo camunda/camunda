@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {EntityNameForm} from 'components';
 
-import {updateProcess} from './service';
+import {updateProcess, loadProcess} from './service';
 import ProcessEditWithErrorHandling from './ProcessEdit';
 import ProcessRenderer from './ProcessRenderer';
 import EventTable from './EventTable';
@@ -17,11 +17,7 @@ import EventTable from './EventTable';
 const ProcessEdit = ProcessEditWithErrorHandling.WrappedComponent;
 
 const props = {
-  initialName: 'initial Name',
-  initialXml: 'initial XML',
-  initialMappings: {},
   id: '1',
-  isNew: false,
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
 
@@ -31,13 +27,32 @@ jest.mock('saveGuard', () => ({
 }));
 
 jest.mock('./service', () => ({
-  updateProcess: jest.fn()
+  updateProcess: jest.fn(),
+  createProcess: jest.fn(),
+  loadProcess: jest.fn().mockReturnValue({
+    name: 'Process Name',
+    xml: 'Process XML',
+    mappings: {}
+  })
 }));
 
 it('should match snapshot', () => {
   const node = shallow(<ProcessEdit {...props} />);
 
   expect(node).toMatchSnapshot();
+});
+
+it('should load process by id', () => {
+  shallow(<ProcessEdit {...props} />);
+
+  expect(loadProcess).toHaveBeenCalledWith('1');
+});
+
+it('should initalize a new process', () => {
+  loadProcess.mockClear();
+  shallow(<ProcessEdit {...props} id="new" />);
+
+  expect(loadProcess).not.toHaveBeenCalled();
 });
 
 it('should get the xml from the Process Renderer for process update', async () => {
@@ -49,14 +64,9 @@ it('should get the xml from the Process Renderer for process update', async () =
   node.find(ProcessRenderer).prop('getXml').action = xmlSpy;
   await node.find(EntityNameForm).prop('onSave')();
 
-  expect(updateProcess).toHaveBeenCalledWith('1', 'initial Name', 'some xml', {});
+  expect(updateProcess).toHaveBeenCalledWith('1', 'Process Name', 'some xml', {});
   expect(xmlSpy).toHaveBeenCalled();
-  expect(saveSpy).toHaveBeenCalledWith({
-    id: '1',
-    name: 'initial Name',
-    xml: 'some xml',
-    mappings: {}
-  });
+  expect(saveSpy).toHaveBeenCalledWith('1');
 });
 
 it('should set a new mapping', () => {
@@ -69,9 +79,12 @@ it('should set a new mapping', () => {
 });
 
 it('should edit a mapping', () => {
-  const node = shallow(
-    <ProcessEdit {...props} initialMappings={{a: {end: {eventName: '1'}, start: null}}} />
-  );
+  loadProcess.mockReturnValueOnce({
+    name: 'Process Name',
+    xml: 'Process XML',
+    mappings: {a: {end: {eventName: '1'}, start: null}}
+  });
+  const node = shallow(<ProcessEdit {...props} />);
   node.setState({selectedNode: {id: 'a'}});
 
   node.find(EventTable).prop('onChange')({eventName: '1'}, true, 'start');
@@ -80,9 +93,12 @@ it('should edit a mapping', () => {
 });
 
 it('should unset a mapping', () => {
-  const node = shallow(
-    <ProcessEdit {...props} initialMappings={{a: {end: {eventName: '1'}, start: null}}} />
-  );
+  loadProcess.mockReturnValueOnce({
+    name: 'Process Name',
+    xml: 'Process XML',
+    mappings: {a: {end: {eventName: '1'}, start: null}}
+  });
+  const node = shallow(<ProcessEdit {...props} />);
   node.setState({selectedNode: {id: 'a'}});
 
   node.find(EventTable).prop('onChange')({eventName: '1'}, false);

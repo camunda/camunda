@@ -114,6 +114,10 @@
     "label": "Event Based Process",
     "parseError": "Could not parse file. Please make sure to upload a valid bpmn file.",
     "list": "Events List",
+    "cancelPublish": "Cancel Publish",
+    "publish": "Publish",
+    "publishStart": "Publishing Process. This may take some time.",
+    "publishSuccess": "{name} has been published.",
     "table": {
       "group": "Group",
       "mapping": "Mapped as…",
@@ -127,7 +131,21 @@
       "seeDocs": "No Events available. To add events, see ",
       "documentation": "Documentation"
     },
-    "deleteWarning": "The '{name}' Process will be permanently deleted. This will result in the deletion of any associated Reports, inside and outside of Collections."
+    "deleteWarning": "The '{name}' Process will be permanently deleted. This will result in the deletion of any associated Reports, inside and outside of Collections.",
+    "publishModal": {
+      "head": "Publishing Process",
+      "republishHead": "Re-Publishing Process",
+      "republishText": "Re-Publishing will update data in all associated Reports.",
+      "text": "Published Event Based Processes will be available to use in Reports.",
+      "hint": "Hint: To use inside a Collection, add the process in the Data Sources tab."
+    },
+    "state": {
+      "unmapped": "Unmapped",
+      "mapped": "Mapped",
+      "publish_pending": "Publishing {publishingProgress}%",
+      "published": "Published",
+      "unpublished_changes": "Unpublished Changes"
+    }
   },
   "report": {
     "label": "Report",

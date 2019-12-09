@@ -1,0 +1,91 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should show a success notification 1`] = `
+Array [
+  Object {
+    "text": "Publishing Process. This may take some time.",
+    "type": "hint",
+  },
+]
+`;
+
+exports[`should show an error message 1`] = `
+Array [
+  "errorMessage",
+]
+`;
+
+exports[`should show different text depending on the republish prop 1`] = `
+<Modal
+  className="PublishModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open="processId"
+>
+  <Component>
+    Publishing Process
+  </Component>
+  <Component>
+    <p>
+      Published Event Based Processes will be available to use in Reports.
+    </p>
+    <p>
+      Hint: To use inside a Collection, add the process in the Data Sources tab.
+    </p>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="close"
+      disabled={false}
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={false}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Publish
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;
+
+exports[`should show different text depending on the republish prop 2`] = `
+<Modal
+  className="PublishModal"
+  onClose={[MockFunction]}
+  onConfirm={[Function]}
+  open="processId"
+>
+  <Component>
+    Re-Publishing Process
+  </Component>
+  <Component>
+    <p>
+      Re-Publishing will update data in all associated Reports.
+    </p>
+  </Component>
+  <Component>
+    <ForwardRef(Button)
+      className="close"
+      disabled={false}
+      onClick={[MockFunction]}
+    >
+      Cancel
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      className="confirm"
+      color="blue"
+      disabled={false}
+      onClick={[Function]}
+      variant="primary"
+    >
+      Publish
+    </ForwardRef(Button)>
+  </Component>
+</Modal>
+`;

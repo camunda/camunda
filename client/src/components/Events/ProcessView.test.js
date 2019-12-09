@@ -7,21 +7,30 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button, Deleter} from 'components';
+import {Deleter} from 'components';
 
-import {removeProcess} from './service';
+import {removeProcess, loadProcess, cancelPublish} from './service';
+import PublishModal from './PublishModal';
 
-import ProcessView from './ProcessView';
+import ProcessViewWithErrorHandling from './ProcessView';
+
+const ProcessView = ProcessViewWithErrorHandling.WrappedComponent;
 
 jest.mock('./service', () => ({
-  removeProcess: jest.fn()
+  removeProcess: jest.fn(),
+  loadProcess: jest.fn().mockReturnValue({
+    id: 'processId',
+    name: 'Process Name',
+    xml: 'Process XML',
+    mappings: {},
+    state: 'mapped'
+  }),
+  cancelPublish: jest.fn()
 }));
 
 const props = {
   id: 'processId',
-  name: 'Process Name',
-  xml: 'process XML',
-  mappings: {},
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   onDelete: jest.fn()
 };
 
@@ -31,13 +40,16 @@ it('should match snapshot', () => {
   expect(node).toMatchSnapshot();
 });
 
+it('should load process by id', () => {
+  shallow(<ProcessView {...props} />);
+
+  expect(loadProcess).toHaveBeenCalledWith('processId');
+});
+
 it('should pass entity to Deleter', () => {
   const node = shallow(<ProcessView {...props} />);
 
-  node
-    .find(Button)
-    .last()
-    .simulate('click');
+  node.find('.delete-button').simulate('click');
 
   expect(node.find(Deleter).prop('entity')).toEqual({id: 'processId', name: 'Process Name'});
 });
@@ -56,4 +68,45 @@ it('should allow deletion of a process', () => {
   node.find(Deleter).prop('deleteEntity')({id: '1'});
 
   expect(removeProcess).toHaveBeenCalledWith('1');
+});
+
+it('should pass a process id to the PublishModal', () => {
+  const node = shallow(<ProcessView {...props} />);
+
+  node.find('.publish-button').simulate('click');
+
+  expect(node.find(PublishModal).prop('id')).toBe('processId');
+  expect(node.find(PublishModal).prop('republish')).toBe(false);
+});
+
+it('should correctly set the republish prop on the PublishModal', () => {
+  loadProcess.mockReturnValueOnce({
+    id: 'processId',
+    name: 'Process Name',
+    xml: 'Process XML',
+    mappings: {},
+    state: 'unpublished_changes'
+  });
+  const node = shallow(<ProcessView {...props} />);
+
+  node.find('.publish-button').simulate('click');
+
+  expect(node.find(PublishModal).prop('republish')).toBe(true);
+});
+
+it('should allow cancel of an ongoing publish', () => {
+  loadProcess.mockReturnValueOnce({
+    id: 'processId',
+    name: 'Process Name',
+    xml: 'Process XML',
+    mappings: {},
+    state: 'publish_pending',
+    publishingProgress: 14
+  });
+
+  const node = shallow(<ProcessView {...props} />);
+
+  node.find('.cancel-button').simulate('click');
+
+  expect(cancelPublish).toHaveBeenCalledWith('processId');
 });

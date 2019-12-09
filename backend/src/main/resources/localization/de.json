@@ -114,6 +114,10 @@
     "label": "Eventbasierter Prozess",
     "parseError": "Konnte Datei nicht verarbeiten. Bitte wählen Sie eine valide BPMN-Datei aus.",
     "list": "Event Liste",
+    "cancelPublish": "Veröffentlichung Abbrechen",
+    "publish": "Veröffentlichen",
+    "publishStart": "Veröffentliche Prozess. Das kann eine Weile dauern.",
+    "publishSuccess": "{name} wurde veröffentlicht.",
     "table": {
       "group": "Gruppe",
       "mapping": "Zugeordnet als…",
@@ -127,7 +131,21 @@
       "seeDocs": "Keine Events verfügbar. Informationen zum Hinzufügen von Events finden Sie in der ",
       "documentation": "Dokumentation"
     },
-    "deleteWarning": "Der '{name}' Prozess wird endgültig gelöscht. Dies wird alle assoziierten Berichte, innerhalb und außerhalb von Sammlungen löschen."
+    "deleteWarning": "Der '{name}' Prozess wird endgültig gelöscht. Dies wird alle assoziierten Berichte, innerhalb und außerhalb von Sammlungen löschen.",
+    "publishModal": {
+      "head": "Prozess Veröffentlichen",
+      "republishHead": "Prozess Neu-Veröffentlichen",
+      "republishText": "Neu-Veröffentlichung wird Daten in allen assoziierten Berichten aktualisieren.",
+      "text": "Veröffentlichte Eventbasierte Prozesse werden in Reports zur Verfügung stehen.",
+      "hint": "Hinweis: Um den Prozess in einer Sammlung zu verwenden, fügen Sie ihn im Datenquellen Register hinzu."
+    },
+    "state": {
+      "unmapped": "Unzugeordnet",
+      "mapped": "Zugeordnet",
+      "publish_pending": "Veröffentlichen {publishingProgress}%",
+      "published": "Veröffentlicht",
+      "unpublished_changes": "Unveröffentlichte Änderungen"
+    }
   },
   "report": {
     "label": "Bericht",

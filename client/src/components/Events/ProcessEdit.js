@@ -8,13 +8,13 @@ import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 
-import {EntityNameForm, BPMNDiagram} from 'components';
+import {EntityNameForm, BPMNDiagram, LoadingIndicator} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {t} from 'translation';
 
-import {createProcess, updateProcess} from './service';
+import {createProcess, updateProcess, loadProcess} from './service';
 import ProcessRenderer from './ProcessRenderer';
 import EventTable from './EventTable';
 
@@ -28,28 +28,70 @@ export default withErrorHandling(
       super(props);
 
       this.state = {
-        name: props.initialName,
+        name: null,
+        xml: null,
         selectedNode: null,
-        mappings: props.initialMappings
+        mappings: {}
       };
     }
 
+    isNew = () => this.props.id === 'new';
+
+    componentDidMount() {
+      if (this.isNew()) {
+        this.initializeNewProcess();
+      } else {
+        this.loadProcess();
+      }
+    }
+
+    initializeNewProcess = () => {
+      const id =
+        'Process_' +
+        Math.random()
+          .toString(36)
+          .substr(2);
+
+      this.setState({
+        name: t('events.new'),
+        xml: `<?xml version="1.0" encoding="UTF-8"?>
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_15hceqv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.4.1">
+        <bpmn:process id="${id}" name="${t('events.new')}" isExecutable="true">
+          <bpmn:startEvent id="StartEvent_1" />
+        </bpmn:process>
+        <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+          <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${id}">
+            <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+              <dc:Bounds x="179" y="99" width="36" height="36" />
+            </bpmndi:BPMNShape>
+          </bpmndi:BPMNPlane>
+        </bpmndi:BPMNDiagram>
+      </bpmn:definitions>
+      `,
+        mappings: {}
+      });
+    };
+
+    loadProcess = () => {
+      this.props.mightFail(
+        loadProcess(this.props.id),
+        ({name, xml, mappings}) => this.setState({name, xml, mappings}),
+        showError
+      );
+    };
+
     save = () => {
       return new Promise(async (resolve, reject) => {
-        const {isNew, mightFail, id} = this.props;
+        const {mightFail, id} = this.props;
         const {name, mappings} = this.state;
         const xml = await this.getXml.action();
 
-        if (isNew) {
-          mightFail(
-            createProcess(name, xml, mappings),
-            id => resolve({id, name, xml, mappings}),
-            error => reject(showError(error))
-          );
+        if (this.isNew()) {
+          mightFail(createProcess(name, xml, mappings), resolve, error => reject(showError(error)));
         } else {
           mightFail(
             updateProcess(id, name, xml, mappings),
-            () => resolve({id, name, xml, mappings}),
+            () => resolve(id),
             error => reject(showError(error))
           );
         }
@@ -57,11 +99,11 @@ export default withErrorHandling(
     };
 
     saveAndGoBack = async () => {
-      const data = await this.save();
+      const id = await this.save();
 
       nowPristine();
 
-      this.props.onSave(data);
+      this.props.onSave(id);
     };
 
     setDirty = () => {
@@ -110,15 +152,18 @@ export default withErrorHandling(
     };
 
     render() {
-      const {name, mappings, selectedNode} = this.state;
-      const {initialXml, isNew} = this.props;
+      const {name, mappings, selectedNode, xml} = this.state;
+
+      if (!xml) {
+        return <LoadingIndicator />;
+      }
 
       return (
         <div className="ProcessEdit">
           <div className="header">
             <EntityNameForm
               name={name}
-              isNew={isNew}
+              isNew={this.isNew()}
               entity="Process"
               onChange={({target}) => {
                 this.setDirty();
@@ -128,7 +173,7 @@ export default withErrorHandling(
               onCancel={nowPristine}
             />
           </div>
-          <BPMNDiagram xml={initialXml} allowModeling>
+          <BPMNDiagram xml={xml} allowModeling>
             <ProcessRenderer
               name={name}
               mappings={mappings}

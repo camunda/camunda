@@ -26,7 +26,9 @@ exports[`should match snapshot 1`] = `
           className="tool-button edit-button"
           to="edit"
         >
-          <ForwardRef(Button)>
+          <ForwardRef(Button)
+            disabled={false}
+          >
             <Icon
               type="edit"
             />
@@ -34,7 +36,18 @@ exports[`should match snapshot 1`] = `
           </ForwardRef(Button)>
         </Link>
         <ForwardRef(Button)
+          className="tool-button publish-button"
+          disabled={false}
+          onClick={[Function]}
+        >
+          <Icon
+            type="publish"
+          />
+          Publish
+        </ForwardRef(Button)>
+        <ForwardRef(Button)
           className="tool-button delete-button"
+          disabled={false}
           onClick={[Function]}
         >
           <Icon
@@ -46,7 +59,7 @@ exports[`should match snapshot 1`] = `
     </div>
   </div>
   <Themed(BPMNDiagramErrorHandler)
-    xml="process XML"
+    xml="Process XML"
   >
     <ProcessRenderer
       mappings={Object {}}
@@ -58,6 +71,12 @@ exports[`should match snapshot 1`] = `
     onClose={[Function]}
     onDelete={[MockFunction]}
     type="process"
+  />
+  <PublishModalErrorHandler
+    id={null}
+    onClose={[Function]}
+    onPublish={[Function]}
+    republish={false}
   />
 </div>
 `;
