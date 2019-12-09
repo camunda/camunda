@@ -28,14 +28,6 @@ public class LogUtil {
     }
   }
 
-  public static void catchAndLog(Logger log, String msg, ThrowingRunnable r) {
-    try {
-      r.run();
-    } catch (Throwable e) {
-      log.error(msg, e);
-    }
-  }
-
   public static void catchAndLog(Logger log, ThrowingRunnable r) {
     try {
       r.run();

@@ -9,6 +9,7 @@ package io.zeebe.util.sched;
 
 import io.zeebe.util.LangUtil;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class FutureUtil {
   /**
@@ -18,6 +19,17 @@ public class FutureUtil {
   public static <T> T join(Future<T> f) {
     try {
       return f.get();
+    } catch (Exception e) {
+      // NOTE: here we actually want to use rethrowUnchecked
+      LangUtil.rethrowUnchecked(e);
+    }
+
+    return null;
+  }
+
+  public static <T> T join(Future<T> f, long timeout, TimeUnit timeUnit) {
+    try {
+      return f.get(timeout, timeUnit);
     } catch (Exception e) {
       // NOTE: here we actually want to use rethrowUnchecked
       LangUtil.rethrowUnchecked(e);

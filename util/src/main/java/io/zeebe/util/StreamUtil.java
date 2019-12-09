@@ -52,11 +52,6 @@ public class StreamUtil {
     return messageDigest;
   }
 
-  public static String sha1Hex(final InputStream data) throws IOException {
-    final MessageDigest messageDigest = updateDigest(getSha1Digest(), data);
-    return digestAsHex(messageDigest);
-  }
-
   public static String digestAsHex(final MessageDigest messageDigest) {
     final byte[] digest = messageDigest.digest();
     final byte[] hexByteArray = BitUtil.toHexByteArray(digest);

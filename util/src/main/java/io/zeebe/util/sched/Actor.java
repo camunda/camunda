@@ -7,9 +7,12 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.CloseableSilently;
+import io.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public abstract class Actor {
+public abstract class Actor implements CloseableSilently {
   protected final ActorControl actor = new ActorControl(this);
 
   public String getName() {
@@ -48,5 +51,14 @@ public abstract class Actor {
         r.accept(actor);
       }
     };
+  }
+
+  @Override
+  public void close() {
+    actor.close().join(30, TimeUnit.SECONDS);
+  }
+
+  public ActorFuture<Void> closeAsync() {
+    return actor.close();
   }
 }

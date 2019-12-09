@@ -103,7 +103,7 @@ public class ActorLifecyclePhasesAndRunTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -125,7 +125,7 @@ public class ActorLifecyclePhasesAndRunTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -147,7 +147,7 @@ public class ActorLifecyclePhasesAndRunTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -230,7 +230,7 @@ public class ActorLifecyclePhasesAndRunTest {
           }
         };
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -254,7 +254,7 @@ public class ActorLifecyclePhasesAndRunTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -278,7 +278,7 @@ public class ActorLifecyclePhasesAndRunTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when

@@ -117,7 +117,7 @@ public class ActorLifecyclePhasesAndConditionsTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -144,7 +144,7 @@ public class ActorLifecyclePhasesAndConditionsTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -171,7 +171,7 @@ public class ActorLifecyclePhasesAndConditionsTest {
         };
 
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when

@@ -49,7 +49,7 @@ public class ActorLifecyclePhasesTest {
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -64,7 +64,7 @@ public class ActorLifecyclePhasesTest {
     schedulerRule.submitActor(actor);
 
     // when
-    final ActorFuture<Void> closeFuture = actor.close(); // request close before doing work
+    final ActorFuture<Void> closeFuture = actor.closeAsync(); // request close before doing work
     schedulerRule.workUntilDone();
 
     // then
@@ -116,7 +116,7 @@ public class ActorLifecyclePhasesTest {
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -175,7 +175,7 @@ public class ActorLifecyclePhasesTest {
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -241,7 +241,7 @@ public class ActorLifecyclePhasesTest {
 
     TestUtil.waitUntil(() -> invocations.get() >= 10);
 
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then

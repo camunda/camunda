@@ -79,20 +79,20 @@ public class ActorLifecyclePhasesAndBlockPhaseTest {
   public void shouldWaitOnFutureInCloseRequested() {
     // given
     final BiConsumer<Void, Throwable> callback = mock(BiConsumer.class);
-
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final LifecycleRecordingActor actor =
         new LifecycleRecordingActor() {
           @Override
           public void onActorStarted() {
             super.onActorStarted();
-            blockPhase(callback);
+            blockPhase(future, callback);
           }
         };
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
 
     // when
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -116,7 +116,7 @@ public class ActorLifecyclePhasesAndBlockPhaseTest {
         };
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -140,7 +140,7 @@ public class ActorLifecyclePhasesAndBlockPhaseTest {
           }
         };
     schedulerRule.submitActor(actor);
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
 
     // when
     schedulerRule.workUntilDone();
@@ -171,7 +171,7 @@ public class ActorLifecyclePhasesAndBlockPhaseTest {
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
 
-    final ActorFuture<Void> closeFuture = actor.close();
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
 
     // when
     trigger.complete(null);

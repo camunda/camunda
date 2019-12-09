@@ -478,6 +478,13 @@ public class ActorControl {
     return task.isClosing();
   }
 
+  public boolean isClosed() {
+    // for that lifecycle phase needs to be volatile
+    final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
+    return !(lifecyclePhase == ActorLifecyclePhase.STARTING
+        || lifecyclePhase == ActorLifecyclePhase.STARTED);
+  }
+
   public void setPriority(ActorPriority priority) {
     ensureCalledFromActorThread("setPriority()");
     task.setPriority(priority.getPriorityClass());

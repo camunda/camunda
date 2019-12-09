@@ -110,7 +110,7 @@ public class ActorLifecyclePhasesAndTimersTest {
           }
         };
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
@@ -135,7 +135,7 @@ public class ActorLifecyclePhasesAndTimersTest {
           }
         };
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // when
