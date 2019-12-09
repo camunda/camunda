@@ -28,8 +28,6 @@ import BottomPanel from './BottomPanel';
 import VariablePanel from './BottomPanel/VariablePanel';
 import IncidentsWrapper from './IncidentsWrapper';
 
-import Header from '../Header';
-
 import Instance from './Instance';
 import {
   getActivityIdToActivityInstancesMap,
@@ -41,21 +39,8 @@ import {
 // mock modules
 jest.mock('modules/utils/bpmn');
 
-jest.mock('../Header', () => {
-  /* eslint react/prop-types: 0  */
-  return function Header(props) {
-    return <div>{props.detail}</div>;
-  };
-});
-
 jest.mock('./TopPanel', () => {
   return function TopPanel() {
-    return <div />;
-  };
-});
-
-jest.mock('./InstanceDetail', () => {
-  return function InstanceDetails() {
     return <div />;
   };
 });
@@ -111,6 +96,7 @@ describe('Instance', () => {
 
     beforeEach(() => {
       createMockDataManager();
+
       root = mountWrappedComponent(
         [
           ThemeProvider,
@@ -556,15 +542,10 @@ describe('Instance', () => {
 
       node.update();
 
-      expect(node.find(Header)).toHaveLength(1);
       expect(node.find(TopPanel)).toHaveLength(1);
       expect(node.find(BottomPanel)).toHaveLength(1);
       expect(node.find(VariablePanel)).toHaveLength(1);
       expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
-    });
-
-    it('should pass skeleton for instance detail to Header', () => {
-      //
     });
   });
 });

@@ -22,18 +22,10 @@ import {DataManagerProvider} from 'modules/DataManager';
 import Filters from './Filters';
 import ListPanel from './ListPanel';
 import Selections from './Selections';
-import Header from '../Header';
+
 import Instances from './Instances';
 
 // component mocks
-jest.mock(
-  '../Header',
-  () =>
-    function Header(props) {
-      return <div />;
-    }
-);
-
 jest.mock(
   './ListPanel',
   () =>
@@ -294,25 +286,6 @@ describe('Instances', () => {
     });
   });
 
-  describe('Header', () => {
-    it('should render the Header', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // then
-      const InstancesNode = node.find(Instances);
-      const HeaderNode = node.find(Header);
-      expect(HeaderNode).toExist();
-      expect(HeaderNode.prop('active')).toBe('instances');
-      expect(HeaderNode.prop('filter')).toBe(InstancesNode.prop('filter'));
-      expect(HeaderNode.prop('filterCount')).toBe(mockInstances.totalCount);
-    });
-  });
-
   describe('SplitPane', () => {
     it('should render a SplitPane', () => {
       // given
@@ -327,22 +300,6 @@ describe('Instances', () => {
       expect(SplitPaneNode).toExist();
       // expect(node.find(SplitPane.Pane).length).toBe(2);
     });
-
-    // it('should render the ListPanel on bottom', () => {
-    //   const node = mount(
-    //     <Router>
-    //       <ThemeProvider>
-    //         <CollapsablePanelProvider>
-    //           <Instances {...mockProps}  />
-    //         </CollapsablePanelProvider>
-    //       </ThemeProvider>
-    //     </Router>
-    //   );
-
-    //   // then
-    //   const ListPanelNode = node.find(ListPanel);
-    //   // expect(ListPanelNode.find(SplitPane.Pane)).toExist();
-    // });
   });
 
   describe('InstancesPollProvider', () => {

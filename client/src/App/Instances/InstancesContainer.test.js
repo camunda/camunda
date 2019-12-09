@@ -10,7 +10,8 @@ import {mount} from 'enzyme';
 import InstancesContainer from './InstancesContainer';
 import Instances from './Instances';
 
-import {parseQueryString, decodeFields} from './service';
+import {decodeFields} from './service';
+import {parseQueryString} from 'modules/utils/filter';
 import * as api from 'modules/api/instances/instances';
 import * as apiDiagram from 'modules/api/diagram/diagram';
 import * as filterUtils from 'modules/utils/filter/filter';

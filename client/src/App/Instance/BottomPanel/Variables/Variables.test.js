@@ -10,7 +10,6 @@ import {mount} from 'enzyme';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createVariables, setProps} from 'modules/testUtils';
 
-// import Skeleton from '../VariablePanel/Skeleton';
 import Variables from './Variables';
 
 const MODE = {
