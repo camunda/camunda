@@ -53,7 +53,7 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
                     if (error == null) {
                       leaderPartitions.put(partitionId, recordWriter);
                     } else {
-                      // todo ideally we should step down
+                      // TODO https://github.com/zeebe-io/zeebe/issues/3499
                       Loggers.SYSTEM_LOGGER.error(
                           "Unexpected error on retrieving write buffer for partition {}",
                           partitionId,

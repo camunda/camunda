@@ -144,7 +144,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
                                   partitionId, atomixRaftPartition.term(), logStream));
                     } else {
                       LOG.error("Failed to install leader partition {}", partitionId, error);
-                      // todo we should step down installation failed!
+                      // TODO https://github.com/zeebe-io/zeebe/issues/3499
                     }
                   });
         }
@@ -168,7 +168,8 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
                           });
                     } else {
                       LOG.error("Failed to install follower partition {}", partitionId, error);
-                      // todo we should step down installation failed!
+                      // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                      // we should probably retry here
                     }
                   });
         }
@@ -198,7 +199,8 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
             (nothing, error) -> {
               if (error != null) {
                 LOG.error("Unexpected exception on removing leader partition!", error);
-                // todo step down
+                // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                // we should probably retry here - step down makes no sense
                 transitionComplete.completeExceptionally(error);
                 return;
               }
@@ -228,7 +230,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
             (nothing, error) -> {
               if (error != null) {
                 LOG.error("Unexpected exception on removing follower partition!", error);
-                // todo step down
+                // TODO https://github.com/zeebe-io/zeebe/issues/3499
                 transitionComplete.completeExceptionally(error);
                 return;
               }
@@ -265,12 +267,13 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
                             LOG.error(
                                 "Unexpected error on retrieving log stream reader.",
                                 errorOnReceiveExporterReader);
+                            // TODO https://github.com/zeebe-io/zeebe/issues/3499
                             installFuture.completeExceptionally(errorOnReceiveExporterReader);
                           }
                         });
               } else {
                 LOG.error("Failed to install stream processor!", processorFail);
-                // todo step down
+                // TODO https://github.com/zeebe-io/zeebe/issues/3499
                 installFuture.completeExceptionally(processorFail);
               }
             });
@@ -286,6 +289,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
       snapshotController.recover();
       zeebeDb = snapshotController.openDb();
     } catch (final Exception e) {
+      // TODO https://github.com/zeebe-io/zeebe/issues/3499
       throw new IllegalStateException(
           String.format(
               "Unexpected error occurred while recovering snapshot controller during leader partition install for partition %d",

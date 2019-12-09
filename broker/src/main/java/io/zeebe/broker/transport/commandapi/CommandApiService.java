@@ -51,7 +51,8 @@ public class CommandApiService implements PartitionListener {
               if (error == null) {
                 service.addPartition(partitionId, recordWriter, limiter.getLimiter(partitionId));
               } else {
-                // todo the best would be to return a future onBecomingLeader
+                // TODO https://github.com/zeebe-io/zeebe/issues/3499
+                // the best would be to return a future onBecomingLeader
                 // when one of these futures failed we need to stop the partition installation and
                 // step down
                 // because then otherwise we are not correctly installed

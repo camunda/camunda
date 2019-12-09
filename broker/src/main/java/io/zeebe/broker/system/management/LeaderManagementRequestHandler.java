@@ -52,7 +52,7 @@ public class LeaderManagementRequestHandler extends Actor implements PartitionLi
                             "Unexpected error on retrieving write buffer for partition {}",
                             partitionId,
                             error);
-                        // todo ideally we can fail on becoming leader future and step down
+                        // TODO https://github.com/zeebe-io/zeebe/issues/3499
                       }
                     }));
   }
