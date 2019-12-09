@@ -54,13 +54,13 @@ public class ExporterDirector extends Actor {
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<ExporterContainer> containers;
   private final LogStream logStream;
-  private final LogStreamReader logStreamReader;
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
   private final ExporterMetrics metrics;
   private final String name;
   private final RetryStrategy exportingRetryStrategy;
   private final RetryStrategy recordWrapStrategy;
+  private LogStreamReader logStreamReader;
   private EventFilter eventFilter;
   private ExportersState state;
 
@@ -77,7 +77,6 @@ public class ExporterDirector extends Actor {
     this.logStream = Objects.requireNonNull(context.getLogStream());
     final int partitionId = logStream.getPartitionId();
     this.recordExporter = new RecordExporter(containers, partitionId);
-    this.logStreamReader = context.getLogStreamReader();
     this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
 
@@ -97,6 +96,24 @@ public class ExporterDirector extends Actor {
   @Override
   public String getName() {
     return name;
+  }
+
+  @Override
+  protected void onActorStarting() {
+    final ActorFuture<LogStreamReader> newReaderFuture = logStream.newLogStreamReader();
+    actor.runOnCompletionBlockingCurrentPhase(newReaderFuture, (reader, errorOnReceivingReader) ->
+    {
+      if (errorOnReceivingReader == null)
+      {
+        logStreamReader = reader;
+      }
+      else {
+        // TODO https://github.com/zeebe-io/zeebe/issues/3499
+        // ideally we could fail the actor start future such that we are able to propagate the error
+        LOG.error("Unexpected error on retrieving reader from log {}", logStream.getLogName(), errorOnReceivingReader);
+        actor.close();
+      }
+    });
   }
 
   @Override

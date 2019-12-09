@@ -18,15 +18,9 @@ public class ExporterDirectorContext {
 
   private int id;
   private String name;
-
   private LogStream logStream;
-  private LogStreamReader logStreamReader;
-
   private Collection<ExporterDescriptor> descriptors;
-
-  private Duration snapshotPeriod;
   private ZeebeDb zeebeDb;
-  private int maxSnapshots;
 
   public int getId() {
     return id;
@@ -40,24 +34,12 @@ public class ExporterDirectorContext {
     return logStream;
   }
 
-  public LogStreamReader getLogStreamReader() {
-    return logStreamReader;
-  }
-
   public Collection<ExporterDescriptor> getDescriptors() {
     return descriptors;
   }
 
-  public Duration getSnapshotPeriod() {
-    return snapshotPeriod;
-  }
-
   public ZeebeDb getZeebeDb() {
     return zeebeDb;
-  }
-
-  public int getMaxSnapshots() {
-    return maxSnapshots;
   }
 
   public ExporterDirectorContext id(int id) {
@@ -75,28 +57,13 @@ public class ExporterDirectorContext {
     return this;
   }
 
-  public ExporterDirectorContext logStreamReader(LogStreamReader logStreamReader) {
-    this.logStreamReader = logStreamReader;
-    return this;
-  }
-
   public ExporterDirectorContext descriptors(Collection<ExporterDescriptor> descriptors) {
     this.descriptors = descriptors;
     return this;
   }
 
-  public ExporterDirectorContext snapshotPeriod(Duration snapshotPeriod) {
-    this.snapshotPeriod = snapshotPeriod;
-    return this;
-  }
-
   public ExporterDirectorContext zeebeDb(ZeebeDb zeebeDb) {
     this.zeebeDb = zeebeDb;
-    return this;
-  }
-
-  public ExporterDirectorContext maxSnapshots(int maxSnapshots) {
-    this.maxSnapshots = maxSnapshots;
     return this;
   }
 }

@@ -34,7 +34,6 @@ import org.junit.runners.model.Statement;
 
 public class ExporterRule implements TestRule {
 
-  private static final int PARTITION_ID = 0;
   private static final int EXPORTER_PROCESSOR_ID = 101;
   private static final String PROCESSOR_NAME = "exporter";
   private static final String STREAM_NAME = "stream";
@@ -85,11 +84,8 @@ public class ExporterRule implements TestRule {
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
             .logStream(stream.getAsyncLogStream())
-            .logStreamReader(stream.newLogStreamReader())
             .zeebeDb(capturedZeebeDb)
-            .maxSnapshots(1)
-            .descriptors(exporterDescriptors)
-            .snapshotPeriod(Duration.ofMinutes(5));
+            .descriptors(exporterDescriptors);
 
     director = new ExporterDirector(context);
     director.startAsync(actorSchedulerRule.get()).join();
