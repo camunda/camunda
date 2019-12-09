@@ -24,6 +24,9 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -329,14 +332,14 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
     createScopeWithTenants(
       collectionId,
       "KEY_1",
-      asList(authorizedTenant, null, unauthorizedTenant1, unauthorizedTenant2),
+      asList(authorizedTenant, DEFAULT_TENANT, unauthorizedTenant1, unauthorizedTenant2),
       RESOURCE_TYPE_PROCESS_DEFINITION
     );
     addRoleToCollectionAsDefaultUser(new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ), collectionId);
-    reportClient.createSingleReport(collectionId, PROCESS, "KEY_1", singletonList(authorizedTenant));
+    reportClient.createSingleReport(collectionId, PROCESS, "KEY_1", newArrayList(authorizedTenant, DEFAULT_TENANT));
 
     List<CollectionScopeEntryRestDto> scopeEntries = collectionClient.getCollectionScopeForKermit(collectionId);
     assertThat(scopeEntries).hasSize(1)
@@ -364,7 +367,15 @@ public class ReportCollectionScopeAuthorizationIT extends AbstractIT {
       .execute(204);
 
     // then
-    assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
+    assertThat(collectionClient.getReportsForCollection(collectionId))
+      .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
+      .hasSize(1)
+      .first()
+      .extracting(r -> (SingleProcessReportDefinitionDto) r)
+      .extracting(SingleProcessReportDefinitionDto::getData)
+      .extracting(ProcessReportDataDto::getTenantIds)
+      .asList()
+      .contains(DEFAULT_TENANT);
   }
 
   @ParameterizedTest(name = "add tenant with masked tenants does not distort scope for type {0}")

@@ -10,10 +10,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionEntity;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
-import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
@@ -62,7 +62,6 @@ public class CollectionScopeService {
   private final DefinitionService definitionService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final ReportReader reportReader;
-  private final CollectionRoleService collectionRoleService;
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionWriter collectionWriter;
   private final ReportService reportService;
@@ -227,7 +226,7 @@ public class CollectionScopeService {
       getReportsAffectedByScopeUpdate(collectionId, collectionDefinition);
 
     if (!force) {
-      checkForConflictOnUpdate(userId, reportsAffectedByScopeUpdate);
+      checkForConflictOnUpdate(reportsAffectedByScopeUpdate);
     }
 
     updateReportsWithNewTenants(userId, tenantsThatWillBeRemoved, reportsAffectedByScopeUpdate);
@@ -247,13 +246,7 @@ public class CollectionScopeService {
 
     final Map<ReportType, List<SingleReportDefinitionDto<?>>> byDefinitionType = reportsAffectedByScopeUpdate
       .stream()
-      .peek(r -> {
-        r.getData().getTenantIds().removeAll(tenantsToBeRemoved);
-        if (r.getData().getTenantIds().isEmpty()) {
-          reportService.deleteReport(userId, r.getId(), true);
-        }
-      })
-      .filter(r -> !r.getData().getTenantIds().isEmpty())
+      .peek(r -> r.getData().getTenantIds().removeAll(tenantsToBeRemoved))
       .collect(Collectors.groupingBy(SingleReportDefinitionDto::getReportType));
     byDefinitionType.getOrDefault(ReportType.DECISION, new ArrayList<>())
       .stream()
@@ -282,9 +275,11 @@ public class CollectionScopeService {
       )));
   }
 
-  private void checkForConflictOnUpdate(final String userId,
-                                        final List<SingleReportDefinitionDto<?>> reportsAffectedByUpdate) {
-    Set<ConflictedItemDto> conflictedItems = getConflictsForReports(userId, reportsAffectedByUpdate);
+  private void checkForConflictOnUpdate(final List<SingleReportDefinitionDto<?>> reportsAffectedByUpdate) {
+    Set<ConflictedItemDto> conflictedItems =
+      reportsAffectedByUpdate.stream()
+      .map(this::reportToConflictedItem)
+      .collect(Collectors.toSet());
     if (!conflictedItems.isEmpty()) {
       throw new OptimizeConflictException(conflictedItems);
     }

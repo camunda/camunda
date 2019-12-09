@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.retrieval;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.persistence.TenantDto;
@@ -32,6 +31,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -168,8 +168,6 @@ public class CollectionConflictIT extends AbstractIT {
         DEFAULT_DEFINITION_KEY,
         singletonList("tenantToBeRemovedFromScope")
       );
-    final String alertId = alertClient.createAlertForReport(singleReportId);
-    final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
 
     // when
     tenants.remove("tenantToBeRemovedFromScope");
@@ -177,38 +175,8 @@ public class CollectionConflictIT extends AbstractIT {
       updateScopeFailsWithConflict(collectionId, scopeEntry.getId(), tenants, conflictScenario.getForceSetToFalse());
 
     // then
+    assertThat(conflictResponse.getConflictedItems()).hasSize(1);
     checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
-    checkConflictedItems(conflictResponse, ConflictedItemType.ALERT, new String[]{alertId});
-    checkConflictedItems(conflictResponse, ConflictedItemType.DASHBOARD, new String[]{dashboardId});
-  }
-
-  @Test
-  public void updateSingleScopeConflictsContainCombinedReportIds() {
-    // given
-    String collectionId = collectionClient.createNewCollection();
-    addTenantToElasticsearch("tenantToBeRemovedFromScope");
-    final ArrayList<String> tenants = new ArrayList<>(DEFAULT_TENANTS);
-    tenants.add("tenantToBeRemovedFromScope");
-    final CollectionScopeEntryDto scopeEntry =
-      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, tenants);
-    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
-    final String singleReportId =
-      reportClient.createSingleReport(
-        collectionId,
-        PROCESS,
-        DEFAULT_DEFINITION_KEY,
-        singletonList("tenantToBeRemovedFromScope")
-      );
-    final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
-
-    // when
-    tenants.remove("tenantToBeRemovedFromScope");
-    ConflictResponseDto conflictResponse =
-      updateScopeFailsWithConflict(collectionId, scopeEntry.getId(), tenants, false);
-
-    // then
-    checkConflictedItems(conflictResponse, ConflictedItemType.REPORT, new String[]{singleReportId});
-    checkConflictedItems(conflictResponse, ConflictedItemType.COMBINED_REPORT, new String[]{combinedReportId});
   }
 
   private void addTenantToElasticsearch(final String tenantId) {
@@ -223,7 +191,7 @@ public class CollectionConflictIT extends AbstractIT {
       .filter(conflictedItemDto -> itemType.equals(conflictedItemDto.getType()))
       .collect(Collectors.toSet());
 
-    Assertions.assertThat(conflictedItemDtos)
+    assertThat(conflictedItemDtos)
       .hasSize(expectedConflictedItemIds.length)
       .extracting(ConflictedItemDto::getId)
       .containsExactlyInAnyOrder(expectedConflictedItemIds);

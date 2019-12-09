@@ -30,6 +30,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -801,7 +802,7 @@ public class CollectionHandlingIT extends AbstractIT {
 
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
-  public void updateSingleScope_reportsWithoutTenantsAreBeingRemoved(DefinitionType definitionType) {
+  public void updateSingleScope_reportsWithoutTenantsAreNotBeingRemoved(DefinitionType definitionType) {
     // given
     String collectionId = collectionClient.createNewCollection();
     addTenantToElasticsearch("tenantToBeRemovedFromScope");
@@ -816,7 +817,7 @@ public class CollectionHandlingIT extends AbstractIT {
       DEFAULT_DEFINITION_KEY,
       singletonList("tenantToBeRemovedFromScope")
     );
-    alertClient.createAlertForReport(singleReportId);
+    final String alertId = alertClient.createAlertForReport(singleReportId);
     final String dashboardId = dashboardClient.createDashboard(collectionId, singletonList(singleReportId));
 
     // when
@@ -832,50 +833,16 @@ public class CollectionHandlingIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
 
     // then
-    assertThat(dashboardClient.getDashboard(dashboardId).getReports()).isEmpty();
-    assertThat(collectionClient.getReportsForCollection(collectionId)).isEmpty();
-    assertThat(collectionClient.getAlertsForCollection(collectionId)).isEmpty();
-  }
-
-  @Test
-  public void updateSingleScope_reportsWithoutTenantsAreBeingRemoved_affectsCombinedReportsAsWell() {
-    // given
-    String collectionId = collectionClient.createNewCollection();
-    addTenantToElasticsearch("tenantToBeRemovedFromScope");
-    final ArrayList<String> tenants = new ArrayList<>(DEFAULT_TENANTS);
-    tenants.add("tenantToBeRemovedFromScope");
-    final CollectionScopeEntryDto scopeEntry =
-      new CollectionScopeEntryDto(PROCESS, DEFAULT_DEFINITION_KEY, tenants);
-    collectionClient.addScopeEntryToCollection(collectionId, scopeEntry);
-    final String singleReportId = reportClient.createSingleReport(
-      collectionId,
-      PROCESS,
-      DEFAULT_DEFINITION_KEY,
-      singletonList("tenantToBeRemovedFromScope")
-    );
-    final String combinedReportId = reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
-
-    // when
-    tenants.remove("tenantToBeRemovedFromScope");
-    Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildUpdateCollectionScopeEntryRequest(
-        collectionId,
-        scopeEntry.getId(),
-        new CollectionScopeEntryUpdateDto(tenants),
-        true
-      )
-      .execute();
-    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NO_CONTENT);
-
-    // then
+    assertThat(dashboardClient.getDashboard(dashboardId).getReports())
+      .extracting(ReportLocationDto::getId)
+      .contains(singleReportId);
     assertThat(collectionClient.getReportsForCollection(collectionId))
-      .hasSize(1)
       .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
-      .extracting(r -> (CombinedReportDefinitionDto) r)
-      .hasOnlyOneElementSatisfying(r -> assertThat(r.getId()).isEqualTo(combinedReportId))
-      .extracting(CombinedReportDefinitionDto::getData)
-      .flatExtracting(CombinedReportDataDto::getReportIds)
-      .isEmpty();
+      .extracting(ReportDefinitionDto::getId)
+      .contains(singleReportId);
+    assertThat(collectionClient.getAlertsForCollection(collectionId))
+      .extracting(AlertDefinitionDto::getId)
+      .contains(alertId);
   }
 
   private void addTenantToElasticsearch(final String tenantId) {
