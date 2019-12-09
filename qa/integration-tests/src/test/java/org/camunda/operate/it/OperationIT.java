@@ -16,8 +16,10 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.entities.listview.WorkflowInstanceForListViewEntity;
 import org.camunda.operate.webapp.es.reader.ActivityInstanceReader;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
+import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.es.reader.OperationReader;
 import org.camunda.operate.webapp.es.reader.VariableReader;
 import org.camunda.operate.webapp.es.reader.WorkflowInstanceReader;
@@ -82,6 +84,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private OperationReader operationReader;
+
+  @Autowired
+  private ListViewReader listViewReader;
 
   private Long initialBatchOperationMaxSize;
 
@@ -565,6 +570,15 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.CANCEL_WORKFLOW_INSTANCE);
     assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
     assertThat(batchOperationEntity.getEndDate()).isNotNull();
+
+    //check batch operation id stored in workflow instance
+    List<WorkflowInstanceForListViewEntity> workflowInstanceEntities = getWorkflowInstanceEntities(workflowInstanceQuery);
+    assertThat(workflowInstanceEntities).hasSize(1);
+    assertThat(workflowInstanceEntities.get(0).getBatchOperationId()).containsExactly(batchOperationEntity.getId());
+  }
+
+  private List<WorkflowInstanceForListViewEntity> getWorkflowInstanceEntities(ListViewQueryDto workflowInstanceQuery) {
+    return listViewReader.queryListView(new ListViewRequestDto(workflowInstanceQuery), 0, 10, new ListViewResponseDto());
   }
 
   @Test

@@ -57,6 +57,8 @@ public class ListViewQueryIT extends OperateIntegrationTest {
   private WorkflowInstanceForListViewEntity completedInstance;
   private WorkflowInstanceForListViewEntity canceledInstance;
 
+  private String batchOperationId = "batchOperationId";
+
   @Test
   public void testQueryAllRunning() throws Exception {
     createData();
@@ -502,7 +504,6 @@ public class ListViewQueryIT extends OperateIntegrationTest {
 
   }
 
-
   @Test
   public void testQueryByWorkflowInstanceIds() throws Exception {
     //given
@@ -524,6 +525,26 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     assertThat(response.getWorkflowInstances()).hasSize(2);
 
     assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+  }
+
+  @Test
+  public void testQueryByBatchOperationId() throws Exception {
+    //given
+    createData();
+
+    ListViewRequestDto query = TestUtil.createGetAllWorkflowInstancesQuery(q ->
+      q.setBatchOperationId(batchOperationId)
+    );
+
+    //when
+    MvcResult mvcResult = postRequest(query(0, 100),query);
+
+    //then
+    ListViewResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() { });
+
+    assertThat(response.getWorkflowInstances()).hasSize(2);
+
+    assertThat(response.getWorkflowInstances()).extracting(ListViewTemplate.ID).containsExactlyInAnyOrder(runningInstance.getId(), completedInstance.getId());
   }
 
   @Test
@@ -1053,18 +1074,21 @@ public class ListViewQueryIT extends OperateIntegrationTest {
     //running instance with one activity and without incidents
     final Long workflowKey = 27L;
     runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowKey);
+    runningInstance.setBatchOperationId(Arrays.asList("a", batchOperationId));
     final ActivityInstanceForListViewEntity activityInstance1 = createActivityInstance(runningInstance.getWorkflowInstanceKey(), ActivityState.ACTIVE);
     vars.add(createVariable(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var1", "X"));
     vars.add(createVariable(runningInstance.getWorkflowInstanceKey(), runningInstance.getWorkflowInstanceKey(), "var2", "Y"));
 
     //completed instance with one activity and without incidents
     completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED, workflowKey);
+    completedInstance.setBatchOperationId(Arrays.asList("b", batchOperationId));
     final ActivityInstanceForListViewEntity activityInstance2 = createActivityInstance(completedInstance.getWorkflowInstanceKey(), ActivityState.COMPLETED);
     vars.add(createVariable(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var1", "X"));
     vars.add(createVariable(completedInstance.getWorkflowInstanceKey(), completedInstance.getWorkflowInstanceKey(), "var2", "Z"));
 
     //canceled instance with two activities and without incidents
     canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    canceledInstance.setBatchOperationId(Arrays.asList("c", "d"));
     final ActivityInstanceForListViewEntity activityInstance3 = createActivityInstance(canceledInstance.getWorkflowInstanceKey(), ActivityState.COMPLETED);
     final ActivityInstanceForListViewEntity activityInstance4 = createActivityInstance(canceledInstance.getWorkflowInstanceKey(), ActivityState.TERMINATED);
     vars.add(createVariable(canceledInstance.getWorkflowInstanceKey(), Long.valueOf(activityInstance3.getId()), "var1", "X"));

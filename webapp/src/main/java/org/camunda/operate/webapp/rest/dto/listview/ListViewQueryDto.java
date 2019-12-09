@@ -51,6 +51,8 @@ public class ListViewQueryDto {
 
   private VariablesQueryDto variable;
 
+  private String batchOperationId;
+
   public ListViewQueryDto() {
   }
 
@@ -216,6 +218,14 @@ public class ListViewQueryDto {
     return this;
   }
 
+  public String getBatchOperationId() {
+    return batchOperationId;
+  }
+
+  public void setBatchOperationId(String batchOperationId) {
+    this.batchOperationId = batchOperationId;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -259,7 +269,10 @@ public class ListViewQueryDto {
       return false;
     if (excludeIds != null ? !excludeIds.equals(that.excludeIds) : that.excludeIds != null)
       return false;
-    return variable != null ? variable.equals(that.variable) : that.variable == null;
+    if (variable != null ? !variable.equals(that.variable) : that.variable != null)
+      return false;
+    return batchOperationId != null ? batchOperationId.equals(that.batchOperationId) : that.batchOperationId == null;
+
   }
 
   @Override
@@ -282,9 +295,10 @@ public class ListViewQueryDto {
     result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);
     result = 31 * result + (excludeIds != null ? excludeIds.hashCode() : 0);
     result = 31 * result + (variable != null ? variable.hashCode() : 0);
+    result = 31 * result + (batchOperationId != null ? batchOperationId.hashCode() : 0);
     return result;
   }
-  
+
   public static ListViewQueryDto createAll() {
     ListViewQueryDto query = createAllRunning();
     query.setFinished(true);
@@ -314,6 +328,6 @@ public class ListViewQueryDto {
         + completed + ", canceled=" + canceled + ", ids=" + ids + ", errorMessage='" + errorMessage + '\'' + ", activityId='" + activityId + '\''
         + ", startDateAfter=" + startDateAfter + ", startDateBefore=" + startDateBefore + ", endDateAfter=" + endDateAfter + ", endDateBefore=" + endDateBefore
         + ", workflowIds=" + workflowIds + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", workflowVersion=" + workflowVersion + ", excludeIds=" + excludeIds
-        + ", variable=" + variable + '}';
+        + ", variable=" + variable + ", batchOperationId='" + batchOperationId + '\'' + '}';
   }
 }

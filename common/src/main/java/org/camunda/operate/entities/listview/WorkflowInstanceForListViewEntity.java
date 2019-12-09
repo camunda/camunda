@@ -6,6 +6,7 @@
 package org.camunda.operate.entities.listview;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
@@ -21,6 +22,8 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
   private OffsetDateTime endDate;
 
   private WorkflowInstanceState state;
+
+  private List<String> batchOperationId;
 
   private ListViewJoinRelation joinRelation = new ListViewJoinRelation(ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION);
 
@@ -80,6 +83,14 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
     this.state = state;
   }
 
+  public List<String> getBatchOperationId() {
+    return batchOperationId;
+  }
+
+  public void setBatchOperationId(List<String> batchOperationId) {
+    this.batchOperationId = batchOperationId;
+  }
+
   public String getBpmnProcessId() {
     return bpmnProcessId;
   }
@@ -121,6 +132,8 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
       return false;
     if (state != that.state)
       return false;
+    if (batchOperationId != null ? !batchOperationId.equals(that.batchOperationId) : that.batchOperationId != null)
+      return false;
     return joinRelation != null ? joinRelation.equals(that.joinRelation) : that.joinRelation == null;
 
   }
@@ -135,6 +148,7 @@ public class WorkflowInstanceForListViewEntity extends OperateZeebeEntity {
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
+    result = 31 * result + (batchOperationId != null ? batchOperationId.hashCode() : 0);
     result = 31 * result + (joinRelation != null ? joinRelation.hashCode() : 0);
     return result;
   }

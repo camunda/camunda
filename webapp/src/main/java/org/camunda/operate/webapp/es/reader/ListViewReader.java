@@ -126,7 +126,7 @@ public class ListViewReader {
     return result;
   }
 
-  protected List<WorkflowInstanceForListViewEntity> queryListView(ListViewRequestDto workflowInstanceRequest,
+  public List<WorkflowInstanceForListViewEntity> queryListView(ListViewRequestDto workflowInstanceRequest,
     Integer firstResult, Integer maxResults, ListViewResponseDto result) {
     SearchSourceBuilder searchSourceBuilder = createSearchSourceBuilder(workflowInstanceRequest);
     searchSourceBuilder
@@ -221,13 +221,21 @@ public class ListViewReader {
         createWorkflowKeysQuery(query),
         createBpmnProcessIdQuery(query),
         createExcludeIdsQuery(query),
-        createVariablesQuery(query)
+        createVariablesQuery(query),
+        createBatchOperatioIdQuery(query)
     );
+  }
+
+  private QueryBuilder createBatchOperatioIdQuery(ListViewQueryDto query) {
+    if (query.getBatchOperationId() != null) {
+      return termQuery(ListViewTemplate.BATCH_OPERATION_ID, query.getBatchOperationId());
+    }
+    return null;
   }
 
   private QueryBuilder createWorkflowKeysQuery(ListViewQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getWorkflowIds())) {
-      return termsQuery(ListViewTemplate.WORKFLOW_KEY,query.getWorkflowIds());
+      return termsQuery(ListViewTemplate.WORKFLOW_KEY, query.getWorkflowIds());
     }
     return null;
   }
