@@ -2,21 +2,20 @@ package io.zeebe.broker.bootstrap;
 
 import static io.zeebe.broker.bootstrap.StartHelper.takeDuration;
 
-import io.zeebe.broker.Broker;
 import io.zeebe.broker.Loggers;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
 
-public class CloseHelper {
+public class CloseHelper implements AutoCloseable {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final List<CloseStep> closeableSteps;
-  private final int nodeId;
+  private final String name;
 
-  public CloseHelper(int nodeId) {
-    this.nodeId = nodeId;
+  public CloseHelper(String name) {
+    this.name = name;
     this.closeableSteps = new ArrayList<>();
   }
 
@@ -35,19 +34,19 @@ public class CloseHelper {
 
         for (CloseStep closeableStep : closeableSteps) {
           try {
-            LOG.info("Closing {} [{}/{}]: {}", nodeId, index, closeableSteps.size(), closeableStep.getName());
+            LOG.info("Closing {} [{}/{}]: {}", name, index, closeableSteps.size(), closeableStep.getName());
             final long durationStepStarting = takeDuration(() -> closeableStep.getClosingFunction().close());
-            Broker.LOG.info(
+            LOG.debug(
               "Closing {} [{}/{}]: {} closed in {} ms",
-              nodeId,
+              name,
               index,
               closeableSteps.size(),
               closeableStep.getName(),
               durationStepStarting);
           } catch (Exception exceptionOnClose) {
-            Broker.LOG.error(
+            LOG.error(
               "Closing {} [{}/{}]: {} failed to close.",
-              nodeId,
+              name,
               index,
               closeableSteps.size(),
               closeableStep.getName(), exceptionOnClose);
@@ -56,14 +55,19 @@ public class CloseHelper {
           index++;
         }
       });
-      Broker.LOG.info(
+      LOG.info(
         "Closing {} succeeded. Closed {} steps in {} ms.",
-        nodeId,
+        name,
         closeableSteps.size(),
         durationTime);
     } catch (Exception willNeverHappen)
     {
-      LOG.error("Unexpected exception occured on closing {}", nodeId, willNeverHappen);
+      LOG.error("Unexpected exception occured on closing {}", name, willNeverHappen);
     }
+  }
+
+  @Override
+  public void close() {
+    closeReverse();
   }
 }

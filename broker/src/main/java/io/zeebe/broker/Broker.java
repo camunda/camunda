@@ -162,33 +162,33 @@ public class Broker implements AutoCloseable {
         "Starting broker {} with configuration {}", localBroker.getNodeId(), brokerCfg.toJson());
     }
 
-    final StartHelper startContext = new StartHelper(localBroker.getNodeId());
+    final StartHelper startContext = new StartHelper("Broker-" + localBroker.getNodeId());
 
     startContext.addStep(
-      "starting actor scheduler", this::actorSchedulerStep);
+      "actor scheduler", this::actorSchedulerStep);
     startContext.addStep(
-      "creating membership and replication protocol", () -> atomixCreateStep(brokerCfg));
+      "membership and replication protocol", () -> atomixCreateStep(brokerCfg));
     startContext.addStep(
-      "starting command api",
+      "command api",
       () -> commandAPIStep(brokerCfg, networkCfg, localBroker));
     startContext.addStep(
-      "starting subscription api", () -> subscriptionAPIStep(localBroker));
+      "subscription api", () -> subscriptionAPIStep(localBroker));
 
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
-        "starting embedded gateway",
+        "embedded gateway",
         () -> new EmbeddedGatewayService(brokerCfg, scheduler,
           atomix));
     }
-    startContext.addStep("joining cluster", () -> atomix.start().join());
+    startContext.addStep("cluster services", () -> atomix.start().join());
     startContext.addStep(
-      "starting topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
+      "topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
     startContext.addStep(
-      "starting metric's server", () -> metricsServerStep(networkCfg, localBroker));
+      "metric's server", () -> metricsServerStep(networkCfg, localBroker));
     startContext.addStep(
-      "starting leader management request handler", () -> managementRequestStep(localBroker));
+      "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep(
-      "starting zeebe partitions", () -> partitionsStep(brokerCfg, clusterCfg, localBroker));
+      "zeebe partitions", () -> partitionsStep(brokerCfg, clusterCfg, localBroker));
 
     return startContext;
   }
@@ -291,7 +291,7 @@ public class Broker implements AutoCloseable {
   }
 
   private AutoCloseable partitionsStep(BrokerCfg brokerCfg, ClusterCfg clusterCfg,
-    BrokerInfo localBroker) {
+    BrokerInfo localBroker) throws Exception {
     final RaftPartitionGroup partitionGroup =
       (RaftPartitionGroup)
         atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);
@@ -303,28 +303,26 @@ public class Broker implements AutoCloseable {
         .map(RaftPartition.class::cast)
         .collect(Collectors.toList());
 
-    LOG.info("Broker {} Partitions {}", localBroker.getNodeId(), owningPartitions);
+    final StartHelper partitionStartHelper = new StartHelper("partitions");
 
-    final List<ZeebePartition> partitions = new ArrayList<>();
     for (final RaftPartition owningPartition : owningPartitions) {
-      final ZeebePartition zeebePartition =
-        new ZeebePartition(
-          localBroker,
-          owningPartition,
-          partitionListeners,
-          atomix.getEventService(),
-          scheduler,
-          brokerCfg,
-          commandHandler,
-          createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
-      scheduleActor(zeebePartition);
-      partitions.add(zeebePartition);
-      LOG.info(
-        "Bootstrap {}: Partition {} successfully installed.",
-        localBroker.getNodeId(),
-        owningPartition.id().id());
+      partitionStartHelper.addStep("partition " + owningPartition.id().id(), () ->
+      {
+        final ZeebePartition zeebePartition =
+          new ZeebePartition(
+            localBroker,
+            owningPartition,
+            partitionListeners,
+            atomix.getEventService(),
+            scheduler,
+            brokerCfg,
+            commandHandler,
+            createFactory(topologyManager, clusterCfg, atomix, managementRequestHandler));
+        scheduleActor(zeebePartition);
+        return zeebePartition;
+      });
     }
-    return () -> partitions.forEach(ZeebePartition::close);
+    return partitionStartHelper.start();
   }
 
   private TypedRecordProcessorsFactory createFactory(

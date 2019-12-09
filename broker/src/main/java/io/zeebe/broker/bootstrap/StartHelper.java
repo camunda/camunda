@@ -1,18 +1,21 @@
 package io.zeebe.broker.bootstrap;
 
-import io.zeebe.broker.Broker;
+import io.zeebe.broker.Loggers;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
 
 public class StartHelper {
+  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
+
   private final List<StartStep> startSteps;
   private final CloseHelper closeHelper;
-  private final int nodeId;
+  private final String name;
 
-  public StartHelper(int nodeId) {
-    this.nodeId = nodeId;
+  public StartHelper(String name) {
+    this.name = name;
     this.startSteps = new ArrayList<>();
-    this.closeHelper = new CloseHelper(nodeId);
+    this.closeHelper = new CloseHelper(name);
   }
 
   public void addStep(String name, Runner runnable) {
@@ -32,15 +35,15 @@ public class StartHelper {
     {
       int index = 1;
       for (StartStep step : startSteps) {
-        Broker.LOG.info("Bootstrap {} [{}/{}]: {}", nodeId, index, startSteps.size(), step.getName());
+        LOG.info("Bootstrap {} [{}/{}]: {}", name, index, startSteps.size(), step.getName());
         try {
           final long durationStepStarting = takeDuration(() -> {
             final AutoCloseable closer = step.getStartFunction().start();
             closeHelper.addCloser(step.getName(), closer);
           });
-          Broker.LOG.info(
-            "Bootstrap {} [{}/{}]: {} succeeded in {} ms",
-            nodeId,
+          LOG.debug(
+            "Bootstrap {} [{}/{}]: {} started in {} ms",
+            name,
             index,
             startSteps.size(),
             step.getName(),
@@ -48,9 +51,9 @@ public class StartHelper {
         }
         catch (Exception startException)
         {
-          Broker.LOG.info(
+          LOG.info(
             "Bootstrap {} [{}/{}]: {} failed with unexpected exception.",
-            nodeId,
+            name,
             index,
             startSteps.size(),
             step.getName(),
@@ -62,9 +65,9 @@ public class StartHelper {
         index++;
       }
     });
-    Broker.LOG.info(
+    LOG.info(
         "Bootstrap {} succeeded. Started {} steps in {} ms.",
-        nodeId,
+      name,
         startSteps.size(),
         durationTime);
     return closeHelper;

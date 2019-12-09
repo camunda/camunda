@@ -15,7 +15,7 @@ public class HelperTest {
   @Before
   public void setup()
   {
-    helper = new StartHelper(1);
+    helper = new StartHelper("1");
   }
 
   @Test
