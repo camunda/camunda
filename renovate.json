@@ -3,5 +3,5 @@
     "config:base"
   ],
 
-  "ignoreDeps": ["docker/docker"]
+  "ignoreDeps": ["docker/engine"]
 }
