@@ -463,10 +463,6 @@ definitions:
         type: "array"
         items:
           $ref: "#/definitions/DeviceRequest"
-      DiskQuota:
-        description: "Disk limit (in bytes)."
-        type: "integer"
-        format: "int64"
       KernelMemory:
         description: "Kernel memory limit in bytes."
         type: "integer"
@@ -1145,6 +1141,7 @@ definitions:
     type: "object"
     additionalProperties:
       type: "array"
+      x-nullable: true
       items:
         $ref: "#/definitions/PortBinding"
     example:
@@ -1169,7 +1166,6 @@ definitions:
       PortBinding represents a binding between a host IP address and a host
       port.
     type: "object"
-    x-nullable: true
     properties:
       HostIp:
         description: "Host IP address that the container's port is mapped to."
@@ -3266,7 +3262,7 @@ definitions:
 
           <p><br /></p>
 
-          - "ingress" makes the target port accessible on on every node,
+          - "ingress" makes the target port accessible on every node,
             regardless of whether there is a task for the service running on
             that node or not.
           - "host" bypasses the routing mesh and publish the port directly on
@@ -3809,7 +3805,7 @@ definitions:
         description: |
           The driver to use for managing cgroups.
         type: "string"
-        enum: ["cgroupfs", "systemd"]
+        enum: ["cgroupfs", "systemd", "none"]
         default: "cgroupfs"
         example: "cgroupfs"
       NEventsListener:
@@ -4044,7 +4040,7 @@ definitions:
       SecurityOptions:
         description: |
           List of security features that are enabled on the daemon, such as
-          apparmor, seccomp, SELinux, and user-namespaces (userns).
+          apparmor, seccomp, SELinux, user-namespaces (userns), and rootless.
 
           Additional configuration options for each security feature may
           be present, and are included as a comma-separated list of key/value
@@ -4057,6 +4053,7 @@ definitions:
           - "name=seccomp,profile=default"
           - "name=selinux"
           - "name=userns"
+          - "name=rootless"
       ProductLicense:
         description: |
           Reports a summary of the product license on the daemon.
@@ -5466,7 +5463,7 @@ paths:
   /containers/{id}/resize:
     post:
       summary: "Resize a container TTY"
-      description: "Resize the TTY for a container. You must restart the container for the resize to take effect."
+      description: "Resize the TTY for a container."
       operationId: "ContainerResize"
       consumes:
         - "application/octet-stream"
@@ -6220,12 +6217,17 @@ paths:
           in: "query"
           description: "If “1”, “true”, or “True” then it will be an error if unpacking the given content would cause an existing directory to be replaced with a non-directory and vice versa."
           type: "string"
+        - name: "copyUIDGID"
+          in: "query"
+          description: "If “1”, “true”, then it will copy UID/GID maps to the dest file or dir"
+          type: "string"
         - name: "inputStream"
           in: "body"
           required: true
           description: "The input stream must be a tar archive compressed with one of the following algorithms: identity (no compression), gzip, bzip2, xz."
           schema:
             type: "string"
+            format: "binary"
       tags: ["Container"]
   /containers/prune:
     post:
@@ -9110,7 +9112,9 @@ paths:
                 type: "string"
               RemoteAddrs:
                 description: "Addresses of manager nodes already participating in the swarm."
-                type: "string"
+                type: "array"
+                items:
+                  type: "string"
               JoinToken:
                 description: "Secret token for joining this swarm."
                 type: "string"
@@ -10375,9 +10379,6 @@ paths:
       description: |
         Start a new interactive session with a server. Session allows server to call back to the client for advanced capabilities.
 
-        > **Note**: This endpoint is *experimental* and only available if the daemon is started with experimental
-        > features enabled. The specifications for this endpoint may still change in a future version of the API.
-
         ### Hijacking
 
         This endpoint hijacks the HTTP connection to HTTP2 transport that allows the client to expose gPRC services on that connection.
@@ -10411,4 +10412,4 @@ paths:
           description: "server error"
           schema:
             $ref: "#/definitions/ErrorResponse"
-      tags: ["Session (experimental)"]
+      tags: ["Session"]
