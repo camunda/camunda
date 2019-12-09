@@ -113,12 +113,6 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-service-container</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
         <artifactId>zeebe-transport</artifactId>
         <version>${project.version}</version>
       </dependency>
