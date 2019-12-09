@@ -256,7 +256,7 @@ public class ReportWriter {
     String deletedItemName = "single report";
     String deletedItemIdentifier = String.format("ID %s", reportId);
 
-    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       idsQuery().addIds(reportId),
       deletedItemName,
@@ -292,7 +292,7 @@ public class ReportWriter {
       ScoreMode.None
     );
 
-    ElasticsearchWriterUtil.doUpdateByQueryRequest(
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
       "report",
       reportId,
@@ -333,7 +333,7 @@ public class ReportWriter {
     String deletedItemName = "all reports of collection";
     String deletedItemIdentifier = String.format("collectionId [%s]", collectionId);
 
-    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       QueryBuilders.termQuery(COLLECTION_ID, collectionId),
       deletedItemName,

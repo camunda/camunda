@@ -25,4 +25,13 @@ public class IndexableEventMappingDto implements OptimizeDto {
   EventTypeDto start;
   EventTypeDto end;
 
+  public static IndexableEventMappingDto fromEventMappingDto(final String flowNodeId,
+                                                             final EventMappingDto eventMappingDto) {
+    return IndexableEventMappingDto.builder()
+      .flowNodeId(flowNodeId)
+      .start(eventMappingDto.getStart())
+      .end(eventMappingDto.getEnd())
+      .build();
+  }
+
 }

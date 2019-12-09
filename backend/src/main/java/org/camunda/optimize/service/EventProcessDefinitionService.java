@@ -32,7 +32,7 @@ public class EventProcessDefinitionService {
   }
 
   public List<EventProcessDefinitionDto> getAllEventProcessesDefinitionsOmitXml() {
-    return eventProcessDefinitionReader.getAllPublishedEventProcessesOmitXml();
+    return eventProcessDefinitionReader.getAllEventProcessDefinitionsOmitXml();
   }
 
   public boolean deleteEventProcessDefinition(final String eventProcessDefinitionId) {

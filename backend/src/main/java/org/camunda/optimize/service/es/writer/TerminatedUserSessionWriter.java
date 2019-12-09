@@ -66,7 +66,7 @@ public class TerminatedUserSessionWriter {
         .format(OPTIMIZE_DATE_FORMAT)
     );
 
-    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       filterQuery,
       deletedItemName,

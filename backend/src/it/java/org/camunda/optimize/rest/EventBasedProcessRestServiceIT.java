@@ -9,28 +9,30 @@ import lombok.NonNull;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.es.schema.index.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.util.FileReaderUtil;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +43,9 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class EventBasedProcessRestServiceIT extends AbstractIT {
 
@@ -408,25 +412,19 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     assertThat(storedEventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
     assertThat(storedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
 
-    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).get()
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
       .isEqualToIgnoringGivenFields(
-        EventProcessDefinitionDto.eventProcessBuilder()
-          .id(storedEventProcessMapping.getId())
-          .key(storedEventProcessMapping.getId())
-          .name(storedEventProcessMapping.getName())
-          .version("1")
-          .bpmn20Xml(storedEventProcessMapping.getXml())
-          .flowNodeNames(Collections.emptyMap())
-          .userTaskNames(Collections.emptyMap())
-          .createdDateTime(LocalDateUtil.getCurrentDateTime())
+        EventProcessPublishStateDto.builder()
+          .processId(storedEventProcessMapping.getId())
+          .publishDateTime(LocalDateUtil.getCurrentDateTime())
+          .state(EventProcessState.PUBLISH_PENDING)
+          .publishProgress(0.0D)
+          .xml(storedEventProcessMapping.getXml())
+          .mappings(eventProcessMappingDto.getMappings())
+          .deleted(false)
           .build(),
-        ProcessDefinitionOptimizeDto.Fields.flowNodeNames,
-        ProcessDefinitionOptimizeDto.Fields.userTaskNames
-      )
-      .satisfies(definitionDto -> {
-        assertThat(definitionDto.getFlowNodeNames()).isNotEmpty();
-        assertThat(definitionDto.getUserTaskNames()).isNotEmpty();
-      });
+        EventProcessPublishStateDto.Fields.id
+      );
   }
 
   @Test
@@ -456,25 +454,19 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     assertThat(republishedEventProcessMapping.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
     assertThat(republishedEventProcessMapping.getPublishingProgress()).isEqualTo(0.0D);
 
-    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).get()
-      .hasFieldOrPropertyWithValue(DefinitionOptimizeDto.Fields.name, updateDto.getName())
-      .hasFieldOrPropertyWithValue(DefinitionOptimizeDto.Fields.version, "1")
-      .hasFieldOrPropertyWithValue(ProcessDefinitionOptimizeDto.Fields.bpmn20Xml, updateDto.getXml())
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
+      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.xml, updateDto.getXml())
       .hasFieldOrPropertyWithValue(
-        EventProcessDefinitionDto.Fields.createdDateTime,
+        EventProcessPublishStateDto.Fields.publishDateTime,
         LocalDateUtil.getCurrentDateTime()
-      )
-      .satisfies(definitionDto -> {
-        assertThat(definitionDto.getFlowNodeNames()).isNotEmpty();
-        assertThat(definitionDto.getUserTaskNames()).isNotEmpty();
-      });
+      );
   }
 
   @NonNull
   private OffsetDateTime getPublishedDateForEventProcessMappingOrFail(final String eventProcessId) {
-    return getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)
+    return getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)
       .orElseThrow(() -> new OptimizeIntegrationTestException("Failed reading first publish date"))
-      .getCreatedDateTime();
+      .getPublishDateTime();
   }
 
   @Test
@@ -498,7 +490,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.UNMAPPED);
     assertThat(actual.getPublishingProgress()).isEqualTo(null);
 
-    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
   }
 
   @Test
@@ -523,8 +515,8 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.PUBLISH_PENDING);
     assertThat(actual.getPublishingProgress()).isEqualTo(0.0D);
 
-    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).get()
-      .hasFieldOrPropertyWithValue(EventProcessDefinitionDto.Fields.createdDateTime, firstPublishDate);
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
+      .hasFieldOrPropertyWithValue(EventProcessPublishStateDto.Fields.publishDateTime, firstPublishDate);
   }
 
   @Test
@@ -557,7 +549,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);
     assertThat(actual.getPublishingProgress()).isEqualTo(null);
 
-    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
   }
 
   @Test
@@ -648,7 +640,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     eventProcessClient.deleteEventProcessMapping(eventProcessId);
 
     // then
-    assertThat(getEventProcessMappingDefinitionFromElasticsearch(eventProcessId)).isEmpty();
+    assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
   }
 
   @Test
@@ -663,17 +655,29 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   }
 
   @SneakyThrows
-  private Optional<EventProcessDefinitionDto> getEventProcessMappingDefinitionFromElasticsearch(final String eventProcessId) {
-    final GetResponse getEventProcessDefinitionResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(eventProcessId), RequestOptions.DEFAULT);
-    return Optional.ofNullable(getEventProcessDefinitionResponse.getSourceAsString())
-      .map(value -> {
-        try {
-          return embeddedOptimizeExtension.getObjectMapper().readValue(value, EventProcessDefinitionDto.class);
-        } catch (IOException e) {
-          throw new OptimizeIntegrationTestException(e);
-        }
-      });
+  private Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromElasticsearch(
+    final String eventProcessMappingId) {
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(
+        boolQuery()
+          .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId))
+          .must(termQuery(EventProcessPublishStateIndex.DELETED, false))
+      )
+      .sort(SortBuilders.fieldSort(EventProcessPublishStateIndex.PUBLISH_DATE_TIME).order(SortOrder.DESC))
+      .size(1);
+    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
+      .getOptimizeElasticClient()
+      .search(new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX).source(searchSourceBuilder), RequestOptions.DEFAULT);
+
+    EventProcessPublishStateDto result = null;
+    if (searchResponse.getHits().totalHits > 0) {
+      result = elasticSearchIntegrationTestExtension.getObjectMapper().readValue(
+        searchResponse.getHits().getAt(0).getSourceAsString(),
+        IndexableEventProcessPublishStateDto.class
+      ).toEventProcessPublishStateDto();
+    }
+
+    return Optional.ofNullable(result);
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappings() {

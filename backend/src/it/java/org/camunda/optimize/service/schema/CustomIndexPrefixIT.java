@@ -80,7 +80,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings.size(), is(24));
+    assertThat(mappings.size(), is(25));
     for (IndexMappingCreator mapping : mappings) {
       final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(mapping.getIndexName(), CUSTOM_PREFIX);
       final String expectedIndexName = getOptimizeIndexNameForAliasAndVersion(

@@ -101,10 +101,10 @@ public class ElasticsearchWriterUtil {
       .collect(Collectors.joining());
   }
 
-  public static<T extends OptimizeDto> void doBulkRequestWithList(OptimizeElasticsearchClient esClient,
-                                           String importItemName,
-                                           List<T> dtoList,
-                                           BiConsumer<BulkRequest, T> addDtoToRequestConsumer) {
+  public static <T extends OptimizeDto> void doBulkRequestWithList(OptimizeElasticsearchClient esClient,
+                                                                   String importItemName,
+                                                                   List<T> dtoList,
+                                                                   BiConsumer<BulkRequest, T> addDtoToRequestConsumer) {
     if (dtoList.isEmpty()) {
       log.warn("Cannot import empty list of {}.", importItemName);
     } else {
@@ -116,10 +116,10 @@ public class ElasticsearchWriterUtil {
     }
   }
 
-  public static<T extends OptimizeDto> void doBulkRequestWithMap(OptimizeElasticsearchClient esClient,
-                                          String importItemName,
-                                          Map<String, List<T>> dtoMap,
-                                          BiConsumer<BulkRequest, Map.Entry<String, List<T>>> addDtoToRequestConsumer) {
+  public static <T extends OptimizeDto> void doBulkRequestWithMap(OptimizeElasticsearchClient esClient,
+                                                                  String importItemName,
+                                                                  Map<String, List<T>> dtoMap,
+                                                                  BiConsumer<BulkRequest, Map.Entry<String, List<T>>> addDtoToRequestConsumer) {
     if (dtoMap.isEmpty()) {
       log.warn("Cannot import empty map of {}.", importItemName);
     } else {
@@ -131,12 +131,12 @@ public class ElasticsearchWriterUtil {
     }
   }
 
-  public static void doUpdateByQueryRequest(OptimizeElasticsearchClient esClient,
-                                            String updateItemName,
-                                            String updateItemIdentifier,
-                                            Script updateScript,
-                                            AbstractQueryBuilder filterQuery,
-                                            String... indices) {
+  public static boolean tryUpdateByQueryRequest(OptimizeElasticsearchClient esClient,
+                                                String updateItemName,
+                                                String updateItemIdentifier,
+                                                Script updateScript,
+                                                AbstractQueryBuilder filterQuery,
+                                                String... indices) {
     UpdateByQueryRequest request = new UpdateByQueryRequest(indices)
       .setQuery(filterQuery)
       .setAbortOnVersionConflict(false)
@@ -151,7 +151,7 @@ public class ElasticsearchWriterUtil {
     } catch (IOException e) {
       String reason =
         String.format(
-          "Could not update %s with key [%s].",
+          "Could not update %s with [%s].",
           updateItemName,
           updateItemIdentifier
         );
@@ -159,19 +159,16 @@ public class ElasticsearchWriterUtil {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    log.debug(
-      "Updated [{}] {} with ",
-      updateResponse.getDeleted(),
-      updateItemName,
-      updateItemIdentifier
-    );
+    log.debug("Updated [{}] {} with {}.", updateResponse.getUpdated(), updateItemName, updateItemIdentifier);
+
+    return updateResponse.getUpdated() > 0L;
   }
 
-  public static void doDeleteByQueryRequest(OptimizeElasticsearchClient esClient,
-                                            AbstractQueryBuilder queryBuilder,
-                                            String deletedItemName,
-                                            String deletedItemIdentifier,
-                                            String... indices) {
+  public static boolean tryDeleteByQueryRequest(OptimizeElasticsearchClient esClient,
+                                                AbstractQueryBuilder queryBuilder,
+                                                String deletedItemName,
+                                                String deletedItemIdentifier,
+                                                String... indices) {
     log.debug("Deleting {} with {}", deletedItemName, deletedItemIdentifier);
 
     DeleteByQueryRequest request = new DeleteByQueryRequest(indices)
@@ -190,12 +187,9 @@ public class ElasticsearchWriterUtil {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    log.debug(
-      "Deleted [{}] {} with ",
-      deleteResponse.getDeleted(),
-      deletedItemName,
-      deletedItemIdentifier
-    );
+    log.debug("Deleted [{}] {} with {}.", deleteResponse.getDeleted(), deletedItemName, deletedItemIdentifier);
+
+    return deleteResponse.getDeleted() > 0L;
   }
 
   private void doBulkRequest(OptimizeElasticsearchClient esClient,

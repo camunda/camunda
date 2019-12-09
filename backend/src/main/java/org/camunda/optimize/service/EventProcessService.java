@@ -10,14 +10,15 @@ import com.google.common.collect.ImmutableSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.MapUtils;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.service.engine.importing.BpmnModelUtility;
 import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
+import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.writer.EventProcessMappingWriter;
+import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.exceptions.InvalidEventProcessStateException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -34,13 +35,11 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractFlowNodeNames;
-import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.extractUserTaskNames;
-import static org.camunda.optimize.service.engine.importing.BpmnModelUtility.parseBpmnModel;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class EventProcessMappingService {
+public class EventProcessService {
 
   public static final ImmutableSet<EventProcessState> PUBLISHABLE_STATES = ImmutableSet.of(
     EventProcessState.MAPPED, EventProcessState.UNPUBLISHED_CHANGES
@@ -52,7 +51,8 @@ public class EventProcessMappingService {
   private final EventProcessMappingReader eventProcessMappingReader;
   private final EventProcessMappingWriter eventProcessMappingWriter;
 
-  private final EventProcessDefinitionService eventProcessDefinitionService;
+  private final EventProcessPublishStateReader eventProcessPublishStateReader;
+  private final EventProcessPublishStateWriter eventProcessPublishStateWriter;
 
   public IdDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     validateMappingsForProvidedXml(eventProcessMappingDto);
@@ -65,20 +65,20 @@ public class EventProcessMappingService {
   }
 
   public boolean deleteEventProcessMapping(final String eventProcessMappingId) {
-    eventProcessDefinitionService.deleteEventProcessDefinition(eventProcessMappingId);
+    eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
     return eventProcessMappingWriter.deleteEventProcessMapping(eventProcessMappingId);
   }
 
   public EventProcessMappingDto getEventProcessMapping(final String eventProcessMappingId) {
-    final Optional<EventProcessMappingDto> eventBasedProcess = eventProcessMappingReader
-        .getEventProcessMapping(eventProcessMappingId);
+    final Optional<EventProcessMappingDto> eventProcessMapping = eventProcessMappingReader
+      .getEventProcessMapping(eventProcessMappingId);
 
-    eventBasedProcess.ifPresent(eventProcessMappingDto -> assignState(
-        eventProcessMappingDto,
-        id -> eventProcessDefinitionService.getEventProcessDefinition(id).orElse(null)
+    eventProcessMapping.ifPresent(eventProcessMappingDto -> assignState(
+      eventProcessMappingDto,
+      id -> eventProcessPublishStateReader.getEventProcessPublishState(id).orElse(null)
     ));
 
-    return eventBasedProcess.orElseThrow(() -> {
+    return eventProcessMapping.orElseThrow(() -> {
       final String message = String.format(
         "Event based process does not exist! Tried to retrieve event based process with id: %s.", eventProcessMappingId
       );
@@ -87,15 +87,16 @@ public class EventProcessMappingService {
   }
 
   public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
-    final Map<String, EventProcessDefinitionDto> allPublishedDefinitions =
-        eventProcessDefinitionService.getAllEventProcessesDefinitionsOmitXml()
-            .stream().collect(Collectors.toMap(EventProcessDefinitionDto::getKey, Function.identity()));
+    final Map<String, EventProcessPublishStateDto> allPublishedStates =
+      eventProcessPublishStateReader.getAllEventProcessPublishStates(false)
+        .stream()
+        .collect(Collectors.toMap(EventProcessPublishStateDto::getProcessId, Function.identity()));
 
     final List<EventProcessMappingDto> allEventProcessMappingsOmitXml =
-        eventProcessMappingReader.getAllEventProcessMappingsOmitXml();
+      eventProcessMappingReader.getAllEventProcessMappingsOmitXml();
 
     allEventProcessMappingsOmitXml
-        .forEach(eventProcessMappingDto -> assignState(eventProcessMappingDto, allPublishedDefinitions::get));
+      .forEach(eventProcessMappingDto -> assignState(eventProcessMappingDto, allPublishedStates::get));
 
     return allEventProcessMappingsOmitXml;
   }
@@ -105,24 +106,22 @@ public class EventProcessMappingService {
 
     if (!PUBLISHABLE_STATES.contains(eventProcessMapping.getState())) {
       throw new InvalidEventProcessStateException(
-          "Cannot publish event based process from state: " + eventProcessMapping.getState()
+        "Cannot publish event based process from state: " + eventProcessMapping.getState()
       );
     }
 
-    final BpmnModelInstance bpmnModelInstance = parseBpmnModel(eventProcessMapping.getXml());
-    final EventProcessDefinitionDto eventProcessMappingDtoToPublish = EventProcessDefinitionDto
-        .eventProcessBuilder()
-        .id(eventProcessMapping.getId())
-        .key(eventProcessMapping.getId())
-        .name(eventProcessMapping.getName())
-        .version("1")
-        .bpmn20Xml(eventProcessMapping.getXml())
-        .flowNodeNames(extractFlowNodeNames(bpmnModelInstance))
-        .userTaskNames(extractUserTaskNames(bpmnModelInstance))
-        // Note: mappings are not available in this DTO yet but will be with OPT-2982
-        .createdDateTime(LocalDateUtil.getCurrentDateTime())
-        .build();
-    eventProcessDefinitionService.createEventProcessDefinition(eventProcessMappingDtoToPublish);
+    final EventProcessPublishStateDto processPublishState = EventProcessPublishStateDto
+      .builder()
+      .processId(eventProcessMapping.getId())
+      .xml(eventProcessMapping.getXml())
+      .publishDateTime(LocalDateUtil.getCurrentDateTime())
+      .state(EventProcessState.PUBLISH_PENDING)
+      .publishProgress(0.0D)
+      .deleted(false)
+      .mappings(eventProcessMapping.getMappings())
+      .build();
+
+    eventProcessPublishStateWriter.createEventProcessPublishState(processPublishState);
   }
 
   public void cancelPublish(final String eventProcessMappingId) {
@@ -130,50 +129,47 @@ public class EventProcessMappingService {
 
     if (!PUBLISH_CANCELABLE_STATES.contains(eventProcessMapping.getState())) {
       throw new InvalidEventProcessStateException(
-          "Cannot cancel publishing of event based process from state: " + eventProcessMapping.getState()
+        "Cannot cancel publishing of event based process from state: " + eventProcessMapping.getState()
       );
     }
 
-    final boolean publishedDecisionWasDeleted = eventProcessDefinitionService.deleteEventProcessDefinition(
-        eventProcessMappingId
-    );
+    final boolean publishWasCancelledSuccessfully = eventProcessPublishStateWriter
+      .deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
 
-    if (!publishedDecisionWasDeleted) {
+    if (!publishWasCancelledSuccessfully) {
       final String message = String.format(
-          "Cannot cancel publishing of an event based process with key [%s] as it is not published yet.",
-          eventProcessMappingId
+        "Cannot cancel publishing of an event based process with key [%s] as it is not published yet.",
+        eventProcessMappingId
       );
       throw new OptimizeValidationException(message);
     }
   }
 
   private void assignState(final EventProcessMappingDto eventProcessMappingDto,
-                           final Function<String, EventProcessDefinitionDto> definitionProvider) {
+                           final Function<String, EventProcessPublishStateDto> publishStateReader) {
     if (MapUtils.isEmpty(eventProcessMappingDto.getMappings())) {
       eventProcessMappingDto.setState(EventProcessState.UNMAPPED);
     } else {
       eventProcessMappingDto.setState(EventProcessState.MAPPED);
     }
 
-    Optional.ofNullable(definitionProvider.apply(eventProcessMappingDto.getId()))
-        .ifPresent(publishedDefinition -> {
-          if (publishedDefinition.getCreatedDateTime().isAfter(eventProcessMappingDto.getLastModified())) {
-            // with OPT-2982 this will become dependent on the publishing progress, once finished it will be
-            // published
-            eventProcessMappingDto.setState(EventProcessState.PUBLISH_PENDING);
-            eventProcessMappingDto.setPublishingProgress(0.0D);
-          } else {
-            eventProcessMappingDto.setState(EventProcessState.UNPUBLISHED_CHANGES);
-          }
-        });
+    Optional.ofNullable(publishStateReader.apply(eventProcessMappingDto.getId()))
+      .ifPresent(processPublishStateDto -> {
+        if (processPublishStateDto.getPublishDateTime().isAfter(eventProcessMappingDto.getLastModified())) {
+          eventProcessMappingDto.setState(processPublishStateDto.getState());
+          eventProcessMappingDto.setPublishingProgress(processPublishStateDto.getPublishProgress());
+        } else {
+          eventProcessMappingDto.setState(EventProcessState.UNPUBLISHED_CHANGES);
+        }
+      });
   }
 
   private void validateMappingsForProvidedXml(final EventProcessMappingDto eventProcessMappingDto) {
     Set<String> flowNodeIds = eventProcessMappingDto.getXml() == null ? Collections.emptySet() :
-        extractFlowNodeNames(BpmnModelUtility.parseBpmnModel(
-            eventProcessMappingDto.getXml())).keySet();
+      extractFlowNodeNames(BpmnModelUtility.parseBpmnModel(
+        eventProcessMappingDto.getXml())).keySet();
     if (eventProcessMappingDto.getMappings() != null
-        && !flowNodeIds.containsAll(eventProcessMappingDto.getMappings().keySet())) {
+      && !flowNodeIds.containsAll(eventProcessMappingDto.getMappings().keySet())) {
       throw new BadRequestException("All Flow Node IDs for event mappings must exist within the provided XML");
     }
   }

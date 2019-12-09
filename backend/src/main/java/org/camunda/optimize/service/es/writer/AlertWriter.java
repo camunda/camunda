@@ -167,7 +167,7 @@ public class AlertWriter {
     String deletedItemName = "all alerts for report";
     String deletedItemIdentifier = String.format("ID [%s]", reportId);
 
-    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       QueryBuilders.termQuery(AlertIndex.REPORT_ID, reportId),
       deletedItemName,

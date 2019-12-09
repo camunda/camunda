@@ -96,7 +96,7 @@ public class ProcessVariableUpdateWriter {
         .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate)));
       addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
 
-      ElasticsearchWriterUtil.doUpdateByQueryRequest(
+      ElasticsearchWriterUtil.tryUpdateByQueryRequest(
         esClient,
         updateItemName,
         processDefinitionKey,

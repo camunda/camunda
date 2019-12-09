@@ -19,7 +19,6 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsD
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -1064,7 +1063,6 @@ public class DefinitionAuthorizationIT extends AbstractIT {
       .bpmn20Xml(key + "1")
       .flowNodeNames(Collections.emptyMap())
       .userTaskNames(Collections.emptyMap())
-      .createdDateTime(LocalDateUtil.getCurrentDateTime())
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       EVENT_PROCESS_DEFINITION_INDEX_NAME,

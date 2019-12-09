@@ -44,6 +44,7 @@ public class ElasticsearchConstants {
   public static final String EVENT_SEQUENCE_COUNT_INDEX_NAME = "event-sequence-count";
   public static final String EVENT_TRACE_STATE_INDEX_NAME = "event-trace-state";
   public static final String EVENT_PROCESS_DEFINITION_INDEX_NAME = "event-process-definition";
+  public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX = "event-process-publish-state";
   public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
 
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";

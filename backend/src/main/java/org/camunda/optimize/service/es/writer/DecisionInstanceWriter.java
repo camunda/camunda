@@ -97,7 +97,7 @@ public class DecisionInstanceWriter {
         .filter(termQuery(DECISION_DEFINITION_KEY, decisionDefinitionKey))
         .filter(rangeQuery(DecisionInstanceIndex.EVALUATION_DATE_TIME).lt(dateTimeFormatter.format(evaluationDate)));
 
-      ElasticsearchWriterUtil.doDeleteByQueryRequest(
+      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
         filterQuery,
         deletedItemName,

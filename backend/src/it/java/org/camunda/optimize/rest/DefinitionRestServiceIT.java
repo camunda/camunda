@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsD
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.TenantRestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -883,7 +882,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
       .bpmn20Xml(key + version)
       .flowNodeNames(Collections.emptyMap())
       .userTaskNames(Collections.emptyMap())
-      .createdDateTime(LocalDateUtil.getCurrentDateTime())
       .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
       EVENT_PROCESS_DEFINITION_INDEX_NAME,

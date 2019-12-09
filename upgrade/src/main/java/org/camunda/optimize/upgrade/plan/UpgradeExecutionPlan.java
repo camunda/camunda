@@ -24,9 +24,12 @@ import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
 import org.springframework.core.type.filter.AssignableTypeFilter;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -103,11 +106,24 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     return indexMapping.stream()
       .map(beanDefinition -> {
         try {
-          return (IndexMappingCreator) Class.forName(beanDefinition.getBeanClassName()).getConstructor().newInstance();
-        } catch (IllegalAccessException | InstantiationException | InvocationTargetException | ClassNotFoundException | NoSuchMethodException e) {
+          final Class<?> indexClass = Class.forName(beanDefinition.getBeanClassName());
+          final Optional<Constructor<?>> noArgumentsConstructor = Arrays.stream(indexClass.getConstructors())
+            .filter(constructor -> constructor.getParameterCount() == 0)
+            .findFirst();
+
+          return noArgumentsConstructor.map(constructor -> {
+            try {
+              return (IndexMappingCreator) constructor.newInstance();
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+              throw new OptimizeRuntimeException("Failed initializing: " + beanDefinition.getBeanClassName(), e);
+            }
+          });
+        } catch (ClassNotFoundException e) {
           throw new OptimizeRuntimeException("Failed initializing: " + beanDefinition.getBeanClassName(), e);
         }
       })
+      .filter(Optional::isPresent)
+      .map(Optional::get)
       .collect(Collectors.toList());
   }
 

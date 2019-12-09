@@ -147,7 +147,7 @@ public class DashboardWriter {
       ScoreMode.None
     );
 
-    ElasticsearchWriterUtil.doUpdateByQueryRequest(
+    ElasticsearchWriterUtil.tryUpdateByQueryRequest(
       esClient,
       "report",
       reportId,
@@ -161,7 +161,7 @@ public class DashboardWriter {
     String deletedItemName = "dashboards of collection";
     String deletedItemIdentifier = String.format("collectionId [%s]", collectionId);
 
-    ElasticsearchWriterUtil.doDeleteByQueryRequest(
+    ElasticsearchWriterUtil.tryDeleteByQueryRequest(
       esClient,
       QueryBuilders.termQuery(COLLECTION_ID, collectionId),
       deletedItemName,

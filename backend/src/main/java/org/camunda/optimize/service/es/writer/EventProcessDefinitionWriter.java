@@ -38,12 +38,15 @@ public class EventProcessDefinitionWriter {
     try {
       final IndexRequest request = new IndexRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME)
         .id(id)
-        .source(objectMapper.writeValueAsString(eventProcessDto), XContentType.JSON)
+        .source(
+          objectMapper.writeValueAsString(eventProcessDto),
+          XContentType.JSON
+        )
         .setRefreshPolicy(IMMEDIATE);
       esClient.index(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       final String errorMessage = String.format(
-        "There was a problem while writing the event based process definition [%s].", id
+        "There was a problem while writing the event process definition [%s].", id
       );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
@@ -53,7 +56,7 @@ public class EventProcessDefinitionWriter {
   }
 
   public boolean deleteEventProcessDefinition(final String eventProcessId) {
-    log.debug("Deleting event based process definition with id [{}].", eventProcessId);
+    log.debug("Deleting event process definition with id [{}].", eventProcessId);
     final DeleteRequest request = new DeleteRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME)
       .id(eventProcessId)
       .setRefreshPolicy(IMMEDIATE);
@@ -63,7 +66,7 @@ public class EventProcessDefinitionWriter {
       deleteResponse = esClient.delete(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       final String errorMessage = String.format(
-        "Could not delete event based process definition with id [%s].", eventProcessId
+        "Could not delete event process definition with id [%s].", eventProcessId
       );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);

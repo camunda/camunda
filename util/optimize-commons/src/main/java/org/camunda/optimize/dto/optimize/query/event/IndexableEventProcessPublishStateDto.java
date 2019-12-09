@@ -5,63 +5,72 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
 @Builder
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class IndexableEventProcessMappingDto implements OptimizeDto {
+public class IndexableEventProcessPublishStateDto {
   @EqualsAndHashCode.Include
   private String id;
-  private String name;
+  private String processMappingId;
+  private OffsetDateTime publishDateTime;
+  private OffsetDateTime lastImportedEventIngestDateTime;
+  private EventProcessState state;
+  private Double publishProgress;
+  private Boolean deleted = false;
   private String xml;
-  private OffsetDateTime lastModified;
-  private String lastModifier;
   private List<IndexableEventMappingDto> mappings;
 
-  public static IndexableEventProcessMappingDto fromEventProcessMappingDto(final EventProcessMappingDto eventMappingDto) {
-    return IndexableEventProcessMappingDto.builder()
-      .id(eventMappingDto.getId())
-      .name(eventMappingDto.getName())
-      .xml(eventMappingDto.getXml())
-      .lastModified(eventMappingDto.getLastModified())
-      .lastModifier(eventMappingDto.getLastModifier())
+  public static IndexableEventProcessPublishStateDto fromEventProcessPublishStateDto(
+    final EventProcessPublishStateDto publishState) {
+    return IndexableEventProcessPublishStateDto.builder()
+      .id(publishState.getId())
+      .processMappingId(publishState.getProcessId())
+      .xml(publishState.getXml())
+      .publishDateTime(publishState.getPublishDateTime())
+      .lastImportedEventIngestDateTime(publishState.getLastImportedEventIngestDateTime())
+      .state(publishState.getState())
+      .publishProgress(publishState.getPublishProgress())
+      .deleted(publishState.getDeleted())
       .mappings(
-        Optional.ofNullable(eventMappingDto.getMappings())
+        Optional.ofNullable(publishState.getMappings())
           .map(mappings -> mappings.keySet()
             .stream()
             .map(flowNodeId -> IndexableEventMappingDto.fromEventMappingDto(
               flowNodeId,
-              eventMappingDto.getMappings().get(flowNodeId)
+              publishState.getMappings().get(flowNodeId)
             ))
             .collect(Collectors.toList()))
           .orElse(null)
       )
       .build();
-
   }
 
-  public EventProcessMappingDto toEventProcessMappingDto() {
-    return EventProcessMappingDto.builder()
-      .id(this.id)
-      .name(this.name)
-      .xml(this.xml)
-      .lastModified(this.lastModified)
-      .lastModifier(this.lastModifier)
+  public EventProcessPublishStateDto toEventProcessPublishStateDto() {
+    return EventProcessPublishStateDto.builder()
+      .id(getId())
+      .processId(getProcessMappingId())
+      .xml(getXml())
+      .publishDateTime(getPublishDateTime())
+      .lastImportedEventIngestDateTime(getLastImportedEventIngestDateTime())
+      .state(getState())
+      .publishProgress(getPublishProgress())
+      .deleted(getDeleted())
       .mappings(
         Optional.ofNullable(this.mappings)
           .map(mappings -> mappings.stream()
@@ -74,6 +83,4 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
       )
       .build();
   }
-
-
 }

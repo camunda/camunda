@@ -93,7 +93,7 @@ public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWrite
         .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate)));
 
-      ElasticsearchWriterUtil.doDeleteByQueryRequest(
+      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
         esClient,
         filterQuery,
         deletedItemName,

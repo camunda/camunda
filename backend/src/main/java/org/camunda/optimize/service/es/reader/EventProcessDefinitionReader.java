@@ -73,7 +73,7 @@ public class EventProcessDefinitionReader {
     return Optional.ofNullable(result);
   }
 
-  public List<EventProcessDefinitionDto> getAllPublishedEventProcessesOmitXml() {
+  public List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml() {
     log.debug("Fetching all available event based processes definitions.");
     String[] fieldsToExclude = new String[]{IndexableEventProcessMappingDto.Fields.xml};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
