@@ -2,7 +2,7 @@ module github.com/zeebe-io/zeebe/clients/go
 
 go 1.13
 
-replace github.com/docker/docker => github.com/docker/engine v1.4.2-0.20191113042239-ea84732a7725
+replace github.com/docker/docker => github.com/docker/engine v1.13.1
 
 require (
 	github.com/Microsoft/go-winio v0.4.14 // indirect
