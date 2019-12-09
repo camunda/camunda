@@ -66,7 +66,7 @@ import org.slf4j.Logger;
 
 public class ZeebePartition extends Actor implements RaftCommitListener, Consumer<Role> {
 
-  private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
+  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final int EXPORTER_PROCESSOR_ID = 1003;
   private static final String EXPORTER_NAME = "exporter-%d";
 
@@ -459,13 +459,16 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
     }
 
     final Actor actor = actorsToClose.remove(0);
+    LOG.debug("Closing {}", actor.getName());
     actor
         .closeAsync()
         .onComplete(
             (v, t) -> {
               if (t == null) {
+                LOG.debug("Closed {} successfully", actor.getName());
                 stepByStepClosing(closingFuture, actorsToClose);
               } else {
+                LOG.debug("Unexpected exception on closing {}", actor.getName(), t);
                 closingFuture.completeExceptionally(t);
               }
             });
@@ -480,7 +483,7 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
 
   @Override
   public String getName() {
-    return actorNamePattern(localBroker, "ZeebePartition");
+    return actorNamePattern(localBroker, "ZeebePartition-" + partitionId);
   }
 
   @Override
@@ -516,10 +519,12 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
             closePartition()
                 .onComplete(
                     (v, t) -> {
+                      final ActorFuture<Void> logStreamCloseFuture = logStream.closeAsync();
                       if (t == null) {
-                        logStream.closeAsync().onComplete(closeFuture);
+                        logStreamCloseFuture.onComplete(closeFuture);
                       } else {
-                        closeFuture.completeExceptionally(t);
+                        // we want to close the log stream any way
+                        logStreamCloseFuture.onComplete((v2, t2) -> closeFuture.completeExceptionally(t));
                       }
                     }));
     closeFuture.join();

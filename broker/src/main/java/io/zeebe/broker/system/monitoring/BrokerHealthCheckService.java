@@ -59,10 +59,8 @@ public class BrokerHealthCheckService extends Actor implements PartitionListener
             partitionInstallStatus.put(partitionId, true);
             brokerStarted = !partitionInstallStatus.containsValue(false);
 
-            LOG.info("Partition '{}' is installed.", partitionId);
-
             if (brokerStarted) {
-              LOG.info("All partitions are installed. Broker is ready!");
+              LOG.debug("All partitions are installed. Broker is ready!");
             }
           }
         });

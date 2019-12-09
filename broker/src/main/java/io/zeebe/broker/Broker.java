@@ -93,6 +93,7 @@ public class Broker implements AutoCloseable {
   private CommandApiService commandHandler;
   private ActorScheduler scheduler;
   private CloseHelper closeHelper;
+  private EmbeddedGatewayService embeddedGatewayService;
 
   public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
@@ -177,8 +178,11 @@ public class Broker implements AutoCloseable {
     if (brokerCfg.getGateway().isEnable()) {
       startContext.addStep(
         "embedded gateway",
-        () -> new EmbeddedGatewayService(brokerCfg, scheduler,
-          atomix));
+        () -> {
+          embeddedGatewayService = new EmbeddedGatewayService(brokerCfg, scheduler,
+            atomix);
+          return embeddedGatewayService;
+        });
     }
     startContext.addStep("cluster services", () -> atomix.start().join());
     startContext.addStep(
@@ -303,7 +307,7 @@ public class Broker implements AutoCloseable {
         .map(RaftPartition.class::cast)
         .collect(Collectors.toList());
 
-    final StartHelper partitionStartHelper = new StartHelper("partitions");
+    final StartHelper partitionStartHelper = new StartHelper("Broker-" + nodeId + " partitions");
 
     for (final RaftPartition owningPartition : owningPartitions) {
       partitionStartHelper.addStep("partition " + owningPartition.id().id(), () ->
@@ -385,6 +389,10 @@ public class Broker implements AutoCloseable {
           }
         }
       });
+  }
+
+  public EmbeddedGatewayService getEmbeddedGatewayService() {
+    return embeddedGatewayService;
   }
 
   public Atomix getAtomix() {

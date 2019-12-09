@@ -15,12 +15,17 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayClusterPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setInternalApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setMonitoringPort;
+import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.atomix.core.Atomix;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.TestLoggers;
+import io.zeebe.broker.system.EmbeddedGatewayService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.transport.SocketAddress;
@@ -47,8 +52,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
   public static final int INSTALL_TIMEOUT = 15;
   public static final TimeUnit INSTALL_TIMEOUT_UNIT = TimeUnit.SECONDS;
-  public static final String INSTALL_TIMEOUT_ERROR_MSG =
-      "Deployment partition not installed into the container within %d %s.";
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
   private static final boolean ENABLE_HTTP_EXPORTER = false;
@@ -212,36 +215,25 @@ public class EmbeddedBrokerRule extends ExternalResource {
         });
     broker.start();
 
+    broker.awaitStarting();
     try {
-      latch.await(15, TimeUnit.SECONDS);
+      latch.await(INSTALL_TIMEOUT, INSTALL_TIMEOUT_UNIT);
     } catch (InterruptedException e) {
       LOG.info("Broker was not started in 15 seconds", e);
       Thread.interrupted();
     }
-    // todo add listener for partition
 
-    //    try {
-    //      // Hack: block until the system stream processor is available
-    //      // this is required in the broker-test suite, because the client rule does not perform
-    // request
-    //      // retries
-    //      // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
-    //      final String partitionName = Partition.getPartitionName(Protocol.DEPLOYMENT_PARTITION);
-    //
-    //      serviceContainer
-    //          .createService(TestService.NAME, new TestService())
-    //          .dependency(PartitionServiceNames.leaderPartitionServiceName(partitionName))
-    //          .dependency(
-    //
-    // TransportServiceNames.serverTransport(TransportServiceNames.COMMAND_API_SERVER_NAME))
-    //          .install()
-    //          .get(INSTALL_TIMEOUT, INSTALL_TIMEOUT_UNIT);
-    //
-    //    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
-    //      stopBroker();
-    //      throw new RuntimeException(
-    //          String.format(INSTALL_TIMEOUT_ERROR_MSG, INSTALL_TIMEOUT, INSTALL_TIMEOUT_UNIT), e);
-    //    }
+    final EmbeddedGatewayService embeddedGatewayService = broker.getEmbeddedGatewayService();
+    if (embeddedGatewayService != null)
+    {
+      final BrokerClient brokerClient = embeddedGatewayService.get().getBrokerClient();
+
+      waitUntil( () -> {
+        final BrokerTopologyManager topologyManager = brokerClient.getTopologyManager();
+        final BrokerClusterState topology = topologyManager.getTopology();
+        return topology != null && topology.getLeaderForPartition(1) >= 0;
+      });
+    }
 
     dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
   }
