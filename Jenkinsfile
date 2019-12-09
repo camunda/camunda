@@ -156,6 +156,27 @@ pipeline {
             }
           }
         }
+        stage('Deploy - Docker Image SNAPSHOT') {
+          when {
+              branch 'master'
+          }
+          environment {
+            IMAGE_NAME = 'camunda/operate'
+            IMAGE_TAG = 'SNAPSHOT'
+            DOCKER_HUB = credentials('camunda-dockerhub')
+          }
+          steps {
+            lock('operate-dockerimage-snapshot-upload') {
+              container('docker') {
+                sh """
+                  docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
+                  docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                  docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                """
+              }
+            }
+          }
+        }
       }
     }
     stage ('Deploy to K8s') {
