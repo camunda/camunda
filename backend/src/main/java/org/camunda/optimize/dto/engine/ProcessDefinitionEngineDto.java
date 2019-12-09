@@ -12,7 +12,7 @@ import java.io.Serializable;
 import java.util.Optional;
 
 @Data
-public class ProcessDefinitionEngineDto implements Serializable,EngineDto {
+public class ProcessDefinitionEngineDto implements Serializable, EngineDto {
 
   protected String id;
   protected String key;

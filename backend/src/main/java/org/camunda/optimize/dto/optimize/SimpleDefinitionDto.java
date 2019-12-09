@@ -24,4 +24,5 @@ public class SimpleDefinitionDto {
   @EqualsAndHashCode.Include
   @NonNull
   private DefinitionType type;
+  private Boolean isEventProcess;
 }

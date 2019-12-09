@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service;
 
+import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -33,6 +34,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.Comparator.naturalOrder;
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 
 @AllArgsConstructor
@@ -57,11 +60,11 @@ public class DefinitionService {
 
   public List<DefinitionWithTenantsDto> getDefinitions(final String userId) {
     final Stream<DefinitionWithTenantIdsDto> stream = definitionReader.getDefinitions().stream();
-    return filterDefinitionsWithTenantsByAuthorizations(userId, stream).collect(Collectors.toList())
+    return filterDefinitionsWithTenantsByAuthorizations(userId, stream).collect(toList())
       .stream()
       // sort by name case insensitive
       .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   public List<TenantWithDefinitionsDto> getDefinitionsGroupedByTenantForUser(final String userId) {
@@ -88,17 +91,23 @@ public class DefinitionService {
         final TenantRestDto tenantDto = tenantIdWithDefinitionsDtoTenantDtoPair.getRight();
         // now filter for tenant and definition key pair authorization
         final List<SimpleDefinitionDto> authorizedDefinitions = tenantIdWithDefinitionsDto.getDefinitions().stream()
-          .filter(definition -> definitionAuthorizationService.isAuthorizedToSeeDefinition(
+          .filter(definition -> definition.getIsEventProcess()
+            || definitionAuthorizationService.isAuthorizedToSeeDefinition(
             userId, IdentityType.USER, definition.getKey(), definition.getType(), tenantIdWithDefinitionsDto.getId()
           ))
           // sort by name case insensitive
           .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))
-          .collect(Collectors.toList());
+          .collect(toList());
         return new TenantWithDefinitionsDto(tenantDto.getId(), tenantDto.getName(), authorizedDefinitions);
       })
       .filter(tenantWithDefinitionsDto -> tenantWithDefinitionsDto.getDefinitions().size() > 0)
       .sorted(Comparator.comparing(TenantWithDefinitionsDto::getId, Comparator.nullsFirst(naturalOrder())))
-      .collect(Collectors.toList());
+      .collect(toList());
+  }
+
+  public Boolean isEventProcessDefinition(final String key) {
+    Optional<DefinitionWithTenantIdsDto> definitionOpt = definitionReader.getDefinition(PROCESS, key);
+    return definitionOpt.map(SimpleDefinitionDto::getIsEventProcess).orElse(false);
   }
 
   private void addSharedDefinitionsToAllAuthorizedTenantEntries(
@@ -134,21 +143,25 @@ public class DefinitionService {
 
     return stream
       .peek(definitionWithTenantIdsDto -> {
-        // we want all tenants to be available for shared definitions,
-        // as technically there can be data for any of them
-        final boolean hasNotDefinedTenant = definitionWithTenantIdsDto.getTenantIds()
-          .contains(TENANT_NOT_DEFINED.getId());
-        if (hasNotDefinedTenant) {
-          definitionWithTenantIdsDto.setTenantIds(
-            mergeTwoCollectionsWithDistinctValues(
-              authorizedTenantDtosById.keySet(), definitionWithTenantIdsDto.getTenantIds()
-            )
-          );
+        if (!definitionWithTenantIdsDto.getIsEventProcess()) { // We do not support tenants for EventProcessDefinition
+          // we want all tenants to be available for shared definitions,
+          // as technically there can be data for any of them
+          final boolean hasNotDefinedTenant = definitionWithTenantIdsDto.getTenantIds()
+            .contains(TENANT_NOT_DEFINED.getId());
+          if (hasNotDefinedTenant) {
+            definitionWithTenantIdsDto.setTenantIds(
+              mergeTwoCollectionsWithDistinctValues(
+                authorizedTenantDtosById.keySet(), definitionWithTenantIdsDto.getTenantIds()
+              )
+            );
+          }
         }
       })
       .map(definitionWithTenantIds -> {
         // ensure that the user is authorized for the particular definition and tenant combination
-        final List<TenantRestDto> authorizedTenants = definitionAuthorizationService
+        final List<TenantRestDto> authorizedTenants = definitionWithTenantIds.getIsEventProcess()
+          ? Lists.newArrayList(new TenantRestDto(TENANT_NOT_DEFINED.getId(), TENANT_NOT_DEFINED.getName()))
+          : definitionAuthorizationService
           .filterAuthorizedTenantsForDefinition(
             userId,
             IdentityType.USER,
@@ -161,16 +174,19 @@ public class DefinitionService {
           .map(authorizedTenantDtosById::get)
           .filter(Objects::nonNull)
           .sorted(Comparator.comparing(TenantRestDto::getId, Comparator.nullsFirst(naturalOrder())))
-          .collect(Collectors.toList());
+          .collect(toList());
 
         return new DefinitionWithTenantsDto(
           definitionWithTenantIds.getKey(),
           definitionWithTenantIds.getName(),
           definitionWithTenantIds.getType(),
+          definitionWithTenantIds.getIsEventProcess(),
           authorizedTenants
         );
       })
-      .filter(definitionWithTenantsDto -> definitionWithTenantsDto.getTenants().size() > 0);
+      .filter(definitionWithTenantsDto ->
+                definitionWithTenantsDto.getIsEventProcess()
+                  || definitionWithTenantsDto.getTenants().size() > 0);
   }
 
   private Map<String, TenantRestDto> getAuthorizedTenantsForUser(final String userId) {
@@ -185,6 +201,6 @@ public class DefinitionService {
                                                                    final Collection<T> secondCollection) {
     return Stream.concat(secondCollection.stream(), firstCollection.stream())
       .distinct()
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 }

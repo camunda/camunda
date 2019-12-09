@@ -28,8 +28,17 @@ public class DefinitionWithTenantsDto extends SimpleDefinitionDto {
   public DefinitionWithTenantsDto(@NonNull final String key,
                                   final String name,
                                   @NonNull final DefinitionType type,
+                                  final Boolean isEventProcess,
                                   @NonNull final List<TenantRestDto> tenants) {
-    super(key, name, type);
+    super(key, name, type, isEventProcess);
+    this.tenants = tenants;
+  }
+
+  public DefinitionWithTenantsDto(@NonNull final String key,
+                                  final String name,
+                                  @NonNull final DefinitionType type,
+                                  @NonNull final List<TenantRestDto> tenants) {
+    super(key, name, type, false);
     this.tenants = tenants;
   }
 }

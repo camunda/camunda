@@ -14,19 +14,25 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.READ_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -35,12 +41,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DefinitionAuthorizationIT extends AbstractIT {
-  public static final String PROCESS_KEY = "aprocess";
+  public static final String PROCESS_KEY = "aProcess";
   public static final String DECISION_KEY = "aDecision";
 
   private static final Stream<Integer> definitionType() {
@@ -589,6 +596,29 @@ public class DefinitionAuthorizationIT extends AbstractIT {
     assertThat(response.getStatus(), is(HttpServletResponse.SC_FORBIDDEN));
   }
 
+  @Test
+  public void revokeDefinitionAuthorizationsUser_getDefinitionByTypeAndKey_EventBased() {
+    //given
+    final String definitionKey = "eventProcessKey";
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    addSimpleEventProcessToElasticsearch(definitionKey);
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetDefinitionByTypeAndKeyRequest(DefinitionType.PROCESS.getId(), definitionKey)
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(HttpServletResponse.SC_OK));
+  }
+
   @ParameterizedTest(name = "If no single tenant is authorized do not allow access to definition of type {0}")
   @EnumSource(DefinitionType.class)
   public void revokeTenantAuthorizationsUser_getDefinitionByTypeAndKey(final DefinitionType definitionType) {
@@ -673,6 +703,29 @@ public class DefinitionAuthorizationIT extends AbstractIT {
 
     // then
     assertThat(definitions.size(), is(0));
+  }
+
+  @Test
+  public void revokeDefinitionAuthorizationsUser_getDefinitions_EventBased() {
+    //given
+    final String definitionKey = "eventProcessKey";
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    addSimpleEventProcessToElasticsearch(definitionKey);
+
+    // when
+    final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetDefinitions()
+      .executeAndReturnList(DefinitionWithTenantsDto.class, 200);
+
+    // then
+    assertThat(definitions.size(), is(1));
   }
 
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not in definitions result")
@@ -760,6 +813,29 @@ public class DefinitionAuthorizationIT extends AbstractIT {
     assertThat(definitionsGroupedByTenant.size(), is(0));
   }
 
+  @Test
+  public void revokeDefinitionAuthorizationsUser_getDefinitionsGroupByTenant_EventBased() {
+    //given
+    final String definitionKey = "eventProcessKey";
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    addSimpleEventProcessToElasticsearch(definitionKey);
+
+    // when
+    final List<TenantWithDefinitionsDto> definitionsGroupedByTenant = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetDefinitionsGroupedByTenant()
+      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+
+    // then
+    assertThat(definitionsGroupedByTenant.size(), is(1));
+  }
+
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not in definitions result")
   @EnumSource(DefinitionType.class)
   public void revokeTenantAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
@@ -819,7 +895,39 @@ public class DefinitionAuthorizationIT extends AbstractIT {
     assertThat(definitionsGroupedByTenant.get(0).getDefinitions().get(0).getKey(), is(definitionKey2));
   }
 
-  @ParameterizedTest(name = "On partial tenant authorization for the same definition authorized tenants are returned of type {0}")
+  @Test
+  public void revokeJustOneDefinitionAuthorizationsUser_getDefinitionsGroupByTenant_EventBased() {
+    //given
+    final String definitionKey1 = "eventProcessKey1";
+    final String definitionKey2 = "eventProcessKey2";
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey1, RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(definitionKey2, RESOURCE_TYPE_PROCESS_DEFINITION);
+
+    addSimpleEventProcessToElasticsearch(definitionKey1);
+    addSimpleEventProcessToElasticsearch(definitionKey2);
+
+    // when
+    final List<TenantWithDefinitionsDto> definitionsGroupedByTenant = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetDefinitionsGroupedByTenant()
+      .executeAndReturnList(TenantWithDefinitionsDto.class, 200);
+
+    // then
+    assertThat(definitionsGroupedByTenant.size(), is(1));
+    assertThat(definitionsGroupedByTenant.get(0).getDefinitions())
+      .extracting(SimpleDefinitionDto::getKey)
+      .containsExactlyInAnyOrder(
+        definitionKey1,
+        definitionKey2
+      );
+  }
+
+  @ParameterizedTest(name = "On partial tenant authorization for the same definition authorized tenants are returned " +
+    "of type {0}")
   @EnumSource(DefinitionType.class)
   public void revokeJustOneTenantAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
     //given
@@ -947,5 +1055,23 @@ public class DefinitionAuthorizationIT extends AbstractIT {
     return engineIntegrationExtension.deployDecisionDefinition(modelInstance, tenantId).getId();
   }
 
+  private EventProcessDefinitionDto addSimpleEventProcessToElasticsearch(final String key) {
+    final EventProcessDefinitionDto eventProcessDefinitionDto = EventProcessDefinitionDto.eventProcessBuilder()
+      .id(key + "- 1")
+      .key(key)
+      .name("eventProcessName")
+      .version("1")
+      .bpmn20Xml(key + "1")
+      .flowNodeNames(Collections.emptyMap())
+      .userTaskNames(Collections.emptyMap())
+      .createdDateTime(LocalDateUtil.getCurrentDateTime())
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      EVENT_PROCESS_DEFINITION_INDEX_NAME,
+      eventProcessDefinitionDto.getId(),
+      eventProcessDefinitionDto
+    );
+    return eventProcessDefinitionDto;
+  }
 }
 

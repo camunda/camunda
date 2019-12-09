@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinition
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -38,6 +39,7 @@ import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionInd
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_NAME;
 import static org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex.DEFINITION_TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -52,7 +54,7 @@ public class DefinitionReader {
   private static final String DEFINITION_KEY_AGGREGATION = "definitionKey";
   private static final String NAME_AGGREGATION = "definitionName";
   private static final String[] ALL_DEFINITION_INDEXES =
-    {PROCESS_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME};
+    {PROCESS_DEFINITION_INDEX_NAME, DECISION_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
   private static final String TENANT_NOT_DEFINED_VALUE = "null";
 
   private final OptimizeElasticsearchClient esClient;
@@ -65,7 +67,7 @@ public class DefinitionReader {
     final BoolQueryBuilder query = QueryBuilders.boolQuery()
       .must(termQuery(DEFINITION_KEY, key));
 
-    return getDefinitionWithTenantIdsDtos(query, new String[]{getIndexNameForType(type)}).stream().findFirst();
+    return getDefinitionWithTenantIdsDtos(query, getIndexNameForType(type)).stream().findFirst();
   }
 
   public List<DefinitionWithTenantIdsDto> getDefinitions() {
@@ -119,6 +121,7 @@ public class DefinitionReader {
             .stream()
             .flatMap(typeBucket -> {
               final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(typeBucket.getKeyAsString());
+              final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(typeBucket.getKeyAsString());
               final Terms keyAggregationResult = typeBucket.getAggregations().get(DEFINITION_KEY_AGGREGATION);
               return keyAggregationResult.getBuckets().stream()
                 .map(keyBucket -> {
@@ -127,7 +130,12 @@ public class DefinitionReader {
                     .findFirst()
                     .map(Terms.Bucket::getKeyAsString)
                     .orElse(null);
-                  return new SimpleDefinitionDto(keyBucket.getKeyAsString(), definitionName, definitionType);
+                  return new SimpleDefinitionDto(
+                    keyBucket.getKeyAsString(),
+                    definitionName,
+                    definitionType,
+                    isEventProcess
+                  );
                 });
             })
             .collect(Collectors.toList());
@@ -141,12 +149,12 @@ public class DefinitionReader {
     }
   }
 
-  private String getIndexNameForType(final DefinitionType type) {
+  private String[] getIndexNameForType(final DefinitionType type) {
     switch (type) {
       case PROCESS:
-        return PROCESS_DEFINITION_INDEX_NAME;
+        return new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
       case DECISION:
-        return DECISION_DEFINITION_INDEX_NAME;
+        return new String[]{DECISION_DEFINITION_INDEX_NAME};
       default:
         throw new OptimizeRuntimeException("Unsupported definition type:" + type);
     }
@@ -192,6 +200,7 @@ public class DefinitionReader {
       return typeAggregationResult.getBuckets().stream()
         .flatMap(typeBucket -> {
           final DefinitionType definitionType = resolveDefinitionTypeFromIndexAlias(typeBucket.getKeyAsString());
+          final Boolean isEventProcess = resolveIsEventProcessFromIndexAlias(typeBucket.getKeyAsString());
           final Terms keyAggregationResult = typeBucket.getAggregations().get(DEFINITION_KEY_AGGREGATION);
           return keyAggregationResult.getBuckets().stream().map(keyBucket -> {
             final Terms tenantResult = keyBucket.getAggregations().get(TENANT_AGGREGATION);
@@ -200,6 +209,7 @@ public class DefinitionReader {
               keyBucket.getKeyAsString(),
               nameResult.getBuckets().stream().findFirst().map(Terms.Bucket::getKeyAsString).orElse(null),
               definitionType,
+              isEventProcess,
               tenantResult.getBuckets().stream()
                 .map(Terms.Bucket::getKeyAsString)
                 // convert null bucket back to a `null` id
@@ -217,13 +227,18 @@ public class DefinitionReader {
   }
 
   private DefinitionType resolveDefinitionTypeFromIndexAlias(String indexName) {
-    if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndex()))) {
+    if (indexName.equals(getOptimizeIndexNameForIndex(new ProcessDefinitionIndex()))
+      || indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndex()))) {
       return DefinitionType.PROCESS;
     } else if (indexName.equals(getOptimizeIndexNameForIndex(new DecisionDefinitionIndex()))) {
       return DefinitionType.DECISION;
     } else {
       throw new OptimizeRuntimeException("Unexpected definition index name: " + indexName);
     }
+  }
+
+  private Boolean resolveIsEventProcessFromIndexAlias(String indexName) {
+    return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndex()));
   }
 
   private String getOptimizeIndexNameForIndex(final StrictIndexMappingCreator index) {

@@ -134,7 +134,13 @@ public class DefinitionAuthorizationService
                                                     final IdentityType identityType,
                                                     final String definitionKey,
                                                     final List<String> tenantIds) {
-    return isAuthorizedToSeeDefinition(identityId, identityType, definitionKey, DefinitionType.PROCESS, tenantIds);
+    return isAuthorizedToSeeDefinition(
+      identityId,
+      identityType,
+      definitionKey,
+      DefinitionType.PROCESS,
+      tenantIds
+    );
   }
 
   public boolean isAuthorizedToSeeProcessDefinition(final String identityId,
@@ -151,7 +157,13 @@ public class DefinitionAuthorizationService
                                                         final String processDefinitionKey,
                                                         final String tenantId,
                                                         final String engineAlias) {
-    return isAuthorizedToSeeProcessDefinition(userId, IdentityType.USER, processDefinitionKey, tenantId, engineAlias);
+    return isAuthorizedToSeeProcessDefinition(
+      userId,
+      IdentityType.USER,
+      processDefinitionKey,
+      tenantId,
+      engineAlias
+    );
   }
 
   public boolean isUserAuthorizedToSeeDecisionDefinition(final String identityId,
@@ -172,7 +184,13 @@ public class DefinitionAuthorizationService
                                                          final IdentityType identityType,
                                                          final String definitionKey,
                                                          final List<String> tenantIds) {
-    return isAuthorizedToSeeDefinition(identityId, identityType, definitionKey, DefinitionType.DECISION, tenantIds);
+    return isAuthorizedToSeeDefinition(
+      identityId,
+      identityType,
+      definitionKey,
+      DefinitionType.DECISION,
+      tenantIds
+    );
   }
 
   public List<String> filterAuthorizedTenantsForDefinition(final String identityId,
@@ -207,7 +225,6 @@ public class DefinitionAuthorizationService
       .map(TenantAndEnginePair::getTenantId)
       .distinct()
       .collect(Collectors.toList());
-
   }
 
   private int mapToResourceType(final DefinitionType definitionType) {

@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ import java.util.Optional;
 public class ReportAuthorizationService {
 
   private final IdentityService identityService;
+  private final DefinitionService definitionService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final AuthorizedCollectionService collectionAuthorizationService;
 
@@ -54,7 +56,10 @@ public class ReportAuthorizationService {
     if (report instanceof SingleProcessReportDefinitionDto) {
       final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionDto) report).getData();
       if (reportData != null) {
-        authorizedToAccessDefinition = definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+        final Boolean isEventProcessReport =
+          definitionService.isEventProcessDefinition(reportData.getProcessDefinitionKey());
+        authorizedToAccessDefinition =
+          isEventProcessReport || definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
           identityId, identityType, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
         );
       }

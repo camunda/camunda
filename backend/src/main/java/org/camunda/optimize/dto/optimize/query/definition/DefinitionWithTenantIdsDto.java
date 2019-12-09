@@ -11,18 +11,23 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 
 import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
-public class DefinitionWithTenantIdsDto {
-  @NonNull
-  private String key;
-  private String name;
-  @NonNull
-  private DefinitionType type;
+public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
   @NonNull
   private List<String> tenantIds;
+
+  public DefinitionWithTenantIdsDto(@NonNull final String key,
+                                    final String name,
+                                    @NonNull final DefinitionType type,
+                                    final Boolean isEventProcess,
+                                    @NonNull final List<String> tenantIds) {
+    super(key, name, type, isEventProcess);
+    this.tenantIds = tenantIds;
+  }
 }
