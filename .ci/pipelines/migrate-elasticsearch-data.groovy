@@ -2,9 +2,9 @@
 
 // TODO: Use parameters for different migrations 
 // Defaults:
-//  elasticsearch-6.8.1
-//  zeebe-0.19.0
-//  operate-1.0.0 
+//  elasticsearch-6.8.3
+//  zeebe-0.21.1
+//  operate-1.1.0 
 //  maven-3.6.1 - Used for migration, test and validation
 static String agent() {
   return """
@@ -23,7 +23,7 @@ spec:
       effect: "NoSchedule"
   initContainers:
     - name: init-sysctl
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.1
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
       command:
       - "sh"
       args:
@@ -36,7 +36,7 @@ spec:
       - mountPath: /usr/share/elasticsearch/config_new/
         name: configdir
     - name: init-plugins
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.1
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
       command:
       - "sh"
       args:
@@ -75,7 +75,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.1
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.3
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms512m -Xmx512m'
@@ -126,7 +126,7 @@ spec:
           cpu: 4
           memory: 8Gi
     - name: operate
-      image: camunda/operate:1.0.0
+      image: camunda/operate:1.1.0
       env:
         - name: CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED
           value: false
@@ -196,6 +196,8 @@ pipeline {
 	  steps {
 		 container('maven') {
           configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+            // Compile els-schema
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f els-schema -DskipTests clean install')
             // Compile QA
             sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
             // Generate Data
@@ -208,12 +210,8 @@ pipeline {
 	stage('Migrate data') {
 		steps {
 		   container('maven') {
-		   	 // migrate from 1.0.0 to 1.1.0
-			 sh("cd ./migration/v1.0.0-to-1.1.0 && sh ./migrate.sh")
-			 // wait a few seconds
-			 sh("sleep 5")
 			 // migrate from 1.1.0 to 1.2.0
-			 sh("cd ./migration/v1.1.0-to-1.2.0 && sh ./migrate.sh")
+			 sh("cd ./els-schema/target/classes && sh ./migrate.sh")
 		 }
 	  }
 	}
