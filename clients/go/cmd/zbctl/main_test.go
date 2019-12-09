@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/suite"
@@ -156,24 +157,24 @@ func buildZbctl() error {
 	if runtime.GOOS == "linux" {
 		zbctl = "zbctl"
 	} else {
-		return fmt.Errorf("Can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
+		return fmt.Errorf("can't run zbctl tests on unsupported OS '%s'", runtime.GOOS)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	files, err := ioutil.ReadDir("dist")
-	if err != nil {
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
 
 	var alreadyBuilt bool
 	for _, file := range files {
-		alreadyBuilt = strings.Contains(file.Name(), zbctl)
+		alreadyBuilt = file.Name() == zbctl
 		if alreadyBuilt {
 			break
 		}
 	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	if !alreadyBuilt {
 		return exec.CommandContext(ctx, "./build.sh", runtime.GOOS).Run()
