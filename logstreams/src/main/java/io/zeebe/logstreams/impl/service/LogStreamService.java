@@ -214,7 +214,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
     final boolean positionNotExist = !reader.seek(position);
     if (positionNotExist) {
       LOG.debug(
-          "Tried to delete from log stream, but found no corresponding address in the log block index for the given position {}.",
+          "Tried to delete from log stream, but found no corresponding address for the given position {}.",
           position);
       return;
     }

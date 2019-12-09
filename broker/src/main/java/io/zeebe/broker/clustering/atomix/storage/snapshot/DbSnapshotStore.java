@@ -186,6 +186,7 @@ public class DbSnapshotStore implements SnapshotStore {
       listeners.forEach(listener -> listener.onNewSnapshot(snapshot, this));
     }
 
+    LOGGER.debug("Committed new snapshot {}", snapshot);
     return snapshot;
   }
 

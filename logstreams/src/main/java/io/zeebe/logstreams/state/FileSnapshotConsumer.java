@@ -81,7 +81,7 @@ public class FileSnapshotConsumer implements SnapshotConsumer {
       return false;
     }
 
-    logger.debug("Consume snapshot chunk {}", chunkName);
+    logger.debug("Consume snapshot chunk {} of snapshot {}", chunkName, snapshotId);
     return writeReceivedSnapshotChunk(snapshotChunk, snapshotFile);
   }
 

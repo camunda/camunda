@@ -102,6 +102,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
 
   @Override
   public void close() {
+    logger.debug("Closing state machine {}", raft.getName());
     compactionContext.close();
     reader.close();
   }
@@ -124,6 +125,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
 
   private void safeCompact(final long index, final CompletableFuture<Void> future) {
     compactionContext.checkThread();
+    logger.debug("Compacting up to index {}", index);
 
     try {
       final var startTime = System.currentTimeMillis();
@@ -172,9 +174,10 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     } else if (reader.getNextIndex() < raft.getSnapshotStore().getCurrentSnapshotIndex()) {
       reader.reset(raft.getSnapshotStore().getCurrentSnapshotIndex());
     } else {
-      logger.error("Cannot apply index {}", index);
-      logger.debug(
-          "Expected next index is {} and reader hasNext {}",
+      // in the case where we tried to apply indexes out of order
+      logger.error(
+          "Cannot apply index {}, expected next index is {} (has more entries: {})",
+          index,
           reader.getNextIndex(),
           reader.hasNext());
       optionalFuture.ifPresent(
