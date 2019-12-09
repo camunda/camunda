@@ -5,12 +5,10 @@
  */
 package org.camunda.operate.es.schema.indices;
 
-import java.io.IOException;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ImportPositionIndex extends AbstractIndexCreator {
+public class ImportPositionIndex extends AbstractIndexDescriptor {
 
   public static final String INDEX_NAME = "import-position";
 
@@ -18,29 +16,7 @@ public class ImportPositionIndex extends AbstractIndexCreator {
   public static final String ID = "id";
   public static final String POSITION = "position";
   public static final String FIELD_INDEX_NAME = "indexName";
-
-  @Override
-  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
-    XContentBuilder newBuilder =  builder
-      .startObject(ID)
-      .field("type", "keyword")
-      .endObject()
-      .startObject(PARTITION_ID)
-        .field("type", "integer")
-      .endObject()
-      .startObject(POSITION)
-        .field("type", "long")
-      .endObject()
-      .startObject(ALIAS_NAME)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(FIELD_INDEX_NAME)
-        .field("type", "keyword")
-      .endObject();
-
-    return newBuilder;
-  }
-
+  
   @Override
   protected String getMainIndexName() {
 	return INDEX_NAME;

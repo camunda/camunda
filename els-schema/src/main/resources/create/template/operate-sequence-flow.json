@@ -18,7 +18,6 @@
 		}
 	},
 	"mappings": {
-		"_doc": {
 			"dynamic": "strict",
 			"dynamic_templates": [
 				{
@@ -52,7 +51,6 @@
 					"type": "long"
 				}
 			}
-		}
 	},
 	"aliases": {
 		"operate-sequence-flow-${schema.version}_alias": {

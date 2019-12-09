@@ -14,7 +14,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.camunda.operate.entities.OperateEntity;
-import org.camunda.operate.es.schema.templates.TemplateCreator;
+import org.camunda.operate.es.schema.templates.TemplateDescriptor;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.elasticsearch.ElasticsearchException;
@@ -67,16 +67,16 @@ public abstract class ElasticsearchUtil {
 
   /* CREATE QUERIES */
 
-  public static SearchRequest createSearchRequest(TemplateCreator template) {
+  public static SearchRequest createSearchRequest(TemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);
   }
 
-  public static SearchRequest createSearchRequest(TemplateCreator template, QueryType queryType) {
+  public static SearchRequest createSearchRequest(TemplateDescriptor template, QueryType queryType) {
     SearchRequest searchRequest = new SearchRequest(whereToSearch(template, queryType)).indicesOptions(IndicesOptions.lenientExpandOpen());
     return searchRequest;
   }
 
-  private static String whereToSearch(TemplateCreator template, QueryType queryType) {
+  private static String whereToSearch(TemplateDescriptor template, QueryType queryType) {
     switch (queryType) {
     case ONLY_ARCHIVE:
       return template.getIndexPattern() + ",-" + template.getMainIndexName();

@@ -66,7 +66,7 @@ public class UserStorage extends AbstractReader {
 
   public void create(UserEntity user) {
     try {
-      IndexRequest request = new IndexRequest(userIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE,user.getId())
+      IndexRequest request = new IndexRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE,user.getId())
           .source(userEntityToJSONString(user), XCONTENT_TYPE);
       esClient.index(request,RequestOptions.DEFAULT);
     } catch (Throwable t) {
@@ -76,7 +76,7 @@ public class UserStorage extends AbstractReader {
 
   public void deleteById(String id) {
     try {
-      DeleteRequest request = new DeleteRequest(userIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE,id);
+      DeleteRequest request = new DeleteRequest(userIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE,id);
       esClient.delete(request,RequestOptions.DEFAULT);
     } catch (Throwable t) {
       logger.error("Could not delete user by id {}", id, t);

@@ -4,7 +4,6 @@
 		}
 	},
 	"mappings": {
-		"_doc": {
 			"dynamic": "strict",
 			"dynamic_templates": [
 				{
@@ -38,7 +37,6 @@
 					"type": "long"
 				}
 			}
-		}
 	},
 	"settings": {
 		"index": {

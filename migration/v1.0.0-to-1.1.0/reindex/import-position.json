@@ -1,9 +1,0 @@
-{
-  "source": {
-    "index": ["operate-import-position-1.0.0_"]
-  },
-  "dest": {
-    "index": "operate-import-position_",
-    "pipeline": "operate-import-position-1.0.0-to-1.1.0"
-  }
-}

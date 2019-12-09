@@ -8,15 +8,15 @@ package org.camunda.operate.es;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import org.camunda.operate.es.schema.indices.IndexCreator;
+import org.camunda.operate.es.schema.indices.IndexDescriptor;
 import org.camunda.operate.es.schema.templates.EventTemplate;
 import org.camunda.operate.es.schema.templates.IncidentTemplate;
-import org.camunda.operate.es.schema.templates.TemplateCreator;
+import org.camunda.operate.es.schema.templates.TemplateDescriptor;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
-import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.client.indices.GetIndexTemplatesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexTemplatesRequest;
@@ -40,21 +40,21 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   private EventTemplate eventTemplate;
 
   @Autowired
-  private List<IndexCreator> indexCreators;
+  private List<IndexDescriptor> indexCreators;
 
   @Autowired
-  private List<TemplateCreator> templateCreators;
+  private List<TemplateDescriptor> templateCreators;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Test
   public void testIndexCreation() throws ExecutionException, InterruptedException, IOException {
-    for (TemplateCreator templateCreator: templateCreators) {
+    for (TemplateDescriptor templateCreator: templateCreators) {
       assertIndexAndAlias(templateCreator.getMainIndexName(), templateCreator.getAlias());
     }
 
-    for (IndexCreator indexCreator: indexCreators) {
+    for (IndexDescriptor indexCreator: indexCreators) {
       assertIndexAndAlias(indexCreator.getIndexName(), indexCreator.getAlias());
     }
 
@@ -68,19 +68,19 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   private void assertTemplateOrder(String templateName, int templateOrder) throws IOException {
     final GetIndexTemplatesResponse getIndexTemplatesResponse =
       esClient.indices()
-        .getTemplate(new GetIndexTemplatesRequest(templateName), RequestOptions.DEFAULT);
+        .getIndexTemplate(new GetIndexTemplatesRequest(templateName), RequestOptions.DEFAULT);
 
     assertThat(getIndexTemplatesResponse.getIndexTemplates()).hasSize(1);
-    assertThat(getIndexTemplatesResponse.getIndexTemplates().iterator().next().getOrder()).isEqualTo(templateOrder);
+    assertThat(getIndexTemplatesResponse.getIndexTemplates().iterator().next().order()).isEqualTo(templateOrder);
   }
 
   private void assertIndexAndAlias(String indexName, String aliasName) throws InterruptedException, ExecutionException, IOException {
     final GetIndexResponse getIndexResponse =
       esClient.indices()
-        .get(new GetIndexRequest().indices(indexName), RequestOptions.DEFAULT);
+        .get(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
 
     assertThat(getIndexResponse.getAliases()).hasSize(1);
-    assertThat(getIndexResponse.getAliases().valuesIt().next().get(0).getAlias()).isEqualTo(aliasName);
+    assertThat(getIndexResponse.getAliases().get(indexName).get(0).alias()).isEqualTo(aliasName);
   }
 
 }

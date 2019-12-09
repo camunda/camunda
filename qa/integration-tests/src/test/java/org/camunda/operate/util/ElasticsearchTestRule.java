@@ -121,8 +121,7 @@ public class ElasticsearchTestRule extends TestWatcher {
   protected void starting(Description description) {
     String indexPrefix = TestUtil.createRandomString(10) + "-operate";
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    elasticsearchSchemaManager.createIndices();
-    elasticsearchSchemaManager.createTemplates();
+    elasticsearchSchemaManager.createSchema();
     assertThat(areIndicesCreatedAfterChecks(indexPrefix,5, 5 * 60 /*sec*/))
       .describedAs("Elasticsearch %s (min %d) indices are created",indexPrefix,5)
       .isTrue();
@@ -287,13 +286,13 @@ public class ElasticsearchTestRule extends TestWatcher {
   public Map<Class<? extends OperateEntity>, String> getEntityToESAliasMap(){
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
-      entityToESAliasMap.put(WorkflowEntity.class, workflowIndex.getAlias());
-      entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getAlias());
-      entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getAlias());
-      entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getAlias());
-      entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getAlias());
-      entityToESAliasMap.put(OperationEntity.class, operationTemplate.getAlias());
-      entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getAlias());
+      entityToESAliasMap.put(WorkflowEntity.class, workflowIndex.getIndexName());
+      entityToESAliasMap.put(IncidentEntity.class, incidentTemplate.getMainIndexName());
+      entityToESAliasMap.put(WorkflowInstanceForListViewEntity.class, listViewTemplate.getMainIndexName());
+      entityToESAliasMap.put(ActivityInstanceForListViewEntity.class, listViewTemplate.getMainIndexName());
+      entityToESAliasMap.put(VariableForListViewEntity.class, listViewTemplate.getMainIndexName());
+      entityToESAliasMap.put(OperationEntity.class, operationTemplate.getMainIndexName());
+      entityToESAliasMap.put(BatchOperationEntity.class, batchOperationTemplate.getMainIndexName());
     }
     return entityToESAliasMap;
   }

@@ -14,7 +14,6 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.OperationsManager;
 import org.camunda.operate.es.schema.indices.WorkflowIndex;
-import org.camunda.operate.es.schema.templates.BatchOperationTemplate;
 import org.camunda.operate.es.schema.templates.ListViewTemplate;
 import org.camunda.operate.es.schema.templates.OperationTemplate;
 import org.camunda.operate.exceptions.OperateRuntimeException;
@@ -57,9 +56,6 @@ public class ElasticsearchManager {
 
   @Autowired
   private OperationTemplate operationTemplate;
-
-  @Autowired
-  private BatchOperationTemplate batchOperationTemplate;
 
   @Autowired
   private ListViewTemplate listViewTemplate;

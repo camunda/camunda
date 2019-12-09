@@ -5,12 +5,10 @@
  */
 package org.camunda.operate.es.schema.templates;
 
-import java.io.IOException;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class VariableTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
+public class VariableTemplate extends AbstractTemplateDescriptor implements WorkflowInstanceDependant {
 
   public static final String INDEX_NAME = "variable";
 
@@ -23,32 +21,6 @@ public class VariableTemplate extends AbstractTemplateCreator implements Workflo
   @Override
   protected String getIndexNameFormat() {
     return INDEX_NAME;
-  }
-  @Override
-  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
-    XContentBuilder newBuilder =  builder
-      .startObject(ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(PARTITION_ID)
-        .field("type", "integer")
-      .endObject()
-      .startObject(WORKFLOW_INSTANCE_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(NAME)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(VALUE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(SCOPE_KEY)
-        .field("type", "long")
-      .endObject();
-    return newBuilder;
   }
 
 }

@@ -1,120 +1,130 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>org.camunda.operate</groupId>
-        <artifactId>parent</artifactId>
-        <version>1.2.0-SNAPSHOT</version>
-    </parent>
+	<parent>
+		<groupId>org.camunda.operate</groupId>
+		<artifactId>parent</artifactId>
+		<version>1.2.0-SNAPSHOT</version>
+	</parent>
 
-    <name>Camunda Operate Common</name>
-    <artifactId>camunda-operate-common</artifactId>
+	<name>Camunda Operate Common</name>
+	<artifactId>camunda-operate-common</artifactId>
 
-    <properties>
-        <plugin.version.license>3.0</plugin.version.license>
-        <license.header>${project.baseUri}/../license/license-header</license.header>
-    </properties>
-    <dependencies>
-        <!-- SPRING BOOT -->
+	<properties>
+		<plugin.version.license>3.0</plugin.version.license>
+		<license.header>${project.baseUri}/../license/license-header</license.header>
+	</properties>
+	<dependencies>
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-starter-logging</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.elasticsearch.client</groupId>
-                    <artifactId>transport</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+		<dependency>
+			<groupId>org.camunda.operate</groupId>
+			<artifactId>camunda-operate-els-schema</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<!-- SPRING BOOT -->
 
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-log4j2</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.elasticsearch.client</groupId>
+					<artifactId>transport</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
+		</dependency>
 
 
-        <!-- ELASTICSEARCH -->
-        <dependency>
-            <groupId>org.elasticsearch.client</groupId>
-            <artifactId>elasticsearch-rest-high-level-client</artifactId>
-        </dependency>
+		<!-- ELASTICSEARCH -->
+		<dependency>
+			<groupId>org.elasticsearch.client</groupId>
+			<artifactId>elasticsearch-rest-high-level-client</artifactId>
+		</dependency>
 
-        <!-- ZEEBE -->
+		<!-- ZEEBE -->
 
-        <dependency>
-            <groupId>io.zeebe</groupId>
-            <artifactId>zeebe-protocol</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>io.zeebe</groupId>
+			<artifactId>zeebe-protocol</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>io.zeebe</groupId>
-            <artifactId>zeebe-client-java</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>io.zeebe</groupId>
+			<artifactId>zeebe-client-java</artifactId>
+		</dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
+		<!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-        </dependency>
+		<dependency>
+			<groupId>org.glassfish</groupId>
+			<artifactId>javax.json</artifactId>
+		</dependency>
 
-        <!-- Micrometer Prometheus -->
-        <dependency>
-            <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus</artifactId>
-        </dependency>
+		<!-- Micrometer Prometheus -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
 
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>test</scope>
-        </dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>3.14.0</version>
-            <scope>test</scope>
-        </dependency>
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<scope>test</scope>
+		</dependency>
 
-    </dependencies>
 
-    <build>
-        <plugins>
 
-            <!-- LICENSE PLUGIN -->
-            <plugin>
-                <groupId>com.mycila</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <version>${plugin.version.license}</version>
-                <configuration>
-                    <header>${license.header}</header>
-                    <includes>
-                        <include>**/*.java</include>
-                    </includes>
-                    <mapping>
-                        <java>SLASHSTAR_STYLE</java>
-                    </mapping>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>add-license</id>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>format</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
 
-        </plugins>
-    </build>
+	</dependencies>
+
+	<build>
+		<plugins>
+
+			<!-- LICENSE PLUGIN -->
+			<plugin>
+				<groupId>com.mycila</groupId>
+				<artifactId>license-maven-plugin</artifactId>
+				<version>${plugin.version.license}</version>
+				<configuration>
+					<header>${license.header}</header>
+					<includes>
+						<include>**/*.java</include>
+					</includes>
+					<mapping>
+						<java>SLASHSTAR_STYLE</java>
+					</mapping>
+				</configuration>
+				<executions>
+					<execution>
+						<id>add-license</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>format</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+		</plugins>
+	</build>
 
 </project>

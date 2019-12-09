@@ -96,7 +96,7 @@ public class WorkflowZeebeRecordProcessor {
     try {
       updateFieldsInInstancesFor(workflowEntity, bulkRequest);
 
-      bulkRequest.add(new IndexRequest(workflowIndex.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, ConversionUtils.toStringOrNull(workflowEntity.getKey()))
+      bulkRequest.add(new IndexRequest(workflowIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, ConversionUtils.toStringOrNull(workflowEntity.getKey()))
           .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON)
       );
     } catch (JsonProcessingException e) {

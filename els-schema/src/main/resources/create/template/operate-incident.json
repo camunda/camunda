@@ -18,7 +18,6 @@
 		}
 	},
 	"mappings": {
-		"_doc": {
 			"dynamic": "strict",
 			"dynamic_templates": [
 				{
@@ -75,7 +74,6 @@
 					"type": "long"
 				}
 			}
-		}
 	},
 	"aliases": {
 		"operate-incident-${schema.version}_alias": {

@@ -18,7 +18,6 @@
 		}
 	},
 	"mappings": {
-		"_doc": {
 			"dynamic": "strict",
 			"dynamic_templates": [
 				{
@@ -77,12 +76,14 @@
 				"batchOperationId": {
 					"type": "keyword"
 				},
+				"zeebeCommandKey": {
+					"type": "keyword"
+				},
 				"startDate": {
 					"format": "date_time",
 					"type": "date"
 				}
 			}
-		}
 	},
 	"aliases": {
 		"operate-operation-${schema.version}_alias": {

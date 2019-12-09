@@ -1,8 +1,0 @@
-{
-  "source": {
-    "index": ["operate-event-1.1.0_"]
-  },
-  "dest": {
-    "index": "operate-event-1.2.0_"
-  }
-}

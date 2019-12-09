@@ -5,13 +5,10 @@
  */
 package org.camunda.operate.es.schema.indices;
 
-import java.io.IOException;
-
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserIndex extends AbstractIndexCreator {
+public class UserIndex extends AbstractIndexDescriptor {
 
   private static final String INDEX_NAME = "user";
   public static final String ID = "id";
@@ -20,31 +17,8 @@ public class UserIndex extends AbstractIndexCreator {
   public static final String ROLE = "role";
 
   @Override
-  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
-    XContentBuilder newBuilder =  builder
-        .startObject(ID)
-          .field("type", "keyword")
-        .endObject()
-        .startObject(USERNAME)
-          .field("type","keyword")
-        .endObject()
-        .startObject(PASSWORD)
-           .field("type","keyword")
-        .endObject()
-        .startObject(ROLE)
-          .field("type","keyword")
-        .endObject();
-      return newBuilder;
-  }
-
-  @Override
-  public boolean needsSeveralShards() {
-    return false;
-  }
-
-  @Override
   protected String getMainIndexName() {
-	return INDEX_NAME;
+    return INDEX_NAME;
   }
 
 }

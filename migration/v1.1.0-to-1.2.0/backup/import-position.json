@@ -1,8 +1,0 @@
-{
-  "source": {
-    "index": ["operate-import-position_"]
-  },
-  "dest": {
-    "index": "operate-import-position-1.1.0_"
-  }
-}

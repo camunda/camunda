@@ -5,14 +5,10 @@
  */
 package org.camunda.operate.es.schema.templates;
 
-import java.io.IOException;
-import org.camunda.operate.property.OperateProperties;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class IncidentTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
+public class IncidentTemplate extends AbstractTemplateDescriptor implements WorkflowInstanceDependant {
 
   public static final String INDEX_NAME = "incident";
 
@@ -29,56 +25,9 @@ public class IncidentTemplate extends AbstractTemplateCreator implements Workflo
   public static final String STATE = "state";
   public static final String CREATION_TIME = "creationTime";
 
-  @Autowired
-  private OperateProperties operateProperties;
-
   @Override
   protected String getIndexNameFormat() {
     return INDEX_NAME;
-  }
-
-  @Override
-  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
-    XContentBuilder newBuilder =  builder
-      .startObject(ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(PARTITION_ID)
-        .field("type", "integer")
-      .endObject()
-      .startObject(KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(CREATION_TIME)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
-      .endObject()
-      .startObject(ERROR_MSG)
-        .field("type", "keyword")
-        .field(EAGER_GLOBAL_ORDINALS, true)
-      .endObject()
-      .startObject(ERROR_TYPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(STATE)
-       .field("type", "keyword")
-      .endObject()
-      .startObject(FLOW_NODE_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(FLOW_NODE_INSTANCE_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(JOB_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(WORKFLOW_INSTANCE_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(WORKFLOW_KEY)
-        .field("type", "long")
-      .endObject();
-    return newBuilder;
   }
 
 }

@@ -10,7 +10,7 @@ createNewTemplatesAndTheirIndexes(){
      echo "Create template $templatename"
      echo "-------------------------------"
  	 $RESTCLIENT --request PUT --url $ES/_template/${templatename}-${schema.version} --data @$template
- 	 $RESTCLIENT --request PUT --url $ES/${templatename}-${schema.version}_ --data @$template
+ 	 $RESTCLIENT --request PUT --url $ES/${templatename}-${schema.version}_
      echo
      echo "-------------------------------"
    done

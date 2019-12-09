@@ -5,32 +5,33 @@
  */
 package org.camunda.operate.es;
 
-import javax.annotation.PostConstruct;
+import static org.camunda.operate.util.CollectionUtil.map;
+
 import java.io.IOException;
-import java.util.Arrays;
+import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
-import org.camunda.operate.es.schema.indices.IndexCreator;
-import org.camunda.operate.es.schema.templates.TemplateCreator;
+import java.util.Map;
+
+import javax.annotation.PostConstruct;
+
+import org.camunda.operate.es.schema.indices.IndexDescriptor;
+import org.camunda.operate.es.schema.templates.TemplateDescriptor;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.property.OperateElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
-import org.elasticsearch.ResourceAlreadyExistsException;
-import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.client.indices.CreateIndexRequest;
-import org.elasticsearch.client.indices.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 @Component("schemaManager")
 @Profile("!test")
@@ -39,134 +40,130 @@ public class ElasticsearchSchemaManager {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
 
   @Autowired
-  private List<IndexCreator> indexCreators;
+  private List<IndexDescriptor> indexCreators;
 
   @Autowired
-  private List<TemplateCreator> templateCreators;
+  private List<TemplateDescriptor> templateCreators;
 
   @Autowired
   private RestHighLevelClient esClient;
 
   @Autowired
   private OperateProperties operateProperties;
-
+    
   @PostConstruct
   public boolean initializeSchema() {
     if (!schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");
-      createIndices();
-      createTemplates();
-      return true;
+      return createSchema();
     } else {
       logger.info("Elasticsearch schema already exists");
       return false;
     }
   }
-
-  public void createIndices() {
-    for (IndexCreator mapping : indexCreators) {
-      createIndex(mapping);
-    }
+  
+  public boolean createSchema() {
+     return createTemplates() && createIndices();
   }
 
-  public void createTemplates() {
-    for (TemplateCreator templateCreator: templateCreators) {
-      createTemplate(templateCreator);
-    }
+  public boolean createIndices() {
+    return !map(indexCreators,this::createIndex).contains(false);
   }
 
-  private void createTemplate(TemplateCreator templateCreator) {
+  public boolean createTemplates() {
+    return !map(templateCreators,this::createTemplate).contains(false);
+  }
+  
+  protected boolean createIndex(IndexDescriptor indexCreator) {
+    String indexName = indexCreator.getIndexName();
+    String indexNameWithoutVersion = getResourceNameFor(indexName);
+    return putIndex(indexName, "/create/index/" + indexNameWithoutVersion + ".json");
+  }
+  
+  protected boolean createTemplate(TemplateDescriptor templateCreator) {
+    String templateName = templateCreator.getTemplateName();
+    String templateNameWithoutVersion = getResourceNameFor(templateName);
+    String indexName = templateName.replace("template", "");
+    return putIndexTemplate(templateName,indexName, "/create/template/" + templateNameWithoutVersion + ".json") 
+        && createIndex(new CreateIndexRequest(indexName));
+  }
+  
+  public boolean schemaAlreadyExists() {
     try {
-      Settings templateSettings = null;
-      try {
-        templateSettings = buildSettings(templateCreator.needsSeveralShards());
-      } catch (IOException e) {
-        logger.error(String.format("Could not create settings for template [%s]", templateCreator.getTemplateName()), e);
-      }
-      final PutIndexTemplateRequest request = new PutIndexTemplateRequest(templateCreator.getTemplateName())
-        .patterns(Arrays.asList(templateCreator.getIndexPattern()))
-        .mapping(templateCreator.getSource())
-        .alias(new Alias(templateCreator.getAlias()))
-        .settings(templateSettings)
-        .order(operateProperties.getElasticsearch().getTemplateOrder());
-      esClient.indices().putTemplate(request, RequestOptions.DEFAULT);
-
-      //create main index
-      final Alias alias = new Alias(templateCreator.getAlias());
-      alias.writeIndex(true);
-      final CreateIndexRequest createIndexRequest = new CreateIndexRequest(templateCreator.getMainIndexName())
-        .alias(alias);
-      esClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
-      logger.debug("Template [{}] was successfully created", templateCreator.getTemplateName());
-    } catch (IOException e) {
-      String message = String.format("Could not add mapping to the template [%s]", templateCreator.getTemplateName());
-      logger.error(message, e);
-    } catch (ResourceAlreadyExistsException e) {
-      logger.warn("Template [{}] already exists", templateCreator.getTemplateName());
-    }
-
-  }
-
-  private void createIndex(IndexCreator mapping) {
-    try {
-      Settings indexSettings = null;
-      try {
-        indexSettings = buildSettings(mapping.needsSeveralShards());
-      } catch (IOException e) {
-        logger.error(String.format("Could not create settings for index [%s]", mapping.getIndexName()), e);
-      }
-      final CreateIndexRequest createIndexRequest = new CreateIndexRequest(mapping.getIndexName())
-          .settings(indexSettings)
-          .alias(new Alias(mapping.getAlias()))
-          .mapping(mapping.getSource());
-      esClient.indices().create(createIndexRequest, RequestOptions.DEFAULT);
-      esClient.indices().refresh(new RefreshRequest(mapping.getIndexName()), RequestOptions.DEFAULT);
-      logger.debug("Index [{}] was successfully created", mapping.getIndexName());
-    } catch (IOException e) {
-      String message = String.format("Could not add mapping to the index [%s]", mapping.getIndexName());
-      logger.error(message, e);
-    } catch (ResourceAlreadyExistsException e) {
-      logger.warn("Index for type [{}] already exists", mapping.getIndexName());
-    }
-
-  }
-
-  /**
-   * Checks in Elasticsearch, if the schema already exists. For this it searches for one of used aliases.
-   * @return true is Elasticsearch schema already exists, false otherwise
-   */
-  protected boolean schemaAlreadyExists() {
-    try {
-     String indexName =	indexCreators.get(0).getAlias();
-     return esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+      String indexName = indexCreators.get(0).getAlias();
+      return esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while checking schema existence: %s", e.getMessage());
       logger.error(message, e);
       throw new OperateRuntimeException(message, e);
     }
   }
+ 
+  protected String getResourceNameFor(String name) {
+    return name
+            .replace(operateProperties.getElasticsearch().getIndexPrefix(),OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX)
+            .replace("-"+OperateProperties.getSchemaVersion(), "")
+            .replace("template", "")
+            .replace("_", "");
+  }
+  
+  public boolean putIndexTemplate(final String templateName,String indexName,final String filename) {
+    final Map<String, Object> template = readJSONFileToMap(filename);
+    // update prefix in template in case it was changed in configuration
+    template.put("index_patterns", Collections.singletonList(indexName + "*"));
+    // update alias in template in case it was changed in configuration
+    template.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
 
-  private Settings buildSettings(boolean needsSeveralShards) throws IOException {
-    XContentBuilder xContentBuilder = jsonBuilder()
-      .startObject()
-        .field("refresh_interval", "2s")
-        .field("number_of_replicas", operateProperties.getElasticsearch().getNumberOfReplicas());
-          if (needsSeveralShards) { xContentBuilder = xContentBuilder
-        .field("number_of_shards", operateProperties.getElasticsearch().getNumberOfShards());
-          } else {  xContentBuilder = xContentBuilder
-        .field("number_of_shards", 1);
-          }
-        xContentBuilder = xContentBuilder
-        .startObject("analysis")
-          // define a lowercase normalizer: https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html
-          .startObject("normalizer")
-            .startObject("case_insensitive")
-              .field("filter","lowercase")
-            .endObject()
-          .endObject()
-        .endObject()
-      .endObject();
-    return Settings.builder().loadFromSource(Strings.toString(xContentBuilder), XContentType.JSON).build();
+    final PutIndexTemplateRequest request =
+        new PutIndexTemplateRequest(templateName).source(template);
+
+    return putIndexTemplate(request);
+  }
+  
+  public boolean putIndex(final String indexName, final String filename) {
+    final Map<String, Object> index = readJSONFileToMap(getResourceNameFor(filename));
+    index.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
+    final CreateIndexRequest request = new CreateIndexRequest(indexName).source(index);
+    return createIndex(request);
   }
 
+  private Map<String, Object> readJSONFileToMap(final String filename) {
+    final Map<String, Object> schema;
+    try (InputStream inputStream = ElasticsearchSchemaManager.class.getResourceAsStream(filename)) {
+      if (inputStream != null) {
+        schema = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
+      } else {
+        throw new OperateRuntimeException(
+            "Failed to find schema in classpath " + filename);
+      }
+    } catch (IOException e) {
+      throw new OperateRuntimeException(
+          "Failed to load schema from classpath " + filename, e);
+    }
+    return schema;
+  }
+  
+  private boolean createIndex(final CreateIndexRequest createIndexRequest) {
+    try {
+      return esClient
+          .indices()
+          .create(createIndexRequest, RequestOptions.DEFAULT)
+          .isAcknowledged();
+    } catch (IOException e) {
+      throw new OperateRuntimeException("Failed to create index ", e);
+    }
+  }
+  
+  
+  private boolean putIndexTemplate(final PutIndexTemplateRequest putIndexTemplateRequest) {
+    try {
+      return esClient
+          .indices()
+          .putTemplate(putIndexTemplateRequest, RequestOptions.DEFAULT)
+          .isAcknowledged();
+    } catch (IOException e) {
+      throw new OperateRuntimeException("Failed to put index template", e);
+    }
+  }
 }
+

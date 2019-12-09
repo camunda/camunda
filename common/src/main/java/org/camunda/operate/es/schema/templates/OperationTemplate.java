@@ -5,14 +5,10 @@
  */
 package org.camunda.operate.es.schema.templates;
 
-import java.io.IOException;
-import org.camunda.operate.property.OperateProperties;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class OperationTemplate extends AbstractTemplateCreator implements WorkflowInstanceDependant {
+public class OperationTemplate extends AbstractTemplateDescriptor implements WorkflowInstanceDependant {
 
   public static final String INDEX_NAME = "operation";
 
@@ -31,66 +27,9 @@ public class OperationTemplate extends AbstractTemplateCreator implements Workfl
   public static final String BATCH_OPERATION_ID = "batchOperationId";
   public static final String ZEEBE_COMMAND_KEY = "zeebeCommandKey";
 
-  @Autowired
-  private OperateProperties operateProperties;
-
   @Override
   protected String getIndexNameFormat() {
     return INDEX_NAME;
-  }
-
-  @Override
-  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
-    XContentBuilder newBuilder =  builder
-      .startObject(ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(WORKFLOW_INSTANCE_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(INCIDENT_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(SCOPE_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(VARIABLE_NAME)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_VALUE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(TYPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(STATE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(START_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
-      .endObject()
-      .startObject(END_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
-      .endObject()
-      .startObject(LOCK_EXPIRATION_TIME)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
-      .endObject()
-      .startObject(LOCK_OWNER)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(ERROR_MSG)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(BATCH_OPERATION_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(ZEEBE_COMMAND_KEY)
-        .field("type", "keyword")
-      .endObject();
-    return newBuilder;
   }
 
 }

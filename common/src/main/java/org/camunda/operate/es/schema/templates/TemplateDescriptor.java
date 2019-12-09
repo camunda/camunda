@@ -5,10 +5,7 @@
  */
 package org.camunda.operate.es.schema.templates;
 
-import java.io.IOException;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-
-public interface TemplateCreator {
+public interface TemplateDescriptor {
 
   String getTemplateName();
 
@@ -17,9 +14,5 @@ public interface TemplateCreator {
   String getMainIndexName();
 
   String getAlias();
-
-  XContentBuilder getSource() throws IOException;
-
-  boolean needsSeveralShards();
 
 }

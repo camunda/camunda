@@ -1,9 +1,0 @@
- {
-    "processors" : [
-      {
-        "remove" : {
-          "field" : "workflowId"
-        }
-      }
-    ]
-  }

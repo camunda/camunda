@@ -5,14 +5,10 @@
  */
 package org.camunda.operate.es.schema.templates;
 
-import java.io.IOException;
-import org.camunda.operate.property.OperateProperties;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ListViewTemplate extends AbstractTemplateCreator {
+public class ListViewTemplate extends AbstractTemplateDescriptor {
 
   public static final String INDEX_NAME = "list-view";
 
@@ -46,98 +42,9 @@ public class ListViewTemplate extends AbstractTemplateCreator {
   public static final String ACTIVITIES_JOIN_RELATION = "activity";
   public static final String VARIABLES_JOIN_RELATION = "variable";
 
-  @Autowired
-  private OperateProperties operateProperties;
-
   @Override
   protected String getIndexNameFormat() {
     return INDEX_NAME;
-  }
-
-  @Override
-  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
-    XContentBuilder newBuilder =  builder
-      .startObject(ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(WORKFLOW_INSTANCE_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(WORKFLOW_KEY)
-        .field("type", "long")
-      .endObject()
-      // WORKFLOW_NAME index is stored as lowercase keyword: https://www.elastic.co/guide/en/elasticsearch/reference/current/keyword.html
-      .startObject(WORKFLOW_NAME)
-        .field("type", "keyword")
-        .field("normalizer","case_insensitive")
-      .endObject()
-      .startObject(WORKFLOW_VERSION)
-        .field("type", "long")
-      .endObject()
-      .startObject(BPMN_PROCESS_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(STATE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(START_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
-      .endObject()
-      .startObject(END_DATE)
-        .field("type", "date")
-        .field("format", operateProperties.getElasticsearch().getElsDateFormat())
-      .endObject()
-      //incident fields
-      .startObject(INCIDENT_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(ERROR_MSG)
-        .field("type", "text") 
-      .endObject()
-      .startObject(INCIDENT_JOB_KEY)
-        .field("type", "keyword")
-      .endObject()
-      //activity instance fields
-      .startObject(ACTIVITY_ID)
-        .field("type", "keyword")
-        .field(EAGER_GLOBAL_ORDINALS, true)
-      .endObject()
-      .startObject(ACTIVITY_STATE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(ACTIVITY_TYPE)
-        .field("type", "keyword")
-      .endObject()
-      //variable fields
-      .startObject(SCOPE_KEY)
-        .field("type", "long")
-      .endObject()
-      .startObject(VAR_NAME)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(VAR_VALUE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(BATCH_OPERATION_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(JOIN_RELATION)
-        .field("type", "join")
-        .startObject("relations")
-          .startArray(WORKFLOW_INSTANCE_JOIN_RELATION)
-            .value(ACTIVITIES_JOIN_RELATION)
-            .value(VARIABLES_JOIN_RELATION)
-          .endArray()
-        .endObject()
-      .endObject()
-      .startObject(PARTITION_ID)
-        .field("type", "integer")
-      .endObject()
-      .startObject(KEY)
-        .field("type", "long")
-      .endObject();
-    return newBuilder;
   }
 
 }
