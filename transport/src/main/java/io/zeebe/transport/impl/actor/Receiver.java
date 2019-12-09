@@ -15,7 +15,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 
 public class Receiver extends Actor {
   protected final ReadTransportPoller transportPoller;
-  private String name;
+  private final String name;
 
   public Receiver(ActorContext actorContext, TransportContext context) {
     this.transportPoller = new ReadTransportPoller(actor);
@@ -51,9 +51,5 @@ public class Receiver extends Actor {
         () -> {
           transportPoller.addChannel(c);
         });
-  }
-
-  public ActorFuture<Void> close() {
-    return actor.close();
   }
 }

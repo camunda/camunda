@@ -148,10 +148,6 @@ public abstract class Conductor extends Actor implements ChannelLifecycleListene
     // empty
   }
 
-  public ActorFuture<Void> close() {
-    return actor.close();
-  }
-
   public ActorFuture<Void> closeCurrentChannels() {
     return actor.call(
         () -> {

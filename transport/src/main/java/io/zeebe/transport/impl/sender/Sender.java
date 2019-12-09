@@ -257,10 +257,6 @@ public class Sender extends Actor implements TimerHandler {
     submittedResponses.add(incomingClientResponse);
   }
 
-  public ActorFuture<Void> close() {
-    return actor.close();
-  }
-
   public ActorFuture<Void> onChannelConnected(TransportChannel ch) {
     return actor.call(
         () -> {

@@ -56,6 +56,6 @@ public class ServerTransport implements AutoCloseable {
   }
 
   public void releaseResources() {
-    transportActorContext.getConductor().close().join();
+    transportActorContext.getConductor().close();
   }
 }
