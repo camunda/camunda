@@ -18,6 +18,7 @@ env-clean: env-down
 
 .PHONY: start-backend
 start-backend:
-	docker-compose up -d elasticsearch zeebe \
+	trap 'docker-compose down -v' EXIT ERR INT TERM \
+	&& docker-compose up -d elasticsearch zeebe \
 	&& mvn install -DskipTests=true -Dskip.fe.build=true \
     && mvn -f webapp/pom.xml exec:java -Dexec.mainClass="org.camunda.operate.Application" -Dspring.profiles.active=dev,dev-data,auth
