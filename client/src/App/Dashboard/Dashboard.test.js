@@ -37,7 +37,7 @@ const mountDashboard = () => {
   return node;
 };
 
-const publish = ({node, topic, response}) => {
+const publish = ({node, state, topic, response}) => {
   const dashboard = node.find(Dashboard);
   const {
     subscriptions,
@@ -46,7 +46,7 @@ const publish = ({node, topic, response}) => {
 
   dataManager.publish({
     subscription: subscriptions[topic],
-    state: LOADING_STATE.LOADED,
+    state,
     response
   });
 };
@@ -92,6 +92,7 @@ describe('Dashboard', () => {
       publish({
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
+        state: LOADING_STATE.LOADED,
         response: instancesByWorkflow
       });
 
@@ -109,6 +110,7 @@ describe('Dashboard', () => {
       publish({
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
+        state: LOADING_STATE.LOAD_FAILED,
         response: fetchError
       });
 
@@ -132,6 +134,7 @@ describe('Dashboard', () => {
       publish({
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
+        state: LOADING_STATE.LOADED,
         response: emptyData
       });
 
@@ -155,6 +158,7 @@ describe('Dashboard', () => {
       publish({
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
+        state: LOADING_STATE.LOADED,
         response: incidentsByError
       });
 
@@ -172,6 +176,7 @@ describe('Dashboard', () => {
       publish({
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
+        state: LOADING_STATE.LOAD_FAILED,
         response: fetchError
       });
 
@@ -194,6 +199,7 @@ describe('Dashboard', () => {
       publish({
         node,
         topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
+        state: LOADING_STATE.LOADED,
         response: emptyData
       });
 

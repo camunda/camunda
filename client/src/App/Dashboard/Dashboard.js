@@ -13,6 +13,7 @@ import {withData} from 'modules/DataManager';
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
+import Skeleton from './Skeleton';
 
 import {PAGE_TITLE, LOADING_STATE} from 'modules/constants';
 
@@ -36,8 +37,8 @@ export class Dashboard extends Component {
     counts: {
       errors: null
     },
-    instancesByWorkflow: {data: [], error: null},
-    incidentsByError: {data: [], error: null}
+    instancesByWorkflow: {data: [], error: null, isLoading: true},
+    incidentsByError: {data: [], error: null, isLoading: true}
   };
 
   componentDidMount = async () => {
@@ -52,16 +53,22 @@ export class Dashboard extends Component {
 
   subscriptions = {
     LOAD_INSTANCES_BY_WORKFLOW: ({state, response}) => {
-      if (state === LOADING_STATE.LOADED) {
+      if (
+        state === LOADING_STATE.LOADED ||
+        state === LOADING_STATE.LOAD_FAILED
+      ) {
         this.setState({
-          instancesByWorkflow: response
+          instancesByWorkflow: {...response, isLoading: false}
         });
       }
     },
     LOAD_INCIDENTS_BY_ERROR: ({state, response}) => {
-      if (state === LOADING_STATE.LOADED) {
+      if (
+        state === LOADING_STATE.LOADED ||
+        state === LOADING_STATE.LOAD_FAILED
+      ) {
         this.setState({
-          incidentsByError: response
+          incidentsByError: {...response, isLoading: false}
         });
       }
     }
@@ -70,6 +77,8 @@ export class Dashboard extends Component {
   renderPanel = (type, state) => {
     if (state.error) {
       return <EmptyPanel type="warning" label={MESSAGES[type].error} />;
+    } else if (state.isLoading) {
+      return <EmptyPanel type="skeleton" Skeleton={Skeleton} rowHeight={32} />;
     } else if (state.data.length === 0) {
       return <EmptyPanel type="info" label={MESSAGES[type].noData} />;
     } else if (state.data.length > 0 && type === INSTANCES_BY_WORKFLOW) {

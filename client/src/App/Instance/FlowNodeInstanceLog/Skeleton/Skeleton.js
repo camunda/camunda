@@ -22,19 +22,10 @@ Row.propTypes = {
   parent: PropTypes.bool
 };
 
-export default React.memo(function Skeleton({rowsToDisplay, ...props}) {
-  function rowMultiplier(rowCount) {
-    const rows = [];
-    for (var i = 0; i < rowCount; i++) {
-      rows.push(<Row key={i} />);
-    }
-    return rows;
-  }
-
+export default React.memo(function Skeleton(props) {
   return (
-    <Styled.Skeleton {...props}>
+    <Styled.MultiRow Component={Row} {...props}>
       <Row parent />
-      {rowMultiplier(rowsToDisplay)}
-    </Styled.Skeleton>
+    </Styled.MultiRow>
   );
 });

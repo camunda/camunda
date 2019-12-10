@@ -1,0 +1,26 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`MultiRow should render 5 rows with child 1`] = `
+<div>
+  <div>
+    Header
+  </div>
+  <dummyComponent
+    key="0"
+  />
+  <dummyComponent
+    key="1"
+  />
+  <dummyComponent
+    key="2"
+  />
+  <dummyComponent
+    key="3"
+  />
+  <dummyComponent
+    key="4"
+  />
+</div>
+`;
+
+exports[`MultiRow should render no rows 1`] = `<div />`;

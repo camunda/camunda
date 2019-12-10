@@ -66,6 +66,10 @@ describe('Header', () => {
   let node;
   let header;
 
+  beforeEach(() => {
+    dataManager = createMockDataManager();
+  });
+
   describe('display', () => {
     it('should render all nav elements', () => {
       const mockProps = {

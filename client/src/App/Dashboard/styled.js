@@ -7,6 +7,7 @@
 import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import EmptyPanel from 'modules/components/EmptyPanel';
+import BasicMultiRow from 'modules/components/MultiRow';
 
 const HEADER_HEIGHT = 56;
 const METRIC_PANEL_HEIGHT = 234;
@@ -105,6 +106,29 @@ export const EmptyMetricPanelWrapper = styled.div`
   display: flex;
   height: 100%;
 `;
+
+export const MultiRow = styled(BasicMultiRow)`
+  display: flex;
+  flex-direction: column;
+`;
+
+const colors = css`
+  background: ${themeStyle({
+    dark: 'rgba(136, 136, 141)',
+    light: Colors.uiLight06
+  })};
+  opacity: ${themeStyle({
+    dark: 0.2,
+    light: 0.09
+  })};
+`;
+
+export const Block = themed(styled.div`
+  margin: 15px 0 19px 35px;
+  height: 21px;
+  flex-grow: 1;
+  ${colors};
+`);
 
 export const Footer = styled.div`
   padding: 12px 0;

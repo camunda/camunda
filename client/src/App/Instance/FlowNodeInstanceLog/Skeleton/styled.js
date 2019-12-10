@@ -7,6 +7,8 @@
 import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
+import BasicMultiRow from 'modules/components/MultiRow';
+
 const colors = css`
   background: ${themeStyle({
     dark: 'rgba(136, 136, 141)',
@@ -18,7 +20,7 @@ const colors = css`
   })};
 `;
 
-export const Skeleton = themed(styled.div`
+export const MultiRow = themed(styled(BasicMultiRow)`
   width: 100%;
 `);
 
