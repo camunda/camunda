@@ -29,17 +29,15 @@ type DispatchCancelWorkflowInstanceCommand interface {
 }
 
 type CancelWorkflowInstanceCommand struct {
-	request        *pb.CancelWorkflowInstanceRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.CancelWorkflowInstanceRequest
 }
 
 func (cmd CancelWorkflowInstanceCommand) Send() (*pb.CancelWorkflowInstanceResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	response, err := cmd.gateway.CancelWorkflowInstance(ctx, cmd.request)
+	response, err := cmd.gateway.CancelWorkflowInstance(ctx, &cmd.request)
 	if cmd.retryPredicate(err) {
 		return cmd.Send()
 	}
@@ -48,14 +46,16 @@ func (cmd CancelWorkflowInstanceCommand) Send() (*pb.CancelWorkflowInstanceRespo
 }
 
 func (cmd CancelWorkflowInstanceCommand) WorkflowInstanceKey(key int64) DispatchCancelWorkflowInstanceCommand {
-	cmd.request = &pb.CancelWorkflowInstanceRequest{WorkflowInstanceKey: key}
+	cmd.request = pb.CancelWorkflowInstanceRequest{WorkflowInstanceKey: key}
 	return cmd
 }
 
 func NewCancelInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) CancelInstanceStep1 {
 	return &CancelWorkflowInstanceCommand{
-		gateway:        gateway,
-		requestTimeout: requestTimeout,
-		retryPredicate: retryPredicate,
+		Command: Command{
+			gateway:        gateway,
+			requestTimeout: requestTimeout,
+			retryPredicate: retryPredicate,
+		},
 	}
 }
