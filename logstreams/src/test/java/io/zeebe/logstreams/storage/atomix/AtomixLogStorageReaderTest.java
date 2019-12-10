@@ -18,9 +18,12 @@ import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.assertj.core.groups.Tuple;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,19 +31,19 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public class AtomixLogStorageReaderTest {
-  private static final ByteBuffer DATA = ByteBuffer.allocate(4).putInt(0, 1);
+  private static final ByteOrder BYTE_ORDER = ByteOrder.BIG_ENDIAN;
 
   private final TemporaryFolder temporaryFolder = new TemporaryFolder();
   private final AtomixLogStorageRule storageRule = new AtomixLogStorageRule(temporaryFolder);
-
   @Rule public final RuleChain chain = RuleChain.outerRule(temporaryFolder).around(storageRule);
+  private final DirectBuffer buffer = new UnsafeBuffer();
 
   @Test
   public void shouldLookUpAddress() {
     // given
     final var reader = storageRule.get().newReader();
-    final var firstEntry = append(1, 4, DATA);
-    final var secondEntry = append(5, 8, DATA);
+    final var firstEntry = append(1, 4, allocateData(1));
+    final var secondEntry = append(5, 8, allocateData(2));
 
     // when
     final var firstEntryAddresses =
@@ -71,7 +74,7 @@ public class AtomixLogStorageReaderTest {
     final var reader = storageRule.get().newReader();
 
     // when
-    final var result = reader.read(ByteBuffer.allocate(1), 1);
+    final var result = reader.read(buffer, 1);
 
     // then
     assertThat(result).isEqualTo(LogStorage.OP_RESULT_NO_DATA);
@@ -81,8 +84,8 @@ public class AtomixLogStorageReaderTest {
   public void shouldReadEntry() {
     // given
     final var reader = storageRule.get().newReader();
-    final var firstEntry = append(1, 4, ByteBuffer.allocate(4).putInt(0, 1));
-    final var secondEntry = append(5, 8, ByteBuffer.allocate(4).putInt(0, 2));
+    final var firstEntry = append(1, 4, allocateData(1));
+    final var secondEntry = append(5, 8, allocateData(2));
 
     // when
     final var firstEntryResults = read(reader, firstEntry.index());
@@ -97,31 +100,44 @@ public class AtomixLogStorageReaderTest {
   public void shouldLookUpEntryWithGaps() {
     // given
     final var reader = storageRule.get().newReader();
-    final var buffer = ByteBuffer.allocate(4);
 
     // when
-    final var first = append(1, 4, ByteBuffer.allocate(4).putInt(0, 1));
+    final var first = append(1, 4, allocateData(1));
     final var second =
         storageRule
             .getRaftLog()
             .writer()
             .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
-    final var third = append(5, 8, ByteBuffer.allocate(4).putInt(0, 2));
+    final var third = append(5, 8, allocateData(2));
 
     // then
     assertThat(reader.lookUpApproximateAddress(3)).isEqualTo(first.index());
     assertThat(reader.lookUpApproximateAddress(6)).isEqualTo(third.index());
 
     // this does not point to the next real ZeebeEntry, but is just an approximate
-    assertThat(reader.read(buffer.clear(), first.index())).isEqualTo(second.index());
-    assertThat(buffer.getInt(0)).isEqualTo(1);
+    assertThat(read(reader, first.index())).isEqualTo(tuple(1, second.index()));
 
     // reading the second entry (a non ZeebeEntry) should find the next correct Zeebe entry
-    assertThat(reader.read(buffer.clear(), second.index())).isEqualTo(third.index() + 1);
-    assertThat(buffer.getInt(0)).isEqualTo(2);
+    assertThat(read(reader, second.index())).isEqualTo(tuple(2, third.index() + 1));
+    assertThat(read(reader, third.index())).isEqualTo(tuple(2, third.index() + 1));
+  }
 
-    assertThat(reader.read(buffer.clear(), third.index())).isEqualTo(third.index() + 1);
-    assertThat(buffer.getInt(0)).isEqualTo(2);
+  @Test
+  public void shouldReadLastZeebeEntry() {
+    // given
+    final var reader = storageRule.get().newReader();
+    final var expected = append(1, 4, allocateData(1));
+    storageRule
+        .getRaftLog()
+        .writer()
+        .append(new ConfigurationEntry(1, System.currentTimeMillis(), Collections.emptyList()));
+
+    // when
+    final var address = reader.readLastBlock(buffer);
+
+    // then
+    assertThat(address).isEqualTo(expected.index() + 1);
+    assertThat(buffer.getInt(0, BYTE_ORDER)).isEqualTo(1);
   }
 
   private Indexed<ZeebeEntry> append(
@@ -133,10 +149,12 @@ public class AtomixLogStorageReaderTest {
   }
 
   private Tuple read(final LogStorageReader reader, final long address) {
-    final var buffer = ByteBuffer.allocate(Integer.BYTES);
     final var result = reader.read(buffer, address);
+    return tuple(buffer.getInt(0, BYTE_ORDER), result);
+  }
 
-    return tuple(buffer.getInt(0), result);
+  private ByteBuffer allocateData(final int value) {
+    return ByteBuffer.allocate(4).order(BYTE_ORDER).putInt(0, value);
   }
 
   private static final class Listener implements AppendListener {

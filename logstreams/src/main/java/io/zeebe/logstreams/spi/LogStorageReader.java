@@ -8,7 +8,7 @@
 package io.zeebe.logstreams.spi;
 
 import java.io.Closeable;
-import java.nio.ByteBuffer;
+import org.agrona.DirectBuffer;
 
 public interface LogStorageReader extends Closeable {
   /**
@@ -18,10 +18,7 @@ public interface LogStorageReader extends Closeable {
   long getFirstBlockAddress();
 
   /**
-   * Naive implementation of the {@link #read(ByteBuffer, long, ReadResultProcessor)} method. Does
-   * not process the bytes which are read.
-   *
-   * <p>Returns an operation result status code which is either
+   * Returns an operation result status code which is either
    *
    * <ul>
    *   <li>positive long representing the next address at which the next block of data can be read
@@ -32,49 +29,23 @@ public interface LogStorageReader extends Closeable {
    *       block
    * </ul>
    *
-   * If this method returns with a positive status code, bytes will be written between the given
-   * readbuffer's {@link ByteBuffer#position()} and {@link ByteBuffer#limit()}.
+   * If this method returns with a positive status code, the read buffer will wrap a sequence of
+   * bytes representing the block that was read, where its {@link DirectBuffer#capacity()} is the
+   * length of the block.
    *
    * @param readBuffer the buffer to read into
    * @param address the address in the underlying storage from which bytes should be read
    * @return the next address from which bytes can be read or error status code.
    */
-  long read(ByteBuffer readBuffer, long address);
+  long read(DirectBuffer readBuffer, long address);
 
   /**
-   * Reads bytes into the read buffer starting at address and process the read bytes with the help
-   * of the processor.
+   * The given read buffer will read and wrap the last block.
    *
-   * <p>Returns an operation result status code which is either
-   *
-   * <ul>
-   *   <li>positive long representing the next address at which the next block of data can be read
-   *   <li>{@link LogStorage#OP_RESULT_INVALID_ADDR}: in case the provided address does not exist
-   *   <li>{@link LogStorage#OP_RESULT_NO_DATA}: in case no data is (yet) available at that address
-   *   <li>{@link LogStorage#OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY}: in case the storage is block
-   *       addressable and the provided buffer does not have sufficient capacity to read a whole
-   *       block
-   * </ul>
-   *
-   * If this method returns with a positive status code, bytes will be written between the given
-   * readbuffer's {@link ByteBuffer#position()} and {@link ByteBuffer#limit()}.
-   *
-   * @param readBuffer the buffer to read into
-   * @param address the address in the underlying storage from which bytes should be read
-   * @param processor the processor to process the buffer and the read result
-   * @return the next address from which bytes can be read or error status code.
-   */
-  long read(ByteBuffer readBuffer, long address, ReadResultProcessor processor);
-
-  /**
-   * Reads bytes into the given read buffer, starts with the last written blocks and iterates with
-   * help of the given processor.
-   *
-   * @param readBuffer the buffer which will contain the last block after this method returns
-   * @param processor the processor process the read bytes
+   * @param readBuffer the buffer which will wrap the last block after this method returns
    * @return the address of the last block
    */
-  long readLastBlock(ByteBuffer readBuffer, ReadResultProcessor processor);
+  long readLastBlock(DirectBuffer readBuffer);
 
   /**
    * Returns an address of the block that may contain the position. The exact address returned can

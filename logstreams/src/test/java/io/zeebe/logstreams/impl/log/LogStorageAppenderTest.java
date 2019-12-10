@@ -52,7 +52,7 @@ public class LogStorageAppenderTest {
   private LogStorage logStorage;
   private LogStorageAppender appender;
   private LogStreamWriterImpl writer;
-  private BufferedLogStreamReader reader;
+  private LogStreamReaderImpl reader;
 
   @Before
   public void setUp() throws Exception {
@@ -72,7 +72,7 @@ public class LogStorageAppenderTest {
         new LogStorageAppender(
             "appender", PARTITION_ID, logStorage, subscription, MAX_FRAGMENT_SIZE);
     writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
-    reader = new BufferedLogStreamReader(logStorage);
+    reader = new LogStreamReaderImpl(logStorage);
   }
 
   @After
