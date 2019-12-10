@@ -31,7 +31,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response;
+import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -420,9 +422,10 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).get()
       .isEqualToIgnoringGivenFields(
         EventProcessPublishStateDto.builder()
-          .processId(storedEventProcessMapping.getId())
+          .processMappingId(storedEventProcessMapping.getId())
           .publishDateTime(LocalDateUtil.getCurrentDateTime())
           .state(EventProcessState.PUBLISH_PENDING)
+          .lastImportedEventIngestDateTime(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
           .publishProgress(0.0D)
           .xml(storedEventProcessMapping.getXml())
           .mappings(eventProcessMappingDto.getMappings())

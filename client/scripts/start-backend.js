@@ -94,6 +94,7 @@ fs.readFile(path.resolve(__dirname, '..', '..', 'pom.xml'), 'utf8', (err, data) 
             '-XX:MetaspaceSize=256m',
             '-XX:MaxMetaspaceSize=256m',
             '-DOPTIMIZE_EVENT_INGESTION_API_SECRET=secret',
+            '-DOPTIMIZE_EVENT_INGEST_IMPORT_ENABLED=true',
             'org.camunda.optimize.Main'
           ],
           {

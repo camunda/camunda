@@ -25,11 +25,11 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class IngestedEventImportScheduler extends AbstractScheduledService {
-
   private final ConfigurationService configurationService;
   private final EventStateProcessingService eventStateProcessingService;
   private final EventProcessInstanceImportMediatorManager instanceImportMediatorManager;
   private final EventProcessInstanceIndexManager eventBasedProcessIndexManager;
+  private final PublishStateUpdateService publishStateUpdateService;
 
   @PostConstruct
   public void init() {
@@ -58,9 +58,13 @@ public class IngestedEventImportScheduler extends AbstractScheduledService {
     if (!eventStateProcessingService.isCurrentlyProcessingEvents()) {
       eventStateProcessingService.processUncountedEvents();
     }
+    eventBasedProcessIndexManager.syncAvailableIndices();
     eventBasedProcessIndexManager.cleanupIndexes();
+    instanceImportMediatorManager.refreshMediators();
+    publishStateUpdateService.updateEventProcessPublishStates();
     final CompletableFuture<?>[] importTaskFutures = instanceImportMediatorManager.getActiveMediators()
       .stream()
+      .filter(EventProcessInstanceImportMediator::canImport)
       .map(eventProcessInstanceImportMediator -> {
         final CompletableFuture<Void> importCompletedFuture =
           eventBasedProcessIndexManager.registerIndexUsageAndReturnCompletableHook(eventProcessInstanceImportMediator);

@@ -31,6 +31,8 @@ import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
@@ -74,6 +76,11 @@ public class OptimizeElasticsearchClient {
 
   public final void close() throws IOException {
     highLevelClient.close();
+  }
+
+  public final CountResponse count(final CountRequest countRequest, final RequestOptions options) throws IOException {
+    applyIndexPrefixes(countRequest);
+    return highLevelClient.count(countRequest, options);
   }
 
   public final DeleteResponse delete(final DeleteRequest deleteRequest, final RequestOptions options) throws
@@ -120,7 +127,8 @@ public class OptimizeElasticsearchClient {
 
   public final MultiGetResponse mget(final MultiGetRequest multiGetRequest, final RequestOptions options)
     throws IOException {
-    multiGetRequest.getItems().forEach(item -> item.index(indexNameService.getOptimizeIndexAliasForIndex(item.index())));
+    multiGetRequest.getItems()
+      .forEach(item -> item.index(indexNameService.getOptimizeIndexAliasForIndex(item.index())));
     multiGetRequest.getItems().forEach(item -> item.type(DEFAULT_INDEX_TYPE));
 
     return highLevelClient.mget(multiGetRequest, options);
@@ -132,7 +140,8 @@ public class OptimizeElasticsearchClient {
     return highLevelClient.scroll(searchScrollRequest, options);
   }
 
-  public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest, final RequestOptions options)
+  public final ClearScrollResponse clearScroll(final ClearScrollRequest clearScrollRequest,
+                                               final RequestOptions options)
     throws IOException {
     // nothing to modify here, still exposing to not force usage of highLevelClient for this common use case
     return highLevelClient.clearScroll(clearScrollRequest, options);

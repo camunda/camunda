@@ -180,7 +180,7 @@ import:
     # Please refer to the technical guide on how to configure the heap size.
     maxEntryLimit: 100000
   ingestedEventImport:
-    enabled: false
+    enabled: ${OPTIMIZE_EVENT_INGEST_IMPORT_ENABLED:false}
     importIntervalInSec: 5
     maxPageSize: 10000
 

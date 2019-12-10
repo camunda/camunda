@@ -5,63 +5,26 @@
  */
 package org.camunda.optimize.service.importing.event;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import lombok.SneakyThrows;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.IdGenerator;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class EventProcessInstanceImportIT extends AbstractIT {
-
-  private static final String MY_TRACE_ID_1 = "myTraceId1";
-  private static final String EVENT_GROUP = "test";
-  private static final String EVENT_SOURCE = "integrationTest";
-  private static final String BPMN_START_EVENT_ID = "StartEvent_1";
-  private static final String BPMN_END_EVENT_ID = "EndEvent_1";
-  private static final String VARIABLE_ID = "var";
-  private static final String VARIABLE_VALUE = "value";
+public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
   @Test
   public void dedicatedInstanceIndexIsCreatedForPublishedEventProcess() {
@@ -572,131 +535,6 @@ public class EventProcessInstanceImportIT extends AbstractIT {
           .build()
       ))
       .build();
-  }
-
-  private String createSimpleEventProcessMapping(final String ingestedStartEventName,
-                                                 final String ingestedEndEventName) {
-    final Map<String, EventMappingDto> eventMappings = new HashMap<>();
-    eventMappings.put(
-      BPMN_START_EVENT_ID,
-      EventMappingDto.builder()
-        .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedStartEventName).build())
-        .build()
-    );
-    eventMappings.put(
-      BPMN_END_EVENT_ID,
-      EventMappingDto.builder()
-        .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedEndEventName).build())
-        .build()
-    );
-    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappingsWithXml(
-      eventMappings, "myEventProcess", createSimpleProcessDefinitionXml()
-    );
-    return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
-  }
-
-  @SneakyThrows
-  private void executeImportCycle() {
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    embeddedOptimizeExtension.getIngestedEventImportScheduler()
-      .runImportCycle()
-      .get(10, TimeUnit.SECONDS);
-
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  @SneakyThrows
-  private List<String> getEventProcessInstanceIndicesFromElasticsearch() {
-    final OptimizeIndexNameService indexNameService = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .getIndexNameService();
-    final GetIndexResponse getIndexResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .getHighLevelClient()
-      .indices().get(
-        new GetIndexRequest().indices(
-          indexNameService.getOptimizeIndexAliasForIndex(EventProcessInstanceIndex.EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
-            + "*"
-        ),
-        RequestOptions.DEFAULT
-      );
-    return Lists.newArrayList(getIndexResponse.indices());
-  }
-
-  @SneakyThrows
-  private Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromElasticsearch(final String eventProcessMappingId) {
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(
-        boolQuery()
-          .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId))
-          .must(termQuery(EventProcessPublishStateIndex.DELETED, false))
-      )
-      .sort(SortBuilders.fieldSort(EventProcessPublishStateIndex.PUBLISH_DATE_TIME).order(SortOrder.DESC))
-      .size(1);
-    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
-      .getOptimizeElasticClient()
-      .search(new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX).source(searchSourceBuilder), RequestOptions.DEFAULT);
-
-    EventProcessPublishStateDto result = null;
-    if (searchResponse.getHits().totalHits > 0) {
-      result = elasticSearchIntegrationTestExtension.getObjectMapper().readValue(
-        searchResponse.getHits().getAt(0).getSourceAsString(),
-        IndexableEventProcessPublishStateDto.class
-      ).toEventProcessPublishStateDto();
-    }
-
-    return Optional.ofNullable(result);
-  }
-
-  @SneakyThrows
-  private List<ProcessInstanceDto> getEventProcessInstancesFromElasticsearch() {
-    final List<ProcessInstanceDto> results = new ArrayList<>();
-    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-      .search(
-        new SearchRequest(EventProcessInstanceIndex.EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*"),
-        RequestOptions.DEFAULT
-      );
-    for (SearchHit hit : searchResponse.getHits().getHits()) {
-      results.add(
-        elasticSearchIntegrationTestExtension.getObjectMapper()
-          .readValue(hit.getSourceAsString(), ProcessInstanceDto.class)
-      );
-    }
-    return results;
-  }
-
-  private String ingestTestEvent(final String event, final OffsetDateTime eventTimestamp) {
-    return ingestTestEvent(
-      IdGenerator.getNextId(), event, eventTimestamp
-    );
-  }
-
-  private String ingestTestEvent(final String eventId, final String event, final OffsetDateTime eventTimestamp) {
-    embeddedOptimizeExtension.getEventService()
-      .saveEvent(new EventDto(
-        eventId,
-        event,
-        eventTimestamp.toInstant().toEpochMilli(),
-        null,
-        MY_TRACE_ID_1,
-        null,
-        EVENT_GROUP,
-        EVENT_SOURCE,
-        ImmutableMap.of(VARIABLE_ID, VARIABLE_VALUE)
-      ));
-    return eventId;
-  }
-
-  @SneakyThrows
-  protected String createSimpleProcessDefinitionXml() {
-    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent(BPMN_START_EVENT_ID)
-      .endEvent(BPMN_END_EVENT_ID)
-      .done();
-    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
-    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
   }
 
 }

@@ -24,7 +24,7 @@ public class LocalDateUtil {
   public static OffsetDateTime getCurrentDateTime() {
     OffsetDateTime value = CURRENT_TIME;
     if (value == null) {
-      return OffsetDateTime.now();
+      value = OffsetDateTime.now();
     }
     return normalize(value);
   }

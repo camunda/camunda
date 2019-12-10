@@ -20,6 +20,8 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.RangeQueryBuilder;
@@ -82,6 +84,21 @@ public class EventReader {
       .gte(ingestTimestamp);
 
     return getPageOfEventsSortedByIngestionTimestamp(timestampQuery, MAX_RESPONSE_SIZE_LIMIT);
+  }
+
+  public Long countEventsIngestedBeforeAndAtIngestTimestamp(final Long ingestTimestamp) {
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(rangeQuery(EventIndex.INGESTION_TIMESTAMP).lte(ingestTimestamp));
+
+    final CountRequest countRequest = new CountRequest(EVENT_INDEX_NAME)
+      .source(searchSourceBuilder);
+
+    try {
+      final CountResponse countResponse = esClient.count(countRequest, RequestOptions.DEFAULT);
+      return countResponse.getCount();
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Was not able to retrieve ingested events count!", e);
+    }
   }
 
   public List<EventCountDto> getEventCounts(final EventCountRequestDto eventCountRequestDto) {

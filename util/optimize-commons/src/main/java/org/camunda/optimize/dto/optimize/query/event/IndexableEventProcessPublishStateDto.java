@@ -40,7 +40,7 @@ public class IndexableEventProcessPublishStateDto {
     final EventProcessPublishStateDto publishState) {
     return IndexableEventProcessPublishStateDto.builder()
       .id(publishState.getId())
-      .processMappingId(publishState.getProcessId())
+      .processMappingId(publishState.getProcessMappingId())
       .xml(publishState.getXml())
       .publishDateTime(publishState.getPublishDateTime())
       .lastImportedEventIngestDateTime(publishState.getLastImportedEventIngestDateTime())
@@ -64,7 +64,7 @@ public class IndexableEventProcessPublishStateDto {
   public EventProcessPublishStateDto toEventProcessPublishStateDto() {
     return EventProcessPublishStateDto.builder()
       .id(getId())
-      .processId(getProcessMappingId())
+      .processMappingId(getProcessMappingId())
       .xml(getXml())
       .publishDateTime(getPublishDateTime())
       .lastImportedEventIngestDateTime(getLastImportedEventIngestDateTime())

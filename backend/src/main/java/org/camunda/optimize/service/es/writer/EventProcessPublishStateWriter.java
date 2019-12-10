@@ -83,7 +83,8 @@ public class EventProcessPublishStateWriter {
       Script updateScript = ElasticsearchWriterUtil.createFieldUpdateScript(
         Sets.newHashSet(
           EventProcessPublishStateIndex.LAST_IMPORTED_EVENT_DATE_TIME,
-          EventProcessPublishStateIndex.PUBLISH_PROGRESS
+          EventProcessPublishStateIndex.PUBLISH_PROGRESS,
+          EventProcessPublishStateIndex.STATE
         ),
         IndexableEventProcessPublishStateDto.fromEventProcessPublishStateDto(eventProcessPublishStateDto),
         objectMapper

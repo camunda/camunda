@@ -34,7 +34,6 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
   final private Map<String, Phaser> indexUsagePhasers = new ConcurrentHashMap<>();
 
   public synchronized Map<String, EventProcessPublishStateDto> getPublishedInstanceIndices() {
-    syncAvailableIndices();
     return publishedInstanceIndices;
   }
 
@@ -62,7 +61,7 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
       });
   }
 
-  private synchronized void syncAvailableIndices() {
+  public synchronized void syncAvailableIndices() {
     eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(true)
       .forEach(publishStateDto -> publishedInstanceIndices.remove(publishStateDto.getId()));
 

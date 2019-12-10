@@ -42,4 +42,8 @@ public class EventService {
     return eventReader.getEventsIngestedAt(ingestTimestamp);
   }
 
+  public Long countEventsIngestedBeforeAndAtIngestTimestamp(final Long ingestTimestamp) {
+    return eventReader.countEventsIngestedBeforeAndAtIngestTimestamp(ingestTimestamp);
+  }
+
 }

@@ -65,7 +65,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
 
   @Override
   public void executeImport(final List<EventDto> pageOfEvents, final Runnable callback) {
-    log.trace("Importing entities for event process [{}].", eventProcessPublishStateDto.getProcessId());
+    log.trace("Importing entities for event process mapping [{}].", eventProcessPublishStateDto.getProcessMappingId());
 
     boolean newDataIsAvailable = !pageOfEvents.isEmpty();
     if (newDataIsAvailable) {
@@ -102,8 +102,8 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
 
     final ProcessInstanceDto processInstanceDto = ProcessInstanceDto.builder()
       .processInstanceId(processInstanceId)
-      .processDefinitionKey(eventProcessPublishStateDto.getProcessId())
-      .processDefinitionId(eventProcessPublishStateDto.getProcessId())
+      .processDefinitionKey(eventProcessPublishStateDto.getProcessMappingId())
+      .processDefinitionId(eventProcessPublishStateDto.getProcessMappingId())
       .processDefinitionVersion("1")
       .build();
 

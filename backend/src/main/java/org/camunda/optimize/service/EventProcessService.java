@@ -26,6 +26,9 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.NotFoundException;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +78,7 @@ public class EventProcessService {
 
     eventProcessMapping.ifPresent(eventProcessMappingDto -> assignState(
       eventProcessMappingDto,
-      id -> eventProcessPublishStateReader.getEventProcessPublishState(id).orElse(null)
+      id -> eventProcessPublishStateReader.getEventProcessPublishStateByEventProcessId(id).orElse(null)
     ));
 
     return eventProcessMapping.orElseThrow(() -> {
@@ -90,7 +93,7 @@ public class EventProcessService {
     final Map<String, EventProcessPublishStateDto> allPublishedStates =
       eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(false)
         .stream()
-        .collect(Collectors.toMap(EventProcessPublishStateDto::getProcessId, Function.identity()));
+        .collect(Collectors.toMap(EventProcessPublishStateDto::getProcessMappingId, Function.identity()));
 
     final List<EventProcessMappingDto> allEventProcessMappingsOmitXml =
       eventProcessMappingReader.getAllEventProcessMappingsOmitXml();
@@ -112,10 +115,11 @@ public class EventProcessService {
 
     final EventProcessPublishStateDto processPublishState = EventProcessPublishStateDto
       .builder()
-      .processId(eventProcessMapping.getId())
+      .processMappingId(eventProcessMapping.getId())
       .xml(eventProcessMapping.getXml())
       .publishDateTime(LocalDateUtil.getCurrentDateTime())
       .state(EventProcessState.PUBLISH_PENDING)
+      .lastImportedEventIngestDateTime(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()))
       .publishProgress(0.0D)
       .deleted(false)
       .mappings(eventProcessMapping.getMappings())

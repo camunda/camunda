@@ -14,10 +14,13 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
@@ -41,13 +44,39 @@ public class EventProcessPublishStateReader {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public Optional<EventProcessPublishStateDto> getEventProcessPublishState(final String eventProcessId) {
-    log.debug("Fetching event process publish state with id [{}].", eventProcessId);
+  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateById(final String publishStateId) {
+    log.debug("Fetching event process publish state with id [{}]", publishStateId);
+    final GetRequest getRequest = new GetRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX).id(publishStateId);
+
+    final GetResponse getResponse;
+    try {
+      getResponse = esClient.get(getRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = String.format("Could not fetch event process publish state with id [%s]", publishStateId);
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+
+    EventProcessPublishStateDto result = null;
+    if (getResponse.isExists()) {
+      String responseAsString = getResponse.getSourceAsString();
+      try {
+        result = objectMapper.readValue(responseAsString, EventProcessPublishStateDto.class);
+      } catch (IOException e) {
+        throw new OptimizeRuntimeException("Can't fetch event process publish state.");
+      }
+    }
+    return Optional.ofNullable(result);
+  }
+
+  public Optional<EventProcessPublishStateDto> getEventProcessPublishStateByEventProcessId(
+    final String eventProcessMappingId) {
+    log.debug("Fetching event process publish state with eventProcessMappingId [{}].", eventProcessMappingId);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(
         boolQuery()
-          .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessId))
+          .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId))
           .must(termQuery(EventProcessPublishStateIndex.DELETED, false))
       )
       .sort(SortBuilders.fieldSort(EventProcessPublishStateIndex.PUBLISH_DATE_TIME).order(SortOrder.DESC))
@@ -59,7 +88,7 @@ public class EventProcessPublishStateReader {
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      final String reason = String.format("Could not fetch event process publish state with id [%s].", eventProcessId);
+      final String reason = String.format("Could not fetch event process publish state with id [%s].", eventProcessMappingId);
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -72,10 +101,10 @@ public class EventProcessPublishStateReader {
           IndexableEventProcessPublishStateDto.class
         ).toEventProcessPublishStateDto();
       } catch (IOException e) {
-        String reason = "Could not deserialize information for event process publish state with id: " + eventProcessId;
+        String reason = "Could not deserialize information for event process publish state with id: " + eventProcessMappingId;
         log.error(
           "Was not able to retrieve event process publish state with id [{}]. Reason: {}",
-          eventProcessId,
+          eventProcessMappingId,
           reason
         );
         throw new OptimizeRuntimeException(reason, e);
@@ -87,8 +116,9 @@ public class EventProcessPublishStateReader {
 
   public List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(final boolean deleted) {
     log.debug("Fetching all available event process publish states with deleted state [{}].", deleted);
+    final TermQueryBuilder query = termQuery(EventProcessPublishStateIndex.DELETED, deleted);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(termQuery(EventProcessPublishStateIndex.DELETED, deleted))
+      .query(query)
       .size(LIST_FETCH_LIMIT);
     final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX)
       .source(searchSourceBuilder)

@@ -25,7 +25,7 @@ import java.util.Map;
 public class EventProcessPublishStateDto {
   @EqualsAndHashCode.Include
   private String id;
-  private String processId;
+  private String processMappingId;
   private OffsetDateTime publishDateTime;
   private OffsetDateTime lastImportedEventIngestDateTime;
   private EventProcessState state;
