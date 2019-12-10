@@ -6,59 +6,49 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
-import {
-  mockResolvedAsyncFn,
-  flushPromises,
-  createInstancesByWorkflow,
-  createIncidentsByError
-} from 'modules/testUtils';
+
 import {BrowserRouter as Router} from 'react-router-dom';
-import {PAGE_TITLE} from 'modules/constants';
+import {PAGE_TITLE, LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
-import * as apiIncidents from 'modules/api/incidents/incidents';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 
-import Dashboard from './Dashboard';
+import {
+  incidentsByError,
+  instancesByWorkflow,
+  fetchError,
+  emptyData,
+  mockDataStore
+} from './Dashboard.setup';
 
+import {Dashboard} from './Dashboard';
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
 import EmptyPanel from 'modules/components/EmptyPanel';
 
-jest.mock('modules/utils/bpmn');
+const mountDashboard = () => {
+  const dataManager = createMockDataManager();
 
-const mockInstancesByWorkflow = {
-  data: createInstancesByWorkflow()
-};
-
-const mockIncidentsByError = {
-  data: createIncidentsByError()
-};
-
-const mockApi = (mockData = {}) => {
-  const {
-    InstancesByWorkflow = mockInstancesByWorkflow,
-    incidentsByError = mockIncidentsByError
-  } = mockData;
-
-  apiIncidents.fetchInstancesByWorkflow = mockResolvedAsyncFn(
-    InstancesByWorkflow
-  );
-  apiIncidents.fetchIncidentsByError = mockResolvedAsyncFn(incidentsByError);
-};
-
-const mockDataStore = {running: 120, active: 20, withIncidents: 100};
-
-const shallowRenderDashboard = async () => {
   const node = mount(
     <Router>
-      <Dashboard.WrappedComponent dataStore={mockDataStore} />
+      <Dashboard dataManager={dataManager} dataStore={mockDataStore} />
     </Router>
   );
-
-  await flushPromises();
-  await node.update();
-
   return node;
+};
+
+const publish = ({node, topic, response}) => {
+  const dashboard = node.find(Dashboard);
+  const {
+    subscriptions,
+    props: {dataManager}
+  } = dashboard.instance();
+
+  dataManager.publish({
+    subscription: subscriptions[topic],
+    state: LOADING_STATE.LOADED,
+    response
+  });
 };
 
 describe('Dashboard', () => {
@@ -66,80 +56,126 @@ describe('Dashboard', () => {
     jest.resetAllMocks();
   });
 
-  it('should set proper page title', async () => {
-    mockApi();
-    await shallowRenderDashboard();
+  it('should set proper page title', () => {
+    // when
+    mountDashboard();
 
+    // then
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
   });
 
-  it('should render transparent heading', async () => {
-    mockApi();
-    const node = await shallowRenderDashboard();
+  it('should render transparent heading', () => {
+    // when
+    const node = mountDashboard();
 
+    // then
     expect(node.contains('Camunda Operate Dashboard')).toBe(true);
   });
 
-  it('should render MetricPanel component', async () => {
-    mockApi();
-    const node = await shallowRenderDashboard();
-
+  it('should render MetricPanel component', () => {
+    // when
+    const node = mountDashboard();
     const MetricPanelNode = node.find(MetricPanel);
 
+    // then
     expect(MetricPanelNode).toExist();
     expect(MetricPanelNode.text()).toContain(
       `${mockDataStore.running} Running Instances`
     );
   });
 
-  describe('Incidents by Workflow', () => {
-    it('should display the Incidents by Workflow box', async () => {
-      mockApi();
-      const node = await shallowRenderDashboard();
+  describe('Instances by Workflow', () => {
+    it('should display the Instances by Workflow box', () => {
+      const node = mountDashboard();
 
+      // when
+      publish({
+        node,
+        topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
+        response: instancesByWorkflow
+      });
+
+      node.update();
+
+      // then
       expect(node.text()).toContain('Instances by Workflow');
       expect(node.find(InstancesByWorkflow)).toExist();
     });
 
-    it('should show empty state on fetch error', async () => {
-      await mockApi({InstancesByWorkflow: {data: [], error: 'fetchError'}});
-      const node = await shallowRenderDashboard();
+    it('should show empty state on fetch error', () => {
+      const node = mountDashboard();
+
+      // when
+      publish({
+        node,
+        topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
+        response: fetchError
+      });
+
+      node.update();
 
       const EmptyPanelNode = node
         .find('[data-test="instances-byWorkflow"]')
         .find(EmptyPanel);
 
+      // then
       expect(EmptyPanelNode).toExist();
       expect(EmptyPanelNode.props().label).toBe(
         'Instances by Workflow could not be fetched.'
       );
     });
 
-    it('should show empty state when no workflows', async () => {
-      await mockApi({InstancesByWorkflow: {data: [], error: null}});
-      const node = await shallowRenderDashboard();
+    it('should show empty state when no workflows', () => {
+      const node = mountDashboard();
+
+      // when
+      publish({
+        node,
+        topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
+        response: emptyData
+      });
+
+      node.update();
 
       const EmptyPanelNode = node
         .find('[data-test="instances-byWorkflow"]')
         .find(EmptyPanel);
 
+      // then
       expect(EmptyPanelNode).toExist();
       expect(EmptyPanelNode.props().label).toBe('There are no Workflows.');
     });
   });
 
   describe('Incidents by Error', () => {
-    it('should display the Incidents by Error box', async () => {
-      mockApi();
-      const node = await shallowRenderDashboard();
+    it('should display the Incidents by Error box', () => {
+      const node = mountDashboard();
 
+      // when
+      publish({
+        node,
+        topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
+        response: incidentsByError
+      });
+
+      node.update();
+
+      // then
       expect(node.text()).toContain('Incidents by Error');
       expect(node.find(IncidentsByError)).toExist();
     });
 
-    it('should show empty state on fetch error', async () => {
-      await mockApi({incidentsByError: {data: [], error: 'fetchError'}});
-      const node = await shallowRenderDashboard();
+    it('should show empty state on fetch error', () => {
+      const node = mountDashboard();
+
+      // when
+      publish({
+        node,
+        topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
+        response: fetchError
+      });
+
+      node.update();
 
       const EmptyPanelNode = node
         .find('[data-test="incidents-byError"]')
@@ -151,10 +187,17 @@ describe('Dashboard', () => {
       );
     });
 
-    it('should show empty state when no workflows', async () => {
-      await mockApi({incidentsByError: {data: [], error: null}});
-      const node = await shallowRenderDashboard();
+    it('should show empty state when no workflows', () => {
+      const node = mountDashboard();
 
+      // when
+      publish({
+        node,
+        topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
+        response: emptyData
+      });
+
+      node.update();
       const EmptyPanelNode = node
         .find('[data-test="incidents-byError"]')
         .find(EmptyPanel);

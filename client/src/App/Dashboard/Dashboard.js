@@ -22,7 +22,7 @@ import * as Styled from './styled.js';
 import {withCountStore} from 'modules/contexts/CountContext';
 import {MESSAGES, INCIDENTS_BY_ERROR, INSTANCES_BY_WORKFLOW} from './constants';
 
-class Dashboard extends Component {
+export class Dashboard extends Component {
   static propTypes = {
     dataStore: PropTypes.shape({
       running: PropTypes.number,
@@ -51,17 +51,17 @@ class Dashboard extends Component {
   };
 
   subscriptions = {
-    LOAD_INSTANCES_BY_WORKFLOW: response => {
-      if (response.state === LOADING_STATE.LOADED) {
+    LOAD_INSTANCES_BY_WORKFLOW: ({state, response}) => {
+      if (state === LOADING_STATE.LOADED) {
         this.setState({
-          instancesByWorkflow: {data: response.response.data, error: null}
+          instancesByWorkflow: response
         });
       }
     },
-    LOAD_INCIDENTS_BY_ERROR: response => {
-      if (response.state === LOADING_STATE.LOADED) {
+    LOAD_INCIDENTS_BY_ERROR: ({state, response}) => {
+      if (state === LOADING_STATE.LOADED) {
         this.setState({
-          incidentsByError: {data: response.response.data, error: null}
+          incidentsByError: response
         });
       }
     }

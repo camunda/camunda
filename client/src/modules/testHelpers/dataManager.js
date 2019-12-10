@@ -37,7 +37,9 @@ const mockDataManager = () => {
     getWorkflowInstancesStatistics: jest.fn(),
     getWorkflowInstancesByIds: jest.fn(),
     getWorkflowInstancesBySelection: jest.fn(),
-    getWorkflowCoreStatistics: jest.fn()
+    getWorkflowCoreStatistics: jest.fn(),
+    getInstancesByWorkflow: jest.fn(),
+    getIncidentsByError: jest.fn()
   };
 };
 
