@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
@@ -21,6 +22,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Builder
 @FieldNameConstants
 public class ProcessInstanceDto implements OptimizeDto {
 

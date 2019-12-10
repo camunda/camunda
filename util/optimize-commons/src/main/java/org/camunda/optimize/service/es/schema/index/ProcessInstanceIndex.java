@@ -5,11 +5,14 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
+import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -20,6 +23,8 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
+@NoArgsConstructor
+@AllArgsConstructor
 @Component
 public class ProcessInstanceIndex extends StrictIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
@@ -86,9 +91,12 @@ public class ProcessInstanceIndex extends StrictIndexMappingCreator implements D
   public static final String CANDIDATE_GROUP_OPERATION_TYPE = CandidateGroupOperationDto.Fields.operationType;
   public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP = CandidateGroupOperationDto.Fields.timestamp;
 
+  @Setter
+  private String indexName = ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+    return indexName;
   }
 
   @Override
@@ -198,7 +206,6 @@ public class ProcessInstanceIndex extends StrictIndexMappingCreator implements D
       ;
     // @formatter:on
   }
-
 
   private XContentBuilder addNestedVariableField(XContentBuilder builder) throws IOException {
     // @formatter:off

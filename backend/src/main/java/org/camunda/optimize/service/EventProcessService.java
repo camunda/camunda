@@ -88,7 +88,7 @@ public class EventProcessService {
 
   public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
     final Map<String, EventProcessPublishStateDto> allPublishedStates =
-      eventProcessPublishStateReader.getAllEventProcessPublishStates(false)
+      eventProcessPublishStateReader.getAllEventProcessPublishStatesWithDeletedState(false)
         .stream()
         .collect(Collectors.toMap(EventProcessPublishStateDto::getProcessId, Function.identity()));
 

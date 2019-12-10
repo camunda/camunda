@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.index.EventIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.action.search.SearchRequest;
@@ -36,7 +36,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.EventIndex.N_GRAM_FIELD;
+import static org.camunda.optimize.service.es.schema.index.events.EventIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;

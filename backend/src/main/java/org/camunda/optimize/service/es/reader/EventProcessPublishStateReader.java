@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -85,7 +85,7 @@ public class EventProcessPublishStateReader {
     return Optional.ofNullable(result);
   }
 
-  public List<EventProcessPublishStateDto> getAllEventProcessPublishStates(final boolean deleted) {
+  public List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(final boolean deleted) {
     log.debug("Fetching all available event process publish states with deleted state [{}].", deleted);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termQuery(EventProcessPublishStateIndex.DELETED, deleted))

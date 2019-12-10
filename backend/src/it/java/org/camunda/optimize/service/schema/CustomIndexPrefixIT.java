@@ -64,7 +64,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
     // then
     assertThat(prefixAwareRestHighLevelClient.getIndexNameService().getIndexPrefix(), is(CUSTOM_PREFIX));
     assertThat(
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient),
       is(true)
     );
   }

@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import lombok.NonNull;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
@@ -17,10 +16,9 @@ import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.es.schema.index.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.util.FileReaderUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -58,7 +56,9 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   public void createEventProcessMappingWithoutAuthorization() {
     // when
     Response response = eventProcessClient
-      .createCreateEventProcessMappingRequest(createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH))
+      .createCreateEventProcessMappingRequest(
+        eventProcessClient.createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+      )
       .withoutAuthentication()
       .execute();
 
@@ -70,7 +70,9 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   public void createEventProcessMapping() {
     // when
     Response response = eventProcessClient
-      .createCreateEventProcessMappingRequest(createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH))
+      .createCreateEventProcessMappingRequest(
+        eventProcessClient.createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+      )
       .execute();
 
     // then
@@ -84,7 +86,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     eventMappings.put(VALID_SCRIPT_TASK_ID, createEventMappingsDto(createMappedEventDto(), createMappedEventDto()));
     eventMappings.put(VALID_USER_TASK_ID, createEventMappingsDto(createMappedEventDto(), null));
     eventMappings.put(VALID_SERVICE_TASK_ID, createEventMappingsDto(null, createMappedEventDto()));
-    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       eventMappings,
       "process name",
       FULL_PROCESS_DEFINITION_XML_PATH
@@ -100,7 +102,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void createEventProcessMappingWithEventMappingIdNotExistInXml() {
     // given event mappings with ID does not exist in XML
-    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("invalid_Id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "process name",
       FULL_PROCESS_DEFINITION_XML_PATH
@@ -116,7 +118,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void createEventProcessMappingWithEventMappingsAndXmlNotPresent() {
     // given event mappings but no XML provided
-    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("some_task_id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "process name",
       null
@@ -134,7 +136,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   public void createEventProcessMappingWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) {
     // given event mappings but mapped events have fields missing
     invalidEventTypeDto.setGroup(null);
-    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("some_task_id", createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())),
       "process name",
       FULL_PROCESS_DEFINITION_XML_PATH
@@ -186,7 +188,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void getEventProcessMappingWithId_unmappedState() {
     // given
-    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       null, "process name", FULL_PROCESS_DEFINITION_XML_PATH
     );
     String expectedId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
@@ -228,7 +230,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
       VALID_SERVICE_TASK_ID,
       createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
     );
-    EventProcessMappingDto firstExpectedDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto firstExpectedDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       firstProcessMappings,
       "process name",
       FULL_PROCESS_DEFINITION_XML_PATH
@@ -236,7 +238,8 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     OffsetDateTime now = OffsetDateTime.parse("2019-11-25T10:00:00+01:00");
     LocalDateUtil.setCurrentTime(now);
     String firstExpectedId = eventProcessClient.createEventProcessMapping(firstExpectedDto);
-    EventProcessMappingDto secondExpectedDto = createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH);
+    EventProcessMappingDto secondExpectedDto = eventProcessClient
+      .createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH);
     String secondExpectedId = eventProcessClient.createEventProcessMapping(secondExpectedDto);
 
     // when
@@ -266,7 +269,8 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void updateEventProcessMappingWithoutAuthorization() {
     // when
-    EventProcessMappingDto updateDto = createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH);
+    EventProcessMappingDto updateDto =
+      eventProcessClient.createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH);
     Response response = eventProcessClient
       .createUpdateEventProcessMappingRequest("doesNotMatter", updateDto)
       .withoutAuthentication()
@@ -281,11 +285,12 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     // given
     OffsetDateTime createdTime = OffsetDateTime.parse("2019-11-24T18:00:00+01:00");
     LocalDateUtil.setCurrentTime(createdTime);
-    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(createEventProcessMappingDto(
-      FULL_PROCESS_DEFINITION_XML_PATH));
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
+      eventProcessClient.createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+    );
 
     // when
-    EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto updateDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       Collections.singletonMap(
         VALID_SERVICE_TASK_ID,
         createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
@@ -321,7 +326,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     // when
     Response response = eventProcessClient.createUpdateEventProcessMappingRequest(
       "doesNotExist",
-      createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+      eventProcessClient.createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
     ).execute();
 
     // then the report is returned with expect
@@ -332,11 +337,11 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   public void updateEventProcessMappingWithEventMappingIdNotExistInXml() {
     // given
     String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
-      createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+      eventProcessClient.createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
     );
 
     // when update event mappings with ID does not exist in XML
-    EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto updateDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("invalid_Id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "process name",
       FULL_PROCESS_DEFINITION_XML_PATH
@@ -353,11 +358,11 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   public void updateEventProcessMappingWithInvalidEventMappings(EventTypeDto invalidEventTypeDto) {
     // given existing event based process
     String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
-      createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+      eventProcessClient.createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
     );
 
     // when update event mappings with a mapped event with missing fields
-    EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto updateDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       Collections.singletonMap(
         VALID_SERVICE_TASK_ID,
         createEventMappingsDto(invalidEventTypeDto, createMappedEventDto())
@@ -377,11 +382,11 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   public void updateEventProcessMappingWithEventMappingAndNoXmlPresent() {
     // given
     String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
-      createEventProcessMappingDto(null)
+      eventProcessClient.createEventProcessMappingDto(null)
     );
 
     // when update event mappings and no XML present
-    EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto updateDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       Collections.singletonMap("some_task_id", createEventMappingsDto(createMappedEventDto(), createMappedEventDto())),
       "process name",
       null
@@ -436,7 +441,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
     // when
     eventProcessClient.publishEventProcessMapping(eventProcessId);
 
-    final EventProcessMappingDto updateDto = createEventProcessMappingDtoWithMappings(
+    final EventProcessMappingDto updateDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       eventProcessMappingDto.getMappings(),
       "new process name",
       FULL_PROCESS_DEFINITION_XML_PATH
@@ -472,7 +477,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void publishUnmappedEventProcessMapping_fails() {
     // given
-    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       null, "unmapped", FULL_PROCESS_DEFINITION_XML_PATH
     );
     String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
@@ -555,7 +560,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void cancelPublishUnmappedEventProcessMapping_fails() {
     // given
-    EventProcessMappingDto eventProcessMappingDto = createEventProcessMappingDtoWithMappings(
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappings(
       null, "unmapped", FULL_PROCESS_DEFINITION_XML_PATH
     );
     String eventProcessId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
@@ -612,8 +617,9 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   @Test
   public void deleteEventProcessMapping() {
     // given
-    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(createEventProcessMappingDto(
-      FULL_PROCESS_DEFINITION_XML_PATH));
+    String storedEventProcessMappingId = eventProcessClient.createEventProcessMapping(
+      eventProcessClient.createEventProcessMappingDto(FULL_PROCESS_DEFINITION_XML_PATH)
+    );
 
     // when
     Response response = eventProcessClient
@@ -681,7 +687,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappings() {
-    return createEventProcessMappingDtoWithMappings(
+    return eventProcessClient.createEventProcessMappingDtoWithMappings(
       Collections.singletonMap(
         VALID_SERVICE_TASK_ID,
         createEventMappingsDto(createMappedEventDto(), createMappedEventDto())
@@ -689,25 +695,6 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
       "process name",
       FULL_PROCESS_DEFINITION_XML_PATH
     );
-  }
-
-  private EventProcessMappingDto createEventProcessMappingDto(final String xmlPath) {
-    return createEventProcessMappingDto(null, xmlPath);
-  }
-
-  private EventProcessMappingDto createEventProcessMappingDto(final String name, final String xmlPath) {
-    return createEventProcessMappingDtoWithMappings(null, name, xmlPath);
-  }
-
-  @SneakyThrows
-  public EventProcessMappingDto createEventProcessMappingDtoWithMappings(
-    final Map<String, EventMappingDto> flowNodeEventMappingsDto,
-    final String name, final String xmlPath) {
-    return EventProcessMappingDto.builder()
-      .name(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)))
-      .mappings(flowNodeEventMappingsDto)
-      .xml(Optional.ofNullable(xmlPath).map(FileReaderUtil::readFile).orElse(null))
-      .build();
   }
 
   private EventMappingDto createEventMappingsDto(EventTypeDto startEventDto, EventTypeDto endEventDto) {

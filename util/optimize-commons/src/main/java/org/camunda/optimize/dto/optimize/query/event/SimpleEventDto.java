@@ -5,16 +5,20 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
 import java.time.OffsetDateTime;
 
-@Getter
-@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+@Builder
 @FieldNameConstants
 public class SimpleEventDto implements Serializable, OptimizeDto {
 

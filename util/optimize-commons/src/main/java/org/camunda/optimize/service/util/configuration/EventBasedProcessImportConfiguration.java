@@ -6,15 +6,11 @@
 package org.camunda.optimize.service.util.configuration;
 
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Data
-public class IngestedEventImportConfiguration {
-  private boolean enabled;
-  private int importIntervalInSec;
-  private int maxPageSize;
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class EventBasedProcessImportConfiguration {
+  private int indexMaintenanceIntervalInSec;
 }

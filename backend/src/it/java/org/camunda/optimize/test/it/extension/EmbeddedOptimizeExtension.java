@@ -33,7 +33,9 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.events.EventService;
 import org.camunda.optimize.service.events.stateprocessing.EventStateProcessingService;
+import org.camunda.optimize.service.importing.event.IngestedEventImportScheduler;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -451,6 +453,14 @@ public class EmbeddedOptimizeExtension implements BeforeEachCallback, AfterEachC
 
   public EventStateProcessingService getEventStateProcessingService() {
     return getApplicationContext().getBean(EventStateProcessingService.class);
+  }
+
+  public EventService getEventService() {
+    return getApplicationContext().getBean(EventService.class);
+  }
+
+  public IngestedEventImportScheduler getIngestedEventImportScheduler() {
+    return getApplicationContext().getBean(IngestedEventImportScheduler.class);
   }
 
   public ElasticSearchSchemaManager getElasticSearchSchemaManager() {

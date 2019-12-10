@@ -11,8 +11,8 @@ import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
@@ -107,7 +107,7 @@ public class ReimportPreparation {
       objectMapper
     );
 
-    schemaManager.createOptimizeIndices(prefixAwareClient.getHighLevelClient());
+    schemaManager.createOptimizeIndices(prefixAwareClient);
 
     logger.info("Finished recreating import and engine data indexes from Elasticsearch.");
   }

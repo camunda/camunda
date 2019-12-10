@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.util;
 
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -52,7 +53,7 @@ public class BackoffCalculator {
   }
 
   public boolean isReadyForNextRetry() {
-    return nextRetryTime.isBefore(OffsetDateTime.now());
+    return nextRetryTime.isBefore(LocalDateUtil.getCurrentDateTime());
   }
 
   public void resetBackoff() {

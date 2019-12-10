@@ -19,6 +19,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
@@ -454,9 +455,22 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     try {
       refreshAllOptimizeIndices();
       deleteAllOptimizeData();
+      deleteAllEventProcessInstanceIndices();
     } catch (Exception e) {
       //nothing to do
       log.error("can't clean optimize indexes", e);
+    }
+  }
+
+  private void deleteAllEventProcessInstanceIndices() {
+    DeleteIndexRequest request = new DeleteIndexRequest(getIndexNameService().getOptimizeIndexAliasForIndex(
+      EventProcessInstanceIndex.EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*"
+    ));
+
+    try {
+      getOptimizeElasticClient().getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not delete all event process indices.", e);
     }
   }
 

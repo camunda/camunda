@@ -6,13 +6,19 @@
 package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import org.camunda.optimize.util.FileReaderUtil;
 
 import javax.servlet.http.HttpServletResponse;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @AllArgsConstructor
 public class EventProcessClient {
@@ -64,7 +70,8 @@ public class EventProcessClient {
   }
 
   public OptimizeRequestExecutor createCancelPublishEventProcessMappingRequest(final String eventProcessMappingId) {
-    return embeddedOptimizeExtension.getRequestExecutor().buildCancelPublishEventProcessMappingRequest(eventProcessMappingId);
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildCancelPublishEventProcessMappingRequest(eventProcessMappingId);
   }
 
   public void cancelPublishEventProcessMapping(final String eventProcessMappingId) {
@@ -79,5 +86,34 @@ public class EventProcessClient {
     createDeleteEventProcessMappingRequest(eventProcessMappingId).execute(HttpServletResponse.SC_NO_CONTENT);
   }
 
+  public EventProcessMappingDto createEventProcessMappingDto(final String xmlPath) {
+    return createEventProcessMappingDto(null, xmlPath);
+  }
+
+  public EventProcessMappingDto createEventProcessMappingDto(final String name, final String xmlPath) {
+    return createEventProcessMappingDtoWithMappings(null, name, xmlPath);
+  }
+
+  @SneakyThrows
+  public EventProcessMappingDto createEventProcessMappingDtoWithMappings(
+    final Map<String, EventMappingDto> flowNodeEventMappingsDto,
+    final String name,
+    final String xmlPath) {
+    return createEventProcessMappingDtoWithMappingsWithXml(
+      flowNodeEventMappingsDto,
+      name,
+      Optional.ofNullable(xmlPath).map(FileReaderUtil::readFile).orElse(null)
+    );
+  }
+
+  @SneakyThrows
+  public EventProcessMappingDto createEventProcessMappingDtoWithMappingsWithXml(
+    final Map<String, EventMappingDto> flowNodeEventMappingsDto, final String name, final String xml) {
+    return EventProcessMappingDto.builder()
+      .name(Optional.ofNullable(name).orElse(RandomStringUtils.randomAlphanumeric(10)))
+      .mappings(flowNodeEventMappingsDto)
+      .xml(xml)
+      .build();
+  }
 
 }

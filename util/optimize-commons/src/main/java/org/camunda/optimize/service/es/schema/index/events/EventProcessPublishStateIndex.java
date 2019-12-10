@@ -3,31 +3,35 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 @Component
-public class EventProcessMappingIndex extends StrictIndexMappingCreator {
+public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
 
   public static final int VERSION = 1;
 
-  public static final String ID = IndexableEventProcessMappingDto.Fields.id;
-  public static final String NAME = IndexableEventProcessMappingDto.Fields.name;
-  public static final String XML = IndexableEventProcessMappingDto.Fields.xml;
-  public static final String LAST_MODIFIED = IndexableEventProcessMappingDto.Fields.lastModified;
-  public static final String LAST_MODIFIER = IndexableEventProcessMappingDto.Fields.lastModifier;
-  public static final String MAPPINGS = IndexableEventProcessMappingDto.Fields.mappings;
+  public static final String ID = IndexableEventProcessPublishStateDto.Fields.id;
+  public static final String PROCESS_MAPPING_ID = IndexableEventProcessPublishStateDto.Fields.processMappingId;
+  public static final String PUBLISH_DATE_TIME = IndexableEventProcessPublishStateDto.Fields.publishDateTime;
+  public static final String LAST_IMPORTED_EVENT_DATE_TIME =
+    IndexableEventProcessPublishStateDto.Fields.lastImportedEventIngestDateTime;
+  public static final String STATE = IndexableEventProcessPublishStateDto.Fields.state;
+  public static final String PUBLISH_PROGRESS = IndexableEventProcessPublishStateDto.Fields.publishProgress;
+  public static final String DELETED = IndexableEventProcessPublishStateDto.Fields.deleted;
+  public static final String XML = IndexableEventProcessPublishStateDto.Fields.xml;
+  public static final String MAPPINGS = IndexableEventProcessPublishStateDto.Fields.mappings;
 
   public static final String FLOWNODE_ID = IndexableEventMappingDto.Fields.flowNodeId;
   public static final String START = IndexableEventMappingDto.Fields.start;
@@ -39,7 +43,7 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
 
   @Override
   public String getIndexName() {
-    return ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
+    return EVENT_PROCESS_PUBLISH_STATE_INDEX;
   }
 
   @Override
@@ -48,21 +52,31 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
   }
 
   @Override
-  public XContentBuilder addProperties(final XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
-    XContentBuilder newXContentBuilder = xContentBuilder
+    final XContentBuilder newXContentBuilder = xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(NAME)
+      .startObject(PROCESS_MAPPING_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(LAST_MODIFIER)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(LAST_MODIFIED)
+      .startObject(PUBLISH_DATE_TIME)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(LAST_IMPORTED_EVENT_DATE_TIME)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(STATE)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(PUBLISH_PROGRESS)
+        .field("type", "double")
+      .endObject()
+      .startObject(DELETED)
+        .field("type", "boolean")
       .endObject()
       .startObject(XML)
         .field("type", "text")
@@ -72,14 +86,14 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
       .startObject(MAPPINGS)
         .field("type", "object")
         .startObject("properties");
-          addNestedFlowNodeMappingsFields(newXContentBuilder)
+          addMappingFields(newXContentBuilder)
         .endObject()
       .endObject();
     // @formatter:on
     return newXContentBuilder;
   }
 
-  private XContentBuilder addNestedFlowNodeMappingsFields(XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addMappingFields(final XContentBuilder xContentBuilder) throws IOException {
     // @formatter:off
     XContentBuilder newXContentBuilder = xContentBuilder
       .startObject(FLOWNODE_ID)
@@ -87,21 +101,21 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
       .endObject()
       .startObject(START)
         .field("type", "object")
-        .startObject("properties");
-          addEventMappingFields(newXContentBuilder)
+      .startObject("properties");
+        addEventMappingFields(newXContentBuilder)
         .endObject()
       .endObject()
       .startObject(END)
         .field("type", "object")
-        .startObject("properties");
-          addEventMappingFields(newXContentBuilder)
+      .startObject("properties");
+        addEventMappingFields(newXContentBuilder)
         .endObject()
       .endObject();
     // @formatter:on
     return newXContentBuilder;
   }
 
-  private XContentBuilder addEventMappingFields(XContentBuilder xContentBuilder) throws IOException {
+  private XContentBuilder addEventMappingFields(final XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       // @formatter:off
       .startObject(GROUP)
@@ -115,5 +129,4 @@ public class EventProcessMappingIndex extends StrictIndexMappingCreator {
       .endObject();
     // @formatter:on
   }
-
 }

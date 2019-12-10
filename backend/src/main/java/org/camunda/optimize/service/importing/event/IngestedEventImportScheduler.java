@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 @AllArgsConstructor
@@ -26,6 +28,8 @@ public class IngestedEventImportScheduler extends AbstractScheduledService {
 
   private final ConfigurationService configurationService;
   private final EventStateProcessingService eventStateProcessingService;
+  private final EventProcessInstanceImportMediatorManager instanceImportMediatorManager;
+  private final EventProcessInstanceIndexManager eventBasedProcessIndexManager;
 
   @PostConstruct
   public void init() {
@@ -47,9 +51,25 @@ public class IngestedEventImportScheduler extends AbstractScheduledService {
 
   @Override
   protected void run() {
+    runImportCycle();
+  }
+
+  public Future<Void> runImportCycle() {
     if (!eventStateProcessingService.isCurrentlyProcessingEvents()) {
       eventStateProcessingService.processUncountedEvents();
     }
+    eventBasedProcessIndexManager.cleanupIndexes();
+    final CompletableFuture<?>[] importTaskFutures = instanceImportMediatorManager.getActiveMediators()
+      .stream()
+      .map(eventProcessInstanceImportMediator -> {
+        final CompletableFuture<Void> importCompletedFuture =
+          eventBasedProcessIndexManager.registerIndexUsageAndReturnCompletableHook(eventProcessInstanceImportMediator);
+        eventProcessInstanceImportMediator.importNextPage(importCompletedFuture);
+        return importCompletedFuture;
+      })
+      .toArray(CompletableFuture[]::new);
+
+    return CompletableFuture.allOf(importTaskFutures);
   }
 
   @Override

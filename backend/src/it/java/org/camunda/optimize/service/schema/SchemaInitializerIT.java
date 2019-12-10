@@ -78,7 +78,7 @@ public class SchemaInitializerIT extends AbstractIT {
 
     // then
     assertThat(
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient),
       is(true)
     );
   }
@@ -97,7 +97,7 @@ public class SchemaInitializerIT extends AbstractIT {
 
     // then
     assertThat(
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaAlreadyExists(prefixAwareRestHighLevelClient),
+      embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient),
       is(true)
     );
   }

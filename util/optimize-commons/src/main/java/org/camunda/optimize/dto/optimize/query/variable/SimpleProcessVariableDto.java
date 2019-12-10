@@ -6,19 +6,24 @@
 package org.camunda.optimize.dto.optimize.query.variable;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 @FieldNameConstants
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SimpleProcessVariableDto {
-
+  @EqualsAndHashCode.Include
   private String id;
   private String name;
   private String type;
   private String value;
+  @EqualsAndHashCode.Include
   private long version;
 }

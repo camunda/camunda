@@ -180,8 +180,9 @@ import:
     # Please refer to the technical guide on how to configure the heap size.
     maxEntryLimit: 100000
   ingestedEventImport:
-    enabled: true
+    enabled: false
     importIntervalInSec: 5
+    maxPageSize: 10000
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.

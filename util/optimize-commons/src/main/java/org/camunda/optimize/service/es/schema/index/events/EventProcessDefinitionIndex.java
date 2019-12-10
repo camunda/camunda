@@ -3,8 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.service.es.schema.index.events;
 
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.springframework.stereotype.Component;
 

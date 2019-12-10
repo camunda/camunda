@@ -11,11 +11,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -29,8 +31,10 @@ import org.elasticsearch.rest.RestStatus;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DEFAULT_INDEX_TYPE;
@@ -54,9 +58,9 @@ public class ElasticSearchSchemaManager {
 
   public void initializeSchema(final OptimizeElasticsearchClient esClient) {
     unblockIndices(esClient.getHighLevelClient());
-    if (!schemaAlreadyExists(esClient)) {
+    if (!schemaExists(esClient)) {
       log.info("Initializing Optimize schema...");
-      createOptimizeIndices(esClient.getHighLevelClient());
+      createOptimizeIndices(esClient);
       log.info("Optimize schema initialized successfully.");
     } else {
       updateAllMappingsAndDynamicSettings(esClient.getHighLevelClient());
@@ -72,21 +76,25 @@ public class ElasticSearchSchemaManager {
     return mappings;
   }
 
-  public boolean schemaAlreadyExists(OptimizeElasticsearchClient esClient) {
-    String[] indices = new String[mappings.size()];
-    int i = 0;
-    for (IndexMappingCreator creator : mappings) {
-      indices[i] = creator.getIndexName();
-      i = ++i;
-    }
+  public boolean schemaExists(OptimizeElasticsearchClient esClient) {
+    return indicesExist(esClient, getMappings());
+  }
 
-    GetIndexRequest request = new GetIndexRequest();
-    request.indices(indices);
+  public boolean indexExists(final OptimizeElasticsearchClient esClient,
+                             final IndexMappingCreator mapping) {
+    return indicesExist(esClient, Collections.singletonList(mapping));
+  }
+
+  private boolean indicesExist(final OptimizeElasticsearchClient esClient,
+                               final List<IndexMappingCreator> mappings) {
+    final List<String> indices = mappings.stream().map(IndexMappingCreator::getIndexName).collect(Collectors.toList());
+    final GetIndexRequest request = new GetIndexRequest();
+    request.indices(indices.toArray(new String[]{}));
 
     try {
       return esClient.exists(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format(
+      final String message = String.format(
         "Could not check if [%s] index(es) already exist.",
         String.join(",", indices)
       );
@@ -99,38 +107,62 @@ public class ElasticSearchSchemaManager {
    * <p>
    * https://www.elastic.co/guide/en/elasticsearch/reference/6.0/indices-aliases.html
    */
-  public void createOptimizeIndices(RestHighLevelClient esClient) {
+  public void createOptimizeIndices(OptimizeElasticsearchClient esClient) {
     for (IndexMappingCreator mapping : mappings) {
-      final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
-      final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
-      final Settings indexSettings = createIndexSettings();
-      try {
-        try {
-          CreateIndexRequest request = new CreateIndexRequest(indexName);
-          request.alias(new Alias(aliasName));
-          request.settings(indexSettings);
-          request.mapping(DEFAULT_INDEX_TYPE, mapping.getSource());
-          esClient.indices().create(request, RequestOptions.DEFAULT);
-        } catch (ElasticsearchStatusException e) {
-          if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
-            log.debug("index {} already exists, updating mapping and dynamic settings.", indexName);
-            updateIndexDynamicSettingsAndMappings(esClient, mapping);
-          } else {
-            throw e;
-          }
-        }
-      } catch (Exception e) {
-        String message = String.format("Could not create Index [%s]", indexName);
-        log.warn(message, e);
-        throw new OptimizeRuntimeException(message, e);
-      }
+      createOptimizeIndex(esClient, mapping);
     }
 
     RefreshRequest refreshAllIndexesRequest = new RefreshRequest();
     try {
-      esClient.indices().refresh(refreshAllIndexesRequest, RequestOptions.DEFAULT);
+      esClient.getHighLevelClient().indices().refresh(refreshAllIndexesRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Could not refresh Optimize indices!", e);
+    }
+  }
+
+  public void createOptimizeIndex(final OptimizeElasticsearchClient esClient, final IndexMappingCreator mapping) {
+    final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
+    final Settings indexSettings = createIndexSettings();
+    try {
+      try {
+        CreateIndexRequest request = new CreateIndexRequest(indexName);
+        request.alias(new Alias(aliasName));
+        request.settings(indexSettings);
+        request.mapping(DEFAULT_INDEX_TYPE, mapping.getSource());
+        esClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
+      } catch (ElasticsearchStatusException e) {
+        if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
+          log.debug("index {} already exists, updating mapping and dynamic settings.", indexName);
+          updateIndexDynamicSettingsAndMappings(esClient.getHighLevelClient(), mapping);
+        } else {
+          throw e;
+        }
+      }
+    } catch (Exception e) {
+      String message = String.format("Could not create Index [%s]", indexName);
+      log.warn(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  public void deleteOptimizeIndex(final OptimizeElasticsearchClient esClient, final ProcessInstanceIndex mapping) {
+    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
+    try {
+      try {
+        DeleteIndexRequest request = new DeleteIndexRequest(indexName);
+        esClient.getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
+      } catch (ElasticsearchStatusException e) {
+        if (e.status() == RestStatus.NOT_FOUND) {
+          log.debug("Index {} was not found.", indexName);
+        } else {
+          throw e;
+        }
+      }
+    } catch (Exception e) {
+      final String message = String.format("Could not delete Index [%s]", indexName);
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
     }
   }
 

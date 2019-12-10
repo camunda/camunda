@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinition
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.EventProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.search.SearchRequest;
