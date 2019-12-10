@@ -201,7 +201,7 @@ pipeline {
             // Compile QA
             sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa -DskipTests clean install')
             // Generate Data
-            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration spring-boot:run')
+            sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-tests spring-boot:run')
             sh('sleep 10')
           }
         }
@@ -220,13 +220,13 @@ pipeline {
 		  container('maven') {
 		      configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
 		        // Validate operate indices 
-		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration -DskipTests=false verify')
+		        sh('mvn -B -s $MAVEN_SETTINGS_XML -f qa/migration-tests -DskipTests=false verify')
 		      }
           }
 		}
         post {
         	always {
-          	junit testResults: 'qa/migration/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
+          	junit testResults: 'qa/migration-tests/target/*-reports/**/*.xml', keepLongStdio: true, allowEmptyResults: true
         	}
       	}
     }

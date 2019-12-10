@@ -8,8 +8,8 @@
 		<version>1.2.0-SNAPSHOT</version>
 	</parent>
 
-	<name>Camunda Operate Migration</name>
-	<artifactId>migration</artifactId>
+	<name>Camunda Operate Migration tests</name>
+	<artifactId>migration-tests</artifactId>
 
 	<properties>
 		<plugin.version.license>3.0</plugin.version.license>
@@ -23,6 +23,7 @@
 			<artifactId>camunda-operate-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.camunda.operate</groupId>
 			<artifactId>camunda-operate-webapp</artifactId>
@@ -57,12 +58,12 @@
 			<artifactId>spring-boot-configuration-processor</artifactId>
 			<optional>true</optional>
 		</dependency>
+		
 		<dependency>
 			<groupId>org.camunda.operate</groupId>
 			<artifactId>camunda-operate-qa-util</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-
 
 		<!-- ELASTICSEARCH -->
 		<dependency>

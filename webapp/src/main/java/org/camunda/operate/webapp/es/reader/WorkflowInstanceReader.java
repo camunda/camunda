@@ -45,7 +45,24 @@ import org.springframework.stereotype.Component;
 public class WorkflowInstanceReader extends AbstractReader {
 
   private static final Logger logger = LoggerFactory.getLogger(WorkflowInstanceReader.class);
+  
+  public static final FilterAggregationBuilder INCIDENTS_AGGREGATION = AggregationBuilders.filter(
+      "incidents",
+      new HasChildQueryBuilder(
+           ListViewTemplate.ACTIVITIES_JOIN_RELATION, 
+           QueryBuilders.existsQuery(ListViewTemplate.INCIDENT_KEY), 
+           ScoreMode.None
+      )
+  );
 
+  public static final FilterAggregationBuilder RUNNING_AGGREGATION = AggregationBuilders.filter(
+      "running",
+      termQuery(
+          ListViewTemplate.STATE, 
+          WorkflowInstanceState.ACTIVE
+       )
+  );
+  
   @Autowired
   private ListViewTemplate listViewTemplate;
 
@@ -153,12 +170,11 @@ public class WorkflowInstanceReader extends AbstractReader {
   }
 
   public WorkflowInstanceCoreStatisticsDto getCoreStatistics() {
-    final FilterAggregationBuilder incidentsAggregation = AggregationBuilders.filter("incidents",
-        new HasChildQueryBuilder(ListViewTemplate.ACTIVITIES_JOIN_RELATION, QueryBuilders.existsQuery(ListViewTemplate.INCIDENT_KEY), ScoreMode.None));
-    final FilterAggregationBuilder runningAggregation = AggregationBuilders.filter("running",
-        termQuery(ListViewTemplate.STATE, WorkflowInstanceState.ACTIVE));
     final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
-        .source(new SearchSourceBuilder().size(0).aggregation(incidentsAggregation).aggregation(runningAggregation));
+        .source(new SearchSourceBuilder().size(0)
+            .aggregation(INCIDENTS_AGGREGATION)
+            .aggregation(RUNNING_AGGREGATION)
+    );
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);

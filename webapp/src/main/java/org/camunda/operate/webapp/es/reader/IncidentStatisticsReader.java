@@ -52,7 +52,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.*;
 @Component
 public class IncidentStatisticsReader extends AbstractReader {
 
-  private static final String WORKFLOW_KEYS = "workflowKeys";
+  public static final String WORKFLOW_KEYS = "workflowKeys";
 
   private static final String UNIQ_WORKFLOW_INSTANCES = "uniq_workflowInstances";
 
@@ -71,9 +71,15 @@ public class IncidentStatisticsReader extends AbstractReader {
   @Autowired
   private WorkflowReader workflowReader;
   
-  private final AggregationBuilder countWorkflowKeys = terms(WORKFLOW_KEYS)
+  public static final AggregationBuilder COUNT_WORKFLOW_KEYS = terms(WORKFLOW_KEYS)
                                                         .field(ListViewTemplate.WORKFLOW_KEY)
                                                         .size(ElasticsearchUtil.TERMS_AGG_SIZE);
+  
+  public static final QueryBuilder INCIDENTS_QUERY =
+      joinWithAnd(
+          termQuery(ListViewTemplate.STATE, WorkflowInstanceState.ACTIVE.toString()),
+          hasChildQuery(ListViewTemplate.ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), ScoreMode.None));
+
 
   public Set<IncidentsByWorkflowGroupStatisticsDto> getWorkflowAndIncidentsStatistics(){
     final Map<Long, IncidentByWorkflowStatisticsDto> incidentsByWorkflowMap = updateActiveInstances(getIncidentsByWorkflow());
@@ -83,15 +89,11 @@ public class IncidentStatisticsReader extends AbstractReader {
   private Map<Long, IncidentByWorkflowStatisticsDto> getIncidentsByWorkflow() {
     Map<Long, IncidentByWorkflowStatisticsDto> results = new HashMap<>();
 
-    QueryBuilder incidentsQuery =
-        joinWithAnd(
-            termQuery(ListViewTemplate.STATE, WorkflowInstanceState.ACTIVE.toString()),
-            hasChildQuery(ListViewTemplate.ACTIVITIES_JOIN_RELATION, existsQuery(ListViewTemplate.INCIDENT_KEY), ScoreMode.None));
-
+    
     SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(workflowInstanceTemplate, ONLY_RUNTIME)
         .source(new SearchSourceBuilder()
-            .query(incidentsQuery)
-            .aggregation(countWorkflowKeys).size(0));
+            .query(INCIDENTS_QUERY)
+            .aggregation(COUNT_WORKFLOW_KEYS).size(0));
 
     try {
       SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -119,7 +121,7 @@ public class IncidentStatisticsReader extends AbstractReader {
       SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(workflowInstanceTemplate, ONLY_RUNTIME)
           .source(new SearchSourceBuilder()
               .query(runningInstanceQuery)
-              .aggregation(countWorkflowKeys)
+              .aggregation(COUNT_WORKFLOW_KEYS)
               .size(0));
 
       SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
