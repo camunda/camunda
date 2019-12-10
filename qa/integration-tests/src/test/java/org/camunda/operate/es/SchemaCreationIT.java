@@ -40,22 +40,22 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   private EventTemplate eventTemplate;
 
   @Autowired
-  private List<IndexDescriptor> indexCreators;
+  private List<IndexDescriptor> indexDescriptors;
 
   @Autowired
-  private List<TemplateDescriptor> templateCreators;
+  private List<TemplateDescriptor> templateDescriptors;
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Test
   public void testIndexCreation() throws ExecutionException, InterruptedException, IOException {
-    for (TemplateDescriptor templateCreator: templateCreators) {
-      assertIndexAndAlias(templateCreator.getMainIndexName(), templateCreator.getAlias());
+    for (TemplateDescriptor templateDescriptor: templateDescriptors) {
+      assertIndexAndAlias(templateDescriptor.getMainIndexName(), templateDescriptor.getAlias());
     }
 
-    for (IndexDescriptor indexCreator: indexCreators) {
-      assertIndexAndAlias(indexCreator.getIndexName(), indexCreator.getAlias());
+    for (IndexDescriptor indexDescriptor: indexDescriptors) {
+      assertIndexAndAlias(indexDescriptor.getIndexName(), indexDescriptor.getAlias());
     }
 
     assertTemplateOrder(workflowInstanceTemplate.getTemplateName(), 30);

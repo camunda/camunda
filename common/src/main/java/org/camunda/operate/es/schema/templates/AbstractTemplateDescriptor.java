@@ -11,8 +11,6 @@ import org.springframework.stereotype.Component;
 
 @Component
 public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
-
-  public static final String EAGER_GLOBAL_ORDINALS = "eager_global_ordinals";
   public static final String PARTITION_ID = "partitionId";
 
   @Autowired

@@ -12,21 +12,20 @@ import org.springframework.stereotype.Component;
 @Component
 public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
-  public static final String EAGER_GLOBAL_ORDINALS = "eager_global_ordinals";
   public static final String PARTITION_ID = "partitionId";
 
   @Autowired
   protected OperateProperties operateProperties;
- 
+
   public String getIndexName() {
-	    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getMainIndexName(),OperateProperties.getSchemaVersion());
+    return String.format("%s-%s-%s_", operateProperties.getElasticsearch().getIndexPrefix(), getMainIndexName(), OperateProperties.getSchemaVersion());
   }
 
   protected abstract String getMainIndexName();
 
-@Override
+  @Override
   public String getAlias() {
-    return  getIndexName() + "alias";
+    return getIndexName() + "alias";
   }
 
 }

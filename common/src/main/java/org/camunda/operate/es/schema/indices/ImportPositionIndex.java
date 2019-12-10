@@ -11,15 +11,14 @@ import org.springframework.stereotype.Component;
 public class ImportPositionIndex extends AbstractIndexDescriptor {
 
   public static final String INDEX_NAME = "import-position";
-
   public static final String ALIAS_NAME = "aliasName";
   public static final String ID = "id";
   public static final String POSITION = "position";
   public static final String FIELD_INDEX_NAME = "indexName";
-  
+
   @Override
   protected String getMainIndexName() {
-	return INDEX_NAME;
+    return INDEX_NAME;
   }
 
 }

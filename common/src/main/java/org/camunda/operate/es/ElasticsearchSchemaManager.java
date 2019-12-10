@@ -40,10 +40,10 @@ public class ElasticsearchSchemaManager {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
 
   @Autowired
-  private List<IndexDescriptor> indexCreators;
+  private List<IndexDescriptor> indexDescriptors;
 
   @Autowired
-  private List<TemplateDescriptor> templateCreators;
+  private List<TemplateDescriptor> templateDescriptors;
 
   @Autowired
   private RestHighLevelClient esClient;
@@ -67,11 +67,11 @@ public class ElasticsearchSchemaManager {
   }
 
   public boolean createIndices() {
-    return !map(indexCreators,this::createIndex).contains(false);
+    return !map(indexDescriptors,this::createIndex).contains(false);
   }
 
   public boolean createTemplates() {
-    return !map(templateCreators,this::createTemplate).contains(false);
+    return !map(templateDescriptors,this::createTemplate).contains(false);
   }
   
   protected boolean createIndex(IndexDescriptor indexCreator) {
@@ -85,12 +85,13 @@ public class ElasticsearchSchemaManager {
     String templateNameWithoutVersion = getResourceNameFor(templateName);
     String indexName = templateName.replace("template", "");
     return putIndexTemplate(templateName,indexName, "/create/template/" + templateNameWithoutVersion + ".json") 
+        // This is necessary, otherwise operate won't find indexes at startup
         && createIndex(new CreateIndexRequest(indexName));
   }
   
   public boolean schemaAlreadyExists() {
     try {
-      String indexName = indexCreators.get(0).getAlias();
+      String indexName = indexDescriptors.get(0).getAlias();
       return esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
     } catch (IOException e) {
       final String message = String.format("Exception occurred, while checking schema existence: %s", e.getMessage());
@@ -98,52 +99,40 @@ public class ElasticsearchSchemaManager {
       throw new OperateRuntimeException(message, e);
     }
   }
- 
-  protected String getResourceNameFor(String name) {
-    return name
-            .replace(operateProperties.getElasticsearch().getIndexPrefix(),OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX)
-            .replace("-"+OperateProperties.getSchemaVersion(), "")
-            .replace("template", "")
-            .replace("_", "");
-  }
   
   public boolean putIndexTemplate(final String templateName,String indexName,final String filename) {
     final Map<String, Object> template = readJSONFileToMap(filename);
-    // update prefix in template in case it was changed in configuration
+    
+    // Adjust prefixes and aliases in case of other configured indexNames
     template.put("index_patterns", Collections.singletonList(indexName + "*"));
-    // update alias in template in case it was changed in configuration
     template.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
 
-    final PutIndexTemplateRequest request =
-        new PutIndexTemplateRequest(templateName).source(template);
-
-    return putIndexTemplate(request);
+    return putIndexTemplate(new PutIndexTemplateRequest(templateName).source(template));
   }
   
   public boolean putIndex(final String indexName, final String filename) {
-    final Map<String, Object> index = readJSONFileToMap(getResourceNameFor(filename));
-    index.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
-    final CreateIndexRequest request = new CreateIndexRequest(indexName).source(index);
-    return createIndex(request);
+    final Map<String, Object> indexDescription = readJSONFileToMap(getResourceNameFor(filename));
+    // Adjust aliases in case of other configured indexNames
+    indexDescription.put("aliases", Collections.singletonMap(indexName+"alias", Collections.EMPTY_MAP));
+    
+    return createIndex(new CreateIndexRequest(indexName).source(indexDescription));
   }
 
-  private Map<String, Object> readJSONFileToMap(final String filename) {
-    final Map<String, Object> schema;
+  protected Map<String, Object> readJSONFileToMap(final String filename) {
+    final Map<String, Object> result;
     try (InputStream inputStream = ElasticsearchSchemaManager.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
-        schema = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
+        result = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
       } else {
-        throw new OperateRuntimeException(
-            "Failed to find schema in classpath " + filename);
+        throw new OperateRuntimeException("Failed to find "+filename+" in classpath ");
       }
     } catch (IOException e) {
-      throw new OperateRuntimeException(
-          "Failed to load schema from classpath " + filename, e);
+      throw new OperateRuntimeException("Failed to load file "+filename+" from classpath ", e);
     }
-    return schema;
+    return result;
   }
   
-  private boolean createIndex(final CreateIndexRequest createIndexRequest) {
+  protected boolean createIndex(final CreateIndexRequest createIndexRequest) {
     try {
       return esClient
           .indices()
@@ -155,7 +144,7 @@ public class ElasticsearchSchemaManager {
   }
   
   
-  private boolean putIndexTemplate(final PutIndexTemplateRequest putIndexTemplateRequest) {
+  protected boolean putIndexTemplate(final PutIndexTemplateRequest putIndexTemplateRequest) {
     try {
       return esClient
           .indices()
@@ -164,6 +153,14 @@ public class ElasticsearchSchemaManager {
     } catch (IOException e) {
       throw new OperateRuntimeException("Failed to put index template", e);
     }
+  }
+  
+  protected String getResourceNameFor(String name) {
+    return name
+            .replace(operateProperties.getElasticsearch().getIndexPrefix(),OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX)
+            .replace("-"+OperateProperties.getSchemaVersion(), "")
+            .replace("template", "")
+            .replace("_", "");
   }
 }
 
