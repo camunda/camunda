@@ -1,7 +1,7 @@
 #!/bin/sh
 # Define migration functions
 ES=${1:-http://localhost:9200}
-# For testing prefix 'echo ' 
+# For testing prefix with 'echo ' 
 RESTCLIENT="curl -K curl.config"
 
 createNewTemplatesAndTheirIndexes(){

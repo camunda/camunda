@@ -91,14 +91,10 @@
 			<scope>test</scope>
 		</dependency>
 
-
-
-
 	</dependencies>
 
 	<build>
 		<plugins>
-
 			<!-- LICENSE PLUGIN -->
 			<plugin>
 				<groupId>com.mycila</groupId>
@@ -123,7 +119,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 		</plugins>
 	</build>
 

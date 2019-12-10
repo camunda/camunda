@@ -20,7 +20,10 @@
 	</properties>
 	<build>
 		<plugins>
-
+	        <!-- 
+	        	* Used for lowercase the application version that is also used as schema version 
+	        	* Elasticsearch accepts only lowercase index names
+	        -->
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -66,6 +69,9 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!-- 
+				Defines packing of migration scripts
+			 -->
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>
@@ -86,7 +92,9 @@
 				</executions>
 			</plugin>
 		</plugins>
-
+		<!-- 
+			Enabled setting of schemaversion in scripts and json files
+		 -->
 		<resources>
 			<resource>
 				<directory>src/main/resources/</directory>

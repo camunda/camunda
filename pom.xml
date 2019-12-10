@@ -228,6 +228,7 @@
         <configuration>
           <archive>
             <manifest>
+              <!--  Add application version to manifest -->
               <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
             </manifest>
           </archive>
