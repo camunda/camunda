@@ -34,6 +34,7 @@ import io.zeebe.client.api.command.FailJobCommandStep1;
 import io.zeebe.client.api.command.PublishMessageCommandStep1;
 import io.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.zeebe.client.api.command.SetVariablesCommandStep1;
+import io.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.zeebe.client.api.command.TopologyRequestStep1;
 import io.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.worker.JobClient;
@@ -308,5 +309,10 @@ public class ZeebeClientImpl implements ZeebeClient {
   @Override
   public FailJobCommandStep1 newFailCommand(long jobKey) {
     return jobClient.newFailCommand(jobKey);
+  }
+
+  @Override
+  public ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey) {
+    return jobClient.newThrowErrorCommand(jobKey);
   }
 }

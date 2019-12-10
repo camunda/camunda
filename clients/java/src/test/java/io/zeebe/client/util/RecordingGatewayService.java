@@ -44,6 +44,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ResolveIncidentResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.SetVariablesResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
@@ -83,6 +85,7 @@ public class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
     addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
+    addRequestHandler(ThrowErrorRequest.class, r -> ThrowErrorResponse.getDefaultInstance());
     addRequestHandler(CompleteJobRequest.class, r -> CompleteJobResponse.getDefaultInstance());
     addRequestHandler(ActivateJobsRequest.class, r -> ActivateJobsResponse.getDefaultInstance());
     addRequestHandler(
@@ -165,6 +168,12 @@ public class RecordingGatewayService extends GatewayImplBase {
 
   @Override
   public void failJob(FailJobRequest request, StreamObserver<FailJobResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void throwError(
+      ThrowErrorRequest request, StreamObserver<ThrowErrorResponse> responseObserver) {
     handle(request, responseObserver);
   }
 

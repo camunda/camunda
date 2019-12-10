@@ -17,6 +17,7 @@ package io.zeebe.client.api.worker;
 
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.client.api.command.FailJobCommandStep1;
+import io.zeebe.client.api.command.ThrowErrorCommandStep1;
 
 /**
  * A client with access to all job-related operation:
@@ -65,4 +66,25 @@ public interface JobClient {
    * @return a builder for the command
    */
   FailJobCommandStep1 newFailCommand(long jobKey);
+
+  /**
+   * Command to report a business error (i.e. non-technical) that occurs while processing a job.
+   *
+   * <pre>
+   * long jobKey = ...;
+   * String code = ...;
+   *
+   * jobClient
+   *  .newThrowErrorCommand(jobKey)
+   *  .errorCode(code)
+   *  .send();
+   * </pre>
+   *
+   * <p>The error is handled in the workflow by an error catch event. If there is no error catch
+   * event with the specified errorCode then an incident will be raised instead.
+   *
+   * @param jobKey the key which identifies the job
+   * @return a builder for the command
+   */
+  ThrowErrorCommandStep1 newThrowErrorCommand(long jobKey);
 }
