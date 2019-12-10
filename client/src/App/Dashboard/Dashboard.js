@@ -8,15 +8,14 @@ import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
+import {withData} from 'modules/DataManager';
 
 import MetricPanel from './MetricPanel';
 import InstancesByWorkflow from './InstancesByWorkflow';
 import IncidentsByError from './IncidentsByError';
-import {
-  fetchInstancesByWorkflow,
-  fetchIncidentsByError
-} from 'modules/api/incidents/incidents';
-import {PAGE_TITLE} from 'modules/constants';
+
+import {PAGE_TITLE, LOADING_STATE} from 'modules/constants';
+
 import EmptyPanel from 'modules/components/EmptyPanel';
 import Copyright from 'modules/components/Copyright';
 import * as Styled from './styled.js';
@@ -29,35 +28,43 @@ class Dashboard extends Component {
       running: PropTypes.number,
       active: PropTypes.number,
       withIncidents: PropTypes.number
-    })
+    }),
+    dataManager: PropTypes.object
   };
 
   state = {
     counts: {
       errors: null
     },
-    incidents: {
-      byWorkflow: {data: [], error: null},
-      byError: {data: [], error: null}
-    },
-    isDataLoaded: false
+    instancesByWorkflow: {data: [], error: null},
+    incidentsByError: {data: [], error: null}
   };
 
   componentDidMount = async () => {
     document.title = PAGE_TITLE.DASHBOARD;
-    const incidents = await this.fetchIncidents();
 
-    this.setState({
-      incidents,
-      isDataLoaded: true
-    });
+    const {dataManager} = this.props;
+
+    dataManager.subscribe(this.subscriptions);
+    dataManager.getInstancesByWorkflow();
+    dataManager.getIncidentsByError();
   };
 
-  fetchIncidents = async () => {
-    return {
-      byWorkflow: await fetchInstancesByWorkflow(),
-      byError: await fetchIncidentsByError()
-    };
+  subscriptions = {
+    LOAD_INSTANCES_BY_WORKFLOW: response => {
+      if (response.state === LOADING_STATE.LOADED) {
+        this.setState({
+          instancesByWorkflow: {data: response.response.data, error: null}
+        });
+      }
+    },
+    LOAD_INCIDENTS_BY_ERROR: response => {
+      if (response.state === LOADING_STATE.LOADED) {
+        this.setState({
+          incidentsByError: {data: response.response.data, error: null}
+        });
+      }
+    }
   };
 
   renderPanel = (type, state) => {
@@ -74,7 +81,8 @@ class Dashboard extends Component {
 
   render() {
     const {
-      incidents: {byError, byWorkflow},
+      instancesByWorkflow,
+      incidentsByError,
       counts: {error: countsError}
     } = this.state;
     const {running, active, withIncidents} = this.props.dataStore;
@@ -103,15 +111,13 @@ class Dashboard extends Component {
             <Styled.Tile data-test="instances-byWorkflow">
               <Styled.TileTitle>Instances by Workflow</Styled.TileTitle>
               <Styled.TileContent>
-                {this.state.isDataLoaded &&
-                  this.renderPanel(INSTANCES_BY_WORKFLOW, byWorkflow)}
+                {this.renderPanel(INSTANCES_BY_WORKFLOW, instancesByWorkflow)}
               </Styled.TileContent>
             </Styled.Tile>
             <Styled.Tile data-test="incidents-byError">
               <Styled.TileTitle>Incidents by Error Message</Styled.TileTitle>
               <Styled.TileContent>
-                {this.state.isDataLoaded &&
-                  this.renderPanel(INCIDENTS_BY_ERROR, byError)}
+                {this.renderPanel(INCIDENTS_BY_ERROR, incidentsByError)}
               </Styled.TileContent>
             </Styled.Tile>
           </Styled.TitleWrapper>
@@ -125,4 +131,4 @@ class Dashboard extends Component {
   }
 }
 
-export default withCountStore(Dashboard);
+export default withData(withCountStore(Dashboard));

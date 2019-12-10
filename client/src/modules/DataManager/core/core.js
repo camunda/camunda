@@ -16,6 +16,11 @@ import {
   applyOperation
 } from 'modules/api/instances';
 
+import {
+  fetchInstancesByWorkflow,
+  fetchIncidentsByError
+} from 'modules/api/incidents';
+
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
 import {fetchWorkflowXML} from 'modules/api/diagram';
@@ -115,6 +120,20 @@ export class DataManager {
       SUBSCRIPTION_TOPIC.LOAD_INSTANCE,
       fetchWorkflowInstance,
       instanceId
+    );
+  }
+
+  getInstancesByWorkflow() {
+    this.fetchAndPublish(
+      SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
+      fetchInstancesByWorkflow
+    );
+  }
+
+  getIncidentsByError() {
+    this.fetchAndPublish(
+      SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
+      fetchIncidentsByError
     );
   }
 
