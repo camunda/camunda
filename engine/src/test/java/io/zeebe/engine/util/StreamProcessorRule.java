@@ -17,16 +17,17 @@ import io.zeebe.engine.processor.TypedRecordProcessorFactory;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
+import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
@@ -54,8 +55,6 @@ public class StreamProcessorRule implements TestRule {
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ControlledActorClock clock = new ControlledActorClock();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
-  private final ServiceContainerRule serviceContainerRule =
-      new ServiceContainerRule(actorSchedulerRule);
   private final ZeebeDbFactory zeebeDbFactory;
   private final SetupRule rule;
   private final int startPartitionId;
@@ -84,7 +83,6 @@ public class StreamProcessorRule implements TestRule {
         RuleChain.outerRule(tempFolder)
             .around(actorSchedulerRule)
             .around(new CleanUpRule(tempFolder::getRoot))
-            .around(serviceContainerRule)
             .around(closeables)
             .around(rule)
             .around(new FailedTestRecordPrinter());
@@ -95,8 +93,14 @@ public class StreamProcessorRule implements TestRule {
     return chain.apply(base, description);
   }
 
-  public LogStream getLogStream(final int partitionId) {
-    return streams.getLogStream(getLogName(partitionId));
+  public LogStreamRecordWriter getLogStreamRecordWriter(final int partitionId) {
+    final String logName = getLogName(partitionId);
+    return streams.getLogStreamRecordWriter(logName);
+  }
+
+  public LogStreamRecordWriter newLogStreamRecordWriter(final int partitionId) {
+    final String logName = getLogName(partitionId);
+    return streams.newLogStreamRecordWriter(logName);
   }
 
   public StreamProcessor startTypedStreamProcessor(final StreamProcessorTestFactory factory) {
@@ -134,10 +138,6 @@ public class StreamProcessorRule implements TestRule {
     closeStreamProcessor(startPartitionId);
   }
 
-  public long getCommitPosition() {
-    return streams.getLogStream(getLogName(startPartitionId)).getCommitPosition();
-  }
-
   public StateSnapshotController getStateSnapshotController(final int partitionId) {
     return streams.getStateSnapshotController(getLogName(partitionId));
   }
@@ -169,7 +169,7 @@ public class StreamProcessorRule implements TestRule {
   public void printAllRecords() {
     int partitionId = startPartitionId;
     for (int i = 0; i < partitionCount; i++) {
-      final LogStream logStream = streams.getLogStream(getLogName(partitionId++));
+      final SynchronousLogStream logStream = streams.getLogStream(getLogName(partitionId++));
       LogStreamPrinter.printRecords(logStream);
     }
   }
@@ -226,6 +226,20 @@ public class StreamProcessorRule implements TestRule {
       final int partition, final Intent intent, final UnpackedObject value) {
     return streams
         .newRecord(getLogName(partition))
+        .recordType(RecordType.COMMAND)
+        .intent(intent)
+        .event(value)
+        .write();
+  }
+
+  public long writeCommandOnPartition(
+      final LogStreamRecordWriter writer,
+      final long key,
+      final Intent intent,
+      final UnpackedObject value) {
+    return streams
+        .newRecord(writer)
+        .key(key)
         .recordType(RecordType.COMMAND)
         .intent(intent)
         .event(value)
@@ -295,14 +309,17 @@ public class StreamProcessorRule implements TestRule {
 
     @Override
     protected void before() {
-      streams =
-          new TestStreams(
-              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
+      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
 
       int partitionId = startPartitionId;
       for (int i = 0; i < partitionCount; i++) {
         streams.createLogStream(getLogName(partitionId), partitionId++);
       }
+    }
+
+    @Override
+    protected void after() {
+      streams = null;
     }
   }
 
@@ -334,6 +351,13 @@ public class StreamProcessorRule implements TestRule {
       try {
         LOG.debug("Clean up test files on path {}", root);
         FileUtil.deleteFolder(root.toPath());
+
+        final long allocatedMemoryInKb = DirectBufferAllocator.getAllocatedMemoryInKb();
+        if (allocatedMemoryInKb > 0) {
+          LOG.warn(
+              "There are still allocated direct buffers of a total size of {}kB.",
+              allocatedMemoryInKb);
+        }
       } catch (IOException e) {
         LOG.error("Error on deleting root test folder", e);
       }

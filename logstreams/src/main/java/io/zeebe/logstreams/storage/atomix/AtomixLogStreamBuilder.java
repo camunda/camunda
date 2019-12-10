@@ -8,7 +8,7 @@
 package io.zeebe.logstreams.storage.atomix;
 
 import io.atomix.protocols.raft.partition.RaftPartition;
-import io.zeebe.logstreams.log.LogStreamBuilder;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
 
 public class AtomixLogStreamBuilder extends LogStreamBuilder<AtomixLogStreamBuilder> {
   private RaftPartition partition;

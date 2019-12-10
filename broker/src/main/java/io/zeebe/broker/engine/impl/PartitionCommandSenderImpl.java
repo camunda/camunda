@@ -9,8 +9,8 @@ package io.zeebe.broker.engine.impl;
 
 import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
+import io.zeebe.broker.clustering.topology.TopologyManager;
+import io.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
 import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;

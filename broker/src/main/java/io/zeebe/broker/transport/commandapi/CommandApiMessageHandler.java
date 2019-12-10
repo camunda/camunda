@@ -12,7 +12,6 @@ import io.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -34,6 +33,8 @@ import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
 import java.util.EnumMap;
+import java.util.Map;
+import java.util.Queue;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -43,22 +44,20 @@ import org.slf4j.Logger;
 public class CommandApiMessageHandler implements ServerMessageHandler, ServerRequestHandler {
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
 
-  protected final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-  protected final ExecuteCommandRequestDecoder executeCommandRequestDecoder =
+  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+  private final ExecuteCommandRequestDecoder executeCommandRequestDecoder =
       new ExecuteCommandRequestDecoder();
-  protected final ManyToOneConcurrentLinkedQueue<Runnable> cmdQueue =
-      new ManyToOneConcurrentLinkedQueue<>();
-  protected final Consumer<Runnable> cmdConsumer = Runnable::run;
+  private final Queue<Runnable> cmdQueue = new ManyToOneConcurrentLinkedQueue<>();
+  private final Consumer<Runnable> cmdConsumer = Runnable::run;
 
-  protected final Int2ObjectHashMap<LogStream> leadingStreams = new Int2ObjectHashMap<>();
-  protected final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
+  private final Int2ObjectHashMap<LogStreamRecordWriter> leadingStreams = new Int2ObjectHashMap<>();
+  private final Int2ObjectHashMap<RequestLimiter<Intent>> partitionLimiters =
       new Int2ObjectHashMap<>();
-  protected final RecordMetadata eventMetadata = new RecordMetadata();
-  protected final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
+  private final RecordMetadata eventMetadata = new RecordMetadata();
 
-  protected final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
+  private final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
 
-  protected final EnumMap<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
+  private final Map<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
   private final BackpressureMetrics metrics;
 
   public CommandApiMessageHandler() {
@@ -94,9 +93,9 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
     final int partitionId = executeCommandRequestDecoder.partitionId();
     final long key = executeCommandRequestDecoder.key();
 
-    final LogStream logStream = leadingStreams.get(partitionId);
+    final LogStreamRecordWriter logStreamWriter = leadingStreams.get(partitionId);
 
-    if (logStream == null) {
+    if (logStreamWriter == null) {
       return errorResponseWriter
           .partitionLeaderMismatch(partitionId)
           .tryWriteResponseOrLogFailure(output, requestAddress.getStreamId(), requestId);
@@ -152,7 +151,9 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
 
     boolean written = false;
     try {
-      written = writeCommand(eventMetadata, buffer, key, logStream, eventOffset, eventLength);
+      written = writeCommand(eventMetadata, buffer, key, logStreamWriter, eventOffset, eventLength);
+    } catch (Exception ex) {
+      LOG.error("Unexpected error on writing {} command", eventIntent, ex);
     } finally {
       if (!written) {
         limiter.onIgnore(requestAddress.getStreamId(), requestId);
@@ -165,10 +166,10 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
       RecordMetadata eventMetadata,
       DirectBuffer buffer,
       long key,
-      LogStream logStream,
+      LogStreamRecordWriter logStreamWriter,
       int eventOffset,
       int eventLength) {
-    logStreamWriter.wrap(logStream);
+    logStreamWriter.reset();
 
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
       logStreamWriter.key(key);
@@ -185,11 +186,12 @@ public class CommandApiMessageHandler implements ServerMessageHandler, ServerReq
     return eventPosition >= 0;
   }
 
-  public void addPartition(LogStream logStream, RequestLimiter<Intent> limiter) {
+  public void addPartition(
+      int partitionId, LogStreamRecordWriter logStreamWriter, RequestLimiter<Intent> limiter) {
     cmdQueue.add(
         () -> {
-          leadingStreams.put(logStream.getPartitionId(), logStream);
-          partitionLimiters.put(logStream.getPartitionId(), limiter);
+          leadingStreams.put(partitionId, logStreamWriter);
+          partitionLimiters.put(partitionId, limiter);
         });
   }
 

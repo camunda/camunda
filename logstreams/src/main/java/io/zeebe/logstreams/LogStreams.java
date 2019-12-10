@@ -8,7 +8,7 @@
 package io.zeebe.logstreams;
 
 import io.atomix.protocols.raft.partition.RaftPartition;
-import io.zeebe.logstreams.log.LogStreamBuilder;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
 
 public final class LogStreams {

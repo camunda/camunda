@@ -7,22 +7,15 @@
  */
 package io.zeebe.logstreams.log;
 
-import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.impl.LogStorageAppender;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
 
 /**
- * Represents a stream of events from a log storage.
+ * Represents a stream of events. New events are append to the end of the log. With {@link
+ * LogStream#newLogStreamRecordWriter()} or {@link LogStream#newLogStreamBatchWriter()} new writers
+ * can be created, which can be used to append new events to the log.
  *
- * <p>The LogStream will append available events to the log storage with the help of an
- * LogController. The events are read from a given Dispatcher, if available. This can be stopped
- * with the {@link LogStream#closeAppender()} method and re-/started with {@link
- * LogStream#openAppender()} or {@link LogStream#closeAppender()}.
- *
- * <p>To access the current LogStorage the {@link LogStream#getLogStorage()} can be used. The {@link
- * #close()} method will close all LogController and the log storage.
+ * <p>To read events, the {@link LogStream#newLogStreamReader()} ()} can be used.
  */
 public interface LogStream extends AutoCloseable {
 
@@ -36,51 +29,32 @@ public interface LogStream extends AutoCloseable {
    */
   String getLogName();
 
-  /** Closes the log stream synchronously. This blocks until the log stream is closed. */
-  @Override
-  void close();
-
   /** Closes the log stream asynchronous. */
   ActorFuture<Void> closeAsync();
 
-  /** @return the current commit position, or a negative value if no entry is committed. */
-  long getCommitPosition();
+  /**
+   * @return a future, when successfully completed it returns the current commit position, or a
+   *     negative value if no entry is committed
+   */
+  ActorFuture<Long> getCommitPositionAsync();
 
   /** sets the new commit position * */
   void setCommitPosition(long position);
 
-  /**
-   * Returns the log storage, which is accessed by the LogStream.
-   *
-   * @return the log storage
-   */
-  LogStorage getLogStorage();
+  /** @return a future, when successfully completed it returns a newly created log stream reader */
+  ActorFuture<LogStreamReader> newLogStreamReader();
 
   /**
-   * Returns the writeBuffer, which is used by the LogStreamController to stream the content into
-   * the log storage.
-   *
-   * @return the writebuffer, which is used by the LogStreamController
+   * @return a future, when successfully completed it returns a newly created log stream record
+   *     writer
    */
-  Dispatcher getWriteBuffer();
+  ActorFuture<LogStreamRecordWriter> newLogStreamRecordWriter();
 
   /**
-   * Returns the log stream controller, which streams the logged events from the write buffer into
-   * the log storage.
-   *
-   * @return the log stream controller
+   * @return a future, when successfully completed it returns a newly created log stream batch
+   *     writer
    */
-  LogStorageAppender getLogStorageAppender();
-
-  /** Stops the streaming to the log storage. New events are no longer append to the log storage. */
-  ActorFuture<Void> closeAppender();
-
-  /**
-   * This method installs and opens the log storage appender.
-   *
-   * @return the future which contains the log storage appender on completion
-   */
-  ActorFuture<LogStorageAppender> openAppender();
+  ActorFuture<LogStreamBatchWriter> newLogStreamBatchWriter();
 
   /**
    * Triggers deletion of data from the log stream, where the given position is used as upper bound.
@@ -89,7 +63,17 @@ public interface LogStream extends AutoCloseable {
    */
   void delete(long position);
 
+  /**
+   * Registers for on commit updates.
+   *
+   * @param condition the condition which should be signalled.
+   */
   void registerOnCommitPositionUpdatedCondition(ActorCondition condition);
 
+  /**
+   * Removes the registered condition.
+   *
+   * @param condition the condition which should be removed
+   */
   void removeOnCommitPositionUpdatedCondition(ActorCondition condition);
 }

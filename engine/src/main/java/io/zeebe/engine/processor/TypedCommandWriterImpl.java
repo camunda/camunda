@@ -9,10 +9,8 @@ package io.zeebe.engine.processor;
 
 import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
 
-import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
-import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -32,9 +30,9 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
 
   protected long sourceRecordPosition = -1;
 
-  public TypedCommandWriterImpl(int partitionId, final Dispatcher dispatcher) {
+  public TypedCommandWriterImpl(LogStreamBatchWriter batchWriter) {
     metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
-    this.batchWriter = new LogStreamBatchWriterImpl(partitionId, dispatcher);
+    this.batchWriter = batchWriter;
     this.typeRegistry = new HashMap<>();
     EVENT_REGISTRY.forEach((e, c) -> typeRegistry.put(c, e));
   }

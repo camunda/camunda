@@ -120,7 +120,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
     schedulerRule.awaitBlockingTasksCompleted(1);
     schedulerRule.workUntilDone();
@@ -147,7 +147,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
     schedulerRule.awaitBlockingTasksCompleted(1);
     schedulerRule.workUntilDone();
@@ -174,7 +174,7 @@ public class ActorLifecyclePhasesAndRunBlockingTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
     schedulerRule.awaitBlockingTasksCompleted(1);
     schedulerRule.workUntilDone();

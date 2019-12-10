@@ -22,7 +22,6 @@
     <module>samples</module>
     <module>dist</module>
     <module>protocol</module>
-    <module>service-container</module>
     <module>bpmn-model</module>
     <module>logstreams</module>
     <module>engine</module>

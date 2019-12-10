@@ -16,16 +16,13 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.time.Duration;
 import java.util.List;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -36,7 +33,6 @@ import org.junit.runners.model.Statement;
 
 public class ExporterRule implements TestRule {
 
-  private static final int PARTITION_ID = 0;
   private static final int EXPORTER_PROCESSOR_ID = 101;
   private static final String PROCESSOR_NAME = "exporter";
   private static final String STREAM_NAME = "stream";
@@ -46,8 +42,6 @@ public class ExporterRule implements TestRule {
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ControlledActorClock clock = new ControlledActorClock();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
-  private final ServiceContainerRule serviceContainerRule =
-      new ServiceContainerRule(actorSchedulerRule);
   private final RuleChain chain;
 
   private final ZeebeDbFactory zeebeDbFactory;
@@ -65,11 +59,7 @@ public class ExporterRule implements TestRule {
 
     zeebeDbFactory = dbFactory;
     chain =
-        RuleChain.outerRule(tempFolder)
-            .around(actorSchedulerRule)
-            .around(serviceContainerRule)
-            .around(closeables)
-            .around(rule);
+        RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables).around(rule);
   }
 
   @Override
@@ -92,13 +82,9 @@ public class ExporterRule implements TestRule {
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
-            .logStream(stream)
-            .logStorage(stream.getLogStorage())
+            .logStream(stream.getAsyncLogStream())
             .zeebeDb(capturedZeebeDb)
-            .maxSnapshots(1)
-            .descriptors(exporterDescriptors)
-            .logStreamReader(new BufferedLogStreamReader())
-            .snapshotPeriod(Duration.ofMinutes(5));
+            .descriptors(exporterDescriptors);
 
     director = new ExporterDirector(context);
     director.startAsync(actorSchedulerRule.get()).join();
@@ -151,9 +137,7 @@ public class ExporterRule implements TestRule {
 
     @Override
     protected void before() {
-      streams =
-          new TestStreams(
-              tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
+      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
       streams.createLogStream(STREAM_NAME, partitionId);
     }
   }

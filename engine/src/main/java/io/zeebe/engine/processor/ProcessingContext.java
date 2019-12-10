@@ -31,6 +31,7 @@ public class ProcessingContext implements ReadonlyProcessingContext {
 
   private BooleanSupplier abortCondition;
   private Consumer<TypedRecord> onProcessedListener = record -> {};
+  private int maxFragmentSize;
 
   public ProcessingContext actor(ActorControl actor) {
     this.actor = actor;
@@ -90,6 +91,16 @@ public class ProcessingContext implements ReadonlyProcessingContext {
   public ProcessingContext onProcessedListener(Consumer<TypedRecord> onProcessedListener) {
     this.onProcessedListener = onProcessedListener;
     return this;
+  }
+
+  public ProcessingContext maxFragmentSize(int maxFragmentSize) {
+    this.maxFragmentSize = maxFragmentSize;
+    return this;
+  }
+
+  @Override
+  public int getMaxFragmentSize() {
+    return maxFragmentSize;
   }
 
   public ActorControl getActor() {

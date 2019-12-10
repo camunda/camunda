@@ -25,8 +25,8 @@ import io.zeebe.engine.util.MockTypedRecord;
 import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.impl.record.value.error.ErrorRecord;
@@ -39,7 +39,6 @@ import io.zeebe.protocol.record.intent.ErrorIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.buffer.BufferUtil;
@@ -66,17 +65,13 @@ public class SkipFailingEventsTest {
   public AutoCloseableRule closeables = new AutoCloseableRule();
 
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-  public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(tempFolder)
-          .around(actorSchedulerRule)
-          .around(serviceContainerRule)
-          .around(closeables);
+      RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
 
   protected TestStreams streams;
-  protected LogStream stream;
+  protected SynchronousLogStream stream;
 
   @Mock protected CommandResponseWriter commandResponseWriter;
   private KeyGenerator keyGenerator;
@@ -86,9 +81,7 @@ public class SkipFailingEventsTest {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
 
-    streams =
-        new TestStreams(
-            tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
+    streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
     commandResponseWriter = streams.getMockedResponseWriter();
     stream = streams.createLogStream(STREAM_NAME);
 

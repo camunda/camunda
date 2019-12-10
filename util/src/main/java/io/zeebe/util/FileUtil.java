@@ -12,14 +12,12 @@ import static java.nio.file.FileVisitResult.SKIP_SUBTREE;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.file.CopyOption;
 import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,16 +30,6 @@ import org.slf4j.Logger;
 public class FileUtil {
 
   public static final Logger LOG = Loggers.FILE_LOGGER;
-
-  public static void closeSilently(Closeable out) {
-    if (out != null) {
-      try {
-        out.close();
-      } catch (Exception e) {
-        // ignore
-      }
-    }
-  }
 
   public static void deleteFolder(String path) throws IOException {
     final Path directory = Paths.get(path);
@@ -68,15 +56,6 @@ public class FileUtil {
         });
   }
 
-  public static long getAvailableSpace(File logLocation) throws IOException {
-    long usableSpace = -1;
-
-    final FileStore fileStore = Files.getFileStore(logLocation.toPath());
-    usableSpace = fileStore.getUsableSpace();
-
-    return usableSpace;
-  }
-
   @SuppressWarnings("resource")
   public static FileChannel openChannel(String filename, boolean create) {
     FileChannel fileChannel = null;
@@ -98,17 +77,6 @@ public class FileUtil {
     }
 
     return fileChannel;
-  }
-
-  public static void moveFile(String source, String target, CopyOption... options) {
-    final Path sourcePath = Paths.get(source);
-    final Path targetPath = Paths.get(target);
-
-    try {
-      Files.move(sourcePath, targetPath, options);
-    } catch (Exception e) {
-      LangUtil.rethrowUnchecked(e);
-    }
   }
 
   /**

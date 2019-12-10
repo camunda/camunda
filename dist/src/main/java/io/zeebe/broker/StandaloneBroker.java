@@ -24,11 +24,12 @@ public class StandaloneBroker {
     final Broker broker;
 
     if (args.length == 1) {
-      broker = startBrokerFromConfiguration(args);
+      broker = createBrokerFromConfiguration(args);
     } else {
-      broker = startDefaultBrokerInTempDirectory();
+      broker = createDefaultBrokerInTempDirectory();
     }
 
+    broker.start();
     getRuntime()
         .addShutdownHook(
             new Thread("Broker close Thread") {
@@ -46,7 +47,7 @@ public class StandaloneBroker {
     WAITING_LATCH.await();
   }
 
-  private static Broker startBrokerFromConfiguration(final String[] args) {
+  private static Broker createBrokerFromConfiguration(final String[] args) {
     String basePath = System.getProperty("basedir");
 
     if (basePath == null) {
@@ -56,7 +57,7 @@ public class StandaloneBroker {
     return new Broker(args[0], basePath, null);
   }
 
-  private static Broker startDefaultBrokerInTempDirectory() {
+  private static Broker createDefaultBrokerInTempDirectory() {
     Loggers.SYSTEM_LOGGER.info("No configuration file specified. Using default configuration.");
 
     try {

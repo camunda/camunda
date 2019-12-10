@@ -17,10 +17,7 @@ import io.zeebe.util.ByteValue;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
-import io.zeebe.util.allocation.ExternallyAllocatedBuffer;
 import io.zeebe.util.sched.ActorScheduler;
-import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.Objects;
 import org.agrona.BitUtil;
 
@@ -28,12 +25,6 @@ import org.agrona.BitUtil;
 public class DispatcherBuilder {
 
   private static final int DEFAULT_BUFFER_SIZE = (int) ByteValue.ofMegabytes(1).toBytes();
-
-  private boolean allocateInMemory = true;
-
-  private ByteBuffer rawBuffer;
-
-  private String bufferFileName;
 
   private int bufferSize = -1;
   private int maxFragmentLength = -1;
@@ -56,30 +47,6 @@ public class DispatcherBuilder {
     dispatcherName = name;
     return this;
   }
-
-  /**
-   * Provide a raw buffer to place the dispatcher's logbuffer in. The dispatcher will place the log
-   * buffer at the beginning of the provided buffer, disregarding position and it's limit. The
-   * provided buffer must be large enough to accommodate the dispatcher
-   *
-   * @see DispatcherBuilder#allocateInFile(String)
-   */
-  public DispatcherBuilder allocateInBuffer(final ByteBuffer rawBuffer) {
-    allocateInMemory = false;
-    this.rawBuffer = rawBuffer;
-    return this;
-  }
-
-  /**
-   * Allocate the dispatcher's buffer in the provided file by mapping it into memory. The file must
-   * exist. The dispatcher will place it's buffer at the beginning of the file.
-   */
-  public DispatcherBuilder allocateInFile(final String fileName) {
-    allocateInMemory = false;
-    bufferFileName = fileName;
-    return this;
-  }
-
   /**
    * The number of bytes the buffer is be able to contain. Represents the size of the data section.
    * Additional space will be allocated for the meta-data sections
@@ -213,25 +180,6 @@ public class DispatcherBuilder {
 
   private AllocatedBuffer initAllocatedBuffer(final int partitionSize) {
     final int requiredCapacity = requiredCapacity(partitionSize);
-
-    AllocatedBuffer allocatedBuffer = null;
-    if (allocateInMemory) {
-      allocatedBuffer = BufferAllocators.allocateDirect(requiredCapacity);
-    } else {
-      if (rawBuffer != null) {
-        if (rawBuffer.remaining() < requiredCapacity) {
-          throw new RuntimeException("Buffer size below required capacity of " + requiredCapacity);
-        }
-        allocatedBuffer = new ExternallyAllocatedBuffer(rawBuffer);
-      } else {
-        final File bufferFile = new File(bufferFileName);
-        if (!bufferFile.exists()) {
-          throw new RuntimeException("File " + bufferFileName + " does not exist");
-        }
-
-        allocatedBuffer = BufferAllocators.allocateMappedFile(requiredCapacity, bufferFile);
-      }
-    }
-    return allocatedBuffer;
+    return BufferAllocators.allocateDirect(requiredCapacity);
   }
 }

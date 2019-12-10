@@ -12,64 +12,37 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.state.Snapshot;
 import io.zeebe.logstreams.state.SnapshotDeletionListener;
 import io.zeebe.logstreams.state.SnapshotStorage;
-import io.zeebe.servicecontainer.Injector;
-import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.Actor;
-import java.util.Objects;
 
-public class LogStreamDeletionService extends Actor
-    implements Service<SnapshotDeletionListener>, SnapshotDeletionListener {
-  private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
+public class LogStreamDeletionService extends Actor implements SnapshotDeletionListener {
   private final LogStream logStream;
   private final StatePositionSupplier positionSupplier;
-
-  private SnapshotStorage snapshotStorage;
+  private final SnapshotStorage snapshotStorage;
 
   public LogStreamDeletionService(
-      final LogStream logStream, final StatePositionSupplier positionSupplier) {
+      final LogStream logStream,
+      final SnapshotStorage snapshotStorage,
+      final StatePositionSupplier positionSupplier) {
+    this.snapshotStorage = snapshotStorage;
     this.logStream = logStream;
     this.positionSupplier = positionSupplier;
   }
 
   @Override
-  public void start(final ServiceStartContext startContext) {
-    snapshotStorage =
-        Objects.requireNonNull(
-            getSnapshotStorageInjector().getValue(), "must have a snapshot storage");
-    startContext.async(startContext.getScheduler().submitActor(this));
-  }
-
-  @Override
-  public void stop(final ServiceStopContext stopContext) {
-    stopContext.async(actor.close());
-  }
-
-  @Override
-  public SnapshotDeletionListener get() {
-    return this;
-  }
-
-  @Override
   protected void onActorStarting() {
-    snapshotStorage.addDeletionListener(get());
+    snapshotStorage.addDeletionListener(this);
   }
 
   @Override
   protected void onActorClosing() {
     if (snapshotStorage != null) {
-      snapshotStorage.removeDeletionListener(get());
+      snapshotStorage.removeDeletionListener(this);
     }
   }
 
   @Override
   public void onSnapshotsDeleted(final Snapshot oldestRemainingSnapshot) {
     actor.run(() -> delegateDeletion(oldestRemainingSnapshot));
-  }
-
-  public Injector<SnapshotStorage> getSnapshotStorageInjector() {
-    return snapshotStorageInjector;
   }
 
   private void delegateDeletion(final Snapshot snapshot) {

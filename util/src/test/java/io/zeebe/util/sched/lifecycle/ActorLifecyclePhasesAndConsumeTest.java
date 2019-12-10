@@ -121,7 +121,7 @@ public class ActorLifecyclePhasesAndConsumeTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -147,7 +147,7 @@ public class ActorLifecyclePhasesAndConsumeTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
@@ -173,7 +173,7 @@ public class ActorLifecyclePhasesAndConsumeTest {
 
     // when
     schedulerRule.submitActor(actor);
-    actor.close();
+    actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then

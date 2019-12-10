@@ -8,20 +8,12 @@
 package io.zeebe.logstreams.util;
 
 import io.atomix.protocols.raft.storage.RaftStorage.Builder;
-import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamBuilder;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStreamBuilder;
-import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.junit.rules.ExternalResource;
@@ -32,12 +24,10 @@ public final class LogStreamRule extends ExternalResource {
   private final ControlledActorClock clock = new ControlledActorClock();
   private final boolean shouldStartByDefault;
 
-  private Consumer<LogStreamBuilder> streamBuilder;
-  private UnaryOperator<Builder> storageBuilder;
-  private ActorScheduler actorScheduler;
-  private ServiceContainer serviceContainer;
-  private LogStream logStream;
-  private BufferedLogStreamReader logStreamReader;
+  private final Consumer<LogStreamBuilder> streamBuilder;
+  private final UnaryOperator<Builder> storageBuilder;
+  private SynchronousLogStream logStream;
+  private LogStreamReader logStreamReader;
   private LogStreamBuilder builder;
   private ActorSchedulerRule actorSchedulerRule;
   private AtomixLogStorageRule logStorageRule;
@@ -61,11 +51,6 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   public static LogStreamRule startByDefault(
-      final TemporaryFolder temporaryFolder, final Consumer<LogStreamBuilder> streamBuilder) {
-    return new LogStreamRule(temporaryFolder, true, streamBuilder);
-  }
-
-  public static LogStreamRule startByDefault(
       final TemporaryFolder temporaryFolder,
       final Consumer<LogStreamBuilder> streamBuilder,
       final UnaryOperator<Builder> storageBuilder) {
@@ -80,13 +65,8 @@ public final class LogStreamRule extends ExternalResource {
     return new LogStreamRule(temporaryFolder, false, b -> {});
   }
 
-  public LogStream startLogStreamWithConfiguration(final Consumer<LogStreamBuilder> streamBuilder) {
-    this.streamBuilder = streamBuilder;
-    startLogStream();
-    return logStream;
-  }
-
-  public LogStream startLogStreamWithStorageConfiguration(final UnaryOperator<Builder> builder) {
+  public SynchronousLogStream startLogStreamWithStorageConfiguration(
+      final UnaryOperator<Builder> builder) {
     logStorageRule = new AtomixLogStorageRule(temporaryFolder);
     this.logStorageRule.open(builder);
     startLogStream();
@@ -111,10 +91,7 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   public void startLogStream() {
-    actorScheduler = actorSchedulerRule.get();
-
-    serviceContainer = new ServiceContainerImpl(actorScheduler);
-    serviceContainer.start();
+    final ActorScheduler actorScheduler = actorSchedulerRule.get();
 
     if (logStorageRule == null) {
       logStorageRule = new AtomixLogStorageRule(temporaryFolder);
@@ -123,7 +100,7 @@ public final class LogStreamRule extends ExternalResource {
 
     builder =
         new AtomixLogStreamBuilder()
-            .withServiceContainer(serviceContainer)
+            .withActorScheduler(actorScheduler)
             .withPartitionId(0)
             .withLogName("0")
             .withLogStorage(logStorageRule.getStorage());
@@ -148,18 +125,15 @@ public final class LogStreamRule extends ExternalResource {
       logStorageRule.close();
       logStorageRule = null;
     }
-
-    try {
-      serviceContainer.close(5, TimeUnit.SECONDS);
-    } catch (final TimeoutException | ExecutionException | InterruptedException e) {
-      e.printStackTrace();
-    }
   }
 
   public void openLogStream() {
-    logStream = builder.build();
+    logStream = new SyncLogStream(builder.build());
     logStorageRule.setPositionListener(logStream::setCommitPosition);
-    logStream.openAppender().join();
+  }
+
+  public LogStreamReader newLogStreamReader() {
+    return logStream.newLogStreamReader();
   }
 
   public LogStreamReader getLogStreamReader() {
@@ -168,18 +142,13 @@ public final class LogStreamRule extends ExternalResource {
     }
 
     if (logStreamReader == null) {
-      logStreamReader = new BufferedLogStreamReader();
+      logStreamReader = logStream.newLogStreamReader();
     }
-    logStreamReader.wrap(getLogStorage());
     return logStreamReader;
   }
 
-  public LogStream getLogStream() {
+  public SynchronousLogStream getLogStream() {
     return logStream;
-  }
-
-  public LogStorage getLogStorage() {
-    return logStream.getLogStorage();
   }
 
   public ControlledActorClock getClock() {

@@ -16,7 +16,11 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.Set;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,14 +28,17 @@ import org.junit.Test;
 
 public class TopologyUpdateTest {
 
-  @Rule public ActorSchedulerRule actor = new ActorSchedulerRule();
+  private final ControlledActorClock actorClock = new ControlledActorClock();
+  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
 
   private BrokerTopologyManagerImpl topologyManager;
+  private Set<Member> members;
 
   @Before
   public void setUp() {
-    topologyManager = new BrokerTopologyManagerImpl((a, b) -> {});
-    actor.submitActor(topologyManager);
+    members = new HashSet<>();
+    topologyManager = new BrokerTopologyManagerImpl(() -> members, (a, b) -> {});
+    actorSchedulerRule.submitActor(topologyManager);
   }
 
   @After
@@ -49,6 +56,40 @@ public class TopologyUpdateTest {
     final BrokerInfo brokerUpdated = createBroker(0);
     brokerUpdated.setFollowerForPartition(1);
     topologyManager.event(createMemberUpdateEvent(brokerUpdated));
+    waitUntil(() -> topologyManager.getTopology().getFollowersForPartition(1) != null);
+    assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isTrue();
+  }
+
+  @Test
+  public void shouldAddBrokerOnTopologyEvenOnNotReceivedEvent() {
+    // given
+    final BrokerInfo broker = createBroker(0);
+    broker.setFollowerForPartition(1);
+    createMemberAddedEvent(broker);
+
+    // when
+    actorClock.addTime(Duration.ofSeconds(10));
+
+    // then
+    waitUntil(() -> topologyManager.getTopology() != null);
+    assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isTrue();
+  }
+
+  @Test
+  public void shouldUpdateBrokerOnTopologyEvenOnNotReceivedEvent() {
+    // given
+    final BrokerInfo broker = createBroker(0);
+    topologyManager.event(createMemberAddedEvent(broker));
+    waitUntil(() -> topologyManager.getTopology() != null);
+    assertThat(topologyManager.getTopology().getFollowersForPartition(1)).isNull();
+
+    // when
+    final BrokerInfo brokerUpdate = createBroker(0);
+    brokerUpdate.setFollowerForPartition(1);
+    createMemberUpdateEvent(brokerUpdate);
+    actorClock.addTime(Duration.ofSeconds(10));
+
+    // then
     waitUntil(() -> topologyManager.getTopology().getFollowersForPartition(1) != null);
     assertThat(topologyManager.getTopology().getFollowersForPartition(1).contains(0)).isTrue();
   }
@@ -125,15 +166,21 @@ public class TopologyUpdateTest {
   }
 
   private ClusterMembershipEvent createMemberAddedEvent(BrokerInfo broker) {
-    final Member member = new Member(new MemberConfig());
-    broker.writeIntoProperties(member.properties());
+    final Member member = createMemberFromBrokerInfo(broker);
     return new ClusterMembershipEvent(Type.MEMBER_ADDED, member);
   }
 
   private ClusterMembershipEvent createMemberUpdateEvent(BrokerInfo broker) {
-    final Member member = new Member(new MemberConfig());
-    broker.writeIntoProperties(member.properties());
+    final Member member = createMemberFromBrokerInfo(broker);
     return new ClusterMembershipEvent(Type.METADATA_CHANGED, member);
+  }
+
+  private Member createMemberFromBrokerInfo(BrokerInfo broker) {
+    final Member member =
+        new Member(new MemberConfig().setId(Integer.toString(broker.getNodeId())));
+    broker.writeIntoProperties(member.properties());
+    members.add(member);
+    return member;
   }
 
   private ClusterMembershipEvent createMemberRemoveEvent(BrokerInfo broker) {

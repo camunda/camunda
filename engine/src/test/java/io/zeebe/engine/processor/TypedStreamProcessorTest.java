@@ -18,8 +18,8 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.Records;
 import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
@@ -27,7 +27,6 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
-import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -42,20 +41,14 @@ import org.mockito.MockitoAnnotations;
 
 public class TypedStreamProcessorTest {
   private static final String STREAM_NAME = "foo";
-  private static final int STREAM_PROCESSOR_ID = 144144;
-  protected LogStream stream;
+  protected SynchronousLogStream stream;
   private final TemporaryFolder tempFolder = new TemporaryFolder();
   private final AutoCloseableRule closeables = new AutoCloseableRule();
   private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
-  private final ServiceContainerRule serviceContainerRule =
-      new ServiceContainerRule(actorSchedulerRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(tempFolder)
-          .around(actorSchedulerRule)
-          .around(serviceContainerRule)
-          .around(closeables);
+      RuleChain.outerRule(tempFolder).around(actorSchedulerRule).around(closeables);
 
   private TestStreams streams;
   private KeyGenerator keyGenerator;
@@ -65,9 +58,7 @@ public class TypedStreamProcessorTest {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
 
-    streams =
-        new TestStreams(
-            tempFolder, closeables, serviceContainerRule.get(), actorSchedulerRule.get());
+    streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
     mockCommandResponseWriter = streams.getMockedResponseWriter();
     stream = streams.createLogStream(STREAM_NAME);
 
