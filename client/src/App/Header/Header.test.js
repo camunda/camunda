@@ -9,14 +9,12 @@ import {mount} from 'enzyme';
 import {HashRouter as Router} from 'react-router-dom';
 
 import {createMockDataManager} from '../../modules/testHelpers/dataManager';
-import {DataManagerProvider} from 'modules/DataManager';
 
 import {LinkElement} from './NavElements';
 
 import Header from './Header';
 import Badge from 'modules/components/Badge';
 
-import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 import * as Styled from './styled.js';
@@ -56,11 +54,7 @@ const mountComponent = props => {
   const node = mount(
     <Router>
       <ThemeProvider>
-        <CollapsablePanelProvider>
-          <DataManagerProvider>
-            <Header.WrappedComponent {...props} />
-          </DataManagerProvider>
-        </CollapsablePanelProvider>
+        <Header.WrappedComponent {...props} />
       </ThemeProvider>
     </Router>
   );

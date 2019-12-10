@@ -208,6 +208,7 @@ class Instance extends Component {
     let updateParams = {
       topic: SUBSCRIPTION_TOPIC.CONSTANT_REFRESH,
       endpoints: [
+        {name: SUBSCRIPTION_TOPIC.LOAD_CORE_STATS},
         {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE},
         {name: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS},
         {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},

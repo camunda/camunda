@@ -103,8 +103,8 @@ class InstancesPollProviderComp extends React.Component {
 
     let updateParams = {
       endpoints: [
-        SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES,
-        SUBSCRIPTION_TOPIC.LOAD_CORE_STATS
+        {name: SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES},
+        {name: SUBSCRIPTION_TOPIC.LOAD_CORE_STATS}
       ],
       topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION
     };

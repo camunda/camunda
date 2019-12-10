@@ -11,6 +11,7 @@ jest.mock('modules/DataManager/core');
 jest.mock('modules/utils/bpmn');
 
 const mockDataManager = () => {
+  let subscription = {};
   return {
     publish: jest.fn(
       ({subscription, state = LOADING_STATE.LOADED, response, staticContent}) =>
@@ -20,7 +21,10 @@ const mockDataManager = () => {
     publishing: jest.fn(),
     poll: {clear: jest.fn(), start: jest.fn().mockImplementation(cb => cb())},
     update: jest.fn(),
-    subscribe: jest.fn(),
+    subscribe: jest.fn().mockImplementation(subs => {
+      subscription = subs;
+    }),
+    subscriptions: jest.fn(() => subscription),
     unsubscribe: jest.fn(),
     applyOperation: jest.fn(),
     getVariables: jest.fn(),

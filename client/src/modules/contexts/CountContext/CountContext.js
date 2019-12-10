@@ -21,7 +21,7 @@ const initialState = {
   selectionCount: 0
 };
 
-function countReducer(state, {type, payload}) {
+export function countReducer(state, {type, payload}) {
   switch (type) {
     case 'filterCount':
       return {...state, filterCount: payload};
@@ -34,8 +34,7 @@ function countReducer(state, {type, payload}) {
   }
 }
 
-function Provider(props) {
-  const {dataManager} = useContext(DataContext);
+export function Provider(props) {
   const subscriptions = {
     LOAD_CORE_STATS: ({state, response}) => {
       if (state === LOADING_STATE.LOADED) {
@@ -57,6 +56,23 @@ function Provider(props) {
     },
     REFRESH_AFTER_OPERATION: ({state, response}) => {
       if (state === LOADING_STATE.LOADED) {
+        const {
+          LOAD_CORE_STATS: {coreStatistics},
+          LOAD_LIST_INSTANCES: {totalCount}
+        } = response;
+
+        dispatch({
+          type: 'coreStats',
+          payload: coreStatistics
+        });
+        dispatch({
+          type: 'filterCount',
+          payload: totalCount
+        });
+      }
+    },
+    CONSTANT_REFRESH: ({state, response}) => {
+      if (state === LOADING_STATE.LOADED) {
         dispatch({
           type: 'coreStats',
           payload: response[SUBSCRIPTION_TOPIC.LOAD_CORE_STATS].coreStatistics
@@ -72,7 +88,7 @@ function Provider(props) {
       }
     }
   };
-
+  const {dataManager} = useContext(DataContext);
   const [store, dispatch] = useReducer(countReducer, initialState);
 
   useEffect(() => {
@@ -98,6 +114,7 @@ function Provider(props) {
       });
 
     filterCount !== 'null' &&
+      typeof filterCount !== 'undefined' &&
       dispatch({
         type: 'filterCount',
         payload: filterCount
@@ -112,7 +129,10 @@ function Provider(props) {
 }
 
 Provider.propTypes = {
-  children: PropTypes.array,
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node
+  ]),
   getStateLocally: PropTypes.func
 };
 
@@ -136,4 +156,4 @@ function withCountStore(Component) {
 
 const CountStoreProvider = withSharedState(Provider);
 
-export {CountStoreProvider, withCountStore};
+export {CountStoreProvider, withCountStore, CountContext};
