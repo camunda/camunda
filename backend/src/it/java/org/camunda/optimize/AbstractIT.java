@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize;
 
+import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
@@ -30,6 +31,10 @@ public abstract class AbstractIT {
   @Order(3)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
+  // engine test helpers
+  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+
+  // optimize test helpers
   protected CollectionClient collectionClient = new CollectionClient(embeddedOptimizeExtension);
   protected ReportClient reportClient = new ReportClient(embeddedOptimizeExtension);
   protected AlertClient alertClient = new AlertClient(embeddedOptimizeExtension);

@@ -262,7 +262,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     String reportShareId = dashboardShareDto.getReports().get(0).getId();
-    HashMap evaluatedReportAsMap =
+    HashMap<?, ?> evaluatedReportAsMap =
       embeddedOptimizeExtension
         .getRequestExecutor()
         .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportShareId)

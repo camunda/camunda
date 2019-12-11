@@ -6,13 +6,13 @@
 package org.camunda.optimize.service.sharing;
 
 import org.apache.http.HttpStatus;
-import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
@@ -27,15 +27,19 @@ import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
 
 public class SharingServiceIT extends AbstractSharingIT {
 
@@ -254,7 +258,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     //when
     DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
     fullBoard.setId(dashboardId);
-    updateDashboard(dashboardId, fullBoard);
+    dashboardClient.updateDashboard(dashboardId, fullBoard);
 
     //then
     DashboardDefinitionDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
@@ -270,24 +274,24 @@ public class SharingServiceIT extends AbstractSharingIT {
     addShareForDashboard(dashboardWithReport);
     DashboardDefinitionDto fullBoard = new DashboardDefinitionDto();
     fullBoard.setId(dashboardWithReport);
-    updateDashboard(dashboardWithReport, fullBoard);
+    dashboardClient.updateDashboard(dashboardWithReport, fullBoard);
 
     //when
-    Response response = updateDashboard(dashboardWithReport, fullBoard);
+    Response response = dashboardClient.updateDashboard(dashboardWithReport, fullBoard);
 
     //then
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
   }
 
   @Test
-  public void updatingDashboardUpdatesRespectiveShare() {
+  public void updateDashboard_addReportAndMetaData() {
     // given
     final String shouldBeIgnoredString = "shouldNotBeUpdated";
     String dashboardId = addEmptyDashboardToOptimize();
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     ReportLocationDto reportLocationDto = new ReportLocationDto();
-    final String reportId = createNewReport(new SingleProcessReportDefinitionDto());
+    final String reportId = reportClient.createSingleProcessReport(new SingleProcessReportDefinitionDto());
     reportLocationDto.setId(reportId);
     reportLocationDto.setConfiguration("testConfiguration");
     DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
@@ -301,7 +305,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     dashboard.setOwner(shouldBeIgnoredString);
 
     // when
-    updateDashboard(dashboardId, dashboard);
+    dashboardClient.updateDashboard(dashboardId, dashboard);
     DashboardDefinitionDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
     // then
@@ -314,6 +318,65 @@ public class SharingServiceIT extends AbstractSharingIT {
     assertThat(dashboardShareDto.getLastModified()).isNotEqualTo(shouldBeIgnoredDate);
     assertThat(dashboardShareDto.getName()).isEqualTo("MyDashboard");
     assertThat(dashboardShareDto.getOwner()).isEqualTo(DEFAULT_USERNAME);
+  }
+
+  @Test
+  public void updateDashboard_addReportAndEvaluateShare() {
+    // given
+    String dashboardId = addEmptyDashboardToOptimize();
+    String dashboardShareId = addShareForDashboard(dashboardId);
+    final String reportId =
+      reportClient.createSingleReport(PRIVATE_COLLECTION_ID, PROCESS, "A_KEY", DEFAULT_TENANTS);
+
+    // when
+    dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
+
+    // then
+    DashboardDefinitionDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
+    assertThat(dashboardShareDto.getReports()).extracting(ReportLocationDto::getId).containsExactly(reportId);
+
+    // and then
+    final ReportDefinitionDto<?> authorizedEvaluationResultDto =
+      sharingClient.evaluateReportForSharedDashboard(dashboardShareId, reportId);
+    assertThat(authorizedEvaluationResultDto.getId()).isEqualTo(reportId);
+  }
+
+  @Test
+  public void updateDashboard_removeReportAndEvaluateDashboardShare() {
+    // given
+    final String reportIdToStayInDashboard =
+      reportClient.createSingleReport(PRIVATE_COLLECTION_ID, PROCESS, "A_KEY", DEFAULT_TENANTS);
+    final String reportIdToBeRemovedFromDashboard =
+      reportClient.createSingleReport(PRIVATE_COLLECTION_ID, PROCESS, "A_KEY", DEFAULT_TENANTS);
+    String dashboardId =
+      dashboardClient.createDashboard(
+        PRIVATE_COLLECTION_ID,
+        Arrays.asList(reportIdToStayInDashboard, reportIdToBeRemovedFromDashboard)
+      );
+    String dashboardShareId = addShareForDashboard(dashboardId);
+
+    // when
+    dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportIdToStayInDashboard));
+
+    // then
+    DashboardDefinitionDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
+    assertThat(dashboardShareDto.getReports())
+      .extracting(ReportLocationDto::getId)
+      .containsExactly(reportIdToStayInDashboard);
+
+    // and then
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportIdToStayInDashboard)
+      .execute();
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
+
+    // and then
+    response = embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportIdToBeRemovedFromDashboard)
+        .execute();
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -637,7 +700,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(reportData);
 
-    String reportId = this.createNewReport(singleProcessReportDefinitionDto);
+    String reportId = this.reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
 
     String dashboardWithReport = createDashboardWithReport(reportId);
     String dashboardShareId = addShareForDashboard(dashboardWithReport);
@@ -658,31 +721,33 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void shareUnauthorizedDashboard() {
+  public void shareDashboard_containsUnauthorizedSingleReport() {
     // given
-    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
-    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
-    String reportId1 = createReport("processDefinition1");
-    String reportId2 = createReport("processDefinition2");
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    String authorizedReportId = createReport("processDefinition1");
+    String unauthorizedReportId = createReport("processDefinition2");
     String dashboardId = addEmptyDashboardToOptimize();
-    addReportToDashboard(dashboardId, reportId1, reportId2);
+    addReportToDashboard(dashboardId, authorizedReportId, unauthorizedReportId);
 
-    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
+    authorizationClient.grantSingleResourceAuthorizationForKermit(
+      "processDefinition1",
+      RESOURCE_TYPE_PROCESS_DEFINITION
+    );
 
     // when I want to share the dashboard as kermit and kermit has no access to report 2
     DashboardShareDto share = createDashboardShareDto(dashboardId);
     Response response = embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildShareDashboardRequest(share)
-            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-            .execute();
+      .getRequestExecutor()
+      .buildShareDashboardRequest(share)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
 
     // then
     assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @Test
-  public void cantShareDashboardWithUnauthorizedCombinedReport() {
+  public void shareDashboard_containsUnauthorizedCombinedReport() {
     // given
     engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
@@ -692,7 +757,7 @@ public class SharingServiceIT extends AbstractSharingIT {
       collectionId, new CollectionRoleDto(new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER)
     );
     final String reportId =
-      reportClient.createSingleReport(collectionId, DefinitionType.PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+      reportClient.createSingleReport(collectionId, PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
     final String combinedReportId = reportClient.createCombinedReport(collectionId, Collections.singletonList(reportId));
     final String dashboardId =
       dashboardClient.createDashboard(collectionId, Collections.singletonList(combinedReportId));

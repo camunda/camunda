@@ -34,6 +34,7 @@ import javax.ws.rs.NotFoundException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -192,7 +193,8 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     DashboardShareDto share = sharedDashboard.orElseThrow(
       () -> new OptimizeRuntimeException(String.format("Could not find dashboard share for id [%s]", dashboardShareId))
     );
-    boolean hasGivenReport = share.getReportShares().stream().anyMatch(r -> r.getId().equals(reportId));
+    DashboardDefinitionDto dashboard = dashboardService.getDashboardDefinitionAsService(share.getDashboardId());
+    boolean hasGivenReport = dashboard.getReports().stream().anyMatch(r -> Objects.equals(r.getId(), reportId));
     if (hasGivenReport) {
       result = evaluateReport(reportId);
     } else {

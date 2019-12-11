@@ -8,7 +8,6 @@ package org.camunda.optimize.service.sharing;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
@@ -27,14 +26,10 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -60,12 +55,12 @@ public abstract class AbstractSharingIT extends AbstractIT {
       .build();
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
     singleProcessReportDefinitionDto.setData(reportData);
-    return this.createNewReport(singleProcessReportDefinitionDto);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   public static void assertErrorFields(ReportEvaluationException errorMessage) {
     assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
-    ReportDefinitionDto reportDefinitionDto = errorMessage.getReportDefinition().getDefinitionDto();
+    ReportDefinitionDto<?> reportDefinitionDto = errorMessage.getReportDefinition().getDefinitionDto();
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
       SingleProcessReportDefinitionDto singleProcessReport =
         (SingleProcessReportDefinitionDto) reportDefinitionDto;
@@ -97,14 +92,6 @@ public abstract class AbstractSharingIT extends AbstractIT {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected String createNewReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
-      .getId();
-  }
-
   protected String createDashboardWithReport(String reportId) {
     String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, reportId);
@@ -133,7 +120,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
 
     fullBoard.setReports(reports);
 
-    updateDashboard(dashboardId, fullBoard);
+    dashboardClient.updateDashboard(dashboardId, fullBoard);
   }
 
   protected String addEmptyDashboardToOptimize() {
@@ -142,13 +129,6 @@ public abstract class AbstractSharingIT extends AbstractIT {
       .buildCreateDashboardRequest()
       .execute(IdDto.class, 200)
       .getId();
-  }
-
-  Response updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildUpdateDashboardRequest(id, updatedDashboard)
-      .execute(204);
   }
 
   protected String addShareForDashboard(String dashboardId) {
@@ -207,20 +187,10 @@ public abstract class AbstractSharingIT extends AbstractIT {
     return response.readEntity(ReportShareDto.class);
   }
 
-  protected void assertReportData(String reportId, HashMap evaluatedReportAsMap) {
+  protected void assertReportData(String reportId, HashMap<?, ?> evaluatedReportAsMap) {
     assertThat(evaluatedReportAsMap, is(notNullValue()));
     assertThat(evaluatedReportAsMap.get("id"), is(reportId));
     assertThat(evaluatedReportAsMap.get("data"), is(notNullValue()));
-  }
-
-  protected void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
-    AuthorizationDto authorizationDto = new AuthorizationDto();
-    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
-    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
-    authorizationDto.setResourceId(definitionKey);
-    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
-    authorizationDto.setUserId(userId);
-    engineIntegrationExtension.createAuthorization(authorizationDto);
   }
 
 }

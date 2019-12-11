@@ -6,6 +6,7 @@
 package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
+import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -60,7 +61,7 @@ public class ReportClient {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
   }
 
@@ -98,11 +99,11 @@ public class ReportClient {
     return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
-  private String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
+  public String createSingleProcessReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
   }
 
@@ -110,7 +111,7 @@ public class ReportClient {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateSingleDecisionReportRequest(decisionReportDefinition)
-      .execute(IdDto.class, 200)
+      .execute(IdDto.class, HttpStatus.SC_OK)
       .getId();
   }
 
