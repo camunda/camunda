@@ -54,12 +54,8 @@ type DispatchPublishMessageCommand interface {
 }
 
 type PublishMessageCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.PublishMessageRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.PublishMessageRequest
 }
 
 func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageCommandStep3 {
@@ -124,7 +120,7 @@ func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	response, err := cmd.gateway.PublishMessage(ctx, cmd.request)
+	response, err := cmd.gateway.PublishMessage(ctx, &cmd.request)
 	if cmd.retryPredicate(err) {
 		return cmd.Send()
 	}
@@ -133,10 +129,11 @@ func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
 
 func NewPublishMessageCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) PublishMessageCommandStep1 {
 	return &PublishMessageCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.PublishMessageRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			SerializerMixin: utils.NewJsonStringSerializer(),
+			gateway:         gateway,
+			requestTimeout:  requestTimeout,
+			retryPredicate:  retryPredicate,
+		},
 	}
 }

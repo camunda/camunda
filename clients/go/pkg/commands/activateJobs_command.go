@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	DefaultJobTimeout     = time.Duration(5 * time.Minute)
+	DefaultJobTimeout     = 5 * time.Minute
 	DefaultJobTimeoutInMs = int64(DefaultJobTimeout / time.Millisecond)
 	DefaultJobWorkerName  = "default"
 	RequestTimeoutOffset  = 10 * time.Second
@@ -51,10 +51,8 @@ type ActivateJobsCommandStep3 interface {
 }
 
 type ActivateJobsCommand struct {
-	request        *pb.ActivateJobsRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.ActivateJobsRequest
 }
 
 func (cmd *ActivateJobsCommand) JobType(jobType string) ActivateJobsCommandStep2 {
@@ -92,7 +90,7 @@ func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	stream, err := cmd.gateway.ActivateJobs(ctx, cmd.request)
+	stream, err := cmd.gateway.ActivateJobs(ctx, &cmd.request)
 	if err != nil {
 		if cmd.retryPredicate(err) {
 			return cmd.Send()
@@ -120,13 +118,15 @@ func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 
 func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ActivateJobsCommandStep1 {
 	return &ActivateJobsCommand{
-		request: &pb.ActivateJobsRequest{
+		request: pb.ActivateJobsRequest{
 			Timeout:        DefaultJobTimeoutInMs,
 			Worker:         DefaultJobWorkerName,
 			RequestTimeout: int64(requestTimeout / time.Millisecond),
 		},
-		gateway:        gateway,
-		requestTimeout: requestTimeout + RequestTimeoutOffset,
-		retryPredicate: retryPredicate,
+		Command: Command{
+			gateway:        gateway,
+			requestTimeout: requestTimeout + RequestTimeoutOffset,
+			retryPredicate: retryPredicate,
+		},
 	}
 }

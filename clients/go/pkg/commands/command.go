@@ -11,35 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
 package commands
 
 import (
-	"context"
+	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 	"time"
 )
 
-type TopologyCommand Command
+type Command struct {
+	utils.SerializerMixin
 
-func (cmd *TopologyCommand) Send() (*pb.TopologyResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
-	defer cancel()
-
-	response, err := cmd.gateway.Topology(ctx, &pb.TopologyRequest{})
-
-	if cmd.retryPredicate(err) {
-		return cmd.Send()
-	}
-
-	return response, err
-}
-
-func NewTopologyCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) *TopologyCommand {
-	return &TopologyCommand{
-		gateway:        gateway,
-		requestTimeout: requestTimeout,
-		retryPredicate: retryPredicate,
-	}
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
+	retryPredicate func(error) bool
 }

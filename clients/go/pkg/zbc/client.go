@@ -109,6 +109,10 @@ func (client *ClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandS
 	return commands.NewActivateJobsCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
 }
 
+func (client *ClientImpl) NewThrowErrorCommand() commands.ThrowErrorCommandStep1 {
+	return commands.NewThrowErrorCommand(client.gateway, client.requestTimeout, client.credentialsProvider.ShouldRetryRequest)
+}
+
 func (client *ClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
 	return worker.NewJobWorkerBuilder(client.gateway, client, client.requestTimeout)
 }

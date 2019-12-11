@@ -19,7 +19,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/zeebe-io/zeebe/clients/go/internal/utils"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
 )
 
@@ -36,12 +35,8 @@ type ResolveIncidentCommandStep2 interface {
 }
 
 type ResolveIncidentCommand struct {
-	utils.SerializerMixin
-
-	request        *pb.ResolveIncidentRequest
-	gateway        pb.GatewayClient
-	requestTimeout time.Duration
-	retryPredicate func(error) bool
+	Command
+	request pb.ResolveIncidentRequest
 }
 
 func (cmd *ResolveIncidentCommand) IncidentKey(incidentKey int64) ResolveIncidentCommandStep2 {
@@ -53,7 +48,7 @@ func (cmd *ResolveIncidentCommand) Send() (*pb.ResolveIncidentResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
-	response, err := cmd.gateway.ResolveIncident(ctx, cmd.request)
+	response, err := cmd.gateway.ResolveIncident(ctx, &cmd.request)
 	if cmd.retryPredicate(err) {
 		return cmd.Send()
 	}
@@ -63,10 +58,10 @@ func (cmd *ResolveIncidentCommand) Send() (*pb.ResolveIncidentResponse, error) {
 
 func NewResolveIncidentCommand(gateway pb.GatewayClient, requestTimeout time.Duration, retryPredicate func(error) bool) ResolveIncidentCommandStep1 {
 	return &ResolveIncidentCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
-		request:         &pb.ResolveIncidentRequest{},
-		gateway:         gateway,
-		requestTimeout:  requestTimeout,
-		retryPredicate:  retryPredicate,
+		Command: Command{
+			gateway:        gateway,
+			requestTimeout: requestTimeout,
+			retryPredicate: retryPredicate,
+		},
 	}
 }

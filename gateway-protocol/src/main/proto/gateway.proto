@@ -198,6 +198,18 @@ message FailJobRequest {
 message FailJobResponse {
 }
 
+message ThrowErrorRequest {
+  // the unique job identifier, as obtained when activating the job
+  int64 jobKey = 1;
+  // the error code that will be matched with an error catch event
+  string errorCode = 2;
+  // an optional error message that provides additional context
+  string errorMessage = 3;
+}
+
+message ThrowErrorResponse {
+}
+
 message PublishMessageRequest {
   // the name of the message
   string name = 1;
@@ -395,6 +407,19 @@ service Gateway {
         - the job is already in a failed state, i.e. ran out of retries
    */
   rpc FailJob (FailJobRequest) returns (FailJobResponse) {
+  }
+
+  /*
+    Reports a business error (i.e. non-technical) that occurs while processing a job. The error is handled in the workflow by an error catch event. If there is no error catch event with the specified errorCode then an incident will be raised instead.
+   
+    Errors:
+      NOT_FOUND:
+        - no job was found with the given key
+
+      FAILED_PRECONDITION:
+        - the job is not in an activated state
+   */
+  rpc ThrowError (ThrowErrorRequest) returns (ThrowErrorResponse) {
   }
 
   /*
