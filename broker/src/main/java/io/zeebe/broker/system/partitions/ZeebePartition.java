@@ -311,13 +311,12 @@ public class ZeebePartition extends Actor implements RaftCommitListener, Consume
 
   private void installProcessingPartition(CompletableActorFuture<Void> installFuture) {
     final StreamProcessor streamProcessor = createStreamProcessor(zeebeDb);
+    closeables.add(streamProcessor);
     streamProcessor
         .openAsync()
         .onComplete(
             (value, processorFail) -> {
               if (processorFail == null) {
-                closeables.add(streamProcessor);
-
                 final DataCfg dataCfg = brokerCfg.getData();
                 installSnapshotDirector(streamProcessor, dataCfg)
                     .onComplete(
