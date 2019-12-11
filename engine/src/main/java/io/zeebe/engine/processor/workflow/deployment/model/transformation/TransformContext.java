@@ -7,10 +7,12 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformation;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
+import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableError;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +23,8 @@ public class TransformContext {
 
   private final Map<DirectBuffer, ExecutableWorkflow> workflows = new HashMap<>();
   private final Map<DirectBuffer, ExecutableMessage> messages = new HashMap<>();
+  private final Map<DirectBuffer, ExecutableError> errors = new HashMap<>();
+
   private JsonPathQueryCompiler jsonPathQueryCompiler;
 
   /*
@@ -41,7 +45,7 @@ public class TransformContext {
   }
 
   public ExecutableWorkflow getWorkflow(final String id) {
-    return workflows.get(BufferUtil.wrapString(id));
+    return workflows.get(wrapString(id));
   }
 
   public List<ExecutableWorkflow> getWorkflows() {
@@ -53,7 +57,15 @@ public class TransformContext {
   }
 
   public ExecutableMessage getMessage(final String id) {
-    return messages.get(BufferUtil.wrapString(id));
+    return messages.get(wrapString(id));
+  }
+
+  public void addError(final ExecutableError error) {
+    errors.put(error.getId(), error);
+  }
+
+  public ExecutableError getError(final String id) {
+    return errors.get(wrapString(id));
   }
 
   public JsonPathQueryCompiler getJsonPathQueryCompiler() {

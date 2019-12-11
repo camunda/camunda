@@ -15,13 +15,25 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import java.util.HashSet;
+import java.util.Set;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class EventDefinitionValidator implements ModelElementValidator<EventDefinition> {
+
+  private static final Set<Class<? extends EventDefinition>> SUPPORTED_EVENT_DEFINITIONS;
+
+  static {
+    SUPPORTED_EVENT_DEFINITIONS = new HashSet<>();
+    SUPPORTED_EVENT_DEFINITIONS.add(MessageEventDefinition.class);
+    SUPPORTED_EVENT_DEFINITIONS.add(TimerEventDefinition.class);
+    SUPPORTED_EVENT_DEFINITIONS.add(ErrorEventDefinition.class);
+  }
 
   @Override
   public Class<EventDefinition> getElementType() {
@@ -31,7 +43,9 @@ public class EventDefinitionValidator implements ModelElementValidator<EventDefi
   @Override
   public void validate(
       final EventDefinition element, final ValidationResultCollector validationResultCollector) {
-    if (!(element instanceof MessageEventDefinition || element instanceof TimerEventDefinition)) {
+
+    final Class<?> elementType = element.getElementType().getInstanceType();
+    if (!SUPPORTED_EVENT_DEFINITIONS.contains(elementType)) {
       validationResultCollector.addError(0, "Event definition of this type is not supported");
     }
   }

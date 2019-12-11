@@ -14,6 +14,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformer.CallActiv
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.CatchEventTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ContextProcessTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.EndEventTransformer;
+import io.zeebe.engine.processor.workflow.deployment.model.transformer.ErrorTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.EventBasedGatewayTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ExclusiveGatewayTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.FlowElementInstantiationTransformer;
@@ -59,6 +60,7 @@ public class BpmnTransformer {
 
   public BpmnTransformer() {
     step1Visitor = new TransformationVisitor();
+    step1Visitor.registerHandler(new ErrorTransformer());
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
     step1Visitor.registerHandler(new MessageTransformer());
     step1Visitor.registerHandler(new ProcessTransformer());

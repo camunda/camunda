@@ -39,7 +39,7 @@ public class ReceiveTaskValidator implements ModelElementValidator<ReceiveTask> 
     }
 
     final Stream<String> messageNames =
-        ModelUtil.getActivityMessageBoundaryEvents(element)
+        ModelUtil.getBoundaryEvents(element, MessageEventDefinition.class)
             .map(MessageEventDefinition::getMessage)
             .filter(m -> m.getName() != null && !m.getName().isEmpty())
             .map(Message::getName);

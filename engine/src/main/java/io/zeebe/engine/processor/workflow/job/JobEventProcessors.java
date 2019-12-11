@@ -11,8 +11,6 @@ import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.deployment.WorkflowState;
-import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -24,8 +22,10 @@ public class JobEventProcessors {
       final ZeebeState zeebeState,
       final Consumer<String> onJobsAvailableCallback,
       final int maxRecordSize) {
-    final WorkflowState workflowState = zeebeState.getWorkflowState();
-    final JobState jobState = zeebeState.getJobState();
+
+    final var workflowState = zeebeState.getWorkflowState();
+    final var jobState = zeebeState.getJobState();
+    final var keyGenerator = zeebeState.getKeyGenerator();
 
     typedRecordProcessors
         .onEvent(ValueType.JOB, JobIntent.CREATED, new JobCreatedProcessor(workflowState))
@@ -34,6 +34,11 @@ public class JobEventProcessors {
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
         .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())
+        .onCommand(ValueType.JOB, JobIntent.THROW_ERROR, new JobThrowErrorProcessor(jobState))
+        .onEvent(
+            ValueType.JOB,
+            JobIntent.ERROR_THROWN,
+            new JobErrorThrownProcessor(workflowState, keyGenerator))
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelProcessor(jobState))
@@ -43,7 +48,7 @@ public class JobEventProcessors {
             new JobBatchActivateProcessor(
                 jobState,
                 workflowState.getElementInstanceState().getVariablesState(),
-                zeebeState.getKeyGenerator(),
+                keyGenerator,
                 maxRecordSize))
         .withListener(new JobTimeoutTrigger(jobState))
         .withListener(

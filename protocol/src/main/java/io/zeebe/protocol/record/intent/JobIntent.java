@@ -34,7 +34,10 @@ public enum JobIntent implements WorkflowInstanceRelatedIntent {
   RETRIES_UPDATED((short) 10),
 
   CANCEL((short) 11),
-  CANCELED((short) 12);
+  CANCELED((short) 12),
+
+  THROW_ERROR((short) 13, false),
+  ERROR_THROWN((short) 14);
 
   private final short value;
   private final boolean shouldBlacklist;
@@ -80,6 +83,10 @@ public enum JobIntent implements WorkflowInstanceRelatedIntent {
         return CANCEL;
       case 12:
         return CANCELED;
+      case 13:
+        return THROW_ERROR;
+      case 14:
+        return ERROR_THROWN;
       default:
         return UNKNOWN;
     }

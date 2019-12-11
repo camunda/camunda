@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.util.client;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -90,6 +92,11 @@ public class JobClient {
     return this;
   }
 
+  public JobClient withErrorCode(final String errorCode) {
+    jobRecord.setErrorCode(wrapString(errorCode));
+    return this;
+  }
+
   public JobClient expectRejection() {
     expectation = REJECTION_SUPPLIER;
     return this;
@@ -126,6 +133,13 @@ public class JobClient {
   public Record<JobRecordValue> updateRetries() {
     final long jobKey = findJobKey();
     final long position = environmentRule.writeCommand(jobKey, JobIntent.UPDATE_RETRIES, jobRecord);
+    return expectation.apply(position);
+  }
+
+  public Record<JobRecordValue> throwError() {
+    final long jobKey = findJobKey();
+    final long position = environmentRule.writeCommand(jobKey, JobIntent.THROW_ERROR, jobRecord);
+
     return expectation.apply(position);
   }
 }

@@ -31,7 +31,7 @@ public class JobMetrics {
   private final String partitionIdLabel;
 
   public JobMetrics(final int partitionId) {
-    this.partitionIdLabel = String.valueOf(partitionId);
+    partitionIdLabel = String.valueOf(partitionId);
   }
 
   private void jobEvent(final String action, final String type) {
@@ -66,6 +66,11 @@ public class JobMetrics {
 
   public void jobCanceled(final String type) {
     jobEvent("canceled", type);
+    jobFinished(type);
+  }
+
+  public void jobErrorThrown(final String type) {
+    jobEvent("error thrown", type);
     jobFinished(type);
   }
 }

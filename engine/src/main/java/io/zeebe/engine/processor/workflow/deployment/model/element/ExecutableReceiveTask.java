@@ -17,7 +17,7 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
     super(id);
 
     getEvents().add(this);
-    getInterruptingElementIds().add(this.getId());
+    getInterruptingElementIds().add(getId());
   }
 
   @Override
@@ -31,12 +31,22 @@ public class ExecutableReceiveTask extends ExecutableActivity implements Executa
   }
 
   @Override
+  public boolean isError() {
+    return false;
+  }
+
+  @Override
   public ExecutableMessage getMessage() {
     return message;
   }
 
   @Override
   public RepeatingInterval getTimer() {
+    return null;
+  }
+
+  @Override
+  public ExecutableError getError() {
     return null;
   }
 

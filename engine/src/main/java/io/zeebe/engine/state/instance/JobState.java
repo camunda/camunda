@@ -144,6 +144,11 @@ public class JobState {
     metrics.jobCanceled(record.getType());
   }
 
+  public void throwError(final long key, final JobRecord record) {
+    delete(key, record);
+    metrics.jobErrorThrown(record.getType());
+  }
+
   private void delete(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
@@ -320,7 +325,7 @@ public class JobState {
     FAILED((byte) 2),
     NOT_FOUND((byte) 3);
 
-    final byte value;
+    byte value;
 
     State(final byte value) {
       this.value = value;
