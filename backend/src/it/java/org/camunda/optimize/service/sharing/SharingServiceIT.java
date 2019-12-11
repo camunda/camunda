@@ -5,6 +5,12 @@
  */
 package org.camunda.optimize.service.sharing;
 
+import org.apache.http.HttpStatus;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.RoleType;
+import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -26,7 +32,10 @@ import java.util.HashMap;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 
 public class SharingServiceIT extends AbstractSharingIT {
 
@@ -80,12 +89,12 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
 
-    HashMap evaluatedReportAsMap = embeddedOptimizeExtension
+    HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(reportShareId)
-            .execute(HashMap.class, 200);
+            .execute(HashMap.class, HttpStatus.SC_OK);
 
     // then
     assertReportData(reportId2, evaluatedReportAsMap);
@@ -103,7 +112,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createDashboardShareResponse(share);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
   }
 
   @Test
@@ -117,21 +126,20 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     // when
     Response response = sharingClient.getDashboardShareResponse(dashboardId);
-    // the 200 means there is a dashboard share
-    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
 
     // then
-    HashMap evaluatedReportAsMap = embeddedOptimizeExtension
+    HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
-            .execute(HashMap.class, 200);
+            .execute(HashMap.class, HttpStatus.SC_OK);
 
     assertReportData(reportId, evaluatedReportAsMap);
 
     evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId2)
-            .execute(HashMap.class, 200);
+            .execute(HashMap.class, HttpStatus.SC_OK);
 
     assertReportData(reportId2, evaluatedReportAsMap);
   }
@@ -152,7 +160,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedReportRequest(reportId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -172,7 +180,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardReportRequest(dashboardShareId, FAKE_REPORT_ID)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -192,7 +200,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardReportRequest("fakedashboardshareid", reportId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -220,7 +228,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
 
     //then
     response =
@@ -229,7 +237,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
     dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId2);
 
@@ -268,7 +276,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = updateDashboard(dashboardWithReport, fullBoard);
 
     //then
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
   }
 
   @Test
@@ -342,7 +350,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteDashboardShareRequest(dashboardShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
 
     //then
     response =
@@ -350,12 +358,12 @@ public class SharingServiceIT extends AbstractSharingIT {
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(dashboardReportShareId)
             .execute();
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
-    HashMap evaluatedReportAsMap = embeddedOptimizeExtension
+    HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(reportShareId)
-            .execute(HashMap.class, 200);
+            .execute(HashMap.class, HttpStatus.SC_OK);
 
     assertReportData(reportId, evaluatedReportAsMap);
   }
@@ -375,7 +383,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .execute();
 
     //then
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -385,7 +393,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(createReportShare());
 
     // then
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -398,7 +406,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(sharingDto);
 
     // then
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -411,7 +419,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createDashboardShareResponse(dashboardShare);
 
     // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -424,7 +432,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     Response response = createReportShareResponse(share);
 
     // then the status code is okay
-    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
     String id =
         response.readEntity(String.class);
     assertThat(id).isNotNull();
@@ -446,7 +454,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedReportRequest(FAKE_REPORT_ID)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -459,7 +467,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildEvaluateSharedDashboardRequest(FAKE_REPORT_ID)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -473,7 +481,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
             .execute();
-    assertThat(response.getStatus()).isEqualTo(200);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
 
     //when
     response =
@@ -482,7 +490,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteReportShareRequest(shareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
 
     //then
     response =
@@ -490,7 +498,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
             .execute();
-    assertThat(response.getStatus()).isEqualTo(500);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_INTERNAL_SERVER_ERROR);
   }
 
   @Test
@@ -505,7 +513,7 @@ public class SharingServiceIT extends AbstractSharingIT {
             .buildDeleteReportShareRequest(reportShareId)
             .execute();
 
-    assertThat(response.getStatus()).isEqualTo(204);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
 
     String newShareId = this.addShareForReport(reportId);
     assertThat(reportShareId).isNotEqualTo(newShareId);
@@ -533,10 +541,10 @@ public class SharingServiceIT extends AbstractSharingIT {
     String shareId = addShareForReport(reportId);
 
     //when
-    HashMap evaluatedReportAsMap = embeddedOptimizeExtension
+    HashMap<?, ?> evaluatedReportAsMap = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildEvaluateSharedReportRequest(shareId)
-            .execute(HashMap.class, 200);
+            .execute(HashMap.class, HttpStatus.SC_OK);
 
     //then
     assertReportData(reportId, evaluatedReportAsMap);
@@ -561,7 +569,7 @@ public class SharingServiceIT extends AbstractSharingIT {
       embeddedOptimizeExtension
             .getRequestExecutor()
             .buildCheckSharingStatusRequest(statusRequest)
-            .execute(ShareSearchResultDto.class, 200);
+            .execute(ShareSearchResultDto.class, HttpStatus.SC_OK);
 
     //then
     assertThat(result.getDashboards().size()).isEqualTo(2);
@@ -587,7 +595,7 @@ public class SharingServiceIT extends AbstractSharingIT {
         embeddedOptimizeExtension
           .getRequestExecutor()
           .buildCheckSharingStatusRequest(statusRequest)
-          .execute(ShareSearchResultDto.class, 200);
+          .execute(ShareSearchResultDto.class, HttpStatus.SC_OK);
 
     // then
     assertThat(result.getReports().size()).isEqualTo(2);
@@ -643,7 +651,7 @@ public class SharingServiceIT extends AbstractSharingIT {
                     dashboardShareId,
                     dashboardShareDto.getReports().get(0).getId()
             )
-            .execute(ReportEvaluationException.class, 400);
+            .execute(ReportEvaluationException.class, HttpStatus.SC_BAD_REQUEST);
 
     //then
     AbstractSharingIT.assertErrorFields(errorResponse);
@@ -652,25 +660,53 @@ public class SharingServiceIT extends AbstractSharingIT {
   @Test
   public void shareUnauthorizedDashboard() {
     // given
-    engineIntegrationExtension.addUser("kermit", "kermit");
-    engineIntegrationExtension.grantUserOptimizeAccess("kermit");
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
     String reportId1 = createReport("processDefinition1");
     String reportId2 = createReport("processDefinition2");
     String dashboardId = addEmptyDashboardToOptimize();
     addReportToDashboard(dashboardId, reportId1, reportId2);
 
-    grantSingleDefinitionAuthorizationsForUser("kermit", "processDefinition1");
+    grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, "processDefinition1");
 
     // when I want to share the dashboard as kermit and kermit has no access to report 2
     DashboardShareDto share = createDashboardShareDto(dashboardId);
     Response response = embeddedOptimizeExtension
             .getRequestExecutor()
             .buildShareDashboardRequest(share)
-            .withUserAuthentication("kermit", "kermit")
+            .withUserAuthentication(KERMIT_USER, KERMIT_USER)
             .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(403);
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+  }
+
+  @Test
+  public void cantShareDashboardWithUnauthorizedCombinedReport() {
+    // given
+    engineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
+    engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
+
+    final String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+    collectionClient.addRoleToCollection(
+      collectionId, new CollectionRoleDto(new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER)
+    );
+    final String reportId =
+      reportClient.createSingleReport(collectionId, DefinitionType.PROCESS, DEFAULT_DEFINITION_KEY, DEFAULT_TENANTS);
+    final String combinedReportId = reportClient.createCombinedReport(collectionId, Collections.singletonList(reportId));
+    final String dashboardId =
+      dashboardClient.createDashboard(collectionId, Collections.singletonList(combinedReportId));
+
+    // when
+    DashboardShareDto share = createDashboardShareDto(dashboardId);
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildShareDashboardRequest(share)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
 }
