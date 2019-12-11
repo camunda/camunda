@@ -47,5 +47,7 @@ public class ElasticsearchConstants {
   public static final String EVENT_PROCESS_PUBLISH_STATE_INDEX = "event-process-publish-state";
   public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
 
+  public static final String EVENT_PROCESS_INSTANCE_INDEX_PREFIX = "event-process-instance-";
+
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
 }

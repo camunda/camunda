@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.event;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -19,8 +18,8 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
@@ -30,6 +29,7 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -44,7 +44,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -102,7 +105,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   @SneakyThrows
-  protected List<String> getEventProcessInstanceIndicesFromElasticsearch() {
+  protected Map<String, List<String>> getEventProcessInstanceIndicesWithAliasesFromElasticsearch() {
     final OptimizeIndexNameService indexNameService = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .getIndexNameService();
     final GetIndexResponse getIndexResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
@@ -110,12 +113,16 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .indices().get(
         new GetIndexRequest().indices(
           indexNameService
-            .getOptimizeIndexAliasForIndex(EventProcessInstanceIndex.EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
+            .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
             + "*"
         ),
         RequestOptions.DEFAULT
       );
-    return Lists.newArrayList(getIndexResponse.indices());
+    return StreamSupport.stream(getIndexResponse.aliases().spliterator(), false)
+      .collect(Collectors.toMap(
+        cursor -> cursor.key,
+        cursor -> cursor.value.stream().map(AliasMetaData::alias).collect(Collectors.toList())
+      ));
   }
 
   @SneakyThrows
@@ -164,7 +171,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final List<ProcessInstanceDto> results = new ArrayList<>();
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .search(
-        new SearchRequest(EventProcessInstanceIndex.EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*"),
+        new SearchRequest(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*"),
         RequestOptions.DEFAULT
       );
     for (SearchHit hit : searchResponse.getHits().getHits()) {
@@ -200,7 +207,6 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return eventId;
   }
 
-
   @SneakyThrows
   protected String createSimpleProcessDefinitionXml() {
     final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
@@ -212,5 +218,11 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(xmlOutput, bpmnModel);
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
+  }
+
+  protected String getEventPublishStateIdForEventProcessMappingId(final String eventProcessMappingId) {
+    return getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)
+      .map(EventProcessPublishStateDto::getId)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get id of published process"));
   }
 }

@@ -11,16 +11,20 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Phaser;
+
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @AllArgsConstructor
 @Slf4j
@@ -29,6 +33,7 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
   final private OptimizeElasticsearchClient elasticsearchClient;
   final private ElasticSearchSchemaManager elasticSearchSchemaManager;
   final private EventProcessPublishStateReader eventProcessPublishStateReader;
+  final private OptimizeIndexNameService indexNameService;
 
   final private Map<String, EventProcessPublishStateDto> publishedInstanceIndices = new ConcurrentHashMap<>();
   final private Map<String, Phaser> indexUsagePhasers = new ConcurrentHashMap<>();
@@ -73,7 +78,9 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
             elasticsearchClient, processInstanceIndex
           );
           if (!indexAlreadyExists) {
-            elasticSearchSchemaManager.createOptimizeIndex(elasticsearchClient, processInstanceIndex);
+            elasticSearchSchemaManager.createOptimizeIndex(
+              elasticsearchClient, processInstanceIndex, Collections.singleton(getOptimizeProcessIndexAlias())
+            );
           }
           publishedInstanceIndices.putIfAbsent(publishStateDto.getId(), publishStateDto);
         } catch (final Exception e) {
@@ -82,6 +89,10 @@ public class EventProcessInstanceIndexManager implements ConfigurationReloadable
           );
         }
       });
+  }
+
+  private String getOptimizeProcessIndexAlias() {
+    return indexNameService.getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_INDEX_NAME);
   }
 
   public synchronized CompletableFuture<Void> registerIndexUsageAndReturnCompletableHook(

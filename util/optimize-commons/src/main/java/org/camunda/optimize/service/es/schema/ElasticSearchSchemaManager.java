@@ -32,8 +32,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
@@ -120,14 +122,23 @@ public class ElasticSearchSchemaManager {
     }
   }
 
-  public void createOptimizeIndex(final OptimizeElasticsearchClient esClient, final IndexMappingCreator mapping) {
-    final String aliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
+  public void createOptimizeIndex(final OptimizeElasticsearchClient esClient,
+                                  final IndexMappingCreator mapping) {
+    createOptimizeIndex(esClient, mapping, Collections.emptySet());
+  }
+
+  public void createOptimizeIndex(final OptimizeElasticsearchClient esClient,
+                                  final IndexMappingCreator mapping,
+                                  final Set<String> additionalAliases) {
+    final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
     final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
     final Settings indexSettings = createIndexSettings();
     try {
       try {
-        CreateIndexRequest request = new CreateIndexRequest(indexName);
-        request.alias(new Alias(aliasName));
+        final CreateIndexRequest request = new CreateIndexRequest(indexName);
+        final Set<String> aliases = new HashSet<>(additionalAliases);
+        aliases.add(defaultAliasName);
+        aliases.forEach(additionalAliasName -> request.alias(new Alias(additionalAliasName)));
         request.settings(indexSettings);
         request.mapping(DEFAULT_INDEX_TYPE, mapping.getSource());
         esClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);

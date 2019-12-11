@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -159,12 +157,6 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
       getEventProcessDefinitionFromElasticsearch(expectedProcessDefinitionId);
 
     assertThat(eventProcessDefinition).isEmpty();
-  }
-
-  private String getEventPublishStateIdForEventProcessMappingId(final String eventProcessMappingId) {
-    return getEventProcessPublishStateDtoFromElasticsearch(eventProcessMappingId)
-      .map(EventProcessPublishStateDto::getId)
-      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get id of published process"));
   }
 
 }

@@ -19,7 +19,6 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
@@ -66,6 +65,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
@@ -463,9 +463,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   private void deleteAllEventProcessInstanceIndices() {
-    DeleteIndexRequest request = new DeleteIndexRequest(getIndexNameService().getOptimizeIndexAliasForIndex(
-      EventProcessInstanceIndex.EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*"
-    ));
+    DeleteIndexRequest request = new DeleteIndexRequest(
+      getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*")
+    );
 
     try {
       getOptimizeElasticClient().getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);

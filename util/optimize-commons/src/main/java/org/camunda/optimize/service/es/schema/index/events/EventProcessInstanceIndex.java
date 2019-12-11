@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 
-public class EventProcessInstanceIndex extends ProcessInstanceIndex {
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 
-  public static final String EVENT_PROCESS_INSTANCE_INDEX_PREFIX = "event-process-instance-";
+public class EventProcessInstanceIndex extends ProcessInstanceIndex {
 
   public EventProcessInstanceIndex(final String eventProcessId) {
     super(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessId);

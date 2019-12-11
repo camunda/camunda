@@ -6,45 +6,48 @@
 package org.camunda.optimize.service.importing.event;
 
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
   @Test
   public void dedicatedInstanceIndexIsCreatedForPublishedEventProcess() {
     // given
-    final String eventProcessId = createSimpleEventProcessMapping("whatever", "huh");
+    final String eventProcessMappingId = createSimpleEventProcessMapping("whatever", "huh");
 
     // when
-    eventProcessClient.publishEventProcessMapping(eventProcessId);
+    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
     executeImportCycle();
 
     // then
-    final Optional<EventProcessPublishStateDto> eventProcessPublishState =
-      getEventProcessPublishStateDtoFromElasticsearch(eventProcessId);
-    assertThat(eventProcessPublishState).isNotEmpty();
+    final String eventProcessPublishStateId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
 
-    final List<String> eventProcessInstanceIndices = getEventProcessInstanceIndicesFromElasticsearch();
-    assertThat(eventProcessInstanceIndices)
+    final Map<String, List<String>> eventProcessInstanceIndicesAndAliases =
+      getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
+    assertThat(eventProcessInstanceIndicesAndAliases)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(eventProcessPublishState.get().getId()));
+      .hasEntrySatisfying(
+        getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId),
+        aliases -> assertThat(aliases).containsExactlyInAnyOrder(
+          getOptimizeIndexAliasForIndexName(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessPublishStateId),
+          getOptimizeIndexAliasForIndexName(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME)
+        )
+      );
   }
 
   @Test
@@ -62,8 +65,9 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final List<String> eventProcessInstanceIndices = getEventProcessInstanceIndicesFromElasticsearch();
-    assertThat(eventProcessInstanceIndices).hasSize(0);
+    final Map<String, List<String>> eventProcessInstanceIndicesAndAliases =
+      getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
+    assertThat(eventProcessInstanceIndicesAndAliases).hasSize(0);
   }
 
   @Test
@@ -535,6 +539,18 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
           .build()
       ))
       .build();
+  }
+
+  private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(final String eventProcessPublishStateId) {
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .getIndexNameService()
+      .getVersionedOptimizeIndexNameForIndexMapping(new EventProcessInstanceIndex(eventProcessPublishStateId));
+  }
+
+  private String getOptimizeIndexAliasForIndexName(final String indexName) {
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .getIndexNameService()
+      .getOptimizeIndexAliasForIndex(indexName);
   }
 
 }
