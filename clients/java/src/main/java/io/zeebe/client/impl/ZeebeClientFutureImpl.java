@@ -85,7 +85,7 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
     // do nothing as we don't support streaming
   }
 
-  private RuntimeException transformExecutionException(ExecutionException e) {
+  private RuntimeException transformExecutionException(final ExecutionException e) {
     final Throwable cause = e.getCause();
 
     if (cause instanceof StatusRuntimeException) {

@@ -31,7 +31,7 @@ public class WorkflowStateTest {
 
   private static final Long FIRST_WORKFLOW_KEY =
       Protocol.encodePartitionId(Protocol.DEPLOYMENT_PARTITION, 1);
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
   private WorkflowState workflowState;
   private ZeebeState zeebeState;
 
@@ -423,18 +423,19 @@ public class WorkflowStateTest {
     Assertions.assertThat(latestWorkflow.getVersion()).isEqualTo(2);
   }
 
-  public static DeploymentRecord creatingDeploymentRecord(ZeebeState zeebeState) {
+  public static DeploymentRecord creatingDeploymentRecord(final ZeebeState zeebeState) {
     return creatingDeploymentRecord(zeebeState, "processId");
   }
 
-  public static DeploymentRecord creatingDeploymentRecord(ZeebeState zeebeState, String processId) {
+  public static DeploymentRecord creatingDeploymentRecord(
+      final ZeebeState zeebeState, final String processId) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final int version = workflowState.getNextWorkflowVersion(processId);
     return creatingDeploymentRecord(zeebeState, processId, version);
   }
 
   public static DeploymentRecord creatingDeploymentRecord(
-      ZeebeState zeebeState, String processId, int version) {
+      final ZeebeState zeebeState, final String processId, final int version) {
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess(processId)
             .startEvent()

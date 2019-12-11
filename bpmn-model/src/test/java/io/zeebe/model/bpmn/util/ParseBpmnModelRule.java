@@ -29,7 +29,7 @@ public class ParseBpmnModelRule extends TestWatcher {
   protected BpmnModelInstance bpmnModelInstance;
 
   @Override
-  protected void starting(Description description) {
+  protected void starting(final Description description) {
 
     if (description.getAnnotation(BpmnModelResource.class) != null) {
 

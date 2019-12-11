@@ -16,9 +16,9 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
 public class IncidentEventProcessors {
 
   public static void addProcessors(
-      TypedRecordProcessors typedRecordProcessors,
-      ZeebeState zeebeState,
-      BpmnStepProcessor bpmnStepProcessor) {
+      final TypedRecordProcessors typedRecordProcessors,
+      final ZeebeState zeebeState,
+      final BpmnStepProcessor bpmnStepProcessor) {
     typedRecordProcessors
         .onCommand(
             ValueType.INCIDENT, IncidentIntent.CREATE, new CreateIncidentProcessor(zeebeState))

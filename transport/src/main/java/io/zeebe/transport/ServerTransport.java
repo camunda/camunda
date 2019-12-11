@@ -18,7 +18,8 @@ public class ServerTransport implements AutoCloseable {
   protected final TransportContext transportContext;
   protected final ServerSocketBinding serverSocketBinding;
 
-  public ServerTransport(ActorContext transportActorContext, TransportContext transportContext) {
+  public ServerTransport(
+      final ActorContext transportActorContext, final TransportContext transportContext) {
     this.transportActorContext = transportActorContext;
     this.transportContext = transportContext;
     this.output = transportContext.getServerOutput();
@@ -34,11 +35,11 @@ public class ServerTransport implements AutoCloseable {
    * Registers a listener with callbacks for whenever a connection to a remote gets established or
    * closed.
    */
-  public ActorFuture<Void> registerChannelListener(TransportListener channelListener) {
+  public ActorFuture<Void> registerChannelListener(final TransportListener channelListener) {
     return transportActorContext.registerListener(channelListener);
   }
 
-  public void removeChannelListener(TransportListener listener) {
+  public void removeChannelListener(final TransportListener listener) {
     transportActorContext.removeListener(listener);
   }
 

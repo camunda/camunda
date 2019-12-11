@@ -22,8 +22,8 @@ public class BufferingServerTransportTest {
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
   public static final SocketAddress SERVER_ADDRESS = new SocketAddress(SocketUtil.getNextAddress());
 
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 

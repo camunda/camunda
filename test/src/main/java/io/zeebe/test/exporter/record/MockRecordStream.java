@@ -12,12 +12,12 @@ import java.util.stream.Stream;
 
 public class MockRecordStream extends StreamWrapper<MockRecord, MockRecordStream> {
 
-  public MockRecordStream(Stream<MockRecord> wrappedStream) {
+  public MockRecordStream(final Stream<MockRecord> wrappedStream) {
     super(wrappedStream);
   }
 
   @Override
-  protected MockRecordStream supply(Stream<MockRecord> wrappedStream) {
+  protected MockRecordStream supply(final Stream<MockRecord> wrappedStream) {
     return new MockRecordStream(wrappedStream);
   }
 
@@ -25,11 +25,11 @@ public class MockRecordStream extends StreamWrapper<MockRecord, MockRecordStream
     return generate(new MockRecord());
   }
 
-  public static MockRecordStream generate(MockRecord seed) {
+  public static MockRecordStream generate(final MockRecord seed) {
     return new MockRecordStream(Stream.iterate(seed, MockRecordStream::generateNextRecord));
   }
 
-  private static MockRecord generateNextRecord(MockRecord previousRecord) {
+  private static MockRecord generateNextRecord(final MockRecord previousRecord) {
     final long position = previousRecord.getPosition() + 1;
     final MockRecord nextRecord = (MockRecord) previousRecord.clone();
 

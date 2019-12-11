@@ -33,7 +33,7 @@ public class NetworkCfg implements ConfigurationEntry {
   private int maxMessageCount = DEFAULT_MAX_MESSAGE_COUNT;
   private String advertisedHost;
 
-  private CommandApiCfg commandApi = new CommandApiCfg();
+  private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
   private MonitoringApiCfg monitoringApi = new MonitoringApiCfg();
 
@@ -88,7 +88,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return maxMessageCount;
   }
 
-  public NetworkCfg setMaxMessageCount(int maxMessageCount) {
+  public NetworkCfg setMaxMessageCount(final int maxMessageCount) {
     this.maxMessageCount = maxMessageCount;
     return this;
   }

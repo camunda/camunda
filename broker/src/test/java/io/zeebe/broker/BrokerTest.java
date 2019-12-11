@@ -48,7 +48,7 @@ public class BrokerTest {
     tryToBindSocketAddress(networkCfg.getCommandApi().getAddress());
   }
 
-  private void tryToBindSocketAddress(SocketAddress socketAddress) {
+  private void tryToBindSocketAddress(final SocketAddress socketAddress) {
     final InetSocketAddress socket = socketAddress.toInetSocketAddress();
     final ServerSocketBinding binding = new ServerSocketBinding(socket);
     binding.doBind();

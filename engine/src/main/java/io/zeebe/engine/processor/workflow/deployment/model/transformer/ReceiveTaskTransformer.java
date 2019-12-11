@@ -25,7 +25,7 @@ public class ReceiveTaskTransformer implements ModelElementTransformer<ReceiveTa
   }
 
   @Override
-  public void transform(ReceiveTask element, TransformContext context) {
+  public void transform(final ReceiveTask element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableReceiveTask executableElement =
         workflow.getElementById(element.getId(), ExecutableReceiveTask.class);

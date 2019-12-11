@@ -16,7 +16,7 @@ public class WorkStealingGroup {
   private final int numOfThreads;
   private final ActorTaskQueue[] taskQueues;
 
-  public WorkStealingGroup(int numOfThreads) {
+  public WorkStealingGroup(final int numOfThreads) {
     this.numOfThreads = numOfThreads;
     this.taskQueues = new ActorTaskQueue[numOfThreads];
     for (int i = 0; i < numOfThreads; i++) {
@@ -30,7 +30,7 @@ public class WorkStealingGroup {
    * @param task the task to submit
    * @param threadId the id of the thread into which queue the task should be submitted
    */
-  public void submit(ActorTask task, int threadId) {
+  public void submit(final ActorTask task, final int threadId) {
     task.schedulingState = QUEUED;
     taskQueues[threadId].append(task);
   }
@@ -58,7 +58,7 @@ public class WorkStealingGroup {
    * <p>Work stealing is a mechanism for <em>load balancing</em>: it relies upon the assumption that
    * there is more work to do than there is resources (threads) to run it.
    */
-  private ActorTask trySteal(ActorThread currentThread) {
+  private ActorTask trySteal(final ActorThread currentThread) {
     /*
      * This implementation uses a random offset into the runner array. The idea is to
      *

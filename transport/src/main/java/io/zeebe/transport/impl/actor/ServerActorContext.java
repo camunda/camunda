@@ -11,7 +11,7 @@ public class ServerActorContext extends ActorContext {
   private ServerConductor serverConductor;
 
   @Override
-  public void setConductor(Conductor conductor) {
+  public void setConductor(final Conductor conductor) {
     super.setConductor(conductor);
     this.serverConductor = (ServerConductor) conductor;
   }

@@ -29,13 +29,13 @@ public final class Message implements DbValue {
   public Message() {}
 
   public Message(
-      long key,
-      DirectBuffer name,
-      DirectBuffer correlationKey,
-      DirectBuffer variables,
-      DirectBuffer id,
-      long timeToLive,
-      long deadline) {
+      final long key,
+      final DirectBuffer name,
+      final DirectBuffer correlationKey,
+      final DirectBuffer variables,
+      final DirectBuffer id,
+      final long timeToLive,
+      final long deadline) {
     this.name.wrap(name);
     this.correlationKey.wrap(correlationKey);
     this.variables.wrap(variables);
@@ -99,7 +99,7 @@ public final class Message implements DbValue {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     int valueOffset = offset;
     valueOffset = writeIntoBuffer(buffer, valueOffset, name);
     valueOffset = writeIntoBuffer(buffer, valueOffset, correlationKey);

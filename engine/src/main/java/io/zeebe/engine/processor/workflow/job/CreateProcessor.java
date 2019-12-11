@@ -17,13 +17,13 @@ public class CreateProcessor implements CommandProcessor<JobRecord> {
 
   private final JobState state;
 
-  public CreateProcessor(JobState state) {
+  public CreateProcessor(final JobState state) {
     this.state = state;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long key = commandControl.accept(JobIntent.CREATED, command.getValue());
     state.create(key, command.getValue());
     return true;

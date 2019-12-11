@@ -16,7 +16,7 @@ public class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobRecord> {
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerCompleteJobRequest(long key, DirectBuffer variables) {
+  public BrokerCompleteJobRequest(final long key, final DirectBuffer variables) {
     super(ValueType.JOB, JobIntent.COMPLETE);
     request.setKey(key);
     requestDto.setVariables(variables);
@@ -28,7 +28,7 @@ public class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobRecord> {
   }
 
   @Override
-  protected JobRecord toResponseDto(DirectBuffer buffer) {
+  protected JobRecord toResponseDto(final DirectBuffer buffer) {
     final JobRecord responseDto = new JobRecord();
     responseDto.wrap(buffer);
     return responseDto;

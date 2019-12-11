@@ -46,10 +46,10 @@ public class BrokerRequestManager extends Actor {
   private final Duration requestTimeout;
 
   public BrokerRequestManager(
-      ClientOutput clientOutput,
-      BrokerTopologyManagerImpl topologyManager,
-      RequestDispatchStrategy dispatchStrategy,
-      Duration requestTimeout) {
+      final ClientOutput clientOutput,
+      final BrokerTopologyManagerImpl topologyManager,
+      final RequestDispatchStrategy dispatchStrategy,
+      final Duration requestTimeout) {
     this.clientOutput = clientOutput;
     this.dispatchStrategy = dispatchStrategy;
     this.topologyManager = topologyManager;
@@ -75,12 +75,12 @@ public class BrokerRequestManager extends Actor {
     }
   }
 
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request) {
+  public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
     return sendRequest(request, this.requestTimeout);
   }
 
   public <T> ActorFuture<BrokerResponse<T>> sendRequest(
-      BrokerRequest<T> request, Duration requestTimeout) {
+      final BrokerRequest<T> request, final Duration requestTimeout) {
     final ActorFuture<BrokerResponse<T>> responseFuture = new CompletableActorFuture<>();
 
     sendRequest(
@@ -98,17 +98,17 @@ public class BrokerRequestManager extends Actor {
   }
 
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
     sendRequest(request, responseConsumer, throwableConsumer, this.requestTimeout);
   }
 
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Duration requestTimeout) {
     sendRequest(
         request,
         responseConsumer,
@@ -119,12 +119,12 @@ public class BrokerRequestManager extends Actor {
   }
 
   private <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<BrokerRejection> rejectionConsumer,
-      Consumer<BrokerError> errorConsumer,
-      Consumer<Throwable> throwableConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<BrokerRejection> rejectionConsumer,
+      final Consumer<BrokerError> errorConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Duration requestTimeout) {
 
     sendRequest(
         request,
@@ -145,7 +145,7 @@ public class BrokerRequestManager extends Actor {
             } else {
               throwableConsumer.accept(error);
             }
-          } catch (RuntimeException e) {
+          } catch (final RuntimeException e) {
             throwableConsumer.accept(new BrokerResponseException(e));
           }
         },
@@ -153,17 +153,17 @@ public class BrokerRequestManager extends Actor {
   }
 
   private <T> void sendRequest(
-      BrokerRequest<T> request,
-      BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
+      final Duration requestTimeout) {
     request.serializeValue();
     actor.run(() -> sendRequestInternal(request, responseConsumer, requestTimeout));
   }
 
   private <T> void sendRequestInternal(
-      BrokerRequest<T> request,
-      BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
+      final Duration requestTimeout) {
     final BrokerNodeIdProvider nodeIdProvider = determineBrokerNodeIdProvider(request);
 
     final ActorFuture<ClientResponse> responseFuture =
@@ -181,7 +181,7 @@ public class BrokerRequestManager extends Actor {
               } else {
                 responseConsumer.accept(null, error);
               }
-            } catch (RuntimeException e) {
+            } catch (final RuntimeException e) {
               responseConsumer.accept(null, new ClientResponseException(e));
             }
           });
@@ -190,7 +190,7 @@ public class BrokerRequestManager extends Actor {
     }
   }
 
-  private BrokerNodeIdProvider determineBrokerNodeIdProvider(BrokerRequest<?> request) {
+  private BrokerNodeIdProvider determineBrokerNodeIdProvider(final BrokerRequest<?> request) {
     if (request.addressesSpecificPartition()) {
       // already know partition id
       return new BrokerNodeIdProvider(request.getPartitionId());
@@ -215,7 +215,8 @@ public class BrokerRequestManager extends Actor {
     }
   }
 
-  private void determinePartitionIdForPublishMessageRequest(BrokerPublishMessageRequest request) {
+  private void determinePartitionIdForPublishMessageRequest(
+      final BrokerPublishMessageRequest request) {
     final BrokerClusterState topology = topologyManager.getTopology();
     if (topology != null) {
       final int partitionsCount = topology.getPartitionsCount();

@@ -23,12 +23,13 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   private final List<Function<T, String>> expressionSuppliers;
 
   private ZeebeExpressionValidator(
-      Class<T> elementType, List<Function<T, String>> expressionSuppliers) {
+      final Class<T> elementType, final List<Function<T, String>> expressionSuppliers) {
     this.elementType = elementType;
     this.expressionSuppliers = expressionSuppliers;
   }
 
-  private void validatePathQuery(String jsonPath, ValidationResultCollector resultCollector) {
+  private void validatePathQuery(
+      final String jsonPath, final ValidationResultCollector resultCollector) {
     if (jsonPath == null || jsonPath.isEmpty()) {
       return;
     }
@@ -48,7 +49,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   }
 
   @Override
-  public void validate(T element, ValidationResultCollector validationResultCollector) {
+  public void validate(final T element, final ValidationResultCollector validationResultCollector) {
 
     expressionSuppliers.forEach(
         supplier -> {
@@ -58,7 +59,7 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   }
 
   public static <T extends ModelElementInstance> ZeebeExpressionValidator.Builder<T> verifyThat(
-      Class<T> elementType) {
+      final Class<T> elementType) {
     return new ZeebeExpressionValidator.Builder<>(elementType);
   }
 
@@ -67,11 +68,11 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
     private final Class<T> elementType;
     private final List<Function<T, String>> expressionSuppliers = new ArrayList<>();
 
-    public Builder(Class<T> elementType) {
+    public Builder(final Class<T> elementType) {
       this.elementType = elementType;
     }
 
-    public Builder<T> hasValidPathExpression(Function<T, String> expressionSupplier) {
+    public Builder<T> hasValidPathExpression(final Function<T, String> expressionSupplier) {
       expressionSuppliers.add(expressionSupplier);
       return this;
     }

@@ -43,11 +43,11 @@ public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVar
   private Duration requestTimeout;
 
   public SetVariablesCommandImpl(
-      GatewayStub asyncStub,
-      ZeebeObjectMapper objectMapper,
-      long elementInstanceKey,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final ZeebeObjectMapper objectMapper,
+      final long elementInstanceKey,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
     this.requestTimeout = requestTimeout;
@@ -57,7 +57,7 @@ public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVar
   }
 
   @Override
-  public FinalCommandStep<SetVariablesResponse> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<SetVariablesResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -78,43 +78,43 @@ public class SetVariablesCommandImpl implements SetVariablesCommandStep1, SetVar
   }
 
   private void send(
-      SetVariablesRequest request,
-      StreamObserver<GatewayOuterClass.SetVariablesResponse> streamObserver) {
+      final SetVariablesRequest request,
+      final StreamObserver<GatewayOuterClass.SetVariablesResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .setVariables(request, streamObserver);
   }
 
   @Override
-  public SetVariablesCommandStep2 local(boolean local) {
+  public SetVariablesCommandStep2 local(final boolean local) {
     builder.setLocal(local);
     return this;
   }
 
   @Override
-  public SetVariablesCommandStep2 variables(InputStream variables) {
+  public SetVariablesCommandStep2 variables(final InputStream variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariables(objectMapper.validateJson("variables", variables));
   }
 
   @Override
-  public SetVariablesCommandStep2 variables(String variables) {
+  public SetVariablesCommandStep2 variables(final String variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariables(objectMapper.validateJson("variables", variables));
   }
 
   @Override
-  public SetVariablesCommandStep2 variables(Map<String, Object> variables) {
+  public SetVariablesCommandStep2 variables(final Map<String, Object> variables) {
     return variables((Object) variables);
   }
 
   @Override
-  public SetVariablesCommandStep2 variables(Object variables) {
+  public SetVariablesCommandStep2 variables(final Object variables) {
     ArgumentUtil.ensureNotNull("variables", variables);
     return setVariables(objectMapper.toJson(variables));
   }
 
-  private SetVariablesCommandStep2 setVariables(String jsonDocument) {
+  private SetVariablesCommandStep2 setVariables(final String jsonDocument) {
     builder.setVariables(jsonDocument);
     return this;
   }

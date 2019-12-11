@@ -48,7 +48,7 @@ public class DispatcherIntegrationTest {
           return FragmentHandler.CONSUME_FRAGMENT_RESULT;
         }
       };
-  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
+  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
 
   @Test
   public void testOffer() throws Exception {
@@ -576,7 +576,7 @@ public class DispatcherIntegrationTest {
   }
 
   protected static class LoggingFragmentHandler implements FragmentHandler {
-    protected List<Integer> handledFragmentLengths = new ArrayList<>();
+    protected final List<Integer> handledFragmentLengths = new ArrayList<>();
 
     @Override
     public int onFragment(

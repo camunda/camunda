@@ -38,10 +38,10 @@ public class JobUpdateRetriesCommandImpl
   private Duration requestTimeout;
 
   public JobUpdateRetriesCommandImpl(
-      GatewayStub asyncStub,
-      long jobKey,
-      Duration requestTimeout,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final long jobKey,
+      final Duration requestTimeout,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
@@ -50,13 +50,13 @@ public class JobUpdateRetriesCommandImpl
   }
 
   @Override
-  public UpdateRetriesJobCommandStep2 retries(int retries) {
+  public UpdateRetriesJobCommandStep2 retries(final int retries) {
     builder.setRetries(retries);
     return this;
   }
 
   @Override
-  public FinalCommandStep<Void> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<Void> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -74,7 +74,8 @@ public class JobUpdateRetriesCommandImpl
   }
 
   private void send(
-      UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> streamObserver) {
+      final UpdateJobRetriesRequest request,
+      final StreamObserver<UpdateJobRetriesResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .updateJobRetries(request, streamObserver);

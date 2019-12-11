@@ -30,7 +30,7 @@ public class QueryImpl<T extends ModelElementInstance> implements Query<T> {
 
   private final Collection<T> collection;
 
-  public QueryImpl(Collection<T> collection) {
+  public QueryImpl(final Collection<T> collection) {
     this.collection = collection;
   }
 
@@ -50,14 +50,15 @@ public class QueryImpl<T extends ModelElementInstance> implements Query<T> {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <V extends ModelElementInstance> Query<V> filterByType(ModelElementType elementType) {
+  public <V extends ModelElementInstance> Query<V> filterByType(
+      final ModelElementType elementType) {
     final Class<V> elementClass = (Class<V>) elementType.getInstanceType();
     return filterByType(elementClass);
   }
 
   @Override
   @SuppressWarnings("unchecked")
-  public <V extends ModelElementInstance> Query<V> filterByType(Class<V> elementClass) {
+  public <V extends ModelElementInstance> Query<V> filterByType(final Class<V> elementClass) {
     final List<V> filtered = new ArrayList<V>();
     for (final T instance : collection) {
       if (elementClass.isAssignableFrom(instance.getClass())) {

@@ -228,7 +228,7 @@ public class MessageMappingTest {
         .hasScopeKey(workflowInstanceKey);
   }
 
-  private void deployWorkflowWithMapping(Consumer<ZeebeVariablesMappingBuilder<?>> c) {
+  private void deployWorkflowWithMapping(final Consumer<ZeebeVariablesMappingBuilder<?>> c) {
     final BpmnModelInstance modifiedWorkflow = workflow.clone();
     final ModelElementInstance element = modifiedWorkflow.getModelElementById("catch");
     if (element instanceof IntermediateCatchEvent) {

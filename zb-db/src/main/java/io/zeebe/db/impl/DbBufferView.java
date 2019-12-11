@@ -16,11 +16,11 @@ public class DbBufferView implements DbValue {
 
   private final MutableDirectBuffer value = new UnsafeBuffer(0, 0);
 
-  public void wrapBuffer(DirectBuffer buffer, int offset, int length) {
+  public void wrapBuffer(final DirectBuffer buffer, final int offset, final int length) {
     value.wrap(buffer, offset, length);
   }
 
-  public void wrapBuffer(DirectBuffer buffer) {
+  public void wrapBuffer(final DirectBuffer buffer) {
     value.wrap(buffer);
   }
 
@@ -34,12 +34,12 @@ public class DbBufferView implements DbValue {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putBytes(offset, value, 0, value.capacity());
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     value.wrap(buffer, offset, length);
   }
 }

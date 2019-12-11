@@ -22,7 +22,7 @@ public class BinaryValue extends BaseValue {
 
   public BinaryValue() {}
 
-  public BinaryValue(DirectBuffer initialValue, int offset, int length) {
+  public BinaryValue(final DirectBuffer initialValue, final int offset, final int length) {
     wrap(initialValue, offset, length);
   }
 
@@ -32,11 +32,11 @@ public class BinaryValue extends BaseValue {
     length = 0;
   }
 
-  public void wrap(DirectBuffer buff) {
+  public void wrap(final DirectBuffer buff) {
     wrap(buff, 0, buff.capacity());
   }
 
-  public void wrap(DirectBuffer buff, int offset, int length) {
+  public void wrap(final DirectBuffer buff, final int offset, final int length) {
     if (length == 0) {
       this.data.wrap(0, 0);
     } else {
@@ -45,7 +45,7 @@ public class BinaryValue extends BaseValue {
     this.length = length;
   }
 
-  public void wrap(StringValue decodedKey) {
+  public void wrap(final StringValue decodedKey) {
     this.wrap(decodedKey.getValue());
   }
 
@@ -54,7 +54,7 @@ public class BinaryValue extends BaseValue {
   }
 
   @Override
-  public void writeJSON(StringBuilder builder) {
+  public void writeJSON(final StringBuilder builder) {
     final byte[] bytes = new byte[length];
     data.getBytes(0, bytes);
 
@@ -64,12 +64,12 @@ public class BinaryValue extends BaseValue {
   }
 
   @Override
-  public void write(MsgPackWriter writer) {
+  public void write(final MsgPackWriter writer) {
     writer.writeBinary(data);
   }
 
   @Override
-  public void read(MsgPackReader reader) {
+  public void read(final MsgPackReader reader) {
     final DirectBuffer buffer = reader.getBuffer();
     final int stringLength = reader.readBinaryLength();
     final int offset = reader.getOffset();
@@ -90,7 +90,7 @@ public class BinaryValue extends BaseValue {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

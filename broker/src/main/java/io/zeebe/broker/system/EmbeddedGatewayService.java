@@ -22,7 +22,7 @@ public class EmbeddedGatewayService implements AutoCloseable {
   private final Gateway gateway;
 
   public EmbeddedGatewayService(
-      BrokerCfg configuration, ActorScheduler actorScheduler, Atomix atomix) {
+      final BrokerCfg configuration, final ActorScheduler actorScheduler, final Atomix atomix) {
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
         cfg -> new BrokerClientImpl(cfg, atomix, actorScheduler, false);
     gateway = new Gateway(configuration.getGateway(), brokerClientFactory, actorScheduler);

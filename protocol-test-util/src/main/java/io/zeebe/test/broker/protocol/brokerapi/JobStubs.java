@@ -15,7 +15,7 @@ public class JobStubs {
 
   private final StubBrokerRule broker;
 
-  public JobStubs(StubBrokerRule broker) {
+  public JobStubs(final StubBrokerRule broker) {
     this.broker = broker;
   }
 
@@ -23,7 +23,7 @@ public class JobStubs {
     registerCompleteCommand(r -> {});
   }
 
-  public void registerCompleteCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+  public void registerCompleteCommand(final Consumer<ExecuteCommandResponseBuilder> modifier) {
     final ExecuteCommandResponseBuilder builder =
         broker
             .onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE)
@@ -44,7 +44,7 @@ public class JobStubs {
     registerFailCommand(r -> {});
   }
 
-  public void registerFailCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+  public void registerFailCommand(final Consumer<ExecuteCommandResponseBuilder> modifier) {
     final ExecuteCommandResponseBuilder builder =
         broker
             .onExecuteCommandRequest(ValueType.JOB, JobIntent.FAIL)
@@ -65,7 +65,7 @@ public class JobStubs {
     registerUpdateRetriesCommand(b -> {});
   }
 
-  public void registerUpdateRetriesCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+  public void registerUpdateRetriesCommand(final Consumer<ExecuteCommandResponseBuilder> modifier) {
     final ExecuteCommandResponseBuilder builder =
         broker
             .onExecuteCommandRequest(ValueType.JOB, JobIntent.UPDATE_RETRIES)

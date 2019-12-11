@@ -25,7 +25,9 @@ public abstract class AbstractExclusiveGatewayBuilder<B extends AbstractExclusiv
     extends AbstractGatewayBuilder<B, ExclusiveGateway> {
 
   protected AbstractExclusiveGatewayBuilder(
-      BpmnModelInstance modelInstance, ExclusiveGateway element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final ExclusiveGateway element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -35,7 +37,7 @@ public abstract class AbstractExclusiveGatewayBuilder<B extends AbstractExclusiv
    * @param sequenceFlow the default sequence flow to set
    * @return the builder object
    */
-  public B defaultFlow(SequenceFlow sequenceFlow) {
+  public B defaultFlow(final SequenceFlow sequenceFlow) {
     element.setDefault(sequenceFlow);
     return myself;
   }

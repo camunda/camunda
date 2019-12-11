@@ -64,16 +64,17 @@ public class WorkflowInstanceRecordStream
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
 
-  public WorkflowInstanceRecordStream withElementType(BpmnElementType elementType) {
+  public WorkflowInstanceRecordStream withElementType(final BpmnElementType elementType) {
     return valueFilter(v -> v.getBpmnElementType() == elementType);
   }
 
   public WorkflowInstanceRecordStream withParentWorkflowInstanceKey(
-      long parentWorkflowInstanceKey) {
+      final long parentWorkflowInstanceKey) {
     return valueFilter(v -> v.getParentWorkflowInstanceKey() == parentWorkflowInstanceKey);
   }
 
-  public WorkflowInstanceRecordStream withParentElementInstanceKey(long parentElementInstanceKey) {
+  public WorkflowInstanceRecordStream withParentElementInstanceKey(
+      final long parentElementInstanceKey) {
     return valueFilter(v -> v.getParentElementInstanceKey() == parentElementInstanceKey);
   }
 

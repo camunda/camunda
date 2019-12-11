@@ -31,11 +31,11 @@ public enum MessageSubscriptionIntent implements WorkflowInstanceRelatedIntent {
   private final short value;
   private final boolean shouldBlacklist;
 
-  MessageSubscriptionIntent(short value) {
+  MessageSubscriptionIntent(final short value) {
     this(value, true);
   }
 
-  MessageSubscriptionIntent(short value, boolean shouldBlacklist) {
+  MessageSubscriptionIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }
@@ -45,7 +45,7 @@ public enum MessageSubscriptionIntent implements WorkflowInstanceRelatedIntent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return OPEN;

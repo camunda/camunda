@@ -51,13 +51,13 @@ public class TransportChannel {
 
   private int connectAttempt;
 
-  private List<SelectionKey> registeredKeys = Collections.synchronizedList(new ArrayList<>());
+  private final List<SelectionKey> registeredKeys = Collections.synchronizedList(new ArrayList<>());
 
   public TransportChannel(
-      ChannelLifecycleListener listener,
-      RemoteAddressImpl remoteAddress,
-      int maxMessageSize,
-      FragmentHandler readHandler) {
+      final ChannelLifecycleListener listener,
+      final RemoteAddressImpl remoteAddress,
+      final int maxMessageSize,
+      final FragmentHandler readHandler) {
     this.listener = listener;
     this.remoteAddress = remoteAddress;
     this.readHandler = readHandler;
@@ -67,11 +67,11 @@ public class TransportChannel {
   }
 
   public TransportChannel(
-      ChannelLifecycleListener listener,
-      RemoteAddressImpl remoteAddress,
-      int maxMessageSize,
-      FragmentHandler readHandler,
-      SocketChannel media) {
+      final ChannelLifecycleListener listener,
+      final RemoteAddressImpl remoteAddress,
+      final int maxMessageSize,
+      final FragmentHandler readHandler,
+      final SocketChannel media) {
     this(listener, remoteAddress, maxMessageSize, readHandler);
     this.media = media;
     STATE_FIELD.set(this, CONNECTED);
@@ -130,34 +130,35 @@ public class TransportChannel {
     return workCount;
   }
 
-  private boolean handleMessage(DirectBuffer buffer, int msgOffset, int msgLength) {
+  private boolean handleMessage(
+      final DirectBuffer buffer, final int msgOffset, final int msgLength) {
     try {
       return readHandler.onFragment(buffer, msgOffset, msgLength, getStreamId(), false)
           != FragmentHandler.POSTPONE_FRAGMENT_RESULT;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.trace("Failed to handle message", e);
       return true;
     }
   }
 
-  private int mediaReceive(SocketChannel media, ByteBuffer receiveBuffer) {
+  private int mediaReceive(final SocketChannel media, final ByteBuffer receiveBuffer) {
     int bytesReceived = -2;
 
     try {
       bytesReceived = media.read(receiveBuffer);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       doClose();
     }
 
     return bytesReceived;
   }
 
-  public int write(ByteBuffer buffer) {
+  public int write(final ByteBuffer buffer) {
     int bytesWritten = -1;
 
     try {
       bytesWritten = media.write(buffer);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       doClose();
     }
 
@@ -168,17 +169,17 @@ public class TransportChannel {
     return remoteAddress.getStreamId();
   }
 
-  public void registerSelector(Selector selector, int ops) {
+  public void registerSelector(final Selector selector, final int ops) {
     try {
       final SelectionKey key = media.register(selector, ops);
       key.attach(this);
       registeredKeys.add(key);
-    } catch (ClosedChannelException e) {
+    } catch (final ClosedChannelException e) {
       LangUtil.rethrowUnchecked(e);
     }
   }
 
-  public void removeSelector(Selector selector) {
+  public void removeSelector(final Selector selector) {
     final SelectionKey key = media.keyFor(selector);
     if (key != null) {
       key.cancel();
@@ -186,7 +187,7 @@ public class TransportChannel {
     }
   }
 
-  public boolean beginConnect(int attempt) {
+  public boolean beginConnect(final int attempt) {
     if (STATE_FIELD.compareAndSet(this, CLOSED, CONNECTING)) {
       connectAttempt = attempt;
       try {
@@ -195,7 +196,7 @@ public class TransportChannel {
         media.configureBlocking(false);
         media.connect(remoteAddress.getAddress().toInetSocketAddress());
         return true;
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.trace("Failed to begin connect to {}", remoteAddress, e);
         doClose();
         return false;
@@ -213,7 +214,7 @@ public class TransportChannel {
       }
 
       connectAttempt = 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOG.trace("Failed to finish connect to {}", remoteAddress, e);
       doClose();
     }
@@ -242,7 +243,7 @@ public class TransportChannel {
       }
 
       allocatedBuffer.close();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.debug("Failed to close channel", e);
     } finally {
       // invoke listener only once and only if connected was invoked as well

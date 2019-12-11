@@ -30,7 +30,8 @@ public class ActivityValidator implements ModelElementValidator<Activity> {
   }
 
   @Override
-  public void validate(Activity element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final Activity element, final ValidationResultCollector validationResultCollector) {
 
     final Stream<MessageEventDefinition> boundaryEvents =
         ModelUtil.getActivityMessageBoundaryEvents(element);

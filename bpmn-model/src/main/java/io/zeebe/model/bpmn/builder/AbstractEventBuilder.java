@@ -23,7 +23,8 @@ import io.zeebe.model.bpmn.instance.Event;
 public abstract class AbstractEventBuilder<B extends AbstractEventBuilder<B, E>, E extends Event>
     extends AbstractFlowNodeBuilder<B, E> {
 
-  protected AbstractEventBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+  protected AbstractEventBuilder(
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 }

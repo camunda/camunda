@@ -18,27 +18,27 @@ public class ActivityElementCompletingHandler<T extends ExecutableActivity>
     extends ElementCompletingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 
-  public ActivityElementCompletingHandler(CatchEventSubscriber catchEventSubscriber) {
+  public ActivityElementCompletingHandler(final CatchEventSubscriber catchEventSubscriber) {
     super();
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public ActivityElementCompletingHandler(
-      IOMappingHelper ioMappingHelper, CatchEventSubscriber catchEventSubscriber) {
+      final IOMappingHelper ioMappingHelper, final CatchEventSubscriber catchEventSubscriber) {
     super(ioMappingHelper);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public ActivityElementCompletingHandler(
-      WorkflowInstanceIntent nextState,
-      IOMappingHelper ioMappingHelper,
-      CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState,
+      final IOMappingHelper ioMappingHelper,
+      final CatchEventSubscriber catchEventSubscriber) {
     super(nextState, ioMappingHelper);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       catchEventSubscriber.unsubscribeFromEvents(context);
       return true;

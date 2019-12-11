@@ -20,7 +20,7 @@ public enum ErrorIntent implements Intent {
 
   private final short value;
 
-  ErrorIntent(short value) {
+  ErrorIntent(final short value) {
     this.value = value;
   }
 
@@ -28,7 +28,7 @@ public enum ErrorIntent implements Intent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return CREATED;

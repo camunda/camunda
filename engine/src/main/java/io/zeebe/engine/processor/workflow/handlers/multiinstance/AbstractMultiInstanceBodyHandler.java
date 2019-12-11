@@ -156,7 +156,7 @@ public abstract class AbstractMultiInstanceBodyHandler
         wrapLoopCounter(innerInstance.getMultiInstanceLoopCounter()));
   }
 
-  private DirectBuffer wrapLoopCounter(int loopCounter) {
+  private DirectBuffer wrapLoopCounter(final int loopCounter) {
     variableWriter.wrap(loopCounterVariableBuffer, 0);
 
     variableWriter.writeInteger(loopCounter);

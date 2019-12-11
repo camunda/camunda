@@ -20,7 +20,7 @@ public class SequenceFlowTakenHandler<T extends ExecutableSequenceFlow> extends 
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     final ExecutableSequenceFlow sequenceFlow = context.getElement();
     final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
 
@@ -33,7 +33,7 @@ public class SequenceFlowTakenHandler<T extends ExecutableSequenceFlow> extends 
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
     return super.shouldHandleState(context)
         && isElementActive(context.getFlowScopeInstance())
         && !isElementInterrupted(context);

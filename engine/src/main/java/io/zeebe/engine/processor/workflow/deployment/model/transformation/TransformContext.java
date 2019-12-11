@@ -32,15 +32,15 @@ public class TransformContext {
     return currentWorkflow;
   }
 
-  public void setCurrentWorkflow(ExecutableWorkflow currentWorkflow) {
+  public void setCurrentWorkflow(final ExecutableWorkflow currentWorkflow) {
     this.currentWorkflow = currentWorkflow;
   }
 
-  public void addWorkflow(ExecutableWorkflow workflow) {
+  public void addWorkflow(final ExecutableWorkflow workflow) {
     workflows.put(workflow.getId(), workflow);
   }
 
-  public ExecutableWorkflow getWorkflow(String id) {
+  public ExecutableWorkflow getWorkflow(final String id) {
     return workflows.get(BufferUtil.wrapString(id));
   }
 
@@ -48,11 +48,11 @@ public class TransformContext {
     return new ArrayList<>(workflows.values());
   }
 
-  public void addMessage(ExecutableMessage message) {
+  public void addMessage(final ExecutableMessage message) {
     messages.put(message.getId(), message);
   }
 
-  public ExecutableMessage getMessage(String id) {
+  public ExecutableMessage getMessage(final String id) {
     return messages.get(BufferUtil.wrapString(id));
   }
 
@@ -60,7 +60,7 @@ public class TransformContext {
     return jsonPathQueryCompiler;
   }
 
-  public void setJsonPathQueryCompiler(JsonPathQueryCompiler jsonPathQueryCompiler) {
+  public void setJsonPathQueryCompiler(final JsonPathQueryCompiler jsonPathQueryCompiler) {
     this.jsonPathQueryCompiler = jsonPathQueryCompiler;
   }
 }

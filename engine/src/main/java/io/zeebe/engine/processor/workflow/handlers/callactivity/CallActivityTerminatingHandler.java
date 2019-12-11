@@ -16,12 +16,12 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 public class CallActivityTerminatingHandler
     extends ActivityElementTerminatingHandler<ExecutableCallActivity> {
 
-  public CallActivityTerminatingHandler(CatchEventSubscriber catchEventSubscriber) {
+  public CallActivityTerminatingHandler(final CatchEventSubscriber catchEventSubscriber) {
     super(null, catchEventSubscriber);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<ExecutableCallActivity> context) {
+  protected boolean handleState(final BpmnStepContext<ExecutableCallActivity> context) {
     if (!super.handleState(context)) {
       return false;
     }

@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class TimeDurationImpl extends ExpressionImpl implements TimeDuration {
 
-  public TimeDurationImpl(ModelTypeInstanceContext instanceContext) {
+  public TimeDurationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(TimeDuration.class, BPMN_ELEMENT_TIME_DURATION)
@@ -46,7 +46,7 @@ public class TimeDurationImpl extends ExpressionImpl implements TimeDuration {
             .instanceProvider(
                 new ModelTypeInstanceProvider<TimeDuration>() {
                   @Override
-                  public TimeDuration newInstance(ModelTypeInstanceContext instanceContext) {
+                  public TimeDuration newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new TimeDurationImpl(instanceContext);
                   }
                 });

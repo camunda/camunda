@@ -64,7 +64,7 @@ public class RecordingInterceptor implements ServerInterceptor {
    *
    * @param interceptAction
    */
-  void setInterceptAction(BiConsumer<ServerCall, Metadata> interceptAction) {
+  void setInterceptAction(final BiConsumer<ServerCall, Metadata> interceptAction) {
     this.interceptAction = interceptAction;
   }
 }

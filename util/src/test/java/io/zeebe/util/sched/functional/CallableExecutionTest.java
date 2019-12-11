@@ -35,7 +35,7 @@ public class CallableExecutionTest {
             try {
               barrier.await(); // signal arrival at barrier
               barrier.await(); // wait for continuation
-            } catch (InterruptedException | BrokenBarrierException e) {
+            } catch (final InterruptedException | BrokenBarrierException e) {
               throw new RuntimeException(e);
             }
           }

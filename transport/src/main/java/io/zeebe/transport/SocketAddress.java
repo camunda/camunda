@@ -32,17 +32,17 @@ public class SocketAddress implements Comparable<SocketAddress> {
     this.hostBuffer = new UnsafeBuffer(byteArray, 0, 0);
   }
 
-  public SocketAddress(String host, int port) {
+  public SocketAddress(final String host, final int port) {
     this();
     host(host);
     port(port);
   }
 
-  public SocketAddress(InetSocketAddress address) {
+  public SocketAddress(final InetSocketAddress address) {
     this(address.getHostName(), address.getPort());
   }
 
-  public SocketAddress(SocketAddress other) {
+  public SocketAddress(final SocketAddress other) {
     this();
     host(other.hostBuffer, 0, other.hostLength());
     port(other.port);
@@ -52,7 +52,7 @@ public class SocketAddress implements Comparable<SocketAddress> {
     return hostBuffer;
   }
 
-  public SocketAddress host(final DirectBuffer src, int offset, final int length) {
+  public SocketAddress host(final DirectBuffer src, final int offset, final int length) {
     checkHostLength(length);
     hostLength(length);
     hostBuffer.putBytes(0, src, offset, length);
@@ -154,7 +154,7 @@ public class SocketAddress implements Comparable<SocketAddress> {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

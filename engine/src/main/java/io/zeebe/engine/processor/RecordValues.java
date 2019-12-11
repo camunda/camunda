@@ -28,7 +28,7 @@ public class RecordValues {
     eventCache = Collections.unmodifiableMap(cache);
   }
 
-  public UnifiedRecordValue readRecordValue(LoggedEvent event, ValueType valueType) {
+  public UnifiedRecordValue readRecordValue(final LoggedEvent event, final ValueType valueType) {
     final UnifiedRecordValue value = eventCache.get(valueType);
     if (value != null) {
       value.reset();

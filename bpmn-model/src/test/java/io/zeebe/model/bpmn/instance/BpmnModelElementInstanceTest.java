@@ -26,12 +26,12 @@ import org.junit.ClassRule;
 public abstract class BpmnModelElementInstanceTest extends AbstractModelElementInstanceTest {
 
   @ClassRule
-  public static GetBpmnModelElementTypeRule modelElementTypeRule =
+  public static final GetBpmnModelElementTypeRule MODEL_ELEMENT_TYPE_RULE =
       new GetBpmnModelElementTypeRule();
 
   @BeforeClass
   public static void initModelElementType() {
-    initModelElementType(modelElementTypeRule);
+    initModelElementType(MODEL_ELEMENT_TYPE_RULE);
   }
 
   @Override

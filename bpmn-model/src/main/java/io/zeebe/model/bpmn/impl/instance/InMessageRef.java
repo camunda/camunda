@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class InMessageRef extends BpmnModelElementInstanceImpl {
 
-  public InMessageRef(ModelTypeInstanceContext instanceContext) {
+  public InMessageRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(InMessageRef.class, BPMN_ELEMENT_IN_MESSAGE_REF)
@@ -43,7 +43,7 @@ public class InMessageRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<InMessageRef>() {
                   @Override
-                  public InMessageRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public InMessageRef newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new InMessageRef(instanceContext);
                   }
                 });

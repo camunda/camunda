@@ -11,10 +11,10 @@ import io.zeebe.msgpack.property.LongProperty;
 
 public class DefaultValuesPOJO extends UnpackedObject {
 
-  protected LongProperty defaultValueProperty;
-  protected LongProperty noDefaultValueProperty = new LongProperty("noDefaultValueProp");
+  protected final LongProperty defaultValueProperty;
+  protected final LongProperty noDefaultValueProperty = new LongProperty("noDefaultValueProp");
 
-  public DefaultValuesPOJO(long defaultValue) {
+  public DefaultValuesPOJO(final long defaultValue) {
     defaultValueProperty = new LongProperty("defaultValueProp", defaultValue);
 
     this.declareProperty(defaultValueProperty).declareProperty(noDefaultValueProperty);
@@ -24,7 +24,7 @@ public class DefaultValuesPOJO extends UnpackedObject {
     return defaultValueProperty.getValue();
   }
 
-  public void setDefaultValueProperty(long value) {
+  public void setDefaultValueProperty(final long value) {
     this.defaultValueProperty.setValue(value);
   }
 
@@ -32,7 +32,7 @@ public class DefaultValuesPOJO extends UnpackedObject {
     return noDefaultValueProperty.getValue();
   }
 
-  public void setNoDefaultValueProperty(long value) {
+  public void setNoDefaultValueProperty(final long value) {
     this.noDefaultValueProperty.setValue(value);
   }
 }

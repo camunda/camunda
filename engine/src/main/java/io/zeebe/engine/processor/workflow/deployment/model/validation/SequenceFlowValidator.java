@@ -22,7 +22,8 @@ public class SequenceFlowValidator implements ModelElementValidator<ConditionExp
 
   @Override
   public void validate(
-      ConditionExpression element, ValidationResultCollector validationResultCollector) {
+      final ConditionExpression element,
+      final ValidationResultCollector validationResultCollector) {
 
     final String expression = element.getTextContent();
     final CompiledJsonCondition condition = JsonConditionFactory.createCondition(expression);

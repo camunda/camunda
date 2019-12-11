@@ -27,12 +27,12 @@ public class ChildElementAssert
 
   private final Class<? extends ModelElementInstance> typeClass;
 
-  protected ChildElementAssert(ChildElementCollection<?> actual) {
+  protected ChildElementAssert(final ChildElementCollection<?> actual) {
     super(actual, ChildElementAssert.class);
     typeClass = actual.getChildElementTypeClass();
   }
 
-  public ChildElementAssert occursMinimal(int minOccurs) {
+  public ChildElementAssert occursMinimal(final int minOccurs) {
     isNotNull();
 
     final int actualMinOccurs = actual.getMinOccurs();
@@ -46,7 +46,7 @@ public class ChildElementAssert
     return this;
   }
 
-  public ChildElementAssert occursMaximal(int maxOccurs) {
+  public ChildElementAssert occursMaximal(final int maxOccurs) {
     isNotNull();
 
     final int actualMaxOccurs = actual.getMaxOccurs();
@@ -113,7 +113,7 @@ public class ChildElementAssert
   }
 
   public ChildElementAssert containsType(
-      Class<? extends ModelElementInstance> childElementTypeClass) {
+      final Class<? extends ModelElementInstance> childElementTypeClass) {
     isNotNull();
 
     final Class<? extends ModelElementInstance> actualChildElementTypeClass =
@@ -128,7 +128,7 @@ public class ChildElementAssert
     return this;
   }
 
-  public ChildElementAssert hasParentElementType(ModelElementType parentElementType) {
+  public ChildElementAssert hasParentElementType(final ModelElementType parentElementType) {
     isNotNull();
 
     final ModelElementType actualParentElementType = actual.getParentElementType();
@@ -142,7 +142,7 @@ public class ChildElementAssert
     return this;
   }
 
-  public ChildElementAssert isNotEmpty(ModelElementInstance instance) {
+  public ChildElementAssert isNotEmpty(final ModelElementInstance instance) {
     isNotNull();
 
     final int actualNumberOfChildElements = actual.get(instance).size();
@@ -154,7 +154,8 @@ public class ChildElementAssert
     return this;
   }
 
-  public ChildElementAssert hasSize(ModelElementInstance instance, int numberOfChildElements) {
+  public ChildElementAssert hasSize(
+      final ModelElementInstance instance, final int numberOfChildElements) {
     isNotNull();
 
     final int actualNumberOfChildElements = actual.get(instance).size();
@@ -168,7 +169,7 @@ public class ChildElementAssert
     return this;
   }
 
-  public ChildElementAssert isEmpty(ModelElementInstance instance) {
+  public ChildElementAssert isEmpty(final ModelElementInstance instance) {
     isNotNull();
 
     final int actualNumberOfChildElements = actual.get(instance).size();

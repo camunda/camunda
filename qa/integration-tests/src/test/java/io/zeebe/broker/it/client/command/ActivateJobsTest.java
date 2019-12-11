@@ -31,7 +31,7 @@ public class ActivateJobsTest {
   @ClassRule
   public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
 
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   private String jobType;
 
@@ -133,7 +133,8 @@ public class ActivateJobsTest {
     assertThat(jobs).hasSize(1).extracting(ActivatedJob::getWorker).contains("open");
   }
 
-  private void sendActivateRequestsAndClose(String jobType, int count) throws InterruptedException {
+  private void sendActivateRequestsAndClose(final String jobType, final int count)
+      throws InterruptedException {
     for (int i = 0; i < count; i++) {
       final ZeebeClient client =
           ZeebeClient.newClientBuilder()

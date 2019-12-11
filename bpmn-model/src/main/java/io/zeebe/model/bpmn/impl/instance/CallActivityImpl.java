@@ -39,11 +39,11 @@ public class CallActivityImpl extends ActivityImpl implements CallActivity {
 
   protected static Attribute<String> calledElementAttribute;
 
-  public CallActivityImpl(ModelTypeInstanceContext context) {
+  public CallActivityImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CallActivity.class, BPMN_ELEMENT_CALL_ACTIVITY)
@@ -52,7 +52,7 @@ public class CallActivityImpl extends ActivityImpl implements CallActivity {
             .instanceProvider(
                 new ModelTypeInstanceProvider<CallActivity>() {
                   @Override
-                  public CallActivity newInstance(ModelTypeInstanceContext instanceContext) {
+                  public CallActivity newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new CallActivityImpl(instanceContext);
                   }
                 });
@@ -73,7 +73,7 @@ public class CallActivityImpl extends ActivityImpl implements CallActivity {
   }
 
   @Override
-  public void setCalledElement(String calledElement) {
+  public void setCalledElement(final String calledElement) {
     calledElementAttribute.setValue(this, calledElement);
   }
 }

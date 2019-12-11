@@ -159,7 +159,7 @@ public class CreateWorkflowInstanceWithResultTest {
     verify(ENGINE.getCommandResponseWriter(), timeout(1000).times(1)).tryWriteResponse(3, 3);
   }
 
-  private void interceptResponseWriter(CommandResponseWriter mockCommandResponseWriter) {
+  private void interceptResponseWriter(final CommandResponseWriter mockCommandResponseWriter) {
     doAnswer(
             (Answer<CommandResponseWriter>)
                 (invocation -> {

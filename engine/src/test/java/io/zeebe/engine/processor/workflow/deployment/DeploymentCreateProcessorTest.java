@@ -30,7 +30,8 @@ import org.mockito.MockitoAnnotations;
 
 public class DeploymentCreateProcessorTest {
   @Rule
-  public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
+  public final StreamProcessorRule rule =
+      new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
   private WorkflowState workflowState;
 

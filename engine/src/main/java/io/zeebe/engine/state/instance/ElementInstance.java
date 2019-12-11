@@ -149,7 +149,7 @@ public class ElementInstance implements DbValue {
     return calledChildInstanceKey;
   }
 
-  public void setCalledChildInstanceKey(long calledChildInstanceKey) {
+  public void setCalledChildInstanceKey(final long calledChildInstanceKey) {
     this.calledChildInstanceKey = calledChildInstanceKey;
   }
 
@@ -157,7 +157,7 @@ public class ElementInstance implements DbValue {
     return interruptingEventKey;
   }
 
-  public void setInterruptingEventKey(long key) {
+  public void setInterruptingEventKey(final long key) {
     this.interruptingEventKey = key;
   }
 

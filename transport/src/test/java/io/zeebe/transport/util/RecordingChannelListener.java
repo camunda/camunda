@@ -14,9 +14,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class RecordingChannelListener implements TransportListener {
 
-  protected List<RemoteAddress> closedConnections = new CopyOnWriteArrayList<>();
-  protected List<RemoteAddress> openedConnections = new CopyOnWriteArrayList<>();
-  protected List<Event> events = new CopyOnWriteArrayList<>();
+  protected final List<RemoteAddress> closedConnections = new CopyOnWriteArrayList<>();
+  protected final List<RemoteAddress> openedConnections = new CopyOnWriteArrayList<>();
+  protected final List<Event> events = new CopyOnWriteArrayList<>();
 
   public List<RemoteAddress> getClosedConnections() {
     return closedConnections;
@@ -31,13 +31,13 @@ public class RecordingChannelListener implements TransportListener {
   }
 
   @Override
-  public void onConnectionEstablished(RemoteAddress remoteAddress) {
+  public void onConnectionEstablished(final RemoteAddress remoteAddress) {
     events.add(Event.ESTABLISHED);
     openedConnections.add(remoteAddress);
   }
 
   @Override
-  public void onConnectionClosed(RemoteAddress remoteAddress) {
+  public void onConnectionClosed(final RemoteAddress remoteAddress) {
     events.add(Event.CLOSED);
     closedConnections.add(remoteAddress);
   }

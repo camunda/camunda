@@ -265,7 +265,7 @@ public class ReusableObjectListTest {
       return value;
     }
 
-    public void setValue(int value) {
+    public void setValue(final int value) {
       this.value = value;
     }
 

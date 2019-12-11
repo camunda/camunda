@@ -27,14 +27,14 @@ public class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl<R, T>
   private final Consumer<StreamObserver<T>> retryAction;
 
   public RetriableClientFutureImpl(
-      Predicate<Throwable> retryPredicate, Consumer<StreamObserver<T>> retryAction) {
+      final Predicate<Throwable> retryPredicate, final Consumer<StreamObserver<T>> retryAction) {
     this(brokerResponse -> null, retryPredicate, retryAction);
   }
 
   public RetriableClientFutureImpl(
-      Function<T, R> responseMapper,
-      Predicate<Throwable> retryPredicate,
-      Consumer<StreamObserver<T>> retryAction) {
+      final Function<T, R> responseMapper,
+      final Predicate<Throwable> retryPredicate,
+      final Consumer<StreamObserver<T>> retryAction) {
     super(responseMapper);
 
     Objects.requireNonNull(retryPredicate, "Expected to have non-null retry predicate.");
@@ -44,7 +44,7 @@ public class RetriableClientFutureImpl<R, T> extends ZeebeClientFutureImpl<R, T>
   }
 
   @Override
-  public void onError(Throwable throwable) {
+  public void onError(final Throwable throwable) {
     if (retryPredicate.test(throwable)) {
       retryAction.accept(this);
     } else {

@@ -23,15 +23,15 @@ public class StubbedGateway {
 
   private static final String SERVER_NAME = "server";
 
-  private StubbedBrokerClient brokerClient;
-  private LongPollingActivateJobsHandler longPollingHandler;
-  private ActorScheduler actorScheduler;
+  private final StubbedBrokerClient brokerClient;
+  private final LongPollingActivateJobsHandler longPollingHandler;
+  private final ActorScheduler actorScheduler;
   private Server server;
 
   public StubbedGateway(
-      ActorScheduler actorScheduler,
-      StubbedBrokerClient brokerClient,
-      LongPollingActivateJobsHandler longPollingHandler) {
+      final ActorScheduler actorScheduler,
+      final StubbedBrokerClient brokerClient,
+      final LongPollingActivateJobsHandler longPollingHandler) {
     this.actorScheduler = actorScheduler;
     this.brokerClient = brokerClient;
     this.longPollingHandler = longPollingHandler;
@@ -51,7 +51,7 @@ public class StubbedGateway {
       server.shutdownNow();
       try {
         server.awaitTermination();
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
       }
     }

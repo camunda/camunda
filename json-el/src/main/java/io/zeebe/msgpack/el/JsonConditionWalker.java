@@ -9,7 +9,7 @@ package io.zeebe.msgpack.el;
 
 public class JsonConditionWalker {
 
-  public static void walk(JsonCondition condition, JsonConditionVisitor visitor) {
+  public static void walk(final JsonCondition condition, final JsonConditionVisitor visitor) {
     if (condition instanceof Comparison) {
       visitComparison((Comparison) condition, visitor);
     } else if (condition instanceof Operator) {
@@ -22,7 +22,8 @@ public class JsonConditionWalker {
     }
   }
 
-  private static void visitComparison(Comparison comparison, JsonConditionVisitor visitor) {
+  private static void visitComparison(
+      final Comparison comparison, final JsonConditionVisitor visitor) {
     visitor.visitObject(comparison.x());
     visitor.visitObject(comparison.y());
   }

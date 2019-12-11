@@ -48,7 +48,7 @@ public class BpmnParser extends AbstractModelParser {
   }
 
   @Override
-  protected void configureFactory(DocumentBuilderFactory dbf) {
+  protected void configureFactory(final DocumentBuilderFactory dbf) {
     dbf.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
     dbf.setAttribute(
         JAXP_SCHEMA_SOURCE,
@@ -58,7 +58,7 @@ public class BpmnParser extends AbstractModelParser {
   }
 
   @Override
-  public BpmnModelInstanceImpl parseModelFromStream(InputStream inputStream) {
+  public BpmnModelInstanceImpl parseModelFromStream(final InputStream inputStream) {
     return (BpmnModelInstanceImpl) super.parseModelFromStream(inputStream);
   }
 
@@ -68,7 +68,7 @@ public class BpmnParser extends AbstractModelParser {
   }
 
   @Override
-  protected BpmnModelInstanceImpl createModelInstance(DomDocument document) {
+  protected BpmnModelInstanceImpl createModelInstance(final DomDocument document) {
     return new BpmnModelInstanceImpl(
         (ModelImpl) Bpmn.INSTANCE.getBpmnModel(), Bpmn.INSTANCE.getBpmnModelBuilder(), document);
   }

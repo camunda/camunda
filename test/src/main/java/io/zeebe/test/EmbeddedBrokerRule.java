@@ -59,13 +59,13 @@ public class EmbeddedBrokerRule extends ExternalResource {
   private List<String> dataDirectories;
 
   @SafeVarargs
-  public EmbeddedBrokerRule(Consumer<BrokerCfg>... configurators) {
+  public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
     this(DEFAULT_CONFIG_FILE, configurators);
   }
 
   @SafeVarargs
   public EmbeddedBrokerRule(
-      final String configFileClasspathLocation, Consumer<BrokerCfg>... configurators) {
+      final String configFileClasspathLocation, final Consumer<BrokerCfg>... configurators) {
     this(
         () ->
             EmbeddedBrokerRule.class
@@ -78,14 +78,14 @@ public class EmbeddedBrokerRule extends ExternalResource {
   @SafeVarargs
   public EmbeddedBrokerRule(
       final Supplier<InputStream> configSupplier,
-      int timeout,
+      final int timeout,
       final Consumer<BrokerCfg>... configurators) {
     this.configSupplier = configSupplier;
     this.configurators = configurators;
     this.timeout = timeout;
 
     newTemporaryFolder = Files.newTemporaryFolder();
-    try (InputStream configStream = configSupplier.get()) {
+    try (final InputStream configStream = configSupplier.get()) {
       if (configStream == null) {
         brokerCfg = new BrokerCfg();
       } else {
@@ -211,7 +211,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     brokerCfg.getExporters().add(exporterCfg);
 
     // custom configurators
-    for (Consumer<BrokerCfg> configurator : configurators) {
+    for (final Consumer<BrokerCfg> configurator : configurators) {
       configurator.accept(brokerCfg);
     }
 

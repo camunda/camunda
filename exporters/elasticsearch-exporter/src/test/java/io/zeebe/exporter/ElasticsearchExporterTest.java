@@ -317,7 +317,7 @@ public class ElasticsearchExporterTest {
     return createExporter(esClient);
   }
 
-  private ElasticsearchExporter createExporter(ElasticsearchClient client) {
+  private ElasticsearchExporter createExporter(final ElasticsearchClient client) {
     return new ElasticsearchExporter() {
       @Override
       protected ElasticsearchClient createClient() {
@@ -326,11 +326,11 @@ public class ElasticsearchExporterTest {
     };
   }
 
-  private void openExporter(ElasticsearchExporter exporter) {
+  private void openExporter(final ElasticsearchExporter exporter) {
     testHarness = new ExporterTestHarness(exporter);
     try {
       testHarness.configure("elasticsearch", config);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new AssertionError("Failed to configure exporter", e);
     }
     testHarness.open();

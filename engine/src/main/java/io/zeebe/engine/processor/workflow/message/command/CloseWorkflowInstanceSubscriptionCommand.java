@@ -53,7 +53,7 @@ public class CloseWorkflowInstanceSubscriptionCommand
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     super.write(buffer, offset);
 
     encoder
@@ -64,7 +64,7 @@ public class CloseWorkflowInstanceSubscriptionCommand
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
@@ -77,7 +77,7 @@ public class CloseWorkflowInstanceSubscriptionCommand
     return subscriptionPartitionId;
   }
 
-  public void setSubscriptionPartitionId(int subscriptionPartitionId) {
+  public void setSubscriptionPartitionId(final int subscriptionPartitionId) {
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
@@ -85,7 +85,7 @@ public class CloseWorkflowInstanceSubscriptionCommand
     return workflowInstanceKey;
   }
 
-  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+  public void setWorkflowInstanceKey(final long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
@@ -93,7 +93,7 @@ public class CloseWorkflowInstanceSubscriptionCommand
     return elementInstanceKey;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
+  public void setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
   }
 
@@ -101,7 +101,7 @@ public class CloseWorkflowInstanceSubscriptionCommand
     return messageName;
   }
 
-  public void setMessageName(DirectBuffer messageName) {
+  public void setMessageName(final DirectBuffer messageName) {
     this.messageName.wrap(messageName);
   }
 }

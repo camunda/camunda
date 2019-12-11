@@ -26,11 +26,11 @@ public abstract class AbstractReferenceAssert<
         S extends AbstractReferenceAssert<S, T>, T extends Reference<?>>
     extends AbstractAssert<S, T> {
 
-  protected AbstractReferenceAssert(T actual, Class<?> selfType) {
+  protected AbstractReferenceAssert(final T actual, final Class<?> selfType) {
     super(actual, selfType);
   }
 
-  public S hasIdentifier(ModelElementInstance instance, String identifier) {
+  public S hasIdentifier(final ModelElementInstance instance, final String identifier) {
     isNotNull();
 
     final String actualIdentifier = actual.getReferenceIdentifier(instance);
@@ -44,7 +44,8 @@ public abstract class AbstractReferenceAssert<
     return myself;
   }
 
-  public S hasTargetElement(ModelElementInstance instance, ModelElementInstance targetElement) {
+  public S hasTargetElement(
+      final ModelElementInstance instance, final ModelElementInstance targetElement) {
     isNotNull();
 
     final ModelElementInstance actualTargetElement = actual.getReferenceTargetElement(instance);
@@ -58,7 +59,7 @@ public abstract class AbstractReferenceAssert<
     return myself;
   }
 
-  public S hasNoTargetElement(ModelElementInstance instance) {
+  public S hasNoTargetElement(final ModelElementInstance instance) {
     isNotNull();
 
     final ModelElementInstance actualTargetElement = actual.getReferenceTargetElement(instance);
@@ -72,7 +73,7 @@ public abstract class AbstractReferenceAssert<
     return myself;
   }
 
-  public S hasTargetAttribute(Attribute<?> targetAttribute) {
+  public S hasTargetAttribute(final Attribute<?> targetAttribute) {
     isNotNull();
 
     final Attribute<String> actualTargetAttribute = actual.getReferenceTargetAttribute();

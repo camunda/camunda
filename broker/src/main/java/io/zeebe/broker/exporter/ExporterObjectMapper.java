@@ -25,7 +25,7 @@ public class ExporterObjectMapper {
     jsonObjectMapper = createDefaultObjectMapper(injectableValues);
   }
 
-  private ObjectMapper createDefaultObjectMapper(InjectableValues injectableValues) {
+  private ObjectMapper createDefaultObjectMapper(final InjectableValues injectableValues) {
     final ObjectMapper objectMapper = new ObjectMapper();
     objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
@@ -38,10 +38,10 @@ public class ExporterObjectMapper {
     return objectMapper;
   }
 
-  public String toJson(Object value) {
+  public String toJson(final Object value) {
     try {
       return jsonObjectMapper.writeValueAsString(value);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new RuntimeException(
           String.format("Failed to serialize object '%s' to JSON", value), e);
     }

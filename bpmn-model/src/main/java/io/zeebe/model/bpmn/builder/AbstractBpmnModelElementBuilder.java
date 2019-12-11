@@ -35,7 +35,7 @@ public abstract class AbstractBpmnModelElementBuilder<
 
   @SuppressWarnings("unchecked")
   protected AbstractBpmnModelElementBuilder(
-      BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     this.modelInstance = modelInstance;
     myself = (B) selfType.cast(this);
     this.element = element;

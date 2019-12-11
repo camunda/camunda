@@ -14,7 +14,7 @@ package io.zeebe.msgpack.mapping;
 public class MappingException extends RuntimeException {
   private static final long serialVersionUID = 1L;
 
-  public MappingException(String msg) {
+  public MappingException(final String msg) {
     super(msg);
   }
 }

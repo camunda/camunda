@@ -16,7 +16,7 @@ import java.util.List;
 
 public class RecordingJobHandler implements JobHandler {
   protected final JobHandler[] jobHandlers;
-  protected List<ActivatedJob> handledJobs = Collections.synchronizedList(new ArrayList<>());
+  protected final List<ActivatedJob> handledJobs = Collections.synchronizedList(new ArrayList<>());
   protected int nextJobHandler = 0;
 
   public RecordingJobHandler() {
@@ -26,12 +26,12 @@ public class RecordingJobHandler implements JobHandler {
         });
   }
 
-  public RecordingJobHandler(JobHandler... jobHandlers) {
+  public RecordingJobHandler(final JobHandler... jobHandlers) {
     this.jobHandlers = jobHandlers;
   }
 
   @Override
-  public void handle(JobClient client, ActivatedJob job) throws Exception {
+  public void handle(final JobClient client, final ActivatedJob job) throws Exception {
     final JobHandler handler = jobHandlers[nextJobHandler];
     nextJobHandler = Math.min(nextJobHandler + 1, jobHandlers.length - 1);
 

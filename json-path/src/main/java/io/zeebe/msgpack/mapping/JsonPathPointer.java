@@ -13,7 +13,7 @@ public class JsonPathPointer {
 
   private final String[] pathElements;
 
-  public JsonPathPointer(String[] pathElements) {
+  public JsonPathPointer(final String[] pathElements) {
     this.pathElements = pathElements;
   }
 

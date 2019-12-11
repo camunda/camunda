@@ -25,7 +25,7 @@ public class ActorExecutor {
   private final ThreadPoolExecutor blockingTasksRunner;
   private Duration blockingTasksShutdownTime;
 
-  public ActorExecutor(ActorSchedulerBuilder builder) {
+  public ActorExecutor(final ActorSchedulerBuilder builder) {
     this.ioBoundThreads = builder.getIoBoundActorThreads();
     this.cpuBoundThreads = builder.getCpuBoundActorThreads();
     this.blockingTasksRunner = builder.getBlockingTasksRunner();
@@ -37,15 +37,15 @@ public class ActorExecutor {
    *
    * @param task the task to submit
    */
-  public ActorFuture<Void> submitCpuBound(ActorTask task) {
+  public ActorFuture<Void> submitCpuBound(final ActorTask task) {
     return submitTask(task, cpuBoundThreads);
   }
 
-  public ActorFuture<Void> submitIoBoundTask(ActorTask task) {
+  public ActorFuture<Void> submitIoBoundTask(final ActorTask task) {
     return submitTask(task, ioBoundThreads);
   }
 
-  private ActorFuture<Void> submitTask(ActorTask task, ActorThreadGroup threadGroup) {
+  private ActorFuture<Void> submitTask(final ActorTask task, final ActorThreadGroup threadGroup) {
     if (task.getLifecyclePhase() != ActorLifecyclePhase.CLOSED) {
       throw new IllegalStateException("ActorTask was already submitted!");
     }
@@ -60,7 +60,7 @@ public class ActorExecutor {
    *
    * @param action the action to submit
    */
-  public void submitBlocking(Runnable action) {
+  public void submitBlocking(final Runnable action) {
     blockingTasksRunner.execute(action);
   }
 
@@ -78,7 +78,7 @@ public class ActorExecutor {
     try {
       blockingTasksRunner.awaitTermination(
           blockingTasksShutdownTime.getSeconds(), TimeUnit.SECONDS);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       e.printStackTrace();
     }
 
@@ -97,7 +97,7 @@ public class ActorExecutor {
     return blockingTasksShutdownTime;
   }
 
-  public void setBlockingTasksShutdownTime(Duration duration) {
+  public void setBlockingTasksShutdownTime(final Duration duration) {
     blockingTasksShutdownTime = duration;
   }
 }

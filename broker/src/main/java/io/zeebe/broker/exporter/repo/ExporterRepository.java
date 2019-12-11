@@ -78,7 +78,7 @@ public class ExporterRepository {
     try {
       final Class<?> specifiedClass = classLoader.loadClass(config.getClassName());
       exporterClass = specifiedClass.asSubclass(Exporter.class);
-    } catch (ClassNotFoundException | ClassCastException e) {
+    } catch (final ClassNotFoundException | ClassCastException e) {
       throw new ExporterLoadException(id, "cannot load specified class", e);
     }
 

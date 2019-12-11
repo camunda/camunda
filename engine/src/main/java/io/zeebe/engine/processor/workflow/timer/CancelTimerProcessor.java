@@ -28,9 +28,9 @@ public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   @Override
   public void processRecord(
-      TypedRecord<TimerRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<TimerRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     final TimerRecord timer = record.getValue();
     final TimerInstance timerInstance =
         workflowState.getTimerState().get(timer.getElementInstanceKey(), record.getKey());

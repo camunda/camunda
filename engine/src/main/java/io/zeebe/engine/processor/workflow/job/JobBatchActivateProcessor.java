@@ -42,10 +42,10 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
 
   public JobBatchActivateProcessor(
-      JobState jobState,
-      VariablesState variablesState,
-      KeyGenerator keyGenerator,
-      long maxRecordLength) {
+      final JobState jobState,
+      final VariablesState variablesState,
+      final KeyGenerator keyGenerator,
+      final long maxRecordLength) {
 
     this.jobState = jobState;
     this.variablesState = variablesState;
@@ -98,7 +98,8 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
   }
 
-  private void collectJobsToActivate(TypedRecord<JobBatchRecord> record, AtomicInteger amount) {
+  private void collectJobsToActivate(
+      final TypedRecord<JobBatchRecord> record, final AtomicInteger amount) {
     final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
@@ -150,7 +151,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
         });
   }
 
-  private void activateJobs(TypedStreamWriter streamWriter, JobBatchRecord value) {
+  private void activateJobs(final TypedStreamWriter streamWriter, final JobBatchRecord value) {
     final Iterator<JobRecord> iterator = value.jobs().iterator();
     final Iterator<LongValue> keyIt = value.jobKeys().iterator();
     while (iterator.hasNext() && keyIt.hasNext()) {
@@ -172,7 +173,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
   }
 
   private DirectBuffer collectVariables(
-      Collection<DirectBuffer> variableNames, long elementInstanceKey) {
+      final Collection<DirectBuffer> variableNames, final long elementInstanceKey) {
     final DirectBuffer variables;
     if (variableNames.isEmpty()) {
       variables = variablesState.getVariablesAsDocument(elementInstanceKey);

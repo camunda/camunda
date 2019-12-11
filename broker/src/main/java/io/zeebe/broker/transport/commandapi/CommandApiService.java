@@ -26,22 +26,23 @@ public class CommandApiService implements PartitionListener {
   private final ServerOutput serverOutput;
 
   public CommandApiService(
-      ServerOutput serverOutput,
-      CommandApiMessageHandler commandApiMessageHandler,
-      PartitionAwareRequestLimiter limiter) {
+      final ServerOutput serverOutput,
+      final CommandApiMessageHandler commandApiMessageHandler,
+      final PartitionAwareRequestLimiter limiter) {
     this.serverOutput = serverOutput;
     this.limiter = limiter;
     this.service = commandApiMessageHandler;
   }
 
   @Override
-  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
     limiter.removePartition(partitionId);
     service.removePartition(logStream);
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     limiter.addPartition(partitionId);
 
     logStream
@@ -66,7 +67,7 @@ public class CommandApiService implements PartitionListener {
     return new CommandResponseWriterImpl(serverOutput);
   }
 
-  public Consumer<TypedRecord> getOnProcessedListener(int partitionId) {
+  public Consumer<TypedRecord> getOnProcessedListener(final int partitionId) {
     final RequestLimiter<Intent> partitionLimiter = limiter.getLimiter(partitionId);
     return typedRecord -> {
       if (typedRecord.getRecordType() == RecordType.COMMAND && typedRecord.hasRequestMetadata()) {

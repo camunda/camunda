@@ -42,11 +42,11 @@ public class CorrelationPropertyBindingImpl extends BaseElementImpl
   protected static AttributeReference<CorrelationProperty> correlationPropertyRefAttribute;
   protected static ChildElement<DataPath> dataPathChild;
 
-  public CorrelationPropertyBindingImpl(ModelTypeInstanceContext instanceContext) {
+  public CorrelationPropertyBindingImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CorrelationPropertyBinding.class, BPMN_ELEMENT_CORRELATION_PROPERTY_BINDING)
@@ -56,7 +56,7 @@ public class CorrelationPropertyBindingImpl extends BaseElementImpl
                 new ModelTypeInstanceProvider<CorrelationPropertyBinding>() {
                   @Override
                   public CorrelationPropertyBinding newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CorrelationPropertyBindingImpl(instanceContext);
                   }
                 });
@@ -81,7 +81,7 @@ public class CorrelationPropertyBindingImpl extends BaseElementImpl
   }
 
   @Override
-  public void setCorrelationProperty(CorrelationProperty correlationProperty) {
+  public void setCorrelationProperty(final CorrelationProperty correlationProperty) {
     correlationPropertyRefAttribute.setReferenceTargetElement(this, correlationProperty);
   }
 
@@ -91,7 +91,7 @@ public class CorrelationPropertyBindingImpl extends BaseElementImpl
   }
 
   @Override
-  public void setDataPath(DataPath dataPath) {
+  public void setDataPath(final DataPath dataPath) {
     dataPathChild.setChild(this, dataPath);
   }
 }

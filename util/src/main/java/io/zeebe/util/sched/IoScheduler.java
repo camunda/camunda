@@ -16,14 +16,14 @@ import io.zeebe.util.sched.clock.ActorClock;
  */
 public class IoScheduler implements TaskScheduler {
 
-  private MultiLevelWorkstealingGroup tasks;
+  private final MultiLevelWorkstealingGroup tasks;
 
-  public IoScheduler(MultiLevelWorkstealingGroup tasks) {
+  public IoScheduler(final MultiLevelWorkstealingGroup tasks) {
     this.tasks = tasks;
   }
 
   @Override
-  public ActorTask getNextTask(ActorClock now) {
+  public ActorTask getNextTask(final ActorClock now) {
     return tasks.getNextTask(0);
   }
 }

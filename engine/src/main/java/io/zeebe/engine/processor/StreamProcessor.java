@@ -83,7 +83,7 @@ public class StreamProcessor extends Actor {
   }
 
   private void onRetrievingWriter(
-      LogStreamBatchWriter batchWriter, Throwable errorOnReceivingWriter) {
+      final LogStreamBatchWriter batchWriter, final Throwable errorOnReceivingWriter) {
 
     if (errorOnReceivingWriter == null) {
       processingContext
@@ -99,7 +99,8 @@ public class StreamProcessor extends Actor {
     }
   }
 
-  private void onRetrievingReader(LogStreamReader reader, Throwable errorOnReceivingReader) {
+  private void onRetrievingReader(
+      final LogStreamReader reader, final Throwable errorOnReceivingReader) {
     if (errorOnReceivingReader == null) {
       this.logStreamReader = reader;
       processingContext.logStreamReader(reader);
@@ -238,7 +239,7 @@ public class StreamProcessor extends Actor {
     return closeFuture;
   }
 
-  private void onFailure(Throwable throwable) {
+  private void onFailure(final Throwable throwable) {
     phase = Phase.FAILED;
     openFuture.completeExceptionally(throwable);
     closeFuture = new CompletableActorFuture<>();

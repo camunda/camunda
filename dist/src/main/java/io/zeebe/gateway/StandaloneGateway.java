@@ -30,7 +30,7 @@ public class StandaloneGateway {
   private final GatewayCfg gatewayCfg;
   private final ActorScheduler actorScheduler;
 
-  public StandaloneGateway(GatewayCfg gatewayCfg) {
+  public StandaloneGateway(final GatewayCfg gatewayCfg) {
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
     actorScheduler = createActorScheduler(gatewayCfg);
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
@@ -55,7 +55,7 @@ public class StandaloneGateway {
     return atomix;
   }
 
-  private ActorScheduler createActorScheduler(GatewayCfg configuration) {
+  private ActorScheduler createActorScheduler(final GatewayCfg configuration) {
     final ActorScheduler actorScheduler =
         ActorScheduler.newActorScheduler()
             .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
@@ -86,13 +86,13 @@ public class StandaloneGateway {
     }
   }
 
-  public static void main(String args[]) throws Exception {
+  public static void main(final String[] args) throws Exception {
     final GatewayCfg gatewayCfg = initConfiguration(args);
     gatewayCfg.init();
     new StandaloneGateway(gatewayCfg).run();
   }
 
-  private static GatewayCfg initConfiguration(String[] args) {
+  private static GatewayCfg initConfiguration(final String[] args) {
     if (args.length >= 1) {
       String configFileLocation = args[0];
 

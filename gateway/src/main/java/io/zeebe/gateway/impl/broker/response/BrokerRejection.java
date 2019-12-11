@@ -19,11 +19,13 @@ public class BrokerRejection {
   private final RejectionType type;
   private final String reason;
 
-  public BrokerRejection(Intent intent, long key, RejectionType type, DirectBuffer reason) {
+  public BrokerRejection(
+      final Intent intent, final long key, final RejectionType type, final DirectBuffer reason) {
     this(intent, key, type, BufferUtil.bufferAsString(reason));
   }
 
-  public BrokerRejection(Intent intent, long key, RejectionType type, String reason) {
+  public BrokerRejection(
+      final Intent intent, final long key, final RejectionType type, final String reason) {
     this.intent = intent;
     this.key = key;
     this.type = type;

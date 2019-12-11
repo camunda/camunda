@@ -39,11 +39,11 @@ public class SignalEventDefinitionImpl extends EventDefinitionImpl
 
   protected static AttributeReference<Signal> signalRefAttribute;
 
-  public SignalEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public SignalEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(SignalEventDefinition.class, BPMN_ELEMENT_SIGNAL_EVENT_DEFINITION)
@@ -53,7 +53,7 @@ public class SignalEventDefinitionImpl extends EventDefinitionImpl
                 new ModelTypeInstanceProvider<SignalEventDefinition>() {
                   @Override
                   public SignalEventDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new SignalEventDefinitionImpl(instanceContext);
                   }
                 });
@@ -73,7 +73,7 @@ public class SignalEventDefinitionImpl extends EventDefinitionImpl
   }
 
   @Override
-  public void setSignal(Signal signal) {
+  public void setSignal(final Signal signal) {
     signalRefAttribute.setReferenceTargetElement(this, signal);
   }
 }

@@ -22,17 +22,17 @@ public class ElementActivatedHandler<T extends ExecutableFlowNode> extends Abstr
     this(WorkflowInstanceIntent.ELEMENT_COMPLETING);
   }
 
-  public ElementActivatedHandler(WorkflowInstanceIntent nextState) {
+  public ElementActivatedHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     return true;
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
     return super.shouldHandleState(context)
         && isStateSameAsElementState(context)
         && (isRootScope(context) || isElementActive(context.getFlowScopeInstance()));

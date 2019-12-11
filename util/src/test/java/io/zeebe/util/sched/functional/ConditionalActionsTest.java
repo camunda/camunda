@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class ConditionalActionsTest {
-  @Rule public ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
+  @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
 
   @Test
   public void shouldNotTriggerActionIfConditionNotTriggered() {

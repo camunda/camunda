@@ -30,8 +30,8 @@ public class CreateWorkflowInstanceWithResultResponseImpl implements WorkflowIns
   private final String variables;
 
   public CreateWorkflowInstanceWithResultResponseImpl(
-      ZeebeObjectMapper objectMapper,
-      GatewayOuterClass.CreateWorkflowInstanceWithResultResponse response) {
+      final ZeebeObjectMapper objectMapper,
+      final GatewayOuterClass.CreateWorkflowInstanceWithResultResponse response) {
     this.objectMapper = objectMapper;
     this.workflowKey = response.getWorkflowKey();
     this.bpmnProcessId = response.getBpmnProcessId();
@@ -71,7 +71,7 @@ public class CreateWorkflowInstanceWithResultResponseImpl implements WorkflowIns
   }
 
   @Override
-  public <T> T getVariablesAsType(Class<T> variableType) {
+  public <T> T getVariablesAsType(final Class<T> variableType) {
     return objectMapper.fromJson(variables, variableType);
   }
 

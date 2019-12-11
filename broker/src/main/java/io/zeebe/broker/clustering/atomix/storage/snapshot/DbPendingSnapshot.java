@@ -94,7 +94,7 @@ public class DbPendingSnapshot implements PendingSnapshot {
 
     IoUtil.ensureDirectoryExists(directory.toFile(), "Pending snapshot directory");
 
-    try (var channel =
+    try (final var channel =
         Files.newByteChannel(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
       channel.write(chunkData);
     } catch (final FileAlreadyExistsException e) {

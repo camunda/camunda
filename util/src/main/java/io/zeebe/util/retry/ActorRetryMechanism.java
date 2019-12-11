@@ -19,12 +19,14 @@ public class ActorRetryMechanism {
   private BooleanSupplier currentTerminateCondition;
   private ActorFuture<Boolean> currentFuture;
 
-  public ActorRetryMechanism(ActorControl actor) {
+  public ActorRetryMechanism(final ActorControl actor) {
     this.actor = actor;
   }
 
   void wrap(
-      OperationToRetry callable, BooleanSupplier condition, ActorFuture<Boolean> resultFuture) {
+      final OperationToRetry callable,
+      final BooleanSupplier condition,
+      final ActorFuture<Boolean> resultFuture) {
     currentCallable = callable;
     currentTerminateCondition = condition;
     currentFuture = resultFuture;

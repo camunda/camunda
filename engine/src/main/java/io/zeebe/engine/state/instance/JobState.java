@@ -57,7 +57,8 @@ public class JobState {
 
   private Consumer<String> onJobsAvailableCallback;
 
-  public JobState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, int partitionId) {
+  public JobState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext, final int partitionId) {
 
     jobRecordToRead = new UnpackedObjectValue();
     jobRecordToRead.wrapObject(new JobRecord());
@@ -92,7 +93,7 @@ public class JobState {
     metrics.jobCreated(record.getType());
   }
 
-  private void createJob(long key, JobRecord record, DirectBuffer type) {
+  private void createJob(final long key, final JobRecord record, final DirectBuffer type) {
     resetVariablesAndUpdateJobRecord(key, record);
     updateJobState(State.ACTIVATABLE);
     makeJobActivatable(type, key);
@@ -133,17 +134,17 @@ public class JobState {
     metrics.jobTimedOut(record.getType());
   }
 
-  public void complete(long key, JobRecord record) {
+  public void complete(final long key, final JobRecord record) {
     delete(key, record);
     metrics.jobCompleted(record.getType());
   }
 
-  public void cancel(long key, JobRecord record) {
+  public void cancel(final long key, final JobRecord record) {
     delete(key, record);
     metrics.jobCanceled(record.getType());
   }
 
-  private void delete(long key, JobRecord record) {
+  private void delete(final long key, final JobRecord record) {
     final DirectBuffer type = record.getTypeBuffer();
     final long deadline = record.getDeadline();
 
@@ -157,7 +158,7 @@ public class JobState {
     removeJobDeadline(deadline);
   }
 
-  public void fail(long key, JobRecord updatedValue) {
+  public void fail(final long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getTypeBuffer();
     final long deadline = updatedValue.getDeadline();
 
@@ -177,12 +178,12 @@ public class JobState {
     metrics.jobFailed(updatedValue.getType());
   }
 
-  private void validateParameters(DirectBuffer type, long deadline) {
+  private void validateParameters(final DirectBuffer type, final long deadline) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
     EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
   }
 
-  public void resolve(long key, final JobRecord updatedValue) {
+  public void resolve(final long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getTypeBuffer();
 
     resetVariablesAndUpdateJobRecord(key, updatedValue);
@@ -205,12 +206,12 @@ public class JobState {
         });
   }
 
-  public boolean exists(long jobKey) {
+  public boolean exists(final long jobKey) {
     this.jobKey.wrapLong(jobKey);
     return jobsColumnFamily.exists(this.jobKey);
   }
 
-  public State getState(long key) {
+  public State getState(final long key) {
     jobKey.wrapLong(key);
 
     final DbByte storedState = statesJobColumnFamily.get(jobKey);
@@ -222,7 +223,7 @@ public class JobState {
     return State.forValue(storedState.getValue());
   }
 
-  public boolean isInState(long key, State state) {
+  public boolean isInState(final long key, final State state) {
     return getState(key) == state;
   }
 
@@ -239,7 +240,9 @@ public class JobState {
   }
 
   boolean visitJob(
-      long jobKey, BiFunction<Long, JobRecord, Boolean> callback, Runnable cleanupRunnable) {
+      final long jobKey,
+      final BiFunction<Long, JobRecord, Boolean> callback,
+      final Runnable cleanupRunnable) {
     final JobRecord job = getJob(jobKey);
     if (job == null) {
       LOG.error("Expected to find job with key {}, but no job found", jobKey);
@@ -264,17 +267,17 @@ public class JobState {
     return unpackedObjectValue == null ? null : (JobRecord) unpackedObjectValue.getObject();
   }
 
-  public void setJobsAvailableCallback(Consumer<String> onJobsAvailableCallback) {
+  public void setJobsAvailableCallback(final Consumer<String> onJobsAvailableCallback) {
     this.onJobsAvailableCallback = onJobsAvailableCallback;
   }
 
-  private void notifyJobAvailable(DirectBuffer jobType) {
+  private void notifyJobAvailable(final DirectBuffer jobType) {
     if (onJobsAvailableCallback != null) {
       onJobsAvailableCallback.accept(BufferUtil.bufferAsString(jobType));
     }
   }
 
-  private void resetVariablesAndUpdateJobRecord(long key, JobRecord updatedValue) {
+  private void resetVariablesAndUpdateJobRecord(final long key, final JobRecord updatedValue) {
     jobKey.wrapLong(key);
     // do not persist variables in job state
     updatedValue.resetVariables();
@@ -282,12 +285,12 @@ public class JobState {
     jobsColumnFamily.put(jobKey, jobRecordToWrite);
   }
 
-  private void updateJobState(State newState) {
+  private void updateJobState(final State newState) {
     jobState.wrapByte(newState.value);
     statesJobColumnFamily.put(jobKey, jobState);
   }
 
-  private void makeJobActivatable(DirectBuffer type, long key) {
+  private void makeJobActivatable(final DirectBuffer type, final long key) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
 
     jobTypeKey.wrapBuffer(type);
@@ -299,14 +302,14 @@ public class JobState {
     notifyJobAvailable(type);
   }
 
-  private void makeJobNotActivatable(DirectBuffer type) {
+  private void makeJobNotActivatable(final DirectBuffer type) {
     EnsureUtil.ensureNotNullOrEmpty("type", type);
 
     jobTypeKey.wrapBuffer(type);
     activatableColumnFamily.delete(typeJobKey);
   }
 
-  private void removeJobDeadline(long deadline) {
+  private void removeJobDeadline(final long deadline) {
     deadlineKey.wrapLong(deadline);
     deadlinesColumnFamily.delete(deadlineJobKey);
   }
@@ -317,13 +320,13 @@ public class JobState {
     FAILED((byte) 2),
     NOT_FOUND((byte) 3);
 
-    byte value;
+    final byte value;
 
-    State(byte value) {
+    State(final byte value) {
       this.value = value;
     }
 
-    static State forValue(byte value) {
+    static State forValue(final byte value) {
       switch (value) {
         case 0:
           return ACTIVATABLE;

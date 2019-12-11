@@ -35,7 +35,7 @@ public class ErrorRecord extends UnifiedRecordValue implements ErrorRecordValue 
         .declareProperty(workflowInstanceKeyProp);
   }
 
-  public void initErrorRecord(Throwable throwable, long position) {
+  public void initErrorRecord(final Throwable throwable, final long position) {
     Objects.requireNonNull(throwable);
     reset();
 
@@ -77,7 +77,7 @@ public class ErrorRecord extends UnifiedRecordValue implements ErrorRecordValue 
     return workflowInstanceKeyProp.getValue();
   }
 
-  public ErrorRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+  public ErrorRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
     this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }

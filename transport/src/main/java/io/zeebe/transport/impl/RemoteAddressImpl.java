@@ -19,7 +19,7 @@ public class RemoteAddressImpl implements RemoteAddress {
   private final SocketAddress addr;
   private volatile int state;
 
-  public RemoteAddressImpl(int streamId, SocketAddress addr) {
+  public RemoteAddressImpl(final int streamId, final SocketAddress addr) {
     this.streamId = streamId;
     this.addr = addr;
     this.state = STATE_ACTIVE;
@@ -45,7 +45,7 @@ public class RemoteAddressImpl implements RemoteAddress {
     this.state = STATE_ACTIVE;
   }
 
-  public boolean isInAnyState(int mask) {
+  public boolean isInAnyState(final int mask) {
     return (this.state & mask) != 0;
   }
 

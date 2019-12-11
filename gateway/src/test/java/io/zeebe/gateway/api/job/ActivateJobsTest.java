@@ -112,7 +112,7 @@ public class ActivateJobsTest extends GatewayTest {
       assertThat(responses.hasNext()).isTrue();
       final ActivateJobsResponse response = responses.next();
 
-      for (ActivatedJob activatedJob : response.getJobsList()) {
+      for (final ActivatedJob activatedJob : response.getJobsList()) {
         assertThat(Protocol.decodePartitionId(activatedJob.getKey()))
             .isEqualTo(Protocol.START_PARTITION_ID + partitionOffset);
       }

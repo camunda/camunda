@@ -26,7 +26,7 @@ public abstract class AbstractSendTaskBuilder<B extends AbstractSendTaskBuilder<
     extends AbstractTaskBuilder<B, SendTask> {
 
   protected AbstractSendTaskBuilder(
-      BpmnModelInstance modelInstance, SendTask element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final SendTask element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -36,7 +36,7 @@ public abstract class AbstractSendTaskBuilder<B extends AbstractSendTaskBuilder<
    * @param implementation the implementation to set
    * @return the builder object
    */
-  public B implementation(String implementation) {
+  public B implementation(final String implementation) {
     element.setImplementation(implementation);
     return myself;
   }
@@ -47,7 +47,7 @@ public abstract class AbstractSendTaskBuilder<B extends AbstractSendTaskBuilder<
    * @param message the message to set
    * @return the builder object
    */
-  public B message(Message message) {
+  public B message(final Message message) {
     element.setMessage(message);
     return myself;
   }
@@ -59,7 +59,7 @@ public abstract class AbstractSendTaskBuilder<B extends AbstractSendTaskBuilder<
    * @param messageName the name of the message
    * @return the builder object
    */
-  public B message(String messageName) {
+  public B message(final String messageName) {
     final Message message = findMessageForName(messageName);
     return message(message);
   }
@@ -70,7 +70,7 @@ public abstract class AbstractSendTaskBuilder<B extends AbstractSendTaskBuilder<
    * @param operation the operation to set
    * @return the builder object
    */
-  public B operation(Operation operation) {
+  public B operation(final Operation operation) {
     element.setOperation(operation);
     return myself;
   }

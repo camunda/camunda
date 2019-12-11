@@ -43,7 +43,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   static {
     try {
       STATE_OFFSET = UNSAFE.objectFieldOffset(ActorThread.class.getDeclaredField("state"));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
@@ -62,12 +62,12 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   private volatile ActorThreadState state;
 
   public ActorThread(
-      String name,
-      int id,
-      ActorThreadGroup threadGroup,
-      TaskScheduler taskScheduler,
-      ActorClock clock,
-      ActorTimerQueue timerQueue) {
+      final String name,
+      final int id,
+      final ActorThreadGroup threadGroup,
+      final TaskScheduler taskScheduler,
+      final ActorClock clock,
+      final ActorTimerQueue timerQueue) {
     setName(name);
     this.state = ActorThreadState.NEW;
     this.threadId = id;
@@ -105,7 +105,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
 
     try {
       resubmit = currentTask.execute(this);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // TODO: check interrupt state?
       // TODO: Handle Exception
       e.printStackTrace();
@@ -128,12 +128,12 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   /** Must be called from this thread, schedules a job to be run later. */
-  public void scheduleTimer(TimerSubscription timer) {
+  public void scheduleTimer(final TimerSubscription timer) {
     timerJobQueue.schedule(timer, clock);
   }
 
   /** Must be called from this thread, remove a scheduled job. */
-  public void removeTimer(TimerSubscription timer) {
+  public void removeTimer(final TimerSubscription timer) {
     timerJobQueue.remove(timer);
   }
 
@@ -152,7 +152,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
      */
     try {
       return (ActorThread) Thread.currentThread();
-    } catch (ClassCastException e) {
+    } catch (final ClassCastException e) {
       return null;
     }
   }
@@ -167,7 +167,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     return job;
   }
 
-  void recycleJob(ActorJob j) {
+  void recycleJob(final ActorJob j) {
     j.reset();
     jobs.offer(j);
   }
@@ -193,7 +193,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
     while (state == ActorThreadState.RUNNING) {
       try {
         doWork();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         e.printStackTrace();
       }
     }
@@ -235,7 +235,7 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
   }
 
   @Override
-  public void accept(Runnable t) {
+  public void accept(final Runnable t) {
     t.run();
   }
 

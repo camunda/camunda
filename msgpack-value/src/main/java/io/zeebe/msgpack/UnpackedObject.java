@@ -20,12 +20,12 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
   protected final MsgPackReader reader = new MsgPackReader();
   protected final MsgPackWriter writer = new MsgPackWriter();
 
-  public void wrap(DirectBuffer buff) {
+  public void wrap(final DirectBuffer buff) {
     wrap(buff, 0, buff.capacity());
   }
 
   @Override
-  public void wrap(DirectBuffer buff, int offset, int length) {
+  public void wrap(final DirectBuffer buff, final int offset, final int length) {
     reader.wrap(buff, offset, length);
     try {
       read(reader);
@@ -45,7 +45,7 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     writer.wrap(buffer, offset);
     write(writer);
   }

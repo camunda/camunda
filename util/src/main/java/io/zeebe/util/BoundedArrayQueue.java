@@ -16,16 +16,16 @@ import java.util.Queue;
 
 /** Non concurrent, garbage-free array queue with fixed capacity. */
 public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
-  protected Object[] array;
+  protected final Object[] array;
 
-  protected int capacity;
-  protected int mask;
+  protected final int capacity;
+  protected final int mask;
   protected long head;
   protected long tail;
 
-  protected BoundedArrayQueueIterator<P> iterator = new BoundedArrayQueueIterator<>();
+  protected final BoundedArrayQueueIterator<P> iterator = new BoundedArrayQueueIterator<>();
 
-  public BoundedArrayQueue(int capacity) {
+  public BoundedArrayQueue(final int capacity) {
     this.capacity = findNextPositivePowerOfTwo(capacity);
     this.mask = this.capacity - 1;
 
@@ -46,7 +46,7 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
   }
 
   @Override
-  public boolean contains(Object o) {
+  public boolean contains(final Object o) {
     boolean contains = false;
 
     for (int i = 0; i < array.length; i++) {
@@ -65,32 +65,32 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
   }
 
   @Override
-  public <T> T[] toArray(T[] a) {
+  public <T> T[] toArray(final T[] a) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean remove(Object o) {
+  public boolean remove(final Object o) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean containsAll(Collection<?> c) {
+  public boolean containsAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean addAll(Collection<? extends P> c) {
+  public boolean addAll(final Collection<? extends P> c) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean removeAll(Collection<?> c) {
+  public boolean removeAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public boolean retainAll(Collection<?> c) {
+  public boolean retainAll(final Collection<?> c) {
     throw new UnsupportedOperationException();
   }
 
@@ -115,12 +115,12 @@ public class BoundedArrayQueue<P> implements Iterable<P>, Queue<P> {
   }
 
   @Override
-  public boolean add(P e) {
+  public boolean add(final P e) {
     return offer(e);
   }
 
   @Override
-  public boolean offer(P object) {
+  public boolean offer(final P object) {
     final int remainingSpace = capacity - size();
 
     if (remainingSpace > 0) {

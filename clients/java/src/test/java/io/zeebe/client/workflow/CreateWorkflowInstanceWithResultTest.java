@@ -124,7 +124,7 @@ public class CreateWorkflowInstanceWithResultTest extends ClientTest {
       return key;
     }
 
-    public VariablesPojo setKey(String key) {
+    public VariablesPojo setKey(final String key) {
       this.key = key;
       return this;
     }

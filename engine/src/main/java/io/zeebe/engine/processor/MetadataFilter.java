@@ -23,7 +23,7 @@ public interface MetadataFilter {
    */
   boolean applies(RecordMetadata metadata);
 
-  default MetadataFilter and(MetadataFilter other) {
+  default MetadataFilter and(final MetadataFilter other) {
     Objects.requireNonNull(other);
     return (e) -> this.applies(e) && other.applies(e);
   }

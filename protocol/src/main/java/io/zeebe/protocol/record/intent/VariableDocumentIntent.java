@@ -21,11 +21,11 @@ public enum VariableDocumentIntent implements Intent {
 
   private final short value;
 
-  VariableDocumentIntent(int value) {
+  VariableDocumentIntent(final int value) {
     this((short) value);
   }
 
-  VariableDocumentIntent(short value) {
+  VariableDocumentIntent(final short value) {
     this.value = value;
   }
 
@@ -34,7 +34,7 @@ public enum VariableDocumentIntent implements Intent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return UPDATE;

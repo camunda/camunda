@@ -38,8 +38,8 @@ public class LongPollingActivateJobsTest {
   private static final long LONG_POLLING_TIMEOUT = 5000;
   private static final long PROBE_TIMEOUT = 20000;
   private static final int FAILED_RESPONSE_THRESHOLD = 3;
-  protected ControlledActorClock actorClock = new ControlledActorClock();
-  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
+  protected final ControlledActorClock actorClock = new ControlledActorClock();
+  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(actorClock);
   private LongPollingActivateJobsHandler handler;
   private ActivateJobsStub stub;
   private int partitionsCount;
@@ -323,7 +323,7 @@ public class LongPollingActivateJobsTest {
     assertThat(request.isTimedOut()).isFalse();
   }
 
-  private List<LongPollingActivateJobsRequest> activateJobsAndWaitUntilBlocked(int amount) {
+  private List<LongPollingActivateJobsRequest> activateJobsAndWaitUntilBlocked(final int amount) {
     return IntStream.range(0, amount)
         .boxed()
         .map(
@@ -340,7 +340,7 @@ public class LongPollingActivateJobsTest {
     return getLongPollingActivateJobsRequest(TYPE);
   }
 
-  private LongPollingActivateJobsRequest getLongPollingActivateJobsRequest(String jobType) {
+  private LongPollingActivateJobsRequest getLongPollingActivateJobsRequest(final String jobType) {
     final int maxJobsToActivate = 2;
     final ActivateJobsRequest request =
         ActivateJobsRequest.newBuilder()

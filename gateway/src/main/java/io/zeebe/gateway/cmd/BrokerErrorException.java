@@ -15,11 +15,11 @@ public class BrokerErrorException extends BrokerException {
 
   protected final BrokerError error;
 
-  public BrokerErrorException(BrokerError brokerError) {
+  public BrokerErrorException(final BrokerError brokerError) {
     this(brokerError, null);
   }
 
-  public BrokerErrorException(BrokerError error, Throwable cause) {
+  public BrokerErrorException(final BrokerError error, final Throwable cause) {
     super(String.format(ERROR_MESSAGE_FORMAT, error.getCode(), error.getMessage()), cause);
     this.error = error;
   }

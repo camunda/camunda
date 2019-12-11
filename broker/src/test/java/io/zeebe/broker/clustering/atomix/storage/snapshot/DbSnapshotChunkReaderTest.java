@@ -76,7 +76,7 @@ public class DbSnapshotChunkReaderTest {
     return ByteBuffer.wrap(chunk.toString().getBytes(DbSnapshotChunkReader.ID_CHARSET));
   }
 
-  private NavigableSet<CharSequence> chunksOf(CharSequence... chunks) {
+  private NavigableSet<CharSequence> chunksOf(final CharSequence... chunks) {
     final var set = new TreeSet<>(CharSequence::compare);
     set.addAll(Arrays.asList(chunks));
     return set;
@@ -88,7 +88,7 @@ public class DbSnapshotChunkReaderTest {
       final var path = directory.resolve(chunk.toString());
       try {
         Files.createFile(path);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
     }

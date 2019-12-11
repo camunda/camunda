@@ -82,9 +82,9 @@ public class CallableActionsTest {
   }
 
   protected static class ExceptionActor extends Actor {
-    protected AtomicInteger invocations = new AtomicInteger(0);
+    protected final AtomicInteger invocations = new AtomicInteger(0);
 
-    public Future<Void> failWith(Exception e) {
+    public Future<Void> failWith(final Exception e) {
       return actor.call(
           () -> {
             invocations.incrementAndGet();

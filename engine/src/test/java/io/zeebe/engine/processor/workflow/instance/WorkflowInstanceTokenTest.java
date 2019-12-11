@@ -471,7 +471,7 @@ public class WorkflowInstanceTokenTest {
   }
 
   private void assertThatWorkflowInstanceCompletedAfter(
-      long workflowInstanceKey, String elementId) {
+      final long workflowInstanceKey, final String elementId) {
     final Record<WorkflowInstanceRecordValue> lastEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
             .withWorkflowInstanceKey(workflowInstanceKey)

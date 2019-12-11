@@ -10,12 +10,12 @@ public class ZeebeTestListener extends RunListener {
   private static final Logger LOG = LoggerFactory.getLogger("io.zeebe.test");
 
   @Override
-  public void testStarted(Description description) throws Exception {
+  public void testStarted(final Description description) throws Exception {
     LOG.info("Test started: {}", description.getDisplayName());
   }
 
   @Override
-  public void testFinished(Description description) throws Exception {
+  public void testFinished(final Description description) throws Exception {
     LOG.info("Test finished: {}", description.getDisplayName());
   }
 }

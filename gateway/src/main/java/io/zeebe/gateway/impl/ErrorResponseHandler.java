@@ -18,12 +18,12 @@ public class ErrorResponseHandler {
 
   protected DirectBuffer errorMessage;
 
-  public boolean handlesResponse(MessageHeaderDecoder responseHeader) {
+  public boolean handlesResponse(final MessageHeaderDecoder responseHeader) {
     return ErrorResponseDecoder.SCHEMA_ID == responseHeader.schemaId()
         && ErrorResponseDecoder.TEMPLATE_ID == responseHeader.templateId();
   }
 
-  public void wrap(DirectBuffer body, int offset, int length, int version) {
+  public void wrap(final DirectBuffer body, final int offset, final int length, final int version) {
     decoder.wrap(body, offset, length, version);
 
     final int errorDataLength = decoder.errorDataLength();

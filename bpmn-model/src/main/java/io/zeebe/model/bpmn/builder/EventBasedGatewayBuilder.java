@@ -23,7 +23,8 @@ import io.zeebe.model.bpmn.instance.EventBasedGateway;
 public class EventBasedGatewayBuilder
     extends AbstractEventBasedGatewayBuilder<EventBasedGatewayBuilder> {
 
-  public EventBasedGatewayBuilder(BpmnModelInstance modelInstance, EventBasedGateway element) {
+  public EventBasedGatewayBuilder(
+      final BpmnModelInstance modelInstance, final EventBasedGateway element) {
     super(modelInstance, element, EventBasedGatewayBuilder.class);
   }
 }

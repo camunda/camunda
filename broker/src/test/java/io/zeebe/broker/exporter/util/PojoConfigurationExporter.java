@@ -16,12 +16,12 @@ public class PojoConfigurationExporter implements Exporter {
   public static PojoExporterConfiguration configuration;
 
   @Override
-  public void configure(Context context) {
+  public void configure(final Context context) {
     configuration = context.getConfiguration().instantiate(PojoExporterConfiguration.class);
   }
 
   @Override
-  public void export(Record record) {}
+  public void export(final Record record) {}
 
   public PojoExporterConfiguration getConfiguration() {
     return configuration;
@@ -37,7 +37,7 @@ public class PojoConfigurationExporter implements Exporter {
       return foo;
     }
 
-    public void setFoo(String foo) {
+    public void setFoo(final String foo) {
       this.foo = foo;
     }
 
@@ -45,7 +45,7 @@ public class PojoConfigurationExporter implements Exporter {
       return x;
     }
 
-    public void setX(int x) {
+    public void setX(final int x) {
       this.x = x;
     }
 
@@ -53,7 +53,7 @@ public class PojoConfigurationExporter implements Exporter {
       return nested;
     }
 
-    public void setNested(PojoExporterConfigurationPart nested) {
+    public void setNested(final PojoExporterConfigurationPart nested) {
       this.nested = nested;
     }
   }
@@ -66,7 +66,7 @@ public class PojoConfigurationExporter implements Exporter {
       return bar;
     }
 
-    public void setBar(String bar) {
+    public void setBar(final String bar) {
       this.bar = bar;
     }
 
@@ -74,7 +74,7 @@ public class PojoConfigurationExporter implements Exporter {
       return y;
     }
 
-    public void setY(double y) {
+    public void setY(final double y) {
       this.y = y;
     }
   }

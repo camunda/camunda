@@ -34,7 +34,7 @@ public class FragmentBatchIntegrationTest {
   private static final byte[] MSG2 = "msg2".getBytes();
   private static final byte[] MSG3 = "msg3".getBytes();
 
-  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
+  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(1);
 
   private Dispatcher dispatcher;
   private Subscription subscription;
@@ -152,7 +152,10 @@ public class FragmentBatchIntegrationTest {
   }
 
   private int assertThatBufferContains(
-      DirectBuffer buffer, int bufferOffset, byte[] expectedMessage, int expectedStreamId) {
+      final DirectBuffer buffer,
+      final int bufferOffset,
+      final byte[] expectedMessage,
+      final int expectedStreamId) {
     final int framedLength = buffer.getInt(lengthOffset(bufferOffset));
     final int fragmentLength = framedLength - DataFrameDescriptor.HEADER_LENGTH;
     assertThat(fragmentLength).isEqualTo(expectedMessage.length);

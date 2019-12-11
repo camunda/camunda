@@ -144,7 +144,7 @@ public class CommandApiRule extends ExternalResource {
         .partitionId(defaultPartitionId);
   }
 
-  public ExecuteCommandRequestBuilder createCmdRequest(int partition) {
+  public ExecuteCommandRequestBuilder createCmdRequest(final int partition) {
     return new ExecuteCommandRequestBuilder(transport.getOutput(), nodeId, msgPackHelper)
         .partitionId(partition);
   }
@@ -229,7 +229,7 @@ public class CommandApiRule extends ExternalResource {
   }
 
   /** @return the workflow key */
-  public Record<DeploymentRecordValue> deployWorkflow(BpmnModelInstance modelInstance) {
+  public Record<DeploymentRecordValue> deployWorkflow(final BpmnModelInstance modelInstance) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, modelInstance);
     final byte[] resource = outStream.toByteArray();
@@ -255,16 +255,20 @@ public class CommandApiRule extends ExternalResource {
         .getFirst();
   }
 
-  public void publishMessage(String messageName, String correlationKey) {
+  public void publishMessage(final String messageName, final String correlationKey) {
     publishMessage(messageName, correlationKey, MsgPackUtil.asMsgPack("{}"));
   }
 
-  public void publishMessage(String messageName, String correlationKey, DirectBuffer variables) {
+  public void publishMessage(
+      final String messageName, final String correlationKey, final DirectBuffer variables) {
     publishMessage(messageName, correlationKey, variables, Duration.ofHours(1).toMillis());
   }
 
   public void publishMessage(
-      String messageName, String correlationKey, DirectBuffer variables, long ttl) {
+      final String messageName,
+      final String correlationKey,
+      final DirectBuffer variables,
+      final long ttl) {
     final ExecuteCommandResponse response =
         createCmdRequest()
             .partitionId(partitionForCorrelationKey(correlationKey))
@@ -281,7 +285,7 @@ public class CommandApiRule extends ExternalResource {
     assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
   }
 
-  public void cancelWorkflowInstance(long workflowInstanceKey) {
+  public void cancelWorkflowInstance(final long workflowInstanceKey) {
     final ExecuteCommandResponse response =
         createCmdRequest()
             .partitionId(Protocol.decodePartitionId(workflowInstanceKey))
@@ -295,11 +299,11 @@ public class CommandApiRule extends ExternalResource {
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
   }
 
-  public void completeJob(String jobType) {
+  public void completeJob(final String jobType) {
     completeJob(jobType, MsgPackUtil.asMsgPack("{}"));
   }
 
-  public void completeJob(String jobType, DirectBuffer variables) {
+  public void completeJob(final String jobType, final DirectBuffer variables) {
     activateJobs(jobType).await();
 
     final Record<JobRecordValue> jobRecord =
@@ -317,7 +321,7 @@ public class CommandApiRule extends ExternalResource {
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
   }
 
-  public ExecuteCommandResponse resolveIncident(long incidentKey) {
+  public ExecuteCommandResponse resolveIncident(final long incidentKey) {
     return createCmdRequest()
         .partitionId(Protocol.decodePartitionId(incidentKey))
         .type(ValueType.INCIDENT, IncidentIntent.RESOLVE)
@@ -331,7 +335,7 @@ public class CommandApiRule extends ExternalResource {
     return (nextPartitionId++ % partitionCount) + START_PARTITION_ID;
   }
 
-  protected int partitionForCorrelationKey(String correlationKey) {
+  protected int partitionForCorrelationKey(final String correlationKey) {
     return SubscriptionUtil.getSubscriptionPartitionId(
         BufferUtil.wrapString(correlationKey), partitionCount);
   }

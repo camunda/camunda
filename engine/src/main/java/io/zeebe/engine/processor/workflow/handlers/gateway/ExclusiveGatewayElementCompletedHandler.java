@@ -19,7 +19,7 @@ public class ExclusiveGatewayElementCompletedHandler<T extends ExecutableExclusi
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     publishDeferredRecords(context);
     return super.handleState(context);
   }

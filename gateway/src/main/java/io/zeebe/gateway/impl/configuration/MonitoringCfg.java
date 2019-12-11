@@ -24,7 +24,7 @@ public class MonitoringCfg {
   private String host;
   private int port = DEFAULT_MONITORING_PORT;
 
-  public void init(Environment environment, String defaultHost) {
+  public void init(final Environment environment, final String defaultHost) {
     environment.getBool(ENV_GATEWAY_MONITORING_ENABLED).ifPresent(this::setEnabled);
     environment.get(ENV_GATEWAY_MONITORING_HOST).ifPresent(this::setHost);
     environment.getInt(ENV_GATEWAY_MONITORING_PORT).ifPresent(this::setPort);
@@ -38,7 +38,7 @@ public class MonitoringCfg {
     return enabled;
   }
 
-  public MonitoringCfg setEnabled(boolean enabled) {
+  public MonitoringCfg setEnabled(final boolean enabled) {
     this.enabled = enabled;
     return this;
   }
@@ -47,7 +47,7 @@ public class MonitoringCfg {
     return host;
   }
 
-  public MonitoringCfg setHost(String host) {
+  public MonitoringCfg setHost(final String host) {
     this.host = host;
     return this;
   }
@@ -56,7 +56,7 @@ public class MonitoringCfg {
     return port;
   }
 
-  public MonitoringCfg setPort(int port) {
+  public MonitoringCfg setPort(final int port) {
     this.port = port;
     return this;
   }
@@ -71,7 +71,7 @@ public class MonitoringCfg {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

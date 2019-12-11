@@ -50,7 +50,7 @@ public class DbSnapshotStoreFactory implements SnapshotStoreFactory {
 
   private void loadSnapshots(
       final Path snapshotDirectory, final NavigableMap<DbSnapshotId, DbSnapshot> snapshots) {
-    try (var stream = Files.newDirectoryStream(snapshotDirectory)) {
+    try (final var stream = Files.newDirectoryStream(snapshotDirectory)) {
       for (final var path : stream) {
         collectSnapshot(snapshots, path);
       }

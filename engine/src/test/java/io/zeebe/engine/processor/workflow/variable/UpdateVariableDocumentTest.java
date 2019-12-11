@@ -77,9 +77,9 @@ public class UpdateVariableDocumentTest {
   }
 
   private void assertVariableDocumentEventProduced(
-      Map<String, Object> document,
-      Record<WorkflowInstanceRecordValue> activatedEvent,
-      Supplier<RecordStream> records) {
+      final Map<String, Object> document,
+      final Record<WorkflowInstanceRecordValue> activatedEvent,
+      final Supplier<RecordStream> records) {
     assertThat(
             records
                 .get()
@@ -93,7 +93,7 @@ public class UpdateVariableDocumentTest {
   }
 
   private void assertVariableRecordsProduced(
-      long workflowInstanceKey, Supplier<RecordStream> records) {
+      final long workflowInstanceKey, final Supplier<RecordStream> records) {
     assertThat(records.get().variableRecords().withWorkflowInstanceKey(workflowInstanceKey))
         .hasSize(2)
         .extracting(
@@ -108,7 +108,8 @@ public class UpdateVariableDocumentTest {
             tuple(VariableIntent.UPDATED, workflowInstanceKey, "x", "2"));
   }
 
-  private BpmnModelInstance newWorkflow(String processId, String taskId, String type) {
+  private BpmnModelInstance newWorkflow(
+      final String processId, final String taskId, final String type) {
     return Bpmn.createExecutableProcess(processId)
         .startEvent()
         .serviceTask(taskId, b -> b.zeebeTaskType(type))
@@ -116,7 +117,8 @@ public class UpdateVariableDocumentTest {
         .done();
   }
 
-  private long getWorkflowInstanceCompletedPosition(String processId, long workflowInstanceKey) {
+  private long getWorkflowInstanceCompletedPosition(
+      final String processId, final long workflowInstanceKey) {
     return RecordingExporter.workflowInstanceRecords()
         .withWorkflowInstanceKey(workflowInstanceKey)
         .withElementId(processId)

@@ -21,8 +21,8 @@ import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
 
 public class ExporterJarClassLoaderTest {
-  private TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
 
   @Rule public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(jarCreator);
 

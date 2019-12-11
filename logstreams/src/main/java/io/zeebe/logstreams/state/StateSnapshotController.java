@@ -74,7 +74,7 @@ public class StateSnapshotController implements SnapshotController {
       final var latestSnapshotDirectory = optionalLatest.get().getPath();
       LOG.debug("Start replicating latest snapshot {}", latestSnapshotDirectory);
 
-      try (var stream = Files.list(latestSnapshotDirectory)) {
+      try (final var stream = Files.list(latestSnapshotDirectory)) {
         final var files = stream.collect(Collectors.toList());
         for (final var file : files) {
           executor.accept(

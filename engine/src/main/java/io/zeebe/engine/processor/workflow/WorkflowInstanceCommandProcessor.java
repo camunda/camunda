@@ -24,7 +24,7 @@ public class WorkflowInstanceCommandProcessor
   private final WorkflowInstanceCommandContext context;
 
   public WorkflowInstanceCommandProcessor(
-      WorkflowEngineState state, final KeyGenerator keyGenerator) {
+      final WorkflowEngineState state, final KeyGenerator keyGenerator) {
     this.state = state;
     commandHandlers = new WorkflowInstanceCommandHandlers();
     final EventOutput output = new EventOutput(state, keyGenerator);
@@ -33,17 +33,17 @@ public class WorkflowInstanceCommandProcessor
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<WorkflowInstanceRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     populateCommandContext(record, responseWriter, streamWriter);
     commandHandlers.handle(context);
   }
 
   private void populateCommandContext(
-      TypedRecord<WorkflowInstanceRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<WorkflowInstanceRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     context.setRecord(record);
     context.setResponseWriter(responseWriter);
     context.setStreamWriter(streamWriter);

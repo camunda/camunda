@@ -24,12 +24,12 @@ class ExporterMappedObject {
     return OBJECT_MAPPER.toJson(this);
   }
 
-  public ExporterMappedObject setJson(String json) {
+  public ExporterMappedObject setJson(final String json) {
     this.json = json;
     return this;
   }
 
-  public ExporterMappedObject setJson(Object object) {
+  public ExporterMappedObject setJson(final Object object) {
     this.json = OBJECT_MAPPER.toJson(object);
     return this;
   }

@@ -32,7 +32,7 @@ public class ObjectMappingUndeclaredPropertiesTest {
             w.writeInteger(456L);
           });
 
-  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldDeserializePOJOWithUndeclaredProperties() {

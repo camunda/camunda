@@ -16,10 +16,10 @@ import io.zeebe.util.buffer.BufferWriter;
 import java.util.Map;
 
 public class ExecuteCommandRequestBuilder {
-  protected ExecuteCommandRequest request;
+  protected final ExecuteCommandRequest request;
 
   public ExecuteCommandRequestBuilder(
-      ClientOutput output, int target, MsgPackHelper msgPackHelper) {
+      final ClientOutput output, final int target, final MsgPackHelper msgPackHelper) {
     this.request = new ExecuteCommandRequest(output, target, msgPackHelper);
   }
 
@@ -35,33 +35,33 @@ public class ExecuteCommandRequestBuilder {
     return request.send(r -> false);
   }
 
-  public ExecuteCommandRequestBuilder partitionId(int partitionId) {
+  public ExecuteCommandRequestBuilder partitionId(final int partitionId) {
     request.partitionId(partitionId);
     return this;
   }
 
-  public ExecuteCommandRequestBuilder key(long key) {
+  public ExecuteCommandRequestBuilder key(final long key) {
     request.key(key);
     return this;
   }
 
-  public ExecuteCommandRequestBuilder type(ValueType valueType, Intent intent) {
+  public ExecuteCommandRequestBuilder type(final ValueType valueType, final Intent intent) {
     request.valueType(valueType);
     request.intent(intent);
     return this;
   }
 
-  public ExecuteCommandRequestBuilder intent(Intent intent) {
+  public ExecuteCommandRequestBuilder intent(final Intent intent) {
     request.intent(intent);
     return this;
   }
 
-  public ExecuteCommandRequestBuilder command(Map<String, Object> command) {
+  public ExecuteCommandRequestBuilder command(final Map<String, Object> command) {
     request.command(command);
     return this;
   }
 
-  public ExecuteCommandRequestBuilder command(BufferWriter command) {
+  public ExecuteCommandRequestBuilder command(final BufferWriter command) {
     request.command(command);
     return this;
   }

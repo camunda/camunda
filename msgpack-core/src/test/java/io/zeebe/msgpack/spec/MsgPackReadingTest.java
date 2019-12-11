@@ -215,11 +215,11 @@ public class MsgPackReadingTest {
     assertThat(reader.getOffset()).isEqualTo(givenBytes.length);
   }
 
-  protected static Consumer<ByteArrayBuilder> given(Consumer<ByteArrayBuilder> arg) {
+  protected static Consumer<ByteArrayBuilder> given(final Consumer<ByteArrayBuilder> arg) {
     return arg;
   }
 
-  protected static Consumer<MsgPackReader> doAssert(Consumer<MsgPackReader> arg) {
+  protected static Consumer<MsgPackReader> doAssert(final Consumer<MsgPackReader> arg) {
     return arg;
   }
 }

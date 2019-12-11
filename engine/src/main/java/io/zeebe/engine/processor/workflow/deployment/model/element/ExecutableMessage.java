@@ -15,7 +15,7 @@ public class ExecutableMessage extends AbstractFlowElement {
   private JsonPathQuery correlationKey;
   private DirectBuffer messageName;
 
-  public ExecutableMessage(String id) {
+  public ExecutableMessage(final String id) {
     super(id);
   }
 
@@ -23,7 +23,7 @@ public class ExecutableMessage extends AbstractFlowElement {
     return correlationKey;
   }
 
-  public void setCorrelationKey(JsonPathQuery correlationKey) {
+  public void setCorrelationKey(final JsonPathQuery correlationKey) {
     this.correlationKey = correlationKey;
   }
 
@@ -31,7 +31,7 @@ public class ExecutableMessage extends AbstractFlowElement {
     return messageName;
   }
 
-  public void setMessageName(DirectBuffer messageName) {
+  public void setMessageName(final DirectBuffer messageName) {
     this.messageName = messageName;
   }
 }

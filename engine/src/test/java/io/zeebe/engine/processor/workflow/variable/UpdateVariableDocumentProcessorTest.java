@@ -44,7 +44,7 @@ public class UpdateVariableDocumentProcessorTest
 
   @Before
   public void setUp() {
-    final ZeebeState state = zeebeStateRule.getZeebeState();
+    final ZeebeState state = ZEEBE_STATE_RULE.getZeebeState();
     elementInstanceState = state.getWorkflowState().getElementInstanceState();
     variablesState = Mockito.spy(elementInstanceState.getVariablesState());
     processor = new UpdateVariableDocumentProcessor(elementInstanceState, variablesState);

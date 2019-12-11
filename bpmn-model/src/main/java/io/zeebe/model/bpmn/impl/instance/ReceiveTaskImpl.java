@@ -48,11 +48,11 @@ public class ReceiveTaskImpl extends TaskImpl implements ReceiveTask {
   protected static AttributeReference<Message> messageRefAttribute;
   protected static AttributeReference<Operation> operationRefAttribute;
 
-  public ReceiveTaskImpl(ModelTypeInstanceContext context) {
+  public ReceiveTaskImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ReceiveTask.class, BPMN_ELEMENT_RECEIVE_TASK)
@@ -61,7 +61,7 @@ public class ReceiveTaskImpl extends TaskImpl implements ReceiveTask {
             .instanceProvider(
                 new ModelTypeInstanceProvider<ReceiveTask>() {
                   @Override
-                  public ReceiveTask newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ReceiveTask newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ReceiveTaskImpl(instanceContext);
                   }
                 });
@@ -101,7 +101,7 @@ public class ReceiveTaskImpl extends TaskImpl implements ReceiveTask {
   }
 
   @Override
-  public void setImplementation(String implementation) {
+  public void setImplementation(final String implementation) {
     implementationAttribute.setValue(this, implementation);
   }
 
@@ -111,7 +111,7 @@ public class ReceiveTaskImpl extends TaskImpl implements ReceiveTask {
   }
 
   @Override
-  public void setInstantiate(boolean instantiate) {
+  public void setInstantiate(final boolean instantiate) {
     instantiateAttribute.setValue(this, instantiate);
   }
 
@@ -121,7 +121,7 @@ public class ReceiveTaskImpl extends TaskImpl implements ReceiveTask {
   }
 
   @Override
-  public void setMessage(Message message) {
+  public void setMessage(final Message message) {
     messageRefAttribute.setReferenceTargetElement(this, message);
   }
 
@@ -131,7 +131,7 @@ public class ReceiveTaskImpl extends TaskImpl implements ReceiveTask {
   }
 
   @Override
-  public void setOperation(Operation operation) {
+  public void setOperation(final Operation operation) {
     operationRefAttribute.setReferenceTargetElement(this, operation);
   }
 }

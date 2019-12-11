@@ -26,9 +26,9 @@ public class ExecuteCommandRequest implements BufferReader {
   protected final MsgPackHelper msgPackHelper;
 
   protected Map<String, Object> command;
-  protected RemoteAddress source;
+  protected final RemoteAddress source;
 
-  public ExecuteCommandRequest(RemoteAddress source, MsgPackHelper msgPackHelper) {
+  public ExecuteCommandRequest(final RemoteAddress source, final MsgPackHelper msgPackHelper) {
     this.source = source;
     this.msgPackHelper = msgPackHelper;
   }
@@ -58,7 +58,7 @@ public class ExecuteCommandRequest implements BufferReader {
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     headerDecoder.wrap(buffer, offset);
 
     bodyDecoder.wrap(

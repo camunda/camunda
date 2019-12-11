@@ -17,7 +17,7 @@ public class ExecutableCallActivity extends ExecutableActivity {
   private Optional<DirectBuffer> calledElementProcessId = Optional.empty();
   private Optional<JsonPathQuery> calledElementProcessIdExpression = Optional.empty();
 
-  public ExecutableCallActivity(String id) {
+  public ExecutableCallActivity(final String id) {
     super(id);
   }
 
@@ -25,7 +25,7 @@ public class ExecutableCallActivity extends ExecutableActivity {
     return calledElementProcessId;
   }
 
-  public void setCalledElementProcessId(String calledElementProcessId) {
+  public void setCalledElementProcessId(final String calledElementProcessId) {
     this.calledElementProcessId = Optional.of(BufferUtil.wrapString(calledElementProcessId));
   }
 
@@ -33,7 +33,8 @@ public class ExecutableCallActivity extends ExecutableActivity {
     return calledElementProcessIdExpression;
   }
 
-  public void setCalledElementProcessIdExpression(JsonPathQuery calledElementProcessIdExpression) {
+  public void setCalledElementProcessIdExpression(
+      final JsonPathQuery calledElementProcessIdExpression) {
     this.calledElementProcessIdExpression = Optional.of(calledElementProcessIdExpression);
   }
 }

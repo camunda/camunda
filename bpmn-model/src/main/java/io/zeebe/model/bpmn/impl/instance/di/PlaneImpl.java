@@ -38,11 +38,11 @@ public abstract class PlaneImpl extends NodeImpl implements Plane {
 
   protected static ChildElementCollection<DiagramElement> diagramElementCollection;
 
-  public PlaneImpl(ModelTypeInstanceContext instanceContext) {
+  public PlaneImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Plane.class, DI_ELEMENT_PLANE)

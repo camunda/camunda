@@ -20,7 +20,7 @@ public class StubbedGatewayRule extends ExternalResource {
   private final StubbedBrokerClient brokerClient;
   private final LongPollingActivateJobsHandler longPollingHandler;
 
-  public StubbedGatewayRule(ActorSchedulerRule actorSchedulerRule) {
+  public StubbedGatewayRule(final ActorSchedulerRule actorSchedulerRule) {
     this.actorSchedulerRule = actorSchedulerRule;
     this.brokerClient = new StubbedBrokerClient();
     this.longPollingHandler =

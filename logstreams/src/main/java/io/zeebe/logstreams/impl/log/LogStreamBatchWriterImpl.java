@@ -61,7 +61,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
   private BufferWriter metadataWriter;
   private BufferWriter valueWriter;
 
-  LogStreamBatchWriterImpl(int partitionId, Dispatcher dispatcher) {
+  LogStreamBatchWriterImpl(final int partitionId, final Dispatcher dispatcher) {
     this.logWriteBuffer = dispatcher;
     this.logId = partitionId;
 
@@ -106,7 +106,7 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
     return this;
   }
 
-  public LogEntryBuilder sourceIndex(int index) {
+  public LogEntryBuilder sourceIndex(final int index) {
     sourceIndex = index;
     return this;
   }

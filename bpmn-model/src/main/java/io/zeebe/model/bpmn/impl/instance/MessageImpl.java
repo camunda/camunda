@@ -40,11 +40,11 @@ public class MessageImpl extends RootElementImpl implements Message {
   protected static Attribute<String> nameAttribute;
   protected static AttributeReference<ItemDefinition> itemRefAttribute;
 
-  public MessageImpl(ModelTypeInstanceContext context) {
+  public MessageImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Message.class, BPMN_ELEMENT_MESSAGE)
@@ -53,7 +53,7 @@ public class MessageImpl extends RootElementImpl implements Message {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<Message>() {
                   @Override
-                  public Message newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Message newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new MessageImpl(instanceContext);
                   }
                 });
@@ -75,7 +75,7 @@ public class MessageImpl extends RootElementImpl implements Message {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -85,7 +85,7 @@ public class MessageImpl extends RootElementImpl implements Message {
   }
 
   @Override
-  public void setItem(ItemDefinition item) {
+  public void setItem(final ItemDefinition item) {
     itemRefAttribute.setReferenceTargetElement(this, item);
   }
 }

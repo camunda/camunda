@@ -25,15 +25,15 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
   private final VariablesState variablesState;
 
   public UpdateVariableDocumentProcessor(
-      ElementInstanceState elementInstanceState, VariablesState variablesState) {
+      final ElementInstanceState elementInstanceState, final VariablesState variablesState) {
     this.elementInstanceState = elementInstanceState;
     this.variablesState = variablesState;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<VariableDocumentRecord> command,
-      CommandControl<VariableDocumentRecord> controller) {
+      final TypedRecord<VariableDocumentRecord> command,
+      final CommandControl<VariableDocumentRecord> controller) {
     final VariableDocumentRecord record = command.getValue();
 
     final ElementInstance scope = elementInstanceState.getInstance(record.getScopeKey());
@@ -55,14 +55,14 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
   }
 
   private boolean mergeDocument(
-      VariableDocumentRecord record,
-      long workflowKey,
-      CommandControl<VariableDocumentRecord> controller) {
+      final VariableDocumentRecord record,
+      final long workflowKey,
+      final CommandControl<VariableDocumentRecord> controller) {
     try {
       getUpdateOperation(record.getUpdateSemantics())
           .apply(record.getScopeKey(), workflowKey, record.getVariablesBuffer());
       return true;
-    } catch (MsgpackReaderException e) {
+    } catch (final MsgpackReaderException e) {
       Loggers.WORKFLOW_PROCESSOR_LOGGER.error(
           "Expected to merge variable document for scope '{}', but its document could not be read",
           record.getScopeKey(),
@@ -77,7 +77,7 @@ public class UpdateVariableDocumentProcessor implements CommandProcessor<Variabl
     }
   }
 
-  private UpdateOperation getUpdateOperation(VariableDocumentUpdateSemantic updateSemantics) {
+  private UpdateOperation getUpdateOperation(final VariableDocumentUpdateSemantic updateSemantics) {
     switch (updateSemantics) {
       case LOCAL:
         return variablesState::setVariablesLocalFromDocument;

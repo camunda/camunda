@@ -16,9 +16,9 @@ import java.util.List;
  * timestamps. Useful for analyzing where tests spend runtime.
  */
 public class Stopwatch {
-  protected List<Checkpoint> checkpoints = new ArrayList<>();
+  protected final List<Checkpoint> checkpoints = new ArrayList<>();
 
-  public void record(String checkpoint) {
+  public void record(final String checkpoint) {
     System.out.println(checkpoint);
     final Checkpoint c = new Checkpoint();
     c.name = checkpoint;

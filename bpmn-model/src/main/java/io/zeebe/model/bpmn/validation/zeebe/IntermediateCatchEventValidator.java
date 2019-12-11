@@ -37,7 +37,8 @@ public class IntermediateCatchEventValidator
 
   @Override
   public void validate(
-      IntermediateCatchEvent element, ValidationResultCollector validationResultCollector) {
+      final IntermediateCatchEvent element,
+      final ValidationResultCollector validationResultCollector) {
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
 
     if (eventDefinitions.size() != 1) {

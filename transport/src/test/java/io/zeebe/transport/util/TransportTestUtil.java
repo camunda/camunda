@@ -14,7 +14,7 @@ import io.zeebe.dispatcher.Dispatcher;
 
 public class TransportTestUtil {
 
-  public static void waitUntilExhausted(Dispatcher dispatcher) {
+  public static void waitUntilExhausted(final Dispatcher dispatcher) {
     final ClaimedFragment fragment = new ClaimedFragment();
 
     // claim until its not possible anymore

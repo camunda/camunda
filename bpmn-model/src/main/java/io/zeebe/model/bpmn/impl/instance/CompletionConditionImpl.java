@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class CompletionConditionImpl extends ExpressionImpl implements CompletionCondition {
 
-  public CompletionConditionImpl(ModelTypeInstanceContext instanceContext) {
+  public CompletionConditionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CompletionCondition.class, BPMN_ELEMENT_COMPLETION_CONDITION)
@@ -45,7 +45,8 @@ public class CompletionConditionImpl extends ExpressionImpl implements Completio
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<CompletionCondition>() {
                   @Override
-                  public CompletionCondition newInstance(ModelTypeInstanceContext instanceContext) {
+                  public CompletionCondition newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CompletionConditionImpl(instanceContext);
                   }
                 });

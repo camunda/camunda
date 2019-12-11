@@ -52,11 +52,11 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
   protected static Attribute<MessageVisibleKind> messageVisibleKindAttribute;
   protected static ChildElement<BpmnLabel> bpmnLabelChild;
 
-  public BpmnEdgeImpl(ModelTypeInstanceContext instanceContext) {
+  public BpmnEdgeImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(BpmnEdge.class, BPMNDI_ELEMENT_BPMN_EDGE)
@@ -65,7 +65,7 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
             .instanceProvider(
                 new ModelTypeInstanceProvider<BpmnEdge>() {
                   @Override
-                  public BpmnEdge newInstance(ModelTypeInstanceContext instanceContext) {
+                  public BpmnEdge newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new BpmnEdgeImpl(instanceContext);
                   }
                 });
@@ -106,7 +106,7 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
   }
 
   @Override
-  public void setBpmnElement(BaseElement bpmnElement) {
+  public void setBpmnElement(final BaseElement bpmnElement) {
     bpmnElementAttribute.setReferenceTargetElement(this, bpmnElement);
   }
 
@@ -116,7 +116,7 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
   }
 
   @Override
-  public void setSourceElement(DiagramElement sourceElement) {
+  public void setSourceElement(final DiagramElement sourceElement) {
     sourceElementAttribute.setReferenceTargetElement(this, sourceElement);
   }
 
@@ -126,7 +126,7 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
   }
 
   @Override
-  public void setTargetElement(DiagramElement targetElement) {
+  public void setTargetElement(final DiagramElement targetElement) {
     targetElementAttribute.setReferenceTargetElement(this, targetElement);
   }
 
@@ -136,7 +136,7 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
   }
 
   @Override
-  public void setMessageVisibleKind(MessageVisibleKind messageVisibleKind) {
+  public void setMessageVisibleKind(final MessageVisibleKind messageVisibleKind) {
     messageVisibleKindAttribute.setValue(this, messageVisibleKind);
   }
 
@@ -146,7 +146,7 @@ public class BpmnEdgeImpl extends LabeledEdgeImpl implements BpmnEdge {
   }
 
   @Override
-  public void setBpmnLabel(BpmnLabel bpmnLabel) {
+  public void setBpmnLabel(final BpmnLabel bpmnLabel) {
     bpmnLabelChild.setChild(this, bpmnLabel);
   }
 }

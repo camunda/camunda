@@ -30,8 +30,8 @@ public class RecordMetadata implements BufferWriter, BufferReader {
 
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-  protected RecordMetadataEncoder encoder = new RecordMetadataEncoder();
-  protected RecordMetadataDecoder decoder = new RecordMetadataDecoder();
+  protected final RecordMetadataEncoder encoder = new RecordMetadataEncoder();
+  protected final RecordMetadataDecoder decoder = new RecordMetadataDecoder();
   protected long requestId;
   protected ValueType valueType = ValueType.NULL_VAL;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
@@ -47,7 +47,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
 
     headerDecoder.wrap(buffer, offset);
@@ -82,7 +82,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder.wrap(buffer, offset);
 
     headerEncoder
@@ -117,7 +117,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return requestId;
   }
 
-  public RecordMetadata requestId(long requestId) {
+  public RecordMetadata requestId(final long requestId) {
     this.requestId = requestId;
     return this;
   }
@@ -126,12 +126,12 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return requestStreamId;
   }
 
-  public RecordMetadata requestStreamId(int requestStreamId) {
+  public RecordMetadata requestStreamId(final int requestStreamId) {
     this.requestStreamId = requestStreamId;
     return this;
   }
 
-  public RecordMetadata protocolVersion(int protocolVersion) {
+  public RecordMetadata protocolVersion(final int protocolVersion) {
     this.protocolVersion = protocolVersion;
     return this;
   }
@@ -144,12 +144,12 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return valueType;
   }
 
-  public RecordMetadata valueType(ValueType eventType) {
+  public RecordMetadata valueType(final ValueType eventType) {
     this.valueType = eventType;
     return this;
   }
 
-  public RecordMetadata intent(Intent intent) {
+  public RecordMetadata intent(final Intent intent) {
     this.intent = intent;
     this.intentValue = intent.value();
     return this;
@@ -159,7 +159,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return intent;
   }
 
-  public RecordMetadata recordType(RecordType recordType) {
+  public RecordMetadata recordType(final RecordType recordType) {
     this.recordType = recordType;
     return this;
   }
@@ -168,7 +168,7 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return recordType;
   }
 
-  public RecordMetadata rejectionType(RejectionType rejectionType) {
+  public RecordMetadata rejectionType(final RejectionType rejectionType) {
     this.rejectionType = rejectionType;
     return this;
   }
@@ -177,13 +177,13 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return rejectionType;
   }
 
-  public RecordMetadata rejectionReason(String rejectionReason) {
+  public RecordMetadata rejectionReason(final String rejectionReason) {
     final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
     this.rejectionReason.wrap(bytes);
     return this;
   }
 
-  public RecordMetadata rejectionReason(DirectBuffer buffer) {
+  public RecordMetadata rejectionReason(final DirectBuffer buffer) {
     this.rejectionReason.wrap(buffer);
     return this;
   }

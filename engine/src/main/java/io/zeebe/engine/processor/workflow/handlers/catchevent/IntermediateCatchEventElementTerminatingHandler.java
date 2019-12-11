@@ -18,19 +18,19 @@ public class IntermediateCatchEventElementTerminatingHandler<T extends Executabl
   private final CatchEventSubscriber catchEventSubscriber;
 
   public IntermediateCatchEventElementTerminatingHandler(
-      CatchEventSubscriber catchEventSubscriber) {
+      final CatchEventSubscriber catchEventSubscriber) {
     super();
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   public IntermediateCatchEventElementTerminatingHandler(
-      WorkflowInstanceIntent nextState, CatchEventSubscriber catchEventSubscriber) {
+      final WorkflowInstanceIntent nextState, final CatchEventSubscriber catchEventSubscriber) {
     super(nextState);
     this.catchEventSubscriber = catchEventSubscriber;
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     if (super.handleState(context)) {
       catchEventSubscriber.unsubscribeFromEvents(context);
       return true;

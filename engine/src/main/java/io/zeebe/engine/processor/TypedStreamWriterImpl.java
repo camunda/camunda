@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 
 public class TypedStreamWriterImpl extends TypedCommandWriterImpl implements TypedStreamWriter {
 
-  public TypedStreamWriterImpl(LogStreamBatchWriter batchWriter) {
+  public TypedStreamWriterImpl(final LogStreamBatchWriter batchWriter) {
     super(batchWriter);
   }
 

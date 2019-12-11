@@ -71,7 +71,7 @@ public class OpenMessageSubscriptionProcessor
   private void handleNewSubscription(
       final TypedRecord<MessageSubscriptionRecord> record,
       final TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final Consumer<SideEffectProducer> sideEffect) {
     final MessageSubscription subscription =
         new MessageSubscription(
             subscriptionRecord.getWorkflowInstanceKey(),

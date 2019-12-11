@@ -43,11 +43,11 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
   protected static Attribute<String> scriptFormatAttribute;
   protected static ChildElement<Script> scriptChild;
 
-  public ScriptTaskImpl(ModelTypeInstanceContext context) {
+  public ScriptTaskImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ScriptTask.class, BPMN_ELEMENT_SCRIPT_TASK)
@@ -56,7 +56,7 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
             .instanceProvider(
                 new ModelTypeInstanceProvider<ScriptTask>() {
                   @Override
-                  public ScriptTask newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ScriptTask newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ScriptTaskImpl(instanceContext);
                   }
                 });
@@ -81,7 +81,7 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
   }
 
   @Override
-  public void setScriptFormat(String scriptFormat) {
+  public void setScriptFormat(final String scriptFormat) {
     scriptFormatAttribute.setValue(this, scriptFormat);
   }
 
@@ -91,7 +91,7 @@ public class ScriptTaskImpl extends TaskImpl implements ScriptTask {
   }
 
   @Override
-  public void setScript(Script script) {
+  public void setScript(final Script script) {
     scriptChild.setChild(this, script);
   }
 }

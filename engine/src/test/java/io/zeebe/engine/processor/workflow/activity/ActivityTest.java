@@ -188,7 +188,7 @@ public class ActivityTest {
     createWorkflowAndAssertIgnoredHeaders(null);
   }
 
-  private void createWorkflowAndAssertIgnoredHeaders(String testValue) {
+  private void createWorkflowAndAssertIgnoredHeaders(final String testValue) {
     // given
     final BpmnModelInstance model =
         Bpmn.createExecutableProcess("process")
@@ -218,9 +218,9 @@ public class ActivityTest {
   }
 
   private void shouldUnsubscribeFromBoundaryEventTrigger(
-      long workflowInstanceKey,
-      WorkflowInstanceIntent leavingState,
-      WorkflowInstanceIntent leftState) {
+      final long workflowInstanceKey,
+      final WorkflowInstanceIntent leavingState,
+      final WorkflowInstanceIntent leftState) {
     // given
     final List<Record<RecordValue>> records =
         RecordingExporter.records()

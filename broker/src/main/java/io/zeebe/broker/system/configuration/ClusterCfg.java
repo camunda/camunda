@@ -122,7 +122,7 @@ public class ClusterCfg implements ConfigurationEntry {
     return clusterName;
   }
 
-  public void setClusterName(String clusterName) {
+  public void setClusterName(final String clusterName) {
     this.clusterName = clusterName;
   }
 
@@ -130,7 +130,7 @@ public class ClusterCfg implements ConfigurationEntry {
     return gossipFailureTimeout;
   }
 
-  public void setGossipFailureTimeout(long gossipFailureTimeout) {
+  public void setGossipFailureTimeout(final long gossipFailureTimeout) {
     this.gossipFailureTimeout = gossipFailureTimeout;
   }
 
@@ -138,7 +138,7 @@ public class ClusterCfg implements ConfigurationEntry {
     return gossipInterval;
   }
 
-  public void setGossipInterval(long gossipInterval) {
+  public void setGossipInterval(final long gossipInterval) {
     this.gossipInterval = gossipInterval;
   }
 
@@ -146,7 +146,7 @@ public class ClusterCfg implements ConfigurationEntry {
     return gossipProbeInterval;
   }
 
-  public void setGossipProbeInterval(long gossipProbeInterval) {
+  public void setGossipProbeInterval(final long gossipProbeInterval) {
     this.gossipProbeInterval = gossipProbeInterval;
   }
 

@@ -21,15 +21,15 @@ public class CloseMessageStartEventSubscriptionProcessor
   private final MessageStartEventSubscriptionState subscriptionState;
 
   public CloseMessageStartEventSubscriptionProcessor(
-      MessageStartEventSubscriptionState subscriptionState) {
+      final MessageStartEventSubscriptionState subscriptionState) {
     this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<MessageStartEventSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<MessageStartEventSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     final MessageStartEventSubscriptionRecord subscriptionRecord = record.getValue();
     final long workflowKey = subscriptionRecord.getWorkflowKey();
 

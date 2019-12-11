@@ -29,7 +29,7 @@ public class ZeebeHeaderImpl extends BpmnModelElementInstanceImpl implements Zee
   private static Attribute<String> keyAttribute;
   private static Attribute<String> valueAttribute;
 
-  public ZeebeHeaderImpl(ModelTypeInstanceContext instanceContext) {
+  public ZeebeHeaderImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
@@ -39,7 +39,7 @@ public class ZeebeHeaderImpl extends BpmnModelElementInstanceImpl implements Zee
   }
 
   @Override
-  public void setKey(String key) {
+  public void setKey(final String key) {
     keyAttribute.setValue(this, key);
   }
 
@@ -49,11 +49,11 @@ public class ZeebeHeaderImpl extends BpmnModelElementInstanceImpl implements Zee
   }
 
   @Override
-  public void setValue(String value) {
+  public void setValue(final String value) {
     valueAttribute.setValue(this, value);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ZeebeHeader.class, ZeebeConstants.ELEMENT_HEADER)

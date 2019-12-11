@@ -18,11 +18,11 @@ public class GrpcStatusExceptionImpl extends ClientException implements GrpcStat
 
   private final Status status;
 
-  public GrpcStatusExceptionImpl(String message, Status status) {
+  public GrpcStatusExceptionImpl(final String message, final Status status) {
     this(message, status, null);
   }
 
-  public GrpcStatusExceptionImpl(String message, Status status, Throwable cause) {
+  public GrpcStatusExceptionImpl(final String message, final Status status, final Throwable cause) {
     super(message, cause);
     this.status = status.augmentDescription(message);
   }

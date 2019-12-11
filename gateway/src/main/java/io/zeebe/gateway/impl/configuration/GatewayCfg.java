@@ -23,11 +23,11 @@ public class GatewayCfg {
     init(new Environment());
   }
 
-  public void init(Environment environment) {
+  public void init(final Environment environment) {
     init(environment, ConfigurationDefaults.DEFAULT_HOST);
   }
 
-  public void init(Environment environment, String defaultHost) {
+  public void init(final Environment environment, final String defaultHost) {
     network.init(environment, defaultHost);
     cluster.init(environment);
     threads.init(environment);
@@ -39,7 +39,7 @@ public class GatewayCfg {
     return network;
   }
 
-  public GatewayCfg setNetwork(NetworkCfg network) {
+  public GatewayCfg setNetwork(final NetworkCfg network) {
     this.network = network;
     return this;
   }
@@ -48,7 +48,7 @@ public class GatewayCfg {
     return cluster;
   }
 
-  public GatewayCfg setCluster(ClusterCfg cluster) {
+  public GatewayCfg setCluster(final ClusterCfg cluster) {
     this.cluster = cluster;
     return this;
   }
@@ -57,7 +57,7 @@ public class GatewayCfg {
     return threads;
   }
 
-  public GatewayCfg setThreads(ThreadsCfg threads) {
+  public GatewayCfg setThreads(final ThreadsCfg threads) {
     this.threads = threads;
     return this;
   }
@@ -66,7 +66,7 @@ public class GatewayCfg {
     return monitoring;
   }
 
-  public GatewayCfg setMonitoring(MonitoringCfg monitoring) {
+  public GatewayCfg setMonitoring(final MonitoringCfg monitoring) {
     this.monitoring = monitoring;
     return this;
   }
@@ -86,7 +86,7 @@ public class GatewayCfg {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

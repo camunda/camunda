@@ -21,12 +21,12 @@ public class CloseProcess implements AutoCloseable {
   private final List<CloseStep> closeableSteps;
   private final String name;
 
-  CloseProcess(String name) {
+  CloseProcess(final String name) {
     this.name = name;
     this.closeableSteps = new ArrayList<>();
   }
 
-  void addCloser(String name, AutoCloseable closingFunction) {
+  void addCloser(final String name, final AutoCloseable closingFunction) {
     closeableSteps.add(new CloseStep(name, closingFunction));
   }
 
@@ -40,7 +40,7 @@ public class CloseProcess implements AutoCloseable {
           name,
           closeableSteps.size(),
           durationTime);
-    } catch (Exception willNeverHappen) {
+    } catch (final Exception willNeverHappen) {
       LOG.error("Unexpected exception occured on closing {}", name, willNeverHappen);
     }
   }
@@ -48,7 +48,7 @@ public class CloseProcess implements AutoCloseable {
   private void closingStepByStep() {
     int index = 1;
 
-    for (CloseStep closeableStep : closeableSteps) {
+    for (final CloseStep closeableStep : closeableSteps) {
       try {
         LOG.info(
             "Closing {} [{}/{}]: {}", name, index, closeableSteps.size(), closeableStep.getName());
@@ -61,7 +61,7 @@ public class CloseProcess implements AutoCloseable {
             closeableSteps.size(),
             closeableStep.getName(),
             durationStepStarting);
-      } catch (Exception exceptionOnClose) {
+      } catch (final Exception exceptionOnClose) {
         LOG.error(
             "Closing {} [{}/{}]: {} failed to close.",
             name,
@@ -85,7 +85,7 @@ public class CloseProcess implements AutoCloseable {
     private final String name;
     private final AutoCloseable closingFunction;
 
-    CloseStep(String name, AutoCloseable closingFunction) {
+    CloseStep(final String name, final AutoCloseable closingFunction) {
       this.name = name;
       this.closingFunction = closingFunction;
     }

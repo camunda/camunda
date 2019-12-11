@@ -39,11 +39,11 @@ public class DocumentationImpl extends BpmnModelElementInstanceImpl implements D
   protected static Attribute<String> idAttribute;
   protected static Attribute<String> textFormatAttribute;
 
-  public DocumentationImpl(ModelTypeInstanceContext context) {
+  public DocumentationImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -52,7 +52,7 @@ public class DocumentationImpl extends BpmnModelElementInstanceImpl implements D
             .instanceProvider(
                 new ModelTypeInstanceProvider<Documentation>() {
                   @Override
-                  public Documentation newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Documentation newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new DocumentationImpl(instanceContext);
                   }
                 });
@@ -71,7 +71,7 @@ public class DocumentationImpl extends BpmnModelElementInstanceImpl implements D
   }
 
   @Override
-  public void setId(String id) {
+  public void setId(final String id) {
     idAttribute.setValue(this, id);
   }
 
@@ -81,7 +81,7 @@ public class DocumentationImpl extends BpmnModelElementInstanceImpl implements D
   }
 
   @Override
-  public void setTextFormat(String textFormat) {
+  public void setTextFormat(final String textFormat) {
     textFormatAttribute.setValue(this, textFormat);
   }
 }

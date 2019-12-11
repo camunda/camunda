@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.EndEvent;
 /** @author Sebastian Menski */
 public class EndEventBuilder extends AbstractEndEventBuilder<EndEventBuilder> {
 
-  public EndEventBuilder(BpmnModelInstance modelInstance, EndEvent element) {
+  public EndEventBuilder(final BpmnModelInstance modelInstance, final EndEvent element) {
     super(modelInstance, element, EndEventBuilder.class);
   }
 }

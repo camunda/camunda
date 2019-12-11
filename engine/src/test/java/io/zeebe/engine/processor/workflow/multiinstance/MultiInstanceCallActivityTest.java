@@ -184,7 +184,7 @@ public class MultiInstanceCallActivityTest {
             BpmnElementType.PROCESS);
   }
 
-  private void awaitJobsCreated(int size) {
+  private void awaitJobsCreated(final int size) {
     assertThat(
             RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).limit(size).count())
         .describedAs("Expected %d jobs to be created", size)

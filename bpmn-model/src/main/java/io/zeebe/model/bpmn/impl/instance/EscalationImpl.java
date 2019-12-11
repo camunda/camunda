@@ -43,11 +43,11 @@ public class EscalationImpl extends RootElementImpl implements Escalation {
   protected static Attribute<String> escalationCodeAttribute;
   protected static AttributeReference<ItemDefinition> structureRefAttribute;
 
-  public EscalationImpl(ModelTypeInstanceContext context) {
+  public EscalationImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Escalation.class, BPMN_ELEMENT_ESCALATION)
@@ -56,7 +56,7 @@ public class EscalationImpl extends RootElementImpl implements Escalation {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Escalation>() {
                   @Override
-                  public Escalation newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Escalation newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new EscalationImpl(instanceContext);
                   }
                 });
@@ -80,7 +80,7 @@ public class EscalationImpl extends RootElementImpl implements Escalation {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -90,7 +90,7 @@ public class EscalationImpl extends RootElementImpl implements Escalation {
   }
 
   @Override
-  public void setEscalationCode(String escalationCode) {
+  public void setEscalationCode(final String escalationCode) {
     escalationCodeAttribute.setValue(this, escalationCode);
   }
 
@@ -100,7 +100,7 @@ public class EscalationImpl extends RootElementImpl implements Escalation {
   }
 
   @Override
-  public void setStructure(ItemDefinition structure) {
+  public void setStructure(final ItemDefinition structure) {
     structureRefAttribute.setReferenceTargetElement(this, structure);
   }
 }

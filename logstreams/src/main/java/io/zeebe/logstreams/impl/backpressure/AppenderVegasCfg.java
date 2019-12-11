@@ -56,7 +56,7 @@ public class AppenderVegasCfg implements AlgorithmCfg {
     return initialLimit;
   }
 
-  public AppenderVegasCfg setInitialLimit(int initialLimit) {
+  public AppenderVegasCfg setInitialLimit(final int initialLimit) {
     this.initialLimit = initialLimit;
     return this;
   }
@@ -65,7 +65,7 @@ public class AppenderVegasCfg implements AlgorithmCfg {
     return maxConcurrency;
   }
 
-  public AppenderVegasCfg setMaxConcurrency(int maxConcurrency) {
+  public AppenderVegasCfg setMaxConcurrency(final int maxConcurrency) {
     this.maxConcurrency = maxConcurrency;
     return this;
   }
@@ -74,7 +74,7 @@ public class AppenderVegasCfg implements AlgorithmCfg {
     return alphaLimit;
   }
 
-  public AppenderVegasCfg setAlphaLimit(double alphaLimit) {
+  public AppenderVegasCfg setAlphaLimit(final double alphaLimit) {
     this.alphaLimit = alphaLimit;
     return this;
   }
@@ -83,7 +83,7 @@ public class AppenderVegasCfg implements AlgorithmCfg {
     return betaLimit;
   }
 
-  public AppenderVegasCfg setBetaLimit(double betaLimit) {
+  public AppenderVegasCfg setBetaLimit(final double betaLimit) {
     this.betaLimit = betaLimit;
     return this;
   }

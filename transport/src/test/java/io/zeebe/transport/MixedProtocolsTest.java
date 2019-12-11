@@ -17,8 +17,8 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
 public class MixedProtocolsTest {
-  public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
-  public AutoCloseableRule closeables = new AutoCloseableRule();
+  public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+  public final AutoCloseableRule closeables = new AutoCloseableRule();
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
   protected final UnsafeBuffer requestBuffer = new UnsafeBuffer(new byte[1024]);
   protected final DirectBufferWriter bufferWriter = new DirectBufferWriter();
@@ -32,7 +32,7 @@ public class MixedProtocolsTest {
   public static class ReverseOrderChannelHandler
       implements ServerMessageHandler, ServerRequestHandler {
     protected final ServerResponse response = new ServerResponse();
-    protected UnsafeBuffer requestResponseMessageBuffer;
+    protected final UnsafeBuffer requestResponseMessageBuffer;
 
     public ReverseOrderChannelHandler() {
       this.requestResponseMessageBuffer = new UnsafeBuffer(new byte[1024 * 1024]);
@@ -40,12 +40,12 @@ public class MixedProtocolsTest {
 
     @Override
     public boolean onRequest(
-        ServerOutput output,
-        RemoteAddress remoteAddress,
-        DirectBuffer buffer,
-        int offset,
-        int length,
-        long requestId) {
+        final ServerOutput output,
+        final RemoteAddress remoteAddress,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final long requestId) {
       requestResponseMessageBuffer.putBytes(0, buffer, offset, length);
       response
           .reset()
@@ -57,11 +57,11 @@ public class MixedProtocolsTest {
 
     @Override
     public boolean onMessage(
-        ServerOutput output,
-        RemoteAddress remoteAddress,
-        DirectBuffer buffer,
-        int offset,
-        int length) {
+        final ServerOutput output,
+        final RemoteAddress remoteAddress,
+        final DirectBuffer buffer,
+        final int offset,
+        final int length) {
       return output.sendMessage(
           remoteAddress.getStreamId(), new DirectBufferWriter().wrap(buffer, offset, length));
     }

@@ -22,17 +22,17 @@ public class ElementTerminatingHandler<T extends ExecutableFlowNode> extends Abs
     this(WorkflowInstanceIntent.ELEMENT_TERMINATED);
   }
 
-  public ElementTerminatingHandler(WorkflowInstanceIntent nextState) {
+  public ElementTerminatingHandler(final WorkflowInstanceIntent nextState) {
     super(nextState);
   }
 
   @Override
-  protected boolean handleState(BpmnStepContext<T> context) {
+  protected boolean handleState(final BpmnStepContext<T> context) {
     return true;
   }
 
   @Override
-  protected boolean shouldHandleState(BpmnStepContext<T> context) {
+  protected boolean shouldHandleState(final BpmnStepContext<T> context) {
     return super.shouldHandleState(context) && isStateSameAsElementState(context);
   }
 }

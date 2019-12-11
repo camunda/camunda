@@ -28,7 +28,9 @@ public class WorkflowState {
   private final EventScopeInstanceState eventScopeInstanceState;
 
   public WorkflowState(
-      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, KeyGenerator keyGenerator) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final DbContext dbContext,
+      final KeyGenerator keyGenerator) {
     versionManager = new NextValueManager(zeebeDb, dbContext, ZbColumnFamilies.WORKFLOW_VERSION);
     workflowPersistenceCache = new WorkflowPersistenceCache(zeebeDb, dbContext);
     timerInstanceState = new TimerInstanceState(zeebeDb, dbContext);
@@ -36,24 +38,24 @@ public class WorkflowState {
     eventScopeInstanceState = new EventScopeInstanceState(zeebeDb, dbContext);
   }
 
-  public int getNextWorkflowVersion(String bpmnProcessId) {
+  public int getNextWorkflowVersion(final String bpmnProcessId) {
     return (int) versionManager.getNextValue(bpmnProcessId);
   }
 
-  public boolean putDeployment(long deploymentKey, DeploymentRecord deploymentRecord) {
+  public boolean putDeployment(final long deploymentKey, final DeploymentRecord deploymentRecord) {
     return workflowPersistenceCache.putDeployment(deploymentKey, deploymentRecord);
   }
 
   public DeployedWorkflow getWorkflowByProcessIdAndVersion(
-      DirectBuffer bpmnProcessId, int version) {
+      final DirectBuffer bpmnProcessId, final int version) {
     return workflowPersistenceCache.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
   }
 
-  public DeployedWorkflow getWorkflowByKey(long workflowKey) {
+  public DeployedWorkflow getWorkflowByKey(final long workflowKey) {
     return workflowPersistenceCache.getWorkflowByKey(workflowKey);
   }
 
-  public DeployedWorkflow getLatestWorkflowVersionByProcessId(DirectBuffer bpmnProcessId) {
+  public DeployedWorkflow getLatestWorkflowVersionByProcessId(final DirectBuffer bpmnProcessId) {
     return workflowPersistenceCache.getLatestWorkflowVersionByProcessId(bpmnProcessId);
   }
 
@@ -61,15 +63,15 @@ public class WorkflowState {
     return workflowPersistenceCache.getWorkflows();
   }
 
-  public Collection<DeployedWorkflow> getWorkflowsByBpmnProcessId(DirectBuffer processId) {
+  public Collection<DeployedWorkflow> getWorkflowsByBpmnProcessId(final DirectBuffer processId) {
     return workflowPersistenceCache.getWorkflowsByBpmnProcessId(processId);
   }
 
-  public void putLatestVersionDigest(DirectBuffer processId, DirectBuffer digest) {
+  public void putLatestVersionDigest(final DirectBuffer processId, final DirectBuffer digest) {
     workflowPersistenceCache.putLatestVersionDigest(processId, digest);
   }
 
-  public DirectBuffer getLatestVersionDigest(DirectBuffer processId) {
+  public DirectBuffer getLatestVersionDigest(final DirectBuffer processId) {
     return workflowPersistenceCache.getLatestVersionDigest(processId);
   }
 

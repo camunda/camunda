@@ -20,13 +20,13 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class SecurityTest {
-  public Timeout testTimeout = Timeout.seconds(120);
+  public final Timeout testTimeout = Timeout.seconds(120);
 
-  public ClusteringRule clusteringRule =
+  public final ClusteringRule clusteringRule =
       new ClusteringRule(
           1, 1, 1, brokerCfg -> {}, this::configureGatewayForTls, this::configureClientForTls);
 
-  public GrpcClientRule clientRule =
+  public final GrpcClientRule clientRule =
       new GrpcClientRule(
           cfg ->
               configureClientForTls(

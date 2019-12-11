@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.ReceiveTask;
 /** @author Sebastian Menski */
 public class ReceiveTaskBuilder extends AbstractReceiveTaskBuilder<ReceiveTaskBuilder> {
 
-  public ReceiveTaskBuilder(BpmnModelInstance modelInstance, ReceiveTask element) {
+  public ReceiveTaskBuilder(final BpmnModelInstance modelInstance, final ReceiveTask element) {
     super(modelInstance, element, ReceiveTaskBuilder.class);
   }
 }

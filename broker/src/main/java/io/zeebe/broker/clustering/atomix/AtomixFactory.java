@@ -40,7 +40,7 @@ public final class AtomixFactory {
 
   private AtomixFactory() {}
 
-  public static Atomix fromConfiguration(BrokerCfg configuration) {
+  public static Atomix fromConfiguration(final BrokerCfg configuration) {
     final var clusterCfg = configuration.getCluster();
     final var nodeId = clusterCfg.getNodeId();
     final var localMemberId = Integer.toString(nodeId);

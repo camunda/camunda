@@ -19,7 +19,7 @@ public class AcceptTransportPoller extends TransportPoller {
   private final ServerConductor serverConductor;
   private final ToIntFunction<SelectionKey> processKeyFn = this::processKey;
 
-  public AcceptTransportPoller(ServerConductor serverConductor) {
+  public AcceptTransportPoller(final ServerConductor serverConductor) {
     this.serverConductor = serverConductor;
   }
 
@@ -27,7 +27,7 @@ public class AcceptTransportPoller extends TransportPoller {
     if (selector.isOpen()) {
       try {
         selector.select();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         selectedKeySet.reset();
         throw new RuntimeException(e);
       }
@@ -38,7 +38,7 @@ public class AcceptTransportPoller extends TransportPoller {
     selectedKeySet.forEach(processKeyFn);
   }
 
-  protected int processKey(SelectionKey key) {
+  protected int processKey(final SelectionKey key) {
     if (key != null && key.isValid()) {
       final ServerSocketBinding serverSocketBinding = (ServerSocketBinding) key.attachment();
       final SocketChannel serverChannel = serverSocketBinding.accept();
@@ -51,7 +51,7 @@ public class AcceptTransportPoller extends TransportPoller {
     return 0;
   }
 
-  public void addServerSocketBinding(ServerSocketBinding binding) {
+  public void addServerSocketBinding(final ServerSocketBinding binding) {
     binding.registerSelector(selector, SelectionKey.OP_ACCEPT);
   }
 }

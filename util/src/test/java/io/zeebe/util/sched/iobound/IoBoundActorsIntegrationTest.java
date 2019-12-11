@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class IoBoundActorsIntegrationTest {
-  @Rule public ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
+  @Rule public final ActorSchedulerRule schedulerRule = new ActorSchedulerRule();
 
   @Test
   public void shouldRunIoBoundActor() {
@@ -64,7 +64,7 @@ public class IoBoundActorsIntegrationTest {
             }
           }
 
-          protected void callback(Void res, Throwable t) {
+          protected void callback(final Void res, final Throwable t) {
             if (ActorThread.current().getActorThreadGroup() != ioBoundActorThreads) {
               isOnWrongThreadGroup.set(true);
             }
@@ -96,7 +96,7 @@ public class IoBoundActorsIntegrationTest {
             }
           }
 
-          protected void callback(Void res, Throwable t) {
+          protected void callback(final Void res, final Throwable t) {
             if (ActorThread.current().getActorThreadGroup() != ioBoundActorThreads) {
               isOnWrongThreadGroup.set(true);
             }
@@ -112,9 +112,9 @@ public class IoBoundActorsIntegrationTest {
   }
 
   class CallableActor extends Actor {
-    private AtomicBoolean isOnWrongThreadGroup;
+    private final AtomicBoolean isOnWrongThreadGroup;
 
-    CallableActor(AtomicBoolean isOnWrongThreadGroup) {
+    CallableActor(final AtomicBoolean isOnWrongThreadGroup) {
       this.isOnWrongThreadGroup = isOnWrongThreadGroup;
     }
 

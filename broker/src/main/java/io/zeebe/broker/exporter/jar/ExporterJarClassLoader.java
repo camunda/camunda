@@ -24,7 +24,7 @@ public final class ExporterJarClassLoader extends URLClassLoader {
   private static final String[] EXPOSED_PACKAGE_PREFIXES =
       new String[] {"io.zeebe.exporter.api", "org.slf4j.", "org.apache.logging.log4j."};
 
-  private ExporterJarClassLoader(URL[] urls) {
+  private ExporterJarClassLoader(final URL[] urls) {
     super(urls);
   }
 
@@ -42,7 +42,7 @@ public final class ExporterJarClassLoader extends URLClassLoader {
   }
 
   @Override
-  public Class<?> loadClass(String name) throws ClassNotFoundException {
+  public Class<?> loadClass(final String name) throws ClassNotFoundException {
     synchronized (getClassLoadingLock(name)) {
       if (name.startsWith(JAVA_PACKAGE_PREFIX)) {
         return findSystemClass(name);

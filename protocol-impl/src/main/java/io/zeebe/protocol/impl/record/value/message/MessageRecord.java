@@ -68,37 +68,37 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
     return timeToLiveProp.getValue();
   }
 
-  public MessageRecord setTimeToLive(long timeToLive) {
+  public MessageRecord setTimeToLive(final long timeToLive) {
     timeToLiveProp.setValue(timeToLive);
     return this;
   }
 
-  public MessageRecord setMessageId(String messageId) {
+  public MessageRecord setMessageId(final String messageId) {
     messageIdProp.setValue(messageId);
     return this;
   }
 
-  public MessageRecord setMessageId(DirectBuffer messageId) {
+  public MessageRecord setMessageId(final DirectBuffer messageId) {
     messageIdProp.setValue(messageId);
     return this;
   }
 
-  public MessageRecord setCorrelationKey(String correlationKey) {
+  public MessageRecord setCorrelationKey(final String correlationKey) {
     correlationKeyProp.setValue(correlationKey);
     return this;
   }
 
-  public MessageRecord setCorrelationKey(DirectBuffer correlationKey) {
+  public MessageRecord setCorrelationKey(final DirectBuffer correlationKey) {
     correlationKeyProp.setValue(correlationKey);
     return this;
   }
 
-  public MessageRecord setName(String name) {
+  public MessageRecord setName(final String name) {
     nameProp.setValue(name);
     return this;
   }
 
-  public MessageRecord setName(DirectBuffer name) {
+  public MessageRecord setName(final DirectBuffer name) {
     nameProp.setValue(name);
     return this;
   }
@@ -113,7 +113,7 @@ public class MessageRecord extends UnifiedRecordValue implements MessageRecordVa
     return MsgPackConverter.convertToMap(variablesProp.getValue());
   }
 
-  public MessageRecord setVariables(DirectBuffer variables) {
+  public MessageRecord setVariables(final DirectBuffer variables) {
     variablesProp.setValue(variables);
     return this;
   }

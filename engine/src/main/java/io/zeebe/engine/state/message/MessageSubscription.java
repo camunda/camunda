@@ -32,12 +32,12 @@ public class MessageSubscription implements DbValue {
   public MessageSubscription() {}
 
   public MessageSubscription(
-      long workflowInstanceKey,
-      long elementInstanceKey,
-      DirectBuffer bpmnProcessId,
-      DirectBuffer messageName,
-      DirectBuffer correlationKey,
-      boolean closeOnCorrelate) {
+      final long workflowInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final boolean closeOnCorrelate) {
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
 
@@ -63,7 +63,7 @@ public class MessageSubscription implements DbValue {
     return messageVariables;
   }
 
-  public void setMessageVariables(DirectBuffer variables) {
+  public void setMessageVariables(final DirectBuffer variables) {
     messageVariables.wrap(variables);
   }
 
@@ -75,7 +75,7 @@ public class MessageSubscription implements DbValue {
     return elementInstanceKey;
   }
 
-  public void setElementInstanceKey(long elementInstanceKey) {
+  public void setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKey = elementInstanceKey;
   }
 
@@ -91,7 +91,7 @@ public class MessageSubscription implements DbValue {
     return commandSentTime;
   }
 
-  public void setCommandSentTime(long commandSentTime) {
+  public void setCommandSentTime(final long commandSentTime) {
     this.commandSentTime = commandSentTime;
   }
 
@@ -103,7 +103,7 @@ public class MessageSubscription implements DbValue {
     return closeOnCorrelate;
   }
 
-  public void setCloseOnCorrelate(boolean closeOnCorrelate) {
+  public void setCloseOnCorrelate(final boolean closeOnCorrelate) {
     this.closeOnCorrelate = closeOnCorrelate;
   }
 

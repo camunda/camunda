@@ -23,7 +23,7 @@ public class ParallelGatewayTransformer implements ModelElementTransformer<Paral
   }
 
   @Override
-  public void transform(ParallelGateway element, TransformContext context) {
+  public void transform(final ParallelGateway element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableFlowNode gateway =
         workflow.getElementById(element.getId(), ExecutableFlowNode.class);

@@ -14,12 +14,12 @@ import org.msgpack.core.MessagePack;
 
 public class MsgPackUtil {
 
-  public static DirectBuffer encodeMsgPack(CheckedConsumer<MessageBufferPacker> msgWriter) {
+  public static DirectBuffer encodeMsgPack(final CheckedConsumer<MessageBufferPacker> msgWriter) {
     final MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
     try {
       msgWriter.accept(packer);
       packer.close();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
     final byte[] bytes = packer.toByteArray();

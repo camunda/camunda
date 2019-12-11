@@ -17,19 +17,19 @@ import java.util.function.BiConsumer;
 public class ActionRecordingActor extends Actor {
   public final List<String> actions = new ArrayList<>();
 
-  protected BiConsumer<Void, Throwable> futureConsumer(String label) {
+  protected BiConsumer<Void, Throwable> futureConsumer(final String label) {
     return (v, t) -> {
       actions.add(label);
     };
   }
 
-  protected Runnable runnable(String label) {
+  protected Runnable runnable(final String label) {
     return () -> {
       actions.add(label);
     };
   }
 
-  protected Callable<Void> callable(String label) {
+  protected Callable<Void> callable(final String label) {
     return () -> {
       actions.add(label);
       return null;

@@ -134,7 +134,7 @@ public class CompleteJobTest extends ClientTest {
       return key;
     }
 
-    public void setKey(String key) {
+    public void setKey(final String key) {
       this.key = key;
     }
   }

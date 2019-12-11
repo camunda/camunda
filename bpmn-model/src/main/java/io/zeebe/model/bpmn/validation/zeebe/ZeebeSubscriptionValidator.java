@@ -28,7 +28,7 @@ public class ZeebeSubscriptionValidator implements ModelElementValidator<ZeebeSu
 
   @Override
   public void validate(
-      ZeebeSubscription element, ValidationResultCollector validationResultCollector) {
+      final ZeebeSubscription element, final ValidationResultCollector validationResultCollector) {
     final String correlationKey = element.getCorrelationKey();
     if (correlationKey == null || correlationKey.isEmpty()) {
       validationResultCollector.addError(0, "zeebe:correlationKey must be present and not empty");

@@ -38,7 +38,7 @@ public class TransportContext {
     return messageMaxLength;
   }
 
-  public void setMessageMaxLength(int messageMaxLength) {
+  public void setMessageMaxLength(final int messageMaxLength) {
     this.messageMaxLength = messageMaxLength;
   }
 
@@ -46,7 +46,7 @@ public class TransportContext {
     return serverOutput;
   }
 
-  public void setServerOutput(ServerOutput serverOutput) {
+  public void setServerOutput(final ServerOutput serverOutput) {
     this.serverOutput = serverOutput;
   }
 
@@ -54,7 +54,7 @@ public class TransportContext {
     return clientOutput;
   }
 
-  public void setClientOutput(ClientOutput clientOutput) {
+  public void setClientOutput(final ClientOutput clientOutput) {
     this.clientOutput = clientOutput;
   }
 
@@ -62,7 +62,7 @@ public class TransportContext {
     return receiveBuffer;
   }
 
-  public void setReceiveBuffer(Dispatcher receiveBuffer) {
+  public void setReceiveBuffer(final Dispatcher receiveBuffer) {
     this.receiveBuffer = receiveBuffer;
   }
 
@@ -70,7 +70,7 @@ public class TransportContext {
     return remoteAddressList;
   }
 
-  public void setRemoteAddressList(RemoteAddressListImpl remoteAddressList) {
+  public void setRemoteAddressList(final RemoteAddressListImpl remoteAddressList) {
     this.remoteAddressList = remoteAddressList;
   }
 
@@ -78,7 +78,7 @@ public class TransportContext {
     return endpointRegistry;
   }
 
-  public void setEndpointRegistry(EndpointRegistry endpointRegistry) {
+  public void setEndpointRegistry(final EndpointRegistry endpointRegistry) {
     this.endpointRegistry = endpointRegistry;
   }
 
@@ -86,7 +86,7 @@ public class TransportContext {
     return receiveHandler;
   }
 
-  public void setReceiveHandler(FragmentHandler receiveHandler) {
+  public void setReceiveHandler(final FragmentHandler receiveHandler) {
     this.receiveHandler = receiveHandler;
   }
 
@@ -94,7 +94,7 @@ public class TransportContext {
     return serverSocketBinding;
   }
 
-  public void setServerSocketBinding(ServerSocketBinding serverSocketBinding) {
+  public void setServerSocketBinding(final ServerSocketBinding serverSocketBinding) {
     this.serverSocketBinding = serverSocketBinding;
   }
 
@@ -102,7 +102,7 @@ public class TransportContext {
     return channelKeepAlivePeriod;
   }
 
-  public void setChannelKeepAlivePeriod(Duration channelKeepAlivePeriod) {
+  public void setChannelKeepAlivePeriod(final Duration channelKeepAlivePeriod) {
     this.channelKeepAlivePeriod = channelKeepAlivePeriod;
   }
 
@@ -110,11 +110,11 @@ public class TransportContext {
     return channelFactory;
   }
 
-  public void setChannelFactory(TransportChannelFactory channelFactory) {
+  public void setChannelFactory(final TransportChannelFactory channelFactory) {
     this.channelFactory = channelFactory;
   }
 
-  public void setSendBuffer(Dispatcher sendBuffer) {
+  public void setSendBuffer(final Dispatcher sendBuffer) {
     this.sendBuffer = sendBuffer;
   }
 
@@ -126,7 +126,7 @@ public class TransportContext {
     return name;
   }
 
-  public void setName(String name) {
+  public void setName(final String name) {
     this.name = name;
   }
 }

@@ -110,15 +110,18 @@ public class RocksDbInternal {
   }
 
   public static void seek(
-      RocksIterator iterator, long nativeHandle, byte[] target, int targetLength) {
+      final RocksIterator iterator,
+      final long nativeHandle,
+      final byte[] target,
+      final int targetLength) {
     try {
       seekMethod.invoke(iterator, nativeHandle, target, targetLength);
-    } catch (IllegalAccessException | InvocationTargetException e) {
+    } catch (final IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException("Unexpected error occurred trying to seek with RocksIterator", e);
     }
   }
 
-  static boolean isRocksDbExceptionRecoverable(RocksDBException rdbex) {
+  static boolean isRocksDbExceptionRecoverable(final RocksDBException rdbex) {
     final Status status = rdbex.getStatus();
     return RECOVERABLE_ERROR_CODES.contains(status.getCode());
   }

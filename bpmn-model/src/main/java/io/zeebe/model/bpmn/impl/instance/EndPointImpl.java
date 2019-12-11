@@ -33,11 +33,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class EndPointImpl extends RootElementImpl implements EndPoint {
 
-  public EndPointImpl(ModelTypeInstanceContext context) {
+  public EndPointImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(EndPoint.class, BPMN_ELEMENT_END_POINT)
@@ -46,7 +46,7 @@ public class EndPointImpl extends RootElementImpl implements EndPoint {
             .instanceProvider(
                 new ModelTypeInstanceProvider<EndPoint>() {
                   @Override
-                  public EndPoint newInstance(ModelTypeInstanceContext instanceContext) {
+                  public EndPoint newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new EndPointImpl(instanceContext);
                   }
                 });

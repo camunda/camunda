@@ -27,7 +27,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class ModelUtil {
-  public static Stream<MessageEventDefinition> getActivityMessageBoundaryEvents(Activity activity) {
+  public static Stream<MessageEventDefinition> getActivityMessageBoundaryEvents(
+      final Activity activity) {
 
     return activity.getBoundaryEvents().stream()
         .flatMap(event -> event.getEventDefinitions().stream())
@@ -36,7 +37,7 @@ public class ModelUtil {
   }
 
   public static List<String> getDuplicateMessageNames(
-      Stream<MessageEventDefinition> eventDefinitions) {
+      final Stream<MessageEventDefinition> eventDefinitions) {
 
     final Stream<Message> messages =
         eventDefinitions

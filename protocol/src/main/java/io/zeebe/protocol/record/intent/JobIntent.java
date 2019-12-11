@@ -39,11 +39,11 @@ public enum JobIntent implements WorkflowInstanceRelatedIntent {
   private final short value;
   private final boolean shouldBlacklist;
 
-  JobIntent(short value) {
+  JobIntent(final short value) {
     this(value, true);
   }
 
-  JobIntent(short value, boolean shouldBlacklist) {
+  JobIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }
@@ -52,7 +52,7 @@ public enum JobIntent implements WorkflowInstanceRelatedIntent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return CREATE;

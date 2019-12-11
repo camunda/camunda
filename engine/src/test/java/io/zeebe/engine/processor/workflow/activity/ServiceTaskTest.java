@@ -39,7 +39,7 @@ public class ServiceTaskTest {
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
 
-  private static BpmnModelInstance workflow(Consumer<ServiceTaskBuilder> consumer) {
+  private static BpmnModelInstance workflow(final Consumer<ServiceTaskBuilder> consumer) {
     final var builder = Bpmn.createExecutableProcess(PROCESS_ID).startEvent().serviceTask("task");
 
     consumer.accept(builder);

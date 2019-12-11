@@ -24,7 +24,8 @@ public class Mapping {
   private final JsonPathPointer targetPointer;
   private final Type type;
 
-  public Mapping(JsonPathQuery source, JsonPathPointer targetPointer, Mapping.Type type) {
+  public Mapping(
+      final JsonPathQuery source, final JsonPathPointer targetPointer, final Mapping.Type type) {
     this.source = source;
     this.targetPointer = targetPointer;
     this.type = type;

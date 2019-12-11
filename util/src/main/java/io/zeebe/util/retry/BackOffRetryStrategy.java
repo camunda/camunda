@@ -23,19 +23,19 @@ public class BackOffRetryStrategy implements RetryStrategy {
   private BooleanSupplier currentTerminateCondition;
   private OperationToRetry currentCallable;
 
-  public BackOffRetryStrategy(ActorControl actor, Duration maxBackOff) {
+  public BackOffRetryStrategy(final ActorControl actor, final Duration maxBackOff) {
     this.actor = actor;
     this.maxBackOff = maxBackOff;
   }
 
   @Override
-  public ActorFuture<Boolean> runWithRetry(OperationToRetry callable) {
+  public ActorFuture<Boolean> runWithRetry(final OperationToRetry callable) {
     return runWithRetry(callable, () -> false);
   }
 
   @Override
   public ActorFuture<Boolean> runWithRetry(
-      OperationToRetry callable, BooleanSupplier terminateCondition) {
+      final OperationToRetry callable, final BooleanSupplier terminateCondition) {
     currentFuture = new CompletableActorFuture<>();
     this.currentTerminateCondition = terminateCondition;
     currentCallable = callable;
@@ -55,7 +55,7 @@ public class BackOffRetryStrategy implements RetryStrategy {
       } else {
         backOff();
       }
-    } catch (Exception exception) {
+    } catch (final Exception exception) {
       if (currentTerminateCondition.getAsBoolean()) {
         currentFuture.complete(false);
       } else {

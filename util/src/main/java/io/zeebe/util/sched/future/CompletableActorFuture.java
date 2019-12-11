@@ -55,19 +55,19 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
     setAwaitingResult();
   }
 
-  private CompletableActorFuture(V value) {
+  private CompletableActorFuture(final V value) {
     this.value = value;
     this.state = COMPLETED;
   }
 
-  private CompletableActorFuture(Throwable throwable) {
+  private CompletableActorFuture(final Throwable throwable) {
     ensureValidThrowable(throwable);
     this.failure = throwable.getMessage();
     this.failureCause = throwable;
     this.state = COMPLETED_EXCEPTIONALLY;
   }
 
-  private void ensureValidThrowable(Throwable throwable) {
+  private void ensureValidThrowable(final Throwable throwable) {
     if (throwable == null) {
       throw new NullPointerException("Throwable must not be null.");
     }
@@ -78,16 +78,16 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
     isDoneCondition = completionLock.newCondition();
   }
 
-  public static <V> CompletableActorFuture<V> completed(V result) {
+  public static <V> CompletableActorFuture<V> completed(final V result) {
     return new CompletableActorFuture<>(result); // cast for null result
   }
 
-  public static <V> CompletableActorFuture<V> completedExceptionally(Throwable throwable) {
+  public static <V> CompletableActorFuture<V> completedExceptionally(final Throwable throwable) {
     return new CompletableActorFuture<>(throwable);
   }
 
   @Override
-  public boolean cancel(boolean mayInterruptIfRunning) {
+  public boolean cancel(final boolean mayInterruptIfRunning) {
     throw new UnsupportedOperationException();
   }
 
@@ -106,13 +106,13 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
   public V get() throws ExecutionException, InterruptedException {
     try {
       return get(Integer.MAX_VALUE, TimeUnit.MILLISECONDS);
-    } catch (TimeoutException e) {
+    } catch (final TimeoutException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public V get(long timeout, TimeUnit unit)
+  public V get(final long timeout, final TimeUnit unit)
       throws ExecutionException, TimeoutException, InterruptedException {
     if (ActorThread.current() != null) {
       if (!isDone()) {
@@ -149,7 +149,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
   }
 
   @Override
-  public void complete(V value) {
+  public void complete(final V value) {
     if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.value = value;
       this.state = COMPLETED;
@@ -166,7 +166,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
   }
 
   @Override
-  public void completeExceptionally(String failure, Throwable throwable) {
+  public void completeExceptionally(final String failure, final Throwable throwable) {
     // important for other actors that consume this by #runOnCompletion
     ensureValidThrowable(throwable);
 
@@ -186,7 +186,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
   }
 
   @Override
-  public void completeExceptionally(Throwable throwable) {
+  public void completeExceptionally(final Throwable throwable) {
     ensureValidThrowable(throwable);
     completeExceptionally(throwable.getMessage(), throwable);
   }
@@ -197,17 +197,17 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
   }
 
   @Override
-  public V join(long timeout, TimeUnit timeUnit) {
+  public V join(final long timeout, final TimeUnit timeUnit) {
     return FutureUtil.join(this, timeout, timeUnit);
   }
 
   @Override
-  public void block(ActorTask onCompletion) {
+  public void block(final ActorTask onCompletion) {
     blockedTasks.add(onCompletion);
   }
 
   @Override
-  public void onComplete(BiConsumer<V, Throwable> consumer) {
+  public void onComplete(final BiConsumer<V, Throwable> consumer) {
     final ActorControl actorControl = ActorControl.current();
     actorControl.runOnCompletion(this, consumer);
   }
@@ -228,7 +228,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
   }
 
   @Override
-  public void accept(V value, Throwable throwable) {
+  public void accept(final V value, final Throwable throwable) {
     if (throwable != null) {
       completeExceptionally(throwable);
     } else {
@@ -247,7 +247,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
     }
   }
 
-  private void notifyAllInQueue(Queue<ActorTask> tasks) {
+  private void notifyAllInQueue(final Queue<ActorTask> tasks) {
     while (!tasks.isEmpty()) {
       final ActorTask task = tasks.poll();
 
@@ -275,7 +275,7 @@ public class CompletableActorFuture<V> implements ActorFuture<V>, BiConsumer<V, 
     return state == CLOSED;
   }
 
-  public void completeWith(CompletableActorFuture<V> otherFuture) {
+  public void completeWith(final CompletableActorFuture<V> otherFuture) {
     if (!otherFuture.isDone()) {
       throw new IllegalArgumentException(
           "Future is not completed, can't complete this future with uncompleted future.");

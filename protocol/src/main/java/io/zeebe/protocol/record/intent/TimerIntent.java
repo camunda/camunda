@@ -28,11 +28,11 @@ public enum TimerIntent implements WorkflowInstanceRelatedIntent {
   private final short value;
   private final boolean shouldBlacklist;
 
-  TimerIntent(short value) {
+  TimerIntent(final short value) {
     this(value, true);
   }
 
-  TimerIntent(short value, boolean shouldBlacklist) {
+  TimerIntent(final short value, final boolean shouldBlacklist) {
     this.value = value;
     this.shouldBlacklist = shouldBlacklist;
   }
@@ -42,7 +42,7 @@ public enum TimerIntent implements WorkflowInstanceRelatedIntent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return CREATE;

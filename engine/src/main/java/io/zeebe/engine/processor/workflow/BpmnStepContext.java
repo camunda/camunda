@@ -35,7 +35,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
 
-  public BpmnStepContext(WorkflowState stateDb, EventOutput eventOutput) {
+  public BpmnStepContext(final WorkflowState stateDb, final EventOutput eventOutput) {
     this.stateDb = stateDb;
     this.eventOutput = eventOutput;
   }
@@ -53,7 +53,9 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   }
 
   public void init(
-      long key, final WorkflowInstanceRecord recordValue, WorkflowInstanceIntent intent) {
+      final long key,
+      final WorkflowInstanceRecord recordValue,
+      final WorkflowInstanceIntent intent) {
     this.recordValue = recordValue;
     this.key = key;
     this.intent = intent;
@@ -105,11 +107,12 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return sideEffect;
   }
 
-  public void raiseIncident(ErrorType errorType, String errorMessage) {
+  public void raiseIncident(final ErrorType errorType, final String errorMessage) {
     raiseIncident(errorType, key, errorMessage);
   }
 
-  public void raiseIncident(ErrorType errorType, long variableScopeKey, String errorMessage) {
+  public void raiseIncident(
+      final ErrorType errorType, final long variableScopeKey, final String errorMessage) {
     incidentCommand.reset();
 
     incidentCommand

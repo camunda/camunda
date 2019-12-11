@@ -20,13 +20,13 @@ public class CancelProcessor implements CommandProcessor<JobRecord> {
       "Expected to cancel job with key '%d', but no such job was found";
   private final JobState state;
 
-  public CancelProcessor(JobState state) {
+  public CancelProcessor(final JobState state) {
     this.state = state;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+      final TypedRecord<JobRecord> command, final CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
     final JobRecord job = state.getJob(jobKey);
     if (job != null) {

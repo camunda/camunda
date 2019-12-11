@@ -48,11 +48,11 @@ public class LaneImpl extends BaseElementImpl implements Lane {
   protected static ElementReferenceCollection<FlowNode, FlowNodeRef> flowNodeRefCollection;
   protected static ChildElement<ChildLaneSet> childLaneSetChild;
 
-  public LaneImpl(ModelTypeInstanceContext instanceContext) {
+  public LaneImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Lane.class, BPMN_ELEMENT_LANE)
@@ -61,7 +61,7 @@ public class LaneImpl extends BaseElementImpl implements Lane {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Lane>() {
                   @Override
-                  public Lane newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Lane newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new LaneImpl(instanceContext);
                   }
                 });
@@ -95,7 +95,7 @@ public class LaneImpl extends BaseElementImpl implements Lane {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -105,7 +105,7 @@ public class LaneImpl extends BaseElementImpl implements Lane {
   }
 
   @Override
-  public void setPartitionElement(PartitionElement partitionElement) {
+  public void setPartitionElement(final PartitionElement partitionElement) {
     partitionElementRefAttribute.setReferenceTargetElement(this, partitionElement);
   }
 
@@ -115,7 +115,7 @@ public class LaneImpl extends BaseElementImpl implements Lane {
   }
 
   @Override
-  public void setPartitionElementChild(PartitionElement partitionElement) {
+  public void setPartitionElementChild(final PartitionElement partitionElement) {
     partitionElementChild.setChild(this, partitionElement);
   }
 
@@ -130,7 +130,7 @@ public class LaneImpl extends BaseElementImpl implements Lane {
   }
 
   @Override
-  public void setChildLaneSet(ChildLaneSet childLaneSet) {
+  public void setChildLaneSet(final ChildLaneSet childLaneSet) {
     childLaneSetChild.setChild(this, childLaneSet);
   }
 }

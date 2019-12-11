@@ -22,12 +22,12 @@ public class MockController implements Controller {
   private long position = UNKNOWN_POSITION;
 
   @Override
-  public void updateLastExportedRecordPosition(long position) {
+  public void updateLastExportedRecordPosition(final long position) {
     this.position = position;
   }
 
   @Override
-  public void scheduleTask(Duration delay, Runnable task) {
+  public void scheduleTask(final Duration delay, final Runnable task) {
     final MockScheduledTask scheduledTask = new MockScheduledTask(delay, task);
     scheduledTasks.add(scheduledTask);
   }
@@ -50,7 +50,7 @@ public class MockController implements Controller {
    *
    * @param elapsed upper bound of tasks delay
    */
-  public void runScheduledTasks(Duration elapsed) {
+  public void runScheduledTasks(final Duration elapsed) {
     final Duration upperBound = elapsed.plusMillis(lastRanAtMs);
 
     scheduledTasks.stream()

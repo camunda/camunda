@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.SendTask;
 /** @author Sebastian Menski */
 public class SendTaskBuilder extends AbstractSendTaskBuilder<SendTaskBuilder> {
 
-  public SendTaskBuilder(BpmnModelInstance modelInstance, SendTask element) {
+  public SendTaskBuilder(final BpmnModelInstance modelInstance, final SendTask element) {
     super(modelInstance, element, SendTaskBuilder.class);
   }
 }

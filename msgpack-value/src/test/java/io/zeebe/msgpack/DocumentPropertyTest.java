@@ -232,7 +232,7 @@ public class DocumentPropertyTest {
       return documentProperty.getValue();
     }
 
-    public void setDocument(DirectBuffer document) {
+    public void setDocument(final DirectBuffer document) {
       documentProperty.setValue(document);
     }
   }

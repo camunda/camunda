@@ -21,7 +21,7 @@ import io.zeebe.model.bpmn.instance.SubProcess;
 
 public class EventSubProcessBuilder extends AbstractEventSubProcessBuilder<EventSubProcessBuilder> {
 
-  public EventSubProcessBuilder(BpmnModelInstance modelInstance, SubProcess element) {
+  public EventSubProcessBuilder(final BpmnModelInstance modelInstance, final SubProcess element) {
     super(modelInstance, element, EventSubProcessBuilder.class);
   }
 }

@@ -26,7 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class ActorFrameworkIntegrationTest {
-  @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
+  @Rule public final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
 
   @Test
   public void testOffer() throws InterruptedException {
@@ -81,7 +81,7 @@ public class ActorFrameworkIntegrationTest {
     Subscription subscription;
     int counter = 0;
 
-    Consumer(Dispatcher dispatcher) {
+    Consumer(final Dispatcher dispatcher) {
       this.dispatcher = dispatcher;
     }
 
@@ -107,7 +107,7 @@ public class ActorFrameworkIntegrationTest {
         final int offset,
         final int length,
         final int streamId,
-        boolean isMarkedFailed) {
+        final boolean isMarkedFailed) {
       final int newCounter = buffer.getInt(offset);
       if (newCounter - 1 != counter) {
         throw new RuntimeException(newCounter + " " + counter);
@@ -124,7 +124,7 @@ public class ActorFrameworkIntegrationTest {
     int counter = 0;
     final Runnable processPeek = this::processPeek;
 
-    PeekingConsumer(Dispatcher dispatcher) {
+    PeekingConsumer(final Dispatcher dispatcher) {
       this.dispatcher = dispatcher;
     }
 
@@ -166,7 +166,7 @@ public class ActorFrameworkIntegrationTest {
         final int offset,
         final int length,
         final int streamId,
-        boolean isMarkedFailed) {
+        final boolean isMarkedFailed) {
       final int newCounter = buffer.getInt(offset);
       if (newCounter - 1 != counter) {
         throw new RuntimeException(newCounter + " " + counter);
@@ -185,9 +185,9 @@ public class ActorFrameworkIntegrationTest {
     final Dispatcher dispatcher;
     int counter = 1;
 
-    Runnable produce = this::produce;
+    final Runnable produce = this::produce;
 
-    Producer(Dispatcher dispatcher) {
+    Producer(final Dispatcher dispatcher) {
       this.dispatcher = dispatcher;
     }
 
@@ -220,9 +220,9 @@ public class ActorFrameworkIntegrationTest {
     final Dispatcher dispatcher;
     final ClaimedFragment claim = new ClaimedFragment();
     int counter = 1;
-    Runnable produce = this::produce;
+    final Runnable produce = this::produce;
 
-    ClaimingProducer(Dispatcher dispatcher) {
+    ClaimingProducer(final Dispatcher dispatcher) {
       this.dispatcher = dispatcher;
     }
 

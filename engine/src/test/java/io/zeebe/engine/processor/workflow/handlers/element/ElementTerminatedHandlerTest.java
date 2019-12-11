@@ -29,7 +29,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 public class ElementTerminatedHandlerTest extends ElementHandlerTestCase {
   @Spy
   IncidentResolver incidentResolver =
-      new IncidentResolver(zeebeStateRule.getZeebeState().getIncidentState());
+      new IncidentResolver(ZEEBE_STATE_RULE.getZeebeState().getIncidentState());
 
   private ElementTerminatedHandler<ExecutableFlowNode> handler;
 

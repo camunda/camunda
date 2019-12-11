@@ -512,25 +512,25 @@ public class DiGeneratorForFlowNodesTest {
     assertTrue(bpmnShape.isMarkerVisible());
   }
 
-  protected void assertTaskShapeProperties(String id) {
+  protected void assertTaskShapeProperties(final String id) {
     final BpmnShape bpmnShapeTask = findBpmnShape(id);
     assertNotNull(bpmnShapeTask);
     assertActivitySize(bpmnShapeTask);
   }
 
-  protected void assertEventShapeProperties(String id) {
+  protected void assertEventShapeProperties(final String id) {
     final BpmnShape bpmnShapeEvent = findBpmnShape(id);
     assertNotNull(bpmnShapeEvent);
     assertEventSize(bpmnShapeEvent);
   }
 
-  protected void assertGatewayShapeProperties(String id) {
+  protected void assertGatewayShapeProperties(final String id) {
     final BpmnShape bpmnShapeGateway = findBpmnShape(id);
     assertNotNull(bpmnShapeGateway);
     assertGatewaySize(bpmnShapeGateway);
   }
 
-  protected BpmnShape findBpmnShape(String id) {
+  protected BpmnShape findBpmnShape(final String id) {
     final Collection<BpmnShape> allShapes = instance.getModelElementsByType(BpmnShape.class);
 
     final Iterator<BpmnShape> iterator = allShapes.iterator();
@@ -543,23 +543,23 @@ public class DiGeneratorForFlowNodesTest {
     return null;
   }
 
-  protected void assertEventSize(BpmnShape shape) {
+  protected void assertEventSize(final BpmnShape shape) {
     assertSize(shape, 36, 36);
   }
 
-  protected void assertGatewaySize(BpmnShape shape) {
+  protected void assertGatewaySize(final BpmnShape shape) {
     assertSize(shape, 50, 50);
   }
 
-  protected void assertSubProcessSize(BpmnShape shape) {
+  protected void assertSubProcessSize(final BpmnShape shape) {
     assertSize(shape, 200, 350);
   }
 
-  protected void assertActivitySize(BpmnShape shape) {
+  protected void assertActivitySize(final BpmnShape shape) {
     assertSize(shape, 80, 100);
   }
 
-  protected void assertSize(BpmnShape shape, int height, int width) {
+  protected void assertSize(final BpmnShape shape, final int height, final int width) {
     assertThat(shape.getBounds().getHeight()).isEqualTo(height);
     assertThat(shape.getBounds().getWidth()).isEqualTo(width);
   }

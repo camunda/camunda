@@ -16,15 +16,15 @@ public class BufferingServerTransport extends ServerTransport {
   protected final Dispatcher receiveBuffer;
 
   public BufferingServerTransport(
-      ActorContext transportActorContext, TransportContext transportContext) {
+      final ActorContext transportActorContext, final TransportContext transportContext) {
     super(transportActorContext, transportContext);
     receiveBuffer = transportContext.getReceiveBuffer();
   }
 
   public ActorFuture<ServerInputSubscription> openSubscription(
-      String subscriptionName,
-      ServerMessageHandler messageHandler,
-      ServerRequestHandler requestHandler) {
+      final String subscriptionName,
+      final ServerMessageHandler messageHandler,
+      final ServerRequestHandler requestHandler) {
     return transportActorContext
         .getServerConductor()
         .openInputSubscription(

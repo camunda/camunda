@@ -67,7 +67,7 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
   }
 
   private long handleInterrupting(
-      BpmnStepContext<T> context, EventTrigger triggeredEvent, long scopeKey) {
+      final BpmnStepContext<T> context, final EventTrigger triggeredEvent, final long scopeKey) {
     final boolean waitForTermination = interruptParentScope(context);
 
     if (waitForTermination) {
@@ -79,7 +79,7 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
     }
   }
 
-  private boolean interruptParentScope(BpmnStepContext<T> context) {
+  private boolean interruptParentScope(final BpmnStepContext<T> context) {
     final long scopeKey = context.getValue().getFlowScopeKey();
     final List<ElementInstance> children = context.getElementInstanceState().getChildren(scopeKey);
     boolean waitForTermination = false;
@@ -100,7 +100,7 @@ public class EventSubProcessEventOccurredHandler<T extends ExecutableStartEvent>
   }
 
   private void prepareActivateContainer(
-      final BpmnStepContext<T> context, WorkflowInstanceRecord event) {
+      final BpmnStepContext<T> context, final WorkflowInstanceRecord event) {
     final DirectBuffer subprocessId = context.getElement().getEventSubProcess();
     containerRecord.reset();
     containerRecord

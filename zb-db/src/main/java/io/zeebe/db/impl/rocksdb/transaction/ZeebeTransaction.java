@@ -24,34 +24,44 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   private final long nativeHandle;
   private boolean inCurrentTransaction;
 
-  public ZeebeTransaction(Transaction transaction) {
+  public ZeebeTransaction(final Transaction transaction) {
     this.transaction = transaction;
     try {
       nativeHandle = RocksDbInternal.nativeHandle.getLong(transaction);
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
   }
 
-  public void put(long columnFamilyHandle, byte[] key, int keyLength, byte[] value, int valueLength)
+  public void put(
+      final long columnFamilyHandle,
+      final byte[] key,
+      final int keyLength,
+      final byte[] value,
+      final int valueLength)
       throws Exception {
     RocksDbInternal.putWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, value, valueLength, columnFamilyHandle, false);
   }
 
-  public byte[] get(long columnFamilyHandle, long readOptionsHandle, byte[] key, int keyLength)
+  public byte[] get(
+      final long columnFamilyHandle,
+      final long readOptionsHandle,
+      final byte[] key,
+      final int keyLength)
       throws Exception {
     return (byte[])
         RocksDbInternal.getWithHandle.invoke(
             transaction, nativeHandle, readOptionsHandle, key, keyLength, columnFamilyHandle);
   }
 
-  public void delete(long columnFamilyHandle, byte[] key, int keyLength) throws Exception {
+  public void delete(final long columnFamilyHandle, final byte[] key, final int keyLength)
+      throws Exception {
     RocksDbInternal.removeWithHandle.invoke(
         transaction, nativeHandle, key, keyLength, columnFamilyHandle, false);
   }
 
-  public RocksIterator newIterator(ReadOptions options, ColumnFamilyHandle handle) {
+  public RocksIterator newIterator(final ReadOptions options, final ColumnFamilyHandle handle) {
     return transaction.getIterator(options, handle);
   }
 
@@ -64,10 +74,10 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   }
 
   @Override
-  public void run(TransactionOperation operations) throws Exception {
+  public void run(final TransactionOperation operations) throws Exception {
     try {
       operations.run();
-    } catch (RocksDBException rdbex) {
+    } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
         throw new ZeebeDbException(errorMessage, rdbex);
@@ -80,7 +90,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   public void commit() throws RocksDBException {
     try {
       commitInternal();
-    } catch (RocksDBException rdbex) {
+    } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction commit.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
         throw new ZeebeDbException(errorMessage, rdbex);
@@ -93,7 +103,7 @@ public class ZeebeTransaction implements ZeebeDbTransaction, AutoCloseable {
   public void rollback() throws RocksDBException {
     try {
       rollbackInternal();
-    } catch (RocksDBException rdbex) {
+    } catch (final RocksDBException rdbex) {
       final String errorMessage = "Unexpected error occurred during RocksDB transaction rollback.";
       if (isRocksDbExceptionRecoverable(rdbex)) {
         throw new ZeebeDbException(errorMessage, rdbex);

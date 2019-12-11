@@ -28,12 +28,12 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
 public class ExporterRepositoryTest {
-  private TemporaryFolder temporaryFolder = new TemporaryFolder();
-  private JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final JarCreatorRule jarCreator = new JarCreatorRule(temporaryFolder);
 
   @Rule public RuleChain chain = RuleChain.outerRule(temporaryFolder).around(jarCreator);
 
-  private ExporterRepository repository = new ExporterRepository();
+  private final ExporterRepository repository = new ExporterRepository();
 
   @Test
   public void shouldCacheDescriptorOnceLoaded() throws ExporterLoadException {
@@ -147,11 +147,11 @@ public class ExporterRepositoryTest {
 
   static class InvalidExporter implements Exporter {
     @Override
-    public void configure(Context context) {
+    public void configure(final Context context) {
       throw new IllegalStateException("what");
     }
 
     @Override
-    public void export(Record record) {}
+    public void export(final Record record) {}
   }
 }

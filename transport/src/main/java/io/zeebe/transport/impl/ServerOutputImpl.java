@@ -21,12 +21,12 @@ public class ServerOutputImpl implements ServerOutput {
 
   private final Sender sender;
 
-  public ServerOutputImpl(Sender sender) {
+  public ServerOutputImpl(final Sender sender) {
     this.sender = sender;
   }
 
   @Override
-  public boolean sendMessage(int remoteStreamId, BufferWriter writer) {
+  public boolean sendMessage(final int remoteStreamId, final BufferWriter writer) {
     final int framedMessageLength =
         TransportHeaderWriter.getFramedMessageLength(writer.getLength());
 
@@ -44,7 +44,7 @@ public class ServerOutputImpl implements ServerOutput {
         sender.submitMessage(outgoingMessage);
 
         return true;
-      } catch (RuntimeException e) {
+      } catch (final RuntimeException e) {
         sender.reclaimMessageBuffer(allocatedBuffer);
         throw e;
       }
@@ -54,7 +54,7 @@ public class ServerOutputImpl implements ServerOutput {
   }
 
   @Override
-  public boolean sendResponse(ServerResponse response) {
+  public boolean sendResponse(final ServerResponse response) {
     final BufferWriter writer = response.getWriter();
     final int framedLength = TransportHeaderWriter.getFramedRequestLength(writer.getLength());
 
@@ -78,7 +78,7 @@ public class ServerOutputImpl implements ServerOutput {
         sender.submitMessage(outgoingMessage);
 
         return true;
-      } catch (RuntimeException e) {
+      } catch (final RuntimeException e) {
         sender.reclaimMessageBuffer(allocatedBuffer);
         throw e;
       }

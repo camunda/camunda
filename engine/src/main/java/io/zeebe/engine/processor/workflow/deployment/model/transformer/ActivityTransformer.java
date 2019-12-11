@@ -22,7 +22,7 @@ public class ActivityTransformer implements ModelElementTransformer<Activity> {
   }
 
   @Override
-  public void transform(Activity element, TransformContext context) {
+  public void transform(final Activity element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableActivity activity =
         workflow.getElementById(element.getId(), ExecutableActivity.class);

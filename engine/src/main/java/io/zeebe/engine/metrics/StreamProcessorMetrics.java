@@ -31,15 +31,16 @@ public class StreamProcessorMetrics {
 
   private final String partitionIdLabel;
 
-  public StreamProcessorMetrics(int partitionId) {
+  public StreamProcessorMetrics(final int partitionId) {
     this.partitionIdLabel = String.valueOf(partitionId);
   }
 
-  private void event(String action) {
+  private void event(final String action) {
     STREAM_PROCESSOR_EVENTS.labels(action, partitionIdLabel).inc();
   }
 
-  public void processingLatency(RecordType recordType, long written, long processed) {
+  public void processingLatency(
+      final RecordType recordType, final long written, final long processed) {
     PROCESSING_LATENCY
         .labels(recordType.name(), partitionIdLabel)
         .observe((processed - written) / 1000f);

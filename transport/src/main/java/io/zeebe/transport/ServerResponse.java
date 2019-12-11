@@ -27,25 +27,25 @@ public class ServerResponse implements BufferWriter {
       new RequestResponseHeaderDescriptor();
   private long requestId;
 
-  public ServerResponse writer(BufferWriter writer) {
+  public ServerResponse writer(final BufferWriter writer) {
     this.writer = writer;
     return this;
   }
 
-  public ServerResponse buffer(DirectBuffer buffer) {
+  public ServerResponse buffer(final DirectBuffer buffer) {
     return buffer(buffer, 0, buffer.capacity());
   }
 
-  public ServerResponse buffer(DirectBuffer buffer, int offset, int length) {
+  public ServerResponse buffer(final DirectBuffer buffer, final int offset, final int length) {
     return writer(writerAdapter.wrap(buffer, offset, length));
   }
 
-  public ServerResponse remoteAddress(RemoteAddress remoteAddress) {
+  public ServerResponse remoteAddress(final RemoteAddress remoteAddress) {
     this.remoteStreamId = remoteAddress.getStreamId();
     return this;
   }
 
-  public ServerResponse remoteStreamId(int remoteStreamId) {
+  public ServerResponse remoteStreamId(final int remoteStreamId) {
     this.remoteStreamId = remoteStreamId;
     return this;
   }
@@ -58,12 +58,12 @@ public class ServerResponse implements BufferWriter {
     return this;
   }
 
-  public ServerResponse requestId(long requestId) {
+  public ServerResponse requestId(final long requestId) {
     this.requestId = requestId;
     return this;
   }
 
-  public boolean trySend(Dispatcher sendBuffer) {
+  public boolean trySend(final Dispatcher sendBuffer) {
     final int requiredLength = getLength();
 
     long claimedOffset;
@@ -82,7 +82,7 @@ public class ServerResponse implements BufferWriter {
         claimedFragment.commit();
 
         return true;
-      } catch (Throwable e) {
+      } catch (final Throwable e) {
         claimedFragment.abort();
       }
     }
@@ -97,7 +97,7 @@ public class ServerResponse implements BufferWriter {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     transportHeaderDescriptor.wrap(buffer, offset).putProtocolRequestReponse();
 
     offset += TransportHeaderDescriptor.headerLength();

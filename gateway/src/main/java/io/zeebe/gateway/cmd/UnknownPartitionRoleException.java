@@ -16,11 +16,12 @@ public class UnknownPartitionRoleException extends ClientException {
   private final int partitionId;
   private final PartitionState state;
 
-  public UnknownPartitionRoleException(int partitionId, PartitionState state) {
+  public UnknownPartitionRoleException(final int partitionId, final PartitionState state) {
     this(partitionId, state, null);
   }
 
-  public UnknownPartitionRoleException(int partitionId, PartitionState state, Throwable cause) {
+  public UnknownPartitionRoleException(
+      final int partitionId, final PartitionState state, final Throwable cause) {
     super(String.format(FORMAT, partitionId, state), cause);
     this.partitionId = partitionId;
     this.state = state;

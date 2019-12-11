@@ -103,7 +103,7 @@ public class BrokerInfoTest {
     assertThat(brokerInfo.getPartitionRoles()).isEmpty();
   }
 
-  private void encodeDecode(BrokerInfo brokerInfo) {
+  private void encodeDecode(final BrokerInfo brokerInfo) {
     // encode
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[brokerInfo.getLength()]);
     brokerInfo.write(buffer, 0);

@@ -266,10 +266,10 @@ public class DeployWorkflowTest extends ClientTest {
     rule.verifyRequestTimeout(requestTimeout);
   }
 
-  private byte[] getBytes(String filename) {
+  private byte[] getBytes(final String filename) {
     try {
       return StreamUtil.readInputStream(DeployWorkflowTest.class.getResourceAsStream(filename));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new AssertionError("Failed to read bytes of file: " + filename, e);
     }
   }

@@ -23,7 +23,7 @@ import org.junit.Test;
 
 public class EventScopeInstanceStateTest {
 
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private EventScopeInstanceState state;
 
@@ -274,7 +274,8 @@ public class EventScopeInstanceStateTest {
     Assertions.assertThat(state.getInstance(secondKey).isInterrupting(firstId)).isFalse();
   }
 
-  private boolean triggerEvent(long eventScopeKey, long eventKey, EventTrigger eventTrigger) {
+  private boolean triggerEvent(
+      final long eventScopeKey, final long eventKey, final EventTrigger eventTrigger) {
     return state.triggerEvent(
         eventScopeKey, eventKey, eventTrigger.getElementId(), eventTrigger.getVariables());
   }
@@ -283,7 +284,7 @@ public class EventScopeInstanceStateTest {
     return createEventTrigger(randomString(), randomString());
   }
 
-  private EventTrigger createEventTrigger(String elementId, String variables) {
+  private EventTrigger createEventTrigger(final String elementId, final String variables) {
     return new EventTrigger()
         .setElementId(wrapString(elementId))
         .setVariables(wrapString(variables));

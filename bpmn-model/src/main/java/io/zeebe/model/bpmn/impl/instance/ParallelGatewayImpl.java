@@ -35,11 +35,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ParallelGatewayImpl extends GatewayImpl implements ParallelGateway {
 
-  public ParallelGatewayImpl(ModelTypeInstanceContext context) {
+  public ParallelGatewayImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ParallelGateway.class, BPMN_ELEMENT_PARALLEL_GATEWAY)
@@ -48,7 +48,8 @@ public class ParallelGatewayImpl extends GatewayImpl implements ParallelGateway 
             .instanceProvider(
                 new ModelTypeInstanceProvider<ParallelGateway>() {
                   @Override
-                  public ParallelGateway newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ParallelGateway newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ParallelGatewayImpl(instanceContext);
                   }
                 });

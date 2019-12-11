@@ -18,15 +18,15 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class RecordingMessageHandler implements ServerMessageHandler, ClientMessageHandler {
-  protected List<ReceivedMessage> receivedMessages = new CopyOnWriteArrayList<>();
+  protected final List<ReceivedMessage> receivedMessages = new CopyOnWriteArrayList<>();
 
   @Override
   public boolean onMessage(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length) {
     recordMessage(remoteAddress, buffer, offset, length);
 
     return true;
@@ -34,18 +34,21 @@ public class RecordingMessageHandler implements ServerMessageHandler, ClientMess
 
   @Override
   public boolean onMessage(
-      ClientOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length) {
+      final ClientOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length) {
     recordMessage(remoteAddress, buffer, offset, length);
 
     return true;
   }
 
   private void recordMessage(
-      RemoteAddress remoteAddress, DirectBuffer buffer, int offset, int length) {
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length) {
     final ReceivedMessage msg = new ReceivedMessage();
     msg.remote = remoteAddress;
     msg.buffer = new UnsafeBuffer(new byte[length]);
@@ -54,7 +57,7 @@ public class RecordingMessageHandler implements ServerMessageHandler, ClientMess
     receivedMessages.add(msg);
   }
 
-  public ReceivedMessage getMessage(int index) {
+  public ReceivedMessage getMessage(final int index) {
     return receivedMessages.get(index);
   }
 

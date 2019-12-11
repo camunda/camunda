@@ -42,11 +42,11 @@ public class LaneSetImpl extends BaseElementImpl implements LaneSet {
   protected static Attribute<String> nameAttribute;
   protected static ChildElementCollection<Lane> laneCollection;
 
-  public LaneSetImpl(ModelTypeInstanceContext instanceContext) {
+  public LaneSetImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(LaneSet.class, BPMN_ELEMENT_LANE_SET)
@@ -55,7 +55,7 @@ public class LaneSetImpl extends BaseElementImpl implements LaneSet {
             .instanceProvider(
                 new ModelTypeInstanceProvider<LaneSet>() {
                   @Override
-                  public LaneSet newInstance(ModelTypeInstanceContext instanceContext) {
+                  public LaneSet newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new LaneSetImpl(instanceContext);
                   }
                 });
@@ -75,7 +75,7 @@ public class LaneSetImpl extends BaseElementImpl implements LaneSet {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 

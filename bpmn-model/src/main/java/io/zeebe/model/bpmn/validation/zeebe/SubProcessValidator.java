@@ -36,7 +36,8 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
   }
 
   @Override
-  public void validate(SubProcess element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final SubProcess element, final ValidationResultCollector validationResultCollector) {
     final Collection<StartEvent> startEvents = element.getChildElementsByType(StartEvent.class);
 
     if (startEvents.size() != 1) {
@@ -55,14 +56,14 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
   }
 
   private void validateEmbeddedSubprocess(
-      ValidationResultCollector validationResultCollector, StartEvent start) {
+      final ValidationResultCollector validationResultCollector, final StartEvent start) {
     if (!start.getEventDefinitions().isEmpty()) {
       validationResultCollector.addError(0, "Start events in subprocesses must be of type none");
     }
   }
 
   private void validateEventSubprocess(
-      ValidationResultCollector validationResultCollector, StartEvent start) {
+      final ValidationResultCollector validationResultCollector, final StartEvent start) {
     final Collection<EventDefinition> eventDefinitions = start.getEventDefinitions();
     if (eventDefinitions.isEmpty()) {
       validationResultCollector.addError(
@@ -84,7 +85,7 @@ public class SubProcessValidator implements ModelElementValidator<SubProcess> {
     }
   }
 
-  private boolean hasTimeCycle(StartEvent start) {
+  private boolean hasTimeCycle(final StartEvent start) {
     return start.getEventDefinitions().stream()
         .anyMatch(
             def ->

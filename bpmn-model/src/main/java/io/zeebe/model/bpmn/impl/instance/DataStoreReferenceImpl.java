@@ -40,11 +40,11 @@ public class DataStoreReferenceImpl extends FlowElementImpl implements DataStore
   protected static AttributeReference<DataStore> dataStoreRefAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
-  public DataStoreReferenceImpl(ModelTypeInstanceContext instanceContext) {
+  public DataStoreReferenceImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataStoreReference.class, BPMN_ELEMENT_DATA_STORE_REFERENCE)
@@ -53,7 +53,8 @@ public class DataStoreReferenceImpl extends FlowElementImpl implements DataStore
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<DataStoreReference>() {
                   @Override
-                  public DataStoreReference newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataStoreReference newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new DataStoreReferenceImpl(instanceContext);
                   }
                 });
@@ -83,7 +84,7 @@ public class DataStoreReferenceImpl extends FlowElementImpl implements DataStore
   }
 
   @Override
-  public void setItemSubject(ItemDefinition itemSubject) {
+  public void setItemSubject(final ItemDefinition itemSubject) {
     itemSubjectRefAttribute.setReferenceTargetElement(this, itemSubject);
   }
 
@@ -93,7 +94,7 @@ public class DataStoreReferenceImpl extends FlowElementImpl implements DataStore
   }
 
   @Override
-  public void setDataState(DataState dataState) {
+  public void setDataState(final DataState dataState) {
     dataStateChild.setChild(this, dataState);
   }
 
@@ -103,7 +104,7 @@ public class DataStoreReferenceImpl extends FlowElementImpl implements DataStore
   }
 
   @Override
-  public void setDataStore(DataStore dataStore) {
+  public void setDataStore(final DataStore dataStore) {
     dataStoreRefAttribute.setReferenceTargetElement(this, dataStore);
   }
 }

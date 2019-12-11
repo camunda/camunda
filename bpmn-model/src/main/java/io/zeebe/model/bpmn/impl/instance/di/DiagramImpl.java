@@ -42,11 +42,11 @@ public abstract class DiagramImpl extends BpmnModelElementInstanceImpl implement
   protected static Attribute<Double> resolutionAttribute;
   protected static Attribute<String> idAttribute;
 
-  public DiagramImpl(ModelTypeInstanceContext instanceContext) {
+  public DiagramImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Diagram.class, DI_ELEMENT_DIAGRAM)
@@ -70,7 +70,7 @@ public abstract class DiagramImpl extends BpmnModelElementInstanceImpl implement
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -80,7 +80,7 @@ public abstract class DiagramImpl extends BpmnModelElementInstanceImpl implement
   }
 
   @Override
-  public void setDocumentation(String documentation) {
+  public void setDocumentation(final String documentation) {
     documentationAttribute.setValue(this, documentation);
   }
 
@@ -90,7 +90,7 @@ public abstract class DiagramImpl extends BpmnModelElementInstanceImpl implement
   }
 
   @Override
-  public void setResolution(double resolution) {
+  public void setResolution(final double resolution) {
     resolutionAttribute.setValue(this, resolution);
   }
 
@@ -100,7 +100,7 @@ public abstract class DiagramImpl extends BpmnModelElementInstanceImpl implement
   }
 
   @Override
-  public void setId(String id) {
+  public void setId(final String id) {
     idAttribute.setValue(this, id);
   }
 }

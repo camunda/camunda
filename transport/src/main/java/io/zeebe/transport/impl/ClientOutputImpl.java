@@ -29,10 +29,10 @@ public class ClientOutputImpl implements ClientOutput {
   protected final long defaultMessageRetryTimeoutInMillis;
 
   public ClientOutputImpl(
-      EndpointRegistry endpointRegistry,
-      Sender requestManager,
-      Duration defaultRequestRetryTimeout,
-      Duration defaultMessageRetryTimeout) {
+      final EndpointRegistry endpointRegistry,
+      final Sender requestManager,
+      final Duration defaultRequestRetryTimeout,
+      final Duration defaultMessageRetryTimeout) {
     this.endpointRegistry = endpointRegistry;
     this.requestManager = requestManager;
     this.defaultRequestRetryTimeout = defaultRequestRetryTimeout;
@@ -40,22 +40,22 @@ public class ClientOutputImpl implements ClientOutput {
   }
 
   @Override
-  public ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer) {
+  public ActorFuture<ClientResponse> sendRequest(final Integer nodeId, final BufferWriter writer) {
     return sendRequest(nodeId, writer, defaultRequestRetryTimeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequest(
-      Integer nodeId, BufferWriter writer, Duration timeout) {
+      final Integer nodeId, final BufferWriter writer, final Duration timeout) {
     return sendRequestWithRetry(() -> nodeId, (b) -> false, writer, timeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequestWithRetry(
-      Supplier<Integer> nodeIdSupplier,
-      Predicate<DirectBuffer> responseInspector,
-      BufferWriter writer,
-      Duration timeout) {
+      final Supplier<Integer> nodeIdSupplier,
+      final Predicate<DirectBuffer> responseInspector,
+      final BufferWriter writer,
+      final Duration timeout) {
     final int messageLength = writer.getLength();
     final int framedLength = TransportHeaderWriter.getFramedRequestLength(messageLength);
 
@@ -74,7 +74,7 @@ public class ClientOutputImpl implements ClientOutput {
         request.getHeaderWriter().wrapRequest(bufferView, writer);
 
         return requestManager.submitRequest(request);
-      } catch (RuntimeException e) {
+      } catch (final RuntimeException e) {
         requestManager.reclaimRequestBuffer(allocatedBuffer);
         throw e;
       }

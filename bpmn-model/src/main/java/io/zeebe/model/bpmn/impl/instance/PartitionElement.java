@@ -32,11 +32,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class PartitionElement extends BaseElementImpl {
 
-  public PartitionElement(ModelTypeInstanceContext instanceContext) {
+  public PartitionElement(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(PartitionElement.class, BPMN_ELEMENT_PARTITION_ELEMENT)
@@ -45,7 +45,8 @@ public class PartitionElement extends BaseElementImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<PartitionElement>() {
                   @Override
-                  public PartitionElement newInstance(ModelTypeInstanceContext instanceContext) {
+                  public PartitionElement newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new PartitionElement(instanceContext);
                   }
                 });

@@ -22,7 +22,7 @@ import io.zeebe.model.bpmn.instance.UserTask;
 /** @author Sebastian Menski */
 public class UserTaskBuilder extends AbstractUserTaskBuilder<UserTaskBuilder> {
 
-  public UserTaskBuilder(BpmnModelInstance modelInstance, UserTask element) {
+  public UserTaskBuilder(final BpmnModelInstance modelInstance, final UserTask element) {
     super(modelInstance, element, UserTaskBuilder.class);
   }
 }

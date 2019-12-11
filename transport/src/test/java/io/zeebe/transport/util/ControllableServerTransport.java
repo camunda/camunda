@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ControllableServerTransport implements AutoCloseable {
-  protected Map<SocketAddress, ServerSocketChannel> serverChannels = new HashMap<>();
-  protected Map<SocketAddress, List<TransportChannel>> clientChannels = new HashMap<>();
-  protected RemoteAddressListImpl remoteList = new RemoteAddressListImpl();
+  protected final Map<SocketAddress, ServerSocketChannel> serverChannels = new HashMap<>();
+  protected final Map<SocketAddress, List<TransportChannel>> clientChannels = new HashMap<>();
+  protected final RemoteAddressListImpl remoteList = new RemoteAddressListImpl();
 
   public ControllableServerTransport() {
     remoteList.setOnAddressAddedConsumer(
@@ -34,18 +34,18 @@ public class ControllableServerTransport implements AutoCloseable {
         });
   }
 
-  public void listenOn(SocketAddress localAddress) {
+  public void listenOn(final SocketAddress localAddress) {
     ServerSocketChannel socketChannel = null;
     try {
       socketChannel = ServerSocketChannel.open();
       socketChannel.bind(localAddress.toInetSocketAddress());
       socketChannel.configureBlocking(true);
       serverChannels.put(localAddress, socketChannel);
-    } catch (IOException e1) {
+    } catch (final IOException e1) {
       if (socketChannel != null) {
         try {
           socketChannel.close();
-        } catch (IOException e2) {
+        } catch (final IOException e2) {
           throw new RuntimeException(e2);
         }
       }
@@ -53,17 +53,18 @@ public class ControllableServerTransport implements AutoCloseable {
     }
   }
 
-  public AtomicInteger acceptNextConnection(SocketAddress localAddress) {
+  public AtomicInteger acceptNextConnection(final SocketAddress localAddress) {
     final AtomicInteger messageCounter = new AtomicInteger(0);
     acceptNextConnection(localAddress, messageCounter);
     return messageCounter;
   }
 
-  public List<TransportChannel> getClientChannels(SocketAddress localAddress) {
+  public List<TransportChannel> getClientChannels(final SocketAddress localAddress) {
     return clientChannels.get(localAddress);
   }
 
-  public void acceptNextConnection(SocketAddress localAddress, AtomicInteger messageCounter) {
+  public void acceptNextConnection(
+      final SocketAddress localAddress, final AtomicInteger messageCounter) {
     try {
       final SocketChannel clientChannel = serverChannels.get(localAddress).accept();
       clientChannel.configureBlocking(false);
@@ -84,12 +85,12 @@ public class ControllableServerTransport implements AutoCloseable {
 
       clientChannels.computeIfAbsent(localAddress, a -> new ArrayList<>());
       clientChannels.get(localAddress).add(c);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  public int receive(SocketAddress localAddress) {
+  public int receive(final SocketAddress localAddress) {
     return clientChannels.get(localAddress).stream().mapToInt(c -> c.receive()).sum();
   }
 
@@ -97,10 +98,10 @@ public class ControllableServerTransport implements AutoCloseable {
   public void close() {
     clientChannels.forEach((a, channels) -> channels.forEach(c -> c.close()));
 
-    for (ServerSocketChannel channel : serverChannels.values()) {
+    for (final ServerSocketChannel channel : serverChannels.values()) {
       try {
         channel.close();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         e.printStackTrace();
       }
     }

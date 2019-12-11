@@ -21,7 +21,7 @@ public class DeployWorkflowStub
   private static final int WORKFLOW_VERSION = 789;
 
   @Override
-  public void registerWith(StubbedBrokerClient gateway) {
+  public void registerWith(final StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerDeployWorkflowRequest.class, this);
   }
 
@@ -38,7 +38,7 @@ public class DeployWorkflowStub
   }
 
   @Override
-  public BrokerResponse<DeploymentRecord> handle(BrokerDeployWorkflowRequest request)
+  public BrokerResponse<DeploymentRecord> handle(final BrokerDeployWorkflowRequest request)
       throws Exception {
     final DeploymentRecord deploymentRecord = request.getRequestWriter();
     deploymentRecord

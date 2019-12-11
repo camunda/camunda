@@ -33,7 +33,7 @@ public class BrokerHealthCheckService extends Actor implements PartitionListener
   changed. */
   private volatile boolean brokerStarted = false;
 
-  public BrokerHealthCheckService(BrokerInfo localMember, Atomix atomix) {
+  public BrokerHealthCheckService(final BrokerInfo localMember, final Atomix atomix) {
     this.localMember = localMember;
     this.atomix = atomix;
     initializePartitionInstallStatus();
@@ -44,16 +44,17 @@ public class BrokerHealthCheckService extends Actor implements PartitionListener
   }
 
   @Override
-  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
     updateBrokerReadyStatus(partitionId);
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     updateBrokerReadyStatus(partitionId);
   }
 
-  private void updateBrokerReadyStatus(int partitionId) {
+  private void updateBrokerReadyStatus(final int partitionId) {
     actor.call(
         () -> {
           if (!brokerStarted) {

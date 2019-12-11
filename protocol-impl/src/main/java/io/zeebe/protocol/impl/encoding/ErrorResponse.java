@@ -43,7 +43,7 @@ public class ErrorResponse implements BufferWriter, BufferReader {
     return errorCode;
   }
 
-  public ErrorResponse setErrorCode(ErrorCode errorCode) {
+  public ErrorResponse setErrorCode(final ErrorCode errorCode) {
     this.errorCode = errorCode;
     return this;
   }
@@ -52,16 +52,16 @@ public class ErrorResponse implements BufferWriter, BufferReader {
     return errorData;
   }
 
-  public ErrorResponse setErrorData(DirectBuffer errorData) {
+  public ErrorResponse setErrorData(final DirectBuffer errorData) {
     this.errorData.wrap(errorData, 0, errorData.capacity());
     return this;
   }
 
-  public boolean tryWrap(DirectBuffer buffer) {
+  public boolean tryWrap(final DirectBuffer buffer) {
     return tryWrap(buffer, 0, buffer.capacity());
   }
 
-  public boolean tryWrap(DirectBuffer buffer, int offset, int length) {
+  public boolean tryWrap(final DirectBuffer buffer, final int offset, final int length) {
     headerDecoder.wrap(buffer, offset);
 
     return headerDecoder.schemaId() == bodyDecoder.sbeSchemaId()
@@ -69,7 +69,7 @@ public class ErrorResponse implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
 
     final int frameEnd = offset + length;
@@ -109,7 +109,7 @@ public class ErrorResponse implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder
         .wrap(buffer, offset)
         .blockLength(bodyEncoder.sbeBlockLength())

@@ -118,23 +118,23 @@ public class CompactListDescriptor {
     return HEADER_LENGTH;
   }
 
-  public static int requiredBufferCapacity(int framedLength, int capacity) {
+  public static int requiredBufferCapacity(final int framedLength, final int capacity) {
     return HEADER_LENGTH + (framedLength * capacity);
   }
 
-  public static int elementOffset(int framedLength, int idx) {
+  public static int elementOffset(final int framedLength, final int idx) {
     return HEADER_LENGTH + (framedLength * idx);
   }
 
-  public static int elementLengthOffset(int offset) {
+  public static int elementLengthOffset(final int offset) {
     return ELEMENT_LENGTH_OFFSET + offset;
   }
 
-  public static int elementDataOffset(int offset) {
+  public static int elementDataOffset(final int offset) {
     return ELEMENT_HEADER_LENGTH + offset;
   }
 
-  public static int framedLength(int length) {
+  public static int framedLength(final int length) {
     return ELEMENT_HEADER_LENGTH + length;
   }
 }

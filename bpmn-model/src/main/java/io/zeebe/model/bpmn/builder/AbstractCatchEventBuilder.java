@@ -39,7 +39,7 @@ public abstract class AbstractCatchEventBuilder<
     extends AbstractEventBuilder<B, E> implements ZeebeVariablesMappingBuilder<B> {
 
   protected AbstractCatchEventBuilder(
-      BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -60,14 +60,14 @@ public abstract class AbstractCatchEventBuilder<
    * @param messageName the name of the message
    * @return the builder object
    */
-  public B message(String messageName) {
+  public B message(final String messageName) {
     final MessageEventDefinition messageEventDefinition = createMessageEventDefinition(messageName);
     element.getEventDefinitions().add(messageEventDefinition);
 
     return myself;
   }
 
-  public B message(Consumer<MessageBuilder> messageBuilderConsumer) {
+  public B message(final Consumer<MessageBuilder> messageBuilderConsumer) {
     final MessageEventDefinition messageEventDefinition =
         createInstance(MessageEventDefinition.class);
     element.getEventDefinitions().add(messageEventDefinition);
@@ -95,7 +95,7 @@ public abstract class AbstractCatchEventBuilder<
    * @param signalName the name of the signal
    * @return the builder object
    */
-  public B signal(String signalName) {
+  public B signal(final String signalName) {
     final SignalEventDefinition signalEventDefinition = createSignalEventDefinition(signalName);
     element.getEventDefinitions().add(signalEventDefinition);
 
@@ -108,7 +108,7 @@ public abstract class AbstractCatchEventBuilder<
    * @param timerDate the time date of the timer
    * @return the builder object
    */
-  public B timerWithDate(String timerDate) {
+  public B timerWithDate(final String timerDate) {
     final TimeDate timeDate = createInstance(TimeDate.class);
     timeDate.setTextContent(timerDate);
 
@@ -126,7 +126,7 @@ public abstract class AbstractCatchEventBuilder<
    * @param timerDuration the time duration of the timer
    * @return the builder object
    */
-  public B timerWithDuration(String timerDuration) {
+  public B timerWithDuration(final String timerDuration) {
     final TimeDuration timeDuration = createInstance(TimeDuration.class);
     timeDuration.setTextContent(timerDuration);
 
@@ -144,7 +144,7 @@ public abstract class AbstractCatchEventBuilder<
    * @param timerCycle the time cycle of the timer
    * @return the builder object
    */
-  public B timerWithCycle(String timerCycle) {
+  public B timerWithCycle(final String timerCycle) {
     final TimeCycle timeCycle = createInstance(TimeCycle.class);
     timeCycle.setTextContent(timerCycle);
 
@@ -160,7 +160,7 @@ public abstract class AbstractCatchEventBuilder<
     return compensateEventDefinition(null);
   }
 
-  public CompensateEventDefinitionBuilder compensateEventDefinition(String id) {
+  public CompensateEventDefinitionBuilder compensateEventDefinition(final String id) {
     final CompensateEventDefinition eventDefinition =
         createInstance(CompensateEventDefinition.class);
     if (id != null) {
@@ -175,7 +175,7 @@ public abstract class AbstractCatchEventBuilder<
     return conditionalEventDefinition(null);
   }
 
-  public ConditionalEventDefinitionBuilder conditionalEventDefinition(String id) {
+  public ConditionalEventDefinitionBuilder conditionalEventDefinition(final String id) {
     final ConditionalEventDefinition eventDefinition =
         createInstance(ConditionalEventDefinition.class);
     if (id != null) {
@@ -187,13 +187,13 @@ public abstract class AbstractCatchEventBuilder<
   }
 
   @Override
-  public B condition(String condition) {
+  public B condition(final String condition) {
     conditionalEventDefinition().condition(condition);
     return myself;
   }
 
   @Override
-  public B zeebeInput(String source, String target) {
+  public B zeebeInput(final String source, final String target) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
     input.setSource(source);
@@ -203,7 +203,7 @@ public abstract class AbstractCatchEventBuilder<
   }
 
   @Override
-  public B zeebeOutput(String source, String target) {
+  public B zeebeOutput(final String source, final String target) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
     input.setSource(source);

@@ -19,7 +19,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class FileUtilTest {
 
-  @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
+  @Rule public final TemporaryFolder tempFolder = new TemporaryFolder();
 
   @Test
   public void shouldDeleteFolder() throws IOException {

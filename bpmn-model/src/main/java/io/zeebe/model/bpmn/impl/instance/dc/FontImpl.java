@@ -47,11 +47,11 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
   protected static Attribute<Boolean> isUnderlineAttribute;
   protected static Attribute<Boolean> isStrikeTroughAttribute;
 
-  public FontImpl(ModelTypeInstanceContext instanceContext) {
+  public FontImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Font.class, DC_ELEMENT_FONT)
@@ -59,7 +59,7 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Font>() {
                   @Override
-                  public Font newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Font newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new FontImpl(instanceContext);
                   }
                 });
@@ -85,7 +85,7 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -95,7 +95,7 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
   }
 
   @Override
-  public void setSize(Double size) {
+  public void setSize(final Double size) {
     sizeAttribute.setValue(this, size);
   }
 
@@ -105,7 +105,7 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
   }
 
   @Override
-  public void setBold(boolean isBold) {
+  public void setBold(final boolean isBold) {
     isBoldAttribute.setValue(this, isBold);
   }
 
@@ -115,7 +115,7 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
   }
 
   @Override
-  public void setItalic(boolean isItalic) {
+  public void setItalic(final boolean isItalic) {
     isItalicAttribute.setValue(this, isItalic);
   }
 
@@ -125,7 +125,7 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
   }
 
   @Override
-  public void setUnderline(boolean isUnderline) {
+  public void setUnderline(final boolean isUnderline) {
     isUnderlineAttribute.setValue(this, isUnderline);
   }
 
@@ -135,7 +135,7 @@ public class FontImpl extends BpmnModelElementInstanceImpl implements Font {
   }
 
   @Override
-  public void setStrikeTrough(boolean isStrikeTrough) {
+  public void setStrikeTrough(final boolean isStrikeTrough) {
     isStrikeTroughAttribute.setValue(this, isStrikeTrough);
   }
 }

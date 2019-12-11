@@ -26,12 +26,12 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
   public MockRecordMetadata() {}
 
   public MockRecordMetadata(
-      Intent intent,
-      int partitionId,
-      RecordType recordType,
-      RejectionType rejectionType,
-      String rejectionReason,
-      ValueType valueType) {
+      final Intent intent,
+      final int partitionId,
+      final RecordType recordType,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final ValueType valueType) {
     this.intent = intent;
     this.partitionId = partitionId;
     this.recordType = recordType;
@@ -44,7 +44,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
     return intent;
   }
 
-  public MockRecordMetadata setIntent(Intent intent) {
+  public MockRecordMetadata setIntent(final Intent intent) {
     this.intent = intent;
     return this;
   }
@@ -53,7 +53,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
     return partitionId;
   }
 
-  public MockRecordMetadata setPartitionId(int partitionId) {
+  public MockRecordMetadata setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
@@ -62,7 +62,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
     return recordType;
   }
 
-  public MockRecordMetadata setRecordType(RecordType recordType) {
+  public MockRecordMetadata setRecordType(final RecordType recordType) {
     this.recordType = recordType;
     return this;
   }
@@ -71,7 +71,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
     return rejectionType;
   }
 
-  public MockRecordMetadata setRejectionType(RejectionType rejectionType) {
+  public MockRecordMetadata setRejectionType(final RejectionType rejectionType) {
     this.rejectionType = rejectionType;
     return this;
   }
@@ -80,7 +80,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
     return rejectionReason;
   }
 
-  public MockRecordMetadata setRejectionReason(String rejectionReason) {
+  public MockRecordMetadata setRejectionReason(final String rejectionReason) {
     this.rejectionReason = rejectionReason;
     return this;
   }
@@ -89,7 +89,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
     return valueType;
   }
 
-  public MockRecordMetadata setValueType(ValueType valueType) {
+  public MockRecordMetadata setValueType(final ValueType valueType) {
     this.valueType = valueType;
     return this;
   }
@@ -106,7 +106,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -127,7 +127,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
   public Object clone() {
     try {
       return super.clone();
-    } catch (CloneNotSupportedException e) {
+    } catch (final CloneNotSupportedException e) {
       throw new RuntimeException(e);
     }
   }

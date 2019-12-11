@@ -24,15 +24,17 @@ public class NextValueManager {
   private final DbLong nextValue;
 
   public NextValueManager(
-      ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext, ZbColumnFamilies columnFamily) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final DbContext dbContext,
+      final ZbColumnFamilies columnFamily) {
     this(INITIAL_VALUE, zeebeDb, dbContext, columnFamily);
   }
 
   public NextValueManager(
-      long initialValue,
-      ZeebeDb<ZbColumnFamilies> zeebeDb,
-      DbContext dbContext,
-      ZbColumnFamilies columnFamily) {
+      final long initialValue,
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final DbContext dbContext,
+      final ZbColumnFamilies columnFamily) {
     this.initialValue = initialValue;
 
     nextValueKey = new DbString();
@@ -41,7 +43,7 @@ public class NextValueManager {
         zeebeDb.createColumnFamily(columnFamily, dbContext, nextValueKey, nextValue);
   }
 
-  public long getNextValue(String key) {
+  public long getNextValue(final String key) {
     nextValueKey.wrapString(key);
 
     final DbLong zbLong = nextValueColumnFamily.get(nextValueKey);

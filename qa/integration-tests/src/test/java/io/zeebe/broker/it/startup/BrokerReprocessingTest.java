@@ -105,8 +105,8 @@ public class BrokerReprocessingTest {
   @Parameter(1)
   public String name;
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+  public final EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public final GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
   @Rule public ExpectedException exception = ExpectedException.none();
   @Rule public Timeout timeout = new Timeout(120, TimeUnit.SECONDS);
@@ -723,7 +723,7 @@ public class BrokerReprocessingTest {
           try {
             clientRule.getClient().newTopologyRequest().send().join();
             return true;
-          } catch (Exception e) {
+          } catch (final Exception e) {
             return false;
           }
         });

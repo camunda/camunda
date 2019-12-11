@@ -52,7 +52,7 @@ public class DebugHttpServer {
   private final LinkedList<String> records;
   private HttpServer server;
 
-  public DebugHttpServer(int port, int maxSize) {
+  public DebugHttpServer(final int port, final int maxSize) {
     this.maxSize = maxSize;
     server = startHttpServer(port);
     resources = loadResources();
@@ -66,13 +66,13 @@ public class DebugHttpServer {
     }
   }
 
-  private HttpServer startHttpServer(int port) {
+  private HttpServer startHttpServer(final int port) {
     try {
       final HttpServer httpServer = HttpServer.create(new InetSocketAddress(port), 0);
       httpServer.createContext("/", new RequestHandler());
       httpServer.start();
       return server;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException("Failed to start debug exporter http server", e);
     }
   }
@@ -84,21 +84,22 @@ public class DebugHttpServer {
         .collect(Collectors.toConcurrentMap(Tuple::getLeft, Tuple::getRight));
   }
 
-  private byte[] loadResource(String resourceName) {
-    try (InputStream resourceAsStream = DebugHttpServer.class.getResourceAsStream(resourceName)) {
+  private byte[] loadResource(final String resourceName) {
+    try (final InputStream resourceAsStream =
+        DebugHttpServer.class.getResourceAsStream(resourceName)) {
       if (resourceAsStream != null) {
         return StreamUtil.read(resourceAsStream);
       } else {
         throw new RuntimeException(
             "Failed to find resource " + resourceName + " for debug http exporter");
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(
           "Failed to read resource " + resourceName + " for debug http exporter", e);
     }
   }
 
-  public synchronized void add(Record record) throws JsonProcessingException {
+  public synchronized void add(final Record record) throws JsonProcessingException {
     while (records.size() >= maxSize) {
       records.removeLast();
     }
@@ -109,7 +110,7 @@ public class DebugHttpServer {
   class RequestHandler implements HttpHandler {
 
     @Override
-    public void handle(HttpExchange httpExchange) throws IOException {
+    public void handle(final HttpExchange httpExchange) throws IOException {
       String path = httpExchange.getRequestURI().getPath().substring(1);
       if (path.isEmpty()) {
         path = "index.html";
@@ -130,7 +131,7 @@ public class DebugHttpServer {
 
       if (response.length > 0) {
         httpExchange.sendResponseHeaders(200, response.length);
-        try (OutputStream outputStream = httpExchange.getResponseBody()) {
+        try (final OutputStream outputStream = httpExchange.getResponseBody()) {
           outputStream.write(response);
         }
       } else {

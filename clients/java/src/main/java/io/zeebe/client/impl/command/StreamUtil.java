@@ -25,7 +25,7 @@ public class StreamUtil {
     final byte[] byteBuffer = new byte[4 * 1024];
     int readBytes;
 
-    try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+    try (final ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
       while ((readBytes = input.read(byteBuffer, 0, byteBuffer.length)) != -1) {
         buffer.write(byteBuffer, 0, readBytes);
       }

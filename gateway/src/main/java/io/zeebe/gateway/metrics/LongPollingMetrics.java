@@ -18,7 +18,7 @@ public class LongPollingMetrics {
           .labelNames("type")
           .register();
 
-  public void setBlockedRequestsCount(String type, int count) {
+  public void setBlockedRequestsCount(final String type, final int count) {
     REQUESTS_QUEUED_CURRENT.labels(type).set(count);
   }
 }

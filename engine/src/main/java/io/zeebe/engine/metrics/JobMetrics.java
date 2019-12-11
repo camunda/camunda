@@ -30,41 +30,41 @@ public class JobMetrics {
 
   private final String partitionIdLabel;
 
-  public JobMetrics(int partitionId) {
+  public JobMetrics(final int partitionId) {
     this.partitionIdLabel = String.valueOf(partitionId);
   }
 
-  private void jobEvent(String action, String type) {
+  private void jobEvent(final String action, final String type) {
     JOB_EVENTS.labels(action, partitionIdLabel, type).inc();
   }
 
-  public void jobCreated(String type) {
+  public void jobCreated(final String type) {
     jobEvent("created", type);
     PENDING_JOBS.labels(partitionIdLabel, type).inc();
   }
 
-  private void jobFinished(String type) {
+  private void jobFinished(final String type) {
     PENDING_JOBS.labels(partitionIdLabel, type).dec();
   }
 
-  public void jobActivated(String type) {
+  public void jobActivated(final String type) {
     jobEvent("activated", type);
   }
 
-  public void jobTimedOut(String type) {
+  public void jobTimedOut(final String type) {
     jobEvent("timed out", type);
   }
 
-  public void jobCompleted(String type) {
+  public void jobCompleted(final String type) {
     jobEvent("completed", type);
     jobFinished(type);
   }
 
-  public void jobFailed(String type) {
+  public void jobFailed(final String type) {
     jobEvent("failed", type);
   }
 
-  public void jobCanceled(String type) {
+  public void jobCanceled(final String type) {
     jobEvent("canceled", type);
     jobFinished(type);
   }

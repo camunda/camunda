@@ -60,9 +60,9 @@ import org.junit.rules.TemporaryFolder;
 public class ConfigurationTest {
 
   public static final String BROKER_BASE = "test";
-  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  public Map<String, String> environment = new HashMap<>();
+  public final Map<String, String> environment = new HashMap<>();
 
   @Test
   public void shouldUseSpecifiedClusterName() {

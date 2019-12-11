@@ -47,10 +47,10 @@ public class ActivateJobsCommandImpl
   private Duration requestTimeout;
 
   public ActivateJobsCommandImpl(
-      GatewayStub asyncStub,
-      ZeebeClientConfiguration config,
-      ZeebeObjectMapper objectMapper,
-      Predicate<Throwable> retryPredicate) {
+      final GatewayStub asyncStub,
+      final ZeebeClientConfiguration config,
+      final ZeebeObjectMapper objectMapper,
+      final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
     this.objectMapper = objectMapper;
     this.retryPredicate = retryPredicate;
@@ -61,47 +61,47 @@ public class ActivateJobsCommandImpl
   }
 
   @Override
-  public ActivateJobsCommandStep2 jobType(String jobType) {
+  public ActivateJobsCommandStep2 jobType(final String jobType) {
     builder.setType(jobType);
     return this;
   }
 
   @Override
-  public ActivateJobsCommandStep3 maxJobsToActivate(int maxJobsToActivate) {
+  public ActivateJobsCommandStep3 maxJobsToActivate(final int maxJobsToActivate) {
     builder.setMaxJobsToActivate(maxJobsToActivate);
     return this;
   }
 
   @Override
-  public ActivateJobsCommandStep3 timeout(long timeout) {
+  public ActivateJobsCommandStep3 timeout(final long timeout) {
     builder.setTimeout(timeout);
     return this;
   }
 
   @Override
-  public ActivateJobsCommandStep3 timeout(Duration timeout) {
+  public ActivateJobsCommandStep3 timeout(final Duration timeout) {
     return timeout(timeout.toMillis());
   }
 
   @Override
-  public ActivateJobsCommandStep3 workerName(String workerName) {
+  public ActivateJobsCommandStep3 workerName(final String workerName) {
     builder.setWorker(workerName);
     return this;
   }
 
   @Override
-  public ActivateJobsCommandStep3 fetchVariables(List<String> fetchVariables) {
+  public ActivateJobsCommandStep3 fetchVariables(final List<String> fetchVariables) {
     builder.addAllFetchVariable(fetchVariables);
     return this;
   }
 
   @Override
-  public ActivateJobsCommandStep3 fetchVariables(String... fetchVariables) {
+  public ActivateJobsCommandStep3 fetchVariables(final String... fetchVariables) {
     return fetchVariables(Arrays.asList(fetchVariables));
   }
 
   @Override
-  public FinalCommandStep<ActivateJobsResponse> requestTimeout(Duration requestTimeout) {
+  public FinalCommandStep<ActivateJobsResponse> requestTimeout(final Duration requestTimeout) {
     builder.setRequestTimeout(requestTimeout.toMillis());
     this.requestTimeout = requestTimeout;
     return this;
@@ -125,7 +125,8 @@ public class ActivateJobsCommandImpl
   }
 
   private void send(
-      ActivateJobsRequest request, StreamObserver<GatewayOuterClass.ActivateJobsResponse> future) {
+      final ActivateJobsRequest request,
+      final StreamObserver<GatewayOuterClass.ActivateJobsResponse> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.plus(DEADLINE_OFFSET).toMillis(), TimeUnit.MILLISECONDS)
         .activateJobs(request, future);

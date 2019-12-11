@@ -32,7 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class JobStateTest {
-  @Rule public ZeebeStateRule stateRule = new ZeebeStateRule();
+  @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private JobState jobState;
   private ZeebeState zeebeState;
@@ -112,7 +112,7 @@ public class JobStateTest {
             jobState::fail);
 
     // when job state is updated then the variables is not persisted
-    for (BiConsumer<Long, JobRecord> stateUpdate : stateUpdates) {
+    for (final BiConsumer<Long, JobRecord> stateUpdate : stateUpdates) {
       jobRecord.setVariables(MsgPackUtil.asMsgPack("foo", "bar"));
       stateUpdate.accept(key, jobRecord);
       final DirectBuffer variables = jobState.getJob(key).getVariablesBuffer();

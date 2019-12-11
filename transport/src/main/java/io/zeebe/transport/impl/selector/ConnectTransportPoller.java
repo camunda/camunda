@@ -24,7 +24,7 @@ public class ConnectTransportPoller extends TransportPoller {
     if (selector.isOpen()) {
       try {
         selector.select();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         selectedKeySet.reset();
         throw new RuntimeException(e);
       }
@@ -35,11 +35,11 @@ public class ConnectTransportPoller extends TransportPoller {
     selectedKeySet.forEach(processKeyFn);
 
     if (selector.isOpen()) {
-      for (TransportChannel channel : channelsToAdd) {
+      for (final TransportChannel channel : channelsToAdd) {
         channel.registerSelector(selector, SelectionKey.OP_CONNECT);
       }
 
-      for (TransportChannel channel : channelsToRemove) {
+      for (final TransportChannel channel : channelsToRemove) {
         channel.removeSelector(selector);
       }
     }
@@ -47,7 +47,7 @@ public class ConnectTransportPoller extends TransportPoller {
     channelsToRemove.clear();
   }
 
-  protected int processKey(SelectionKey key) {
+  protected int processKey(final SelectionKey key) {
     if (key != null && key.isValid()) {
       final TransportChannel channel = (TransportChannel) key.attachment();
       removeChannel(channel);
@@ -58,12 +58,12 @@ public class ConnectTransportPoller extends TransportPoller {
     return 0;
   }
 
-  public void addChannel(TransportChannel channel) {
+  public void addChannel(final TransportChannel channel) {
     channelsToAdd.add(channel);
     selector.wakeup();
   }
 
-  public void removeChannel(TransportChannel channel) {
+  public void removeChannel(final TransportChannel channel) {
     channelsToRemove.add(channel);
     selector.wakeup();
   }

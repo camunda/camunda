@@ -48,11 +48,11 @@ public abstract class FlowElementImpl extends BaseElementImpl implements FlowEle
   protected static ElementReferenceCollection<CategoryValue, CategoryValueRef>
       categoryValueRefCollection;
 
-  public FlowElementImpl(ModelTypeInstanceContext context) {
+  public FlowElementImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
 
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -84,7 +84,7 @@ public abstract class FlowElementImpl extends BaseElementImpl implements FlowEle
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 
@@ -94,7 +94,7 @@ public abstract class FlowElementImpl extends BaseElementImpl implements FlowEle
   }
 
   @Override
-  public void setAuditing(Auditing auditing) {
+  public void setAuditing(final Auditing auditing) {
     auditingChild.setChild(this, auditing);
   }
 
@@ -104,7 +104,7 @@ public abstract class FlowElementImpl extends BaseElementImpl implements FlowEle
   }
 
   @Override
-  public void setMonitoring(Monitoring monitoring) {
+  public void setMonitoring(final Monitoring monitoring) {
     monitoringChild.setChild(this, monitoring);
   }
 

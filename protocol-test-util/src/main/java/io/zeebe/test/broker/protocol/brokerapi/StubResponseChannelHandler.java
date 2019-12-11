@@ -31,13 +31,13 @@ public class StubResponseChannelHandler implements ServerRequestHandler {
   protected final List<Object> allRequests = new CopyOnWriteArrayList<>();
   protected final List<ExecuteCommandRequest> commandRequests = new CopyOnWriteArrayList<>();
 
-  protected ServerResponse response = new ServerResponse();
+  protected final ServerResponse response = new ServerResponse();
 
-  public StubResponseChannelHandler(MsgPackHelper msgPackHelper) {
+  public StubResponseChannelHandler(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
   }
 
-  public void addExecuteCommandRequestStub(ResponseStub<ExecuteCommandRequest> stub) {
+  public void addExecuteCommandRequestStub(final ResponseStub<ExecuteCommandRequest> stub) {
     cmdRequestStubs.add(0, stub); // add to front such that more recent stubs override older ones
   }
 
@@ -51,12 +51,12 @@ public class StubResponseChannelHandler implements ServerRequestHandler {
 
   @Override
   public boolean onRequest(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length,
-      long requestId) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final long requestId) {
     final MutableDirectBuffer copy = new UnsafeBuffer(new byte[length]);
     copy.putBytes(0, buffer, offset, length);
 
@@ -84,12 +84,12 @@ public class StubResponseChannelHandler implements ServerRequestHandler {
   }
 
   protected <T> boolean handleRequest(
-      ServerOutput output,
-      T request,
-      List<? extends ResponseStub<T>> responseStubs,
-      RemoteAddress requestSource,
-      long requestId) {
-    for (ResponseStub<T> stub : responseStubs) {
+      final ServerOutput output,
+      final T request,
+      final List<? extends ResponseStub<T>> responseStubs,
+      final RemoteAddress requestSource,
+      final long requestId) {
+    for (final ResponseStub<T> stub : responseStubs) {
       if (stub.applies(request)) {
         if (stub.shouldRespond()) {
           final MessageBuilder<T> responseWriter = stub.getResponseWriter();

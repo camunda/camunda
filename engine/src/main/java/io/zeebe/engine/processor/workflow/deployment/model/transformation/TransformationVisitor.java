@@ -23,17 +23,18 @@ public class TransformationVisitor extends TypeHierarchyVisitor {
     return context;
   }
 
-  public void setContext(TransformContext context) {
+  public void setContext(final TransformContext context) {
     this.context = context;
   }
 
-  public void registerHandler(ModelElementTransformer<?> transformHandler) {
+  public void registerHandler(final ModelElementTransformer<?> transformHandler) {
     transformHandlers.put(transformHandler.getType(), transformHandler);
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
   @Override
-  protected void visit(ModelElementType implementedType, BpmnModelElementInstance instance) {
+  protected void visit(
+      final ModelElementType implementedType, final BpmnModelElementInstance instance) {
     final ModelElementTransformer handler =
         transformHandlers.get(implementedType.getInstanceType());
 

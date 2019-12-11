@@ -76,7 +76,8 @@ public final class MsgPackDocumentExtractor {
   private final MsgPackTraverser traverser = new MsgPackTraverser();
   private final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
 
-  public MsgPackDiff extract(DirectBuffer document, boolean strictMode, Mapping... mappings) {
+  public MsgPackDiff extract(
+      final DirectBuffer document, final boolean strictMode, final Mapping... mappings) {
     diff.init(mappings, document);
     traverser.wrap(document, 0, document.capacity());
 
@@ -112,7 +113,7 @@ public final class MsgPackDocumentExtractor {
    *
    * @param jsonPathQuery the query which should be executed
    */
-  private void executeLeafMapping(JsonPathQuery jsonPathQuery, boolean strictMode) {
+  private void executeLeafMapping(final JsonPathQuery jsonPathQuery, final boolean strictMode) {
     queryExecutor.init(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
 
     traverser.reset();

@@ -15,7 +15,7 @@ public class MsgPackFilterContext extends AbstractDynamicContext {
 
   protected static final int STATIC_ELEMENT_SIZE = BitUtil.SIZE_OF_INT;
 
-  public MsgPackFilterContext(int capacity, int dynamicContextSize) {
+  public MsgPackFilterContext(final int capacity, final int dynamicContextSize) {
     super(capacity, STATIC_ELEMENT_SIZE, dynamicContextSize);
   }
 
@@ -23,7 +23,7 @@ public class MsgPackFilterContext extends AbstractDynamicContext {
     return cursorView.getInt(FILTER_ID_OFFSET);
   }
 
-  public void filterId(int filterId) {
+  public void filterId(final int filterId) {
     cursorView.putInt(FILTER_ID_OFFSET, filterId);
   }
 }

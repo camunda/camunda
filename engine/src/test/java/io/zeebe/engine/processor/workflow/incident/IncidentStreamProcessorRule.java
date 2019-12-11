@@ -54,7 +54,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
   private WorkflowState workflowState;
   private ZeebeState zeebeState;
 
-  public IncidentStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
+  public IncidentStreamProcessorRule(final StreamProcessorRule streamProcessorRule) {
     environmentRule = streamProcessorRule;
   }
 
@@ -164,7 +164,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
         .get();
   }
 
-  public void awaitIncidentInState(Intent state) {
+  public void awaitIncidentInState(final Intent state) {
     waitUntil(
         () ->
             environmentRule
@@ -176,7 +176,7 @@ public class IncidentStreamProcessorRule extends ExternalResource {
                 .isPresent());
   }
 
-  public void awaitIncidentRejection(Intent state) {
+  public void awaitIncidentRejection(final Intent state) {
     waitUntil(
         () ->
             environmentRule

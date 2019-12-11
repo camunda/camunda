@@ -29,7 +29,7 @@ public class MsgPackDocumentTreeWriter {
   protected final DirectBuffer nodeName;
   protected MsgPackTree documentTree;
 
-  public MsgPackDocumentTreeWriter(int initialDocumentSize) {
+  public MsgPackDocumentTreeWriter(final int initialDocumentSize) {
     this.msgPackWriter = new MsgPackWriter();
     this.resultingBuffer = new ExpandableArrayBuffer(initialDocumentSize);
     this.nodeName = new UnsafeBuffer(0, 0);
@@ -42,7 +42,7 @@ public class MsgPackDocumentTreeWriter {
    * @param documentTree the tree which should be written
    * @return the size of the message pack document
    */
-  public int write(MsgPackTree documentTree) {
+  public int write(final MsgPackTree documentTree) {
     this.documentTree = documentTree;
     msgPackWriter.wrap(resultingBuffer, 0);
 
@@ -71,7 +71,7 @@ public class MsgPackDocumentTreeWriter {
    * @param nodeName the name of the current node
    * @param isArray indicates if the current node belongs to an array
    */
-  private void writeNode(String parentId, String nodeName, boolean isArray) {
+  private void writeNode(final String parentId, final String nodeName, final boolean isArray) {
     if (!parentId.isEmpty() && !isArray) {
       this.nodeName.wrap(nodeName.getBytes());
       msgPackWriter.writeString(this.nodeName);
@@ -89,7 +89,7 @@ public class MsgPackDocumentTreeWriter {
         msgPackWriter.writeMapHeader(childs.size());
       }
 
-      for (String child : childs) {
+      for (final String child : childs) {
         writeNode(nodeId, child, isArrayNode);
       }
     }

@@ -27,18 +27,19 @@ public class LeaderManagementRequestHandler extends Actor implements PartitionLi
   private PushDeploymentRequestHandler pushDeploymentRequestHandler;
   private final Atomix atomix;
 
-  public LeaderManagementRequestHandler(BrokerInfo localBroker, Atomix atomix) {
+  public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
     this.localBroker = localBroker;
     this.atomix = atomix;
   }
 
   @Override
-  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
     actor.submit(() -> leaderForPartitions.remove(partitionId));
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     actor.submit(
         () ->
             logStream

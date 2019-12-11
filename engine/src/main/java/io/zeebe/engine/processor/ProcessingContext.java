@@ -33,67 +33,68 @@ public class ProcessingContext implements ReadonlyProcessingContext {
   private Consumer<TypedRecord> onProcessedListener = record -> {};
   private int maxFragmentSize;
 
-  public ProcessingContext actor(ActorControl actor) {
+  public ProcessingContext actor(final ActorControl actor) {
     this.actor = actor;
     return this;
   }
 
-  public ProcessingContext eventFilter(EventFilter eventFilter) {
+  public ProcessingContext eventFilter(final EventFilter eventFilter) {
     this.eventFilter = eventFilter;
     return this;
   }
 
-  public ProcessingContext logStream(LogStream logStream) {
+  public ProcessingContext logStream(final LogStream logStream) {
     this.logStream = logStream;
     return this;
   }
 
-  public ProcessingContext logStreamReader(LogStreamReader logStreamReader) {
+  public ProcessingContext logStreamReader(final LogStreamReader logStreamReader) {
     this.logStreamReader = logStreamReader;
     return this;
   }
 
-  public ProcessingContext eventCache(RecordValues recordValues) {
+  public ProcessingContext eventCache(final RecordValues recordValues) {
     this.recordValues = recordValues;
     return this;
   }
 
-  public ProcessingContext recordProcessorMap(RecordProcessorMap recordProcessorMap) {
+  public ProcessingContext recordProcessorMap(final RecordProcessorMap recordProcessorMap) {
     this.recordProcessorMap = recordProcessorMap;
     return this;
   }
 
-  public ProcessingContext zeebeState(ZeebeState zeebeState) {
+  public ProcessingContext zeebeState(final ZeebeState zeebeState) {
     this.zeebeState = zeebeState;
     return this;
   }
 
-  public ProcessingContext dbContext(DbContext dbContext) {
+  public ProcessingContext dbContext(final DbContext dbContext) {
     this.dbContext = dbContext;
     return this;
   }
 
-  public ProcessingContext abortCondition(BooleanSupplier abortCondition) {
+  public ProcessingContext abortCondition(final BooleanSupplier abortCondition) {
     this.abortCondition = abortCondition;
     return this;
   }
 
-  public ProcessingContext logStreamWriter(TypedStreamWriter logStreamWriter) {
+  public ProcessingContext logStreamWriter(final TypedStreamWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
     return this;
   }
 
-  public ProcessingContext commandResponseWriter(CommandResponseWriter commandResponseWriter) {
+  public ProcessingContext commandResponseWriter(
+      final CommandResponseWriter commandResponseWriter) {
     this.commandResponseWriter = commandResponseWriter;
     return this;
   }
 
-  public ProcessingContext onProcessedListener(Consumer<TypedRecord> onProcessedListener) {
+  public ProcessingContext onProcessedListener(final Consumer<TypedRecord> onProcessedListener) {
     this.onProcessedListener = onProcessedListener;
     return this;
   }
 
-  public ProcessingContext maxFragmentSize(int maxFragmentSize) {
+  public ProcessingContext maxFragmentSize(final int maxFragmentSize) {
     this.maxFragmentSize = maxFragmentSize;
     return this;
   }

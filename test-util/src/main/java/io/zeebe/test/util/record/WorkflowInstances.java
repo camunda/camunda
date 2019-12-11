@@ -15,7 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class WorkflowInstances {
-  public static Map<String, String> getCurrentVariables(long workflowInstanceKey) {
+  public static Map<String, String> getCurrentVariables(final long workflowInstanceKey) {
     final Record<WorkflowInstanceRecordValue> completed =
         RecordingExporter.workflowInstanceRecords()
             .withWorkflowInstanceKey(workflowInstanceKey)
@@ -27,7 +27,7 @@ public class WorkflowInstances {
   }
 
   public static Map<String, String> getCurrentVariables(
-      long workflowInstanceKey, long completedPosition) {
+      final long workflowInstanceKey, final long completedPosition) {
     return getCurrentVariables(workflowInstanceKey, -1, completedPosition);
   }
 
@@ -37,7 +37,7 @@ public class WorkflowInstances {
    * running in parallel in different sub-processes would see their respective scopes.
    */
   public static Map<String, String> getCurrentVariables(
-      long workflowInstanceKey, long startingPosition, long stoppingPosition) {
+      final long workflowInstanceKey, final long startingPosition, final long stoppingPosition) {
     final Map<String, String> document = new HashMap<>();
     final int partitionId = Protocol.decodePartitionId(workflowInstanceKey);
 

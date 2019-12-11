@@ -21,7 +21,7 @@ public class WorkflowInstanceCommandHandlers {
     handlers.put(WorkflowInstanceIntent.CANCEL, new CancelWorkflowInstanceHandler());
   }
 
-  public void handle(WorkflowInstanceCommandContext context) {
+  public void handle(final WorkflowInstanceCommandContext context) {
     final WorkflowInstanceCommandHandler handler = handlers.get(context.getCommand());
     if (handler != null) {
       handler.handle(context);

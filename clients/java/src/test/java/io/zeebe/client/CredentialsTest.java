@@ -73,12 +73,12 @@ public class CredentialsTest {
         .credentialsProvider(
             new CredentialsProvider() {
               @Override
-              public void applyCredentials(Metadata headers) {
+              public void applyCredentials(final Metadata headers) {
                 headers.put(AUTH_KEY, bearerToken);
               }
 
               @Override
-              public boolean shouldRetryRequest(Throwable throwable) {
+              public boolean shouldRetryRequest(final Throwable throwable) {
                 return false;
               }
             });
@@ -108,12 +108,12 @@ public class CredentialsTest {
               int attempt = 0;
 
               @Override
-              public void applyCredentials(Metadata headers) {
+              public void applyCredentials(final Metadata headers) {
                 headers.put(AUTH_KEY, String.format("Bearer token-%d", attempt++));
               }
 
               @Override
-              public boolean shouldRetryRequest(Throwable throwable) {
+              public boolean shouldRetryRequest(final Throwable throwable) {
                 return true;
               }
             });
@@ -142,12 +142,12 @@ public class CredentialsTest {
               int retryCounter = retries;
 
               @Override
-              public void applyCredentials(Metadata headers) {
+              public void applyCredentials(final Metadata headers) {
                 headers.put(AUTH_KEY, String.format("Bearer token-%d", retryCounter));
               }
 
               @Override
-              public boolean shouldRetryRequest(Throwable throwable) {
+              public boolean shouldRetryRequest(final Throwable throwable) {
                 return retryCounter-- > 0;
               }
             });

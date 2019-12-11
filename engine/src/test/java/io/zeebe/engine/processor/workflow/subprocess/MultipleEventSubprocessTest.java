@@ -254,7 +254,7 @@ public class MultipleEventSubprocessTest {
         .containsExactly("event_sub_proc_timer");
   }
 
-  private void triggerMessageStart(long wfInstanceKey, String msgName) {
+  private void triggerMessageStart(final long wfInstanceKey, final String msgName) {
     RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
         .withWorkflowInstanceKey(wfInstanceKey)
         .await();
@@ -262,7 +262,7 @@ public class MultipleEventSubprocessTest {
     ENGINE.message().withName(msgName).withCorrelationKey("123").publish();
   }
 
-  private void triggerTimerStart(long wfInstanceKey) {
+  private void triggerTimerStart(final long wfInstanceKey) {
     RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
         .withWorkflowInstanceKey(wfInstanceKey)
         .withElementType(BpmnElementType.SERVICE_TASK)
@@ -271,7 +271,7 @@ public class MultipleEventSubprocessTest {
     ENGINE.increaseTime(Duration.ofSeconds(60));
   }
 
-  private static void completeJob(long wfInstanceKey, String taskType) {
+  private static void completeJob(final long wfInstanceKey, final String taskType) {
     RecordingExporter.jobRecords(JobIntent.CREATED)
         .withWorkflowInstanceKey(wfInstanceKey)
         .withType(taskType)
@@ -281,7 +281,7 @@ public class MultipleEventSubprocessTest {
   }
 
   private BpmnModelInstance twoEventSubprocModel(
-      boolean timerInterrupt, boolean msgInterrupt, String msgName) {
+      final boolean timerInterrupt, final boolean msgInterrupt, final String msgName) {
     final ProcessBuilder builder = Bpmn.createExecutableProcess(PROCESS_ID);
 
     builder
@@ -305,7 +305,7 @@ public class MultipleEventSubprocessTest {
   }
 
   private BpmnModelInstance twoEventSubprocWithTasksModel(
-      boolean timerInterrupt, boolean msgInterrupt, String msgName) {
+      final boolean timerInterrupt, final boolean msgInterrupt, final String msgName) {
     final ProcessBuilder builder = Bpmn.createExecutableProcess(PROCESS_ID);
 
     builder
@@ -329,7 +329,7 @@ public class MultipleEventSubprocessTest {
         .done();
   }
 
-  private static BpmnModelInstance nestedMsgModel(String msgName) {
+  private static BpmnModelInstance nestedMsgModel(final String msgName) {
     final StartEventBuilder procBuilder =
         Bpmn.createExecutableProcess(PROCESS_ID).startEvent("proc_start");
     procBuilder.serviceTask("proc_task", b -> b.zeebeTaskType("proc_type")).endEvent();

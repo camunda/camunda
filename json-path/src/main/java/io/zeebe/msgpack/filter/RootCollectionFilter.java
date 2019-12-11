@@ -15,7 +15,9 @@ public class RootCollectionFilter implements MsgPackFilter {
 
   @Override
   public boolean matches(
-      MsgPackTraversalContext ctx, DirectBuffer filterContext, MsgPackToken value) {
+      final MsgPackTraversalContext ctx,
+      final DirectBuffer filterContext,
+      final MsgPackToken value) {
     return !ctx.hasElements() && !value.getType().isScalar();
   }
 }

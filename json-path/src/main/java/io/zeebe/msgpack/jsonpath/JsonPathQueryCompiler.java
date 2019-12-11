@@ -32,17 +32,17 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
     JSON_PATH_FILTERS[WILDCARD_FILTER_ID] = new WildcardFilter();
   }
 
-  protected JsonPathTokenizer tokenizer = new JsonPathTokenizer();
-  protected UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
+  protected final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
+  protected final UnsafeBuffer expressionBuffer = new UnsafeBuffer(0, 0);
   protected ParsingMode mode;
   private JsonPathQuery currentQuery;
 
-  public JsonPathQuery compile(String jsonPathExpression) {
+  public JsonPathQuery compile(final String jsonPathExpression) {
     expressionBuffer.wrap(jsonPathExpression.getBytes(StandardCharsets.UTF_8));
     return compile(expressionBuffer, 0, expressionBuffer.capacity());
   }
 
-  public JsonPathQuery compile(DirectBuffer buffer, int offset, int length) {
+  public JsonPathQuery compile(final DirectBuffer buffer, final int offset, final int length) {
     currentQuery = new JsonPathQuery(JSON_PATH_FILTERS);
     currentQuery.wrap(buffer, offset, length);
 
@@ -62,7 +62,10 @@ public class JsonPathQueryCompiler implements JsonPathTokenVisitor {
 
   @Override
   public void visit(
-      JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength) {
+      final JsonPathToken type,
+      final DirectBuffer valueBuffer,
+      final int valueOffset,
+      final int valueLength) {
     if (!currentQuery.isValid()) {
       // ignore tokens once query is invalid
       return;

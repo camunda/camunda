@@ -16,7 +16,8 @@ public class ClientResponseImpl implements ClientResponse {
   private final long requestId;
   private final DirectBuffer responseBuffer;
 
-  public ClientResponseImpl(IncomingResponse incomingResponse, RemoteAddress remoteAddress) {
+  public ClientResponseImpl(
+      final IncomingResponse incomingResponse, final RemoteAddress remoteAddress) {
     this.remoteAddres = remoteAddress;
     this.requestId = incomingResponse.getRequestId();
     this.responseBuffer = incomingResponse.getResponseBuffer();

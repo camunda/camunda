@@ -16,7 +16,7 @@ public class MyCredentialsProvider implements CredentialsProvider {
      * Adds a token to the Authorization header of a gRPC call.
     */
     @Override
-    public void applyCredentials(Metadata headers) {
+    public void applyCredentials(final Metadata headers) {
       final Key<String> authHeaderkey = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);     
       headers.put(authHeaderKey, "Bearer someToken");
     }
@@ -25,7 +25,7 @@ public class MyCredentialsProvider implements CredentialsProvider {
     * Retries request if it failed with a timeout.
     */
     @Override
-    public boolean shouldRetryRequest(Throwable throwable) {
+    public boolean shouldRetryRequest(final Throwable throwable) {
       return ((StatusRuntimeException) throwable).getStatus() == Status.DEADLINE_EXCEEDED;
     }
 }
@@ -109,7 +109,7 @@ For security reasons, client secrets should not be hardcoded. Therefore, the rec
 
 ```java
 public class AuthorizedClient {
-    public void main(String[] args) {
+    public void main(final String[] args) {
         final ZeebeClient client =
             new ZeebeClientBuilderImpl()
                 .brokerContactPoint("cluster.endpoint.com:443")

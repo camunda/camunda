@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class TargetRef extends BpmnModelElementInstanceImpl {
 
-  public TargetRef(ModelTypeInstanceContext instanceContext) {
+  public TargetRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(TargetRef.class, BPMN_ELEMENT_TARGET_REF)
@@ -43,7 +43,7 @@ public class TargetRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<TargetRef>() {
                   @Override
-                  public TargetRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public TargetRef newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new TargetRef(instanceContext);
                   }
                 });

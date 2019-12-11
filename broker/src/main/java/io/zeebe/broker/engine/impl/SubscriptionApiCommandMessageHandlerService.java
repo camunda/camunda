@@ -27,7 +27,8 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
   private final Atomix atomix;
   private final BrokerInfo localBroker;
 
-  public SubscriptionApiCommandMessageHandlerService(BrokerInfo localBroker, Atomix atomix) {
+  public SubscriptionApiCommandMessageHandlerService(
+      final BrokerInfo localBroker, final Atomix atomix) {
     this.localBroker = localBroker;
     this.atomix = atomix;
   }
@@ -38,12 +39,13 @@ public class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   @Override
-  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
     actor.submit(() -> leaderPartitions.remove(partitionId));
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     actor.submit(
         () -> {
           logStream

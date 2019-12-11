@@ -15,31 +15,31 @@ import org.msgpack.core.MessagePack;
 
 public class MsgPackUtil {
 
-  public static DirectBuffer encodeMsgPack(CheckedConsumer<MessageBufferPacker> msgWriter) {
+  public static DirectBuffer encodeMsgPack(final CheckedConsumer<MessageBufferPacker> msgWriter) {
     final MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
     try {
       msgWriter.accept(packer);
       packer.close();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
     final byte[] bytes = packer.toByteArray();
     return new UnsafeBuffer(bytes);
   }
 
-  public static byte[] toByte(long value) {
+  public static byte[] toByte(final long value) {
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[8]);
     buf.putLong(0, value, ByteOrder.BIG_ENDIAN);
     return buf.byteArray();
   }
 
-  public static byte[] toByte(float value) {
+  public static byte[] toByte(final float value) {
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[4]);
     buf.putFloat(0, value, ByteOrder.BIG_ENDIAN);
     return buf.byteArray();
   }
 
-  public static byte[] toByte(double value) {
+  public static byte[] toByte(final double value) {
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[8]);
     buf.putDouble(0, value, ByteOrder.BIG_ENDIAN);
     return buf.byteArray();

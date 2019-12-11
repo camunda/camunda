@@ -37,7 +37,8 @@ public class TopologyManagerImpl extends Actor
 
   private final List<TopologyPartitionListener> topologyPartitionListeners = new ArrayList<>();
 
-  public TopologyManagerImpl(Atomix atomix, BrokerInfo localBroker, ClusterCfg clusterCfg) {
+  public TopologyManagerImpl(
+      final Atomix atomix, final BrokerInfo localBroker, final ClusterCfg clusterCfg) {
     this.atomix = atomix;
     this.localBroker = localBroker;
     localBroker
@@ -47,12 +48,13 @@ public class TopologyManagerImpl extends Actor
   }
 
   @Override
-  public void onBecomingFollower(int partitionId, long term, LogStream logStream) {
+  public void onBecomingFollower(
+      final int partitionId, final long term, final LogStream logStream) {
     setFollower(partitionId);
   }
 
   @Override
-  public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+  public void onBecomingLeader(final int partitionId, final long term, final LogStream logStream) {
     setLeader(term, partitionId);
   }
 
@@ -72,7 +74,7 @@ public class TopologyManagerImpl extends Actor
         .forEach(m -> event(new ClusterMembershipEvent(Type.MEMBER_ADDED, m)));
   }
 
-  public void setLeader(long term, int partitionId) {
+  public void setLeader(final long term, final int partitionId) {
     actor.call(
         () -> {
           partitionLeaders.put(partitionId, localBroker);
@@ -82,7 +84,7 @@ public class TopologyManagerImpl extends Actor
         });
   }
 
-  public void setFollower(int partitionId) {
+  public void setFollower(final int partitionId) {
     actor.call(
         () -> {
           removeIfLeader(localBroker, partitionId);
@@ -92,7 +94,7 @@ public class TopologyManagerImpl extends Actor
   }
 
   @Override
-  public void event(ClusterMembershipEvent clusterMembershipEvent) {
+  public void event(final ClusterMembershipEvent clusterMembershipEvent) {
     final Member eventSource = clusterMembershipEvent.subject();
 
     final BrokerInfo brokerInfo = readBrokerInfo(eventSource);
@@ -123,7 +125,7 @@ public class TopologyManagerImpl extends Actor
   }
 
   // Remove a member from the topology
-  private void onMemberRemoved(BrokerInfo brokerInfo) {
+  private void onMemberRemoved(final BrokerInfo brokerInfo) {
     LOG.debug("Received member removed {} ", brokerInfo);
     brokerInfo.consumePartitions(
         partition -> removeIfLeader(brokerInfo, partition),
@@ -131,7 +133,7 @@ public class TopologyManagerImpl extends Actor
         followerPartitionId -> {});
   }
 
-  private void removeIfLeader(BrokerInfo brokerInfo, Integer partition) {
+  private void removeIfLeader(final BrokerInfo brokerInfo, final Integer partition) {
     final BrokerInfo currentLeader = partitionLeaders.get(partition);
     if (currentLeader != null && currentLeader.getNodeId() == brokerInfo.getNodeId()) {
       partitionLeaders.remove(partition);
@@ -139,7 +141,7 @@ public class TopologyManagerImpl extends Actor
   }
 
   // Update local knowledge about the partitions of remote node
-  private void onMetadataChanged(BrokerInfo brokerInfo) {
+  private void onMetadataChanged(final BrokerInfo brokerInfo) {
     LOG.debug(
         "Received metadata change for {}, partitions {} terms {}",
         brokerInfo.getNodeId(),
@@ -156,7 +158,8 @@ public class TopologyManagerImpl extends Actor
         });
   }
 
-  private boolean updatePartitionLeader(BrokerInfo brokerInfo, int leaderPartitionId, long term) {
+  private boolean updatePartitionLeader(
+      final BrokerInfo brokerInfo, final int leaderPartitionId, final long term) {
     final BrokerInfo currentLeader = partitionLeaders.get(leaderPartitionId);
 
     if (currentLeader != null) {
@@ -176,7 +179,7 @@ public class TopologyManagerImpl extends Actor
     return true;
   }
 
-  private BrokerInfo readBrokerInfo(Member eventSource) {
+  private BrokerInfo readBrokerInfo(final Member eventSource) {
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
     if (brokerInfo != null && !isStaticConfigValid(brokerInfo)) {
       LOG.error(
@@ -189,7 +192,7 @@ public class TopologyManagerImpl extends Actor
   }
 
   // Validate that the remote node's configuration is equal to the local node
-  private boolean isStaticConfigValid(BrokerInfo brokerInfo) {
+  private boolean isStaticConfigValid(final BrokerInfo brokerInfo) {
     return brokerInfo.getNodeId() >= 0
         && brokerInfo.getNodeId() < localBroker.getClusterSize()
         && localBroker.getClusterSize() == brokerInfo.getClusterSize()
@@ -204,12 +207,12 @@ public class TopologyManagerImpl extends Actor
   }
 
   @Override
-  public void removeTopologyPartitionListener(TopologyPartitionListener listener) {
+  public void removeTopologyPartitionListener(final TopologyPartitionListener listener) {
     actor.run(() -> topologyPartitionListeners.remove(listener));
   }
 
   @Override
-  public void addTopologyPartitionListener(TopologyPartitionListener listener) {
+  public void addTopologyPartitionListener(final TopologyPartitionListener listener) {
     actor.run(
         () -> {
           topologyPartitionListeners.add(listener);
@@ -222,8 +225,8 @@ public class TopologyManagerImpl extends Actor
         });
   }
 
-  private void notifyPartitionLeaderUpdated(int partitionId, BrokerInfo member) {
-    for (TopologyPartitionListener listener : topologyPartitionListeners) {
+  private void notifyPartitionLeaderUpdated(final int partitionId, final BrokerInfo member) {
+    for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
     }
   }

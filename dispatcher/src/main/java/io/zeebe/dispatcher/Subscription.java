@@ -49,12 +49,12 @@ public class Subscription implements ConsumableChannel {
   protected volatile boolean isClosed = false;
 
   public Subscription(
-      AtomicPosition position,
-      AtomicPosition limit,
-      int id,
-      String name,
-      ActorCondition onConsumption,
-      LogBuffer logBuffer) {
+      final AtomicPosition position,
+      final AtomicPosition limit,
+      final int id,
+      final String name,
+      final ActorCondition onConsumption,
+      final LogBuffer logBuffer) {
     this.position = position;
     this.id = id;
     this.name = name;
@@ -76,12 +76,12 @@ public class Subscription implements ConsumableChannel {
   }
 
   @Override
-  public void registerConsumer(ActorCondition consumer) {
+  public void registerConsumer(final ActorCondition consumer) {
     actorConditions.registerConsumer(consumer);
   }
 
   @Override
-  public void removeConsumer(ActorCondition consumer) {
+  public void removeConsumer(final ActorCondition consumer) {
     actorConditions.registerConsumer(consumer);
   }
 
@@ -97,7 +97,7 @@ public class Subscription implements ConsumableChannel {
    *
    * @return the amount of read fragments
    */
-  public int poll(FragmentHandler frgHandler, int maxNumOfFragments) {
+  public int poll(final FragmentHandler frgHandler, final int maxNumOfFragments) {
     int fragmentsRead = 0;
 
     if (!isClosed) {
@@ -131,7 +131,7 @@ public class Subscription implements ConsumableChannel {
       int fragmentOffset,
       final int maxNumOfFragments,
       final long limit,
-      boolean handlerControlled) {
+      final boolean handlerControlled) {
     final UnsafeBuffer buffer = partition.getDataBuffer();
 
     int fragmentsConsumed = 0;
@@ -172,7 +172,7 @@ public class Subscription implements ConsumableChannel {
             fragmentResult = handlerResult;
           }
 
-        } catch (RuntimeException e) {
+        } catch (final RuntimeException e) {
           // TODO!
           LOG.error("Failed to handle fragment", e);
         }
@@ -202,7 +202,7 @@ public class Subscription implements ConsumableChannel {
    *
    * @return the amount of read fragments
    */
-  public int peekAndConsume(FragmentHandler frgHandler, int maxNumOfFragments) {
+  public int peekAndConsume(final FragmentHandler frgHandler, final int maxNumOfFragments) {
     int fragmentsRead = 0;
 
     if (!isClosed) {
@@ -241,7 +241,8 @@ public class Subscription implements ConsumableChannel {
    *     different stream id than the previous one
    * @return amount of read bytes
    */
-  public int peekBlock(BlockPeek availableBlock, int maxBlockSize, boolean isStreamAware) {
+  public int peekBlock(
+      final BlockPeek availableBlock, final int maxBlockSize, final boolean isStreamAware) {
     int bytesAvailable = 0;
 
     if (!isClosed) {
@@ -276,7 +277,7 @@ public class Subscription implements ConsumableChannel {
       int partitionId,
       int partitionOffset,
       final int maxBlockSize,
-      long limit,
+      final long limit,
       final boolean isStreamAware) {
     final UnsafeBuffer buffer = partition.getDataBuffer();
     final int bufferOffset = partition.getUnderlyingBufferOffset();

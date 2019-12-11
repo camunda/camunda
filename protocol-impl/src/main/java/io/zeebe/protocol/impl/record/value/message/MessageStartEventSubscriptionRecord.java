@@ -46,7 +46,7 @@ public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
     return workflowKeyProp.getValue();
   }
 
-  public MessageStartEventSubscriptionRecord setWorkflowKey(long key) {
+  public MessageStartEventSubscriptionRecord setWorkflowKey(final long key) {
     workflowKeyProp.setValue(key);
     return this;
   }
@@ -66,17 +66,17 @@ public class MessageStartEventSubscriptionRecord extends UnifiedRecordValue
     return bufferAsString(messageNameProp.getValue());
   }
 
-  public MessageStartEventSubscriptionRecord setMessageName(DirectBuffer messageName) {
+  public MessageStartEventSubscriptionRecord setMessageName(final DirectBuffer messageName) {
     messageNameProp.setValue(messageName);
     return this;
   }
 
-  public MessageStartEventSubscriptionRecord setStartEventId(DirectBuffer startEventId) {
+  public MessageStartEventSubscriptionRecord setStartEventId(final DirectBuffer startEventId) {
     startEventIdProp.setValue(startEventId);
     return this;
   }
 
-  public MessageStartEventSubscriptionRecord setBpmnProcessId(DirectBuffer bpmnProcessId) {
+  public MessageStartEventSubscriptionRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }

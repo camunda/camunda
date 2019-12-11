@@ -35,7 +35,7 @@ public class VariableDocumentRecord extends UnifiedRecordValue
         .declareProperty(variablesProperty);
   }
 
-  public VariableDocumentRecord wrap(VariableDocumentRecord other) {
+  public VariableDocumentRecord wrap(final VariableDocumentRecord other) {
     this.setScopeKey(other.getScopeKey())
         .setVariables(other.getVariablesBuffer())
         .setUpdateSemantics(other.getUpdateSemantics());
@@ -47,7 +47,7 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     return scopeKeyProperty.getValue();
   }
 
-  public VariableDocumentRecord setScopeKey(long scopeKey) {
+  public VariableDocumentRecord setScopeKey(final long scopeKey) {
     scopeKeyProperty.setValue(scopeKey);
     return this;
   }
@@ -56,7 +56,8 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     return updateSemanticsProperty.getValue();
   }
 
-  public VariableDocumentRecord setUpdateSemantics(VariableDocumentUpdateSemantic updateSemantics) {
+  public VariableDocumentRecord setUpdateSemantics(
+      final VariableDocumentUpdateSemantic updateSemantics) {
     updateSemanticsProperty.setValue(updateSemantics);
     return this;
   }
@@ -66,7 +67,7 @@ public class VariableDocumentRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
-  public VariableDocumentRecord setVariables(DirectBuffer variables) {
+  public VariableDocumentRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
     return this;
   }
@@ -82,7 +83,7 @@ public class VariableDocumentRecord extends UnifiedRecordValue
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

@@ -19,7 +19,7 @@ public class MockContext implements Context {
 
   public MockContext() {}
 
-  public MockContext(Logger logger, Configuration configuration) {
+  public MockContext(final Logger logger, final Configuration configuration) {
     this.logger = logger;
     this.configuration = configuration;
   }
@@ -29,7 +29,7 @@ public class MockContext implements Context {
     return logger;
   }
 
-  public void setLogger(Logger logger) {
+  public void setLogger(final Logger logger) {
     this.logger = logger;
   }
 
@@ -38,7 +38,7 @@ public class MockContext implements Context {
     return configuration;
   }
 
-  public void setConfiguration(Configuration configuration) {
+  public void setConfiguration(final Configuration configuration) {
     this.configuration = configuration;
   }
 
@@ -47,7 +47,7 @@ public class MockContext implements Context {
   }
 
   @Override
-  public void setFilter(RecordFilter filter) {
+  public void setFilter(final RecordFilter filter) {
     this.filter = filter;
   }
 }

@@ -34,7 +34,7 @@ public class TransportHeaderDescriptor {
 
   protected final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 
-  public static int framedLength(int messageLength) {
+  public static int framedLength(final int messageLength) {
     return HEADER_LENGTH + messageLength;
   }
 
@@ -42,16 +42,16 @@ public class TransportHeaderDescriptor {
     return HEADER_LENGTH;
   }
 
-  public static int protocolIdOffset(int offset) {
+  public static int protocolIdOffset(final int offset) {
     return offset + PROTOCOL_ID_OFFSET;
   }
 
-  public TransportHeaderDescriptor wrap(DirectBuffer buffer, int offset) {
+  public TransportHeaderDescriptor wrap(final DirectBuffer buffer, final int offset) {
     this.buffer.wrap(buffer, offset, HEADER_LENGTH);
     return this;
   }
 
-  public TransportHeaderDescriptor protocolId(short protocolId) {
+  public TransportHeaderDescriptor protocolId(final short protocolId) {
     buffer.putShort(PROTOCOL_ID_OFFSET, protocolId, HEADER_BYTE_ORDER);
     return this;
   }

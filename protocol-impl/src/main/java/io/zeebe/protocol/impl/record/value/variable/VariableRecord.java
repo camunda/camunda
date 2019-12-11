@@ -53,22 +53,22 @@ public class VariableRecord extends UnifiedRecordValue
     return workflowKeyProp.getValue();
   }
 
-  public VariableRecord setWorkflowKey(long workflowKey) {
+  public VariableRecord setWorkflowKey(final long workflowKey) {
     this.workflowKeyProp.setValue(workflowKey);
     return this;
   }
 
-  public VariableRecord setScopeKey(long scopeKey) {
+  public VariableRecord setScopeKey(final long scopeKey) {
     this.scopeKeyProp.setValue(scopeKey);
     return this;
   }
 
-  public VariableRecord setValue(DirectBuffer value) {
+  public VariableRecord setValue(final DirectBuffer value) {
     this.valueProp.setValue(value);
     return this;
   }
 
-  public VariableRecord setName(DirectBuffer name) {
+  public VariableRecord setName(final DirectBuffer name) {
     this.nameProp.setValue(name);
     return this;
   }
@@ -87,7 +87,7 @@ public class VariableRecord extends UnifiedRecordValue
     return workflowInstanceKeyProp.getValue();
   }
 
-  public VariableRecord setWorkflowInstanceKey(long workflowInstanceKey) {
+  public VariableRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
     this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }

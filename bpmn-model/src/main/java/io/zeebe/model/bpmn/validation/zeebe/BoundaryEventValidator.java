@@ -31,7 +31,8 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
   }
 
   @Override
-  public void validate(BoundaryEvent element, ValidationResultCollector validationResultCollector) {
+  public void validate(
+      final BoundaryEvent element, final ValidationResultCollector validationResultCollector) {
     if (element.getAttachedTo() == null) {
       validationResultCollector.addError(0, "Must be attached to an activity");
     }
@@ -48,7 +49,7 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
   }
 
   private void validateEventDefinition(
-      BoundaryEvent element, ValidationResultCollector validationResultCollector) {
+      final BoundaryEvent element, final ValidationResultCollector validationResultCollector) {
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
 
     if (eventDefinitions.size() != 1) {
@@ -61,7 +62,7 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
     }
   }
 
-  private SupportLevel getSupportLevel(EventDefinition eventDefinition) {
+  private SupportLevel getSupportLevel(final EventDefinition eventDefinition) {
     if (eventDefinition instanceof MessageEventDefinition) {
       return SupportLevel.All;
     } else if (eventDefinition instanceof TimerEventDefinition) {
@@ -77,9 +78,9 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
   }
 
   private void validateSupportLevel(
-      BoundaryEvent element,
-      ValidationResultCollector validationResultCollector,
-      SupportLevel supportLevel) {
+      final BoundaryEvent element,
+      final ValidationResultCollector validationResultCollector,
+      final SupportLevel supportLevel) {
     switch (supportLevel) {
       case None:
         validationResultCollector.addError(0, "Boundary events must be one of: timer, message");

@@ -34,11 +34,11 @@ public class TransactionImpl extends SubProcessImpl implements Transaction {
 
   protected static Attribute<TransactionMethod> methodAttribute;
 
-  public TransactionImpl(ModelTypeInstanceContext context) {
+  public TransactionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Transaction.class, BPMN_ELEMENT_TRANSACTION)
@@ -47,7 +47,7 @@ public class TransactionImpl extends SubProcessImpl implements Transaction {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Transaction>() {
                   @Override
-                  public Transaction newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Transaction newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new TransactionImpl(instanceContext);
                   }
                 });
@@ -67,7 +67,7 @@ public class TransactionImpl extends SubProcessImpl implements Transaction {
   }
 
   @Override
-  public void setMethod(TransactionMethod method) {
+  public void setMethod(final TransactionMethod method) {
     methodAttribute.setValue(this, method);
   }
 }

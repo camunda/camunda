@@ -13,15 +13,15 @@ import io.zeebe.engine.state.instance.IncidentState;
 public class IncidentResolver {
   private final IncidentState incidentState;
 
-  public IncidentResolver(IncidentState incidentState) {
+  public IncidentResolver(final IncidentState incidentState) {
     this.incidentState = incidentState;
   }
 
-  public void resolveIncidents(BpmnStepContext context) {
+  public void resolveIncidents(final BpmnStepContext context) {
     resolveIncidents(context, context.getKey());
   }
 
-  public void resolveIncidents(BpmnStepContext context, long scopeKey) {
+  public void resolveIncidents(final BpmnStepContext context, final long scopeKey) {
     incidentState.forExistingWorkflowIncident(
         scopeKey, (record, key) -> context.getOutput().appendResolvedIncidentEvent(key, record));
   }

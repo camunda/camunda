@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementType;
 public abstract class TypeHierarchyVisitor implements ModelElementVisitor {
 
   @Override
-  public void visit(BpmnModelElementInstance instance) {
+  public void visit(final BpmnModelElementInstance instance) {
     final ModelElementType type = instance.getElementType();
     final List<ModelElementType> typeHierarchy = getTypeHierarchy(type);
 
-    for (ModelElementType implementedType : typeHierarchy) {
+    for (final ModelElementType implementedType : typeHierarchy) {
       visit(implementedType, instance);
     }
   }
@@ -43,7 +43,7 @@ public abstract class TypeHierarchyVisitor implements ModelElementVisitor {
   protected abstract void visit(
       ModelElementType implementedType, BpmnModelElementInstance instance);
 
-  private List<ModelElementType> getTypeHierarchy(ModelElementType type) {
+  private List<ModelElementType> getTypeHierarchy(final ModelElementType type) {
     return ((BpmnImpl) Bpmn.INSTANCE).getHierarchy(type);
   }
 }

@@ -154,7 +154,7 @@ public class ClusteredDataDeletionTest {
   }
 
   private Map<Integer, Integer> takeSnapshotAndWaitForReplication(
-      final List<Broker> brokers, ClusteringRule clusteringRule) {
+      final List<Broker> brokers, final ClusteringRule clusteringRule) {
     final Map<Integer, Integer> segmentCounts = new HashMap<>();
     brokers.forEach(
         b -> {
@@ -167,22 +167,22 @@ public class ClusteredDataDeletionTest {
     return segmentCounts;
   }
 
-  private int getSegmentsCount(Broker broker) {
+  private int getSegmentsCount(final Broker broker) {
     return getSegments(broker).size();
   }
 
-  private Collection<Path> getSegments(Broker broker) {
+  private Collection<Path> getSegments(final Broker broker) {
     try {
       return Files.list(clusteringRule.getSegmentsDirectory(broker))
           .filter(path -> path.toString().endsWith(".log"))
           .collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
   public static class TestExporter implements Exporter {
-    public static List<Record> records = new CopyOnWriteArrayList<>();
+    static final List<Record> RECORDS = new CopyOnWriteArrayList<>();
     private Controller controller;
 
     @Override
@@ -192,7 +192,7 @@ public class ClusteredDataDeletionTest {
 
     @Override
     public void export(final Record record) {
-      records.add(record);
+      RECORDS.add(record);
       controller.updateLastExportedRecordPosition(record.getPosition());
     }
   }

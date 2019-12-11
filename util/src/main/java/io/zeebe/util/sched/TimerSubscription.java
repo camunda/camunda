@@ -20,7 +20,8 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer, Run
   private long timerId = -1L;
   private ActorThread thread;
 
-  public TimerSubscription(ActorJob job, long deadline, TimeUnit timeUnit, boolean isRecurring) {
+  public TimerSubscription(
+      final ActorJob job, final long deadline, final TimeUnit timeUnit, final boolean isRecurring) {
     this.job = job;
     task = job.getTask();
     this.timeUnit = timeUnit;
@@ -71,7 +72,7 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer, Run
     return timerId;
   }
 
-  public void setTimerId(long timerId) {
+  public void setTimerId(final long timerId) {
     this.timerId = timerId;
   }
 
@@ -88,7 +89,7 @@ public class TimerSubscription implements ActorSubscription, ScheduledTimer, Run
     return timeUnit;
   }
 
-  public void onTimerExpired(TimeUnit timeUnit, long now) {
+  public void onTimerExpired(final TimeUnit timeUnit, final long now) {
     if (!isCanceled) {
       isDone = true;
       task.tryWakeup();

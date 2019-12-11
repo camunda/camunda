@@ -25,7 +25,7 @@ public class CompleteEventsInBlockProcessor implements ReadResultProcessor {
   }
 
   @Override
-  public int process(ByteBuffer byteBuffer, int readResult) {
+  public int process(final ByteBuffer byteBuffer, int readResult) {
     if (byteBuffer.capacity() < HEADER_BLOCK_LENGTH) {
       readResult = (int) OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
     }

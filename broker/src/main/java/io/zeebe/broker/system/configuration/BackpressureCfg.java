@@ -17,7 +17,7 @@ public class BackpressureCfg implements ConfigurationEntry {
     return enabled;
   }
 
-  public BackpressureCfg setEnabled(boolean enabled) {
+  public BackpressureCfg setEnabled(final boolean enabled) {
     this.enabled = enabled;
     return this;
   }
@@ -26,7 +26,7 @@ public class BackpressureCfg implements ConfigurationEntry {
     return useWindowed;
   }
 
-  public BackpressureCfg setUseWindowed(boolean useWindowed) {
+  public BackpressureCfg setUseWindowed(final boolean useWindowed) {
     this.useWindowed = useWindowed;
     return this;
   }
@@ -35,7 +35,7 @@ public class BackpressureCfg implements ConfigurationEntry {
     return LimitAlgorithm.valueOf(algorithm.toUpperCase());
   }
 
-  public BackpressureCfg setAlgorithm(String algorithm) {
+  public BackpressureCfg setAlgorithm(final String algorithm) {
     this.algorithm = algorithm;
     return this;
   }

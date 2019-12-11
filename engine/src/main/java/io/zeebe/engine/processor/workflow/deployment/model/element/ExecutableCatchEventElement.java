@@ -21,7 +21,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private Timer timer;
   private boolean interrupting;
 
-  public ExecutableCatchEventElement(String id) {
+  public ExecutableCatchEventElement(final String id) {
     super(id);
   }
 
@@ -40,7 +40,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
     return message;
   }
 
-  public void setMessage(ExecutableMessage message) {
+  public void setMessage(final ExecutableMessage message) {
     this.message = message;
   }
 
@@ -49,7 +49,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
     return timer;
   }
 
-  public void setTimer(Timer timer) {
+  public void setTimer(final Timer timer) {
     this.timer = timer;
   }
 
@@ -67,7 +67,7 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
     return interrupting;
   }
 
-  public void setInterrupting(boolean interrupting) {
+  public void setInterrupting(final boolean interrupting) {
     this.interrupting = interrupting;
   }
 }

@@ -26,7 +26,7 @@ public class ExporterDescriptor {
   public Exporter newInstance() throws ExporterInstantiationException {
     try {
       return exporterClass.newInstance();
-    } catch (InstantiationException | IllegalAccessException e) {
+    } catch (final InstantiationException | IllegalAccessException e) {
       throw new ExporterInstantiationException(getId(), e);
     }
   }

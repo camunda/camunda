@@ -67,10 +67,10 @@ public class Sender extends Actor implements TimerHandler {
   private DeadlineTimerWheel requestTimeouts;
 
   public Sender(
-      ActorContext actorContext,
-      TransportMemoryPool messageMemoryPool,
-      TransportMemoryPool requestMemoryPool,
-      Duration keepalivePeriod) {
+      final ActorContext actorContext,
+      final TransportMemoryPool messageMemoryPool,
+      final TransportMemoryPool requestMemoryPool,
+      final Duration keepalivePeriod) {
     this.messageMemoryPool = messageMemoryPool;
     this.requestMemoryPool = requestMemoryPool;
     this.keepAlivePeriod = keepalivePeriod;
@@ -148,7 +148,7 @@ public class Sender extends Actor implements TimerHandler {
 
       try {
         shouldRetry = !request.tryComplete(response);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         request.fail(e);
         reclaimRequestBuffer(request.getRequestBuffer().byteBuffer());
         return;
@@ -233,7 +233,7 @@ public class Sender extends Actor implements TimerHandler {
   }
 
   private void sendKeepalives() {
-    for (ChannelWriteQueue channelWriteQueue : channelList) {
+    for (final ChannelWriteQueue channelWriteQueue : channelList) {
       if (!channelWriteQueue.hasPending()) {
         channelWriteQueue
             .getPendingWrites()
@@ -244,20 +244,20 @@ public class Sender extends Actor implements TimerHandler {
     sendNext();
   }
 
-  public ActorFuture<ClientResponse> submitRequest(OutgoingRequest request) {
+  public ActorFuture<ClientResponse> submitRequest(final OutgoingRequest request) {
     submittedRequests.add(request);
     return request.getResponseFuture();
   }
 
-  public void submitMessage(OutgoingMessage outgoingMessage) {
+  public void submitMessage(final OutgoingMessage outgoingMessage) {
     submittedMessages.add(outgoingMessage);
   }
 
-  public void submitResponse(IncomingResponse incomingClientResponse) {
+  public void submitResponse(final IncomingResponse incomingClientResponse) {
     submittedResponses.add(incomingClientResponse);
   }
 
-  public ActorFuture<Void> onChannelConnected(TransportChannel ch) {
+  public ActorFuture<Void> onChannelConnected(final TransportChannel ch) {
     return actor.call(
         () -> {
           final ChannelWriteQueue sendQueue = new ChannelWriteQueue(ch);
@@ -266,7 +266,7 @@ public class Sender extends Actor implements TimerHandler {
         });
   }
 
-  public ActorFuture<Void> onChannelClosed(TransportChannel channel) {
+  public ActorFuture<Void> onChannelClosed(final TransportChannel channel) {
     return actor.call(
         () -> {
           final ChannelWriteQueue sendQueue = channelMap.remove(channel.getStreamId());
@@ -279,7 +279,7 @@ public class Sender extends Actor implements TimerHandler {
   }
 
   @Override
-  public boolean onTimerExpiry(TimeUnit timeUnit, long now, long timerId) {
+  public boolean onTimerExpiry(final TimeUnit timeUnit, final long now, final long timerId) {
     final OutgoingRequest request = requestsByTimeoutIds.get(timerId);
 
     if (request != null) {
@@ -291,23 +291,24 @@ public class Sender extends Actor implements TimerHandler {
     return true;
   }
 
-  public ByteBuffer allocateMessageBuffer(int length) {
+  public ByteBuffer allocateMessageBuffer(final int length) {
     return messageMemoryPool.allocate(length);
   }
 
-  public void reclaimMessageBuffer(ByteBuffer allocatedBuffer) {
+  public void reclaimMessageBuffer(final ByteBuffer allocatedBuffer) {
     messageMemoryPool.reclaim(allocatedBuffer);
   }
 
-  public ByteBuffer allocateRequestBuffer(int requestedCapacity) {
+  public ByteBuffer allocateRequestBuffer(final int requestedCapacity) {
     return requestMemoryPool.allocate(requestedCapacity);
   }
 
-  public void reclaimRequestBuffer(ByteBuffer allocatedBuffer) {
+  public void reclaimRequestBuffer(final ByteBuffer allocatedBuffer) {
     requestMemoryPool.reclaim(allocatedBuffer);
   }
 
-  public void failPendingRequestsToRemote(RemoteAddressImpl remoteAddress, String reason) {}
+  public void failPendingRequestsToRemote(
+      final RemoteAddressImpl remoteAddress, final String reason) {}
 
   public class ChannelWriteQueue {
     private final Deque<Batch> pendingWrites = new LinkedList<>();
@@ -316,7 +317,7 @@ public class Sender extends Actor implements TimerHandler {
 
     private Batch currentWrite;
 
-    public ChannelWriteQueue(TransportChannel channel) {
+    public ChannelWriteQueue(final TransportChannel channel) {
       this.channel = channel;
     }
 
@@ -340,7 +341,7 @@ public class Sender extends Actor implements TimerHandler {
       }
     }
 
-    public void offer(OutgoingRequest request) {
+    public void offer(final OutgoingRequest request) {
       // try to fit into last pending batch
       final Batch existingBatch = pendingWrites.peekLast();
 
@@ -365,7 +366,7 @@ public class Sender extends Actor implements TimerHandler {
       }
     }
 
-    public void offer(OutgoingMessage message) {
+    public void offer(final OutgoingMessage message) {
       // try to fit into last pending batch
       Batch batch = pendingWrites.peekLast();
 
@@ -400,7 +401,7 @@ public class Sender extends Actor implements TimerHandler {
   }
 
   class ControlMessage extends Batch {
-    ControlMessage(DirectBuffer controlMessageTemplate) {
+    ControlMessage(final DirectBuffer controlMessageTemplate) {
       super(controlMessageTemplate.capacity());
       view.putBytes(0, controlMessageTemplate, 0, controlMessageTemplate.capacity());
       this.writeOffset = controlMessageTemplate.capacity();
@@ -419,12 +420,12 @@ public class Sender extends Actor implements TimerHandler {
     final ByteBuffer batchBuffer;
     int writeOffset = 0;
 
-    Batch(int size) {
+    Batch(final int size) {
       batchBuffer = ByteBuffer.allocateDirect(size);
       view.wrap(batchBuffer);
     }
 
-    public boolean addToBatch(OutgoingRequest request, TransportChannel channel) {
+    public boolean addToBatch(final OutgoingRequest request, final TransportChannel channel) {
       final DirectBuffer requestBuffer = request.getRequestBuffer();
       final int requestLength = requestBuffer.capacity();
 
@@ -447,7 +448,7 @@ public class Sender extends Actor implements TimerHandler {
       }
     }
 
-    public boolean addToBatch(OutgoingMessage message) {
+    public boolean addToBatch(final OutgoingMessage message) {
       final DirectBuffer buffer = message.getBuffer();
       final int requiredLength = buffer.capacity();
 
@@ -461,7 +462,7 @@ public class Sender extends Actor implements TimerHandler {
       }
     }
 
-    public boolean writeTo(TransportChannel channel) {
+    public boolean writeTo(final TransportChannel channel) {
       return channel.write(batchBuffer) > 0;
     }
 

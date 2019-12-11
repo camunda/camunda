@@ -37,11 +37,11 @@ public abstract class ItemAwareElementImpl extends BaseElementImpl implements It
   protected static AttributeReference<ItemDefinition> itemSubjectRefAttribute;
   protected static ChildElement<DataState> dataStateChild;
 
-  public ItemAwareElementImpl(ModelTypeInstanceContext instanceContext) {
+  public ItemAwareElementImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ItemAwareElement.class, BPMN_ELEMENT_ITEM_AWARE_ELEMENT)
@@ -68,7 +68,7 @@ public abstract class ItemAwareElementImpl extends BaseElementImpl implements It
   }
 
   @Override
-  public void setItemSubject(ItemDefinition itemSubject) {
+  public void setItemSubject(final ItemDefinition itemSubject) {
     itemSubjectRefAttribute.setReferenceTargetElement(this, itemSubject);
   }
 
@@ -78,7 +78,7 @@ public abstract class ItemAwareElementImpl extends BaseElementImpl implements It
   }
 
   @Override
-  public void setDataState(DataState dataState) {
+  public void setDataState(final DataState dataState) {
     dataStateChild.setChild(this, dataState);
   }
 }

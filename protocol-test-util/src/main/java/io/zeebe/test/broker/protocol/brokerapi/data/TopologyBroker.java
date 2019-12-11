@@ -16,8 +16,8 @@ public class TopologyBroker {
   protected final int nodeId;
   protected final String host;
   protected final int port;
-  private Set<BrokerPartitionState> partitions = new LinkedHashSet<>();
-  private SocketAddress address;
+  private final Set<BrokerPartitionState> partitions = new LinkedHashSet<>();
+  private final SocketAddress address;
 
   public TopologyBroker(final int nodeId, final String host, final int port) {
     this.nodeId = nodeId;
@@ -42,7 +42,7 @@ public class TopologyBroker {
     return partitions;
   }
 
-  public TopologyBroker addPartition(BrokerPartitionState brokerPartitionState) {
+  public TopologyBroker addPartition(final BrokerPartitionState brokerPartitionState) {
     partitions.add(brokerPartitionState);
     return this;
   }
@@ -57,7 +57,7 @@ public class TopologyBroker {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

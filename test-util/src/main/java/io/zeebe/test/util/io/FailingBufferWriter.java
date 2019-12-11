@@ -17,7 +17,7 @@ public class FailingBufferWriter implements BufferWriter {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     throw new FailingBufferWriterException("Could not write - expected");
   }
 
@@ -25,7 +25,7 @@ public class FailingBufferWriter implements BufferWriter {
 
     private static final long serialVersionUID = 1L;
 
-    public FailingBufferWriterException(String string) {
+    public FailingBufferWriterException(final String string) {
       super(string);
     }
   }

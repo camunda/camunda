@@ -61,7 +61,7 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     return partitionId;
   }
 
-  public ExecuteCommandResponse setPartitionId(int partitionId) {
+  public ExecuteCommandResponse setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
     return this;
   }
@@ -70,7 +70,7 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     return key;
   }
 
-  public ExecuteCommandResponse setKey(long key) {
+  public ExecuteCommandResponse setKey(final long key) {
     this.key = key;
     return this;
   }
@@ -79,7 +79,7 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     return recordType;
   }
 
-  public ExecuteCommandResponse setRecordType(RecordType recordType) {
+  public ExecuteCommandResponse setRecordType(final RecordType recordType) {
     this.recordType = recordType;
     return this;
   }
@@ -88,7 +88,7 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     return valueType;
   }
 
-  public ExecuteCommandResponse setValueType(ValueType valueType) {
+  public ExecuteCommandResponse setValueType(final ValueType valueType) {
     this.valueType = valueType;
     return this;
   }
@@ -97,7 +97,7 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     return intent;
   }
 
-  public ExecuteCommandResponse setIntent(Intent intent) {
+  public ExecuteCommandResponse setIntent(final Intent intent) {
     this.intent = intent;
     return this;
   }
@@ -106,7 +106,7 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     return rejectionType;
   }
 
-  public ExecuteCommandResponse setRejectionType(RejectionType rejectionType) {
+  public ExecuteCommandResponse setRejectionType(final RejectionType rejectionType) {
     this.rejectionType = rejectionType;
     return this;
   }
@@ -115,7 +115,8 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     return value;
   }
 
-  public ExecuteCommandResponse setValue(DirectBuffer buffer, int offset, int length) {
+  public ExecuteCommandResponse setValue(
+      final DirectBuffer buffer, final int offset, final int length) {
     this.value.wrap(buffer, offset, length);
     return this;
   }
@@ -124,13 +125,14 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     return rejectionReason;
   }
 
-  public ExecuteCommandResponse setRejectionReason(DirectBuffer buffer, int offset, int length) {
+  public ExecuteCommandResponse setRejectionReason(
+      final DirectBuffer buffer, final int offset, final int length) {
     this.rejectionReason.wrap(buffer, offset, length);
     return this;
   }
 
   @Override
-  public void wrap(DirectBuffer buffer, int offset, int length) {
+  public void wrap(final DirectBuffer buffer, int offset, final int length) {
     reset();
 
     final int frameEnd = offset + length;
@@ -187,7 +189,7 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder
         .wrap(buffer, offset)
         .blockLength(bodyEncoder.sbeBlockLength())

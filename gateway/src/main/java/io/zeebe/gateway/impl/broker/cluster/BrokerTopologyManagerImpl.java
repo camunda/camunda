@@ -32,7 +32,8 @@ public class BrokerTopologyManagerImpl extends Actor
   private final Supplier<Set<Member>> membersSupplier;
 
   public BrokerTopologyManagerImpl(
-      Supplier<Set<Member>> membersSupplier, final IntObjConsumer<SocketAddress> registerEndpoint) {
+      final Supplier<Set<Member>> membersSupplier,
+      final IntObjConsumer<SocketAddress> registerEndpoint) {
     this.membersSupplier = membersSupplier;
     this.registerEndpoint = registerEndpoint;
     this.topology = new AtomicReference<>(null);
@@ -51,7 +52,7 @@ public class BrokerTopologyManagerImpl extends Actor
     }
 
     final BrokerClusterStateImpl newTopology = new BrokerClusterStateImpl(topology.get());
-    for (Member member : members) {
+    for (final Member member : members) {
       final BrokerInfo brokerInfo = BrokerInfo.fromProperties(member.properties());
       if (brokerInfo != null) {
         newTopology.addBrokerIfAbsent(brokerInfo.getNodeId());
@@ -67,7 +68,7 @@ public class BrokerTopologyManagerImpl extends Actor
     actor.runAtFixedRate(Duration.ofSeconds(5), this::checkForMissingEvents);
   }
 
-  public void setTopology(BrokerClusterStateImpl topology) {
+  public void setTopology(final BrokerClusterStateImpl topology) {
     this.topology.set(topology);
   }
 
@@ -77,7 +78,7 @@ public class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public void event(ClusterMembershipEvent event) {
+  public void event(final ClusterMembershipEvent event) {
     final Member subject = event.subject();
     final Type eventType = event.type();
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(subject.properties());
@@ -123,7 +124,7 @@ public class BrokerTopologyManagerImpl extends Actor
 
   // Update topology information based on the distributed event
   private void processProperties(
-      BrokerInfo distributedBrokerInfo, BrokerClusterStateImpl newTopology) {
+      final BrokerInfo distributedBrokerInfo, final BrokerClusterStateImpl newTopology) {
 
     newTopology.setClusterSize(distributedBrokerInfo.getClusterSize());
     newTopology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());

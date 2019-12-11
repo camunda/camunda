@@ -49,7 +49,7 @@ public class MessageCorrelationMultiplePartitionsTest {
           .endEvent("end")
           .done();
 
-  @Rule public EngineRule engine = EngineRule.multiplePartition(3);
+  @Rule public final EngineRule engine = EngineRule.multiplePartition(3);
 
   @Before
   public void init() {

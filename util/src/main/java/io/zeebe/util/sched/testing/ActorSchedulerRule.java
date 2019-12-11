@@ -24,22 +24,23 @@ public class ActorSchedulerRule extends ExternalResource {
   private ActorSchedulerBuilder builder;
   private ActorScheduler actorScheduler;
 
-  public ActorSchedulerRule(int numOfThreads, ActorClock clock) {
+  public ActorSchedulerRule(final int numOfThreads, final ActorClock clock) {
     this(numOfThreads, 2, clock);
   }
 
-  public ActorSchedulerRule(int numOfThreads, int numOfIoThreads, ActorClock clock) {
+  public ActorSchedulerRule(
+      final int numOfThreads, final int numOfIoThreads, final ActorClock clock) {
 
     this.numOfIoThreads = numOfIoThreads;
     this.numOfThreads = numOfThreads;
     this.clock = clock;
   }
 
-  public ActorSchedulerRule(int numOfThreads) {
+  public ActorSchedulerRule(final int numOfThreads) {
     this(numOfThreads, null);
   }
 
-  public ActorSchedulerRule(ActorClock clock) {
+  public ActorSchedulerRule(final ActorClock clock) {
     this(Math.max(1, Runtime.getRuntime().availableProcessors() - 2), clock);
   }
 
@@ -66,7 +67,7 @@ public class ActorSchedulerRule extends ExternalResource {
     builder = null;
   }
 
-  public ActorFuture<Void> submitActor(Actor actor) {
+  public ActorFuture<Void> submitActor(final Actor actor) {
     return actorScheduler.submitActor(actor);
   }
 

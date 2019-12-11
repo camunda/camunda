@@ -137,79 +137,79 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return workflowKeyProp.getValue();
   }
 
-  public JobRecord setWorkflowKey(long workflowKey) {
+  public JobRecord setWorkflowKey(final long workflowKey) {
     this.workflowKeyProp.setValue(workflowKey);
     return this;
   }
 
-  public JobRecord setWorkflowDefinitionVersion(int version) {
+  public JobRecord setWorkflowDefinitionVersion(final int version) {
     this.workflowDefinitionVersionProp.setValue(version);
     return this;
   }
 
-  public JobRecord setBpmnProcessId(String bpmnProcessId) {
+  public JobRecord setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public JobRecord setBpmnProcessId(DirectBuffer bpmnProcessId) {
+  public JobRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     this.bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 
-  public JobRecord setElementInstanceKey(long elementInstanceKey) {
+  public JobRecord setElementInstanceKey(final long elementInstanceKey) {
     this.elementInstanceKeyProp.setValue(elementInstanceKey);
     return this;
   }
 
-  public JobRecord setElementId(String elementId) {
+  public JobRecord setElementId(final String elementId) {
     this.elementIdProp.setValue(elementId);
     return this;
   }
 
-  public JobRecord setElementId(DirectBuffer elementId) {
+  public JobRecord setElementId(final DirectBuffer elementId) {
     return setElementId(elementId, 0, elementId.capacity());
   }
 
-  public JobRecord setErrorMessage(String errorMessage) {
+  public JobRecord setErrorMessage(final String errorMessage) {
     errorMessageProp.setValue(errorMessage);
     return this;
   }
 
-  public JobRecord setErrorMessage(DirectBuffer buf) {
+  public JobRecord setErrorMessage(final DirectBuffer buf) {
     return setErrorMessage(buf, 0, buf.capacity());
   }
 
-  public JobRecord setDeadline(long val) {
+  public JobRecord setDeadline(final long val) {
     deadlineProp.setValue(val);
     return this;
   }
 
-  public JobRecord setRetries(int retries) {
+  public JobRecord setRetries(final int retries) {
     retriesProp.setValue(retries);
     return this;
   }
 
-  public JobRecord setWorker(String worker) {
+  public JobRecord setWorker(final String worker) {
     this.workerProp.setValue(worker);
     return this;
   }
 
-  public JobRecord setWorker(DirectBuffer worker) {
+  public JobRecord setWorker(final DirectBuffer worker) {
     return setWorker(worker, 0, worker.capacity());
   }
 
-  public JobRecord setCustomHeaders(DirectBuffer buffer) {
+  public JobRecord setCustomHeaders(final DirectBuffer buffer) {
     customHeadersProp.setValue(buffer, 0, buffer.capacity());
     return this;
   }
 
-  public JobRecord setType(String type) {
+  public JobRecord setType(final String type) {
     this.typeProp.setValue(type);
     return this;
   }
 
-  public JobRecord setType(DirectBuffer buf) {
+  public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
   }
 
@@ -223,7 +223,7 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return MsgPackConverter.convertToMap(variableProp.getValue());
   }
 
-  public JobRecord setVariables(DirectBuffer variables) {
+  public JobRecord setVariables(final DirectBuffer variables) {
     variableProp.setValue(variables);
     return this;
   }
@@ -248,7 +248,7 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return workflowInstanceKeyProp.getValue();
   }
 
-  public JobRecord setWorkflowInstanceKey(long key) {
+  public JobRecord setWorkflowInstanceKey(final long key) {
     this.workflowInstanceKeyProp.setValue(key);
     return this;
   }
@@ -258,22 +258,22 @@ public class JobRecord extends UnifiedRecordValue implements JobRecordValue {
     return elementIdProp.getValue();
   }
 
-  public JobRecord setElementId(DirectBuffer activityId, int offset, int length) {
+  public JobRecord setElementId(final DirectBuffer activityId, final int offset, final int length) {
     this.elementIdProp.setValue(activityId, offset, length);
     return this;
   }
 
-  public JobRecord setErrorMessage(DirectBuffer buf, int offset, int length) {
+  public JobRecord setErrorMessage(final DirectBuffer buf, final int offset, final int length) {
     errorMessageProp.setValue(buf, offset, length);
     return this;
   }
 
-  public JobRecord setType(DirectBuffer buf, int offset, int length) {
+  public JobRecord setType(final DirectBuffer buf, final int offset, final int length) {
     typeProp.setValue(buf, offset, length);
     return this;
   }
 
-  public JobRecord setWorker(DirectBuffer worker, int offset, int length) {
+  public JobRecord setWorker(final DirectBuffer worker, final int offset, final int length) {
     workerProp.setValue(worker, offset, length);
     return this;
   }

@@ -46,11 +46,11 @@ public class JobWorkerImpl implements JobWorker, Closeable {
   private final AtomicReference<JobPoller> jobPoller;
 
   public JobWorkerImpl(
-      int maxJobsActive,
-      ScheduledExecutorService executor,
-      Duration pollInterval,
-      JobRunnableFactory jobRunnableFactory,
-      JobPoller jobPoller) {
+      final int maxJobsActive,
+      final ScheduledExecutorService executor,
+      final Duration pollInterval,
+      final JobRunnableFactory jobRunnableFactory,
+      final JobPoller jobPoller) {
 
     this.maxJobsActive = maxJobsActive;
     this.activationThreshold = Math.round(maxJobsActive * 0.3f);
@@ -104,7 +104,7 @@ public class JobWorkerImpl implements JobWorker, Closeable {
                 this.jobPoller.set(jobPoller);
               },
               this::isOpen);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           LOG.warn("Failed to activate jobs", e);
           this.jobPoller.set(jobPoller);
         }
@@ -114,11 +114,11 @@ public class JobWorkerImpl implements JobWorker, Closeable {
     }
   }
 
-  private boolean shouldActivateJobs(int remainingJobs) {
+  private boolean shouldActivateJobs(final int remainingJobs) {
     return acquiringJobs.get() && remainingJobs <= activationThreshold;
   }
 
-  private void submitJob(ActivatedJob job) {
+  private void submitJob(final ActivatedJob job) {
     executor.execute(jobRunnableFactory.create(job, this::jobHandlerFinished));
   }
 

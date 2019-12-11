@@ -21,7 +21,7 @@ public class WorkflowInstanceCreator {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker).usePlaintext();
 
-    try (ZeebeClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
 
       System.out.println("Creating workflow instance");
 

@@ -29,7 +29,7 @@ public abstract class AbstractThrowEventBuilder<
     extends AbstractEventBuilder<B, E> {
 
   protected AbstractThrowEventBuilder(
-      BpmnModelInstance modelInstance, E element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance, final E element, final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 
@@ -40,7 +40,7 @@ public abstract class AbstractThrowEventBuilder<
    * @param messageName the name of the message
    * @return the builder object
    */
-  public B message(String messageName) {
+  public B message(final String messageName) {
     final MessageEventDefinition messageEventDefinition = createMessageEventDefinition(messageName);
     element.getEventDefinitions().add(messageEventDefinition);
 
@@ -64,7 +64,7 @@ public abstract class AbstractThrowEventBuilder<
    * @param id the id of the message event definition
    * @return the message event definition builder object
    */
-  public MessageEventDefinitionBuilder messageEventDefinition(String id) {
+  public MessageEventDefinitionBuilder messageEventDefinition(final String id) {
     final MessageEventDefinition messageEventDefinition = createEmptyMessageEventDefinition();
     if (id != null) {
       messageEventDefinition.setId(id);
@@ -81,7 +81,7 @@ public abstract class AbstractThrowEventBuilder<
    * @param signalName the name of the signal
    * @return the builder object
    */
-  public B signal(String signalName) {
+  public B signal(final String signalName) {
     final SignalEventDefinition signalEventDefinition = createSignalEventDefinition(signalName);
     element.getEventDefinitions().add(signalEventDefinition);
 
@@ -96,7 +96,7 @@ public abstract class AbstractThrowEventBuilder<
    * @param signalName the name of the signal
    * @return the signal event definition builder object
    */
-  public SignalEventDefinitionBuilder signalEventDefinition(String signalName) {
+  public SignalEventDefinitionBuilder signalEventDefinition(final String signalName) {
     final SignalEventDefinition signalEventDefinition = createSignalEventDefinition(signalName);
     element.getEventDefinitions().add(signalEventDefinition);
 
@@ -110,7 +110,7 @@ public abstract class AbstractThrowEventBuilder<
    * @param escalationCode the code of the escalation
    * @return the builder object
    */
-  public B escalation(String escalationCode) {
+  public B escalation(final String escalationCode) {
     final EscalationEventDefinition escalationEventDefinition =
         createEscalationEventDefinition(escalationCode);
     element.getEventDefinitions().add(escalationEventDefinition);
@@ -122,7 +122,7 @@ public abstract class AbstractThrowEventBuilder<
     return compensateEventDefinition(null);
   }
 
-  public CompensateEventDefinitionBuilder compensateEventDefinition(String id) {
+  public CompensateEventDefinitionBuilder compensateEventDefinition(final String id) {
     final CompensateEventDefinition eventDefinition =
         createInstance(CompensateEventDefinition.class);
     if (id != null) {

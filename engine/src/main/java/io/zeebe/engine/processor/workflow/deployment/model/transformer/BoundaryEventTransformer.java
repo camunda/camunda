@@ -22,7 +22,7 @@ public class BoundaryEventTransformer implements ModelElementTransformer<Boundar
   }
 
   @Override
-  public void transform(BoundaryEvent event, TransformContext context) {
+  public void transform(final BoundaryEvent event, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableBoundaryEvent element =
         workflow.getElementById(event.getId(), ExecutableBoundaryEvent.class);
@@ -32,7 +32,9 @@ public class BoundaryEventTransformer implements ModelElementTransformer<Boundar
   }
 
   private void attachToActivity(
-      BoundaryEvent event, ExecutableWorkflow workflow, ExecutableBoundaryEvent element) {
+      final BoundaryEvent event,
+      final ExecutableWorkflow workflow,
+      final ExecutableBoundaryEvent element) {
     final Activity attachedToActivity = event.getAttachedTo();
     final ExecutableActivity attachedToElement =
         workflow.getElementById(attachedToActivity.getId(), ExecutableActivity.class);

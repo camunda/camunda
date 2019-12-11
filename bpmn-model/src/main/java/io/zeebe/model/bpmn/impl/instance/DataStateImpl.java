@@ -33,11 +33,11 @@ public class DataStateImpl extends BaseElementImpl implements DataState {
 
   protected static Attribute<String> nameAttribute;
 
-  public DataStateImpl(ModelTypeInstanceContext instanceContext) {
+  public DataStateImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(DataState.class, BPMN_ELEMENT_DATA_STATE)
@@ -46,7 +46,7 @@ public class DataStateImpl extends BaseElementImpl implements DataState {
             .instanceProvider(
                 new ModelTypeInstanceProvider<DataState>() {
                   @Override
-                  public DataState newInstance(ModelTypeInstanceContext instanceContext) {
+                  public DataState newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new DataStateImpl(instanceContext);
                   }
                 });
@@ -62,7 +62,7 @@ public class DataStateImpl extends BaseElementImpl implements DataState {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 }

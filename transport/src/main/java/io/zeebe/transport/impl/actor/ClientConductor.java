@@ -24,7 +24,7 @@ import java.time.Duration;
 public class ClientConductor extends Conductor {
   private final ConnectTransportPoller connectTransportPoller;
 
-  public ClientConductor(ActorContext actorContext, TransportContext context) {
+  public ClientConductor(final ActorContext actorContext, final TransportContext context) {
     super(actorContext, context);
     connectTransportPoller = new ConnectTransportPoller();
     remoteAddressList.setOnAddressAddedConsumer(this::onRemoteAddressAdded);
@@ -36,7 +36,7 @@ public class ClientConductor extends Conductor {
     actor.pollBlocking(connectTransportPoller::pollBlocking, connectTransportPoller::processKeys);
   }
 
-  public void openChannel(RemoteAddressImpl address, int connectAttempt) {
+  public void openChannel(final RemoteAddressImpl address, final int connectAttempt) {
     final TransportChannel channel =
         channelFactory.buildClientChannel(
             this,
@@ -57,7 +57,7 @@ public class ClientConductor extends Conductor {
   }
 
   @Override
-  public void onChannelClosed(TransportChannel channel, boolean wasConnected) {
+  public void onChannelClosed(final TransportChannel channel, final boolean wasConnected) {
     // #submit is better than #run here => ensures we yield and make progress on other jobs
     actor.submit(
         () -> {
@@ -78,7 +78,7 @@ public class ClientConductor extends Conductor {
     super.onActorClosing();
   }
 
-  private void onRemoteAddressAdded(RemoteAddressImpl remoteAddress) {
+  private void onRemoteAddressAdded(final RemoteAddressImpl remoteAddress) {
     actor.call(
         () -> {
           final TransportChannel channel = channels.get(remoteAddress.getStreamId());
@@ -94,10 +94,10 @@ public class ClientConductor extends Conductor {
   }
 
   public ActorFuture<ClientInputMessageSubscription> openClientInputMessageSubscription(
-      String subscriptionName,
-      ClientMessageHandler messageHandler,
-      ClientOutput output,
-      RemoteAddressList remoteAddressList) {
+      final String subscriptionName,
+      final ClientMessageHandler messageHandler,
+      final ClientOutput output,
+      final RemoteAddressList remoteAddressList) {
     final CompletableActorFuture<ClientInputMessageSubscription> future =
         new CompletableActorFuture<>();
 

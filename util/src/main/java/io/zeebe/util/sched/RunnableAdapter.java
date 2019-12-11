@@ -17,7 +17,7 @@ public class RunnableAdapter<T> implements Runnable {
   private T value;
   private Throwable exception;
 
-  public RunnableAdapter(Callable<T> callable) {
+  public RunnableAdapter(final Callable<T> callable) {
     this.callable = callable;
   }
 
@@ -25,16 +25,16 @@ public class RunnableAdapter<T> implements Runnable {
   public void run() {
     try {
       value = callable.call();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       exception = e;
     }
   }
 
-  public static <T> RunnableAdapter<T> wrapCallable(Callable<T> callable) {
+  public static <T> RunnableAdapter<T> wrapCallable(final Callable<T> callable) {
     return new RunnableAdapter<>(callable);
   }
 
-  public static RunnableAdapter<Void> wrapRunnable(Runnable callable) {
+  public static RunnableAdapter<Void> wrapRunnable(final Runnable callable) {
     return new RunnableAdapter<Void>(
         () -> {
           callable.run();
@@ -42,13 +42,13 @@ public class RunnableAdapter<T> implements Runnable {
         });
   }
 
-  public Runnable wrapBiConsumer(BiConsumer<T, Throwable> consumer) {
+  public Runnable wrapBiConsumer(final BiConsumer<T, Throwable> consumer) {
     return () -> {
       consumer.accept(value, exception);
     };
   }
 
-  public Runnable wrapConsumer(Consumer<Throwable> consumer) {
+  public Runnable wrapConsumer(final Consumer<Throwable> consumer) {
     return () -> {
       consumer.accept(exception);
     };

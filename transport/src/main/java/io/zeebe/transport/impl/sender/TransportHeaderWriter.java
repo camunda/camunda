@@ -39,15 +39,15 @@ public class TransportHeaderWriter {
 
   private final UnsafeBuffer bufferView = new UnsafeBuffer();
 
-  public static int getFramedRequestLength(int messageLength) {
+  public static int getFramedRequestLength(final int messageLength) {
     return DataFrameDescriptor.alignedLength(REQUEST_HEADER_LENGTH + messageLength);
   }
 
-  public static int getFramedMessageLength(int messageLength) {
+  public static int getFramedMessageLength(final int messageLength) {
     return DataFrameDescriptor.alignedLength(MESSAGE_HEADER_LENGTH + messageLength);
   }
 
-  public void wrapRequest(MutableDirectBuffer buffer, BufferWriter messageWriter) {
+  public void wrapRequest(final MutableDirectBuffer buffer, final BufferWriter messageWriter) {
     bufferView.wrap(buffer);
 
     final int fragmentLength = REQUEST_HEADER_LENGTH + messageWriter.getLength();
@@ -66,7 +66,9 @@ public class TransportHeaderWriter {
   }
 
   public void wrapMessage(
-      MutableDirectBuffer buffer, BufferWriter messageWriter, int remoteStreamId) {
+      final MutableDirectBuffer buffer,
+      final BufferWriter messageWriter,
+      final int remoteStreamId) {
     bufferView.wrap(buffer);
 
     final int fragmentLength = MESSAGE_HEADER_LENGTH + messageWriter.getLength();
@@ -84,12 +86,12 @@ public class TransportHeaderWriter {
     messageWriter.write(bufferView, MESSAGE_HEADER_LENGTH);
   }
 
-  public TransportHeaderWriter setStreamId(int streamId) {
+  public TransportHeaderWriter setStreamId(final int streamId) {
     bufferView.putInt(STREAM_ID_OFFSET, streamId);
     return this;
   }
 
-  public TransportHeaderWriter setRequestId(long requestId) {
+  public TransportHeaderWriter setRequestId(final long requestId) {
     bufferView.putLong(REQUEST_ID_OFFSET, requestId);
     return this;
   }

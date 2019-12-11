@@ -58,7 +58,8 @@ public class WorkflowPersistenceCache {
   private final DbBuffer digest;
   private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
-  public WorkflowPersistenceCache(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public WorkflowPersistenceCache(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     workflowKey = new DbLong();
     persistedWorkflow = new PersistedWorkflow();
     workflowColumnFamily =
@@ -131,7 +132,7 @@ public class WorkflowPersistenceCache {
   }
 
   // is called on getters, if workflow is not in memory
-  private DeployedWorkflow updateInMemoryState(PersistedWorkflow persistedWorkflow) {
+  private DeployedWorkflow updateInMemoryState(final PersistedWorkflow persistedWorkflow) {
 
     // we have to copy to store this in cache
     persistedWorkflow.write(buffer, 0);
@@ -156,8 +157,8 @@ public class WorkflowPersistenceCache {
     return deployedWorkflow;
   }
 
-  private BpmnModelInstance readModelInstanceFromBuffer(DirectBuffer buffer) {
-    try (DirectBufferInputStream stream = new DirectBufferInputStream(buffer)) {
+  private BpmnModelInstance readModelInstanceFromBuffer(final DirectBuffer buffer) {
+    try (final DirectBufferInputStream stream = new DirectBufferInputStream(buffer)) {
       return Bpmn.readModelFromStream(stream);
     }
   }
@@ -197,7 +198,7 @@ public class WorkflowPersistenceCache {
     return deployedWorkflow;
   }
 
-  private DeployedWorkflow lookupWorkflowByIdAndPersistedVersion(DbLong version) {
+  private DeployedWorkflow lookupWorkflowByIdAndPersistedVersion(final DbLong version) {
     final long latestVersion = version != null ? version.getValue() : -1;
     workflowVersion.wrapLong(latestVersion);
 
@@ -226,7 +227,7 @@ public class WorkflowPersistenceCache {
     }
   }
 
-  private DeployedWorkflow lookupPersistenceState(DirectBuffer processId, int version) {
+  private DeployedWorkflow lookupPersistenceState(final DirectBuffer processId, final int version) {
     workflowId.wrapBuffer(processId);
     workflowVersion.wrapLong(version);
 
@@ -257,7 +258,7 @@ public class WorkflowPersistenceCache {
     }
   }
 
-  private DeployedWorkflow lookupPersistenceStateForWorkflowByKey(long workflowKey) {
+  private DeployedWorkflow lookupPersistenceStateForWorkflowByKey(final long workflowKey) {
     this.workflowKey.wrapLong(workflowKey);
 
     final PersistedWorkflow persistedWorkflow = workflowColumnFamily.get(this.workflowKey);

@@ -15,23 +15,27 @@ import io.zeebe.protocol.record.intent.Intent;
 public final class NoopResponseWriter implements TypedResponseWriter {
 
   @Override
-  public void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason) {}
+  public void writeRejectionOnCommand(
+      final TypedRecord<?> command, final RejectionType type, final String reason) {}
 
   @Override
-  public void writeEvent(TypedRecord<?> event) {}
+  public void writeEvent(final TypedRecord<?> event) {}
 
   @Override
   public void writeEventOnCommand(
-      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command) {}
+      final long eventKey,
+      final Intent eventState,
+      final UnpackedObject eventValue,
+      final TypedRecord<?> command) {}
 
   @Override
   public void writeResponse(
-      long eventKey,
-      Intent eventState,
-      UnpackedObject eventValue,
-      ValueType valueType,
-      long requestId,
-      int requestStreamId) {}
+      final long eventKey,
+      final Intent eventState,
+      final UnpackedObject eventValue,
+      final ValueType valueType,
+      final long requestId,
+      final int requestStreamId) {}
 
   @Override
   public boolean flush() {

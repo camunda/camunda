@@ -26,7 +26,7 @@ public class ExclusiveGatewayTransformer implements ModelElementTransformer<Excl
   }
 
   @Override
-  public void transform(ExclusiveGateway element, TransformContext context) {
+  public void transform(final ExclusiveGateway element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableExclusiveGateway gateway =
         workflow.getElementById(element.getId(), ExecutableExclusiveGateway.class);
@@ -53,7 +53,7 @@ public class ExclusiveGatewayTransformer implements ModelElementTransformer<Excl
   }
 
   private void transformDefaultFlow(
-      ExclusiveGateway element,
+      final ExclusiveGateway element,
       final ExecutableWorkflow workflow,
       final ExecutableExclusiveGateway gateway) {
     final SequenceFlow defaultFlowElement = element.getDefault();

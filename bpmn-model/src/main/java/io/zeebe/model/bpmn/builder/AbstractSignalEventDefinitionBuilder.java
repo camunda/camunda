@@ -23,7 +23,9 @@ public abstract class AbstractSignalEventDefinitionBuilder<
     extends AbstractRootElementBuilder<B, SignalEventDefinition> {
 
   protected AbstractSignalEventDefinitionBuilder(
-      BpmnModelInstance modelInstance, SignalEventDefinition element, Class<?> selfType) {
+      final BpmnModelInstance modelInstance,
+      final SignalEventDefinition element,
+      final Class<?> selfType) {
     super(modelInstance, element, selfType);
   }
 }

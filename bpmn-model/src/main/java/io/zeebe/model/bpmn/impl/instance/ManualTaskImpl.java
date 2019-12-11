@@ -35,11 +35,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class ManualTaskImpl extends TaskImpl implements ManualTask {
 
-  public ManualTaskImpl(ModelTypeInstanceContext context) {
+  public ManualTaskImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ManualTask.class, BPMN_ELEMENT_MANUAL_TASK)
@@ -48,7 +48,7 @@ public class ManualTaskImpl extends TaskImpl implements ManualTask {
             .instanceProvider(
                 new ModelTypeInstanceProvider<ManualTask>() {
                   @Override
-                  public ManualTask newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ManualTask newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ManualTaskImpl(instanceContext);
                   }
                 });

@@ -30,7 +30,7 @@ public class EventDefinitionValidator implements ModelElementValidator<EventDefi
 
   @Override
   public void validate(
-      EventDefinition element, ValidationResultCollector validationResultCollector) {
+      final EventDefinition element, final ValidationResultCollector validationResultCollector) {
     if (!(element instanceof MessageEventDefinition || element instanceof TimerEventDefinition)) {
       validationResultCollector.addError(0, "Event definition of this type is not supported");
     }

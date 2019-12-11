@@ -22,7 +22,8 @@ import io.zeebe.model.bpmn.instance.ComplexGateway;
 /** @author Sebastian Menski */
 public class ComplexGatewayBuilder extends AbstractComplexGatewayBuilder<ComplexGatewayBuilder> {
 
-  public ComplexGatewayBuilder(BpmnModelInstance modelInstance, ComplexGateway element) {
+  public ComplexGatewayBuilder(
+      final BpmnModelInstance modelInstance, final ComplexGateway element) {
     super(modelInstance, element, ComplexGatewayBuilder.class);
   }
 }

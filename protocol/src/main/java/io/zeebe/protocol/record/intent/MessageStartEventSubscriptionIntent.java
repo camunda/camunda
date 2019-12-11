@@ -24,7 +24,7 @@ public enum MessageStartEventSubscriptionIntent implements Intent {
 
   private final short value;
 
-  MessageStartEventSubscriptionIntent(short value) {
+  MessageStartEventSubscriptionIntent(final short value) {
     this.value = value;
   }
 
@@ -33,7 +33,7 @@ public enum MessageStartEventSubscriptionIntent implements Intent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return OPEN;

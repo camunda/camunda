@@ -41,11 +41,11 @@ public class ImportImpl extends BpmnModelElementInstanceImpl implements Import {
   protected static Attribute<String> locationAttribute;
   protected static Attribute<String> importTypeAttribute;
 
-  public ImportImpl(ModelTypeInstanceContext context) {
+  public ImportImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder bpmnModelBuilder) {
+  public static void registerType(final ModelBuilder bpmnModelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         bpmnModelBuilder
             .defineType(Import.class, BPMN_ELEMENT_IMPORT)
@@ -53,7 +53,7 @@ public class ImportImpl extends BpmnModelElementInstanceImpl implements Import {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Import>() {
                   @Override
-                  public Import newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Import newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new ImportImpl(instanceContext);
                   }
                 });
@@ -74,7 +74,7 @@ public class ImportImpl extends BpmnModelElementInstanceImpl implements Import {
   }
 
   @Override
-  public void setNamespace(String namespace) {
+  public void setNamespace(final String namespace) {
     namespaceAttribute.setValue(this, namespace);
   }
 
@@ -84,7 +84,7 @@ public class ImportImpl extends BpmnModelElementInstanceImpl implements Import {
   }
 
   @Override
-  public void setLocation(String location) {
+  public void setLocation(final String location) {
     locationAttribute.setValue(this, location);
   }
 
@@ -94,7 +94,7 @@ public class ImportImpl extends BpmnModelElementInstanceImpl implements Import {
   }
 
   @Override
-  public void setImportType(String importType) {
+  public void setImportType(final String importType) {
     importTypeAttribute.setValue(this, importType);
   }
 }

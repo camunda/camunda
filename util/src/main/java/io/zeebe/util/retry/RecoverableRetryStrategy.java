@@ -20,18 +20,19 @@ public class RecoverableRetryStrategy implements RetryStrategy {
   private CompletableActorFuture<Boolean> currentFuture;
   private BooleanSupplier terminateCondition;
 
-  public RecoverableRetryStrategy(ActorControl actor) {
+  public RecoverableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
     this.retryMechanism = new ActorRetryMechanism(actor);
   }
 
   @Override
-  public ActorFuture<Boolean> runWithRetry(OperationToRetry callable) {
+  public ActorFuture<Boolean> runWithRetry(final OperationToRetry callable) {
     return runWithRetry(callable, () -> false);
   }
 
   @Override
-  public ActorFuture<Boolean> runWithRetry(OperationToRetry callable, BooleanSupplier condition) {
+  public ActorFuture<Boolean> runWithRetry(
+      final OperationToRetry callable, final BooleanSupplier condition) {
     currentFuture = new CompletableActorFuture<>();
     terminateCondition = condition;
     retryMechanism.wrap(callable, terminateCondition, currentFuture);
@@ -44,13 +45,13 @@ public class RecoverableRetryStrategy implements RetryStrategy {
   private void run() {
     try {
       retryMechanism.run();
-    } catch (RecoverableException ex) {
+    } catch (final RecoverableException ex) {
       if (terminateCondition.getAsBoolean()) {
         actor.done();
       } else {
         actor.yield();
       }
-    } catch (Exception exception) {
+    } catch (final Exception exception) {
       currentFuture.completeExceptionally(exception);
       actor.done();
     }

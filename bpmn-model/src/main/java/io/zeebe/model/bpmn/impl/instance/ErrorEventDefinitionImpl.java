@@ -38,11 +38,11 @@ public class ErrorEventDefinitionImpl extends EventDefinitionImpl implements Err
 
   protected static AttributeReference<Error> errorRefAttribute;
 
-  public ErrorEventDefinitionImpl(ModelTypeInstanceContext context) {
+  public ErrorEventDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ErrorEventDefinition.class, BPMN_ELEMENT_ERROR_EVENT_DEFINITION)
@@ -52,7 +52,7 @@ public class ErrorEventDefinitionImpl extends EventDefinitionImpl implements Err
                 new ModelTypeInstanceProvider<ErrorEventDefinition>() {
                   @Override
                   public ErrorEventDefinition newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ErrorEventDefinitionImpl(instanceContext);
                   }
                 });
@@ -72,7 +72,7 @@ public class ErrorEventDefinitionImpl extends EventDefinitionImpl implements Err
   }
 
   @Override
-  public void setError(Error error) {
+  public void setError(final Error error) {
     errorRefAttribute.setReferenceTargetElement(this, error);
   }
 }

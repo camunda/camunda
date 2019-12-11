@@ -20,10 +20,10 @@ import java.util.function.Consumer;
 
 public class JobEventProcessors {
   public static void addJobProcessors(
-      TypedRecordProcessors typedRecordProcessors,
-      ZeebeState zeebeState,
-      Consumer<String> onJobsAvailableCallback,
-      int maxRecordSize) {
+      final TypedRecordProcessors typedRecordProcessors,
+      final ZeebeState zeebeState,
+      final Consumer<String> onJobsAvailableCallback,
+      final int maxRecordSize) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
     final JobState jobState = zeebeState.getJobState();
 
@@ -49,7 +49,7 @@ public class JobEventProcessors {
         .withListener(
             new StreamProcessorLifecycleAware() {
               @Override
-              public void onRecovered(ReadonlyProcessingContext context) {
+              public void onRecovered(final ReadonlyProcessingContext context) {
                 jobState.setJobsAvailableCallback(onJobsAvailableCallback);
               }
             });

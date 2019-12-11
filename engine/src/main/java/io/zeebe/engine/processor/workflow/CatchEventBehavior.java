@@ -47,20 +47,23 @@ public class CatchEventBehavior {
   private final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys = new HashMap<>();
 
   public CatchEventBehavior(
-      ZeebeState state, SubscriptionCommandSender subscriptionCommandSender, int partitionsCount) {
+      final ZeebeState state,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final int partitionsCount) {
     this.state = state;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.partitionsCount = partitionsCount;
   }
 
-  public void unsubscribeFromEvents(long elementInstanceKey, BpmnStepContext<?> context) {
+  public void unsubscribeFromEvents(
+      final long elementInstanceKey, final BpmnStepContext<?> context) {
     unsubscribeFromTimerEvents(elementInstanceKey, context.getOutput().getStreamWriter());
     unsubscribeFromMessageEvents(elementInstanceKey, context);
     context.getStateDb().getEventScopeInstanceState().deleteInstance(elementInstanceKey);
   }
 
   public void subscribeToEvents(
-      BpmnStepContext<?> context, final ExecutableCatchEventSupplier supplier)
+      final BpmnStepContext<?> context, final ExecutableCatchEventSupplier supplier)
       throws MessageCorrelationKeyException {
     final List<ExecutableCatchEvent> events = supplier.getEvents();
     final VariablesDocumentSupplier variablesSupplier =
@@ -97,12 +100,12 @@ public class CatchEventBehavior {
   }
 
   public void subscribeToTimerEvent(
-      long elementInstanceKey,
-      long workflowInstanceKey,
-      long workflowKey,
-      DirectBuffer handlerNodeId,
-      Timer timer,
-      TypedStreamWriter writer) {
+      final long elementInstanceKey,
+      final long workflowInstanceKey,
+      final long workflowKey,
+      final DirectBuffer handlerNodeId,
+      final Timer timer,
+      final TypedStreamWriter writer) {
     timerRecord.reset();
     timerRecord
         .setRepetitions(timer.getRepetitions())
@@ -114,7 +117,8 @@ public class CatchEventBehavior {
     writer.appendNewCommand(TimerIntent.CREATE, timerRecord);
   }
 
-  private void unsubscribeFromTimerEvents(long elementInstanceKey, TypedStreamWriter writer) {
+  private void unsubscribeFromTimerEvents(
+      final long elementInstanceKey, final TypedStreamWriter writer) {
     state
         .getWorkflowState()
         .getTimerState()
@@ -122,7 +126,7 @@ public class CatchEventBehavior {
             elementInstanceKey, t -> unsubscribeFromTimerEvent(t, writer));
   }
 
-  public void unsubscribeFromTimerEvent(TimerInstance timer, TypedStreamWriter writer) {
+  public void unsubscribeFromTimerEvent(final TimerInstance timer, final TypedStreamWriter writer) {
     timerRecord.reset();
     timerRecord
         .setElementInstanceKey(timer.getElementInstanceKey())
@@ -136,7 +140,9 @@ public class CatchEventBehavior {
   }
 
   private void subscribeToMessageEvent(
-      BpmnStepContext<?> context, ExecutableCatchEvent handler, DirectBuffer extractedKey) {
+      final BpmnStepContext<?> context,
+      final ExecutableCatchEvent handler,
+      final DirectBuffer extractedKey) {
     final ExecutableMessage message = handler.getMessage();
 
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
@@ -173,7 +179,8 @@ public class CatchEventBehavior {
                     closeOnCorrelate));
   }
 
-  private void unsubscribeFromMessageEvents(long elementInstanceKey, BpmnStepContext<?> context) {
+  private void unsubscribeFromMessageEvents(
+      final long elementInstanceKey, final BpmnStepContext<?> context) {
     state
         .getWorkflowInstanceSubscriptionState()
         .visitElementSubscriptions(
@@ -181,7 +188,7 @@ public class CatchEventBehavior {
   }
 
   private boolean unsubscribeFromMessageEvent(
-      BpmnStepContext<?> context, WorkflowInstanceSubscription subscription) {
+      final BpmnStepContext<?> context, final WorkflowInstanceSubscription subscription) {
     final DirectBuffer messageName = cloneBuffer(subscription.getMessageName());
     final int subscriptionPartitionId = subscription.getSubscriptionPartitionId();
     final long workflowInstanceKey = subscription.getWorkflowInstanceKey();
@@ -203,7 +210,7 @@ public class CatchEventBehavior {
   }
 
   private DirectBuffer extractCorrelationKey(
-      ExecutableMessage message, MessageCorrelationKeyContext context) {
+      final ExecutableMessage message, final MessageCorrelationKeyContext context) {
     final QueryResults results =
         queryProcessor.process(message.getCorrelationKey(), context.getVariablesAsDocument());
     final String errorMessage;
@@ -233,22 +240,22 @@ public class CatchEventBehavior {
   }
 
   private boolean sendCloseMessageSubscriptionCommand(
-      int subscriptionPartitionId,
-      long workflowInstanceKey,
-      long elementInstanceKey,
-      DirectBuffer messageName) {
+      final int subscriptionPartitionId,
+      final long workflowInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer messageName) {
     return subscriptionCommandSender.closeMessageSubscription(
         subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName);
   }
 
   private boolean sendOpenMessageSubscription(
-      int subscriptionPartitionId,
-      long workflowInstanceKey,
-      long elementInstanceKey,
-      DirectBuffer bpmnProcessId,
-      DirectBuffer messageName,
-      DirectBuffer correlationKey,
-      boolean closeOnCorrelate) {
+      final int subscriptionPartitionId,
+      final long workflowInstanceKey,
+      final long elementInstanceKey,
+      final DirectBuffer bpmnProcessId,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final boolean closeOnCorrelate) {
     return subscriptionCommandSender.openMessageSubscription(
         subscriptionPartitionId,
         workflowInstanceKey,
@@ -260,12 +267,12 @@ public class CatchEventBehavior {
   }
 
   private Map<DirectBuffer, DirectBuffer> extractMessageCorrelationKeys(
-      List<ExecutableCatchEvent> events,
-      MessageCorrelationKeyContext elementContext,
-      MessageCorrelationKeyContext scopeContext) {
+      final List<ExecutableCatchEvent> events,
+      final MessageCorrelationKeyContext elementContext,
+      final MessageCorrelationKeyContext scopeContext) {
     extractedCorrelationKeys.clear();
 
-    for (ExecutableCatchEvent event : events) {
+    for (final ExecutableCatchEvent event : events) {
       if (event.isMessage()) {
         final MessageCorrelationKeyContext context =
             event.getElementType() == BpmnElementType.BOUNDARY_EVENT

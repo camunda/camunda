@@ -49,10 +49,10 @@ public class OutgoingRequest {
   private boolean isTimedout;
 
   public OutgoingRequest(
-      Supplier<RemoteAddress> remoteAddressSupplier,
-      Predicate<DirectBuffer> retryPredicate,
-      UnsafeBuffer requestBuffer,
-      Duration timeout) {
+      final Supplier<RemoteAddress> remoteAddressSupplier,
+      final Predicate<DirectBuffer> retryPredicate,
+      final UnsafeBuffer requestBuffer,
+      final Duration timeout) {
     this.remoteAddressSupplier = remoteAddressSupplier;
     this.retryPredicate = retryPredicate;
     this.requestBuffer = requestBuffer;
@@ -67,7 +67,7 @@ public class OutgoingRequest {
     return remoteAddressSupplier.get();
   }
 
-  public boolean tryComplete(IncomingResponse incomingResponse) {
+  public boolean tryComplete(final IncomingResponse incomingResponse) {
     final DirectBuffer data = incomingResponse.getResponseBuffer();
 
     if (responseFuture.isDone()) {
@@ -77,7 +77,7 @@ public class OutgoingRequest {
         final RemoteAddress remoteAddress = remotesTried.peekFirst();
         final ClientResponseImpl response = new ClientResponseImpl(incomingResponse, remoteAddress);
         responseFuture.complete(response);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.debug("Could not complete request future", e);
       }
 
@@ -88,10 +88,10 @@ public class OutgoingRequest {
     }
   }
 
-  public void fail(Throwable throwable) {
+  public void fail(final Throwable throwable) {
     try {
       responseFuture.completeExceptionally(throwable);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.debug("Could not complete request future exceptionally", e);
     }
   }
@@ -108,7 +108,7 @@ public class OutgoingRequest {
     return timeout;
   }
 
-  public void markRemoteAddress(RemoteAddress remoteAddress) {
+  public void markRemoteAddress(final RemoteAddress remoteAddress) {
     if (!remoteAddress.equals(remotesTried.peekFirst())) {
       remotesTried.push(remoteAddress);
     }
@@ -126,7 +126,7 @@ public class OutgoingRequest {
     return timerId;
   }
 
-  public void setTimerId(long timerId) {
+  public void setTimerId(final long timerId) {
     this.timerId = timerId;
   }
 
@@ -134,7 +134,7 @@ public class OutgoingRequest {
     return lastRequestId;
   }
 
-  public void setLastRequestId(long requestId) {
+  public void setLastRequestId(final long requestId) {
     this.lastRequestId = requestId;
   }
 

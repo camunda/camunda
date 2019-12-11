@@ -218,15 +218,15 @@ public class JobOutputMappingTest {
   }
 
   private static Consumer<ZeebeVariablesMappingBuilder<ServiceTaskBuilder>> mapping(
-      Consumer<ZeebeVariablesMappingBuilder<ServiceTaskBuilder>> mappingBuilder) {
+      final Consumer<ZeebeVariablesMappingBuilder<ServiceTaskBuilder>> mappingBuilder) {
     return mappingBuilder;
   }
 
-  private static List<Tuple> activityVariables(Tuple... variables) {
+  private static List<Tuple> activityVariables(final Tuple... variables) {
     return Arrays.asList(variables);
   }
 
-  private static List<Tuple> scopeVariables(Tuple... variables) {
+  private static List<Tuple> scopeVariables(final Tuple... variables) {
     return Arrays.asList(variables);
   }
 }

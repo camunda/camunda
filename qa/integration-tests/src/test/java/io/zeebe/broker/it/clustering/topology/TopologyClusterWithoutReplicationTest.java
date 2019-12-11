@@ -52,7 +52,7 @@ public class TopologyClusterWithoutReplicationTest {
     assertPartitionInTopology(brokers, START_PARTITION_ID + 2);
   }
 
-  private void assertPartitionInTopology(List<BrokerInfo> brokers, int partition) {
+  private void assertPartitionInTopology(final List<BrokerInfo> brokers, final int partition) {
     assertThat(brokers)
         .flatExtracting(BrokerInfo::getPartitions)
         .filteredOn(p -> p.getPartitionId() == partition)

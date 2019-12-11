@@ -17,7 +17,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class BufferWriterUtil {
 
   public static <T extends BufferWriter & BufferReader> void assertEqualFieldsAfterWriteAndRead(
-      final T writer, String... fieldNames) {
+      final T writer, final String... fieldNames) {
     final T reader = writeAndRead(writer);
 
     assertThat(reader).isEqualToComparingOnlyGivenFields(writer, fieldNames);
@@ -32,14 +32,15 @@ public class BufferWriterUtil {
     return reader;
   }
 
-  public static void wrap(BufferWriter writer, BufferReader reader) {
+  public static void wrap(final BufferWriter writer, final BufferReader reader) {
     final UnsafeBuffer buffer = new UnsafeBuffer(new byte[writer.getLength()]);
     writer.write(buffer, 0);
 
     reader.wrap(buffer, 0, buffer.capacity());
   }
 
-  public static <T extends BufferReader> T wrap(BufferWriter writer, Class<T> readerClass) {
+  public static <T extends BufferReader> T wrap(
+      final BufferWriter writer, final Class<T> readerClass) {
     final T reader = ReflectUtil.newInstance(readerClass);
 
     wrap(writer, reader);

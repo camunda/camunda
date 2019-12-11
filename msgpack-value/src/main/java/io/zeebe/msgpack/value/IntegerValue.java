@@ -18,7 +18,7 @@ public class IntegerValue extends BaseValue {
     this(0);
   }
 
-  public IntegerValue(int initialValue) {
+  public IntegerValue(final int initialValue) {
     this.value = initialValue;
   }
 
@@ -26,7 +26,7 @@ public class IntegerValue extends BaseValue {
     return value;
   }
 
-  public void setValue(int val) {
+  public void setValue(final int val) {
     this.value = val;
   }
 
@@ -36,17 +36,17 @@ public class IntegerValue extends BaseValue {
   }
 
   @Override
-  public void writeJSON(StringBuilder builder) {
+  public void writeJSON(final StringBuilder builder) {
     builder.append(value);
   }
 
   @Override
-  public void write(MsgPackWriter writer) {
+  public void write(final MsgPackWriter writer) {
     writer.writeInteger(value);
   }
 
   @Override
-  public void read(MsgPackReader reader) {
+  public void read(final MsgPackReader reader) {
     final long longValue = reader.readInteger();
 
     if (longValue < Integer.MIN_VALUE || longValue > Integer.MAX_VALUE) {
@@ -68,7 +68,7 @@ public class IntegerValue extends BaseValue {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

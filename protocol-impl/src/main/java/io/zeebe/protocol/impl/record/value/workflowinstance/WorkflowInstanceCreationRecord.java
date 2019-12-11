@@ -59,22 +59,22 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return workflowKeyProperty.getValue();
   }
 
-  public WorkflowInstanceCreationRecord setWorkflowKey(long key) {
+  public WorkflowInstanceCreationRecord setWorkflowKey(final long key) {
     this.workflowKeyProperty.setValue(key);
     return this;
   }
 
-  public WorkflowInstanceCreationRecord setVersion(int version) {
+  public WorkflowInstanceCreationRecord setVersion(final int version) {
     this.versionProperty.setValue(version);
     return this;
   }
 
-  public WorkflowInstanceCreationRecord setBpmnProcessId(String bpmnProcessId) {
+  public WorkflowInstanceCreationRecord setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 
-  public WorkflowInstanceCreationRecord setBpmnProcessId(DirectBuffer bpmnProcessId) {
+  public WorkflowInstanceCreationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
     this.bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
@@ -84,7 +84,7 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return workflowInstanceKeyProperty.getValue();
   }
 
-  public WorkflowInstanceCreationRecord setWorkflowInstanceKey(long instanceKey) {
+  public WorkflowInstanceCreationRecord setWorkflowInstanceKey(final long instanceKey) {
     this.workflowInstanceKeyProperty.setValue(instanceKey);
     return this;
   }
@@ -94,7 +94,7 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return MsgPackConverter.convertToMap(variablesProperty.getValue());
   }
 
-  public WorkflowInstanceCreationRecord setVariables(DirectBuffer variables) {
+  public WorkflowInstanceCreationRecord setVariables(final DirectBuffer variables) {
     variablesProperty.setValue(variables);
     return this;
   }
@@ -103,7 +103,7 @@ public class WorkflowInstanceCreationRecord extends UnifiedRecordValue
     return fetchVariablesProperty;
   }
 
-  public WorkflowInstanceCreationRecord setFetchVariables(List<String> fetchVariables) {
+  public WorkflowInstanceCreationRecord setFetchVariables(final List<String> fetchVariables) {
     fetchVariables.forEach(variable -> fetchVariablesProperty.add().wrap(wrapString(variable)));
     return this;
   }

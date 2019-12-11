@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class Supports extends BpmnModelElementInstanceImpl {
 
-  public Supports(ModelTypeInstanceContext instanceContext) {
+  public Supports(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Supports.class, BPMN_ELEMENT_SUPPORTS)
@@ -43,7 +43,7 @@ public class Supports extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelTypeInstanceProvider<Supports>() {
                   @Override
-                  public Supports newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Supports newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new Supports(instanceContext);
                   }
                 });

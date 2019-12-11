@@ -36,11 +36,11 @@ public class PropertyImpl extends ItemAwareElementImpl implements Property {
 
   protected static Attribute<String> nameAttribute;
 
-  public PropertyImpl(ModelTypeInstanceContext instanceContext) {
+  public PropertyImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(Property.class, BPMN_ELEMENT_PROPERTY)
@@ -49,7 +49,7 @@ public class PropertyImpl extends ItemAwareElementImpl implements Property {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<Property>() {
                   @Override
-                  public Property newInstance(ModelTypeInstanceContext instanceContext) {
+                  public Property newInstance(final ModelTypeInstanceContext instanceContext) {
                     return new PropertyImpl(instanceContext);
                   }
                 });
@@ -65,7 +65,7 @@ public class PropertyImpl extends ItemAwareElementImpl implements Property {
   }
 
   @Override
-  public void setName(String name) {
+  public void setName(final String name) {
     nameAttribute.setValue(this, name);
   }
 }

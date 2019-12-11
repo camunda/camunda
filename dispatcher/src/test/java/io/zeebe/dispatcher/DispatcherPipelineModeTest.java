@@ -27,8 +27,8 @@ public class DispatcherPipelineModeTest {
   public static final FragmentHandler NOOP_FRAGMENT_HANDLER =
       (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 
-  protected ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
-  protected AutoCloseableRule closeables = new AutoCloseableRule();
+  protected final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
+  protected final AutoCloseableRule closeables = new AutoCloseableRule();
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(scheduler).around(closeables);
 
@@ -36,7 +36,7 @@ public class DispatcherPipelineModeTest {
     return buildDispatcher(b -> {});
   }
 
-  protected Dispatcher buildDispatcher(Consumer<DispatcherBuilder> configurator) {
+  protected Dispatcher buildDispatcher(final Consumer<DispatcherBuilder> configurator) {
     final DispatcherBuilder builder =
         Dispatchers.create("foo")
             .actorScheduler(scheduler.get())
@@ -179,7 +179,8 @@ public class DispatcherPipelineModeTest {
     assertThat(dispatcher.getPublisherLimit()).isEqualTo(expectedPublisherLimit);
   }
 
-  protected void publishMessages(Dispatcher dispatcher, int numMessages, int length) {
+  protected void publishMessages(
+      final Dispatcher dispatcher, final int numMessages, final int length) {
     for (int i = 0; i < numMessages; i++) {
       long position = -2;
 
@@ -193,7 +194,7 @@ public class DispatcherPipelineModeTest {
     }
   }
 
-  protected static DirectBuffer bufferOfLength(int length) {
+  protected static DirectBuffer bufferOfLength(final int length) {
     return new UnsafeBuffer(new byte[length]);
   }
 }

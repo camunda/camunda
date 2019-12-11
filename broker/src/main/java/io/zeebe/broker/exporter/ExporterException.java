@@ -10,7 +10,7 @@ package io.zeebe.broker.exporter;
 public class ExporterException extends RuntimeException {
   private static final long serialVersionUID = 9144017472787012481L;
 
-  public ExporterException(String message, Throwable cause) {
+  public ExporterException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

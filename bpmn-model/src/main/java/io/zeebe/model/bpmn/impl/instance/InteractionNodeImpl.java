@@ -35,11 +35,11 @@ public abstract class InteractionNodeImpl extends BpmnModelElementInstanceImpl
 
   protected static Attribute<String> idAttribute;
 
-  public InteractionNodeImpl(ModelTypeInstanceContext instanceContext) {
+  public InteractionNodeImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder.defineType(InteractionNode.class, "").namespaceUri(BPMN20_NS).abstractType();
 

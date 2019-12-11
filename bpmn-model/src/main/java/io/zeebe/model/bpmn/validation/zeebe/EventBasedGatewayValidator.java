@@ -45,7 +45,7 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
 
   @Override
   public void validate(
-      EventBasedGateway element, ValidationResultCollector validationResultCollector) {
+      final EventBasedGateway element, final ValidationResultCollector validationResultCollector) {
 
     final Collection<SequenceFlow> outgoingSequenceFlows = element.getOutgoing();
 
@@ -79,7 +79,7 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
     }
   }
 
-  private boolean isValidOutgoingSequenceFlow(SequenceFlow flow) {
+  private boolean isValidOutgoingSequenceFlow(final SequenceFlow flow) {
     final FlowNode targetNode = flow.getTarget();
 
     if (targetNode instanceof IntermediateCatchEvent) {
@@ -103,7 +103,7 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
   }
 
   private Stream<MessageEventDefinition> getMessageEventDefinitions(
-      Collection<SequenceFlow> outgoingSequenceFlows) {
+      final Collection<SequenceFlow> outgoingSequenceFlows) {
     return outgoingSequenceFlows.stream()
         .map(SequenceFlow::getTarget)
         .filter(t -> t instanceof IntermediateCatchEvent)
@@ -114,7 +114,7 @@ public class EventBasedGatewayValidator implements ModelElementValidator<EventBa
   }
 
   private boolean succeedingNodesOnlyHaveEventBasedGatewayAsIncomingFlows(
-      EventBasedGateway element) {
+      final EventBasedGateway element) {
     return element.getSucceedingNodes().stream()
         .flatMap(flowNode -> flowNode.getPreviousNodes().stream())
         .allMatch(element::equals);

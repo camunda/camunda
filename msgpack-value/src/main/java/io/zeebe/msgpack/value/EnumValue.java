@@ -19,7 +19,7 @@ public class EnumValue<E extends Enum<E>> extends BaseValue {
 
   private E value;
 
-  public EnumValue(Class<E> e, E defaultValue) {
+  public EnumValue(final Class<E> e, final E defaultValue) {
     enumConstants = e.getEnumConstants();
     binaryEnumValues = new StringValue[enumConstants.length];
 
@@ -31,7 +31,7 @@ public class EnumValue<E extends Enum<E>> extends BaseValue {
     this.value = defaultValue;
   }
 
-  public EnumValue(Class<E> e) {
+  public EnumValue(final Class<E> e) {
     this(e, null);
   }
 
@@ -39,7 +39,7 @@ public class EnumValue<E extends Enum<E>> extends BaseValue {
     return value;
   }
 
-  public void setValue(E val) {
+  public void setValue(final E val) {
     this.value = val;
   }
 
@@ -49,17 +49,17 @@ public class EnumValue<E extends Enum<E>> extends BaseValue {
   }
 
   @Override
-  public void writeJSON(StringBuilder builder) {
+  public void writeJSON(final StringBuilder builder) {
     binaryEnumValues[value.ordinal()].writeJSON(builder);
   }
 
   @Override
-  public void write(MsgPackWriter writer) {
+  public void write(final MsgPackWriter writer) {
     binaryEnumValues[value.ordinal()].write(writer);
   }
 
   @Override
-  public void read(MsgPackReader reader) {
+  public void read(final MsgPackReader reader) {
     decodedValue.read(reader);
 
     for (int i = 0; i < binaryEnumValues.length; i++) {
@@ -85,7 +85,7 @@ public class EnumValue<E extends Enum<E>> extends BaseValue {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

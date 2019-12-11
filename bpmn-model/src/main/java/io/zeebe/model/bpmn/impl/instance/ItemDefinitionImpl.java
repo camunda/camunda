@@ -37,11 +37,11 @@ public class ItemDefinitionImpl extends RootElementImpl implements ItemDefinitio
   protected static Attribute<Boolean> isCollectionAttribute;
   protected static Attribute<ItemKind> itemKindAttribute;
 
-  public ItemDefinitionImpl(ModelTypeInstanceContext context) {
+  public ItemDefinitionImpl(final ModelTypeInstanceContext context) {
     super(context);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(ItemDefinition.class, BpmnModelConstants.BPMN_ELEMENT_ITEM_DEFINITION)
@@ -50,7 +50,8 @@ public class ItemDefinitionImpl extends RootElementImpl implements ItemDefinitio
             .instanceProvider(
                 new ModelTypeInstanceProvider<ItemDefinition>() {
                   @Override
-                  public ItemDefinition newInstance(ModelTypeInstanceContext instanceContext) {
+                  public ItemDefinition newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new ItemDefinitionImpl(instanceContext);
                   }
                 });
@@ -75,7 +76,7 @@ public class ItemDefinitionImpl extends RootElementImpl implements ItemDefinitio
   }
 
   @Override
-  public void setStructureRef(String structureRef) {
+  public void setStructureRef(final String structureRef) {
     structureRefAttribute.setValue(this, structureRef);
   }
 
@@ -85,7 +86,7 @@ public class ItemDefinitionImpl extends RootElementImpl implements ItemDefinitio
   }
 
   @Override
-  public void setCollection(boolean isCollection) {
+  public void setCollection(final boolean isCollection) {
     isCollectionAttribute.setValue(this, isCollection);
   }
 
@@ -95,7 +96,7 @@ public class ItemDefinitionImpl extends RootElementImpl implements ItemDefinitio
   }
 
   @Override
-  public void setItemKind(ItemKind itemKind) {
+  public void setItemKind(final ItemKind itemKind) {
     itemKindAttribute.setValue(this, itemKind);
   }
 }

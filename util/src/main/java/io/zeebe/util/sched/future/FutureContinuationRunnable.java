@@ -11,10 +11,11 @@ import io.zeebe.util.Loggers;
 import java.util.function.BiConsumer;
 
 public class FutureContinuationRunnable<T> implements Runnable {
-  private ActorFuture<T> future;
-  private BiConsumer<T, Throwable> consumer;
+  private final ActorFuture<T> future;
+  private final BiConsumer<T, Throwable> consumer;
 
-  public FutureContinuationRunnable(ActorFuture<T> future, BiConsumer<T, Throwable> consumer) {
+  public FutureContinuationRunnable(
+      final ActorFuture<T> future, final BiConsumer<T, Throwable> consumer) {
     this.future = future;
     this.consumer = consumer;
   }
@@ -25,7 +26,7 @@ public class FutureContinuationRunnable<T> implements Runnable {
       try {
         final T res = future.get();
         consumer.accept(res, null);
-      } catch (Throwable e) {
+      } catch (final Throwable e) {
         Loggers.ACTOR_LOGGER.debug("Continuing on future completion failed", e);
       }
     } else {

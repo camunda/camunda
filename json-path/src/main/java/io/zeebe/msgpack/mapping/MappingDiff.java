@@ -38,40 +38,44 @@ public class MappingDiff implements MsgPackDiff {
   private Mapping[] mappings;
   private DirectBuffer document;
 
-  public void init(Mapping[] mappings, DirectBuffer document) {
+  public void init(final Mapping[] mappings, final DirectBuffer document) {
     this.mappings = mappings;
     this.document = document;
   }
 
-  public int getResultOffset(int mappingIndex) {
+  public int getResultOffset(final int mappingIndex) {
     return mappingResults.getInt(mapToResultIndex(mappingIndex));
   }
 
-  public int getResultLength(int mappingIndex) {
+  public int getResultLength(final int mappingIndex) {
     return mappingResults.getInt(mapToResultIndex(mappingIndex) + BitUtil.SIZE_OF_INT);
   }
 
-  public boolean isMappedFromSourceDocument(int mappingIndex) {
+  public boolean isMappedFromSourceDocument(final int mappingIndex) {
     return mappingResults.getByte(mapToResultIndex(mappingIndex) + (2 * BitUtil.SIZE_OF_INT)) == 1;
   }
 
-  private static int mapToResultIndex(int mappingIndex) {
+  private static int mapToResultIndex(final int mappingIndex) {
     return mappingIndex * RESULT_ENTRY_LENGTH;
   }
 
-  public void setResult(int mappingIndex, int offset, int length) {
+  public void setResult(final int mappingIndex, final int offset, final int length) {
     setResult(mappingIndex, offset, length, true);
   }
 
-  public void setNullResult(int mappingIndex) {
+  public void setNullResult(final int mappingIndex) {
     setResult(mappingIndex, 1, 1, false);
   }
 
-  public void setEmptyMapResult(int mappingIndex) {
+  public void setEmptyMapResult(final int mappingIndex) {
     setResult(mappingIndex, 0, 1, false);
   }
 
-  private void setResult(int mappingIndex, int offset, int length, boolean fromSourceDocument) {
+  private void setResult(
+      final int mappingIndex,
+      final int offset,
+      final int length,
+      final boolean fromSourceDocument) {
     int mappingResultOffset = mapToResultIndex(mappingIndex);
     mappingResults.putInt(mappingResultOffset, offset);
 
@@ -82,7 +86,7 @@ public class MappingDiff implements MsgPackDiff {
     mappingResults.putByte(mappingResultOffset, fromSourceDocument ? (byte) 1 : (byte) 0);
   }
 
-  private boolean isIndex(String nodeName) {
+  private boolean isIndex(final String nodeName) {
     final int len = nodeName.length();
     for (int i = 0; i < len; i++) {
       final char currentChar = nodeName.charAt(i);
@@ -94,7 +98,7 @@ public class MappingDiff implements MsgPackDiff {
   }
 
   @Override
-  public void mergeInto(MsgPackTree document) {
+  public void mergeInto(final MsgPackTree document) {
     final int constantsDocumentId = document.addDocument(CONSTANTS_DOCUMENT);
     final int ourDocumentId = document.addDocument(this.document);
 
@@ -130,7 +134,10 @@ public class MappingDiff implements MsgPackDiff {
   }
 
   private String mergeContainerInto(
-      MsgPackTree document, String parentId, String nodeName, String nextPathElement) {
+      final MsgPackTree document,
+      final String parentId,
+      final String nodeName,
+      final String nextPathElement) {
 
     final String nodeId = construct(parentId, nodeName);
 
@@ -150,13 +157,13 @@ public class MappingDiff implements MsgPackDiff {
   }
 
   private void mergeValueInto(
-      MsgPackTree document,
-      String parentId,
-      String nodeName,
-      Mapping.Type mappingType,
-      int documentId,
-      int valueOffset,
-      int valueLength) {
+      final MsgPackTree document,
+      final String parentId,
+      final String nodeName,
+      final Mapping.Type mappingType,
+      final int documentId,
+      final int valueOffset,
+      final int valueLength) {
     switch (mappingType) {
       case COLLECT:
         document.appendToArray(parentId, nodeName, documentId, valueOffset, valueLength);

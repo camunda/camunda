@@ -31,7 +31,7 @@ public class MessageStartEventSubscriptionTest {
   private static final String MESSAGE_NAME2 = "startMessage2";
   private static final String EVENT_ID2 = "startEventId2";
 
-  @Rule public EngineRule engine = EngineRule.singlePartition();
+  @Rule public final EngineRule engine = EngineRule.singlePartition();
 
   @Test
   public void shouldOpenMessageSubscriptionOnDeployment() {

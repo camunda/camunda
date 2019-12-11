@@ -22,7 +22,8 @@ import org.junit.Test;
 
 public class RecoverableRetryStrategyTest {
 
-  @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
 
   private RecoverableRetryStrategy recoverableRetryStrategy;
   private ActorControl actorControl;

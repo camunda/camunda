@@ -43,7 +43,8 @@ public class MessageSubscriptionState {
   private final ColumnFamily<DbCompositeKey<DbCompositeKey<DbString, DbString>, DbLong>, DbNil>
       messageNameAndCorrelationKeyColumnFamily;
 
-  public MessageSubscriptionState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public MessageSubscriptionState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     this.dbContext = dbContext;
 
     elementInstanceKey = new DbLong();
@@ -78,7 +79,7 @@ public class MessageSubscriptionState {
             DbNil.INSTANCE);
   }
 
-  public MessageSubscription get(long elementInstanceKey, DirectBuffer messageName) {
+  public MessageSubscription get(final long elementInstanceKey, final DirectBuffer messageName) {
     this.messageName.wrapBuffer(messageName);
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     return subscriptionColumnFamily.get(elementKeyAndMessageName);
@@ -97,7 +98,7 @@ public class MessageSubscriptionState {
   public void visitSubscriptions(
       final DirectBuffer messageName,
       final DirectBuffer correlationKey,
-      MessageSubscriptionVisitor visitor) {
+      final MessageSubscriptionVisitor visitor) {
 
     this.messageName.wrapBuffer(messageName);
     this.correlationKey.wrapBuffer(correlationKey);
@@ -110,8 +111,8 @@ public class MessageSubscriptionState {
   }
 
   private Boolean visitMessageSubscription(
-      DbCompositeKey<DbLong, DbString> elementKeyAndMessageName,
-      MessageSubscriptionVisitor visitor) {
+      final DbCompositeKey<DbLong, DbString> elementKeyAndMessageName,
+      final MessageSubscriptionVisitor visitor) {
     final MessageSubscription messageSubscription =
         subscriptionColumnFamily.get(elementKeyAndMessageName);
 
@@ -127,23 +128,24 @@ public class MessageSubscriptionState {
 
   public void updateToCorrelatingState(
       final MessageSubscription subscription,
-      DirectBuffer messageVariables,
-      long sentTime,
-      long messageKey) {
+      final DirectBuffer messageVariables,
+      final long sentTime,
+      final long messageKey) {
     subscription.setMessageVariables(messageVariables);
     subscription.setMessageKey(messageKey);
     updateSentTime(subscription, sentTime);
   }
 
-  public void resetSentTime(MessageSubscription subscription) {
+  public void resetSentTime(final MessageSubscription subscription) {
     updateSentTime(subscription, 0);
   }
 
-  public void updateSentTimeInTransaction(final MessageSubscription subscription, long sentTime) {
+  public void updateSentTimeInTransaction(
+      final MessageSubscription subscription, final long sentTime) {
     dbContext.runInTransaction((() -> updateSentTime(subscription, sentTime)));
   }
 
-  public void updateSentTime(final MessageSubscription subscription, long sentTime) {
+  public void updateSentTime(final MessageSubscription subscription, final long sentTime) {
     elementInstanceKey.wrapLong(subscription.getElementInstanceKey());
     messageName.wrapBuffer(subscription.getMessageName());
 
@@ -158,7 +160,8 @@ public class MessageSubscriptionState {
     }
   }
 
-  public void visitSubscriptionBefore(final long deadline, MessageSubscriptionVisitor visitor) {
+  public void visitSubscriptionBefore(
+      final long deadline, final MessageSubscriptionVisitor visitor) {
     sentTimeColumnFamily.whileTrue(
         (compositeKey, nil) -> {
           final long sentTime = compositeKey.getFirst().getValue();
@@ -170,14 +173,14 @@ public class MessageSubscriptionState {
   }
 
   public boolean existSubscriptionForElementInstance(
-      long elementInstanceKey, DirectBuffer messageName) {
+      final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
 
     return subscriptionColumnFamily.exists(elementKeyAndMessageName);
   }
 
-  public boolean remove(long elementInstanceKey, DirectBuffer messageName) {
+  public boolean remove(final long elementInstanceKey, final DirectBuffer messageName) {
     this.elementInstanceKey.wrapLong(elementInstanceKey);
     this.messageName.wrapBuffer(messageName);
 
@@ -201,7 +204,7 @@ public class MessageSubscriptionState {
     removeSubscriptionFromSentTimeColumnFamily(subscription);
   }
 
-  private void removeSubscriptionFromSentTimeColumnFamily(MessageSubscription subscription) {
+  private void removeSubscriptionFromSentTimeColumnFamily(final MessageSubscription subscription) {
     if (subscription.getCommandSentTime() > 0) {
       sentTime.wrapLong(subscription.getCommandSentTime());
       sentTimeColumnFamily.delete(sentTimeCompositeKey);

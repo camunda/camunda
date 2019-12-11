@@ -29,13 +29,14 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
 
   private final ZeebeState zeebeState;
 
-  public CreateIncidentProcessor(ZeebeState zeebeState) {
+  public CreateIncidentProcessor(final ZeebeState zeebeState) {
     this.zeebeState = zeebeState;
   }
 
   @Override
   public boolean onCommand(
-      TypedRecord<IncidentRecord> command, CommandControl<IncidentRecord> commandControl) {
+      final TypedRecord<IncidentRecord> command,
+      final CommandControl<IncidentRecord> commandControl) {
     final IncidentRecord incidentEvent = command.getValue();
 
     final boolean incidentIsNotRejected = !rejectIncidentCreation(incidentEvent, commandControl);
@@ -49,7 +50,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
   }
 
   public boolean rejectIncidentCreation(
-      IncidentRecord incidentEvent, CommandControl<IncidentRecord> commandControl) {
+      final IncidentRecord incidentEvent, final CommandControl<IncidentRecord> commandControl) {
     final IncidentState incidentState = zeebeState.getIncidentState();
 
     final boolean isJobIncident = incidentState.isJobIncident(incidentEvent);
@@ -61,7 +62,8 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
     }
   }
 
-  private boolean rejectJobIncident(long jobKey, CommandControl<IncidentRecord> commandControl) {
+  private boolean rejectJobIncident(
+      final long jobKey, final CommandControl<IncidentRecord> commandControl) {
     final JobState state = zeebeState.getJobState();
     final JobState.State jobState = state.getState(jobKey);
 
@@ -76,7 +78,7 @@ public final class CreateIncidentProcessor implements CommandProcessor<IncidentR
   }
 
   private boolean rejectWorkflowInstanceIncident(
-      long elementInstanceKey, CommandControl<IncidentRecord> commandControl) {
+      final long elementInstanceKey, final CommandControl<IncidentRecord> commandControl) {
     final ElementInstanceState elementInstanceState =
         zeebeState.getWorkflowState().getElementInstanceState();
 

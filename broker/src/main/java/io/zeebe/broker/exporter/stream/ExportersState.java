@@ -24,7 +24,7 @@ public class ExportersState {
   private final DbLong position;
   private final ColumnFamily<DbString, DbLong> exporterPositionColumnFamily;
 
-  public ExportersState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public ExportersState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     exporterId = new DbString();
     position = new DbLong();
     exporterPositionColumnFamily =
@@ -42,7 +42,7 @@ public class ExportersState {
     setPositionIfGreater(position);
   }
 
-  private void setPositionIfGreater(long position) {
+  private void setPositionIfGreater(final long position) {
     // not that performant then rocksdb merge but
     // was currently simpler and easier to implement
     // if necessary change it again to merge
@@ -68,12 +68,12 @@ public class ExportersState {
     return zbLong == null ? VALUE_NOT_FOUND : zbLong.getValue();
   }
 
-  private void setPosition(long position) {
+  private void setPosition(final long position) {
     this.position.wrapLong(position);
     exporterPositionColumnFamily.put(this.exporterId, this.position);
   }
 
-  public void visitPositions(BiConsumer<String, Long> consumer) {
+  public void visitPositions(final BiConsumer<String, Long> consumer) {
     exporterPositionColumnFamily.forEach(
         (exporterId, position) -> consumer.accept(exporterId.toString(), position.getValue()));
   }
@@ -85,7 +85,7 @@ public class ExportersState {
     return positions.longStream().min().orElse(-1L);
   }
 
-  public void removePosition(String exporter) {
+  public void removePosition(final String exporter) {
     exporterId.wrapString(exporter);
     exporterPositionColumnFamily.delete(exporterId);
   }

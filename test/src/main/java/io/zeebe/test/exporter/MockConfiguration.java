@@ -20,16 +20,17 @@ public class MockConfiguration<T> implements Configuration {
   public MockConfiguration() {}
 
   /** @param configuration will be returned every time by a call to {{@link #instantiate(Class)}} */
-  public MockConfiguration(T configuration) {
+  public MockConfiguration(final T configuration) {
     this.configuration = configuration;
   }
 
-  public MockConfiguration(String id, Map<String, Object> arguments) {
+  public MockConfiguration(final String id, final Map<String, Object> arguments) {
     this.id = id;
     this.arguments = arguments;
   }
 
-  public MockConfiguration(String id, Map<String, Object> arguments, T configuration) {
+  public MockConfiguration(
+      final String id, final Map<String, Object> arguments, final T configuration) {
     this.id = id;
     this.arguments = arguments;
     this.configuration = configuration;
@@ -40,7 +41,7 @@ public class MockConfiguration<T> implements Configuration {
     return id;
   }
 
-  public void setId(String id) {
+  public void setId(final String id) {
     this.id = id;
   }
 
@@ -49,12 +50,12 @@ public class MockConfiguration<T> implements Configuration {
     return arguments;
   }
 
-  public void setArguments(Map<String, Object> arguments) {
+  public void setArguments(final Map<String, Object> arguments) {
     this.arguments = arguments;
   }
 
   @Override
-  public <R> R instantiate(Class<R> configClass) {
+  public <R> R instantiate(final Class<R> configClass) {
     if (configuration != null && configClass.isAssignableFrom(configuration.getClass())) {
       return configClass.cast(configuration);
     }
@@ -67,7 +68,7 @@ public class MockConfiguration<T> implements Configuration {
    *
    * @param configuration instance to return for {@link #instantiate(Class)} calls
    */
-  public void setConfiguration(T configuration) {
+  public void setConfiguration(final T configuration) {
     this.configuration = configuration;
   }
 }

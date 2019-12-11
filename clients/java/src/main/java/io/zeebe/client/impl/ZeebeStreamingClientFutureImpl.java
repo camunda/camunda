@@ -25,7 +25,7 @@ public class ZeebeStreamingClientFutureImpl<ClientResponse, BrokerResponse>
   private final Consumer<BrokerResponse> collector;
 
   public ZeebeStreamingClientFutureImpl(
-      ClientResponse response, Consumer<BrokerResponse> collector) {
+      final ClientResponse response, final Consumer<BrokerResponse> collector) {
     this.response = response;
     this.collector = collector;
   }

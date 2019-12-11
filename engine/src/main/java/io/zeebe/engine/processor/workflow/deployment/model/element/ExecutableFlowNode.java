@@ -19,7 +19,7 @@ public class ExecutableFlowNode extends AbstractFlowElement {
   private Mapping[] inputMappings = new Mapping[0];
   private Mapping[] outputMappings = new Mapping[0];
 
-  public ExecutableFlowNode(String id) {
+  public ExecutableFlowNode(final String id) {
     super(id);
   }
 
@@ -27,7 +27,7 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     return outgoing;
   }
 
-  public void addOutgoing(ExecutableSequenceFlow flow) {
+  public void addOutgoing(final ExecutableSequenceFlow flow) {
     this.outgoing.add(flow);
   }
 
@@ -35,7 +35,7 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     return incoming;
   }
 
-  public void addIncoming(ExecutableSequenceFlow flow) {
+  public void addIncoming(final ExecutableSequenceFlow flow) {
     this.incoming.add(flow);
   }
 
@@ -43,7 +43,7 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     return inputMappings;
   }
 
-  public void setInputMappings(Mapping[] inputMappings) {
+  public void setInputMappings(final Mapping[] inputMappings) {
     this.inputMappings = inputMappings;
   }
 
@@ -51,7 +51,7 @@ public class ExecutableFlowNode extends AbstractFlowElement {
     return outputMappings;
   }
 
-  public void setOutputMappings(Mapping[] outputMappings) {
+  public void setOutputMappings(final Mapping[] outputMappings) {
     this.outputMappings = outputMappings;
   }
 }

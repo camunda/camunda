@@ -18,7 +18,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class PartitionBuilder {
 
-  public LogBufferPartition[] slicePartitions(int partitionSize, AllocatedBuffer allocatedBuffer) {
+  public LogBufferPartition[] slicePartitions(
+      final int partitionSize, final AllocatedBuffer allocatedBuffer) {
     final ByteBuffer buffer = allocatedBuffer.getRawBuffer();
     final LogBufferPartition[] partitions = new LogBufferPartition[PARTITION_COUNT];
 

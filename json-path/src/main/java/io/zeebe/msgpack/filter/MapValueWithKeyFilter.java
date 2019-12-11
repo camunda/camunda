@@ -23,7 +23,9 @@ public class MapValueWithKeyFilter implements MsgPackFilter {
 
   @Override
   public boolean matches(
-      MsgPackTraversalContext ctx, DirectBuffer filterContext, MsgPackToken value) {
+      final MsgPackTraversalContext ctx,
+      final DirectBuffer filterContext,
+      final MsgPackToken value) {
 
     if (ctx.hasElements() && ctx.isMap()) {
       final MutableDirectBuffer dynamicContext = ctx.dynamicContext();
@@ -59,12 +61,16 @@ public class MapValueWithKeyFilter implements MsgPackFilter {
   }
 
   public static void encodeDynamicContext(
-      MutableDirectBuffer contextBuffer, DirectBuffer keyBuffer, int keyOffset, int keyLength) {
+      final MutableDirectBuffer contextBuffer,
+      final DirectBuffer keyBuffer,
+      final int keyOffset,
+      final int keyLength) {
     contextBuffer.putInt(0, keyLength);
     contextBuffer.putBytes(BitUtil.SIZE_OF_INT, keyBuffer, keyOffset, keyLength);
   }
 
-  public static void encodeDynamicContext(MutableDirectBuffer contextBuffer, String key) {
+  public static void encodeDynamicContext(
+      final MutableDirectBuffer contextBuffer, final String key) {
     final UnsafeBuffer keyBuffer = new UnsafeBuffer(key.getBytes(StandardCharsets.UTF_8));
     encodeDynamicContext(contextBuffer, keyBuffer, 0, keyBuffer.capacity());
   }

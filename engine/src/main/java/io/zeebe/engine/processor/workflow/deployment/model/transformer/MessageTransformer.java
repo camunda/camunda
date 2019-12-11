@@ -25,7 +25,7 @@ public class MessageTransformer implements ModelElementTransformer<Message> {
   }
 
   @Override
-  public void transform(Message element, TransformContext context) {
+  public void transform(final Message element, final TransformContext context) {
 
     final String id = element.getId();
     final ExecutableMessage executableElement = new ExecutableMessage(id);

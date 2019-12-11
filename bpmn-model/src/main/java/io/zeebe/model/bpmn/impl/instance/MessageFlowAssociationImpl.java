@@ -40,11 +40,11 @@ public class MessageFlowAssociationImpl extends BaseElementImpl implements Messa
   protected static AttributeReference<MessageFlow> innerMessageFlowRefAttribute;
   protected static AttributeReference<MessageFlow> outerMessageFlowRefAttribute;
 
-  public MessageFlowAssociationImpl(ModelTypeInstanceContext instanceContext) {
+  public MessageFlowAssociationImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(MessageFlowAssociation.class, BPMN_ELEMENT_MESSAGE_FLOW_ASSOCIATION)
@@ -54,7 +54,7 @@ public class MessageFlowAssociationImpl extends BaseElementImpl implements Messa
                 new ModelTypeInstanceProvider<MessageFlowAssociation>() {
                   @Override
                   public MessageFlowAssociation newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new MessageFlowAssociationImpl(instanceContext);
                   }
                 });
@@ -82,7 +82,7 @@ public class MessageFlowAssociationImpl extends BaseElementImpl implements Messa
   }
 
   @Override
-  public void setInnerMessageFlow(MessageFlow innerMessageFlow) {
+  public void setInnerMessageFlow(final MessageFlow innerMessageFlow) {
     innerMessageFlowRefAttribute.setReferenceTargetElement(this, innerMessageFlow);
   }
 
@@ -92,7 +92,7 @@ public class MessageFlowAssociationImpl extends BaseElementImpl implements Messa
   }
 
   @Override
-  public void setOuterMessageFlow(MessageFlow outerMessageFlow) {
+  public void setOuterMessageFlow(final MessageFlow outerMessageFlow) {
     outerMessageFlowRefAttribute.setReferenceTargetElement(this, outerMessageFlow);
   }
 }

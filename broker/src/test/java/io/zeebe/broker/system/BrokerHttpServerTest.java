@@ -37,9 +37,9 @@ public class BrokerHttpServerTest {
   public void shouldGetMetrics() throws IOException {
     final String url = baseUrl + "/metrics";
 
-    try (CloseableHttpClient client = HttpClients.createDefault()) {
+    try (final CloseableHttpClient client = HttpClients.createDefault()) {
       final HttpGet request = new HttpGet(url);
-      try (CloseableHttpResponse response = client.execute(request)) {
+      try (final CloseableHttpResponse response = client.execute(request)) {
         assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
         assertThat(EntityUtils.toString(response.getEntity())).contains("jvm_info");
       }
@@ -50,9 +50,9 @@ public class BrokerHttpServerTest {
   public void shouldGetReadyStatus() throws IOException {
     final String url = baseUrl + "/ready";
 
-    try (CloseableHttpClient client = HttpClients.createDefault()) {
+    try (final CloseableHttpClient client = HttpClients.createDefault()) {
       final HttpGet request = new HttpGet(url);
-      try (CloseableHttpResponse response = client.execute(request)) {
+      try (final CloseableHttpResponse response = client.execute(request)) {
         assertThat(response.getStatusLine().getStatusCode()).isEqualTo(204);
       }
     }

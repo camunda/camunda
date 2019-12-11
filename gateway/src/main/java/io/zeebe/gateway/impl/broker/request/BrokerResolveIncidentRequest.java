@@ -16,7 +16,7 @@ public class BrokerResolveIncidentRequest extends BrokerExecuteCommand<IncidentR
 
   private final IncidentRecord requestDto = new IncidentRecord();
 
-  public BrokerResolveIncidentRequest(long incidentKey) {
+  public BrokerResolveIncidentRequest(final long incidentKey) {
     super(ValueType.INCIDENT, IncidentIntent.RESOLVE);
     request.setKey(incidentKey);
   }
@@ -27,7 +27,7 @@ public class BrokerResolveIncidentRequest extends BrokerExecuteCommand<IncidentR
   }
 
   @Override
-  protected IncidentRecord toResponseDto(DirectBuffer buffer) {
+  protected IncidentRecord toResponseDto(final DirectBuffer buffer) {
     final IncidentRecord responseDto = new IncidentRecord();
     responseDto.wrap(buffer);
     return responseDto;

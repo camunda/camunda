@@ -31,7 +31,7 @@ public class JobRecordStream
     return valueFilter(v -> v.getRetries() == retries);
   }
 
-  public JobRecordStream withWorkflowInstanceKey(long workflowInstanceKey) {
+  public JobRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
 }

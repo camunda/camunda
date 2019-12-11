@@ -20,7 +20,7 @@ public class RemoteAddressListImpl implements RemoteAddressList {
   private Consumer<RemoteAddressImpl> onAddressAddedConsumer = r -> {};
 
   @Override
-  public synchronized RemoteAddressImpl getByStreamId(int streamId) {
+  public synchronized RemoteAddressImpl getByStreamId(final int streamId) {
     if (streamId < size) {
       return index[streamId];
     }
@@ -35,7 +35,7 @@ public class RemoteAddressListImpl implements RemoteAddressList {
    * @return
    */
   @Override
-  public RemoteAddressImpl getByAddress(SocketAddress inetSocketAddress) {
+  public RemoteAddressImpl getByAddress(final SocketAddress inetSocketAddress) {
     return getByAddress(inetSocketAddress, RemoteAddressImpl.STATE_ACTIVE);
   }
 
@@ -45,7 +45,7 @@ public class RemoteAddressListImpl implements RemoteAddressList {
    * assigned (+ new stream id)
    */
   @Override
-  public synchronized void retire(RemoteAddress remote) {
+  public synchronized void retire(final RemoteAddress remote) {
     getByStreamId(remote.getStreamId()).retire();
   }
 
@@ -56,7 +56,7 @@ public class RemoteAddressListImpl implements RemoteAddressList {
    * @param remote
    */
   @Override
-  public synchronized void deactivate(RemoteAddress remote) {
+  public synchronized void deactivate(final RemoteAddress remote) {
     getByStreamId(remote.getStreamId()).deactivate();
   }
 
@@ -68,7 +68,7 @@ public class RemoteAddressListImpl implements RemoteAddressList {
   }
 
   @Override
-  public RemoteAddressImpl register(SocketAddress inetSocketAddress) {
+  public RemoteAddressImpl register(final SocketAddress inetSocketAddress) {
     RemoteAddressImpl result = getByAddress(inetSocketAddress);
 
     if (result == null) {
@@ -107,7 +107,7 @@ public class RemoteAddressListImpl implements RemoteAddressList {
   }
 
   private synchronized RemoteAddressImpl getByAddress(
-      SocketAddress inetSocketAddress, int stateMask) {
+      final SocketAddress inetSocketAddress, final int stateMask) {
     final int currSize = size;
 
     for (int i = 0; i < currSize; i++) {
@@ -125,7 +125,7 @@ public class RemoteAddressListImpl implements RemoteAddressList {
   }
 
   public synchronized void setOnAddressAddedConsumer(
-      Consumer<RemoteAddressImpl> onAddressAddedConsumer) {
+      final Consumer<RemoteAddressImpl> onAddressAddedConsumer) {
     this.onAddressAddedConsumer = onAddressAddedConsumer;
   }
 }

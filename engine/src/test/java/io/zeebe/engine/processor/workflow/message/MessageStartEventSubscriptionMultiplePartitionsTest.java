@@ -25,7 +25,7 @@ public class MessageStartEventSubscriptionMultiplePartitionsTest {
   private static final String MESSAGE_NAME1 = "startMessage1";
   private static final String EVENT_ID1 = "startEventId1";
 
-  public @Rule EngineRule engine = EngineRule.multiplePartition(3);
+  public @Rule final EngineRule engine = EngineRule.multiplePartition(3);
 
   @Test
   public void shouldOpenMessageStartEventSubscriptionOnAllPartitions() {

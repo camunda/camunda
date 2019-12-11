@@ -22,16 +22,16 @@ import org.mockito.ArgumentMatcher;
  * @param <T>
  */
 public class BufferReaderMatcher<T extends BufferReader> implements ArgumentMatcher<T> {
-  protected List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
+  protected final List<BufferReaderMatch<T>> propertyMatchers = new ArrayList<>();
 
   @Override
   @SuppressWarnings("unchecked")
-  public boolean matches(T argument) {
+  public boolean matches(final T argument) {
     if (argument == null) {
       return false;
     }
 
-    for (BufferReaderMatch<T> matcher : propertyMatchers) {
+    for (final BufferReaderMatch<T> matcher : propertyMatchers) {
       if (!matcher.matches(argument)) {
         return false;
       }
@@ -40,7 +40,8 @@ public class BufferReaderMatcher<T extends BufferReader> implements ArgumentMatc
     return true;
   }
 
-  public BufferReaderMatcher<T> matching(Function<T, Object> actualProperty, Object expectedValue) {
+  public BufferReaderMatcher<T> matching(
+      final Function<T, Object> actualProperty, final Object expectedValue) {
     final BufferReaderMatch<T> match = new BufferReaderMatch<>();
     match.propertyExtractor = actualProperty;
 

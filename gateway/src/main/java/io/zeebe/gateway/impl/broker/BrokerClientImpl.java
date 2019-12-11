@@ -192,16 +192,16 @@ public class BrokerClientImpl implements BrokerClient {
 
   @Override
   public <T> ActorFuture<BrokerResponse<T>> sendRequest(
-      BrokerRequest<T> request, Duration requestTimeout) {
+      final BrokerRequest<T> request, final Duration requestTimeout) {
     return requestManager.sendRequest(request, requestTimeout);
   }
 
   @Override
   public <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer,
-      Duration requestTimeout) {
+      final BrokerRequest<T> request,
+      final BrokerResponseConsumer<T> responseConsumer,
+      final Consumer<Throwable> throwableConsumer,
+      final Duration requestTimeout) {
     requestManager.sendRequest(request, responseConsumer, throwableConsumer, requestTimeout);
   }
 

@@ -43,14 +43,14 @@ import org.camunda.bpm.model.xml.impl.util.ModelUtil;
  */
 public class ModelWalker {
 
-  private BpmnModelInstanceImpl modelInstance;
-  private Deque<BpmnModelElementInstance> elementsToVisit = new LinkedList<>();
+  private final BpmnModelInstanceImpl modelInstance;
+  private final Deque<BpmnModelElementInstance> elementsToVisit = new LinkedList<>();
 
-  public ModelWalker(BpmnModelInstance modelInstance) {
+  public ModelWalker(final BpmnModelInstance modelInstance) {
     this.modelInstance = (BpmnModelInstanceImpl) modelInstance;
   }
 
-  public void walk(ModelElementVisitor visitor) {
+  public void walk(final ModelElementVisitor visitor) {
     final Definitions rootElement = modelInstance.getDefinitions();
 
     elementsToVisit.add(rootElement); // top-down
@@ -63,7 +63,8 @@ public class ModelWalker {
     }
   }
 
-  private Collection<BpmnModelElementInstance> getChildElements(BpmnModelElementInstance element) {
+  private Collection<BpmnModelElementInstance> getChildElements(
+      final BpmnModelElementInstance element) {
     return ModelUtil.getModelElementCollection(
         element.getDomElement().getChildElements(), modelInstance);
   }

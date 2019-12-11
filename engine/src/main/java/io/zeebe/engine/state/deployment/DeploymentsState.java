@@ -22,7 +22,7 @@ public class DeploymentsState {
   private final DbLong deploymentKey;
   private final ColumnFamily<DbLong, PendingDeploymentDistribution> pendingDeploymentColumnFamily;
 
-  public DeploymentsState(ZeebeDb<ZbColumnFamilies> zeebeDb, DbContext dbContext) {
+  public DeploymentsState(final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
 
     deploymentKey = new DbLong();
     pendingDeploymentDistribution =

@@ -26,7 +26,7 @@ public class WorkflowImpl implements Workflow {
   protected final int version;
   protected final String resourceName;
 
-  public WorkflowImpl(WorkflowMetadata workflow) {
+  public WorkflowImpl(final WorkflowMetadata workflow) {
     this(
         workflow.getWorkflowKey(),
         workflow.getBpmnProcessId(),
@@ -34,7 +34,11 @@ public class WorkflowImpl implements Workflow {
         workflow.getResourceName());
   }
 
-  public WorkflowImpl(long workflowKey, String bpmnProcessId, int version, String resourceName) {
+  public WorkflowImpl(
+      final long workflowKey,
+      final String bpmnProcessId,
+      final int version,
+      final String resourceName) {
     this.workflowKey = workflowKey;
     this.bpmnProcessId = bpmnProcessId;
     this.version = version;
@@ -67,7 +71,7 @@ public class WorkflowImpl implements Workflow {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

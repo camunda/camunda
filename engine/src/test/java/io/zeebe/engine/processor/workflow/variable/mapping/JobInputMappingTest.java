@@ -106,7 +106,8 @@ public class JobInputMappingTest {
         .isEqualTo(JsonUtil.fromJsonAsMap(expectedVariables));
   }
 
-  private static Consumer<ServiceTaskBuilder> mapping(Consumer<ServiceTaskBuilder> mappingBuilder) {
+  private static Consumer<ServiceTaskBuilder> mapping(
+      final Consumer<ServiceTaskBuilder> mappingBuilder) {
     return mappingBuilder;
   }
 }

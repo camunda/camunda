@@ -30,11 +30,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
  */
 public class EventDefinitionRef extends BpmnModelElementInstanceImpl {
 
-  public EventDefinitionRef(ModelTypeInstanceContext instanceContext) {
+  public EventDefinitionRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(EventDefinitionRef.class, BPMN_ELEMENT_EVENT_DEFINITION_REF)
@@ -42,7 +42,8 @@ public class EventDefinitionRef extends BpmnModelElementInstanceImpl {
             .instanceProvider(
                 new ModelElementTypeBuilder.ModelTypeInstanceProvider<EventDefinitionRef>() {
                   @Override
-                  public EventDefinitionRef newInstance(ModelTypeInstanceContext instanceContext) {
+                  public EventDefinitionRef newInstance(
+                      final ModelTypeInstanceContext instanceContext) {
                     return new EventDefinitionRef(instanceContext);
                   }
                 });

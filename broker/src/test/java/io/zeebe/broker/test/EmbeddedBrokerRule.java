@@ -64,19 +64,19 @@ public class EmbeddedBrokerRule extends ExternalResource {
   protected final Consumer<BrokerCfg>[] configurators;
   protected BrokerCfg brokerCfg;
   protected Broker broker;
-  protected ControlledActorClock controlledActorClock = new ControlledActorClock();
+  protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected long startTime;
   private File newTemporaryFolder;
   private List<String> dataDirectories;
 
   @SafeVarargs
-  public EmbeddedBrokerRule(Consumer<BrokerCfg>... configurators) {
+  public EmbeddedBrokerRule(final Consumer<BrokerCfg>... configurators) {
     this(DEFAULT_CONFIG_FILE, configurators);
   }
 
   @SafeVarargs
   public EmbeddedBrokerRule(
-      final String configFileClasspathLocation, Consumer<BrokerCfg>... configurators) {
+      final String configFileClasspathLocation, final Consumer<BrokerCfg>... configurators) {
     this(
         () ->
             EmbeddedBrokerRule.class
@@ -188,7 +188,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   public void startBroker() {
     if (brokerCfg == null) {
-      try (InputStream configStream = configSupplier.get()) {
+      try (final InputStream configStream = configSupplier.get()) {
         if (configStream == null) {
           brokerCfg = new BrokerCfg();
         } else {
@@ -208,7 +208,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
     try {
       latch.await(INSTALL_TIMEOUT, INSTALL_TIMEOUT_UNIT);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       LOG.info("Broker was not started in 15 seconds", e);
       Thread.currentThread().interrupt();
     }
@@ -241,7 +241,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     TEST_RECORDER.accept(brokerCfg);
 
     // custom configurators
-    for (Consumer<BrokerCfg> configurator : configurators) {
+    for (final Consumer<BrokerCfg> configurator : configurators) {
       configurator.accept(brokerCfg);
     }
 
@@ -269,15 +269,17 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
     private final CountDownLatch latch;
 
-    LeaderPartitionListener(CountDownLatch latch) {
+    LeaderPartitionListener(final CountDownLatch latch) {
       this.latch = latch;
     }
 
     @Override
-    public void onBecomingFollower(int partitionId, long term, LogStream logStream) {}
+    public void onBecomingFollower(
+        final int partitionId, final long term, final LogStream logStream) {}
 
     @Override
-    public void onBecomingLeader(int partitionId, long term, LogStream logStream) {
+    public void onBecomingLeader(
+        final int partitionId, final long term, final LogStream logStream) {
       latch.countDown();
     }
   }

@@ -31,11 +31,11 @@ import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceP
  */
 public class CorrelationPropertyRef extends BpmnModelElementInstanceImpl {
 
-  public CorrelationPropertyRef(ModelTypeInstanceContext instanceContext) {
+  public CorrelationPropertyRef(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
   }
 
-  public static void registerType(ModelBuilder modelBuilder) {
+  public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
             .defineType(CorrelationPropertyRef.class, BPMN_ELEMENT_CORRELATION_PROPERTY_REF)
@@ -44,7 +44,7 @@ public class CorrelationPropertyRef extends BpmnModelElementInstanceImpl {
                 new ModelTypeInstanceProvider<CorrelationPropertyRef>() {
                   @Override
                   public CorrelationPropertyRef newInstance(
-                      ModelTypeInstanceContext instanceContext) {
+                      final ModelTypeInstanceContext instanceContext) {
                     return new CorrelationPropertyRef(instanceContext);
                   }
                 });

@@ -18,15 +18,15 @@ public class BrokerException extends RuntimeException {
 
   private static final long serialVersionUID = -2808029505078161668L;
 
-  public BrokerException(String message) {
+  public BrokerException(final String message) {
     super(message);
   }
 
-  public BrokerException(String message, Throwable cause) {
+  public BrokerException(final String message, final Throwable cause) {
     super(message, cause);
   }
 
-  public BrokerException(Throwable cause) {
+  public BrokerException(final Throwable cause) {
     super(cause);
   }
 }

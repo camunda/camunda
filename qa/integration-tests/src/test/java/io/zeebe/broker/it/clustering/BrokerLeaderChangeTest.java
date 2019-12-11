@@ -33,9 +33,9 @@ public class BrokerLeaderChangeTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
-  public Timeout testTimeout = Timeout.seconds(120);
-  public ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
-  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  public final Timeout testTimeout = Timeout.seconds(120);
+  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
+  public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -105,7 +105,7 @@ public class BrokerLeaderChangeTest {
     void waitForJobCompletion() {
       try {
         latch.await(10, TimeUnit.SECONDS);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new RuntimeException(e);
       }
       assertJobCompleted();

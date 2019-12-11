@@ -76,22 +76,23 @@ public class ZeebeClientImpl implements ZeebeClient {
     this(configuration, buildChannel(configuration));
   }
 
-  public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ManagedChannel channel) {
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration, final ManagedChannel channel) {
     this(configuration, channel, buildGatewayStub(channel, configuration));
   }
 
   public ZeebeClientImpl(
       final ZeebeClientConfiguration configuration,
-      ManagedChannel channel,
-      GatewayStub gatewayStub) {
+      final ManagedChannel channel,
+      final GatewayStub gatewayStub) {
     this(configuration, channel, gatewayStub, buildExecutorService(configuration));
   }
 
   public ZeebeClientImpl(
-      ZeebeClientConfiguration config,
-      ManagedChannel channel,
-      GatewayStub gatewayStub,
-      ScheduledExecutorService executorService) {
+      final ZeebeClientConfiguration config,
+      final ManagedChannel channel,
+      final GatewayStub gatewayStub,
+      final ScheduledExecutorService executorService) {
     this.config = config;
     this.objectMapper = new ZeebeObjectMapper();
     this.channel = channel;
@@ -106,7 +107,7 @@ public class ZeebeClientImpl implements ZeebeClient {
     this.jobClient = newJobClient();
   }
 
-  public static ManagedChannel buildChannel(ZeebeClientConfiguration config) {
+  public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
     final URI address;
 
     try {
@@ -124,7 +125,7 @@ public class ZeebeClientImpl implements ZeebeClient {
     return channelBuilder.build();
   }
 
-  private static CallCredentials buildCallCredentials(ZeebeClientConfiguration config) {
+  private static CallCredentials buildCallCredentials(final ZeebeClientConfiguration config) {
     final CredentialsProvider customCredentialsProvider = config.getCredentialsProvider();
 
     if (customCredentialsProvider == null) {
@@ -135,7 +136,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   private static void configureConnectionSecurity(
-      ZeebeClientConfiguration config, NettyChannelBuilder channelBuilder) {
+      final ZeebeClientConfiguration config, final NettyChannelBuilder channelBuilder) {
     if (!config.isPlaintextConnectionEnabled()) {
       final String certificatePath = config.getCaCertificatePath();
       SslContext sslContext = null;
@@ -146,9 +147,9 @@ public class ZeebeClientImpl implements ZeebeClient {
               "Expected valid certificate path but found empty path instead.");
         }
 
-        try (FileInputStream certInputStream = new FileInputStream(certificatePath)) {
+        try (final FileInputStream certInputStream = new FileInputStream(certificatePath)) {
           sslContext = GrpcSslContexts.forClient().trustManager(certInputStream).build();
-        } catch (IOException e) {
+        } catch (final IOException e) {
           throw new RuntimeException(e);
         }
       }
@@ -160,13 +161,13 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   public static GatewayStub buildGatewayStub(
-      ManagedChannel channel, ZeebeClientConfiguration config) {
+      final ManagedChannel channel, final ZeebeClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
     return GatewayGrpc.newStub(channel).withCallCredentials(credentials);
   }
 
   private static ScheduledExecutorService buildExecutorService(
-      ZeebeClientConfiguration configuration) {
+      final ZeebeClientConfiguration configuration) {
     final int threadCount = configuration.getNumJobWorkerExecutionThreads();
     return Executors.newScheduledThreadPool(threadCount);
   }
@@ -188,7 +189,7 @@ public class ZeebeClientImpl implements ZeebeClient {
         c -> {
           try {
             c.close();
-          } catch (IOException e) {
+          } catch (final IOException e) {
             // ignore
           }
         });
@@ -200,7 +201,7 @@ public class ZeebeClientImpl implements ZeebeClient {
         throw new ClientException(
             "Timed out awaiting termination of job worker executor after 15 seconds");
       }
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new ClientException(
           "Unexpected interrupted awaiting termination of job worker executor", e);
     }
@@ -212,7 +213,7 @@ public class ZeebeClientImpl implements ZeebeClient {
         throw new ClientException(
             "Timed out awaiting termination of in-flight request channel after 15 seconds");
       }
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new ClientException(
           "Unexpectedly interrupted awaiting termination of in-flight request channel", e);
     }
@@ -260,7 +261,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public ResolveIncidentCommandStep1 newResolveIncidentCommand(long incidentKey) {
+  public ResolveIncidentCommandStep1 newResolveIncidentCommand(final long incidentKey) {
     return new ResolveIncidentCommandImpl(
         asyncStub,
         incidentKey,
@@ -269,7 +270,7 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey) {
+  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(final long jobKey) {
     return new JobUpdateRetriesCommandImpl(
         asyncStub,
         jobKey,
@@ -301,12 +302,12 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public CompleteJobCommandStep1 newCompleteCommand(long jobKey) {
+  public CompleteJobCommandStep1 newCompleteCommand(final long jobKey) {
     return jobClient.newCompleteCommand(jobKey);
   }
 
   @Override
-  public FailJobCommandStep1 newFailCommand(long jobKey) {
+  public FailJobCommandStep1 newFailCommand(final long jobKey) {
     return jobClient.newFailCommand(jobKey);
   }
 }

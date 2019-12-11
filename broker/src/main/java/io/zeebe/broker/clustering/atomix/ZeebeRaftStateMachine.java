@@ -138,7 +138,7 @@ public class ZeebeRaftStateMachine implements RaftStateMachine {
     }
   }
 
-  private void safeApplyAll(final long index, CompletableFuture<?> future) {
+  private void safeApplyAll(final long index, final CompletableFuture<?> future) {
     threadContext.checkThread();
 
     lastEnqueued = Math.max(lastEnqueued, raft.getSnapshotStore().getCurrentSnapshotIndex());

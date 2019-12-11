@@ -26,7 +26,9 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class RetryStrategyTest {
 
-  @Rule public ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+  @Rule
+  public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
+
   @Parameter public Class<RetryStrategy> retryStrategyClass;
   private RetryStrategy retryStrategy;
   private ActorControl actorControl;
@@ -48,7 +50,7 @@ public class RetryStrategyTest {
       final Constructor<RetryStrategy> constructor =
           retryStrategyClass.getConstructor(ActorControl.class);
       retryStrategy = constructor.newInstance(actorControl);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
 

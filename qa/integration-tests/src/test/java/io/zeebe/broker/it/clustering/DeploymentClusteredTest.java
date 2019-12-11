@@ -28,9 +28,9 @@ public class DeploymentClusteredTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
-  public Timeout testTimeout = Timeout.seconds(120);
-  public ClusteringRule clusteringRule = new ClusteringRule(3, 3, 3);
-  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  public final Timeout testTimeout = Timeout.seconds(120);
+  public final ClusteringRule clusteringRule = new ClusteringRule(3, 3, 3);
+  public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =

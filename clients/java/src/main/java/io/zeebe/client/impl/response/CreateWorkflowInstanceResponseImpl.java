@@ -26,7 +26,7 @@ public class CreateWorkflowInstanceResponseImpl implements WorkflowInstanceEvent
   private final long workflowInstanceKey;
 
   public CreateWorkflowInstanceResponseImpl(
-      GatewayOuterClass.CreateWorkflowInstanceResponse response) {
+      final GatewayOuterClass.CreateWorkflowInstanceResponse response) {
     this.workflowKey = response.getWorkflowKey();
     this.bpmnProcessId = response.getBpmnProcessId();
     this.version = response.getVersion();
