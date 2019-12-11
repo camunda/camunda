@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,6 +25,8 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
   private String bpmn20Xml;
   private Map<String, String> flowNodeNames = new HashMap<>();
   private Map<String, String> userTaskNames = new HashMap<>();
+  @JsonIgnore
+  private Boolean isEventBased;
 
   public ProcessDefinitionOptimizeDto(final String id,
                                       final String key,

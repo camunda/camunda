@@ -6,8 +6,11 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.rest.definition.DefinitionVersionsWithTenantsRestDto;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
@@ -22,6 +25,8 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServiceIT {
+
+  private static final String ALL_VERSIONS_STRING = "ALL";
 
   @Test
   public void getDecisionDefinitions() {
@@ -112,6 +117,26 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
 
     // then
     assertThat(actualXml, is(expectedDefinitionDto.getDmn10Xml()));
+  }
+
+  @Test
+  public void getLatestDecisionDefinitionXml() {
+    //given
+    final String key = "aKey";
+    DecisionDefinitionOptimizeDto expectedDto1 = createDecisionDefinitionDto(key, "1", null);
+    DecisionDefinitionOptimizeDto expectedDto2 = createDecisionDefinitionDto(key, "2", null);
+    addDecisionDefinitionToElasticsearch(expectedDto1);
+    addDecisionDefinitionToElasticsearch(expectedDto2);
+
+    // when
+    String actualXml =
+      embeddedOptimizeExtension
+        .getRequestExecutor()
+        .buildGetDecisionDefinitionXmlRequest(key, ALL_VERSIONS_STRING)
+        .execute(String.class, 200);
+
+    // then
+    assertThat(actualXml, is(expectedDto2.getDmn10Xml()));
   }
 
   @Test

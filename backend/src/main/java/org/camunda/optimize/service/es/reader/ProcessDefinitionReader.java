@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.StrictIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -20,6 +22,7 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.script.Script;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -42,6 +45,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessDefinitionInde
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidDefinitionVersion;
 import static org.camunda.optimize.service.util.DefinitionVersionHandlingUtil.convertToValidVersion;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -58,6 +62,8 @@ public class ProcessDefinitionReader {
   private OptimizeElasticsearchClient esClient;
   private ConfigurationService configurationService;
   private ObjectMapper objectMapper;
+  private final String[] ALL_PROCESS_INDICES = new String[]{PROCESS_DEFINITION_INDEX_NAME,
+    EVENT_PROCESS_DEFINITION_INDEX_NAME};
 
   public Optional<ProcessDefinitionOptimizeDto> getFullyImportedProcessDefinition(
     final String processDefinitionKey,
@@ -84,7 +90,7 @@ public class ProcessDefinitionReader {
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     searchSourceBuilder.query(query);
     searchSourceBuilder.size(1);
-    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+    SearchRequest searchRequest = new SearchRequest(ALL_PROCESS_INDICES)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -103,9 +109,11 @@ public class ProcessDefinitionReader {
 
     ProcessDefinitionOptimizeDto processDefinitionOptimizeDto = null;
     if (searchResponse.getHits().getTotalHits() > 0L) {
-      String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
+      SearchHit hit = searchResponse.getHits().getAt(0);
+      String responseAsString = hit.getSourceAsString();
       try {
         processDefinitionOptimizeDto = objectMapper.readValue(responseAsString, ProcessDefinitionOptimizeDto.class);
+        processDefinitionOptimizeDto.setIsEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
       } catch (IOException e) {
         log.error("Could not read process definition from Elasticsearch!", e);
       }
@@ -154,6 +162,7 @@ public class ProcessDefinitionReader {
       String responseAsString = searchResponse.getHits().getAt(0).getSourceAsString();
       try {
         processDefinitionOptimizeDto = objectMapper.readValue(responseAsString, ProcessDefinitionOptimizeDto.class);
+        processDefinitionOptimizeDto.setIsEventBased(false);
       } catch (IOException e) {
         log.error("Could not read process definition from Elasticsearch!", e);
       }
@@ -211,7 +220,7 @@ public class ProcessDefinitionReader {
       .sort(SortBuilders.scriptSort(script, ScriptSortBuilder.ScriptSortType.NUMBER).order(SortOrder.DESC))
       .size(1);
 
-    SearchRequest searchRequest = new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+    SearchRequest searchRequest = new SearchRequest(ALL_PROCESS_INDICES)
       .source(searchSourceBuilder);
 
     SearchResponse searchResponse;
@@ -249,7 +258,7 @@ public class ProcessDefinitionReader {
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest =
-      new SearchRequest(PROCESS_DEFINITION_INDEX_NAME)
+      new SearchRequest(ALL_PROCESS_INDICES)
         .source(searchSourceBuilder)
         .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
 
@@ -261,13 +270,38 @@ public class ProcessDefinitionReader {
       throw new OptimizeRuntimeException("Was not able to retrieve process definitions!", e);
     }
 
+    Function<SearchHit, ProcessDefinitionOptimizeDto> mappingFunction = hit -> {
+      final String sourceAsString = hit.getSourceAsString();
+      try {
+        ProcessDefinitionOptimizeDto procDefDto = objectMapper.readValue(
+          sourceAsString,
+          ProcessDefinitionOptimizeDto.class
+        );
+        procDefDto.setIsEventBased(resolveIsEventProcessFromIndexAlias(hit.getIndex()));
+        return procDefDto;
+      } catch (IOException e) {
+        final String reason = "While mapping search results to class {} "
+          + "it was not possible to deserialize a hit from Elasticsearch!"
+          + " Hit response from Elasticsearch: " + sourceAsString;
+        log.error(reason, ProcessDefinitionOptimizeDto.class.getSimpleName(), e);
+        throw new OptimizeRuntimeException(reason);
+      }
+    };
+
     return ElasticsearchHelper.retrieveAllScrollResults(
       scrollResp,
       ProcessDefinitionOptimizeDto.class,
-      objectMapper,
+      mappingFunction,
       esClient,
       configurationService.getElasticsearchScrollTimeout()
     );
   }
 
+  private Boolean resolveIsEventProcessFromIndexAlias(String indexName) {
+    return indexName.equals(getOptimizeIndexNameForIndex(new EventProcessDefinitionIndex()));
+  }
+
+  private String getOptimizeIndexNameForIndex(final StrictIndexMappingCreator index) {
+    return esClient.getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(index);
+  }
 }

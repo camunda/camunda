@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Function;
 
 @Slf4j
 @UtilityClass
@@ -32,16 +33,49 @@ public class ElasticsearchHelper {
   public static <T> List<T> retrieveAllScrollResults(final SearchResponse initialScrollResponse,
                                                      final Class<T> itemClass,
                                                      final ObjectMapper objectMapper,
-                                                     final OptimizeElasticsearchClient esclient,
+                                                     final OptimizeElasticsearchClient esClient,
                                                      final Integer scrollingTimeout) {
     return retrieveScrollResultsTillLimit(
-      initialScrollResponse, itemClass, objectMapper, esclient, scrollingTimeout, Integer.MAX_VALUE
+      initialScrollResponse, itemClass, objectMapper, esClient, scrollingTimeout, Integer.MAX_VALUE
+    );
+  }
+
+  public static <T> List<T> retrieveAllScrollResults(final SearchResponse initialScrollResponse,
+                                                     final Class<T> itemClass,
+                                                     final Function<SearchHit, T> mappingFunction,
+                                                     final OptimizeElasticsearchClient esClient,
+                                                     final Integer scrollingTimeout) {
+    return retrieveScrollResultsTillLimit(
+      initialScrollResponse, itemClass, mappingFunction, esClient, scrollingTimeout, Integer.MAX_VALUE
     );
   }
 
   public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
                                                            final Class<T> itemClass,
                                                            final ObjectMapper objectMapper,
+                                                           final OptimizeElasticsearchClient esClient,
+                                                           final Integer scrollingTimeout,
+                                                           final Integer limit) {
+    Function<SearchHit, T> mappingFunction = hit -> {
+      final String sourceAsString = hit.getSourceAsString();
+      try {
+        return objectMapper.readValue(sourceAsString, itemClass);
+      } catch (IOException e) {
+        final String reason = "While mapping search results to class {} "
+          + "it was not possible to deserialize a hit from Elasticsearch!"
+          + " Hit response from Elasticsearch: " + sourceAsString;
+        log.error(reason, itemClass.getSimpleName(), e);
+        throw new OptimizeRuntimeException(reason);
+      }
+    };
+    return retrieveScrollResultsTillLimit(
+      initialScrollResponse, itemClass, mappingFunction, esClient, scrollingTimeout, limit
+    );
+  }
+
+  public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
+                                                           final Class<T> itemClass,
+                                                           final Function<SearchHit, T> mappingFunction,
                                                            final OptimizeElasticsearchClient esclient,
                                                            final Integer scrollingTimeout,
                                                            final Integer limit) {
@@ -51,7 +85,7 @@ public class ElasticsearchHelper {
     SearchHits hits = currentScrollResp.getHits();
 
     while (hits != null && hits.getHits().length > 0) {
-      results.addAll(mapHits(hits, limit - results.size(), itemClass, objectMapper));
+      results.addAll(mapHits(hits, limit - results.size(), itemClass, mappingFunction));
 
       if (hits.getTotalHits() > results.size() && results.size() < limit) {
         final SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResp.getScrollId());
@@ -77,7 +111,7 @@ public class ElasticsearchHelper {
   }
 
   public static <T> void clearScroll(final Class<T> itemClass, final OptimizeElasticsearchClient esclient,
-                                      final String scrollId) {
+                                     final String scrollId) {
     try {
       ClearScrollRequest clearScrollRequest = new ClearScrollRequest();
       clearScrollRequest.addScrollId(scrollId);
@@ -103,28 +137,37 @@ public class ElasticsearchHelper {
   public static <T> List<T> mapHits(final SearchHits searchHits,
                                     final Class<T> itemClass,
                                     final ObjectMapper objectMapper) {
-    return mapHits(searchHits, Integer.MAX_VALUE, itemClass, objectMapper);
+    Function<SearchHit, T> mappingFunction = hit -> {
+      final String sourceAsString = hit.getSourceAsString();
+      try {
+        return objectMapper.readValue(sourceAsString, itemClass);
+      } catch (IOException e) {
+        final String reason = "While mapping search results to class {} "
+          + "it was not possible to deserialize a hit from Elasticsearch!"
+          + " Hit response from Elasticsearch: " + sourceAsString;
+        log.error(reason, itemClass.getSimpleName(), e);
+        throw new OptimizeRuntimeException(reason);
+      }
+    };
+    return mapHits(searchHits, Integer.MAX_VALUE, itemClass, mappingFunction);
   }
 
   public static <T> List<T> mapHits(final SearchHits searchHits,
                                     final Integer resultLimit,
                                     final Class<T> itemClass,
-                                    final ObjectMapper objectMapper) {
+                                    final Function<SearchHit, T> mappingFunction) {
     final List<T> results = new ArrayList<>();
     for (SearchHit hit : searchHits) {
       if (results.size() >= resultLimit) {
         break;
       }
 
-      final String responseAsString = hit.getSourceAsString();
       try {
-        final T report = objectMapper.readValue(responseAsString, itemClass);
+        final T report = mappingFunction.apply(hit);
         results.add(report);
-      } catch (IOException e) {
+      } catch (Exception e) {
         final String reason = "While mapping search results to class {} "
-          + "it was not possible to deserialize a hit from Elasticsearch!"
-          + " Hit response from Elasticsearch: "
-          + responseAsString;
+          + "it was not possible to deserialize a hit from Elasticsearch!";
         log.error(reason, itemClass.getSimpleName(), e);
         throw new OptimizeRuntimeException(reason);
       }

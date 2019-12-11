@@ -127,13 +127,13 @@ public class ProcessDefinitionService extends AbstractDefinitionService {
     final List<ProcessDefinitionOptimizeDto> processDefinitions) {
     return processDefinitions
       .stream()
-      .filter(def -> isAuthorizedToReadProcessDefinition(userId, def))
+      .filter(def -> def.getIsEventBased() || isAuthorizedToReadProcessDefinition(userId, def))
       .collect(Collectors.toList());
   }
 
   private boolean isAuthorizedToReadProcessDefinition(final String userId,
                                                       final ProcessDefinitionOptimizeDto processDefinition) {
-    return definitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
+    return processDefinition.getIsEventBased() || definitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
       userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
     );
   }
