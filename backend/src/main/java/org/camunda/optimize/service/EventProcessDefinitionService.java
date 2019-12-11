@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.reader.EventProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.EventProcessDefinitionWriter;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,12 +32,20 @@ public class EventProcessDefinitionService {
     eventProcessDefinitionWriter.createEventProcessDefinition(definitionDto);
   }
 
+  public void importEventProcessDefinitions(final List<EventProcessDefinitionDto> definitionOptimizeDtos) {
+    eventProcessDefinitionWriter.importEventProcessDefinitions(definitionOptimizeDtos);
+  }
+
   public List<EventProcessDefinitionDto> getAllEventProcessesDefinitionsOmitXml() {
     return eventProcessDefinitionReader.getAllEventProcessDefinitionsOmitXml();
   }
 
   public boolean deleteEventProcessDefinition(final String eventProcessDefinitionId) {
     return eventProcessDefinitionWriter.deleteEventProcessDefinition(eventProcessDefinitionId);
+  }
+
+  public void deleteEventProcessDefinitions(final Collection<String> definitionIds) {
+    eventProcessDefinitionWriter.deleteEventProcessDefinitions(definitionIds);
   }
 
 }

@@ -24,6 +24,7 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
 
   public static final String ID = IndexableEventProcessPublishStateDto.Fields.id;
   public static final String PROCESS_MAPPING_ID = IndexableEventProcessPublishStateDto.Fields.processMappingId;
+  public static final String NAME = IndexableEventProcessPublishStateDto.Fields.name;
   public static final String PUBLISH_DATE_TIME = IndexableEventProcessPublishStateDto.Fields.publishDateTime;
   public static final String LAST_IMPORTED_EVENT_DATE_TIME =
     IndexableEventProcessPublishStateDto.Fields.lastImportedEventIngestDateTime;
@@ -59,6 +60,9 @@ public class EventProcessPublishStateIndex extends StrictIndexMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(PROCESS_MAPPING_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(NAME)
         .field("type", "keyword")
       .endObject()
       .startObject(PUBLISH_DATE_TIME)

@@ -116,6 +116,7 @@ public class EventProcessService {
     final EventProcessPublishStateDto processPublishState = EventProcessPublishStateDto
       .builder()
       .processMappingId(eventProcessMapping.getId())
+      .name(eventProcessMapping.getName())
       .xml(eventProcessMapping.getXml())
       .publishDateTime(LocalDateUtil.getCurrentDateTime())
       .state(EventProcessState.PUBLISH_PENDING)
@@ -125,6 +126,7 @@ public class EventProcessService {
       .mappings(eventProcessMapping.getMappings())
       .build();
 
+    eventProcessPublishStateWriter.deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
     eventProcessPublishStateWriter.createEventProcessPublishState(processPublishState);
   }
 

@@ -35,6 +35,7 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
       .isEqualToIgnoringGivenFields(
         EventProcessPublishStateDto.builder()
           .processMappingId(eventProcessId)
+          .name(EVENT_PROCESS_NAME)
           .state(EventProcessState.PUBLISH_PENDING)
           .publishDateTime(publishDateTime)
           .lastImportedEventIngestDateTime(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0L), ZoneId.systemDefault()))
@@ -137,6 +138,7 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
           .publishProgress(50.0D)
           .build(),
         EventProcessPublishStateDto.Fields.id,
+        EventProcessPublishStateDto.Fields.name,
         EventProcessPublishStateDto.Fields.xml,
         EventProcessPublishStateDto.Fields.mappings
       );
@@ -180,6 +182,7 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
           .publishProgress(100.0D)
           .build(),
         EventProcessPublishStateDto.Fields.id,
+        EventProcessPublishStateDto.Fields.name,
         EventProcessPublishStateDto.Fields.xml,
         EventProcessPublishStateDto.Fields.mappings
       );
@@ -227,6 +230,7 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
           .publishProgress(100.0D)
           .build(),
         EventProcessPublishStateDto.Fields.id,
+        EventProcessPublishStateDto.Fields.name,
         EventProcessPublishStateDto.Fields.xml,
         EventProcessPublishStateDto.Fields.mappings
       );

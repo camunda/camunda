@@ -423,6 +423,7 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
       .isEqualToIgnoringGivenFields(
         EventProcessPublishStateDto.builder()
           .processMappingId(storedEventProcessMapping.getId())
+          .name(storedEventProcessMapping.getName())
           .publishDateTime(LocalDateUtil.getCurrentDateTime())
           .state(EventProcessState.PUBLISH_PENDING)
           .lastImportedEventIngestDateTime(OffsetDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneId.systemDefault()))

@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,17 +102,17 @@ public class ElasticsearchWriterUtil {
       .collect(Collectors.joining());
   }
 
-  public static <T extends OptimizeDto> void doBulkRequestWithList(OptimizeElasticsearchClient esClient,
-                                                                   String importItemName,
-                                                                   List<T> dtoList,
-                                                                   BiConsumer<BulkRequest, T> addDtoToRequestConsumer) {
-    if (dtoList.isEmpty()) {
-      log.warn("Cannot import empty list of {}.", importItemName);
+  public static <T> void doBulkRequestWithList(OptimizeElasticsearchClient esClient,
+                                               String importItemName,
+                                               Collection<T> entityCollection,
+                                               BiConsumer<BulkRequest, T> addDtoToRequestConsumer) {
+    if (entityCollection.isEmpty()) {
+      log.warn("Cannot perform bulk request with empty collection of {}.", importItemName);
     } else {
       final BulkRequest bulkRequest = new BulkRequest();
       bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
 
-      dtoList.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
+      entityCollection.forEach(dto -> addDtoToRequestConsumer.accept(bulkRequest, dto));
       doBulkRequest(esClient, bulkRequest, importItemName);
     }
   }

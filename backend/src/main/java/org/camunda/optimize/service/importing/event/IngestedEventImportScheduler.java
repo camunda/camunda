@@ -30,6 +30,7 @@ public class IngestedEventImportScheduler extends AbstractScheduledService {
   private final EventProcessInstanceImportMediatorManager instanceImportMediatorManager;
   private final EventProcessInstanceIndexManager eventBasedProcessIndexManager;
   private final PublishStateUpdateService publishStateUpdateService;
+  private final EventProcessDefinitionImportService eventProcessDefinitionImportService;
 
   @PostConstruct
   public void init() {
@@ -62,6 +63,7 @@ public class IngestedEventImportScheduler extends AbstractScheduledService {
     eventBasedProcessIndexManager.cleanupIndexes();
     instanceImportMediatorManager.refreshMediators();
     publishStateUpdateService.updateEventProcessPublishStates();
+    eventProcessDefinitionImportService.syncPublishedEventProcessDefinitions();
     final CompletableFuture<?>[] importTaskFutures = instanceImportMediatorManager.getActiveMediators()
       .stream()
       .filter(EventProcessInstanceImportMediator::canImport)

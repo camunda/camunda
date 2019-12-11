@@ -26,6 +26,7 @@ public class EventProcessPublishStateDto {
   @EqualsAndHashCode.Include
   private String id;
   private String processMappingId;
+  private String name;
   private OffsetDateTime publishDateTime;
   private OffsetDateTime lastImportedEventIngestDateTime;
   private EventProcessState state;

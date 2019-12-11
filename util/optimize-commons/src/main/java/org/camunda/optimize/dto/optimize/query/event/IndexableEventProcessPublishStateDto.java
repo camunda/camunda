@@ -28,6 +28,7 @@ public class IndexableEventProcessPublishStateDto {
   @EqualsAndHashCode.Include
   private String id;
   private String processMappingId;
+  private String name;
   private OffsetDateTime publishDateTime;
   private OffsetDateTime lastImportedEventIngestDateTime;
   private EventProcessState state;
@@ -41,6 +42,7 @@ public class IndexableEventProcessPublishStateDto {
     return IndexableEventProcessPublishStateDto.builder()
       .id(publishState.getId())
       .processMappingId(publishState.getProcessMappingId())
+      .name(publishState.getName())
       .xml(publishState.getXml())
       .publishDateTime(publishState.getPublishDateTime())
       .lastImportedEventIngestDateTime(publishState.getLastImportedEventIngestDateTime())
@@ -65,6 +67,7 @@ public class IndexableEventProcessPublishStateDto {
     return EventProcessPublishStateDto.builder()
       .id(getId())
       .processMappingId(getProcessMappingId())
+      .name(getName())
       .xml(getXml())
       .publishDateTime(getPublishDateTime())
       .lastImportedEventIngestDateTime(getLastImportedEventIngestDateTime())

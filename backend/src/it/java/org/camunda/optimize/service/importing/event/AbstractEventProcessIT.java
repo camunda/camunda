@@ -14,6 +14,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
@@ -24,6 +25,8 @@ import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishSt
 import org.camunda.optimize.service.util.IdGenerator;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -42,6 +45,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -55,9 +59,19 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String VARIABLE_VALUE = "value";
   protected static final String EVENT_GROUP = "test";
   protected static final String EVENT_SOURCE = "integrationTest";
+  public static final String EVENT_PROCESS_NAME = "myEventProcess";
 
   protected String createSimpleEventProcessMapping(final String ingestedStartEventName,
                                                    final String ingestedEndEventName) {
+    EventProcessMappingDto eventProcessMappingDto = createSimpleEventProcessMappingDto(
+      ingestedStartEventName,
+      ingestedEndEventName
+    );
+    return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+  }
+
+  protected EventProcessMappingDto createSimpleEventProcessMappingDto(final String ingestedStartEventName,
+                                                                      final String ingestedEndEventName) {
     final Map<String, EventMappingDto> eventMappings = new HashMap<>();
     eventMappings.put(
       BPMN_START_EVENT_ID,
@@ -71,10 +85,9 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
         .start(EventTypeDto.builder().group(EVENT_GROUP).source(EVENT_SOURCE).eventName(ingestedEndEventName).build())
         .build()
     );
-    EventProcessMappingDto eventProcessMappingDto = eventProcessClient.createEventProcessMappingDtoWithMappingsWithXml(
-      eventMappings, "myEventProcess", createSimpleProcessDefinitionXml()
+    return eventProcessClient.createEventProcessMappingDtoWithMappingsWithXml(
+      eventMappings, EVENT_PROCESS_NAME, createSimpleProcessDefinitionXml()
     );
-    return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
   }
 
   @SneakyThrows
@@ -131,6 +144,22 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   @SneakyThrows
+  protected Optional<EventProcessDefinitionDto> getEventProcessDefinitionFromElasticsearch(
+    final String definitionId) {
+    final GetResponse getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .get(new GetRequest(EVENT_PROCESS_DEFINITION_INDEX_NAME).id(definitionId), RequestOptions.DEFAULT);
+
+    EventProcessDefinitionDto result = null;
+    if (getResponse.isExists()) {
+      result = elasticSearchIntegrationTestExtension.getObjectMapper().readValue(
+        getResponse.getSourceAsString(), EventProcessDefinitionDto.class
+      );
+    }
+
+    return Optional.ofNullable(result);
+  }
+
+  @SneakyThrows
   protected List<ProcessInstanceDto> getEventProcessInstancesFromElasticsearch() {
     final List<ProcessInstanceDto> results = new ArrayList<>();
     final SearchResponse searchResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
@@ -147,10 +176,12 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return results;
   }
 
+  protected String ingestTestEvent(final String event) {
+    return ingestTestEvent(IdGenerator.getNextId(), event, OffsetDateTime.now());
+  }
+
   protected String ingestTestEvent(final String event, final OffsetDateTime eventTimestamp) {
-    return ingestTestEvent(
-      IdGenerator.getNextId(), event, eventTimestamp
-    );
+    return ingestTestEvent(IdGenerator.getNextId(), event, eventTimestamp);
   }
 
   protected String ingestTestEvent(final String eventId, final String event, final OffsetDateTime eventTimestamp) {
