@@ -25,6 +25,14 @@
       <version>${project.version}</version>
       <classifier>exec</classifier>
     </dependency>
+    
+    <dependency>
+      <groupId>org.camunda.operate</groupId>
+      <artifactId>camunda-operate-els-schema</artifactId>
+      <version>${project.version}</version>
+      <type>zip</type>
+    </dependency>
+    
   </dependencies>
 
   <build>

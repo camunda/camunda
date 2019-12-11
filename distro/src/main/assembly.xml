@@ -20,7 +20,15 @@
         <include>org.camunda.operate:camunda-operate-webapp:jar:exec</include>
       </includes>
     </dependencySet>
-
+	
+	
+	 <dependencySet>
+      <outputDirectory>schema/</outputDirectory>
+      <includes>
+        <include>org.camunda.operate:camunda-operate-els-schema:zip</include>
+      </includes>
+    </dependencySet>
+    
   </dependencySets>
 
   <fileSets>
