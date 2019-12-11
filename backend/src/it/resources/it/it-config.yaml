@@ -25,3 +25,6 @@ es:
   settings:
     index:
       prefix: ${indexPrefix:optimize}
+
+eventBasedProcess:
+  authorizedUserIds: ['demo']

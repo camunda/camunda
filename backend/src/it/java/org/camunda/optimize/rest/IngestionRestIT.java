@@ -171,8 +171,7 @@ public class IngestionRestIT extends AbstractIT {
     final EventDto eventDto = createEventDto();
 
     final String customSecret = "mySecret";
-    embeddedOptimizeExtension.getConfigurationService().getIngestionConfiguration()
-      .setApiSecret(customSecret);
+    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setApiSecret(customSecret);
 
     // when
     final Response ingestResponse = embeddedOptimizeExtension.getRequestExecutor()
@@ -224,8 +223,7 @@ public class IngestionRestIT extends AbstractIT {
   @Test
   public void ingestEventBatch_limitExceeded() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getIngestionConfiguration()
-      .setMaxBatchRequestBytes(1L);
+    embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().setMaxBatchRequestBytes(1L);
 
     final List<EventDto> eventDtos = IntStream.range(0, 2)
       .mapToObj(operand -> createEventDto())
@@ -326,7 +324,7 @@ public class IngestionRestIT extends AbstractIT {
   }
 
   private String getApiSecret() {
-    return embeddedOptimizeExtension.getConfigurationService().getIngestionConfiguration().getApiSecret();
+    return embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getApiSecret();
   }
 
   private EventDto createEventDto() {

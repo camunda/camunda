@@ -49,6 +49,11 @@ public class ConfigurationParser {
   );
   // explicit yaml null values see https://yaml.org/type/null.html
   private static final Set<String> YAML_EXPLICIT_NULL_VALUES = ImmutableSet.of("~", "null", "Null", "NULL");
+  private static final Pattern LIST_PATTERN = Pattern.compile("^\\[.*\\]$");
+  // @formatter:off
+  private static final TypeReference<List<Object>> LIST_TYPE_REFERENCE = new TypeReference<List<Object>>() {}; public static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP_TYPE = new TypeReference<Map<String, Object>>() {
+  };
+  // @formatter:on
 
   public static Optional<DocumentContext> parseConfigFromLocations(List<InputStream> sources) {
     YAMLMapper yamlMapper = configureConfigMapper();
@@ -64,9 +69,8 @@ public class ConfigurationParser {
       }
 
       // resolve environment placeholders
-      Map<String, Object> rawConfigMap =
-        yamlMapper.convertValue(resultNode, new TypeReference<Map<String, Object>>() {});
-      final Map<String, Object> configMap = resolveVariablePlaceholders(rawConfigMap);
+      final Map<String, Object> rawConfigMap = yamlMapper.convertValue(resultNode, STRING_OBJECT_MAP_TYPE);
+      final Map<String, Object> configMap = resolveVariablePlaceholders(rawConfigMap, yamlMapper);
 
       //prepare to work with JSON Path
       return Optional.of(JsonPath.parse(configMap));
@@ -76,27 +80,40 @@ public class ConfigurationParser {
     }
   }
 
-  private static Map<String, Object> resolveVariablePlaceholders(final Map<String, Object> configMap) {
+  private static Map<String, Object> resolveVariablePlaceholders(final Map<String, Object> configMap,
+                                                                 final YAMLMapper yamlMapper) {
     return configMap.entrySet().stream()
       .peek(entry -> {
-        final Object newValue = resolveVariablePlaceholders(entry.getValue());
+        final Object newValue = resolveVariablePlaceholders(entry.getValue(), yamlMapper);
         entry.setValue(newValue);
       })
       .collect(LinkedHashMap::new, (map, entry) -> map.put(entry.getKey(), entry.getValue()), HashMap::putAll);
   }
 
-  private static Object resolveVariablePlaceholders(final Object value) {
+  private static Object resolveVariablePlaceholders(final Object value, final YAMLMapper yamlMapper) {
     Object newValue = value;
     if (value instanceof Map) {
-      newValue = resolveVariablePlaceholders((Map<String, Object>) value);
+      newValue = resolveVariablePlaceholders((Map<String, Object>) value, yamlMapper);
     } else if (value instanceof List) {
       final List<Object> values = ((List<Object>) value);
       if (values.size() > 0) {
-        newValue = values.stream().map(ConfigurationParser::resolveVariablePlaceholders)
+        newValue = values.stream()
+          .map(entryValue -> resolveVariablePlaceholders(entryValue, yamlMapper))
           .collect(Collectors.toList());
       }
     } else if (value instanceof String) {
-      newValue = resolveVariablePlaceholders((String) value);
+      final String stringValue = (String) value;
+      newValue = resolveVariablePlaceholders(stringValue);
+
+      final String newStringValue = (String) newValue;
+      if (newStringValue != null && LIST_PATTERN.matcher(newStringValue).matches()) {
+        try {
+          final List<Object> list = yamlMapper.readValue(newStringValue, LIST_TYPE_REFERENCE);
+          newValue = resolveVariablePlaceholders(list, yamlMapper);
+        } catch (IOException e) {
+          log.debug("Detected array value pattern in [{}] but couldn't parse it", newValue.toString(), e);
+        }
+      }
     }
     return newValue;
   }

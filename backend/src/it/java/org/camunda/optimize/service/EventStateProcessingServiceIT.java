@@ -184,7 +184,13 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     String traceIdThree = "traceIdThree";
     EventDto eventOneTraceOne = createEventDtoWithProperties(traceIdOne, "backend", "ketchup", "signup-event", 100L);
     EventDto eventOneTraceTwo = createEventDtoWithProperties(traceIdTwo, "backend", "ketchup", "signup-event", 200L);
-    EventDto eventOneTraceThree = createEventDtoWithProperties(traceIdThree, "backend", "ketchup", "signup-event", 300L);
+    EventDto eventOneTraceThree = createEventDtoWithProperties(
+      traceIdThree,
+      "backend",
+      "ketchup",
+      "signup-event",
+      300L
+    );
     ingestEventBatch(Arrays.asList(eventOneTraceOne, eventOneTraceTwo, eventOneTraceThree));
 
     // when
@@ -213,8 +219,17 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     // then trace state and sequence counts are correct after processing
     assertThat(getAllStoredEventTraceStates()).containsExactlyInAnyOrder(
       new EventTraceStateDto(traceIdOne, Arrays.asList(
-        TracedEventDto.fromEventDto(eventOneTraceOne), TracedEventDto.fromEventDto(eventTwoTraceOne), TracedEventDto.fromEventDto(eventThreeTraceOne))),
-      new EventTraceStateDto(traceIdTwo, Arrays.asList(TracedEventDto.fromEventDto(eventOneTraceTwo), TracedEventDto.fromEventDto(eventTwoTraceTwo))),
+        TracedEventDto.fromEventDto(eventOneTraceOne),
+        TracedEventDto.fromEventDto(eventTwoTraceOne),
+        TracedEventDto.fromEventDto(eventThreeTraceOne)
+      )),
+      new EventTraceStateDto(
+        traceIdTwo,
+        Arrays.asList(
+          TracedEventDto.fromEventDto(eventOneTraceTwo),
+          TracedEventDto.fromEventDto(eventTwoTraceTwo)
+        )
+      ),
       new EventTraceStateDto(traceIdThree, Collections.singletonList(TracedEventDto.fromEventDto(eventOneTraceThree)))
     );
     assertThat(getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
@@ -365,9 +380,7 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(
         eventDtos,
-        embeddedOptimizeExtension.getConfigurationService()
-          .getIngestionConfiguration()
-          .getApiSecret()
+        embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getApiSecret()
       )
       .execute();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

@@ -9,12 +9,16 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.camunda.optimize.service.util.configuration.engine.IngestionConfiguration;
+
+import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Data
-public class IngestedEventImportConfiguration {
+public class EventBasedProcessConfiguration {
   private boolean enabled;
-  private int importIntervalInSec;
-  private int maxPageSize;
+  private List<String> authorizedUserIds;
+  private EventImportConfiguration eventImport;
+  private IngestionConfiguration eventIngestion;
 }

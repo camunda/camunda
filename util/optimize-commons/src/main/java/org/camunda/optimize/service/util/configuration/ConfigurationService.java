@@ -32,10 +32,9 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.INGESTED_EVENT_IMPORT_CONFIGURATION;
-import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.INGESTION_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -121,7 +120,6 @@ public class ConfigurationService {
   private List<String> DecisionInputImportPluginBasePackages;
   private String pluginDirectory;
 
-
   private String containerHost;
   private String containerKeystorePassword;
   private String containerKeystoreLocation;
@@ -166,9 +164,7 @@ public class ConfigurationService {
 
   private IdentitySyncConfiguration identitySyncConfiguration;
 
-  private IngestionConfiguration ingestionConfiguration;
-
-  private IngestedEventImportConfiguration ingestedEventImportConfiguration;
+  private EventBasedProcessConfiguration eventBasedProcessConfiguration;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -581,10 +577,10 @@ public class ConfigurationService {
   }
 
   // Note: special setter for Optional field value, see note on field why the field is Optional
+
   public void setContainerAccessUrlValue(String containerAccessUrl) {
     this.containerAccessUrl = Optional.ofNullable(containerAccessUrl);
   }
-
   public List<String> getDecisionInputImportPluginBasePackages() {
     if (DecisionInputImportPluginBasePackages == null) {
       DecisionInputImportPluginBasePackages =
@@ -631,10 +627,10 @@ public class ConfigurationService {
   }
 
   // Note: special setter for Optional field value, see note on field why the field is Optional
+
   public void setContainerHttpPortValue(Integer containerHttpPort) {
     this.containerHttpPort = Optional.ofNullable(containerHttpPort);
   }
-
   @JsonIgnore
   public boolean isHttpDisabled() {
     return !getContainerHttpPort().isPresent();
@@ -872,19 +868,28 @@ public class ConfigurationService {
     return identitySyncConfiguration;
   }
 
-  public IngestionConfiguration getIngestionConfiguration() {
-    if (ingestionConfiguration == null) {
-      ingestionConfiguration = configJsonContext.read(INGESTION_CONFIGURATION, IngestionConfiguration.class);
-    }
-    return ingestionConfiguration;
-  }
-
-  public IngestedEventImportConfiguration getIngestedEventImportConfiguration() {
-    if (ingestedEventImportConfiguration == null) {
-      ingestedEventImportConfiguration = configJsonContext.read(
-        INGESTED_EVENT_IMPORT_CONFIGURATION, IngestedEventImportConfiguration.class
+  public EventBasedProcessConfiguration getEventBasedProcessConfiguration() {
+    if (eventBasedProcessConfiguration == null) {
+      eventBasedProcessConfiguration = configJsonContext.read(
+        EVENT_BASED_PROCESS_CONFIGURATION,
+        EventBasedProcessConfiguration.class
       );
     }
-    return ingestedEventImportConfiguration;
+    return eventBasedProcessConfiguration;
+  }
+
+  @JsonIgnore
+  public EventImportConfiguration getEventImportConfiguration() {
+    return getEventBasedProcessConfiguration().getEventImport();
+  }
+
+  @JsonIgnore
+  public IngestionConfiguration getEventIngestionConfiguration() {
+    return getEventBasedProcessConfiguration().getEventIngestion();
+  }
+
+  @JsonIgnore
+  public List<String> getEventBasedProcessAccessUserIds() {
+    return getEventBasedProcessConfiguration().getAuthorizedUserIds();
   }
 }

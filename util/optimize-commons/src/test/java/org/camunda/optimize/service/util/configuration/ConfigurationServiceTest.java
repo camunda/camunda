@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.util.configuration;
 
+import com.google.common.collect.ImmutableList;
 import com.jayway.jsonpath.spi.mapper.MappingException;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
@@ -15,6 +16,7 @@ import org.junit.contrib.java.lang.system.EnvironmentVariables;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
@@ -50,6 +52,7 @@ public class ConfigurationServiceTest {
   private static final String CUSTOM_PACKAGE_3 = "pack_3";
   private static final String SECRET = "secret";
   private static final String ACCESS_URL = "accessUrl";
+  public static final String CUSTOM_EVENT_BASED_USER_IDS = "[demo,kermit]";
 
   @Rule
   public final EnvironmentVariables environmentVariables = new EnvironmentVariables();
@@ -169,6 +172,7 @@ public class ConfigurationServiceTest {
     environmentVariables.set("PACKAGE_3", CUSTOM_PACKAGE_3);
     environmentVariables.set("SECRET", SECRET);
     environmentVariables.set("ACCESS_URL", ACCESS_URL);
+    environmentVariables.set("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -190,6 +194,7 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("SECRET", SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
+    System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -222,6 +227,7 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("SECRET", SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
+    System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -253,6 +259,7 @@ public class ConfigurationServiceTest {
     System.setProperty("PACKAGE_3", CUSTOM_PACKAGE_3);
     System.setProperty("SECRET", SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
+    System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -345,14 +352,18 @@ public class ConfigurationServiceTest {
       underTest.getVariableImportPluginBasePackages(),
       contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3)
     );
+    assertThat(
+      underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds(),
+      is(Collections.emptyList())
+    );
     // by default a secret will get generated, so it should neither be the custom secret value
     assertThat(
-      underTest.getIngestionConfiguration().getApiSecret(),
+      underTest.getEventBasedProcessConfiguration().getEventIngestion().getApiSecret(),
       is(not(SECRET))
     );
     // nor should it be null
     assertThat(
-      underTest.getIngestionConfiguration().getApiSecret(),
+      underTest.getEventBasedProcessConfiguration().getEventIngestion().getApiSecret(),
       is(not(nullValue()))
     );
     assertThat(
@@ -386,7 +397,11 @@ public class ConfigurationServiceTest {
       contains("1", CUSTOM_PACKAGE_2, CUSTOM_PACKAGE_3)
     );
     assertThat(
-      underTest.getIngestionConfiguration().getApiSecret(),
+      underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds(),
+      is(ImmutableList.of("demo", "kermit"))
+    );
+    assertThat(
+      underTest.getEventBasedProcessConfiguration().getEventIngestion().getApiSecret(),
       is(SECRET)
     );
     assertThat(

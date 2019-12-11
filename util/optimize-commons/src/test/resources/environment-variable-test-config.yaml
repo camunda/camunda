@@ -40,8 +40,9 @@ plugin:
   variableImport:
     basePackages: ['1', '${PACKAGE_2}', '${PACKAGE_3}']
 
-ingestion:
-  apiSecret: ${SECRET:Null}
+eventBasedProcess:
+  eventIngestion:
+    apiSecret: ${SECRET:Null}
 
 container:
   accessUrl: ${ACCESS_URL:null}

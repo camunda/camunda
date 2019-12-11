@@ -14,7 +14,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class EventImportSchedulerIT extends AbstractIT {
   @Test
   public void verifyEventImportDisabledByDefault() {
-    assertThat(embeddedOptimizeExtension.getConfigurationService().getIngestedEventImportConfiguration().isEnabled(), is(false));
+    assertThat(embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().isEnabled(), is(false));
     assertThat(embeddedOptimizeExtension.getIngestedEventImportScheduler().isScheduledToRun(), is(false));
   }
 

@@ -66,7 +66,7 @@ public class IngestionRestService {
   }
 
   private String getApiSecret() {
-    return configurationService.getIngestionConfiguration().getApiSecret();
+    return configurationService.getEventBasedProcessConfiguration().getEventIngestion().getApiSecret();
   }
 
   @Data

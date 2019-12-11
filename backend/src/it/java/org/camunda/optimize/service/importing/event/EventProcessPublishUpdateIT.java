@@ -51,7 +51,7 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
   @Test
   public void partialPublishingProgress() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getIngestedEventImportConfiguration().setMaxPageSize(1);
+    embeddedOptimizeExtension.getConfigurationService().getEventImportConfiguration().setMaxPageSize(1);
 
     final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime firstEventTimestamp = timeBaseLine.minusSeconds(60);
@@ -97,7 +97,7 @@ public class EventProcessPublishUpdateIT extends AbstractEventProcessIT {
   @Test
   public void eventsIngestedAfterPublishDontAffectProgress() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().getIngestedEventImportConfiguration().setMaxPageSize(1);
+    embeddedOptimizeExtension.getConfigurationService().getEventImportConfiguration().setMaxPageSize(1);
 
     final OffsetDateTime timeBaseLine = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime firstEventTimestamp = timeBaseLine.minusSeconds(60);

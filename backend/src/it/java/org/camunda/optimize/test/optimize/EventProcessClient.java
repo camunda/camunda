@@ -25,6 +25,12 @@ public class EventProcessClient {
 
   private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
 
+  public boolean getIsEventBasedProcessEnabled() {
+    return embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetIsEventProcessEnabledRequest()
+      .execute(Boolean.class, 200);
+  }
+
   public OptimizeRequestExecutor createCreateEventProcessMappingRequest(final EventProcessMappingDto eventProcessMappingDto) {
     return embeddedOptimizeExtension.getRequestExecutor().buildCreateEventProcessMappingRequest(eventProcessMappingDto);
   }

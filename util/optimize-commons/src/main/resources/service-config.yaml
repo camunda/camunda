@@ -179,10 +179,6 @@ import:
     # When increasing the limit, keep in mind to account for that by increasing the JVM heap memory as well.
     # Please refer to the technical guide on how to configure the heap size.
     maxEntryLimit: 100000
-  ingestedEventImport:
-    enabled: ${OPTIMIZE_EVENT_INGEST_IMPORT_ENABLED:false}
-    importIntervalInSec: 5
-    maxPageSize: 10000
 
 # everything that is related with configuring Elasticsearch or creating
 # a connection to it.
@@ -276,7 +272,6 @@ plugin:
     #If empty, the import is not influenced.
     basePackages: []
 
-
 serialization:
   # Define a custom date format that should be used for
   # fetching date data from the engine(should be the same as in the engine)
@@ -366,11 +361,17 @@ ui:
     # a hex encoded color that should be used as background color for the header. Default color is white.
     backgroundColor: '#FFFFFF'
 
-ingestion:
-  # Secret to be provided on the Ingestion REST API when ingesting data.
-  # If set `null` a random secret will be generated with each startup of Optimize and logged.
-  apiSecret: ${OPTIMIZE_EVENT_INGESTION_API_SECRET:null}
-  # Content length limit for an ingestion REST API Bulk request in bytes.
-  # Requests will be rejected when exceeding that limit.
-  # Defaults to 10MB.
-  maxBatchRequestBytes: 10485760
+eventBasedProcess:
+  enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_ENABLED:false}
+  authorizedUserIds: ${OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS:[]}
+  eventImport:
+    importIntervalInSec: 5
+    maxPageSize: 10000
+  eventIngestion:
+    # Secret to be provided on the Ingestion REST API when ingesting data.
+    # If set `null` a random secret will be generated with each startup of Optimize and logged.
+    apiSecret: ${OPTIMIZE_EVENT_INGESTION_API_SECRET:null}
+    # Content length limit for an ingestion REST API Bulk request in bytes.
+    # Requests will be rejected when exceeding that limit.
+    # Defaults to 10MB.
+    maxBatchRequestBytes: 10485760

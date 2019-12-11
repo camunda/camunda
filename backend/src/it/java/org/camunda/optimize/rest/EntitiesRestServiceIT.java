@@ -357,6 +357,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
     String dashboardId = addDashboardToOptimize("aDashboardName");
     String collectionId = addCollection("aCollectionName");
+    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(true);
     String eventProcessId = addEventProcessMappingToOptimize("anEventProcessName");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -368,6 +369,24 @@ public class EntitiesRestServiceIT extends AbstractIT {
     assertThat(result.getDashboardName(), is("aDashboardName"));
     assertThat(result.getReportName(), is("aReportName"));
     assertThat(result.getEventBasedProcessName(), is("anEventProcessName"));
+  }
+
+  @Test
+  public void getEntityNames_ReturnsNoResponseForEventBasedProcessIfThereIsNone() {
+    //given
+    String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
+    String dashboardId = addDashboardToOptimize("aDashboardName");
+    String collectionId = addCollection("aCollectionName");
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    EntityNameDto result = getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
+
+    // then
+    assertThat(result.getCollectionName(), is("aCollectionName"));
+    assertThat(result.getDashboardName(), is("aDashboardName"));
+    assertThat(result.getReportName(), is("aReportName"));
+    assertThat(result.getEventBasedProcessName(), is(nullValue()));
   }
 
   @Test

@@ -10,7 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.events.stateprocessing.EventStateProcessingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.service.util.configuration.IngestedEventImportConfiguration;
+import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
+import org.camunda.optimize.service.util.configuration.EventImportConfiguration;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
@@ -34,7 +35,7 @@ public class IngestedEventImportScheduler extends AbstractScheduledService {
 
   @PostConstruct
   public void init() {
-    if (getEventBasedImportConfiguration().isEnabled()) {
+    if (getEventBasedProcessConfiguration().isEnabled()) {
       startImportScheduling();
     }
   }
@@ -80,10 +81,14 @@ public class IngestedEventImportScheduler extends AbstractScheduledService {
 
   @Override
   protected Trigger getScheduleTrigger() {
-    return new PeriodicTrigger(getEventBasedImportConfiguration().getImportIntervalInSec(), TimeUnit.SECONDS);
+    return new PeriodicTrigger(getEventImportConfiguration().getImportIntervalInSec(), TimeUnit.SECONDS);
   }
 
-  private IngestedEventImportConfiguration getEventBasedImportConfiguration() {
-    return configurationService.getIngestedEventImportConfiguration();
+  private EventBasedProcessConfiguration getEventBasedProcessConfiguration() {
+    return configurationService.getEventBasedProcessConfiguration();
+  }
+
+  private EventImportConfiguration getEventImportConfiguration() {
+    return configurationService.getEventImportConfiguration();
   }
 }

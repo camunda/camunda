@@ -10,12 +10,14 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.EventProcessService;
+import org.camunda.optimize.service.security.EventProcessAuthenticationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
 import javax.validation.Valid;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.GET;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.POST;
@@ -35,26 +37,47 @@ import java.util.List;
 public class EventBasedProcessRestService {
 
   private final EventProcessService eventProcessService;
+  private final EventProcessAuthenticationService authenticationService;
   private final SessionService sessionService;
+
+  @GET
+  @Path("/isEnabled")
+  @Produces(MediaType.APPLICATION_JSON)
+  public boolean getIsEnabled(@Context ContainerRequestContext requestContext) {
+    return eventProcessService.isEventProcessImportEnabled()
+      && isUserIsGrantedEventProcessManagementAccess(sessionService.getRequestUserOrFailNotAuthorized(requestContext));
+  }
 
   @GET
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public EventProcessMappingDto getEventProcessMapping(@PathParam("id") String eventProcessId) {
+  public EventProcessMappingDto getEventProcessMapping(@PathParam("id") final String eventProcessId,
+                                                       @Context ContainerRequestContext requestContext) {
+    validateAccessToEventProcessManagement(
+      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
+    );
     return eventProcessService.getEventProcessMapping(eventProcessId);
   }
 
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
+  public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml(
+    @Context final ContainerRequestContext requestContext) {
+    validateAccessToEventProcessManagement(
+      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
+    );
     return eventProcessService.getAllEventProcessMappingsOmitXml();
   }
 
   @POST
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public IdDto createEventProcessMapping(@Context final ContainerRequestContext requestContext,
-                                         @Valid final EventProcessMappingDto eventProcessMappingDto) {
+  public IdDto createEventProcessMapping(@Valid final EventProcessMappingDto eventProcessMappingDto,
+                                         @Context final ContainerRequestContext requestContext) {
+    validateAccessToEventProcessManagement(
+      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
+    );
+
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     eventProcessMappingDto.setLastModifier(userId);
     return eventProcessService.createEventProcessMapping(eventProcessMappingDto);
@@ -64,10 +87,14 @@ public class EventBasedProcessRestService {
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public void updateEventProcessMapping(@PathParam("id") String eventProcessId,
+  public void updateEventProcessMapping(@PathParam("id") final String eventProcessId,
                                         @Context final ContainerRequestContext requestContext,
                                         @Valid final EventProcessMappingDto eventProcessMappingDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    validateAccessToEventProcessManagement(
+      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
+    );
+
+    final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     eventProcessMappingDto.setId(eventProcessId);
     eventProcessMappingDto.setLastModifier(userId);
     eventProcessService.updateEventProcessMapping(eventProcessMappingDto);
@@ -76,23 +103,33 @@ public class EventBasedProcessRestService {
   @POST
   @Path("/{id}/_publish")
   @Produces(MediaType.APPLICATION_JSON)
-  public void publishEventProcessMapping(@PathParam("id") String eventProcessId,
+  public void publishEventProcessMapping(@PathParam("id") final String eventProcessId,
                                          @Context final ContainerRequestContext requestContext) {
+    validateAccessToEventProcessManagement(
+      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
+    );
     eventProcessService.publishEventProcessMapping(eventProcessId);
   }
 
   @POST
   @Path("/{id}/_cancelPublish")
   @Produces(MediaType.APPLICATION_JSON)
-  public void cancelEventProcessPublish(@PathParam("id") String eventProcessId,
+  public void cancelEventProcessPublish(@PathParam("id") final String eventProcessId,
                                         @Context final ContainerRequestContext requestContext) {
+    validateAccessToEventProcessManagement(
+      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
+    );
     eventProcessService.cancelPublish(eventProcessId);
   }
 
   @DELETE
   @Path("/{id}")
   @Produces(MediaType.APPLICATION_JSON)
-  public void deleteEventProcess(@PathParam("id") String eventProcessId) {
+  public void deleteEventProcess(@PathParam("id") final String eventProcessId,
+                                 @Context final ContainerRequestContext requestContext) {
+    validateAccessToEventProcessManagement(
+      sessionService.getRequestUserOrFailNotAuthorized(requestContext)
+    );
     final boolean wasFoundAndDeleted = eventProcessService.deleteEventProcessMapping(eventProcessId);
 
     if (!wasFoundAndDeleted) {
@@ -103,6 +140,19 @@ public class EventBasedProcessRestService {
       );
       throw new NotFoundException(errorMessage);
     }
+  }
+
+  private void validateAccessToEventProcessManagement(final String userId) {
+    if (!eventProcessService.isEventProcessImportEnabled()) {
+      throw new ForbiddenException("The event process feature is not activated.");
+    }
+    if (!isUserIsGrantedEventProcessManagementAccess(userId)) {
+      throw new ForbiddenException("The user " + userId + " is not authorized to use the event process api.");
+    }
+  }
+
+  private boolean isUserIsGrantedEventProcessManagementAccess(final String userId) {
+    return authenticationService.hasEventProcessManagementAccess(userId);
   }
 
 }

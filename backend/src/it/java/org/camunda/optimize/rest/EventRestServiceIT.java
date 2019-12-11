@@ -704,9 +704,7 @@ public class EventRestServiceIT extends AbstractIT {
     embeddedOptimizeExtension.getRequestExecutor()
       .buildIngestEventBatch(
         allEventDtos,
-        embeddedOptimizeExtension.getConfigurationService()
-          .getIngestionConfiguration()
-          .getApiSecret()
+        embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getApiSecret()
       )
       .execute();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();

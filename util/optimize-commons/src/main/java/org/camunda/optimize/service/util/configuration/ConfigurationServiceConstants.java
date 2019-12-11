@@ -14,6 +14,7 @@ public interface ConfigurationServiceConstants {
   String TOKEN_SECRET = "$.auth.token.secret";
   String SAME_SITE_COOKIE_FLAG_ENABLED = "$.auth.cookie.same-site.enabled";
   String SUPER_USER_IDS = "$.auth.superUserIds";
+  String EVENT_PROCESS_ACCESS_USER_IDS = "$.auth.eventProcessManagementAccessUserIds";
 
   String CONFIGURED_ENGINES = "$.engines";
 
@@ -101,7 +102,5 @@ public interface ConfigurationServiceConstants {
 
   String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
 
-  String INGESTION_CONFIGURATION = "$.ingestion";
-
-  String INGESTED_EVENT_IMPORT_CONFIGURATION = "$.import.ingestedEventImport";
+  String EVENT_BASED_PROCESS_CONFIGURATION = "$.eventBasedProcess";
 }

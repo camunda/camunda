@@ -107,7 +107,7 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
       () -> getApplicationContext().getBean(ObjectMapper.class),
       () -> getApplicationContext()
         .getBean(ConfigurationService.class)
-        .getIngestionConfiguration()
+        .getEventIngestionConfiguration()
         .getMaxBatchRequestBytes()
     ));
     context.addFilter(

@@ -238,7 +238,8 @@ ui:
     # a hex encoded color that should be used as background color for the header. Default color is white.
     backgroundColor: '#FFFFFF'
 
-ingestion:
-  # Secret to be provided on the Ingestion REST API when ingesting data.
-  # If set `null` a random secret will be generated with each startup of Optimize and logged.
-  apiSecret: null
+eventBasedProcess:
+  eventIngestion:
+    # Secret to be provided on the Ingestion REST API when ingesting data.
+    # If set `null` a random secret will be generated with each startup of Optimize and logged.
+    apiSecret: null

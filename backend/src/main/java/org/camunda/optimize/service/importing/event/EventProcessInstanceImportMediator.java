@@ -93,7 +93,7 @@ public class EventProcessInstanceImportMediator {
   }
 
   private int getMaxPageSize() {
-    return configurationService.getIngestedEventImportConfiguration().getMaxPageSize();
+    return configurationService.getEventImportConfiguration().getMaxPageSize();
   }
 
   public void shutdown() {

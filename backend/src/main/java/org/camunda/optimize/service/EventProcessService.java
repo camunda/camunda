@@ -22,6 +22,7 @@ import org.camunda.optimize.service.es.writer.EventProcessPublishStateWriter;
 import org.camunda.optimize.service.exceptions.InvalidEventProcessStateException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
@@ -51,11 +52,17 @@ public class EventProcessService {
     EventProcessState.PUBLISH_PENDING, EventProcessState.PUBLISHED, EventProcessState.UNPUBLISHED_CHANGES
   );
 
+  private final ConfigurationService configurationService;
+
   private final EventProcessMappingReader eventProcessMappingReader;
   private final EventProcessMappingWriter eventProcessMappingWriter;
 
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
   private final EventProcessPublishStateWriter eventProcessPublishStateWriter;
+
+  public boolean isEventProcessImportEnabled() {
+    return configurationService.getEventBasedProcessConfiguration().isEnabled();
+  }
 
   public IdDto createEventProcessMapping(final EventProcessMappingDto eventProcessMappingDto) {
     validateMappingsForProvidedXml(eventProcessMappingDto);

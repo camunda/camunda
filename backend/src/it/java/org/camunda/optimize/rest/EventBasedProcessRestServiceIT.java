@@ -6,30 +6,23 @@
 package org.camunda.optimize.rest;
 
 import lombok.NonNull;
-import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.importing.event.AbstractEventProcessIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -38,21 +31,78 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public class EventBasedProcessRestServiceIT extends AbstractIT {
+public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
   private static final String FULL_PROCESS_DEFINITION_XML_PATH = "/bpmn/leadQualification.bpmn";
   private static final String VALID_SCRIPT_TASK_ID = "ScriptTask_1";
   private static final String VALID_USER_TASK_ID = "UserTask_1d75hsy";
   private static final String VALID_SERVICE_TASK_ID = "ServiceTask_0j2w5af";
+
+  private static Stream<Arguments> getAllEndpointsThatNeedEventAuthorization() {
+    return Stream.of(
+      Arguments.of(HttpMethod.GET, "/eventBasedProcess", null),
+      Arguments.of(HttpMethod.POST, "/eventBasedProcess", null),
+      Arguments.of(
+        HttpMethod.PUT, "/eventBasedProcess/someId", EventProcessMappingDto.builder().name("someName").build()
+      ),
+      Arguments.of(HttpMethod.POST, "/eventBasedProcess/someId/_publish", null),
+      Arguments.of(HttpMethod.POST, "/eventBasedProcess/someId/_cancelPublish", null),
+      Arguments.of(HttpMethod.DELETE, "/eventBasedProcess/someId", null)
+    );
+  }
+
+  @Test
+  public void getIsEventBasedProcessesEnabledWithoutAuthorization() {
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetIsEventProcessEnabledRequest()
+      .withoutAuthentication()
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+  }
+
+  @Test
+  public void getIsEventBasedProcessesEnabled() {
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isEqualTo(true);
+  }
+
+  @Test
+  public void getIsEventBasedProcessesEnabledWithFeatureDeactivatedReturnsFalse() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isEqualTo(false);
+  }
+
+  @Test
+  public void getIsEventBasedProcessesEnabledWithUserNotGrantedEventBasedProcessAccessReturnsFalse() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessConfiguration()
+      .getAuthorizedUserIds()
+      .clear();
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isEqualTo(false);
+  }
 
   @Test
   public void createEventProcessMappingWithoutAuthorization() {
@@ -66,6 +116,43 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
 
     // then the status code is not authorized
     assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_UNAUTHORIZED);
+  }
+
+  @ParameterizedTest()
+  @MethodSource("getAllEndpointsThatNeedEventAuthorization")
+  public void callingEventBasedProcessApiWithFeatureDeactivatedReturnsForbidden(final String method,
+                                                                                final String path,
+                                                                                final Object payload) {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration().setEnabled(false);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGenericRequest(method, path, payload)
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_FORBIDDEN);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getAllEndpointsThatNeedEventAuthorization")
+  public void callingEventBasedProcessApiWithUserNotGrantedEventBasedProcessAccessReturnsForbidden(final String method,
+                                                                                                   final String path,
+                                                                                                   final Object payload) {
+    // given
+    embeddedOptimizeExtension.getConfigurationService()
+      .getEventBasedProcessConfiguration()
+      .getAuthorizedUserIds()
+      .clear();
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGenericRequest(method, path, payload)
+      .execute();
+
+    // then the status code is not authorized
+    assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_FORBIDDEN);
   }
 
   @Test
@@ -662,32 +749,6 @@ public class EventBasedProcessRestServiceIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(HttpServletResponse.SC_NOT_FOUND);
-  }
-
-  @SneakyThrows
-  private Optional<EventProcessPublishStateDto> getEventProcessPublishStateDtoFromElasticsearch(
-    final String eventProcessMappingId) {
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(
-        boolQuery()
-          .must(termQuery(EventProcessPublishStateIndex.PROCESS_MAPPING_ID, eventProcessMappingId))
-          .must(termQuery(EventProcessPublishStateIndex.DELETED, false))
-      )
-      .sort(SortBuilders.fieldSort(EventProcessPublishStateIndex.PUBLISH_DATE_TIME).order(SortOrder.DESC))
-      .size(1);
-    final SearchResponse searchResponse = elasticSearchIntegrationTestExtension
-      .getOptimizeElasticClient()
-      .search(new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX).source(searchSourceBuilder), RequestOptions.DEFAULT);
-
-    EventProcessPublishStateDto result = null;
-    if (searchResponse.getHits().totalHits > 0) {
-      result = elasticSearchIntegrationTestExtension.getObjectMapper().readValue(
-        searchResponse.getHits().getAt(0).getSourceAsString(),
-        IndexableEventProcessPublishStateDto.class
-      ).toEventProcessPublishStateDto();
-    }
-
-    return Optional.ofNullable(result);
   }
 
   private EventProcessMappingDto createEventProcessMappingDtoWithSimpleMappings() {
