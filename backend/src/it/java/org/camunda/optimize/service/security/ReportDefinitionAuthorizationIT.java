@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.security;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
+import org.apache.http.HttpStatus;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -14,17 +14,13 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.camunda.optimize.test.util.ProcessReportDataBuilder;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -37,19 +33,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
@@ -79,7 +74,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @ParameterizedTest
@@ -103,7 +98,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @ParameterizedTest
@@ -130,7 +125,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @ParameterizedTest
@@ -160,7 +155,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
   }
 
   @ParameterizedTest
@@ -180,7 +175,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @ParameterizedTest
@@ -199,7 +194,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @ParameterizedTest
@@ -221,7 +216,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @ParameterizedTest
@@ -241,7 +236,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @ParameterizedTest
@@ -263,7 +258,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(403));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @ParameterizedTest
@@ -282,7 +277,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_OK);
 
     // when
     Response otherUserResponse = embeddedOptimizeExtension
@@ -292,7 +287,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(otherUserResponse.getStatus(), is(403));
+    assertThat(otherUserResponse.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   @Test
@@ -320,20 +315,98 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
     // when
     CombinedReportDataDto combinedReport = createCombinedReportData(authorizedReportId, notAuthorizedReportId);
 
-    CombinedProcessReportResultDataDto<ReportMapResultDto> result = embeddedOptimizeExtension
+    Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {
-      })
-      .getResult();
+      .execute();
 
     // then
-    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
-    List<MapResultEntryDto> flowNodeToCount = resultMap.get(authorizedReportId).getResult().getData();
-    assertThat(flowNodeToCount.size(), is(2));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+  }
+
+  @Test
+  public void updateCombinedReport_addUnauthorizedReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    deployStartAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    String unauthorizedReportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final String combinedReportId =
+      reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.emptyList());
+
+    // when
+    final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
+    combinedReportUpdate.getData().getReportIds().add(unauthorizedReportId);
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate, true)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+  }
+
+  @Test
+  public void updateCombinedReport_removeUnauthorizedReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    deployStartAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final String combinedReportId =
+      reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
+
+    // when
+    final CombinedReportDefinitionDto combinedReportUpdate = new CombinedReportDefinitionDto();
+    combinedReportUpdate.getData().setReports(Collections.emptyList());
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportUpdate, true)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+  }
+
+  @Test
+  public void getCombinedReport_containsUnauthorizedReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    deployStartAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final String combinedReportId =
+      reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildGetReportRequest(combinedReportId)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+  }
+
+  @Test
+  public void deleteCombinedReport_containsUnauthorizedReport() {
+    // given
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    deployStartAndImportDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    String reportId = createReportForDefinition(RESOURCE_TYPE_PROCESS_DEFINITION);
+    final String combinedReportId =
+      reportClient.createCombinedReport(PRIVATE_COLLECTION_ID, Collections.singletonList(reportId));
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .buildDeleteReportRequest(combinedReportId, true)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
   }
 
   private String getDefinitionKey(final int definitionResourceType) {
@@ -439,14 +512,14 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildCreateSingleProcessReportRequest()
-          .execute(IdDto.class, 200)
+          .execute(IdDto.class, HttpStatus.SC_OK)
           .getId();
       case RESOURCE_TYPE_DECISION_DEFINITION:
         return embeddedOptimizeExtension
           .getRequestExecutor()
           .withUserAuthentication(user, password)
           .buildCreateSingleDecisionReportRequest()
-          .execute(IdDto.class, 200)
+          .execute(IdDto.class, HttpStatus.SC_OK)
           .getId();
     }
   }
@@ -454,7 +527,7 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   private void updateReportAsUser(String id, ReportDefinitionDto updatedReport, final String user,
                                   final String password) {
     Response response = getUpdateReportResponse(id, updatedReport, user, password);
-    assertThat(response.getStatus(), is(204));
+    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
   }
 
   private ReportDefinitionDto constructReportWithDefinition(int resourceType) {

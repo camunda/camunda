@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -21,6 +22,7 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 
@@ -37,6 +39,21 @@ public class ReportClient {
     report.setCollectionId(collectionId);
     report.setData(createCombinedReportData(singleReportIds.toArray(new String[]{})));
     return createNewCombinedReport(report);
+  }
+
+  public void updateCombinedReport(final String combinedReportId, final List<String> containedReportIds) {
+    final CombinedReportDefinitionDto combinedReportData = new CombinedReportDefinitionDto();
+    combinedReportData.getData()
+      .getReports()
+      .addAll(
+        containedReportIds.stream()
+          .map(CombinedReportItemDto::new)
+          .collect(Collectors.toList())
+      );
+    embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateCombinedProcessReportRequest(combinedReportId, combinedReportData)
+      .execute();
   }
 
   private String createNewCombinedReport(CombinedReportDefinitionDto combinedReportDefinitionDto) {

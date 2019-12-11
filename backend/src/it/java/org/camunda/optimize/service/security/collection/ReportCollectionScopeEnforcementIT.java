@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
-import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -35,6 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
@@ -46,8 +46,6 @@ import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT
 // the @MethodSource method to be non-static.
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class ReportCollectionScopeEnforcementIT extends AbstractIT {
-
-  protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @SuppressWarnings("unused")
   @ParameterizedTest(name = "enforcing the scope with one tenant works for {2}")
@@ -65,7 +63,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
 
     // when
-    final String processReportId = functionToEnforceScopeFor.apply(
+    final String reportId = functionToEnforceScopeFor.apply(
       new ScopeScenario(collectionId, "KEY_1", tenants)
     );
     final List<AuthorizedReportDefinitionDto> reportsForCollection =
@@ -76,7 +74,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .allMatch(this::singleReportHasDefinitionKey, "definition key should be updated for single reports")
       .extracting(ReportDefinitionDto::getId)
-      .contains(processReportId);
+      .contains(reportId);
   }
 
   @SuppressWarnings("unused")
@@ -97,7 +95,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
 
     // when
-    final String processReportId = functionToEnforceScopeFor.apply(
+    final String reportId = functionToEnforceScopeFor.apply(
       new ScopeScenario(collectionId, "KEY_1", singletonList(null))
     );
     final List<AuthorizedReportDefinitionDto> reportsForCollection =
@@ -108,7 +106,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .allMatch(this::singleReportHasDefinitionKey, "definition key should be updated for single reports")
       .extracting(ReportDefinitionDto::getId)
-      .contains(processReportId);
+      .contains(reportId);
   }
 
   @SuppressWarnings("unused")
@@ -126,7 +124,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
 
     // when
-    final String processReportId = functionToEnforceScopeFor.apply(
+    final String reportId = functionToEnforceScopeFor.apply(
       new ScopeScenario(collectionId, "KEY_1", tenants)
     );
     final List<AuthorizedReportDefinitionDto> reportsForCollection =
@@ -137,7 +135,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .allMatch(this::singleReportHasDefinitionKey, "definition key should be updated for single reports")
       .extracting(ReportDefinitionDto::getId)
-      .contains(processReportId);
+      .contains(reportId);
   }
 
   @SuppressWarnings("unused")
@@ -153,7 +151,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
 
     // when
-    final String processReportId = functionToEnforceScopeFor.apply(
+    final String reportId = functionToEnforceScopeFor.apply(
       new ScopeScenario(collectionId, null, tenants)
     );
     final List<AuthorizedReportDefinitionDto> reportsForCollection =
@@ -163,7 +161,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     assertThat(reportsForCollection)
       .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
-      .contains(processReportId);
+      .contains(reportId);
   }
 
   @SuppressWarnings("unused")
@@ -184,7 +182,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
 
     // when
-    final String processReportId = functionToEnforceScopeFor.apply(
+    final String reportId = functionToEnforceScopeFor.apply(
       new ScopeScenario(null, "KEY_1", singletonList(null))
     );
     final List<AuthorizedReportDefinitionDto> privateReports = embeddedOptimizeExtension
@@ -199,7 +197,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     assertThat(privateReports)
       .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
-      .contains(processReportId);
+      .contains(reportId);
   }
 
   @ParameterizedTest(name = "allow undefined key report in scenario {2}")
@@ -350,6 +348,20 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
       .getId();
   }
 
+  private String createCombinedReport(final String collectionId, final String processDefinitionKey,
+                                      final List<String> tenants) {
+    String singleReportId = createProcessReport(collectionId, processDefinitionKey, tenants);
+    return reportClient.createCombinedReport(collectionId, singletonList(singleReportId));
+  }
+
+  private String updateCombinedReport(final String collectionId, final String processDefinitionKey,
+                                      final List<String> tenants) {
+    String singleReportId = createProcessReport(collectionId, processDefinitionKey, tenants);
+    final String combinedReportId = reportClient.createCombinedReport(collectionId, emptyList());
+    reportClient.updateCombinedReport(combinedReportId, singletonList(singleReportId));
+    return combinedReportId;
+  }
+
   private String createEmptyReport(final String collectionId, final DefinitionType definitionType) {
     switch (definitionType) {
       case PROCESS:
@@ -413,6 +425,8 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     return Stream.of(
       Arguments.of(createProcessReportFromScopeScenario(), PROCESS, "create process report"),
       Arguments.of(updateProcessReportFromScopeScenario(), PROCESS, "update process report"),
+      Arguments.of(createCombinedReportFromScopeScenario(), PROCESS, "create combined process report"),
+      Arguments.of(updateCombinedReportFromScopeScenario(), PROCESS, "update combined process report"),
       Arguments.of(copyAndMoveProcessReportScenario(), PROCESS, "copy and move process report"),
       Arguments.of(copyAndMoveCombinedReportScenario(), PROCESS, "copy and move combined process report"),
       Arguments.of(createDecisionReportFromScopeScenario(), DECISION, "create decision report"),
@@ -443,6 +457,22 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
 
   private Function<ScopeScenario, Response> createProcessReportFromScopeScenarioRequest() {
     return (scenario) -> createProcessReportRequest(
+      scenario.getCollectionIdToAddReportTo(),
+      scenario.getDefinitionKey(),
+      scenario.getTenants()
+    );
+  }
+
+  private Function<ScopeScenario, String> createCombinedReportFromScopeScenario() {
+    return (scenario) -> createCombinedReport(
+      scenario.getCollectionIdToAddReportTo(),
+      scenario.getDefinitionKey(),
+      scenario.getTenants()
+    );
+  }
+
+  private Function<ScopeScenario, String> updateCombinedReportFromScopeScenario() {
+    return (scenario) -> updateCombinedReport(
       scenario.getCollectionIdToAddReportTo(),
       scenario.getDefinitionKey(),
       scenario.getTenants()

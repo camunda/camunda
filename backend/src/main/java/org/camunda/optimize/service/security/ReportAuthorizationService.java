@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
@@ -16,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.IdentityService;
+import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +31,7 @@ public class ReportAuthorizationService {
   private final DefinitionService definitionService;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final AuthorizedCollectionService collectionAuthorizationService;
+  private final ReportReader reportReader;
 
   public Optional<RoleType> getAuthorizedRole(final String userId, final ReportDefinitionDto report) {
     final boolean isSuperUser = identityService.isSuperUserIdentity(userId);
@@ -55,14 +58,8 @@ public class ReportAuthorizationService {
     boolean authorizedToAccessDefinition = false;
     if (report instanceof SingleProcessReportDefinitionDto) {
       final ProcessReportDataDto reportData = ((SingleProcessReportDefinitionDto) report).getData();
-      if (reportData != null) {
-        final Boolean isEventProcessReport =
-          definitionService.isEventProcessDefinition(reportData.getProcessDefinitionKey());
-        authorizedToAccessDefinition =
-          isEventProcessReport || definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-          identityId, identityType, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
-        );
-      }
+      authorizedToAccessDefinition =
+        isAuthorizedToAccessProcessReportDefinition(identityId, identityType, reportData);
     } else if (report instanceof SingleDecisionReportDefinitionDto) {
       final DecisionReportDataDto reportData = ((SingleDecisionReportDefinitionDto) report).getData();
       if (reportData != null) {
@@ -71,12 +68,27 @@ public class ReportAuthorizationService {
         );
       }
     } else if (report instanceof CombinedReportDefinitionDto) {
-      // for combined reports the access is handled on evaluation
-      authorizedToAccessDefinition = true;
+      final CombinedReportDataDto reportData = ((CombinedReportDefinitionDto) report).getData();
+      authorizedToAccessDefinition = reportReader.getAllSingleProcessReportsForIdsOmitXml(reportData.getReportIds())
+        .stream()
+        .allMatch(r -> isAuthorizedToAccessProcessReportDefinition(identityId, identityType, r.getData()));
     } else {
       throw new OptimizeRuntimeException("Unsupported report type: " + report.getClass().getSimpleName());
     }
     return authorizedToAccessDefinition;
+  }
+
+  private boolean isAuthorizedToAccessProcessReportDefinition(final String identityId,
+                                                              final IdentityType identityType,
+                                                              final ProcessReportDataDto reportData) {
+    if (reportData != null) {
+      final Boolean isEventProcessReport =
+        definitionService.isEventProcessDefinition(reportData.getProcessDefinitionKey());
+      return isEventProcessReport || definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+          identityId, identityType, reportData.getProcessDefinitionKey(), reportData.getTenantIds()
+        );
+    }
+    return false;
   }
 
 }
