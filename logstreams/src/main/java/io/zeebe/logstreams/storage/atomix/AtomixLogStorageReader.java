@@ -12,14 +12,10 @@ import io.atomix.protocols.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.spi.LogStorageReader;
-import io.zeebe.logstreams.spi.ReadResultProcessor;
-import java.nio.ByteBuffer;
 import java.util.Optional;
+import org.agrona.DirectBuffer;
 
 public class AtomixLogStorageReader implements LogStorageReader {
-  private static final ReadResultProcessor DEFAULT_READ_PROCESSOR =
-      (buffer, readResult) -> readResult;
-
   private final RaftLogReader reader;
 
   public AtomixLogStorageReader(final RaftLogReader reader) {
@@ -32,13 +28,7 @@ public class AtomixLogStorageReader implements LogStorageReader {
   }
 
   @Override
-  public long read(final ByteBuffer readBuffer, final long address) {
-    return read(readBuffer, address, DEFAULT_READ_PROCESSOR);
-  }
-
-  @Override
-  public long read(
-      final ByteBuffer readBuffer, final long address, final ReadResultProcessor processor) {
+  public long read(final DirectBuffer readBuffer, final long address) {
     if (address < reader.getFirstIndex()) {
       return LogStorage.OP_RESULT_INVALID_ADDR;
     }
@@ -49,7 +39,7 @@ public class AtomixLogStorageReader implements LogStorageReader {
 
     final var result =
         findEntry(address)
-            .map(indexed -> copyEntryData(indexed, readBuffer, processor))
+            .map(indexed -> wrapEntryData(indexed, readBuffer))
             .orElse(LogStorage.OP_RESULT_NO_DATA);
 
     if (result < 0) {
@@ -61,16 +51,33 @@ public class AtomixLogStorageReader implements LogStorageReader {
     return reader.getNextIndex();
   }
 
+  /**
+   * This is currently a quite slow implementation as Atomix does not support navigating backwards;
+   * it would require a refactor there if this is ever too slow.
+   *
+   * <p>{@inheritDoc}
+   */
   @Override
-  public long readLastBlock(final ByteBuffer readBuffer, final ReadResultProcessor processor) {
-    final var result = read(readBuffer, reader.getLastIndex(), processor);
+  public long readLastBlock(final DirectBuffer readBuffer) {
+    final var firstIndex = reader.getFirstIndex();
+    var index = reader.getLastIndex();
 
-    // if reading the last index returns invalid address, this means the log is empty
-    if (result == LogStorage.OP_RESULT_INVALID_ADDR) {
-      return LogStorage.OP_RESULT_NO_DATA;
-    }
+    do {
+      reader.reset(index);
+      if (!reader.hasNext()) {
+        break;
+      }
 
-    return result;
+      final var indexed = reader.next();
+      if (indexed.type() == ZeebeEntry.class) {
+        wrapEntryData(indexed.cast(), readBuffer);
+        return reader.getNextIndex();
+      }
+
+      index--;
+    } while (index >= firstIndex);
+
+    return LogStorage.OP_RESULT_NO_DATA;
   }
 
   /**
@@ -88,7 +95,7 @@ public class AtomixLogStorageReader implements LogStorageReader {
       return optionalEntry.map(Indexed::index).orElse(LogStorage.OP_RESULT_INVALID_ADDR);
     }
 
-    // when the log is empty, last index is defined as first index - 1
+    // when the log is empty, the last index is defined as first index - 1
     if (low >= high) {
       // need a better way to figure out how to know if its empty
       if (findEntry(low).isEmpty()) {
@@ -158,19 +165,10 @@ public class AtomixLogStorageReader implements LogStorageReader {
     return Optional.empty();
   }
 
-  private long copyEntryData(
-      final Indexed<ZeebeEntry> entry, final ByteBuffer dest, final ReadResultProcessor processor) {
+  private long wrapEntryData(final Indexed<ZeebeEntry> entry, final DirectBuffer dest) {
     final var data = entry.entry().data();
     final var length = data.remaining();
-    if (dest.remaining() < length) {
-      return LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
-    }
-
-    // old loop to avoid updating the position of the data buffer
-    for (int i = 0; i < length; i++) {
-      dest.put(data.get(i));
-    }
-
-    return processor.process(dest, length);
+    dest.wrap(data, data.position(), data.remaining());
+    return length;
   }
 }

@@ -41,7 +41,7 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
   private final ByteValue maxFrameLength;
   private final ActorScheduler actorScheduler;
   private final List<LogStreamReader> readers;
-  private final BufferedLogStreamReader reader;
+  private final LogStreamReaderImpl reader;
   private final LogStorage logStorage;
   private ActorFuture<LogStorageAppender> appenderFuture;
   private Dispatcher writeBuffer;
@@ -64,13 +64,13 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
 
     try {
       logStorage.open();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
 
     commitPosition = INVALID_ADDRESS;
     readers = new ArrayList<>();
-    this.reader = new BufferedLogStreamReader(logStorage);
+    this.reader = new LogStreamReaderImpl(logStorage);
     readers.add(reader);
     internalSetCommitPosition(reader.seekToEnd());
   }
@@ -141,7 +141,7 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
   public ActorFuture<LogStreamReader> newLogStreamReader() {
     return actor.call(
         () -> {
-          final BufferedLogStreamReader reader = new BufferedLogStreamReader(logStorage);
+          final LogStreamReaderImpl reader = new LogStreamReaderImpl(logStorage);
           readers.add(reader);
           return reader;
         });
@@ -240,7 +240,7 @@ public class LogStreamImpl extends Actor implements LogStream, AutoCloseable {
   }
 
   private int determineInitialPartitionId() {
-    try (BufferedLogStreamReader logReader = new BufferedLogStreamReader(logStorage)) {
+    try (LogStreamReaderImpl logReader = new LogStreamReaderImpl(logStorage)) {
 
       // Get position of last entry
       final long lastPosition = logReader.seekToEnd();
