@@ -18,7 +18,8 @@ const initialState = {
   withIncidents: 0,
   filterCount: null,
   instancesInSelectionsCount: 0,
-  selectionCount: 0
+  selectionCount: 0,
+  isLoaded: false
 };
 
 export function countReducer(state, {type, payload}) {
@@ -26,7 +27,7 @@ export function countReducer(state, {type, payload}) {
     case 'filterCount':
       return {...state, filterCount: payload};
     case 'coreStats':
-      return {...state, ...payload};
+      return {...state, ...payload, isLoaded: true};
     case 'selectionCount':
       return {...state, ...payload};
     default:

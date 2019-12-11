@@ -31,6 +31,7 @@ import {
 import {DEBOUNCE_DELAY, ALL_VERSIONS_OPTION} from './constants';
 
 jest.mock('./constants');
+jest.mock('modules/utils/bpmn');
 
 api.fetchGroupedWorkflows = mockResolvedAsyncFn(groupedWorkflowsMock);
 

@@ -35,6 +35,14 @@ jest.mock(
 );
 
 jest.mock(
+  './Filters',
+  () =>
+    function Filters(props) {
+      return <div />;
+    }
+);
+
+jest.mock(
   './Selections',
   () =>
     function Selections(props) {
@@ -148,7 +156,6 @@ describe('Instances', () => {
         mockProps.groupedWorkflows
       );
       expect(FiltersNode.prop('filter')).toEqual(mockProps.filter);
-      expect(FiltersNode.prop('filterCount')).toBe(mockInstances.totalCount);
     });
 
     it('should handle the filter reset', () => {

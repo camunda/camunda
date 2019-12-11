@@ -24,14 +24,12 @@ export const workflows = {
 export const mockProps = {
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),
-  filterCount: 1,
   selectableFlowNodes: []
 };
 
 export const mockPropsWithSelectableFlowNodes = {
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),
-  filterCount: 1,
   selectableFlowNodes: [
     {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
     {id: 'TaskB', $type: 'bpmn:EndEvent'}

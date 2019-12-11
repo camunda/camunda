@@ -101,7 +101,6 @@ export default class Instances extends Component {
                         ...DEFAULT_FILTER_CONTROLLED_VALUES,
                         ...this.props.filter
                       }}
-                      filterCount={this.props.filterCount}
                       onFilterReset={() =>
                         this.props.onFilterReset(DEFAULT_FILTER)
                       }
