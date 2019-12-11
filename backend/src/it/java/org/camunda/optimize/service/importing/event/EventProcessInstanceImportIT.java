@@ -5,12 +5,14 @@
  */
 package org.camunda.optimize.service.importing.event;
 
+import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.SimpleEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -37,16 +39,22 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // then
     final String eventProcessPublishStateId = getEventPublishStateIdForEventProcessMappingId(eventProcessMappingId);
 
-    final Map<String, List<String>> eventProcessInstanceIndicesAndAliases =
+    final Map<String, List<AliasMetaData>> eventProcessInstanceIndicesAndAliases =
       getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
     assertThat(eventProcessInstanceIndicesAndAliases)
       .hasSize(1)
       .hasEntrySatisfying(
         getVersionedEventProcessInstanceIndexNameForPublishedStateId(eventProcessPublishStateId),
-        aliases -> assertThat(aliases).containsExactlyInAnyOrder(
-          getOptimizeIndexAliasForIndexName(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessPublishStateId),
-          getOptimizeIndexAliasForIndexName(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME)
-        )
+        aliases -> assertThat(aliases)
+          .extracting(AliasMetaData::alias, AliasMetaData::writeIndex)
+          .containsExactlyInAnyOrder(
+            Tuple.tuple(
+              getOptimizeIndexAliasForIndexName(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + eventProcessPublishStateId), true
+            ),
+            Tuple.tuple(
+              getOptimizeIndexAliasForIndexName(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME), false
+            )
+          )
       );
   }
 
@@ -65,7 +73,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final Map<String, List<String>> eventProcessInstanceIndicesAndAliases =
+    final Map<String, List<AliasMetaData>> eventProcessInstanceIndicesAndAliases =
       getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
     assertThat(eventProcessInstanceIndicesAndAliases).hasSize(0);
   }

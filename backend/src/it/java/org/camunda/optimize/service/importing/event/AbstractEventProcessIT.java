@@ -47,8 +47,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -105,7 +105,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   @SneakyThrows
-  protected Map<String, List<String>> getEventProcessInstanceIndicesWithAliasesFromElasticsearch() {
+  protected Map<String, List<AliasMetaData>> getEventProcessInstanceIndicesWithAliasesFromElasticsearch() {
     final OptimizeIndexNameService indexNameService = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .getIndexNameService();
     final GetIndexResponse getIndexResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
@@ -119,10 +119,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
         RequestOptions.DEFAULT
       );
     return StreamSupport.stream(getIndexResponse.aliases().spliterator(), false)
-      .collect(Collectors.toMap(
-        cursor -> cursor.key,
-        cursor -> cursor.value.stream().map(AliasMetaData::alias).collect(Collectors.toList())
-      ));
+      .collect(Collectors.toMap(cursor -> cursor.key, cursor -> cursor.value));
   }
 
   @SneakyThrows

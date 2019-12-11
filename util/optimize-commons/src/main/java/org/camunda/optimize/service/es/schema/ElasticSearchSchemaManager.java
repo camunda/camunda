@@ -129,16 +129,20 @@ public class ElasticSearchSchemaManager {
 
   public void createOptimizeIndex(final OptimizeElasticsearchClient esClient,
                                   final IndexMappingCreator mapping,
-                                  final Set<String> additionalAliases) {
+                                  final Set<String> additionalReadOnlyAliases) {
     final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
     final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
     final Settings indexSettings = createIndexSettings();
     try {
       try {
         final CreateIndexRequest request = new CreateIndexRequest(indexName);
-        final Set<String> aliases = new HashSet<>(additionalAliases);
+        final Set<String> aliases = new HashSet<>(additionalReadOnlyAliases);
         aliases.add(defaultAliasName);
-        aliases.forEach(additionalAliasName -> request.alias(new Alias(additionalAliasName)));
+        aliases.forEach(
+          additionalAliasName -> request.alias(
+            new Alias(additionalAliasName).writeIndex(defaultAliasName.equals(additionalAliasName))
+          )
+        );
         request.settings(indexSettings);
         request.mapping(DEFAULT_INDEX_TYPE, mapping.getSource());
         esClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
