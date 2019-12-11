@@ -9,19 +9,14 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
-public class EventCountDto {
+public class EventCountServiceDto {
 
-  private String group;
-  private String source;
-  private String eventName;
-  private Long count;
-  private boolean suggested = false;
+  EventCountRequestDto eventCountRequestDto;
+  EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto;
 
 }

@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
 
@@ -35,15 +33,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUE
 @Slf4j
 public class EventSequenceCountWriter {
 
-  public static final String ID_FIELD_SEPARATOR = ":";
-  public static final String ID_EVENT_SEPARATOR = "%";
-
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
   public void updateEventSequenceCountsWithAdjustments(final List<EventSequenceCountDto> eventSequenceCountDtos) {
     log.debug("Making adjustments to [{}] event sequence counts in elasticsearch", eventSequenceCountDtos.size());
-    eventSequenceCountDtos.forEach(sequence -> sequence.setId(generateIdForEventSequenceCountDto(sequence)));
+    eventSequenceCountDtos.forEach(EventSequenceCountDto::generateIdForEventSequenceCountDto);
 
     final BulkRequest bulkRequest = new BulkRequest();
     for (EventSequenceCountDto eventSequenceCountDto : eventSequenceCountDtos) {
@@ -86,20 +81,6 @@ public class EventSequenceCountWriter {
       ))
       .upsert(indexRequest);
     return updateRequest;
-  }
-
-  public String generateIdForEventSequenceCountDto(EventSequenceCountDto eventSequenceCountDto) {
-    Optional<EventTypeDto> sourceEvent = Optional.ofNullable(eventSequenceCountDto.getSourceEvent());
-    Optional<EventTypeDto> targetEvent = Optional.ofNullable(eventSequenceCountDto.getTargetEvent());
-    return new StringBuilder()
-      .append(sourceEvent.map(EventTypeDto::getGroup).orElse(null)).append(ID_FIELD_SEPARATOR)
-      .append(sourceEvent.map(EventTypeDto::getSource).orElse(null)).append(ID_FIELD_SEPARATOR)
-      .append(sourceEvent.map(EventTypeDto::getEventName).orElse(null))
-      .append(ID_EVENT_SEPARATOR)
-      .append(targetEvent.map(EventTypeDto::getGroup).orElse(null)).append(ID_FIELD_SEPARATOR)
-      .append(targetEvent.map(EventTypeDto::getSource).orElse(null)).append(ID_FIELD_SEPARATOR)
-      .append(targetEvent.map(EventTypeDto::getEventName).orElse(null))
-      .toString();
   }
 
 }

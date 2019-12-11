@@ -9,19 +9,21 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.FieldNameConstants;
+
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import java.util.Map;
 
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldNameConstants
-public class EventCountDto {
+public class EventCountSuggestionsRequestDto {
 
-  private String group;
-  private String source;
-  private String eventName;
-  private Long count;
-  private boolean suggested = false;
+  @NotBlank
+  String targetFlowNodeId;
+  @NotBlank
+  String xml;
+  Map<String, EventMappingDto> mappings;
 
 }

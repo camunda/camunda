@@ -27,8 +27,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
-import static org.camunda.optimize.service.es.writer.EventSequenceCountWriter.ID_EVENT_SEPARATOR;
-import static org.camunda.optimize.service.es.writer.EventSequenceCountWriter.ID_FIELD_SEPARATOR;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_NAME;
@@ -404,26 +402,13 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     EventTypeDto targetEvent = Optional.ofNullable(target)
       .map(tar -> new EventTypeDto(tar.getGroup(), tar.getSource(), tar.getEventName()))
       .orElse(null);
-    return EventSequenceCountDto.builder()
-      .id(generateSequenceIdFromSourceAndTargetEvents(source, target))
+    EventSequenceCountDto eventSequenceCountDto = EventSequenceCountDto.builder()
       .sourceEvent(sourceEvent)
       .targetEvent(targetEvent)
       .count(count)
       .build();
-  }
-
-  private String generateSequenceIdFromSourceAndTargetEvents(EventDto source, EventDto target) {
-    Optional<EventDto> sourceEvent = Optional.ofNullable(source);
-    Optional<EventDto> targetEvent = Optional.ofNullable(target);
-    return new StringBuilder()
-      .append(sourceEvent.map(EventDto::getGroup).orElse(null)).append(ID_FIELD_SEPARATOR)
-      .append(sourceEvent.map(EventDto::getSource).orElse(null)).append(ID_FIELD_SEPARATOR)
-      .append(sourceEvent.map(EventDto::getEventName).orElse(null))
-      .append(ID_EVENT_SEPARATOR)
-      .append(targetEvent.map(EventDto::getGroup).orElse(null)).append(ID_FIELD_SEPARATOR)
-      .append(targetEvent.map(EventDto::getSource).orElse(null)).append(ID_FIELD_SEPARATOR)
-      .append(targetEvent.map(EventDto::getEventName).orElse(null))
-      .toString();
+    eventSequenceCountDto.generateIdForEventSequenceCountDto();
+    return eventSequenceCountDto;
   }
 
 }

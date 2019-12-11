@@ -201,7 +201,7 @@ public class EventStateProcessingService {
                      .map(target -> new EventTypeDto(target.getGroup(), target.getSource(), target.getEventName()))
                      .orElse(null))
       .build();
-    eventSequenceCountDto.setId(eventSequenceCountWriter.generateIdForEventSequenceCountDto(eventSequenceCountDto));
+    eventSequenceCountDto.generateIdForEventSequenceCountDto();
     return eventSequenceCountDto;
   }
 

@@ -11,12 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -34,9 +32,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.events.EventIndex.N_GRAM_FIELD;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_INDEX_NAME;
@@ -58,12 +54,6 @@ public class EventReader {
   private static final String SOURCE = EventDto.Fields.source;
   private static final String GROUP = EventDto.Fields.group;
   private static final String KEYWORD_ANALYZER = "keyword";
-  private static final Comparator DEFAULT_COMPARATOR = Comparator.comparing(
-    EventCountDto::getGroup,
-    String.CASE_INSENSITIVE_ORDER
-  )
-    .thenComparing(EventCountDto::getSource, String.CASE_INSENSITIVE_ORDER)
-    .thenComparing(EventCountDto::getEventName, String.CASE_INSENSITIVE_ORDER);
 
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
@@ -120,7 +110,7 @@ public class EventReader {
     } catch (IOException e) {
       throw new OptimizeRuntimeException("Was not able to get event counts!", e);
     }
-    return sortEventCountsUsingWithRequestParameters(eventCountRequestDto, eventCountDtos);
+    return eventCountDtos;
   }
 
   private List<EventDto> getPageOfEventsSortedByIngestionTimestamp(final QueryBuilder query, final int limit) {
@@ -194,36 +184,6 @@ public class EventReader {
       .field(GROUP)
       .size(MAX_RESPONSE_SIZE_LIMIT)
       .subAggregation(sourceAggregation);
-  }
-
-  private List<EventCountDto> sortEventCountsUsingWithRequestParameters(final EventCountRequestDto eventCountRequestDto,
-                                                                        List<EventCountDto> eventCountDtos) {
-    SortOrder sortOrder = eventCountRequestDto.getSortOrder();
-    boolean isAscending = sortOrder == null || sortOrder.equals(SortOrder.ASC);
-
-    Comparator comparator = Optional.ofNullable(eventCountRequestDto.getOrderBy())
-      .map(orderBy ->
-             sortOrderedComparator(isAscending, getCustomComparator(orderBy))
-               .thenComparing(sortOrderedComparator(isAscending, DEFAULT_COMPARATOR)))
-      .orElseGet(() -> sortOrderedComparator(isAscending, DEFAULT_COMPARATOR));
-    eventCountDtos.sort(comparator);
-    return eventCountDtos;
-  }
-
-  private Comparator sortOrderedComparator(final boolean isAscending, final Comparator comparator) {
-    return isAscending ? comparator : comparator.reversed();
-  }
-
-  private Comparator getCustomComparator(final String orderBy) {
-    if (orderBy.equalsIgnoreCase(EventCountDto.Fields.group)) {
-      return Comparator.comparing(EventCountDto::getGroup, String.CASE_INSENSITIVE_ORDER);
-    } else if (orderBy.equalsIgnoreCase(EventCountDto.Fields.source)) {
-      return Comparator.comparing(EventCountDto::getSource, String.CASE_INSENSITIVE_ORDER);
-    } else if (orderBy.equalsIgnoreCase(EventCountDto.Fields.eventName)) {
-      return Comparator.comparing(EventCountDto::getEventName, String.CASE_INSENSITIVE_ORDER);
-    } else {
-      throw new OptimizeValidationException("invalid orderBy field");
-    }
   }
 
 }

@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventCountSuggestionsRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -1067,12 +1068,23 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetEventRequest(EventCountRequestDto eventCountRequestDto) {
+  public OptimizeRequestExecutor buildGetEventCountRequest(EventCountRequestDto eventCountRequestDto) {
     this.path = "event/count";
     this.requestType = GET;
-    Optional.ofNullable(eventCountRequestDto.getSearchTerm()).ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    Optional.ofNullable(eventCountRequestDto.getOrderBy()).ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
-    Optional.ofNullable(eventCountRequestDto.getSortOrder()).ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
+    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getSearchTerm).ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getOrderBy).ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
+    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getSortOrder).ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildPostEventCountRequest(EventCountRequestDto eventCountRequestDto,
+                                                            EventCountSuggestionsRequestDto eventCountSuggestionsRequestDto) {
+    this.path = "event/count";
+    this.requestType = POST;
+    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getSearchTerm).ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getOrderBy).ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
+    Optional.ofNullable(eventCountRequestDto).map(EventCountRequestDto::getSortOrder).ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
+    this.body = Optional.ofNullable(eventCountSuggestionsRequestDto).map(this::getBody).orElse(null);
     return this;
   }
 
