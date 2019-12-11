@@ -49,5 +49,8 @@ public class ElasticsearchConstants {
 
   public static final String EVENT_PROCESS_INSTANCE_INDEX_PREFIX = "event-process-instance-";
 
+  public static final String EVENT_PROCESSING_IMPORT_REFERENCE = "eventStateProcessing";
+  public static final String EVENT_PROCESSING_ENGINE_REFERENCE = "optimize";
+
   public static final String METADATA_TYPE_SCHEMA_VERSION = "schemaVersion";
 }

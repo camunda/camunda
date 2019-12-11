@@ -83,8 +83,7 @@ public class OptimizeElasticsearchClient {
     return highLevelClient.count(countRequest, options);
   }
 
-  public final DeleteResponse delete(final DeleteRequest deleteRequest, final RequestOptions options) throws
-                                                                                                      IOException {
+  public final DeleteResponse delete(final DeleteRequest deleteRequest, final RequestOptions options) throws IOException {
     applyIndexPrefix(deleteRequest);
     deleteRequest.type(DEFAULT_INDEX_TYPE);
 

@@ -32,6 +32,7 @@ import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -52,6 +53,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
+import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -179,18 +181,25 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     addEntryToTracker(indexName, id);
   }
 
-  public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
-    GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(
-      ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME,
-      "1"
-    ));
-
-    String content = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT).getSourceAsString();
-    TimestampBasedImportIndexDto timestampBasedImportIndexDto = OBJECT_MAPPER.readValue(
-      content,
-      TimestampBasedImportIndexDto.class
+  public OffsetDateTime getLastProcessedEventTimestamp() throws IOException {
+    return getLastImportTimestampOfTimestampBasedImportIndex(
+      ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE,
+      ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE
     );
-    return timestampBasedImportIndexDto.getTimestampOfLastEntity();
+  }
+
+  public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
+    return getLastImportTimestampOfTimestampBasedImportIndex(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME, "1");
+  }
+
+  private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(String esType, String engine) throws IOException {
+    GetRequest getRequest = new GetRequest(TIMESTAMP_BASED_IMPORT_INDEX_NAME).id(EsHelper.constructKey(esType, engine));
+    GetResponse response = prefixAwareRestHighLevelClient.get(getRequest, RequestOptions.DEFAULT);
+    if (response.isExists()) {
+      return OBJECT_MAPPER.readValue(response.getSourceAsString(), TimestampBasedImportIndexDto.class).getTimestampOfLastEntity();
+    } else {
+      throw new NotFoundException(String.format("Timestamp based import index does not exist: esType: {%s}, engine: {%s}", esType, engine));
+    }
   }
 
   public void blockProcInstIndex(boolean block) throws IOException {

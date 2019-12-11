@@ -18,6 +18,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -40,7 +41,6 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   @BeforeEach
   public void setup() {
     eventStateProcessingService = embeddedOptimizeExtension.getEventStateProcessingService();
-    eventStateProcessingService.setLastProcessedEntityIngestionTimestamp(0L);
   }
 
   @Test
@@ -49,13 +49,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     eventStateProcessingService.processUncountedEvents();
 
     // then
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(0L);
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(EVENT_TRACE_STATE_INDEX_NAME)).isEqualTo(0);
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(EVENT_SEQUENCE_COUNT_INDEX_NAME)).isEqualTo(0);
   }
 
   @Test
-  public void processSingleBatchOfEventsNewUniqueTraceIds() {
+  public void processSingleBatchOfEventsNewUniqueTraceIds() throws IOException {
     // given
     EventDto eventDtoTraceOne = createEventDtoWithProperties("traceOne", "backend", "ketchup", "signup-event", 100L);
     EventDto eventDtoTraceTwo = createEventDtoWithProperties("traceTwo", "backend", "ketchup", "register-event", 200L);
@@ -88,11 +87,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventDtoTraceTwo, null, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoTraceThree, null, 1)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
 
   @Test
-  public void processSingleBatchOfEventsIncludingSharedTraceIds() {
+  public void processSingleBatchOfEventsIncludingSharedTraceIds() throws IOException {
     // given
     String traceId = "someTraceId";
     EventDto eventDtoOne = createEventDtoWithProperties(traceId, "backend", "ketchup", "signup-event", 100L);
@@ -118,11 +117,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventDtoTwo, eventDtoThree, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoThree, null, 1)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
 
   @Test
-  public void processSingleBatchOfEventsWithRepeatedSequencesAcrossTraces() {
+  public void processSingleBatchOfEventsWithRepeatedSequencesAcrossTraces() throws IOException {
     // given
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
@@ -174,11 +173,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventDtoTraceThreeEventOne, eventDtoTraceThreeEventTwo, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoTraceThreeEventTwo, null, 1)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
 
   @Test
-  public void processMultipleBatchesOfEventsWithMultipleTracesNoTimestampModifications() {
+  public void processMultipleBatchesOfEventsWithMultipleTracesNoTimestampModifications() throws IOException {
     // given
     String traceIdOne = "traceIdOne";
     String traceIdTwo = "traceIdTwo";
@@ -201,7 +200,7 @@ public class EventStateProcessingServiceIT extends AbstractIT {
     assertThat(getAllStoredEventSequenceCounts()).containsExactlyInAnyOrder(
       createSequenceFromSourceAndTargetEvents(eventOneTraceOne, null, 3)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch adds further trace events
     EventDto eventTwoTraceOne = createEventDtoWithProperties(traceIdOne, "backend", "ketchup", "register-event", 400L);
@@ -225,11 +224,12 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventTwoTraceTwo, null, 1),
       createSequenceFromSourceAndTargetEvents(eventOneTraceThree, null, 1)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
 
   @Test
-  public void processMultipleBatchesOfEventsWithEventTimestampModificationRequiringAdjustmentsForTraceEvent() {
+  public void processMultipleBatchesOfEventsWithEventTimestampModificationRequiringAdjustmentsForTraceEvent() throws
+                                                                                                              IOException {
     // given
     String traceId = "traceId";
     EventDto eventDtoOne = createEventDtoWithProperties(traceId, "backend", "ketchup", "signup-event", 100L);
@@ -254,7 +254,7 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventDtoTwo, eventDtoThree, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoThree, null, 1)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch includes timestamp modification
     EventDto eventDtoThreeModified = createEventDtoWithProperties(
@@ -280,11 +280,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventDtoThreeModified, eventDtoTwo, 1),
       createSequenceFromSourceAndTargetEvents(eventDtoTwo, null, 1)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
   }
 
   @Test
-  public void processMultipleBatchesOfEventsWithSingleTraceDuplicateEventsAcrossBatches() {
+  public void processMultipleBatchesOfEventsWithSingleTraceDuplicateEventsAcrossBatches() throws IOException {
     // given
     String traceId = "traceIdOne";
     EventDto eventOne = createEventDtoWithProperties(traceId, "backend", "ketchup", "signup-event", 100L);
@@ -309,7 +309,7 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventTwo, eventThree, 1),
       createSequenceFromSourceAndTargetEvents(eventThree, null, 1)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
 
     // when second batch adds repeated event trace already processes
     EventDto eventTwoRepeated = createEventDtoWithProperties(traceId, "backend", "ketchup", "register-event", 200L);
@@ -330,7 +330,11 @@ public class EventStateProcessingServiceIT extends AbstractIT {
       createSequenceFromSourceAndTargetEvents(eventTwo, eventThree, 1),
       createSequenceFromSourceAndTargetEvents(eventThree, null, 1)
     );
-    assertThat(eventStateProcessingService.getLastProcessedEntityIngestionTimestamp()).isEqualTo(findMostRecentEventTimestamp());
+    assertThat(getLastProcessedEntityTimestampFromElasticsearch()).isEqualTo(findMostRecentEventTimestamp());
+  }
+
+  private Long getLastProcessedEntityTimestampFromElasticsearch() throws IOException {
+    return elasticSearchIntegrationTestExtension.getLastProcessedEventTimestamp().toInstant().toEpochMilli();
   }
 
   private Long findMostRecentEventTimestamp() {
@@ -352,12 +356,8 @@ public class EventStateProcessingServiceIT extends AbstractIT {
   }
 
   private <T> List<T> getAllStoredDocumentsForIndexAsClass(String indexName, Class<T> dtoClass) {
-    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(
-      indexName);
-    return mapHits(
-      response.getHits(),
-      dtoClass,
-      embeddedOptimizeExtension.getObjectMapper()
+    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(indexName);
+    return mapHits(response.getHits(), dtoClass, embeddedOptimizeExtension.getObjectMapper()
     );
   }
 

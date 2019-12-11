@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * Write all information of the current import index to elasticsearch.
- * If optimized is restarted the import index can thus be restored again.
+ * If Optimize is restarted the import index can thus be restored again.
  */
 @AllArgsConstructor
 @Slf4j

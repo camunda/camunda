@@ -15,9 +15,11 @@ import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.xcontent.XContentFactory;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -49,6 +51,17 @@ public class ImportIndexWriter {
       importIndexDtos,
       this::addImportIndexRequest
     );
+  }
+
+  public void updateTimestampBasedImportIndex(TimestampBasedImportIndexDto timestampBasedImportIndexDto) {
+    try {
+      esClient.index(createDefinitionBasedRequest(timestampBasedImportIndexDto), RequestOptions.DEFAULT);
+      log.debug("timestamp based import index updated: [{}}]", timestampBasedImportIndexDto);
+    } catch (IOException e) {
+      String errorMessage = String.format("Could not write timestamp based import index: [%s].", timestampBasedImportIndexDto);
+      log.error(errorMessage, e);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
   }
 
   private void addImportIndexRequest(BulkRequest bulkRequest, OptimizeDto optimizeDto) {

@@ -6,7 +6,6 @@
 
 package org.camunda.optimize.service;
 
-
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.service.es.reader.EventTraceStateReader;

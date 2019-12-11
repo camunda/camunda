@@ -8,16 +8,22 @@ package org.camunda.optimize.service.events.stateprocessing;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import org.camunda.optimize.service.EventTraceStateService;
+import org.camunda.optimize.service.es.reader.TimestampBasedImportIndexReader;
 import org.camunda.optimize.service.es.writer.EventSequenceCountWriter;
+import org.camunda.optimize.service.es.writer.ImportIndexWriter;
 import org.camunda.optimize.service.events.EventService;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,6 +34,8 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_ENGINE_REFERENCE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 @RequiredArgsConstructor
@@ -39,12 +47,15 @@ public class EventStateProcessingService {
   private final EventService eventService;
   private final EventTraceStateService eventTraceStateService;
   private final EventSequenceCountWriter eventSequenceCountWriter;
+  private final ImportIndexWriter importIndexWriter;
+  private final TimestampBasedImportIndexReader timestampBasedImportIndexReader;
 
-  private Long lastProcessedEntityIngestionTimestamp = 0L;
   private boolean isCurrentlyProcessingEvents = false;
 
   public void processUncountedEvents() {
     isCurrentlyProcessingEvents = true;
+    Long lastProcessedEntityIngestionTimestamp = fetchLastProcessedEntityIngestionTimestamp();
+
     List<EventDto> eventsToProcess = eventService.getEventsIngestedAt(lastProcessedEntityIngestionTimestamp);
     List<EventDto> eventsAfterLastProcessedTimestamp = eventService.getEventsIngestedAfter(
       lastProcessedEntityIngestionTimestamp,
@@ -55,10 +66,27 @@ public class EventStateProcessingService {
     if (eventsAfterLastProcessedTimestamp.isEmpty()) {
       log.debug("No new events to process");
     } else {
-      lastProcessedEntityIngestionTimestamp = eventsToProcess.get(eventsToProcess.size() - 1).getIngestionTimestamp();
       processStateAndCountsForEvents(eventsToProcess);
+      storeUpdatedLastProcessedTimestamp(eventsToProcess);
     }
     isCurrentlyProcessingEvents = false;
+  }
+
+  private Long fetchLastProcessedEntityIngestionTimestamp() {
+    return timestampBasedImportIndexReader.getImportIndex(EVENT_PROCESSING_IMPORT_REFERENCE, EVENT_PROCESSING_ENGINE_REFERENCE)
+    .map(index -> index.getTimestampOfLastEntity().toInstant().toEpochMilli())
+    .orElse(0L);
+  }
+
+  private void storeUpdatedLastProcessedTimestamp(final List<EventDto> eventsToProcess) {
+    TimestampBasedImportIndexDto eventStateProcessingIndex = new TimestampBasedImportIndexDto();
+    eventStateProcessingIndex.setEsTypeIndexRefersTo(EVENT_PROCESSING_IMPORT_REFERENCE);
+    eventStateProcessingIndex.setEngine(EVENT_PROCESSING_ENGINE_REFERENCE);
+    eventStateProcessingIndex.setTimestampOfLastEntity(OffsetDateTime.ofInstant(
+      Instant.ofEpochMilli(eventsToProcess.get(eventsToProcess.size() - 1).getIngestionTimestamp()),
+      ZoneId.systemDefault()
+    ));
+    importIndexWriter.updateTimestampBasedImportIndex(eventStateProcessingIndex);
   }
 
   private void processStateAndCountsForEvents(final List<EventDto> eventsToProcess) {
