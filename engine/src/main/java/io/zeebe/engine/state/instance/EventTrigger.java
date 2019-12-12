@@ -18,7 +18,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class EventTrigger extends UnpackedObject implements DbValue {
+public final class EventTrigger extends UnpackedObject implements DbValue {
 
   private final StringProperty elementIdProp = new StringProperty("elementId");
   private final BinaryProperty variablesProp = new BinaryProperty("variables");

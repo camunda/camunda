@@ -38,7 +38,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class MessageCatchElementTest {
+public final class MessageCatchElementTest {
 
   private static final int PARTITION_COUNT = 3;
 

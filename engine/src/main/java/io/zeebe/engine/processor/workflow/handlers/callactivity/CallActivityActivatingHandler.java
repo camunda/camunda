@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
-public class CallActivityActivatingHandler
+public final class CallActivityActivatingHandler
     extends ActivityElementActivatingHandler<ExecutableCallActivity> {
 
   private final KeyGenerator keyGenerator;

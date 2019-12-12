@@ -11,7 +11,7 @@ import io.zeebe.engine.processor.SideEffectProducer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SideEffectQueue implements SideEffectProducer {
+public final class SideEffectQueue implements SideEffectProducer {
   private final List<SideEffectProducer> sideEffects = new ArrayList<>();
 
   public void clear() {

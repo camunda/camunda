@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 
-public class MessageEventProcessors {
+public final class MessageEventProcessors {
 
   public static void addMessageProcessors(
       final TypedRecordProcessors typedRecordProcessors,

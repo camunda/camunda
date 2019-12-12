@@ -29,7 +29,7 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-public class ServiceTaskTransformer implements ModelElementTransformer<ServiceTask> {
+public final class ServiceTaskTransformer implements ModelElementTransformer<ServiceTask> {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 

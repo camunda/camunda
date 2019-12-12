@@ -13,7 +13,7 @@ import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementTerminatingHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class EventBasedGatewayElementTerminatingHandler<T extends ExecutableEventBasedGateway>
+public final class EventBasedGatewayElementTerminatingHandler<T extends ExecutableEventBasedGateway>
     extends ElementTerminatingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 

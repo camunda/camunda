@@ -28,7 +28,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MultiInstanceIncidentTest {
+public final class MultiInstanceIncidentTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 

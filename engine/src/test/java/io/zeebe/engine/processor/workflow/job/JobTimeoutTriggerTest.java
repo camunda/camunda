@@ -26,7 +26,7 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 
-public class JobTimeoutTriggerTest {
+public final class JobTimeoutTriggerTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 

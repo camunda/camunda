@@ -12,7 +12,7 @@ import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 
-public class CommandProcessorImpl<T extends UnifiedRecordValue>
+public final class CommandProcessorImpl<T extends UnifiedRecordValue>
     implements TypedRecordProcessor<T>, CommandControl<T> {
 
   private final CommandProcessor<T> wrappedProcessor;

@@ -12,7 +12,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class UnpackedObjectValue implements DbValue {
+public final class UnpackedObjectValue implements DbValue {
 
   private UnpackedObject value;
 

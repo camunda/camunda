@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class OpenWorkflowInstanceSubscriptionProcessor
+public final class OpenWorkflowInstanceSubscriptionProcessor
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
 
   public static final String NO_SUBSCRIPTION_FOUND_MESSAGE =

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.agrona.ExpandableArrayBuffer;
 
-public class ElementInstanceState {
+public final class ElementInstanceState {
 
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, DbNil> parentChildColumnFamily;
   private final DbCompositeKey<DbLong, DbLong> parentChildKey;

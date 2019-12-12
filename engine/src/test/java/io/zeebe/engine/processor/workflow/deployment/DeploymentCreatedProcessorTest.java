@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class DeploymentCreatedProcessorTest {
+public final class DeploymentCreatedProcessorTest {
   public static final String PROCESS_ID = "process";
   public static final String RESOURCE_ID = "process.bpmn";
   public static final String MESSAGE_NAME = "msg";

@@ -17,7 +17,7 @@ import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class WorkflowEngineState implements StreamProcessorLifecycleAware {
+public final class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;
   private ElementInstanceState elementInstanceState;

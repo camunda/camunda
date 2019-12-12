@@ -17,7 +17,7 @@ import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.TimerIntent;
 
-public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
+public final class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
   public static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to cancel timer with key '%d', but no such timer was found";
   private final WorkflowState workflowState;

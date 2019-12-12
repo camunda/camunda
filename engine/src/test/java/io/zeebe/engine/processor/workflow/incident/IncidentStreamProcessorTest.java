@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class IncidentStreamProcessorTest {
+public final class IncidentStreamProcessorTest {
 
   public final StreamProcessorRule envRule = new StreamProcessorRule();
   public final IncidentStreamProcessorRule streamProcessorRule =

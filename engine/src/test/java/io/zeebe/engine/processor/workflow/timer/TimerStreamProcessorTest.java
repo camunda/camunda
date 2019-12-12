@@ -22,7 +22,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class TimerStreamProcessorTest {
+public final class TimerStreamProcessorTest {
 
   private static final String PROCESS_ID = "process";
 

@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import java.util.List;
 
-public class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {
+public final class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private final WorkflowState workflowState;
   private final boolean isDeploymentPartition;

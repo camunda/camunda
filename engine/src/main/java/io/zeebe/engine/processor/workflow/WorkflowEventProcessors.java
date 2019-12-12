@@ -35,7 +35,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import java.util.Arrays;
 import java.util.List;
 
-public class WorkflowEventProcessors {
+public final class WorkflowEventProcessors {
 
   private static final List<WorkflowInstanceIntent> WORKFLOW_INSTANCE_COMMANDS =
       Arrays.asList(WorkflowInstanceIntent.CANCEL);

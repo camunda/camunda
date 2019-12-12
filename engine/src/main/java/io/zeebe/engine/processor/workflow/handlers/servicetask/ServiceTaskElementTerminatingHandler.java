@@ -20,7 +20,7 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.intent.JobIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTask>
+public final class ServiceTaskElementTerminatingHandler<T extends ExecutableServiceTask>
     extends ActivityElementTerminatingHandler<T> {
   private final IncidentState incidentState;
   private final JobState jobState;

@@ -51,7 +51,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 @SuppressWarnings("unchecked")
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class CreateWorkflowInstanceProcessorTest
+public final class CreateWorkflowInstanceProcessorTest
     extends CommandProcessorTestCase<WorkflowInstanceCreationRecord> {
 
   private static final BpmnModelInstance VALID_WORKFLOW =

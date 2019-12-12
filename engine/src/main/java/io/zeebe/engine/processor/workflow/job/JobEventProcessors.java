@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
 import java.util.function.Consumer;
 
-public class JobEventProcessors {
+public final class JobEventProcessors {
   public static void addJobProcessors(
       final TypedRecordProcessors typedRecordProcessors,
       final ZeebeState zeebeState,

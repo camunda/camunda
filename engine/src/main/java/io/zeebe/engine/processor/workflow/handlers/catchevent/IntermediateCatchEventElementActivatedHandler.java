@@ -12,7 +12,8 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCat
 import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class IntermediateCatchEventElementActivatedHandler<T extends ExecutableCatchEventElement>
+public final class IntermediateCatchEventElementActivatedHandler<
+        T extends ExecutableCatchEventElement>
     extends ElementActivatedHandler<T> {
   public IntermediateCatchEventElementActivatedHandler() {
     this(null);

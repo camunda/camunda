@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import org.junit.Test;
 
-public class EventBasedGatewayTransformationTest {
+public final class EventBasedGatewayTransformationTest {
   @Test
   public void shouldTransformEventBasedGatewayCorrectly() {
     // given

@@ -24,7 +24,7 @@ import io.zeebe.model.bpmn.util.time.TimeDateTimer;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
+public final class CatchEventTransformer implements ModelElementTransformer<CatchEvent> {
   @Override
   public Class<CatchEvent> getType() {
     return CatchEvent.class;

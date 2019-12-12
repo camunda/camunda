@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
 
-public class StreamProcessorReprocessingTest {
+public final class StreamProcessorReprocessingTest {
   private static final long TIMEOUT_MILLIS = 2_000L;
   private static final VerificationWithTimeout TIMEOUT = timeout(TIMEOUT_MILLIS);
 

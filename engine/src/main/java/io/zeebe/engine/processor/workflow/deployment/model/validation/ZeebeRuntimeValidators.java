@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 
-public class ZeebeRuntimeValidators {
+public final class ZeebeRuntimeValidators {
 
   public static final Collection<ModelElementValidator<?>> VALIDATORS =
       List.of(

@@ -18,7 +18,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class ElementInstance implements DbValue {
+public final class ElementInstance implements DbValue {
 
   private final IndexedRecord elementRecord;
 

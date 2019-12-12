@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class YamlTask {
+public final class YamlTask {
   private String id = "";
 
   private String type = "";

@@ -33,7 +33,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class UpdateVariableDocumentProcessorTest
+public final class UpdateVariableDocumentProcessorTest
     extends CommandProcessorTestCase<VariableDocumentRecord> {
 
   public static final int WORKFLOW_KEY = -1;

@@ -20,7 +20,7 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.ErrorType;
 
-public class BpmnStepContext<T extends ExecutableFlowElement> {
+public final class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
   private final SideEffectQueue sideEffect = new SideEffectQueue();

@@ -12,7 +12,7 @@ import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
-public class StoredRecord implements DbValue {
+public final class StoredRecord implements DbValue {
 
   private static final int PURPOSE_OFFSET = 0;
   private static final int PURPOSE_LENGTH = BitUtil.SIZE_OF_BYTE;

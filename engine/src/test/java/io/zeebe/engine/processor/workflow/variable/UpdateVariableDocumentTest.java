@@ -32,7 +32,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class UpdateVariableDocumentTest {
+public final class UpdateVariableDocumentTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
 

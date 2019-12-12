@@ -19,7 +19,7 @@ import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
 
 @RunWith(MockitoJUnitRunner.StrictStubs.class)
-public class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableFlowNode> {
+public final class EventOccurredHandlerTest extends ElementHandlerTestCase<ExecutableFlowNode> {
   private EventOccurredHandler<ExecutableFlowNode> handler;
 
   @Override

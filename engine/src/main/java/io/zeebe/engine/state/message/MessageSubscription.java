@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MessageSubscription implements DbValue {
+public final class MessageSubscription implements DbValue {
 
   private final DirectBuffer bpmnProcessId = new UnsafeBuffer();
   private final DirectBuffer messageName = new UnsafeBuffer();

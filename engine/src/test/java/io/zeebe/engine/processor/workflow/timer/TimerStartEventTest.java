@@ -28,7 +28,7 @@ import java.time.Instant;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TimerStartEventTest {
+public final class TimerStartEventTest {
 
   private static final BpmnModelInstance SIMPLE_MODEL =
       Bpmn.createExecutableProcess("process")

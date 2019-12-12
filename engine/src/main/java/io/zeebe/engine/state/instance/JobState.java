@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
-public class JobState {
+public final class JobState {
 
   private static final Logger LOG = Loggers.WORKFLOW_PROCESSOR_LOGGER;
 

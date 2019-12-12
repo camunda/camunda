@@ -15,7 +15,7 @@ import io.zeebe.util.sched.ActorControl;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
-public class ProcessingContext implements ReadonlyProcessingContext {
+public final class ProcessingContext implements ReadonlyProcessingContext {
 
   private ActorControl actor;
   private EventFilter eventFilter;

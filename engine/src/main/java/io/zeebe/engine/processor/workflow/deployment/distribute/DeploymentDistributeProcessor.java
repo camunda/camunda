@@ -26,7 +26,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
+public final class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private final DeploymentsState deploymentsState;
   private final DeploymentDistributor deploymentDistributor;

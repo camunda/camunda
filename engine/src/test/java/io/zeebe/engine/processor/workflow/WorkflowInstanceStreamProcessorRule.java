@@ -59,7 +59,7 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public class WorkflowInstanceStreamProcessorRule extends ExternalResource
+public final class WorkflowInstanceStreamProcessorRule extends ExternalResource
     implements StreamProcessorLifecycleAware {
 
   public static final int VERSION = 1;

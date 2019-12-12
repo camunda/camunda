@@ -58,7 +58,7 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-public class SkipFailingEventsTest {
+public final class SkipFailingEventsTest {
   public static final String STREAM_NAME = "foo";
 
   public final TemporaryFolder tempFolder = new TemporaryFolder();

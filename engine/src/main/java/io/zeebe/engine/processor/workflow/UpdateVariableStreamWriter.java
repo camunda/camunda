@@ -13,7 +13,7 @@ import io.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.zeebe.protocol.record.intent.VariableIntent;
 import org.agrona.DirectBuffer;
 
-public class UpdateVariableStreamWriter implements VariableListener {
+public final class UpdateVariableStreamWriter implements VariableListener {
 
   private final VariableRecord record = new VariableRecord();
 

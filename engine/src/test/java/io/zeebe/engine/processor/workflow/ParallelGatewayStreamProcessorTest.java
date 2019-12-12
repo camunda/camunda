@@ -25,7 +25,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class ParallelGatewayStreamProcessorTest {
+public final class ParallelGatewayStreamProcessorTest {
 
   public static final String PROCESS_ID = "process";
   public static final DirectBuffer PROCESS_ID_BUFFER = BufferUtil.wrapString("process");

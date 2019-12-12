@@ -19,7 +19,7 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import java.util.Collection;
 import org.agrona.DirectBuffer;
 
-public class WorkflowState {
+public final class WorkflowState {
 
   private final NextValueManager versionManager;
   private final WorkflowPersistenceCache workflowPersistenceCache;

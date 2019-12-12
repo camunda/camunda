@@ -28,7 +28,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import org.agrona.DirectBuffer;
 
-public class CreateWorkflowInstanceProcessor
+public final class CreateWorkflowInstanceProcessor
     implements CommandProcessor<WorkflowInstanceCreationRecord> {
 
   private static final String ERROR_MESSAGE_NO_IDENTIFIER_SPECIFIED =

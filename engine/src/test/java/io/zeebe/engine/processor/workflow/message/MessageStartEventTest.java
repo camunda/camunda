@@ -30,7 +30,7 @@ import java.util.stream.IntStream;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MessageStartEventTest {
+public final class MessageStartEventTest {
 
   private static final String MESSAGE_NAME_1 = "a";
   private static final String MESSAGE_NAME_2 = "b";

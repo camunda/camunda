@@ -20,7 +20,7 @@ import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.Optional;
 
-public class CallActivityTransformer implements ModelElementTransformer<CallActivity> {
+public final class CallActivityTransformer implements ModelElementTransformer<CallActivity> {
 
   @Override
   public Class<CallActivity> getType() {

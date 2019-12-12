@@ -37,7 +37,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CreateDeploymentTest {
+public final class CreateDeploymentTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final String PROCESS_ID_2 = "process2";

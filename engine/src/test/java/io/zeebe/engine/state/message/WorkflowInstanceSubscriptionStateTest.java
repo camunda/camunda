@@ -21,7 +21,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class WorkflowInstanceSubscriptionStateTest {
+public final class WorkflowInstanceSubscriptionStateTest {
 
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 

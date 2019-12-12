@@ -18,7 +18,7 @@ import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.StartEvent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class StartEventTransformer implements ModelElementTransformer<StartEvent> {
+public final class StartEventTransformer implements ModelElementTransformer<StartEvent> {
 
   @Override
   public Class<StartEvent> getType() {

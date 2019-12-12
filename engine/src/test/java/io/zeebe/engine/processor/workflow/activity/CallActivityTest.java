@@ -31,7 +31,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CallActivityTest {
+public final class CallActivityTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 

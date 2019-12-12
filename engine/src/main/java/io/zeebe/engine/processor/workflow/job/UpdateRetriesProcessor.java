@@ -14,7 +14,7 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.JobIntent;
 
-public class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
+public final class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
 
   private static final String NO_JOB_FOUND_MESSAGE =
       "Expected to update retries for job with key '%d', but no such job was found";

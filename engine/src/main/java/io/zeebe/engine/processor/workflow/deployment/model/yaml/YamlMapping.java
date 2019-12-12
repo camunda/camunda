@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.yaml;
 
-public class YamlMapping {
+public final class YamlMapping {
   private static final String DEFAULT_MAPPING = "$";
 
   private String source = DEFAULT_MAPPING;

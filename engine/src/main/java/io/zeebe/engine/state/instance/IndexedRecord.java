@@ -17,7 +17,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class IndexedRecord implements DbValue {
+public final class IndexedRecord implements DbValue {
 
   private final WorkflowInstanceRecord value = new WorkflowInstanceRecord();
   private long key;

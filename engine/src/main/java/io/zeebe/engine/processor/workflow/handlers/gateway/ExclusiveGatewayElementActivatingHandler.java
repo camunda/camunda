@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
-public class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclusiveGateway>
+public final class ExclusiveGatewayElementActivatingHandler<T extends ExecutableExclusiveGateway>
     extends ElementActivatingHandler<T> {
   private static final String NO_OUTGOING_FLOW_CHOSEN_ERROR =
       "Expected at least one condition to evaluate to true, or to have a default flow";

@@ -34,7 +34,7 @@ import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.collections.LongHashSet;
 import org.agrona.io.DirectBufferInputStream;
 
-public class WorkflowPersistenceCache {
+public final class WorkflowPersistenceCache {
   private final BpmnTransformer transformer = new BpmnTransformer();
 
   private final Map<DirectBuffer, Long2ObjectHashMap<DeployedWorkflow>>

@@ -26,7 +26,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.function.Consumer;
 
-public class EngineProcessors {
+public final class EngineProcessors {
 
   public static TypedRecordProcessors createEngineProcessors(
       final ProcessingContext processingContext,

@@ -15,7 +15,7 @@ import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.camunda.bpm.model.xml.validation.ValidationResult;
 import org.camunda.bpm.model.xml.validation.ValidationResultFormatter;
 
-public class ValidationErrorFormatter implements ValidationResultFormatter {
+public final class ValidationErrorFormatter implements ValidationResultFormatter {
 
   @Override
   public void formatElement(final StringWriter writer, final ModelElementInstance element) {

@@ -17,7 +17,7 @@ import io.zeebe.db.impl.DbString;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import org.agrona.DirectBuffer;
 
-public class MessageSubscriptionState {
+public final class MessageSubscriptionState {
 
   private final DbContext dbContext;
 

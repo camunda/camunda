@@ -11,7 +11,7 @@ import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
-public class WorkflowEngineMetrics {
+public final class WorkflowEngineMetrics {
 
   private static final Counter ELEMENT_INSTANCE_EVENTS =
       Counter.build()

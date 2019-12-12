@@ -12,7 +12,7 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.protocol.Protocol;
 
-public class KeyState implements KeyGenerator {
+public final class KeyState implements KeyGenerator {
 
   private static final long INITIAL_VALUE = 0;
 

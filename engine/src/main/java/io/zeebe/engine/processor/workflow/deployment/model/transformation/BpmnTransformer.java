@@ -33,7 +33,7 @@ import io.zeebe.model.bpmn.traversal.ModelWalker;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import java.util.List;
 
-public class BpmnTransformer {
+public final class BpmnTransformer {
 
   /*
    * Step 1: Instantiate all elements in the workflow

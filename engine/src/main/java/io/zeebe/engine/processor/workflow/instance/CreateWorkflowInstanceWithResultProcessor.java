@@ -18,7 +18,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCrea
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 
-public class CreateWorkflowInstanceWithResultProcessor
+public final class CreateWorkflowInstanceWithResultProcessor
     implements CommandProcessor<WorkflowInstanceCreationRecord> {
 
   private final CreateWorkflowInstanceProcessor createProcessor;

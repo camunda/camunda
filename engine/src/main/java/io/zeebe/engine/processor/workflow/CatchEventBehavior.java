@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
-public class CatchEventBehavior {
+public final class CatchEventBehavior {
 
   private final ZeebeState state;
   private final SubscriptionCommandSender subscriptionCommandSender;

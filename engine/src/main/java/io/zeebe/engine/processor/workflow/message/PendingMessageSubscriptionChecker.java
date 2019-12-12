@@ -12,7 +12,7 @@ import io.zeebe.engine.state.message.MessageSubscription;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.util.sched.clock.ActorClock;
 
-public class PendingMessageSubscriptionChecker implements Runnable {
+public final class PendingMessageSubscriptionChecker implements Runnable {
   private final SubscriptionCommandSender commandSender;
   private final MessageSubscriptionState subscriptionState;
 

@@ -13,7 +13,7 @@ import io.zeebe.engine.processor.workflow.handlers.CatchEventSubscriber;
 import io.zeebe.engine.processor.workflow.handlers.activity.ActivityElementTerminatingHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class CallActivityTerminatingHandler
+public final class CallActivityTerminatingHandler
     extends ActivityElementTerminatingHandler<ExecutableCallActivity> {
 
   public CallActivityTerminatingHandler(final CatchEventSubscriber catchEventSubscriber) {

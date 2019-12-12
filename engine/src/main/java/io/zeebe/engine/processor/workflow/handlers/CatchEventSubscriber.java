@@ -13,7 +13,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCat
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.protocol.record.value.ErrorType;
 
-public class CatchEventSubscriber {
+public final class CatchEventSubscriber {
   private final CatchEventBehavior catchEventBehavior;
 
   public CatchEventSubscriber(final CatchEventBehavior catchEventBehavior) {

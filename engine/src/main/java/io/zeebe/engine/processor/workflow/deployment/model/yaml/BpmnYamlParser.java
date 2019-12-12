@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class BpmnYamlParser {
+public final class BpmnYamlParser {
 
   private final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
   private final Map<String, YamlTask> tasksById = new HashMap<>();

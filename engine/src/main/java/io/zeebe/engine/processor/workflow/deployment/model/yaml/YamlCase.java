@@ -9,7 +9,7 @@ package io.zeebe.engine.processor.workflow.deployment.model.yaml;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class YamlCase {
+public final class YamlCase {
   @JsonProperty("case")
   private String condition = "";
 

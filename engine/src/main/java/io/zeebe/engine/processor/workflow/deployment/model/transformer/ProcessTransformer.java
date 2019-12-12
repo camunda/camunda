@@ -15,7 +15,7 @@ import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 
-public class ProcessTransformer implements ModelElementTransformer<Process> {
+public final class ProcessTransformer implements ModelElementTransformer<Process> {
 
   @Override
   public Class<Process> getType() {

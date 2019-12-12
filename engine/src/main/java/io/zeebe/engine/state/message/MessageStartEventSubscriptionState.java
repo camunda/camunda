@@ -19,7 +19,7 @@ import io.zeebe.engine.state.instance.UnpackedObjectValue;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import org.agrona.DirectBuffer;
 
-public class MessageStartEventSubscriptionState {
+public final class MessageStartEventSubscriptionState {
 
   private final DbString messageName;
   private final DbLong workflowKey;

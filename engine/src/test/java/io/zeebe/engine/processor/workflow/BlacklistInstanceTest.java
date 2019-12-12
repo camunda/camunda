@@ -44,7 +44,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public class BlacklistInstanceTest {
+public final class BlacklistInstanceTest {
 
   @ClassRule public static final ZeebeStateRule ZEEBE_STATE_RULE = new ZeebeStateRule();
   private static final AtomicLong KEY_GENERATOR = new AtomicLong(0);

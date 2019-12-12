@@ -16,7 +16,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class WorkflowInstanceCommandContext {
+public final class WorkflowInstanceCommandContext {
 
   private final EventOutput eventOutput;
   private final ElementInstanceState elementInstanceState;

@@ -14,7 +14,7 @@ import io.zeebe.engine.processor.workflow.handlers.IOMappingHelper;
 import io.zeebe.engine.processor.workflow.handlers.element.ElementCompletingHandler;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class EventBasedGatewayElementCompletingHandler<T extends ExecutableEventBasedGateway>
+public final class EventBasedGatewayElementCompletingHandler<T extends ExecutableEventBasedGateway>
     extends ElementCompletingHandler<T> {
   private final CatchEventSubscriber catchEventSubscriber;
 

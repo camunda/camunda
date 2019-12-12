@@ -12,7 +12,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CorrelateWorkflowInstanceSubscriptionCommand
+public final class CorrelateWorkflowInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
         CorrelateWorkflowInstanceSubscriptionEncoder,
         CorrelateWorkflowInstanceSubscriptionDecoder> {

@@ -16,7 +16,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TimerInstance implements DbValue {
+public final class TimerInstance implements DbValue {
 
   public static final int NO_ELEMENT_INSTANCE = -1;
 

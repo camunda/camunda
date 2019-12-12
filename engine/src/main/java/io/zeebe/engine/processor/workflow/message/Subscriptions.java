@@ -17,7 +17,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class Subscriptions {
+public final class Subscriptions {
 
   private final ReusableObjectList<Subscription> subscriptions =
       new ReusableObjectList<>(Subscription::new);
@@ -72,7 +72,7 @@ public class Subscriptions {
     boolean apply(Subscription subscription);
   }
 
-  public class Subscription implements Reusable {
+  public final class Subscription implements Reusable {
 
     private final MutableDirectBuffer bpmnProcessId = new ExpandableArrayBuffer();
     private final DirectBuffer bufferView = new UnsafeBuffer(bpmnProcessId);

@@ -39,7 +39,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class BoundaryEventTest {
+public final class BoundaryEventTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final BpmnModelInstance MULTIPLE_SEQUENCE_FLOWS =

@@ -22,7 +22,7 @@ import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PublishMessageClient {
+public final class PublishMessageClient {
 
   private static final int DEFAULT_VALUE = -1;
   private static final Duration DEFAULT_MSG_TTL = Duration.ofHours(1);

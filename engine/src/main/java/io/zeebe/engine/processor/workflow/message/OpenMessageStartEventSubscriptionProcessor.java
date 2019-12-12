@@ -17,7 +17,7 @@ import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscription
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import java.util.Collections;
 
-public class OpenMessageStartEventSubscriptionProcessor
+public final class OpenMessageStartEventSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartEventSubscriptionRecord> {
 
   private final MessageStartEventSubscriptionState subscriptionState;

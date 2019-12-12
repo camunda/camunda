@@ -20,7 +20,7 @@ import java.util.List;
 
 // todo: this skips the sequence flow taken and just starts the next element
 // https://github.com/zeebe-io/zeebe/issues/1979
-public class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBasedGateway>
+public final class EventBasedGatewayEventOccurredHandler<T extends ExecutableEventBasedGateway>
     extends EventOccurredHandler<T> {
   public EventBasedGatewayEventOccurredHandler() {
     super();

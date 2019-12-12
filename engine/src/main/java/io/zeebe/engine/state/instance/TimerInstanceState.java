@@ -16,7 +16,7 @@ import io.zeebe.db.impl.DbNil;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import java.util.function.Consumer;
 
-public class TimerInstanceState {
+public final class TimerInstanceState {
 
   private final ColumnFamily<DbCompositeKey<DbLong, DbLong>, TimerInstance>
       timerInstanceColumnFamily;

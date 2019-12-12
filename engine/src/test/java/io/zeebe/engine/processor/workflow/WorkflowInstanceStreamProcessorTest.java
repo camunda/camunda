@@ -45,7 +45,7 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 import org.mockito.ArgumentCaptor;
 
-public class WorkflowInstanceStreamProcessorTest {
+public final class WorkflowInstanceStreamProcessorTest {
 
   private static final String PROCESS_ID = "process";
   private static final BpmnModelInstance SERVICE_TASK_WORKFLOW =

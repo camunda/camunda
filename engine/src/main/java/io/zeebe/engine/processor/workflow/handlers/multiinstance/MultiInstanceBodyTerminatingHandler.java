@@ -17,7 +17,7 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
 import java.util.function.Function;
 
-public class MultiInstanceBodyTerminatingHandler extends AbstractMultiInstanceBodyHandler {
+public final class MultiInstanceBodyTerminatingHandler extends AbstractMultiInstanceBodyHandler {
 
   private final CatchEventSubscriber catchEventSubscriber;
 

@@ -24,7 +24,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class CreateWorkflowInstanceTest {
+public final class CreateWorkflowInstanceTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 

@@ -15,7 +15,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 
-public class BoundaryEventTransformer implements ModelElementTransformer<BoundaryEvent> {
+public final class BoundaryEventTransformer implements ModelElementTransformer<BoundaryEvent> {
   @Override
   public Class<BoundaryEvent> getType() {
     return BoundaryEvent.class;

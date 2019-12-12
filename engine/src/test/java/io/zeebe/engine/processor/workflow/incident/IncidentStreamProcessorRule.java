@@ -44,7 +44,7 @@ import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
 
-public class IncidentStreamProcessorRule extends ExternalResource {
+public final class IncidentStreamProcessorRule extends ExternalResource {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
   private final StreamProcessorRule environmentRule;

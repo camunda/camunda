@@ -10,7 +10,7 @@ package io.zeebe.engine.processor.workflow.message;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class MessageCorrelationKeyContext {
+public final class MessageCorrelationKeyContext {
   private long variablesScopeKey;
   private DirectBuffer variablesDocument;
   private VariablesDocumentSupplier variablesSupplier;

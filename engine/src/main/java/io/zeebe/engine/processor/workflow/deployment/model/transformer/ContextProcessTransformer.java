@@ -12,7 +12,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Process;
 
-public class ContextProcessTransformer implements ModelElementTransformer<Process> {
+public final class ContextProcessTransformer implements ModelElementTransformer<Process> {
 
   @Override
   public Class<Process> getType() {

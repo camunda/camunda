@@ -64,7 +64,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
 
-public class TestStreams {
+public final class TestStreams {
   private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
 
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
@@ -133,14 +133,13 @@ public class TestStreams {
                 .withMaxEntrySize(4 * 1024 * 1024)
                 .withMaxSegmentSize(128 * 1024 * 1024));
     final var logStream =
-        spy(
-            new SyncLogStream(
-                LogStreams.createLogStream()
-                    .withLogName(name)
-                    .withLogStorage(logStorageRule.getStorage())
-                    .withPartitionId(partitionId)
-                    .withActorScheduler(actorScheduler)
-                    .build()));
+        new SyncLogStream(
+            LogStreams.createLogStream()
+                .withLogName(name)
+                .withLogStorage(logStorageRule.getStorage())
+                .withPartitionId(partitionId)
+                .withActorScheduler(actorScheduler)
+                .build());
     logStorageRule.setPositionListener(logStream::setCommitPosition);
 
     final LogContext logContext = LogContext.createLogContext(logStream, logStorageRule);

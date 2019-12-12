@@ -28,7 +28,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 
-public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
+public final class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
 
   public RecordStream(final Stream<LoggedEvent> stream) {
     super(stream);

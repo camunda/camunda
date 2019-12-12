@@ -14,7 +14,7 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
-public class TypedRecordStream<T extends UnifiedRecordValue>
+public final class TypedRecordStream<T extends UnifiedRecordValue>
     extends StreamWrapper<Record<T>, TypedRecordStream<T>> {
 
   public TypedRecordStream(final Stream<Record<T>> wrappedStream) {

@@ -21,7 +21,7 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class MessageStartEventSubscriptionMultiplePartitionsTest {
+public final class MessageStartEventSubscriptionMultiplePartitionsTest {
   private static final String MESSAGE_NAME1 = "startMessage1";
   private static final String EVENT_ID1 = "startEventId1";
 

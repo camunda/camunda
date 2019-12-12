@@ -14,7 +14,7 @@ import io.zeebe.engine.processor.workflow.handlers.element.EventOccurredHandler;
 import io.zeebe.engine.state.instance.EventTrigger;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class IntermediateCatchEventEventOccurredHandler<T extends ExecutableCatchEventElement>
+public final class IntermediateCatchEventEventOccurredHandler<T extends ExecutableCatchEventElement>
     extends EventOccurredHandler<T> {
   public IntermediateCatchEventEventOccurredHandler() {
     this(null);

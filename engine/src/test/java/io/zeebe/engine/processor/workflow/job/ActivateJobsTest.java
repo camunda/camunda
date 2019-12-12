@@ -43,7 +43,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class ActivateJobsTest {
+public final class ActivateJobsTest {
 
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
   private static final String LONG_CUSTOM_HEADER_VALUE = RandomString.make(128);

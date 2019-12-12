@@ -14,7 +14,8 @@ import io.zeebe.engine.processor.workflow.handlers.AbstractHandler;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
-public class SequenceFlowTakenHandler<T extends ExecutableSequenceFlow> extends AbstractHandler<T> {
+public final class SequenceFlowTakenHandler<T extends ExecutableSequenceFlow>
+    extends AbstractHandler<T> {
   public SequenceFlowTakenHandler() {
     super(null);
   }

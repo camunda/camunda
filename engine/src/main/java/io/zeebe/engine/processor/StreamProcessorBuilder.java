@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-public class StreamProcessorBuilder {
+public final class StreamProcessorBuilder {
 
   private final ProcessingContext processingContext;
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();

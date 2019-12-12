@@ -21,7 +21,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LogStreamPrinter {
+public final class LogStreamPrinter {
 
   private static final String HEADER_INDENTATION = "\t\t\t";
   private static final String ENTRY_INDENTATION = HEADER_INDENTATION + "\t";

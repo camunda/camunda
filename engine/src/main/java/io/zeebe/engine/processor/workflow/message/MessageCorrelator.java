@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MessageCorrelator {
+public final class MessageCorrelator {
 
   private final DirectBuffer messageVariables = new UnsafeBuffer();
   private final MessageState messageState;
