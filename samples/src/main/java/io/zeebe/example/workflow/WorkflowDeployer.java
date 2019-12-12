@@ -11,7 +11,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.response.DeploymentEvent;
 
-public class WorkflowDeployer {
+public final class WorkflowDeployer {
 
   public static void main(final String[] args) {
     final String broker = "localhost:26500";

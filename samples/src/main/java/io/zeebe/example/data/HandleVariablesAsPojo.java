@@ -14,7 +14,7 @@ import io.zeebe.client.api.worker.JobClient;
 import io.zeebe.client.api.worker.JobHandler;
 import java.util.Scanner;
 
-public class HandleVariablesAsPojo {
+public final class HandleVariablesAsPojo {
   public static void main(final String[] args) {
     final String broker = "127.0.0.1:26500";
 
