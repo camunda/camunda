@@ -33,12 +33,15 @@ jest.mock('./Submenu', () => props => (
 jest.mock('./service', () => ({findLetterOption: jest.fn()}));
 
 function setupRefs(node) {
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({})
-  };
-  node.instance().headerRef = {
-    getBoundingClientRect: () => ({})
-  };
+  const footer = document.createElement('div');
+  footer.getBoundingClientRect = () => ({});
+  document.body.appendChild(footer);
+  node.instance().footerRef = footer;
+
+  const header = document.createElement('div');
+  header.getBoundingClientRect = () => ({});
+  document.body.appendChild(header);
+  node.instance().headerRef = header;
 }
 
 function simulateDropdown(
@@ -60,13 +63,15 @@ function simulateDropdown(
     }
   };
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({top: footerTop})
-  };
+  const footer = document.createElement('div');
+  footer.getBoundingClientRect = () => ({top: footerTop});
+  document.body.appendChild(footer);
+  node.instance().footerRef = footer;
 
-  node.instance().headerRef = {
-    getBoundingClientRect: () => ({bottom: headerBottom})
-  };
+  const header = document.createElement('div');
+  header.getBoundingClientRect = () => ({bottom: headerBottom});
+  document.body.appendChild(header);
+  node.instance().headerRef = header;
 }
 
 it('should render without crashing', () => {
@@ -192,13 +197,7 @@ it('should set aria-expanded to false when closed', () => {
     </Dropdown>
   );
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({})
-  };
-
-  node.instance().headerRef = {
-    getBoundingClientRect: () => ({})
-  };
+  setupRefs(node);
 
   node.setState({open: true});
 

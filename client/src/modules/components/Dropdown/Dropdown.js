@@ -57,10 +57,10 @@ export default class Dropdown extends React.Component {
   }
 
   initilizeHeaderAndFooterRefs() {
-    if (!this.footerRef) {
+    if (!this.footerRef || !document.body.contains(this.footerRef)) {
       this.footerRef = document.body.querySelector('.Footer');
     }
-    if (!this.headerRef) {
+    if (!this.headerRef || !document.body.contains(this.headerRef)) {
       this.headerRef = document.body.querySelector('.Header');
     }
   }

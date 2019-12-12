@@ -8,7 +8,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import AppWithErrorHandling from './App';
-import {Header} from './components';
 
 jest.mock('notifications', () => ({addNotification: jest.fn(), Notifications: () => <span />}));
 
@@ -21,26 +20,6 @@ jest.mock('translation', () => ({
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data))
 };
-
-it('should include a header and footer page', async () => {
-  const node = shallow(<App {...props} />);
-  await node.update();
-  const content = shallow(node.find('Route').prop('render')({location: {pathname: '/'}}));
-
-  expect(content.find(Header)).toExist();
-  expect(content.find('Footer')).toExist();
-});
-
-it('should not include a header for shared resources', async () => {
-  const node = shallow(<App {...props} />);
-  await node.update();
-  const content = shallow(
-    node.find('Route').prop('render')({location: {pathname: '/share/report/3'}})
-  );
-
-  expect(content.find('Header')).not.toExist();
-  expect(content.find('Footer')).not.toExist();
-});
 
 it('should show an error message when it is not possible to initilize the translation', async () => {
   const node = shallow(<App {...props} error="test error message" />);

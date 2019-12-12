@@ -10,8 +10,6 @@ import {init} from 'translation';
 
 import {
   PrivateRoute,
-  Header,
-  Footer,
   Home,
   Collection,
   Report,
@@ -86,31 +84,23 @@ class App extends React.Component {
         <Router getUserConfirmation={SaveGuard.getUserConfirmation}>
           <Route
             path="/"
-            render={({location: {pathname}}) => {
-              const hideHeader = pathname.indexOf('/share') === 0;
-
-              return (
-                <div className="Root-container">
-                  {!hideHeader && <Header name="Camunda Optimize" />}
-                  <main>
-                    <ErrorBoundary>
-                      <Switch>
-                        <PrivateRoute exact path="/" component={Home} />
-                        <PrivateRoute path="/analysis" component={Analysis} />
-                        <PrivateRoute exact path="/eventBasedProcess" component={Events} />
-                        <Route exact path="/share/:type/:id" component={Sharing} />
-                        <PrivateRoute
-                          path="/(report|dashboard|collection|eventBasedProcess)/*"
-                          render={this.renderEntity}
-                        />
-                        <PrivateRoute path="*" component={ErrorPage} />
-                      </Switch>
-                    </ErrorBoundary>
-                  </main>
-                  {!hideHeader && <Footer />}
-                </div>
-              );
-            }}
+            render={() => (
+              <div className="Root-container">
+                <ErrorBoundary>
+                  <Switch>
+                    <PrivateRoute exact path="/" component={Home} />
+                    <PrivateRoute path="/analysis" component={Analysis} />
+                    <PrivateRoute exact path="/eventBasedProcess" component={Events} />
+                    <Route exact path="/share/:type/:id" component={Sharing} />
+                    <PrivateRoute
+                      path="/(report|dashboard|collection|eventBasedProcess)/*"
+                      render={this.renderEntity}
+                    />
+                    <PrivateRoute path="*" component={ErrorPage} />
+                  </Switch>
+                </ErrorBoundary>
+              </div>
+            )}
           />
           <SaveGuard />
         </Router>

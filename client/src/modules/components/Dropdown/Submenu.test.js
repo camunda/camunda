@@ -99,13 +99,15 @@ it('should shift the submenu up when there is no space available', () => {
     }
   };
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({top: 100})
-  };
+  const footer = document.createElement('div');
+  footer.getBoundingClientRect = () => ({top: 100});
+  document.body.appendChild(footer);
+  node.instance().footerRef = footer;
 
-  node.instance().headerRef = {
-    getBoundingClientRect: () => ({bottom: 10})
-  };
+  const header = document.createElement('div');
+  header.getBoundingClientRect = () => ({bottom: 10});
+  document.body.appendChild(header);
+  node.instance().headerRef = header;
 
   node.instance().calculatePlacement();
   node.update();
@@ -126,13 +128,15 @@ it('should show a scrollbar when submenu is bigger than the viewport height', ()
     }
   };
 
-  node.instance().footerRef = {
-    getBoundingClientRect: () => ({top: 100})
-  };
+  const footer = document.createElement('div');
+  footer.getBoundingClientRect = () => ({top: 100});
+  document.body.appendChild(footer);
+  node.instance().footerRef = footer;
 
-  node.instance().headerRef = {
-    getBoundingClientRect: () => ({bottom: 10})
-  };
+  const header = document.createElement('div');
+  header.getBoundingClientRect = () => ({bottom: 10});
+  document.body.appendChild(header);
+  node.instance().headerRef = header;
 
   node.instance().calculatePlacement();
   node.setProps({open: true});

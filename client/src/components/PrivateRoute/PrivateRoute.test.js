@@ -7,6 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Header, Footer} from '..';
+
 import PrivateRoute from './PrivateRoute';
 import {Login} from './Login';
 
@@ -53,4 +55,23 @@ it('should unregister the response handler when it is destroyed', () => {
   node.unmount();
 
   expect(removeHandler).toHaveBeenCalled();
+});
+
+it('should include a header and footer page', () => {
+  const node = shallow(<PrivateRoute component={TestComponent} />);
+
+  const content = node.find('Route').renderProp('render')();
+
+  expect(content.find(Header)).toExist();
+  expect(content.find(Footer)).toExist();
+});
+
+it('should not include a header when showing the login screen', () => {
+  const node = shallow(<PrivateRoute component={TestComponent} />);
+  node.setState({showLogin: true});
+
+  const content = node.find('Route').renderProp('render')();
+
+  expect(content.find(Header)).not.toExist();
+  expect(content.find(Footer)).not.toExist();
 });

@@ -14,27 +14,36 @@ import {t} from 'translation';
 import {getHeader} from 'config';
 import classnames from 'classnames';
 import {withErrorHandling} from 'HOC';
-import {addNotification} from 'notifications';
+import {addNotification, showError} from 'notifications';
 import ChangeLog from './ChangeLog';
+
+import {isEventBasedProcessEnabled} from './service';
 
 import './Header.scss';
 
 class Header extends React.Component {
   state = {
-    config: {}
+    config: {},
+    showEventBased: false
   };
 
-  async componentDidMount() {
+  componentDidMount() {
     this.props.mightFail(
       getHeader(),
       config => this.setState({config}),
       () => addNotification({type: 'error', text: t('navigation.configLoadingError')})
     );
+
+    this.props.mightFail(
+      isEventBasedProcessEnabled(),
+      enabled => this.setState({showEventBased: enabled}),
+      showError
+    );
   }
 
   render() {
     const {name, location} = this.props;
-    const {config} = this.state;
+    const {config, showEventBased} = this.state;
 
     return (
       <header
@@ -58,12 +67,14 @@ class Header extends React.Component {
             linksTo="/analysis"
             active={['/analysis/', '/analysis/*']}
           />
-          <HeaderNav.Item
-            name={t('navigation.events')}
-            linksTo="/eventBasedProcess/"
-            active={['/eventBasedProcess/', '/eventBasedProcess/*']}
-            breadcrumbsEntities={['eventBasedProcess']}
-          />
+          {showEventBased && (
+            <HeaderNav.Item
+              name={t('navigation.events')}
+              linksTo="/eventBasedProcess/"
+              active={['/eventBasedProcess/', '/eventBasedProcess/*']}
+              breadcrumbsEntities={['eventBasedProcess']}
+            />
+          )}
         </HeaderNav>
         <ChangeLog />
         <LogoutButton />

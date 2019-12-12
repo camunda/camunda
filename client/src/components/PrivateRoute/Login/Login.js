@@ -40,14 +40,12 @@ export default class Login extends React.Component {
 
     const authResult = await login(username, password);
 
-    this.setState({waitingForServer: false});
-
     if (authResult.token) {
       this.props.onLogin(authResult.token);
     } else {
       const {errorCode, errorMessage} = authResult;
       const error = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
-      this.setState({error: error || t('login.error')});
+      this.setState({waitingForServer: false, error: error || t('login.error')});
       this.passwordField.focus();
       this.passwordField.select();
     }

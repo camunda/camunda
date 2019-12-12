@@ -9,6 +9,8 @@ import {Route} from 'react-router-dom';
 import classnames from 'classnames';
 import {addHandler, removeHandler, request} from 'request';
 
+import {Header, Footer} from '..';
+
 import {Login} from './Login';
 
 import './PrivateRoute.scss';
@@ -51,12 +53,17 @@ export default class PrivateRoute extends React.Component {
       <Route
         {...rest}
         render={props => {
+          const {showLogin} = this.state;
           return (
             <>
-              <div className={classnames('PrivateRoute', {showLogin: this.state.showLogin})}>
-                {this.props.render ? this.props.render(props) : <Component {...props} />}
-              </div>
-              {this.state.showLogin && <Login {...props} onLogin={this.handleLoginSuccess} />}
+              {!showLogin && <Header name="Camunda Optimize" />}
+              <main>
+                <div className={classnames('PrivateRoute', {showLogin})}>
+                  {this.props.render ? this.props.render(props) : <Component {...props} />}
+                </div>
+                {showLogin && <Login {...props} onLogin={this.handleLoginSuccess} />}
+              </main>
+              {!showLogin && <Footer />}
             </>
           );
         }}
@@ -71,7 +78,12 @@ export default class PrivateRoute extends React.Component {
 
 const outstandingRequests = [];
 addHandler((response, payload) => {
-  if (response.status === 401 && payload.url !== 'api/authentication') {
+  if (
+    response.status === 401 &&
+    !['api/authentication', 'api/onboarding/whatsnew', 'api/eventBasedProcess/isEnabled'].includes(
+      payload.url
+    )
+  ) {
     return new Promise((resolve, reject) => {
       outstandingRequests.push({resolve, reject, payload});
     });
