@@ -54,6 +54,9 @@
             },
             "errorMessage": {
               "type": "text"
+            },
+            "errorCode": {
+              "type": "text"
             }
           }
         }
